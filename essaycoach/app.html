@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EssayCoach - AI Essay Reviewer | SUITE</title>
+    <meta name="description" content="Paste your essay and get instant AI feedback: score, grammar fixes, stronger sentences, structure suggestions, and improvement tips.">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0f; --bg-card: #1a1a2e; --border: #2a2a3e;
+            --accent: #8b5cf6; --accent-hover: #a78bfa;
+            --accent-glow: rgba(139, 92, 246, 0.12);
+            --text: #e2e8f0; --text-secondary: #94a3b8; --text-dim: #64748b;
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --info: #3b82f6;
+        }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 900px; padding: 24px 20px; flex: 1; }
+
+        .header { text-align: center; margin-bottom: 28px; }
+        .header-logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .header-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #e2e8f0, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--text-secondary); font-size: 15px; }
+
+        /* Input */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
+        .essay-textarea { width: 100%; min-height: 250px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; resize: vertical; line-height: 1.7; transition: border-color 0.2s; }
+        .essay-textarea:focus { border-color: var(--accent); }
+        .essay-textarea::placeholder { color: var(--text-dim); }
+
+        .type-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .type-btn { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .type-btn:hover { border-color: var(--accent); color: var(--text); }
+        .type-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-hover); }
+
+        .word-count { text-align: right; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+        .review-btn { width: 100%; margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .review-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
+        .review-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.show { display: block; }
+        .loading-spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading h3 { font-size: 18px; margin-bottom: 8px; }
+        .loading p { color: var(--text-secondary); font-size: 14px; }
+
+        /* Results */
+        .results { display: none; }
+        .results.show { display: block; }
+        .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .results-header h2 { font-size: 20px; font-weight: 700; }
+        .new-btn { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+        .new-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Score card */
+        .score-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+        .score-top { display: flex; align-items: center; gap: 24px; margin-bottom: 16px; }
+        .score-ring { width: 90px; height: 90px; position: relative; flex-shrink: 0; }
+        .score-ring svg { width: 90px; height: 90px; transform: rotate(-90deg); }
+        .score-ring circle { fill: none; stroke-width: 7; }
+        .score-ring .bg { stroke: var(--border); }
+        .score-ring .fg { stroke-linecap: round; transition: stroke-dashoffset 1s, stroke 0.3s; }
+        .score-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 26px; font-weight: 700; }
+        .score-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+        .sub-scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .sub-score { text-align: center; padding: 10px 6px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        .sub-score-val { font-size: 20px; font-weight: 700; }
+        .sub-score-label { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: var(--bg-card); padding: 4px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border); overflow-x: auto; }
+        .tab { flex: 1; padding: 10px 10px; background: none; border: none; color: var(--text-secondary); font-size: 12px; font-weight: 500; cursor: pointer; border-radius: 7px; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
+        .tab:hover { color: var(--text); }
+        .tab.active { background: var(--accent); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Lists */
+        .item-list { list-style: none; }
+        .item-list li { padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.5; display: flex; gap: 12px; align-items: flex-start; }
+        .dot-green { width: 8px; height: 8px; background: var(--success); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .dot-red { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .dot-blue { width: 8px; height: 8px; background: var(--info); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+        .dot-yellow { width: 8px; height: 8px; background: var(--warning); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+
+        /* Fix cards */
+        .fix-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .fix-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .fix-original { font-size: 13px; color: var(--text-dim); text-decoration: line-through; padding: 6px 10px; background: rgba(239,68,68,0.05); border-radius: 6px; margin-bottom: 6px; line-height: 1.5; }
+        .fix-improved { font-size: 14px; color: var(--text); padding: 6px 10px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15); border-radius: 6px; margin-bottom: 6px; line-height: 1.5; }
+        .fix-reason { font-size: 12px; color: var(--text-dim); font-style: italic; }
+
+        .no-items { text-align: center; padding: 40px; color: var(--text-dim); font-size: 14px; }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-message { padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; }
+        .qa-message.user { background: var(--accent); color: white; margin-left: 40px; }
+        .qa-message.ai { background: var(--bg-card); border: 1px solid var(--border); margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; }
+        .qa-input:focus { border-color: var(--accent); }
+        .qa-input::placeholder { color: var(--text-dim); }
+        .qa-send { padding: 12px 20px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .qa-send:disabled { opacity: 0.6; cursor: not-allowed; }
+        .qa-placeholder { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 14px; }
+        .qa-placeholder p:first-child { font-size: 24px; margin-bottom: 8px; }
+
+        .error-msg { display: none; padding: 12px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: var(--danger); font-size: 14px; margin-top: 16px; }
+        .error-msg.show { display: block; }
+        .footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .container { padding: 16px 12px; }
+            .header h1 { font-size: 22px; }
+            .sub-scores { grid-template-columns: repeat(3, 1fr); }
+            .tabs { flex-wrap: nowrap; }
+            .tab { flex: 0 0 auto; }
+            .score-top { flex-direction: column; text-align: center; }
+            .results-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <div class="header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="24" height="24">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                </div>
+                <h1>EssayCoach</h1>
+            </div>
+            <p>Paste your essay — get instant AI feedback, fixes, and improvements</p>
+        </div>
+
+        <!-- Input -->
+        <div id="inputView">
+            <div class="form-group">
+                <label>Paste your essay</label>
+                <textarea class="essay-textarea" id="essayInput" placeholder="Paste your essay here..."></textarea>
+                <div class="word-count" id="wordCount">0 words</div>
+            </div>
+            <div class="form-group">
+                <label>Essay type <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+                <div class="type-grid" id="typeGrid">
+                    <button class="type-btn active" data-type="general">General</button>
+                    <button class="type-btn" data-type="argumentative">Argumentative</button>
+                    <button class="type-btn" data-type="narrative">Narrative</button>
+                    <button class="type-btn" data-type="research">Research Paper</button>
+                    <button class="type-btn" data-type="college-application">College App</button>
+                    <button class="type-btn" data-type="business">Business</button>
+                </div>
+            </div>
+            <button class="review-btn" id="reviewBtn" disabled>Review My Essay</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <h3>Reviewing your essay...</h3>
+            <p>AI is analyzing clarity, structure, grammar, and style</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <h2>Essay Feedback</h2>
+                <button class="new-btn" id="newBtn">New Essay</button>
+            </div>
+
+            <div class="score-card">
+                <div class="score-top">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 90 90"><circle class="bg" cx="45" cy="45" r="38"/><circle class="fg" id="scoreCircle" cx="45" cy="45" r="38" stroke-dasharray="239" stroke-dashoffset="239"/></svg>
+                        <div class="score-num" id="scoreNum">0</div>
+                    </div>
+                    <div class="score-summary" id="scoreSummary"></div>
+                </div>
+                <div class="sub-scores" id="subScores"></div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="strengths">Strengths</button>
+                <button class="tab" data-tab="weaknesses">Weaknesses</button>
+                <button class="tab" data-tab="grammar">Grammar</button>
+                <button class="tab" data-tab="rewrites">Rewrites</button>
+                <button class="tab" data-tab="structure">Structure</button>
+                <button class="tab" data-tab="next">Next Steps</button>
+                <button class="tab" data-tab="qa">Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-strengths"><ul class="item-list" id="strengthsList"></ul></div>
+            <div class="tab-content" id="tab-weaknesses"><ul class="item-list" id="weaknessesList"></ul></div>
+            <div class="tab-content" id="tab-grammar"><div id="grammarList"></div></div>
+            <div class="tab-content" id="tab-rewrites"><div id="rewritesList"></div></div>
+            <div class="tab-content" id="tab-structure"><ul class="item-list" id="structureList"></ul></div>
+            <div class="tab-content" id="tab-next"><ul class="item-list" id="nextList"></ul></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages"><div class="qa-placeholder"><p>Ask anything about your essay</p><p>e.g. "How can I make my thesis stronger?" or "Is my conclusion effective?"</p></div></div>
+                <div class="qa-input-row">
+                    <input type="text" class="qa-input" id="qaInput" placeholder="Ask about your essay...">
+                    <button class="qa-send" id="qaSendBtn">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Powered by <a href="https://suitegpt.app" target="_blank">SUITE</a></div>
+
+    <script>
+        let essayText = '', essayType = 'general', qaHistory = [];
+        const $ = id => document.getElementById(id);
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function chargeCredits(f) { if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'essaycoach', feature: f, chargeId: 'ey-' + Date.now(), amount: 5 }, '*'); }
+
+        // Word count
+        $('essayInput').addEventListener('input', () => {
+            const words = $('essayInput').value.trim().split(/\s+/).filter(w => w).length;
+            $('wordCount').textContent = words + ' words';
+            $('reviewBtn').disabled = words < 20;
+        });
+
+        // Type selector
+        $('typeGrid').addEventListener('click', e => {
+            const btn = e.target.closest('.type-btn');
+            if (!btn) return;
+            $('typeGrid').querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            essayType = btn.dataset.type;
+        });
+
+        function showError(msg) { $('errorMsg').textContent = msg; $('errorMsg').classList.add('show'); }
+        function hideError() { $('errorMsg').classList.remove('show'); }
+
+        // Review
+        $('reviewBtn').addEventListener('click', async () => {
+            essayText = $('essayInput').value.trim();
+            if (!essayText) return;
+            $('reviewBtn').disabled = true;
+            $('inputView').style.display = 'none';
+            $('loading').classList.add('show');
+            hideError();
+
+            try {
+                chargeCredits('review');
+                const resp = await fetch('/api/essaycoach', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'review', essay: essayText, essayType })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Review failed');
+                showResults(await resp.json());
+            } catch (err) {
+                $('loading').classList.remove('show');
+                $('inputView').style.display = 'block';
+                $('reviewBtn').disabled = false;
+                showError(err.message);
+            }
+        });
+
+        function scoreColor(s) { return s >= 70 ? '#10b981' : s >= 40 ? '#f59e0b' : '#ef4444'; }
+
+        function showResults(data) {
+            $('loading').classList.remove('show');
+            $('results').classList.add('show');
+
+            // Score ring
+            const score = Math.min(100, Math.max(0, data.overallScore || 0));
+            const circ = 239;
+            $('scoreCircle').style.strokeDashoffset = circ - (score / 100) * circ;
+            $('scoreCircle').style.stroke = scoreColor(score);
+            $('scoreNum').textContent = score;
+            $('scoreSummary').textContent = data.scoreSummary || '';
+
+            // Sub scores
+            const subs = data.scores || {};
+            const subLabels = { clarity: 'Clarity', structure: 'Structure', grammar: 'Grammar', argument: 'Argument', style: 'Style' };
+            $('subScores').innerHTML = Object.entries(subLabels).map(([k, label]) => {
+                const v = subs[k] || 0;
+                return `<div class="sub-score"><div class="sub-score-val" style="color:${scoreColor(v)}">${v}</div><div class="sub-score-label">${label}</div></div>`;
+            }).join('');
+
+            // Strengths
+            $('strengthsList').innerHTML = (data.strengths?.length > 0) ?
+                data.strengths.map(s => `<li><div class="dot-green"></div>${esc(s)}</li>`).join('') :
+                '<div class="no-items">No specific strengths identified.</div>';
+
+            // Weaknesses
+            $('weaknessesList').innerHTML = (data.weaknesses?.length > 0) ?
+                data.weaknesses.map(w => `<li><div class="dot-red"></div>${esc(w)}</li>`).join('') :
+                '<div class="no-items">No major weaknesses found.</div>';
+
+            // Grammar
+            $('grammarList').innerHTML = (data.grammarFixes?.length > 0) ?
+                data.grammarFixes.map(g => `<div class="fix-card"><div class="fix-label" style="color:var(--danger)">Error</div><div class="fix-original">${esc(g.original)}</div><div class="fix-label" style="color:var(--accent)">Fixed</div><div class="fix-improved">${esc(g.fixed)}</div><div class="fix-reason">${esc(g.explanation || '')}</div></div>`).join('') :
+                '<div class="no-items" style="color:var(--success)">No grammar errors found!</div>';
+
+            // Rewrites
+            $('rewritesList').innerHTML = (data.improvedSentences?.length > 0) ?
+                data.improvedSentences.map(r => `<div class="fix-card"><div class="fix-label" style="color:var(--text-dim)">Original</div><div class="fix-original">${esc(r.original)}</div><div class="fix-label" style="color:var(--accent)">Stronger</div><div class="fix-improved">${esc(r.improved)}</div><div class="fix-reason">${esc(r.reason || '')}</div></div>`).join('') :
+                '<div class="no-items">No sentence rewrites suggested.</div>';
+
+            // Structure
+            $('structureList').innerHTML = (data.structureSuggestions?.length > 0) ?
+                data.structureSuggestions.map(s => `<li><div class="dot-blue"></div>${esc(s)}</li>`).join('') :
+                '<div class="no-items">Structure looks good!</div>';
+
+            // Next steps
+            $('nextList').innerHTML = (data.nextSteps?.length > 0) ?
+                data.nextSteps.map(n => `<li><div class="dot-yellow"></div>${esc(n)}</li>`).join('') :
+                '<div class="no-items">No specific next steps.</div>';
+
+            // Reset Q&A
+            qaHistory = [];
+            $('qaMessages').innerHTML = '<div class="qa-placeholder"><p>Ask anything about your essay</p><p>e.g. "How can I make my thesis stronger?" or "Is my conclusion effective?"</p></div>';
+        }
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            t.classList.add('active');
+            $('tab-' + t.dataset.tab).classList.add('active');
+        }));
+
+        // Q&A
+        $('qaSendBtn').addEventListener('click', sendQ);
+        $('qaInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendQ(); } });
+
+        async function sendQ() {
+            const q = $('qaInput').value.trim();
+            if (!q || !essayText) return;
+            const ph = $('qaMessages').querySelector('.qa-placeholder');
+            if (ph) ph.remove();
+            $('qaMessages').innerHTML += `<div class="qa-message user">${esc(q)}</div>`;
+            $('qaInput').value = ''; $('qaSendBtn').disabled = true; $('qaInput').disabled = true;
+            const lid = 'qa-' + Date.now();
+            $('qaMessages').innerHTML += `<div class="qa-message ai" id="${lid}">Thinking...</div>`;
+            $('qaMessages').scrollTop = $('qaMessages').scrollHeight;
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/essaycoach', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', essay: essayText, question: q, history: qaHistory })
+                });
+                if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+                const data = await resp.json();
+                $(lid).textContent = data.answer;
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: data.answer });
+            } catch (err) { $(lid).textContent = 'Error: ' + err.message; }
+            $('qaSendBtn').disabled = false; $('qaInput').disabled = false; $('qaInput').focus();
+            $('qaMessages').scrollTop = $('qaMessages').scrollHeight;
+        }
+
+        // New
+        $('newBtn').addEventListener('click', () => {
+            essayText = ''; qaHistory = [];
+            $('results').classList.remove('show');
+            $('inputView').style.display = 'block';
+            $('essayInput').value = ''; $('wordCount').textContent = '0 words';
+            $('reviewBtn').disabled = true; hideError();
+        });
+    </script>
+</body>
+</html>
