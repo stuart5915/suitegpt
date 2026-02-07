@@ -11,7 +11,7 @@ import { InventorySystem } from './InventorySystem';
 import { QuestSystem } from './QuestSystem';
 
 export interface HitsplatEvent {
-    targetType: 'player' | 'npc';
+    targetType: 'player' | 'npc' | 'monster';
     targetId: string;
     damage: number;
     isMiss: boolean;

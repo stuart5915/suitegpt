@@ -42,10 +42,16 @@ export class QuestSystem {
         progress.status = 'active';
         // Initialize objective tracking
         const objData = q.objectives.map(obj => {
-            if (obj.type === 'kill' || obj.type === 'kill_zone' || obj.type === 'collect' || obj.type === 'deliver') {
+            if (obj.type === 'kill' || obj.type === 'kill_zone' || obj.type === 'collect' || obj.type === 'deliver' || obj.type === 'kill_monster') {
+                return { ...obj, progress: 0 };
+            }
+            if (obj.type === 'kill_boss') {
                 return { ...obj, progress: 0 };
             }
             if (obj.type === 'visit') {
+                return { ...obj, visited: [] as string[] };
+            }
+            if (obj.type === 'visit_zone') {
                 return { ...obj, visited: [] as string[] };
             }
             if (obj.type === 'kill_roles') {
@@ -74,6 +80,14 @@ export class QuestSystem {
 
     checkEnterBuilding(player: PlayerSchema, buildingId: string): QuestEvent[] {
         return this.checkProgress(player, 'enter_building', { building: buildingId });
+    }
+
+    checkMonsterKill(player: PlayerSchema, monsterId: string, isBoss: boolean): QuestEvent[] {
+        return this.checkProgress(player, 'kill_monster', { monsterId, isBoss });
+    }
+
+    checkVisitZone(player: PlayerSchema, zoneId: string): QuestEvent[] {
+        return this.checkProgress(player, 'visit_zone', { zone: zoneId });
     }
 
     private checkProgress(player: PlayerSchema, type: string, data: any): QuestEvent[] {
@@ -125,6 +139,25 @@ export class QuestSystem {
                         changed = true;
                     }
                 }
+                if (type === 'kill_monster' && obj.type === 'kill_monster') {
+                    if (obj.monsterId === data.monsterId) {
+                        obj.progress = Math.min(obj.count, (obj.progress || 0) + 1);
+                        changed = true;
+                    }
+                }
+                if (type === 'kill_monster' && obj.type === 'kill_boss') {
+                    if (data.isBoss && obj.bossId === data.monsterId) {
+                        obj.progress = 1;
+                        changed = true;
+                    }
+                }
+                if (type === 'visit_zone' && obj.type === 'visit_zone') {
+                    if (!obj.visited) obj.visited = [];
+                    if (data.zone && !obj.visited.includes(data.zone)) {
+                        obj.visited.push(data.zone);
+                        changed = true;
+                    }
+                }
                 if (type === 'enter_building' && obj.type === 'deliver' && data.building === obj.destination) {
                     const has = this.inventorySystem.countItem(player, obj.item);
                     if (has >= obj.count) {
@@ -142,14 +175,20 @@ export class QuestSystem {
                 }
 
                 // Check if this objective is done
-                if (obj.type === 'kill' || obj.type === 'kill_zone' || obj.type === 'collect' || obj.type === 'deliver') {
+                if (obj.type === 'kill' || obj.type === 'kill_zone' || obj.type === 'collect' || obj.type === 'deliver' || obj.type === 'kill_monster') {
                     if ((obj.progress || 0) < obj.count) allDone = false;
                 }
+                if (obj.type === 'kill_boss') {
+                    if ((obj.progress || 0) < 1) allDone = false;
+                }
                 if (obj.type === 'visit') {
-                    if (obj.visited.length < obj.buildings.length) allDone = false;
+                    if ((obj.visited || []).length < obj.buildings.length) allDone = false;
+                }
+                if (obj.type === 'visit_zone') {
+                    if ((obj.visited || []).length < obj.zones.length) allDone = false;
                 }
                 if (obj.type === 'kill_roles') {
-                    if (obj.killed.length < obj.roles.length) allDone = false;
+                    if ((obj.killed || []).length < obj.roles.length) allDone = false;
                 }
             }
 

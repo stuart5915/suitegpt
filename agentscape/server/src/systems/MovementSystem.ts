@@ -4,9 +4,10 @@
 
 import { PlayerSchema } from '../schema/PlayerSchema';
 import { NPCSchema } from '../schema/NPCSchema';
+import { MonsterSchema } from '../schema/MonsterSchema';
 import { GameMap } from '../utils/MapGenerator';
 import { findPath, PathNode } from '../utils/Pathfinding';
-import { MOVE_SPEED, NPC_MOVE_SPEED, MAP_SIZE, BUILDINGS } from '../config';
+import { MOVE_SPEED, NPC_MOVE_SPEED, MONSTER_MOVE_SPEED, MAP_SIZE, BUILDINGS } from '../config';
 
 export class MovementSystem {
     private map: GameMap;
@@ -73,7 +74,7 @@ export class MovementSystem {
     stopPlayerMove(player: PlayerSchema): void {
         player.isMoving = false;
         player.pathQueue = [];
-        player.state = player.combatTargetNpcId ? 'combat' : 'idle';
+        player.state = (player.combatTargetNpcId || player.combatTargetMonsterId) ? 'combat' : 'idle';
     }
 
     updateNPCMovement(npc: NPCSchema, dt: number): void {
@@ -120,5 +121,57 @@ export class MovementSystem {
 
     pathfindForNPC(npc: NPCSchema, targetX: number, targetZ: number): void {
         npc.path = findPath(this.map.grid, npc.tileX, npc.tileZ, targetX, targetZ);
+    }
+
+    // ============================================================
+    // Monster Movement
+    // ============================================================
+
+    updateMonsterMovement(monster: MonsterSchema, dt: number): void {
+        if (monster.isDead || monster.path.length === 0) return;
+        if (monster.state !== 'PATROL' && monster.state !== 'AGGRO' && monster.state !== 'LEASHING') return;
+
+        monster.moveProgress += dt * MONSTER_MOVE_SPEED;
+
+        if (monster.moveProgress >= 1) {
+            monster.moveProgress = 0;
+            monster.tileX = monster.moveToX;
+            monster.tileZ = monster.moveToZ;
+            monster.x = monster.moveToX;
+            monster.z = monster.moveToZ;
+            monster.pathIndex++;
+
+            if (monster.pathIndex < monster.path.length) {
+                monster.moveFromX = monster.moveToX;
+                monster.moveFromZ = monster.moveToZ;
+                monster.moveToX = monster.path[monster.pathIndex].x;
+                monster.moveToZ = monster.path[monster.pathIndex].z;
+            } else {
+                // Path complete
+                monster.path = [];
+                return;
+            }
+        }
+
+        if (monster.path.length > 0) {
+            const lx = monster.moveFromX + (monster.moveToX - monster.moveFromX) * monster.moveProgress;
+            const lz = monster.moveFromZ + (monster.moveToZ - monster.moveFromZ) * monster.moveProgress;
+            monster.x = lx;
+            monster.z = lz;
+            monster.rotation = Math.atan2(monster.moveToX - monster.moveFromX, monster.moveToZ - monster.moveFromZ);
+        }
+    }
+
+    pathfindForMonster(monster: MonsterSchema, targetX: number, targetZ: number): void {
+        const path = findPath(this.map.grid, monster.tileX, monster.tileZ, targetX, targetZ);
+        monster.path = path;
+        if (path.length > 1) {
+            monster.pathIndex = 1;
+            monster.moveProgress = 0;
+            monster.moveFromX = path[0].x;
+            monster.moveFromZ = path[0].z;
+            monster.moveToX = path[1].x;
+            monster.moveToZ = path[1].z;
+        }
     }
 }

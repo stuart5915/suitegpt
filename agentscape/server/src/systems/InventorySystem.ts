@@ -198,4 +198,21 @@ export class InventorySystem {
 
         return { leveledUp: newLevel > oldLevel, newLevel };
     }
+
+    // --- Combat stat helpers ---
+    getPlayerAttack(player: PlayerSchema): number {
+        const weaponSlot = player.equippedWeaponSlot >= 0 ? player.inventory[player.equippedWeaponSlot] : null;
+        return player.attack + (weaponSlot ? weaponSlot.attackStat : 0);
+    }
+
+    getPlayerStrength(player: PlayerSchema): number {
+        const weaponSlot = player.equippedWeaponSlot >= 0 ? player.inventory[player.equippedWeaponSlot] : null;
+        return player.strength + (weaponSlot ? weaponSlot.strengthStat : 0);
+    }
+
+    getPlayerDefence(player: PlayerSchema): number {
+        const helmSlot = player.equippedHelmSlot >= 0 ? player.inventory[player.equippedHelmSlot] : null;
+        const shieldSlot = player.equippedShieldSlot >= 0 ? player.inventory[player.equippedShieldSlot] : null;
+        return player.defence + (helmSlot ? helmSlot.defenceStat : 0) + (shieldSlot ? shieldSlot.defenceStat : 0);
+    }
 }

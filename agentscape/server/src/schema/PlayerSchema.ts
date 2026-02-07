@@ -120,6 +120,7 @@ export class PlayerSchema extends Schema {
 
     // Server-side only (not synced)
     combatTargetNpcId: string | null = null;
+    combatTargetMonsterId: string | null = null;
     combatTimer: number = 0;
     specActive: boolean = false;
     energyRegenTimer: number = 0;
