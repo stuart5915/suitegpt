@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThumbnailAI — AI Thumbnail Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #3b82f6; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .app-header .back:hover { color: #3b82f6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #3b82f6; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 8px; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #2563eb30; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; transition: all 0.2s; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #3b82f6; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Video Analysis Banner */
+        .video-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
+        .video-banner h2 { font-size: 1.2rem; margin-bottom: 8px; }
+        .video-banner .emotion { color: #60a5fa; font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .video-banner .trigger { color: #94a3b8; font-size: 0.85rem; }
+
+        /* Thumbnails Grid */
+        .thumbs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .thumb-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+        .thumb-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+        .thumb-preview { width: 100%; aspect-ratio: 16/9; background: #0f0f1a; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .thumb-preview svg { width: 100%; height: 100%; }
+        .thumb-preview .thumb-num { position: absolute; top: 8px; left: 8px; background: #3b82f6; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; z-index: 2; }
+        .thumb-preview .ctr-badge { position: absolute; top: 8px; right: 8px; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; z-index: 2; }
+        .ctr-badge.high { background: #10b98130; color: #34d399; }
+        .ctr-badge.medium { background: #fbbf2430; color: #fbbf24; }
+        .thumb-info { padding: 16px; }
+        .thumb-info h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .thumb-info .layout-badge { display: inline-block; background: #3b82f620; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-bottom: 8px; }
+        .thumb-info p { color: #94a3b8; font-size: 0.82rem; line-height: 1.5; margin-bottom: 10px; }
+        .thumb-text-overlay { background: #0f0f1a; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+        .thumb-text-overlay .headline { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+        .thumb-text-overlay .subtext { font-size: 0.78rem; color: #94a3b8; }
+        .thumb-elements { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .thumb-element { background: #2a2a3e; color: #94a3b8; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; }
+        .thumb-colors { display: flex; gap: 6px; align-items: center; }
+        .color-dot { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #2a2a3e; }
+        .thumb-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .svg-dl { padding: 6px 14px; background: #3b82f620; border: 1px solid #3b82f640; color: #60a5fa; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .svg-dl:hover { background: #3b82f640; }
+
+        /* Tips Tab */
+        .tips-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .tips-card h3 { font-size: 0.95rem; margin-bottom: 12px; }
+        .tip-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+        .tip-item::before { content: '💡'; flex-shrink: 0; }
+        .tip-item.avoid::before { content: '⚠️'; }
+        .text-rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .text-rule { background: #0f0f1a; border-radius: 10px; padding: 14px; text-align: center; }
+        .text-rule .val { font-size: 1.2rem; font-weight: 700; color: #60a5fa; margin-bottom: 4px; }
+        .text-rule .lbl { font-size: 0.75rem; color: #94a3b8; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #3b82f620; border: 1px solid #3b82f630; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input input:focus { border-color: #3b82f6; }
+        .qa-input button { padding: 12px 20px; background: #3b82f6; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-input button:disabled { opacity: 0.5; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; font-size: 0.9rem; display: none; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .thumbs-grid { grid-template-columns: 1fr; } .text-rules { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🎬 Thumbnail<span>AI</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Describe Your Video</h2>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Video Title *</label>
+                    <input type="text" id="videoTitle" placeholder="e.g. I Quit My Job to Build AI Apps — Month 3">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="platform">
+                        <option value="YouTube">YouTube</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Twitter">Twitter / X</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Style</label>
+                    <select id="styleSelect">
+                        <option value="attention-grabbing">Attention-Grabbing</option>
+                        <option value="clean-minimal">Clean & Minimal</option>
+                        <option value="bold-dramatic">Bold & Dramatic</option>
+                        <option value="fun-colorful">Fun & Colorful</option>
+                        <option value="professional">Professional</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Video Description (optional)</label>
+                    <textarea id="description" placeholder="What's the video about? Who's the audience? Any specific imagery or mood?"></textarea>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Thumbnails →</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Designing click-worthy thumbnails...</p>
+        </div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Video</button>
+            <div class="video-banner" id="videoBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="thumbnails">Thumbnails</button>
+                <button class="tab" data-tab="tips">CTR Tips</button>
+                <button class="tab" data-tab="qa">Design Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-thumbnails">
+                <div class="thumbs-grid" id="thumbsGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tab-tips">
+                <div id="tipsContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about your thumbnails — I can suggest refinements, different text, color variations, or A/B test ideas.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Make concept 2 more dramatic with red text" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function generate() {
+            const title = document.getElementById('videoTitle').value.trim();
+            if (!title) { document.getElementById('videoTitle').style.borderColor = '#ef4444'; return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'thumbnailai', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch('/api/thumbnailai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate',
+                        title,
+                        description: document.getElementById('description').value.trim(),
+                        platform: document.getElementById('platform').value,
+                        style: document.getElementById('styleSelect').value
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse response. Please try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const va = data.videoAnalysis || {};
+            document.getElementById('videoBanner').innerHTML = `
+                <h2>${document.getElementById('videoTitle').value}</h2>
+                <div class="emotion">Target Emotion: ${va.targetEmotion || 'curiosity'}</div>
+                <div class="trigger">${va.clickTrigger || ''}</div>
+            `;
+
+            const grid = document.getElementById('thumbsGrid');
+            grid.innerHTML = (data.thumbnails || []).map((t, i) => {
+                let svgHtml = '';
+                try {
+                    const div = document.createElement('div');
+                    div.innerHTML = t.svg || '';
+                    const svg = div.querySelector('svg');
+                    if (svg) svgHtml = svg.outerHTML;
+                } catch(e) { svgHtml = '<div style="color:#64748b;font-size:0.8rem;">Preview unavailable</div>'; }
+
+                const overlay = t.textOverlay || {};
+                const colors = t.colorScheme || {};
+                const ctr = (t.ctr_prediction || 'medium').toLowerCase();
+
+                return `
+                    <div class="thumb-card">
+                        <div class="thumb-preview">
+                            <div class="thumb-num">${i + 1}</div>
+                            <span class="ctr-badge ${ctr}">${ctr.toUpperCase()} CTR</span>
+                            ${svgHtml}
+                        </div>
+                        <div class="thumb-info">
+                            <h3>${t.name || 'Concept ' + (i+1)}</h3>
+                            <span class="layout-badge">${t.layout || 'custom'}</span>
+                            ${t.platform_fit ? `<span class="layout-badge" style="margin-left:4px;">${t.platform_fit}</span>` : ''}
+                            <p>${t.description || ''}</p>
+                            ${overlay.headline ? `
+                                <div class="thumb-text-overlay">
+                                    <div class="headline">"${overlay.headline}"</div>
+                                    ${overlay.subtext ? `<div class="subtext">${overlay.subtext}</div>` : ''}
+                                </div>
+                            ` : ''}
+                            <div class="thumb-elements">
+                                ${(t.elements || []).map(e => `<span class="thumb-element">${e}</span>`).join('')}
+                            </div>
+                            <div class="thumb-colors">
+                                ${colors.background ? `<div class="color-dot" style="background:${colors.background}" title="Background"></div>` : ''}
+                                ${colors.textColor ? `<div class="color-dot" style="background:${colors.textColor}" title="Text"></div>` : ''}
+                                ${colors.accent ? `<div class="color-dot" style="background:${colors.accent}" title="Accent"></div>` : ''}
+                            </div>
+                            <div class="thumb-actions">
+                                <button class="svg-dl" onclick="downloadSVG(${i})">↓ Download SVG</button>
+                                <button class="svg-dl" onclick="copySVG(${i})">📋 Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Tips
+            const tr = data.textRules || {};
+            document.getElementById('tipsContent').innerHTML = `
+                <div class="tips-card">
+                    <h3>Text Rules</h3>
+                    <div class="text-rules">
+                        <div class="text-rule"><div class="val">${tr.maxWords || 5}</div><div class="lbl">Max Words</div></div>
+                        <div class="text-rule"><div class="val" style="font-size:0.9rem;">${tr.fontStyle || 'Bold Sans'}</div><div class="lbl">Font Style</div></div>
+                        <div class="text-rule"><div class="val" style="font-size:0.9rem;">${tr.placement || 'Center'}</div><div class="lbl">Placement</div></div>
+                    </div>
+                </div>
+                <div class="tips-card">
+                    <h3>Best Practices</h3>
+                    ${(data.bestPractices || []).map(t => `<div class="tip-item">${t}</div>`).join('')}
+                </div>
+                <div class="tips-card">
+                    <h3>Things to Avoid</h3>
+                    ${(data.avoidList || []).map(t => `<div class="tip-item avoid">${t}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        function downloadSVG(idx) {
+            const thumb = resultData?.thumbnails?.[idx];
+            if (!thumb?.svg) return;
+            const blob = new Blob([thumb.svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `thumbnail-concept-${idx + 1}.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copySVG(idx) {
+            const thumb = resultData?.thumbnails?.[idx];
+            if (!thumb?.svg) return;
+            navigator.clipboard.writeText(thumb.svg).then(() => {
+                const btns = document.querySelectorAll('.svg-dl');
+                const btn = btns[idx * 2 + 1];
+                if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '📋 Copy', 1500); }
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'thumbnailai', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch('/api/thumbnailai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) })
+                });
+
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                qaHistory.push({ role: 'assistant', content: data.answer || 'No response' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally {
+                document.getElementById('qaBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null;
+            qaHistory = [];
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about your thumbnails — I can suggest refinements, different text, color variations, or A/B test ideas.</div>';
+        }
+    </script>
+</body>
+</html>
