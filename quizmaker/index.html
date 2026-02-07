@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaker — Free AI Quiz Generator | Create Tests from Any Material</title>
+    <meta name="description" content="Paste study notes, textbook chapters, or articles — AI generates quizzes with multiple choice, true/false, and short answer questions. Study mode + test mode. 100% free.">
+    <meta property="og:title" content="QuizMaker — AI Quiz Generator">
+    <meta property="og:description" content="Turn any study material into a quiz with AI. Multiple choice, true/false, short answer — instant generation.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/quizmaker/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/quizmaker/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #0ea5e915; border: 1px solid #0ea5e930; color: #0ea5e9; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #0ea5e9, #0284c7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 600px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn {
+            display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #0ea5e930; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-input { background: #0f0f1a; border-radius: 10px; padding: 16px; font-size: 0.8rem; color: #94a3b8; line-height: 1.6; margin-bottom: 16px; border-left: 3px solid #0ea5e9; }
+        .demo-arrow { text-align: center; color: #0ea5e9; font-size: 1.5rem; margin: 16px 0; }
+        .demo-question { background: #0f0f1a; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .demo-q-num { font-size: 0.7rem; font-weight: 700; color: #0ea5e9; text-transform: uppercase; margin-bottom: 6px; }
+        .demo-q-text { font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; }
+        .demo-option { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.8rem; color: #94a3b8; border: 1px solid #2a2a3e; }
+        .demo-option.correct { border-color: #22c55e; background: #22c55e10; color: #22c55e; }
+        .demo-explanation { font-size: 0.75rem; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #2a2a3e; }
+
+        .modes-section { max-width: 800px; margin: 0 auto; padding: 40px 24px; }
+        .modes-section h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .modes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .mode-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; }
+        .mode-card h3 { color: #0ea5e9; margin-bottom: 8px; }
+        .mode-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px;
+            text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;
+        }
+        .tool-card:hover { border-color: #0ea5e9; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #0ea5e9; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.8rem; }
+            .features, .tools-grid, .modes-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Quiz Generator</span></h1>
+        <p>Paste your study notes, textbook chapters, or any material — AI creates a complete quiz with answer explanations in seconds. Study mode or test mode.</p>
+        <a href="app.html" class="cta-btn">Generate a Quiz →</a>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">🎯</div>
+            <h3>4 Question Types</h3>
+            <p>Multiple choice, true/false, short answer, and fill-in-the-blank — all auto-generated from your material.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">📊</div>
+            <h3>3 Difficulty Levels</h3>
+            <p>Easy (recall), medium (application), or hard (analysis) — match the quiz to your study level.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">💡</div>
+            <h3>Answer Explanations</h3>
+            <p>Every question comes with a detailed explanation referencing your source material.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Paste a biology chapter → get instant quiz questions</p>
+        <div class="demo-card">
+            <div class="demo-input">
+                "Mitochondria are membrane-bound organelles found in the cytoplasm of eukaryotic cells. They are often referred to as the 'powerhouses of the cell' because they generate most of the cell's supply of ATP through oxidative phosphorylation. Mitochondria have their own DNA, known as mtDNA, which is inherited maternally..."
+            </div>
+            <div class="demo-arrow">↓ AI generates quiz</div>
+            <div class="demo-question">
+                <div class="demo-q-num">Question 1 — Multiple Choice</div>
+                <div class="demo-q-text">What is the primary function of mitochondria in eukaryotic cells?</div>
+                <div class="demo-option">A) Protein synthesis</div>
+                <div class="demo-option correct">B) ATP production through oxidative phosphorylation ✓</div>
+                <div class="demo-option">C) DNA replication</div>
+                <div class="demo-option">D) Cell division</div>
+                <div class="demo-explanation">Mitochondria generate most of the cell's ATP through oxidative phosphorylation, earning them the nickname "powerhouses of the cell."</div>
+            </div>
+            <div class="demo-question">
+                <div class="demo-q-num">Question 2 — True / False</div>
+                <div class="demo-q-text">Mitochondrial DNA (mtDNA) is inherited from both parents.</div>
+                <div class="demo-option correct">False ✓ — mtDNA is inherited maternally only.</div>
+            </div>
+            <div class="demo-question">
+                <div class="demo-q-num">Question 3 — Fill in the Blank</div>
+                <div class="demo-q-text">Mitochondria are found in the cytoplasm of _______ cells.</div>
+                <div class="demo-option correct">Answer: eukaryotic</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modes-section">
+        <h2>Two Ways to Use Your Quiz</h2>
+        <div class="modes-grid">
+            <div class="mode-card">
+                <h3>📖 Study Mode</h3>
+                <p>See the correct answer and explanation immediately after each question. Perfect for learning new material and understanding concepts.</p>
+            </div>
+            <div class="mode-card">
+                <h3>🎯 Test Mode</h3>
+                <p>Answer all questions first, then submit to see your score. Answers and explanations are revealed after submission. Great for self-assessment.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/essaycoach/" class="tool-card">
+                <h3>📝 EssayCoach</h3>
+                <p>Paste your essay and get instant feedback on structure, grammar, and argument strength.</p>
+            </a>
+            <a href="/codementor/" class="tool-card">
+                <h3>💻 CodeMentor</h3>
+                <p>Paste code, get AI review with scores, bug detection, and improvement suggestions.</p>
+            </a>
+            <a href="/docdigest/" class="tool-card">
+                <h3>📄 DocDigest</h3>
+                <p>Upload a PDF and get an instant summary, key points, and action items.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>QuizMaker is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaker — AI Quiz Generator | SUITE</title>
+    <meta name="description" content="Paste study material, get instant quizzes with multiple choice, true/false, and short answer questions — powered by AI.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header h1 span { color: #0ea5e9; }
+        .header p { color: #94a3b8; margin-top: 6px; font-size: 0.9rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .form-group textarea {
+            width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; resize: vertical; min-height: 180px;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea:focus { border-color: #0ea5e9; }
+        .form-group input, .form-group select {
+            width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: #0ea5e9; }
+
+        .options-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; transition: all 0.2s;
+        }
+        .chip:hover { border-color: #0ea5e9; color: #e2e8f0; }
+        .chip.active { background: #0ea5e9; color: #000; border-color: #0ea5e9; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff;
+            transition: opacity 0.2s; font-family: inherit;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        .results { display: none; }
+
+        .quiz-header { background: linear-gradient(135deg, #0ea5e915, #0284c710); border: 1px solid #0ea5e930; border-radius: 16px; padding: 24px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .quiz-header h2 { color: #0ea5e9; font-size: 1.2rem; }
+        .quiz-header .meta { display: flex; gap: 16px; flex-wrap: wrap; }
+        .quiz-header .meta span { font-size: 0.8rem; color: #94a3b8; background: #0f0f1a; padding: 6px 12px; border-radius: 8px; }
+
+        .mode-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+        .mode-btn {
+            flex: 1; padding: 12px; border: 1px solid #2a2a3e; border-radius: 10px; background: #1a1a2e;
+            color: #94a3b8; font-weight: 600; font-size: 0.85rem; cursor: pointer; text-align: center;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .mode-btn:hover { border-color: #0ea5e9; }
+        .mode-btn.active { background: #0ea5e9; color: #000; border-color: #0ea5e9; }
+
+        .question-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 14px; transition: border-color 0.2s; }
+        .question-card.correct { border-color: #22c55e; }
+        .question-card.incorrect { border-color: #ef4444; }
+        .question-num { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #0ea5e9; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .q-type { background: #0ea5e920; color: #0ea5e9; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; }
+        .question-text { font-size: 1rem; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+
+        .options-list { display: flex; flex-direction: column; gap: 8px; }
+        .option-btn {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;
+            border: 1px solid #2a2a3e; background: #0f0f1a; cursor: pointer; transition: all 0.2s;
+            font-size: 0.9rem; color: #e2e8f0; text-align: left; font-family: inherit; width: 100%;
+        }
+        .option-btn:hover { border-color: #0ea5e9; }
+        .option-btn.selected { border-color: #0ea5e9; background: #0ea5e915; }
+        .option-btn.correct-answer { border-color: #22c55e; background: #22c55e15; }
+        .option-btn.wrong-answer { border-color: #ef4444; background: #ef444415; }
+        .option-letter { width: 28px; height: 28px; border-radius: 50%; background: #2a2a3e; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+
+        .tf-options { display: flex; gap: 10px; }
+        .tf-btn {
+            flex: 1; padding: 12px; border: 1px solid #2a2a3e; border-radius: 10px; background: #0f0f1a;
+            color: #e2e8f0; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s;
+            font-family: inherit; font-size: 0.9rem;
+        }
+        .tf-btn:hover { border-color: #0ea5e9; }
+        .tf-btn.selected { border-color: #0ea5e9; background: #0ea5e915; }
+        .tf-btn.correct-answer { border-color: #22c55e; background: #22c55e15; }
+        .tf-btn.wrong-answer { border-color: #ef4444; background: #ef444415; }
+
+        .sa-input {
+            width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; resize: vertical; min-height: 60px;
+        }
+        .sa-input:focus { border-color: #0ea5e9; }
+
+        .explanation { margin-top: 12px; padding: 12px; background: #0f0f1a; border-radius: 10px; border-left: 3px solid #0ea5e9; display: none; }
+        .explanation.show { display: block; }
+        .explanation .label { font-size: 0.7rem; font-weight: 700; color: #0ea5e9; text-transform: uppercase; margin-bottom: 4px; }
+        .explanation .correct-text { color: #22c55e; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+        .explanation .explain-text { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .score-card { background: linear-gradient(135deg, #0ea5e920, #0284c710); border: 1px solid #0ea5e940; border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 20px; display: none; }
+        .score-card .score-big { font-size: 3rem; font-weight: 800; color: #0ea5e9; }
+        .score-card .score-label { font-size: 0.9rem; color: #94a3b8; margin-top: 4px; }
+        .score-card .score-bar { width: 100%; max-width: 300px; height: 8px; background: #2a2a3e; border-radius: 4px; margin: 16px auto 0; overflow: hidden; }
+        .score-card .score-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; transition: all 0.2s; font-family: inherit;
+        }
+        .action-btn:hover { border-color: #0ea5e9; color: #e2e8f0; }
+
+        .tips-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+        .tips-section h3 { color: #0ea5e9; font-size: 0.95rem; margin-bottom: 10px; }
+        .tips-section li { color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-top: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #0ea5e920; border: 1px solid #0ea5e930; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input-row input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; }
+        .qa-input-row input:focus { border-color: #0ea5e9; }
+        .qa-input-row button { padding: 12px 24px; border: none; border-radius: 10px; background: #0ea5e9; color: #000; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 14px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: 1fr; }
+            .quiz-header { flex-direction: column; align-items: flex-start; }
+            .qa-msg.user { margin-left: 10px; }
+            .qa-msg.ai { margin-right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 <span>QuizMaker</span></h1>
+            <p>Paste study material — AI generates quizzes instantly</p>
+        </div>
+
+        <div id="inputSection" class="input-section">
+            <div class="form-group">
+                <label>Study Material</label>
+                <textarea id="materialInput" placeholder="Paste your notes, textbook chapter, article, or any study material here..."></textarea>
+            </div>
+            <div class="options-row">
+                <div class="form-group">
+                    <label>Subject (optional)</label>
+                    <input type="text" id="subjectInput" placeholder="e.g., Biology">
+                </div>
+                <div class="form-group">
+                    <label>Difficulty</label>
+                    <select id="difficultySelect">
+                        <option value="easy">Easy (Recall)</option>
+                        <option value="medium" selected>Medium (Application)</option>
+                        <option value="hard">Hard (Analysis)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Questions</label>
+                    <select id="countSelect">
+                        <option value="5">5 Questions</option>
+                        <option value="10" selected>10 Questions</option>
+                        <option value="15">15 Questions</option>
+                        <option value="20">20 Questions</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Question Types</label>
+                <div class="chip-group" id="typeChips">
+                    <div class="chip active" data-val="multiple_choice">Multiple Choice</div>
+                    <div class="chip active" data-val="true_false">True / False</div>
+                    <div class="chip active" data-val="short_answer">Short Answer</div>
+                    <div class="chip active" data-val="fill_blank">Fill in the Blank</div>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Quiz</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Creating your quiz...</p>
+        </div>
+
+        <div id="errorSection" style="display:none;"></div>
+
+        <div id="resultsSection" class="results">
+            <div id="quizHeader" class="quiz-header"></div>
+            <div id="scoreCard" class="score-card"></div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="studyModeBtn" onclick="setMode('study')">📖 Study Mode</button>
+                <button class="mode-btn" id="testModeBtn" onclick="setMode('test')">🎯 Test Mode</button>
+            </div>
+
+            <div class="action-bar">
+                <button class="action-btn" onclick="revealAll()">👁️ Show All Answers</button>
+                <button class="action-btn" id="submitBtn" onclick="submitQuiz()" style="display:none;">✅ Submit Quiz</button>
+                <button class="action-btn" onclick="copyQuiz()">📋 Copy Quiz</button>
+                <button class="action-btn" onclick="newQuiz()">🔄 New Quiz</button>
+            </div>
+
+            <div id="questionsContainer"></div>
+
+            <div id="tipsSection" class="tips-section" style="display:none;"></div>
+
+            <div class="qa-section">
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-msg ai">Ask me anything about the quiz material — explanations, more practice questions, or study strategies!</div>
+                </div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="e.g., Explain question 3 in more detail..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuiz = null;
+        let currentMode = 'study';
+        let userAnswers = {};
+        let qaHistory = [];
+        const selectedTypes = new Set(['multiple_choice', 'true_false', 'short_answer', 'fill_blank']);
+
+        document.querySelectorAll('#typeChips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const val = chip.dataset.val;
+                chip.classList.toggle('active');
+                if (selectedTypes.has(val)) selectedTypes.delete(val);
+                else selectedTypes.add(val);
+            });
+        });
+
+        async function generate() {
+            const material = document.getElementById('materialInput').value.trim();
+            if (!material) { alert('Please paste some study material.'); return; }
+            if (selectedTypes.size === 0) { alert('Select at least one question type.'); return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                chargeCredits('generate');
+
+                const resp = await fetch('/api/quizmaker', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate',
+                        material,
+                        subject: document.getElementById('subjectInput').value.trim(),
+                        difficulty: document.getElementById('difficultySelect').value,
+                        questionCount: parseInt(document.getElementById('countSelect').value),
+                        questionTypes: [...selectedTypes]
+                    })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                if (data.raw) {
+                    document.getElementById('errorSection').innerHTML = `<div class="error-msg">${data.raw}</div>`;
+                    document.getElementById('errorSection').style.display = 'block';
+                    document.getElementById('inputSection').style.display = 'block';
+                } else {
+                    currentQuiz = data;
+                    userAnswers = {};
+                    renderQuiz(data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorSection').innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function renderQuiz(data) {
+            const header = document.getElementById('quizHeader');
+            header.innerHTML = `
+                <div><h2>${data.quizTitle || 'Quiz'}</h2></div>
+                <div class="meta">
+                    ${data.subject ? `<span>📚 ${data.subject}</span>` : ''}
+                    <span>📊 ${(data.difficulty || 'medium').charAt(0).toUpperCase() + (data.difficulty || 'medium').slice(1)}</span>
+                    <span>❓ ${data.questions?.length || 0} Questions</span>
+                </div>
+            `;
+
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            if (!data.questions?.length) {
+                container.innerHTML = '<p style="color:#94a3b8;">No questions generated.</p>';
+                return;
+            }
+
+            data.questions.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                card.id = `qcard-${q.id || idx}`;
+
+                const typeLabel = { multiple_choice: 'Multiple Choice', true_false: 'True / False', short_answer: 'Short Answer', fill_blank: 'Fill in the Blank' }[q.type] || q.type;
+
+                let answerHtml = '';
+                if (q.type === 'multiple_choice' && q.options?.length) {
+                    answerHtml = `<div class="options-list">${q.options.map((opt, oi) => {
+                        const letter = String.fromCharCode(65 + oi);
+                        const text = opt.replace(/^[A-D]\)\s*/, '');
+                        return `<button class="option-btn" data-qid="${q.id || idx}" data-letter="${letter}" onclick="selectOption(this)">
+                            <span class="option-letter">${letter}</span><span>${text}</span>
+                        </button>`;
+                    }).join('')}</div>`;
+                } else if (q.type === 'true_false') {
+                    answerHtml = `<div class="tf-options">
+                        <button class="tf-btn" data-qid="${q.id || idx}" data-val="True" onclick="selectTF(this)">True</button>
+                        <button class="tf-btn" data-qid="${q.id || idx}" data-val="False" onclick="selectTF(this)">False</button>
+                    </div>`;
+                } else {
+                    answerHtml = `<textarea class="sa-input" data-qid="${q.id || idx}" placeholder="Type your answer..." oninput="userAnswers[this.dataset.qid]=this.value"></textarea>`;
+                }
+
+                card.innerHTML = `
+                    <div class="question-num">Question ${idx + 1} <span class="q-type">${typeLabel}</span></div>
+                    <div class="question-text">${q.question}</div>
+                    ${answerHtml}
+                    <div class="explanation" id="exp-${q.id || idx}">
+                        <div class="label">Answer</div>
+                        <div class="correct-text">✓ ${q.correctAnswer || ''}</div>
+                        <div class="explain-text">${q.explanation || ''}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Tips
+            if (data.studyTips?.length) {
+                const tipsSection = document.getElementById('tipsSection');
+                tipsSection.innerHTML = `<h3>📚 Study Tips</h3><ul>${data.studyTips.map(t => `<li>${t}</li>`).join('')}</ul>`;
+                tipsSection.style.display = 'block';
+            }
+
+            document.getElementById('scoreCard').style.display = 'none';
+            setMode('study');
+        }
+
+        function selectOption(btn) {
+            const qid = btn.dataset.qid;
+            btn.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            userAnswers[qid] = btn.dataset.letter;
+
+            if (currentMode === 'study') {
+                showExplanation(qid);
+                gradeQuestion(qid);
+            }
+        }
+
+        function selectTF(btn) {
+            const qid = btn.dataset.qid;
+            btn.parentElement.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            userAnswers[qid] = btn.dataset.val;
+
+            if (currentMode === 'study') {
+                showExplanation(qid);
+                gradeQuestion(qid);
+            }
+        }
+
+        function showExplanation(qid) {
+            const exp = document.getElementById(`exp-${qid}`);
+            if (exp) exp.classList.add('show');
+        }
+
+        function gradeQuestion(qid) {
+            const q = currentQuiz.questions.find(x => String(x.id) === String(qid));
+            if (!q) return;
+            const card = document.getElementById(`qcard-${qid}`);
+            const userAnswer = userAnswers[qid];
+            if (!userAnswer) return;
+
+            const correct = String(q.correctAnswer).trim().toLowerCase();
+            const user = String(userAnswer).trim().toLowerCase();
+            const isCorrect = correct === user || correct.startsWith(user);
+
+            card.classList.remove('correct', 'incorrect');
+            card.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+            if (q.type === 'multiple_choice') {
+                card.querySelectorAll('.option-btn').forEach(b => {
+                    b.classList.remove('correct-answer', 'wrong-answer');
+                    if (b.dataset.letter === q.correctAnswer) b.classList.add('correct-answer');
+                    else if (b.dataset.letter === userAnswer && !isCorrect) b.classList.add('wrong-answer');
+                });
+            } else if (q.type === 'true_false') {
+                card.querySelectorAll('.tf-btn').forEach(b => {
+                    b.classList.remove('correct-answer', 'wrong-answer');
+                    if (b.dataset.val === q.correctAnswer) b.classList.add('correct-answer');
+                    else if (b.dataset.val === userAnswer && !isCorrect) b.classList.add('wrong-answer');
+                });
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('studyModeBtn').classList.toggle('active', mode === 'study');
+            document.getElementById('testModeBtn').classList.toggle('active', mode === 'test');
+            document.getElementById('submitBtn').style.display = mode === 'test' ? '' : 'none';
+
+            // Reset visual state
+            document.querySelectorAll('.explanation').forEach(e => e.classList.remove('show'));
+            document.querySelectorAll('.question-card').forEach(c => c.classList.remove('correct', 'incorrect'));
+            document.querySelectorAll('.option-btn, .tf-btn').forEach(b => b.classList.remove('correct-answer', 'wrong-answer'));
+            document.getElementById('scoreCard').style.display = 'none';
+
+            if (mode === 'study') {
+                // Re-show explanations for answered questions
+                Object.keys(userAnswers).forEach(qid => {
+                    showExplanation(qid);
+                    gradeQuestion(qid);
+                });
+            }
+        }
+
+        function submitQuiz() {
+            if (!currentQuiz?.questions) return;
+            let correct = 0;
+            const total = currentQuiz.questions.length;
+
+            currentQuiz.questions.forEach(q => {
+                const qid = String(q.id);
+                showExplanation(qid);
+                gradeQuestion(qid);
+
+                const userAnswer = String(userAnswers[qid] || '').trim().toLowerCase();
+                const correctAnswer = String(q.correctAnswer).trim().toLowerCase();
+                if (userAnswer === correctAnswer || correctAnswer.startsWith(userAnswer)) correct++;
+            });
+
+            const pct = Math.round((correct / total) * 100);
+            const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#eab308' : '#ef4444';
+            const scoreCard = document.getElementById('scoreCard');
+            scoreCard.innerHTML = `
+                <div class="score-big" style="color:${color}">${pct}%</div>
+                <div class="score-label">${correct} of ${total} correct</div>
+                <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div>
+            `;
+            scoreCard.style.display = 'block';
+            scoreCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function revealAll() {
+            if (!currentQuiz?.questions) return;
+            currentQuiz.questions.forEach(q => {
+                showExplanation(String(q.id));
+                gradeQuestion(String(q.id));
+            });
+        }
+
+        function copyQuiz() {
+            if (!currentQuiz?.questions) return;
+            let text = `${currentQuiz.quizTitle || 'Quiz'}\n${'='.repeat(40)}\n\n`;
+            currentQuiz.questions.forEach((q, i) => {
+                text += `${i + 1}. ${q.question}\n`;
+                if (q.options?.length) q.options.forEach(o => { text += `   ${o}\n`; });
+                text += `   Answer: ${q.correctAnswer}\n   ${q.explanation || ''}\n\n`;
+            });
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy Quiz', 2000);
+        }
+
+        function newQuiz() {
+            currentQuiz = null;
+            userAnswers = {};
+            qaHistory = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me anything about the quiz material!</div>';
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/quizmaker', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'qa',
+                        question: q,
+                        history: qaHistory,
+                        context: currentQuiz ? JSON.stringify(currentQuiz).slice(0, 50000) : ''
+                    })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'model', content: answer });
+                document.getElementById('qaLoading').innerHTML = answer.replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `Error: ${err.message}`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'quizmaker',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: 5
+                }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
