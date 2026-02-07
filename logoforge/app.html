@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogoForge — AI Logo Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #ef4444; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .app-header .back:hover { color: #ef4444; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input Section */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #ef4444; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 8px; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #dc262630; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 60px 24px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #ef4444; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; font-size: 0.95rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; transition: all 0.2s; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #ef4444; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        /* Results */
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Brand Banner */
+        .brand-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
+        .brand-banner h2 { font-size: 1.4rem; margin-bottom: 8px; }
+        .brand-banner .personality { color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; }
+        .brand-banner .mood-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+        .mood-tag { background: #ef444420; border: 1px solid #ef444440; color: #f87171; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+
+        /* Logo Concepts Grid */
+        .concepts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .concept-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; }
+        .concept-card:hover { border-color: #ef4444; transform: translateY(-2px); }
+        .concept-preview { width: 100%; height: 200px; background: #0f0f1a; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        .concept-preview svg { max-width: 160px; max-height: 160px; }
+        .concept-preview .concept-num { position: absolute; top: 10px; left: 10px; background: #ef4444; color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+        .concept-info { padding: 16px; }
+        .concept-info h3 { font-size: 1rem; margin-bottom: 6px; }
+        .concept-info .style-badge { display: inline-block; background: #ef444420; color: #f87171; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-bottom: 8px; }
+        .concept-info p { color: #94a3b8; font-size: 0.82rem; line-height: 1.5; margin-bottom: 12px; }
+        .color-palette { display: flex; gap: 6px; margin-bottom: 12px; }
+        .color-swatch { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #2a2a3e; cursor: pointer; position: relative; }
+        .color-swatch:hover::after { content: attr(data-name); position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); background: #0f0f1a; color: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; white-space: nowrap; z-index: 10; }
+        .font-suggestion { font-size: 0.78rem; color: #64748b; }
+        .font-suggestion strong { color: #94a3b8; }
+        .concept-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .svg-download { padding: 6px 14px; background: #ef444420; border: 1px solid #ef444440; color: #f87171; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+        .svg-download:hover { background: #ef444440; }
+
+        /* Typography Tab */
+        .typo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .typo-card h3 { font-size: 0.95rem; margin-bottom: 12px; }
+        .typo-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .typo-list li { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+        .typo-list .check { color: #10b981; }
+        .typo-list .cross { color: #ef4444; }
+        .typo-reasoning { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a2a3e; }
+
+        /* Brand Guidelines Tab */
+        .guidelines-grid { display: grid; gap: 16px; }
+        .guideline-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .guideline-card h3 { font-size: 0.95rem; margin-bottom: 12px; }
+        .guideline-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+        .guideline-item.do::before { content: '✓'; color: #10b981; font-weight: 700; }
+        .guideline-item.dont::before { content: '✗'; color: #ef4444; font-weight: 700; }
+
+        /* Q&A Tab */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #ef444420; border: 1px solid #ef444430; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input input:focus { border-color: #ef4444; }
+        .qa-input button { padding: 12px 20px; background: #ef4444; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-input button:disabled { opacity: 0.5; }
+
+        /* New Design btn */
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: border-color 0.2s; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+        /* Error */
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; font-size: 0.9rem; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .concepts-grid { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🔥 Logo<span>Forge</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Describe Your Brand</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Brand Name *</label>
+                    <input type="text" id="brandName" placeholder="e.g. Bloom, NovaTech, SkyRun">
+                </div>
+                <div class="form-group">
+                    <label>Industry</label>
+                    <select id="industry">
+                        <option value="">Select industry...</option>
+                        <option value="technology">Technology</option>
+                        <option value="food">Food & Beverage</option>
+                        <option value="health">Health & Wellness</option>
+                        <option value="fashion">Fashion & Beauty</option>
+                        <option value="finance">Finance</option>
+                        <option value="education">Education</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="sports">Sports & Fitness</option>
+                        <option value="travel">Travel & Hospitality</option>
+                        <option value="creative">Creative & Design</option>
+                        <option value="ecommerce">E-commerce</option>
+                        <option value="nonprofit">Non-Profit</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Style</label>
+                    <select id="styleSelect">
+                        <option value="modern">Modern & Clean</option>
+                        <option value="classic">Classic & Elegant</option>
+                        <option value="playful">Playful & Fun</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="bold">Bold & Striking</option>
+                        <option value="geometric">Geometric</option>
+                        <option value="organic">Organic & Natural</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Color Preference</label>
+                    <select id="colorPref">
+                        <option value="auto">Let AI decide</option>
+                        <option value="blue">Blues</option>
+                        <option value="green">Greens</option>
+                        <option value="red">Reds & Warm</option>
+                        <option value="purple">Purples</option>
+                        <option value="monochrome">Monochrome</option>
+                        <option value="earth">Earth Tones</option>
+                        <option value="pastel">Pastels</option>
+                        <option value="vibrant">Vibrant & Bold</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Brand Description (optional)</label>
+                    <textarea id="description" placeholder="What does your brand do? Who's your audience? Any specific imagery or symbols you like?"></textarea>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Logo Concepts →</button>
+        </div>
+
+        <div class="loading" id="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Forging your logo concepts...</p>
+        </div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Brand</button>
+
+            <div class="brand-banner" id="brandBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="concepts">Logo Concepts</button>
+                <button class="tab" data-tab="typography">Typography</button>
+                <button class="tab" data-tab="guidelines">Brand Guidelines</button>
+                <button class="tab" data-tab="qa">Design Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-concepts">
+                <div class="concepts-grid" id="conceptsGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tab-typography">
+                <div id="typographyContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-guidelines">
+                <div id="guidelinesContent"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about your logos — I can suggest refinements, explain design choices, or help with variations.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Can you make concept 1 more minimalist?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="error" id="error" style="display:none;"></div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function generate() {
+            const brandName = document.getElementById('brandName').value.trim();
+            if (!brandName) { document.getElementById('brandName').style.borderColor = '#ef4444'; return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'logoforge', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch('/api/logoforge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate',
+                        brandName,
+                        industry: document.getElementById('industry').value,
+                        style: document.getElementById('styleSelect').value,
+                        colorPreference: document.getElementById('colorPref').value,
+                        description: document.getElementById('description').value.trim()
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse response. Please try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            // Brand Banner
+            const ba = data.brandAnalysis || {};
+            document.getElementById('brandBanner').innerHTML = `
+                <h2>${document.getElementById('brandName').value}</h2>
+                <div class="personality">${ba.personality || ''}</div>
+                <div class="mood-tags">${(ba.moodKeywords || []).map(k => `<span class="mood-tag">${k}</span>`).join('')}</div>
+            `;
+
+            // Concepts Grid
+            const grid = document.getElementById('conceptsGrid');
+            grid.innerHTML = (data.concepts || []).map((c, i) => {
+                let svgHtml = '';
+                try {
+                    // Sanitize SVG - render it
+                    const div = document.createElement('div');
+                    div.innerHTML = c.svg || '';
+                    const svg = div.querySelector('svg');
+                    if (svg) svgHtml = svg.outerHTML;
+                } catch(e) { svgHtml = '<div style="color:#64748b;font-size:0.8rem;">Preview unavailable</div>'; }
+
+                const palette = (c.colorPalette || []).map(p =>
+                    `<div class="color-swatch" style="background:${p.hex}" data-name="${p.name} (${p.usage})" title="${p.hex}"></div>`
+                ).join('');
+
+                const font = c.fontSuggestion || {};
+
+                return `
+                    <div class="concept-card">
+                        <div class="concept-preview">
+                            <div class="concept-num">${i + 1}</div>
+                            ${svgHtml}
+                        </div>
+                        <div class="concept-info">
+                            <h3>${c.name || 'Concept ' + (i+1)}</h3>
+                            <span class="style-badge">${c.style || 'modern'}</span>
+                            <p>${c.description || ''}</p>
+                            <div class="color-palette">${palette}</div>
+                            <div class="font-suggestion"><strong>Fonts:</strong> ${font.primary || 'Sans-serif'} + ${font.secondary || 'Serif'}</div>
+                            <div class="concept-actions">
+                                <button class="svg-download" onclick="downloadSVG(${i})">↓ Download SVG</button>
+                                <button class="svg-download" onclick="copySVG(${i})">📋 Copy SVG</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Typography
+            const typo = data.typography || {};
+            document.getElementById('typographyContent').innerHTML = `
+                <div class="typo-card">
+                    <h3>Recommended Fonts</h3>
+                    <ul class="typo-list">
+                        ${(typo.recommended || []).map(f => `<li><span class="check">✓</span> ${f}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="typo-card">
+                    <h3>Fonts to Avoid</h3>
+                    <ul class="typo-list">
+                        ${(typo.avoid || []).map(f => `<li><span class="cross">✗</span> ${f}</li>`).join('')}
+                    </ul>
+                    <div class="typo-reasoning">${typo.reasoning || ''}</div>
+                </div>
+            `;
+
+            // Brand Guidelines
+            const bg = data.brandGuidelines || {};
+            const dos = (bg.dosAndDonts || []);
+            document.getElementById('guidelinesContent').innerHTML = `
+                <div class="guidelines-grid">
+                    <div class="guideline-card">
+                        <h3>Usage Guidelines</h3>
+                        ${dos.map(d => {
+                            const isDo = d.toLowerCase().startsWith('do:') || d.toLowerCase().startsWith('do ');
+                            return `<div class="guideline-item ${isDo ? 'do' : 'dont'}">${d.replace(/^(do:|don't:|dont:)\s*/i, '')}</div>`;
+                        }).join('')}
+                    </div>
+                    ${bg.minimumSize ? `<div class="guideline-card"><h3>Minimum Size</h3><div class="guideline-item do">${bg.minimumSize}</div></div>` : ''}
+                    ${bg.spacing ? `<div class="guideline-card"><h3>Clear Space</h3><div class="guideline-item do">${bg.spacing}</div></div>` : ''}
+                </div>
+            `;
+        }
+
+        function downloadSVG(idx) {
+            const concept = resultData?.concepts?.[idx];
+            if (!concept?.svg) return;
+            const blob = new Blob([concept.svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${document.getElementById('brandName').value.toLowerCase().replace(/\s+/g, '-')}-concept-${idx + 1}.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copySVG(idx) {
+            const concept = resultData?.concepts?.[idx];
+            if (!concept?.svg) return;
+            navigator.clipboard.writeText(concept.svg).then(() => {
+                const btns = document.querySelectorAll('.svg-download');
+                const btn = btns[idx * 2 + 1];
+                if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '📋 Copy SVG', 1500); }
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'logoforge', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch('/api/logoforge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'qa',
+                        question: q,
+                        history: qaHistory,
+                        context: JSON.stringify(resultData)
+                    })
+                });
+
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                qaHistory.push({ role: 'assistant', content: data.answer || 'No response' });
+
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally {
+                document.getElementById('qaBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null;
+            qaHistory = [];
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about your logos — I can suggest refinements, explain design choices, or help with variations.</div>';
+        }
+    </script>
+</body>
+</html>
