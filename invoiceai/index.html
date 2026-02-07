@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceAI — Free AI Receipt Scanner | Photo → Instant Data Extraction</title>
+    <meta name="description" content="Photo any receipt or invoice — AI extracts every line item, totals, vendor info, and categorizes the expense for bookkeeping and taxes. 100% free.">
+    <meta property="og:title" content="InvoiceAI — Free AI Receipt Scanner">
+    <meta property="og:description" content="Receipt photo in, structured data out — line items, totals, tax info, expense categories, and deduction flags. Instant bookkeeping.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/invoiceai/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/invoiceai/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #6366f115; border: 1px solid #6366f130; color: #818cf8; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #818cf8, #6366f1); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #6366f130; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #6366f115; border: 1px solid #6366f130; color: #818cf8; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #818cf8; font-size: 1.5rem; margin: 16px 0; }
+
+        .demo-vendor { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .demo-vendor h3 { font-size: 1.2rem; }
+        .demo-vendor .date { font-size: 0.85rem; color: #94a3b8; }
+
+        .demo-items { margin-bottom: 16px; }
+        .demo-item { display: flex; justify-content: space-between; padding: 10px 14px; background: #0f0f1a; border-radius: 8px; margin-bottom: 4px; font-size: 0.85rem; }
+        .demo-item .cat { font-size: 0.7rem; color: #818cf8; margin-left: 8px; }
+
+        .demo-totals { background: #0f0f1a; border-radius: 12px; padding: 14px 16px; }
+        .demo-total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; color: #94a3b8; }
+        .demo-total-row.final { color: #e2e8f0; font-weight: 800; font-size: 1rem; border-top: 1px solid #2a2a3e; padding-top: 8px; margin-top: 4px; }
+
+        .demo-flags { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .demo-flag { padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); color: #818cf8; }
+        .demo-flag.green { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #4ade80; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #818cf8; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #818cf8; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.8rem; }
+            .features, .tools-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Receipt</span> Scanner</h1>
+        <p>Photo any receipt or invoice — AI extracts every line item, totals, vendor info, and categorizes the expense for instant bookkeeping.</p>
+        <a href="app.html" class="cta-btn">Scan My Receipt →</a>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">📸</div>
+            <h3>Photo → Data</h3>
+            <p>Snap a photo of any receipt, invoice, or bill. AI reads every line and extracts structured data instantly.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">📊</div>
+            <h3>Auto-Categorize</h3>
+            <p>Each line item and the overall expense is automatically categorized — meals, travel, office, utilities, and more.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">💰</div>
+            <h3>Tax-Ready</h3>
+            <p>Flags potential business deductions, identifies tax amounts, and notes anything useful for tax time.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Photo of a restaurant receipt</p>
+        <div class="demo-card">
+            <div class="demo-tags">
+                <div class="demo-tag">📸 Photo Upload</div>
+                <div class="demo-tag">🧾 Receipt</div>
+                <div class="demo-tag">🍽️ Business Meal</div>
+            </div>
+            <div class="demo-arrow">↓</div>
+
+            <div class="demo-vendor">
+                <h3>🍽️ The Italian Place</h3>
+                <div class="date">📅 2025-01-15 · 🕐 7:32 PM</div>
+            </div>
+
+            <div class="demo-items">
+                <div class="demo-item"><span>Margherita Pizza (1×) <span class="cat">food</span></span><span>$16.00</span></div>
+                <div class="demo-item"><span>Caesar Salad (1×) <span class="cat">food</span></span><span>$12.00</span></div>
+                <div class="demo-item"><span>Sparkling Water (2×) <span class="cat">food</span></span><span>$8.00</span></div>
+                <div class="demo-item"><span>Tiramisu (1×) <span class="cat">food</span></span><span>$10.00</span></div>
+            </div>
+
+            <div class="demo-totals">
+                <div class="demo-total-row"><span>Subtotal</span><span>$46.00</span></div>
+                <div class="demo-total-row"><span>Tax (8.875%)</span><span>$4.08</span></div>
+                <div class="demo-total-row"><span>Tip</span><span>$9.00</span></div>
+                <div class="demo-total-row final"><span>Total</span><span>$59.08</span></div>
+            </div>
+
+            <div class="demo-flags">
+                <span class="demo-flag">🧾 Credit Card</span>
+                <span class="demo-flag">🍽️ Meals & Entertainment</span>
+                <span class="demo-flag green">✓ Potentially Deductible</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/portfoliogpt/" class="tool-card">
+                <h3>📈 PortfolioGPT</h3>
+                <p>Paste your holdings — get risk analysis, rebalancing suggestions, and sector exposure.</p>
+            </a>
+            <a href="/bizplan/" class="tool-card">
+                <h3>📋 BizPlan AI</h3>
+                <p>Describe your idea — get a complete business plan with market analysis and financials.</p>
+            </a>
+            <a href="/contractreader/" class="tool-card">
+                <h3>📄 ContractReader</h3>
+                <p>Paste any contract — AI highlights key terms, risks, and what to negotiate.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>InvoiceAI is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>

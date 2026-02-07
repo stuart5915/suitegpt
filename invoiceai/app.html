@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceAI — AI Receipt Scanner</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.8rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+        /* Upload */
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #818cf8; background: #6366f108; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 6px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone input { display: none; }
+        .preview-wrap { position: relative; display: none; margin-bottom: 16px; }
+        .preview-wrap img { width: 100%; max-height: 350px; object-fit: contain; border-radius: 12px; background: #1a1a2e; }
+        .preview-wrap .remove { position: absolute; top: 8px; right: 8px; background: #ef4444; color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; }
+
+        .context-input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 50px; margin-bottom: 16px; }
+        .context-input:focus { outline: none; border-color: #818cf8; }
+        .context-input::placeholder { color: #64748b; }
+
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #818cf8, #6366f1); color: #fff; font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #6366f130; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 4px solid #2a2a3e; border-top: 4px solid #818cf8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .new-btn { display: inline-block; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: border-color 0.2s; }
+        .new-btn:hover { border-color: #818cf8; }
+
+        /* Vendor banner */
+        .vendor-banner { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+        .vendor-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+        .vendor-name { font-size: 1.3rem; font-weight: 800; color: #818cf8; }
+        .vendor-type { display: inline-block; background: #6366f120; border: 1px solid #6366f140; color: #818cf8; padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .vendor-details { margin-top: 8px; font-size: 0.8rem; color: #94a3b8; line-height: 1.6; }
+        .vendor-meta { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+        .vendor-meta span { font-size: 0.8rem; color: #94a3b8; }
+
+        /* Total card */
+        .total-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
+        .total-row.sub { color: #94a3b8; }
+        .total-row.final { font-weight: 800; font-size: 1.2rem; color: #818cf8; border-top: 2px solid #2a2a3e; padding-top: 10px; margin-top: 6px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #94a3b8; }
+        .tab.active { background: #6366f120; border-color: #6366f1; color: #818cf8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Line items */
+        .line-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .line-left { flex: 1; }
+        .line-left .desc { font-size: 0.9rem; font-weight: 600; }
+        .line-left .meta { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+        .line-cat { display: inline-block; background: #6366f115; border: 1px solid #6366f130; color: #818cf8; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin-left: 6px; }
+        .line-right { font-weight: 700; font-size: 0.95rem; white-space: nowrap; margin-left: 12px; }
+
+        /* Info cards */
+        .card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+        .card h3 { font-size: 1rem; margin-bottom: 10px; }
+        .card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1a1a2e; }
+        .info-row:last-child { border: none; }
+        .info-label { font-size: 0.8rem; color: #94a3b8; }
+        .info-value { font-size: 0.85rem; font-weight: 600; }
+
+        .flag-card { background: #0f0f1a; border-left: 3px solid #818cf8; border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px; }
+        .flag-card p { font-size: 0.85rem; line-height: 1.5; }
+        .flag-card.green { border-color: #4ade80; }
+        .flag-card.yellow { border-color: #fbbf24; }
+
+        .copy-btn { padding: 10px 20px; background: #6366f120; border: 1px solid #6366f140; color: #818cf8; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 12px; }
+        .copy-btn:hover { background: #6366f130; }
+
+        /* QA */
+        .qa-container { display: flex; flex-direction: column; height: 400px; }
+        .qa-messages { flex: 1; overflow-y: auto; padding: 16px; background: #0f0f1a; border-radius: 12px; margin-bottom: 12px; }
+        .qa-msg { margin-bottom: 12px; }
+        .qa-msg.user { text-align: right; }
+        .qa-msg .bubble { display: inline-block; max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; text-align: left; }
+        .qa-msg.user .bubble { background: #6366f1; color: #fff; }
+        .qa-msg.assistant .bubble { background: #1a1a2e; color: #e2e8f0; }
+        .qa-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input:focus { outline: none; border-color: #818cf8; }
+        .qa-input::placeholder { color: #64748b; }
+        .qa-send { padding: 12px 20px; background: #6366f1; color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .qa-send:disabled { opacity: 0.5; }
+
+        @media (max-width: 640px) { .vendor-top { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 Invoice<span>AI</span></h1>
+            <p>Photo any receipt or invoice — get instant data extraction</p>
+        </div>
+
+        <!-- Upload View -->
+        <div id="uploadView">
+            <div class="upload-zone" id="dropZone">
+                <div class="icon">📸</div>
+                <h3>Drop your receipt or invoice photo</h3>
+                <p>or click to browse — JPG, PNG up to 4MB</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" alt="Receipt preview">
+                <button class="remove" id="removeBtn">×</button>
+            </div>
+            <textarea class="context-input" id="contextInput" placeholder="Optional: add context — e.g. 'business lunch with client' or 'office supplies for Q1'"></textarea>
+            <button class="submit-btn" id="submitBtn" disabled>Extract Data →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Reading and extracting data...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="resultsView">
+            <button class="new-btn" id="newBtn">← New Receipt</button>
+
+            <div class="vendor-banner" id="vendorBanner"></div>
+            <div class="total-card" id="totalCard"></div>
+
+            <div class="tabs" id="tabBar">
+                <div class="tab active" data-tab="items">Line Items</div>
+                <div class="tab" data-tab="details">Details</div>
+                <div class="tab" data-tab="tax">Tax & Deductions</div>
+                <div class="tab" data-tab="export">Export</div>
+                <div class="tab" data-tab="qa">Accountant Q&A</div>
+            </div>
+
+            <div class="tab-content active" id="tab-items"></div>
+            <div class="tab-content" id="tab-details"></div>
+            <div class="tab-content" id="tab-tax"></div>
+            <div class="tab-content" id="tab-export"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg assistant"><div class="bubble">Ask me anything about this receipt — expense categorization, tax deductions, bookkeeping, or how to record it!</div></div>
+                    </div>
+                    <div class="qa-row">
+                        <input class="qa-input" id="qaInput" placeholder="Ask about this expense...">
+                        <button class="qa-send" id="qaSend">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let imageBase64 = null, imageMime = null, resultData = null, qaHistory = [];
+        const API = '/api/invoiceai';
+
+        // Upload
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4MB'); return; }
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const full = e.target.result;
+                imageBase64 = full.split(',')[1];
+                previewImg.src = full;
+                previewWrap.style.display = 'block';
+                dropZone.style.display = 'none';
+                submitBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('removeBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null;
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            fileInput.value = '';
+            submitBtn.disabled = true;
+        });
+
+        // Submit
+        submitBtn.addEventListener('click', async () => {
+            if (!imageBase64) return;
+
+            document.getElementById('uploadView').style.display = 'none';
+            document.getElementById('loadingView').style.display = 'block';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'invoiceai', feature: 'extract', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const body = { mode: 'extract', image: imageBase64, mimeType: imageMime };
+                const desc = document.getElementById('contextInput').value.trim();
+                if (desc) body.description = desc;
+
+                const resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+
+                if (data.raw) { renderRaw(data.raw); return; }
+                resultData = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error extracting data. Please try again.');
+                document.getElementById('loadingView').style.display = 'none';
+                document.getElementById('uploadView').style.display = 'block';
+            }
+        });
+
+        function fmt(n) { return typeof n === 'number' ? '$' + n.toFixed(2) : n || '—'; }
+
+        function renderRaw(text) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+            document.getElementById('vendorBanner').innerHTML = '';
+            document.getElementById('totalCard').innerHTML = '';
+            document.getElementById('tab-items').innerHTML = `<div class="card"><p style="white-space:pre-wrap">${text}</p></div>`;
+        }
+
+        function renderResults(d) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+
+            // Vendor banner
+            const v = d.vendor || {};
+            document.getElementById('vendorBanner').innerHTML = `
+                <div class="vendor-top">
+                    <div>
+                        <div class="vendor-name">${v.name || 'Unknown Vendor'}</div>
+                        ${v.address ? `<div class="vendor-details">${v.address}</div>` : ''}
+                    </div>
+                    <div class="vendor-type">${d.documentType || 'receipt'}</div>
+                </div>
+                <div class="vendor-meta">
+                    ${d.date ? `<span>📅 ${d.date}</span>` : ''}
+                    ${d.time ? `<span>🕐 ${d.time}</span>` : ''}
+                    ${d.invoiceNumber ? `<span>🔢 ${d.invoiceNumber}</span>` : ''}
+                    ${d.paymentMethod ? `<span>💳 ${d.paymentMethod}</span>` : ''}
+                </div>
+            `;
+
+            // Total card
+            let totalHTML = '';
+            if (d.subtotal != null) totalHTML += `<div class="total-row sub"><span>Subtotal</span><span>${fmt(d.subtotal)}</span></div>`;
+            if (d.tax != null) totalHTML += `<div class="total-row sub"><span>Tax ${d.taxRate ? '(' + d.taxRate + ')' : ''}</span><span>${fmt(d.tax)}</span></div>`;
+            if (d.tip) totalHTML += `<div class="total-row sub"><span>Tip</span><span>${fmt(d.tip)}</span></div>`;
+            totalHTML += `<div class="total-row final"><span>Total</span><span>${fmt(d.total)}</span></div>`;
+            document.getElementById('totalCard').innerHTML = totalHTML;
+
+            // Line items tab
+            let itemsHTML = '';
+            if (d.lineItems?.length) {
+                d.lineItems.forEach(item => {
+                    itemsHTML += `<div class="line-item">
+                        <div class="line-left">
+                            <div class="desc">${item.description}<span class="line-cat">${item.category || 'other'}</span></div>
+                            <div class="meta">${item.quantity > 1 ? item.quantity + '× ' + fmt(item.unitPrice) : ''}</div>
+                        </div>
+                        <div class="line-right">${fmt(item.total)}</div>
+                    </div>`;
+                });
+            } else {
+                itemsHTML = '<div class="card"><p>No line items extracted.</p></div>';
+            }
+            document.getElementById('tab-items').innerHTML = itemsHTML;
+
+            // Details tab
+            let detHTML = '<div class="card"><h3>Receipt Details</h3>';
+            const details = [
+                ['Document Type', d.documentType],
+                ['Vendor', v.name],
+                ['Address', v.address],
+                ['Phone', v.phone],
+                ['Website', v.website],
+                ['Date', d.date],
+                ['Time', d.time],
+                ['Invoice #', d.invoiceNumber],
+                ['Payment', d.paymentMethod],
+                ['Currency', d.currency],
+                ['Confidence', d.confidence]
+            ];
+            details.forEach(([label, val]) => {
+                if (val) detHTML += `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${val}</span></div>`;
+            });
+            detHTML += '</div>';
+            if (d.warnings?.length) {
+                detHTML += '<div class="card"><h3>⚠️ Warnings</h3>';
+                d.warnings.forEach(w => { detHTML += `<div class="flag-card yellow"><p>${w}</p></div>`; });
+                detHTML += '</div>';
+            }
+            if (d.notes) detHTML += `<div class="card"><h3>Notes</h3><p>${d.notes}</p></div>`;
+            document.getElementById('tab-details').innerHTML = detHTML;
+
+            // Tax tab
+            let taxHTML = '';
+            taxHTML += `<div class="card"><h3>Expense Category</h3><p style="font-size:1.1rem;font-weight:700;color:#818cf8;margin-bottom:8px">${d.expenseCategory || 'Uncategorized'}</p>`;
+            if (d.businessExpense) taxHTML += `<div class="flag-card green"><p>✓ Flagged as potential business expense</p></div>`;
+            if (d.deductible) taxHTML += `<div class="flag-card green"><p>💰 ${d.deductible}</p></div>`;
+            taxHTML += '</div>';
+            if (d.tax != null) {
+                taxHTML += `<div class="card"><h3>Tax Breakdown</h3>
+                    <div class="info-row"><span class="info-label">Tax Amount</span><span class="info-value">${fmt(d.tax)}</span></div>
+                    ${d.taxRate ? `<div class="info-row"><span class="info-label">Tax Rate</span><span class="info-value">${d.taxRate}</span></div>` : ''}
+                </div>`;
+            }
+            document.getElementById('tab-tax').innerHTML = taxHTML;
+
+            // Export tab
+            let csv = 'Description,Quantity,Unit Price,Total,Category\n';
+            (d.lineItems || []).forEach(item => {
+                csv += `"${item.description}",${item.quantity},${item.unitPrice},${item.total},"${item.category}"\n`;
+            });
+            csv += `\n,,,${d.total},TOTAL`;
+
+            const jsonStr = JSON.stringify(d, null, 2);
+
+            document.getElementById('tab-export').innerHTML = `
+                <div class="card">
+                    <h3>Export as CSV</h3>
+                    <pre style="background:#0f0f1a;padding:14px;border-radius:10px;font-size:0.8rem;overflow-x:auto;max-height:200px;color:#94a3b8">${csv}</pre>
+                    <button class="copy-btn" onclick="copyText(\`${csv.replace(/`/g, '\\`')}\`)">Copy CSV</button>
+                </div>
+                <div class="card">
+                    <h3>Export as JSON</h3>
+                    <pre style="background:#0f0f1a;padding:14px;border-radius:10px;font-size:0.75rem;overflow-x:auto;max-height:200px;color:#94a3b8">${jsonStr.replace(/</g, '&lt;')}</pre>
+                    <button class="copy-btn" onclick="copyJSON()">Copy JSON</button>
+                </div>
+            `;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => { alert('Copied to clipboard!'); });
+        }
+        function copyJSON() {
+            navigator.clipboard.writeText(JSON.stringify(resultData, null, 2)).then(() => { alert('Copied to clipboard!'); });
+        }
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+
+        // New
+        document.getElementById('newBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null; resultData = null; qaHistory = [];
+            fileInput.value = '';
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            document.getElementById('contextInput').value = '';
+            submitBtn.disabled = true;
+            document.getElementById('resultsView').style.display = 'none';
+            document.getElementById('uploadView').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg assistant"><div class="bubble">Ask me anything about this receipt — expense categorization, tax deductions, bookkeeping, or how to record it!</div></div>';
+            document.querySelectorAll('.tab')[0].click();
+        });
+
+        // Q&A
+        const qaInput = document.getElementById('qaInput');
+        const qaSend = document.getElementById('qaSend');
+        const qaMessages = document.getElementById('qaMessages');
+
+        async function sendQA() {
+            const q = qaInput.value.trim();
+            if (!q) return;
+            qaInput.value = '';
+            qaSend.disabled = true;
+
+            qaMessages.innerHTML += `<div class="qa-msg user"><div class="bubble">${q}</div></div>`;
+            qaMessages.innerHTML += `<div class="qa-msg assistant" id="qaTyping"><div class="bubble">Thinking...</div></div>`;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'invoiceai', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: resultData ? JSON.stringify(resultData) : null })
+                });
+                const data = await resp.json();
+                const answer = data.answer || 'Sorry, I couldn\'t answer that.';
+
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">${answer.replace(/\n/g, '<br>')}</div></div>`;
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">Sorry, something went wrong. Please try again.</div></div>`;
+            }
+            qaSend.disabled = false;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+        }
+
+        qaSend.addEventListener('click', sendQA);
+        qaInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQA(); } });
+    </script>
+</body>
+</html>
