@@ -385,10 +385,91 @@
             padding: 1px 6px; border-radius: 3px;
             background: rgba(139,0,0,0.6); border-bottom: 2px solid #ef4444;
         }
+        /* Character Creation Screen */
+        #char-create-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 70%);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+        #char-create-screen.hidden { display: none; }
+        .cc-container {
+            display: flex; gap: 32px; align-items: flex-start;
+            background: rgba(20,20,30,0.9); border: 2px solid #4a4a50;
+            border-radius: 8px; padding: 32px; max-width: 700px; width: 90%;
+        }
+        .cc-form { flex: 1; }
+        .cc-form h1 { color: #fff; font-size: 22px; margin-bottom: 4px; }
+        .cc-form p.cc-sub { color: #6b7280; font-size: 11px; margin-bottom: 20px; }
+        .cc-field { margin-bottom: 16px; }
+        .cc-field label { display: block; color: #9ca3af; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cc-field input[type="text"] {
+            width: 100%; background: #1a1a1f; border: 1px solid #3a3a40;
+            color: #fff; padding: 8px 12px; font-size: 14px; font-family: inherit;
+            border-radius: 4px; outline: none;
+        }
+        .cc-field input[type="text"]:focus { border-color: #6366f1; }
+        .cc-colors { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cc-color-btn {
+            width: 28px; height: 28px; border-radius: 4px; border: 2px solid #3a3a40;
+            cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+        }
+        .cc-color-btn:hover { transform: scale(1.15); }
+        .cc-color-btn.selected { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+        .cc-classes { display: flex; gap: 8px; }
+        .cc-class-btn {
+            flex: 1; padding: 10px 6px; background: #1a1a1f; border: 1px solid #3a3a40;
+            border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.15s;
+        }
+        .cc-class-btn:hover { border-color: #6366f1; background: #222230; }
+        .cc-class-btn.selected { border-color: #6366f1; background: #6366f122; }
+        .cc-class-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+        .cc-class-name { color: #fff; font-size: 11px; font-weight: bold; display: block; }
+        .cc-class-desc { color: #6b7280; font-size: 9px; display: block; margin-top: 2px; }
+        .cc-start-btn {
+            width: 100%; padding: 12px; background: #6366f1; color: #fff;
+            border: none; border-radius: 4px; font-size: 14px; font-weight: bold;
+            font-family: inherit; cursor: pointer; margin-top: 8px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .cc-start-btn:hover { background: #5558e6; }
+        .cc-start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .cc-preview {
+            width: 180px; height: 240px; border: 2px solid #3a3a40;
+            border-radius: 4px; background: #111118; flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
-    <div id="game-frame">
+    <!-- Character Creation Screen -->
+    <div id="char-create-screen">
+        <div class="cc-container">
+            <div class="cc-form">
+                <h1>Create Your Character</h1>
+                <p class="cc-sub">Enter the world of AgentScape</p>
+                <div class="cc-field">
+                    <label>Character Name</label>
+                    <input type="text" id="cc-name" maxlength="16" placeholder="Enter a name..." autocomplete="off">
+                </div>
+                <div class="cc-field">
+                    <label>Body Color</label>
+                    <div class="cc-colors" id="cc-body-colors"></div>
+                </div>
+                <div class="cc-field">
+                    <label>Hair Color</label>
+                    <div class="cc-colors" id="cc-hair-colors"></div>
+                </div>
+                <div class="cc-field">
+                    <label>Class</label>
+                    <div class="cc-classes" id="cc-classes"></div>
+                </div>
+                <button class="cc-start-btn" id="cc-start" disabled>Enter AgentScape</button>
+            </div>
+            <canvas class="cc-preview" id="cc-preview" width="180" height="240"></canvas>
+        </div>
+    </div>
+
+    <div id="game-frame" style="display:none;">
         <!-- Game Viewport -->
         <div id="game-viewport">
             <div id="zone-indicator">SUITE City</div>
@@ -482,9 +563,10 @@
                 <button class="action-btn" id="btnAttackMode" onclick="toggleAttackMode()">Attack Mode</button>
                 <button class="action-btn" id="btnSpec" onclick="useSpecialAttack()">Spec (F)</button>
                 <button class="action-btn" onclick="toggleDayNight()">Day/Night</button>
+                <button class="action-btn" onclick="deleteCharacter()" style="color:#ef4444;border-color:#ef444466;">Delete Char</button>
                 <div id="skill-action-area"></div>
                 <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">
-                    WASD Move | Q/E Rotate<br>Scroll Zoom | F Spec
+                    WASD Walk | Q/E Rotate<br>Scroll Zoom | Click Move | F Spec
                 </div>
             </div>
         </div>
@@ -497,6 +579,161 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
     (function() {
+        // ============================================================
+        // === CHARACTER CREATION ===
+        // ============================================================
+        const BODY_COLORS = [
+            '#3355aa', '#aa3333', '#33aa55', '#aa8833', '#8833aa',
+            '#33aaaa', '#aa5533', '#5533aa', '#336699', '#993366'
+        ];
+        const HAIR_COLORS = [
+            '#4a3728', '#1a1a1a', '#c4a35a', '#8c4a2f', '#d4d4d4',
+            '#aa2222', '#2244aa', '#6633aa', '#22aa44', '#ff8844'
+        ];
+        const CLASSES = [
+            { id: 'warrior', icon: '⚔️', name: 'Warrior', desc: '+2 Attack, +1 Strength', bonuses: { attack: 2, strength: 1 } },
+            { id: 'sentinel', icon: '🛡️', name: 'Sentinel', desc: '+2 Defence, +1 HP', bonuses: { defence: 2, hitpoints: 1 } },
+            { id: 'explorer', icon: '🧭', name: 'Explorer', desc: '+1 All combat stats', bonuses: { attack: 1, strength: 1, defence: 1 } }
+        ];
+
+        const savedChar = localStorage.getItem('agentscape_character');
+        let charData = savedChar ? JSON.parse(savedChar) : null;
+
+        function runCharacterCreation() {
+            return new Promise((resolve) => {
+                if (charData) {
+                    document.getElementById('char-create-screen').classList.add('hidden');
+                    document.getElementById('game-frame').style.display = '';
+                    return resolve(charData);
+                }
+
+                let selBody = BODY_COLORS[0], selHair = HAIR_COLORS[0], selClass = 'explorer';
+                const nameInput = document.getElementById('cc-name');
+                const startBtn = document.getElementById('cc-start');
+
+                // Populate body colors
+                const bodyDiv = document.getElementById('cc-body-colors');
+                BODY_COLORS.forEach((c, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
+                    btn.style.background = c;
+                    btn.onclick = () => {
+                        selBody = c;
+                        bodyDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        drawPreview();
+                    };
+                    bodyDiv.appendChild(btn);
+                });
+
+                // Populate hair colors
+                const hairDiv = document.getElementById('cc-hair-colors');
+                HAIR_COLORS.forEach((c, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
+                    btn.style.background = c;
+                    btn.onclick = () => {
+                        selHair = c;
+                        hairDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        drawPreview();
+                    };
+                    hairDiv.appendChild(btn);
+                });
+
+                // Populate classes
+                const classDiv = document.getElementById('cc-classes');
+                CLASSES.forEach(cls => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-class-btn' + (cls.id === 'explorer' ? ' selected' : '');
+                    btn.innerHTML = `<span class="cc-class-icon">${cls.icon}</span><span class="cc-class-name">${cls.name}</span><span class="cc-class-desc">${cls.desc}</span>`;
+                    btn.onclick = () => {
+                        selClass = cls.id;
+                        classDiv.querySelectorAll('.cc-class-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                    };
+                    classDiv.appendChild(btn);
+                });
+
+                // Name validation
+                nameInput.addEventListener('input', () => {
+                    const name = nameInput.value.trim();
+                    startBtn.disabled = name.length < 1 || name.length > 16;
+                });
+
+                // Preview renderer
+                const pvCanvas = document.getElementById('cc-preview');
+                const pvCtx = pvCanvas.getContext('2d');
+                function drawPreview() {
+                    pvCtx.clearRect(0, 0, 180, 240);
+                    // Background gradient
+                    const grad = pvCtx.createLinearGradient(0, 0, 0, 240);
+                    grad.addColorStop(0, '#1a1a2e');
+                    grad.addColorStop(1, '#111118');
+                    pvCtx.fillStyle = grad;
+                    pvCtx.fillRect(0, 0, 180, 240);
+                    // Shadow
+                    pvCtx.fillStyle = 'rgba(0,0,0,0.3)';
+                    pvCtx.beginPath();
+                    pvCtx.ellipse(90, 200, 25, 8, 0, 0, Math.PI * 2);
+                    pvCtx.fill();
+                    // Legs
+                    pvCtx.fillStyle = '#554433';
+                    pvCtx.fillRect(75, 165, 12, 30);
+                    pvCtx.fillRect(93, 165, 12, 30);
+                    // Body
+                    pvCtx.fillStyle = selBody;
+                    pvCtx.fillRect(70, 115, 40, 55);
+                    // Arms
+                    pvCtx.fillRect(55, 118, 15, 45);
+                    pvCtx.fillRect(110, 118, 15, 45);
+                    // Head (skin)
+                    pvCtx.fillStyle = '#ffcc99';
+                    pvCtx.fillRect(72, 75, 36, 38);
+                    // Hair
+                    pvCtx.fillStyle = selHair;
+                    pvCtx.fillRect(70, 70, 40, 15);
+                    pvCtx.fillRect(70, 70, 8, 30);
+                    pvCtx.fillRect(102, 70, 8, 30);
+                    // Eyes
+                    pvCtx.fillStyle = '#fff';
+                    pvCtx.fillRect(80, 86, 6, 5);
+                    pvCtx.fillRect(94, 86, 6, 5);
+                    pvCtx.fillStyle = '#222';
+                    pvCtx.fillRect(82, 87, 3, 3);
+                    pvCtx.fillRect(96, 87, 3, 3);
+                }
+                drawPreview();
+
+                // Start button
+                startBtn.onclick = () => {
+                    const name = nameInput.value.trim();
+                    if (!name) return;
+                    const classInfo = CLASSES.find(c => c.id === selClass);
+                    const data = {
+                        name,
+                        bodyColor: selBody,
+                        hairColor: selHair,
+                        classId: selClass,
+                        bonuses: classInfo.bonuses
+                    };
+                    localStorage.setItem('agentscape_character', JSON.stringify(data));
+                    charData = data;
+                    document.getElementById('char-create-screen').classList.add('hidden');
+                    document.getElementById('game-frame').style.display = '';
+                    resolve(data);
+                };
+
+                // Enter key to submit
+                nameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !startBtn.disabled) startBtn.click();
+                });
+            });
+        }
+
+        // Run character creation, then boot the game
+        runCharacterCreation().then(startGame);
+        function startGame(charInfo) {
         // ============================================================
         // === CONFIG ===
         // ============================================================
@@ -516,8 +753,11 @@
         const SUPABASE_URL = 'https://kyojtmbjsfkfrdvulbyg.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5b2p0bWJqc2ZrZnJkdnVsYnlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5MTk1MTksImV4cCI6MjA1MDQ5NTUxOX0.JDUpMbOFIqkexJrSHPAzcmFpMOCbMnMxJE-IuZ8OLFY';
 
-        const playerName = 'Player' + Math.floor(Math.random() * 9999);
-        const playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+        // Apply character data from creation screen
+        const playerName = charInfo.name;
+        const playerColor = charInfo.bodyColor;
+        const playerHairColor = charInfo.hairColor;
+        const playerClass = charInfo.classId;
         const otherPlayers = new Map();
         let chatChannel = null;
 
@@ -2002,12 +2242,16 @@
         // === PLAYER CHARACTER ===
         // ============================================================
         const playerGroup = new THREE.Group();
-        const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:0x3355aa}));body.position.y=0.5;body.castShadow=true;playerGroup.add(body);
+        const bodyColor = new THREE.Color(playerColor);
+        const hairColor = new THREE.Color(playerHairColor);
+        const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:bodyColor}));body.position.y=0.5;body.castShadow=true;playerGroup.add(body);
         const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;playerGroup.add(head);
+        // Hair on top of head
+        const hair=new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27),new THREE.MeshLambertMaterial({color:hairColor}));hair.position.y=1.04;playerGroup.add(hair);
         const legGeo=new THREE.BoxGeometry(0.1,0.3,0.15),legMat=new THREE.MeshLambertMaterial({color:0x554433});
         const leftLeg=new THREE.Mesh(legGeo,legMat);leftLeg.position.set(-0.08,0.15,0);playerGroup.add(leftLeg);
         const rightLeg=new THREE.Mesh(legGeo,legMat);rightLeg.position.set(0.08,0.15,0);playerGroup.add(rightLeg);
-        const armGeo=new THREE.BoxGeometry(0.08,0.35,0.1),armMat=new THREE.MeshLambertMaterial({color:0x3355aa});
+        const armGeo=new THREE.BoxGeometry(0.08,0.35,0.1),armMat=new THREE.MeshLambertMaterial({color:bodyColor});
         const leftArm=new THREE.Mesh(armGeo,armMat);leftArm.position.set(-0.22,0.5,0);playerGroup.add(leftArm);
         const rightArm=new THREE.Mesh(armGeo,armMat);rightArm.position.set(0.22,0.5,0);playerGroup.add(rightArm);
         const playerShadow=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));playerShadow.rotation.x=-Math.PI/2;playerShadow.position.y=0.02;playerGroup.add(playerShadow);
@@ -3368,18 +3612,27 @@
             const dt = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // Camera
+            // Camera follows player + WASD movement
             if (!chatInputFocused) {
-                const ps = 10 * dt;
-                if (keys['w']) { camTargetZ -= ps * Math.cos(camAngle); camTargetX -= ps * Math.sin(camAngle); }
-                if (keys['s']) { camTargetZ += ps * Math.cos(camAngle); camTargetX += ps * Math.sin(camAngle); }
-                if (keys['a']) { camTargetX -= ps * Math.cos(camAngle); camTargetZ += ps * Math.sin(camAngle); }
-                if (keys['d']) { camTargetX += ps * Math.cos(camAngle); camTargetZ -= ps * Math.sin(camAngle); }
                 if (keys['q']) camAngle -= 1.5 * dt;
                 if (keys['e']) camAngle += 1.5 * dt;
+                // WASD click-to-walk: compute target tile and start path
+                if (!isMoving && (keys['w'] || keys['a'] || keys['s'] || keys['d'])) {
+                    let dx = 0, dz = 0;
+                    if (keys['w']) { dz -= Math.cos(camAngle); dx -= Math.sin(camAngle); }
+                    if (keys['s']) { dz += Math.cos(camAngle); dx += Math.sin(camAngle); }
+                    if (keys['a']) { dx -= Math.cos(camAngle); dz += Math.sin(camAngle); }
+                    if (keys['d']) { dx += Math.cos(camAngle); dz -= Math.sin(camAngle); }
+                    const tx = Math.round(playerTileX + Math.sign(dx));
+                    const tz = Math.round(playerTileZ + Math.sign(dz));
+                    if (tx >= 0 && tx < MAP_SIZE && tz >= 0 && tz < MAP_SIZE && grid[tx][tz] === 1) {
+                        startMoveTo([{x:playerTileX,z:playerTileZ},{x:tx,z:tz}]);
+                    }
+                }
             }
-            camTargetX = Math.max(-10, Math.min(MAP_SIZE + 10, camTargetX));
-            camTargetZ = Math.max(-10, Math.min(MAP_SIZE + 10, camTargetZ));
+            // Lock camera to player position
+            camTargetX = playerWorldX;
+            camTargetZ = playerWorldZ;
             updateCamera();
 
             // Player movement
@@ -3509,11 +3762,19 @@
         // === INIT ===
         // ============================================================
         initInventory();
+        // Apply class bonuses
+        if (charInfo.bonuses) {
+            Object.entries(charInfo.bonuses).forEach(([stat, bonus]) => {
+                if (playerStats[stat] !== undefined) playerStats[stat] += bonus;
+            });
+            if (charInfo.bonuses.hitpoints) playerStats.maxHp += charInfo.bonuses.hitpoints * 10;
+            playerStats.hp = playerStats.maxHp;
+        }
         renderInventory();
         renderStats();
         updateOrbs();
         document.querySelector('.stat-player-name').textContent = playerName;
-        addChatMessage('system', 'Welcome to AgentScape! Right-click to interact.');
+        addChatMessage('system', `Welcome to AgentScape, ${playerName}! Right-click to interact.`);
         animate();
 
         window.addEventListener('resize', () => {
@@ -3521,6 +3782,16 @@
             camera.updateProjectionMatrix();
             renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         });
+
+        // Delete character handler
+        window.deleteCharacter = function() {
+            if (confirm('Are you sure you want to delete your character? All progress will be lost!')) {
+                localStorage.removeItem('agentscape_character');
+                location.reload();
+            }
+        };
+
+        } // end startGame
     })();
     </script>
 </body>
