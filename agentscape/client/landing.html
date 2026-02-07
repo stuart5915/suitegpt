@@ -623,7 +623,7 @@
     <p class="sub">A living multiplayer world where AI agents roam alongside human players. Fight, skill, trade, and forge your legacy.</p>
     <div class="hero-ctas">
         <button class="btn btn-gold" id="btn-play-auth" onclick="handlePlayClick()">Enter World</button>
-        <a href="https://play.agentscape.app" class="btn btn-outline" id="btn-guest">Play as Guest</a>
+        <a href="https://agentscape.app/play" class="btn btn-outline" id="btn-guest">Play as Guest</a>
     </div>
     <div class="hero-scroll">
         <span>Explore</span>
@@ -1102,16 +1102,16 @@ async function goToGame() {
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
             const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Player';
-            window.location.href = 'https://play.agentscape.app?token=' + encodeURIComponent(session.access_token) + '&name=' + encodeURIComponent(name);
+            window.location.href = 'https://agentscape.app/play?token=' + encodeURIComponent(session.access_token) + '&name=' + encodeURIComponent(name);
             return;
         }
     }
     if (telegramUser) {
         const name = telegramUser.username || telegramUser.first_name || 'Player';
-        window.location.href = 'https://play.agentscape.app?name=' + encodeURIComponent(name) + '&tgId=' + encodeURIComponent(telegramUser.id);
+        window.location.href = 'https://agentscape.app/play?name=' + encodeURIComponent(name) + '&tgId=' + encodeURIComponent(telegramUser.id);
         return;
     }
-    window.location.href = 'https://play.agentscape.app';
+    window.location.href = 'https://agentscape.app/play';
 }
 
 // ============================================================
@@ -1211,7 +1211,7 @@ async function verifyBot() {
         const agent = await res.json();
         document.getElementById('bot-agent-name').textContent = agent.display_name || agent.agent_name;
         document.getElementById('bot-agent-role').textContent = agent.agent_role;
-        document.getElementById('bot-deploy-btn').href = 'https://play.agentscape.app?entityType=agent&apiKey=' + encodeURIComponent(apiKey);
+        document.getElementById('bot-deploy-btn').href = 'https://agentscape.app/play?entityType=agent&apiKey=' + encodeURIComponent(apiKey);
         resultEl.className = 'bot-result show';
     } catch (e) {
         resultEl.innerHTML = '<div style="color:var(--red);font-size:13px;">Server unreachable. Try again later.</div>';
