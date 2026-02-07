@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockupAI — Free AI Wireframe & Mockup Generator | Idea → Wireframes</title>
+    <meta name="description" content="Describe your app or website idea — AI generates wireframe mockups, color schemes, typography, and design guidance. Skip Figma, go straight to wireframes. 100% free.">
+    <meta property="og:title" content="MockupAI — Free AI Wireframe & Mockup Generator">
+    <meta property="og:description" content="Describe your app idea — get wireframe mockups, color scheme, typography, and UX suggestions instantly.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/mockupai/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/mockupai/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #8b5cf615; border: 1px solid #8b5cf630; color: #a78bfa; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); }
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .demo-tag { background: #8b5cf615; border: 1px solid #8b5cf630; color: #a78bfa; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .demo-screen { background: #f8f9fa; border-radius: 10px; padding: 12px; text-align: center; }
+        .demo-screen .frame { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px; margin-bottom: 8px; min-height: 120px; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; }
+        .demo-screen .frame .bar { width: 80%; height: 6px; background: #dee2e6; border-radius: 3px; }
+        .demo-screen .frame .btn { width: 50%; height: 10px; background: #0d6efd; border-radius: 3px; }
+        .demo-screen .frame .card { width: 90%; height: 20px; background: #f1f3f5; border-radius: 4px; }
+        .demo-screen .label { font-size: 0.72rem; color: #6c757d; font-weight: 600; }
+        .demo-colors { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+        .demo-swatch { width: 36px; height: 36px; border-radius: 8px; border: 2px solid #2a2a3e; }
+        .demo-suggestion { background: #0f0f1a; border-radius: 10px; padding: 12px 16px; font-size: 0.82rem; color: #94a3b8; }
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #a78bfa; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; }
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #a78bfa; text-decoration: none; }
+        @media (max-width: 640px) { .hero h1 { font-size: 1.8rem; } .features, .tools-grid { grid-template-columns: 1fr; } .demo-screens { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Wireframe</span> Generator</h1>
+        <p>Describe your app or website idea — AI generates wireframe mockups, suggests colors and typography, and gives UX design advice. Skip the blank canvas.</p>
+        <a href="app.html" class="cta-btn">Generate Mockups →</a>
+    </div>
+    <div class="features">
+        <div class="feature-card"><div class="icon">🎨</div><h3>Instant Wireframes</h3><p>Describe your idea in plain English. AI generates 3-4 key screen wireframes with real UI components.</p></div>
+        <div class="feature-card"><div class="icon">🎯</div><h3>Design System</h3><p>Get a color scheme, typography pairing, and design principles tailored to your project.</p></div>
+        <div class="feature-card"><div class="icon">🔄</div><h3>User Flow</h3><p>AI maps the user journey through your screens and suggests UX improvements.</p></div>
+    </div>
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">"A fitness tracking app with social features"</p>
+        <div class="demo-card">
+            <div class="demo-tags"><div class="demo-tag">📱 Mobile App</div><div class="demo-tag">🎨 Modern Minimal</div><div class="demo-tag">4 Screens</div></div>
+            <div class="demo-screens">
+                <div class="demo-screen">
+                    <div class="frame"><div class="bar"></div><div class="card"></div><div class="card"></div><div class="btn"></div></div>
+                    <div class="label">Home / Feed</div>
+                </div>
+                <div class="demo-screen">
+                    <div class="frame"><div class="bar"></div><div class="bar" style="width:60%"></div><div class="card"></div><div class="card"></div></div>
+                    <div class="label">Workout Log</div>
+                </div>
+                <div class="demo-screen">
+                    <div class="frame"><div class="bar" style="width:40%;height:40px;background:#0d6efd;border-radius:50%"></div><div class="bar"></div><div class="bar"></div></div>
+                    <div class="label">Profile</div>
+                </div>
+            </div>
+            <div class="demo-colors">
+                <div class="demo-swatch" style="background:#0d6efd"></div>
+                <div class="demo-swatch" style="background:#198754"></div>
+                <div class="demo-swatch" style="background:#f8f9fa"></div>
+                <div class="demo-swatch" style="background:#212529"></div>
+                <div class="demo-swatch" style="background:#6c757d"></div>
+            </div>
+            <div class="demo-suggestion"><strong>UX Tip:</strong> Place the workout log CTA on the home screen for quick access — 68% of fitness app sessions start with logging a workout.</div>
+        </div>
+    </div>
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/logoforge/" class="tool-card"><h3>🎨 LogoForge</h3><p>Describe your brand — AI creates logo concepts with full brand guidelines.</p></a>
+            <a href="/thumbnailai/" class="tool-card"><h3>🖼️ ThumbnailAI</h3><p>Describe your video — AI generates click-worthy thumbnail concepts.</p></a>
+            <a href="/brandkit/" class="tool-card"><h3>🏷️ BrandKit</h3><p>Describe your brand — AI builds a full brand identity kit.</p></a>
+        </div>
+    </div>
+    <div class="footer"><p>MockupAI is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p></div>
+</body>
+</html>

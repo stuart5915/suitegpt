@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockupAI — AI Wireframe Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { padding: 20px 24px 12px; text-align: center; border-bottom: 1px solid #1a1a2e; }
+        .app-header h1 { font-size: 1.4rem; font-weight: 800; }
+        .app-header h1 span { background: linear-gradient(135deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #64748b; font-size: 0.8rem; margin-top: 4px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        .form-group textarea, .form-group select, .form-group input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .form-group select { cursor: pointer; }
+        .form-group textarea:focus, .form-group select:focus, .form-group input:focus { outline: none; border-color: #8b5cf6; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; font-family: inherit; }
+        .generate-btn:hover { transform: translateY(-1px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .project-name { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+        .project-type { display: inline-block; background: #8b5cf620; border: 1px solid #8b5cf640; color: #a78bfa; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-bottom: 12px; }
+        .flow-text { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; max-width: 600px; margin: 0 auto 24px; }
+
+        /* Screen cards */
+        .screens-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .screen-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; overflow: hidden; }
+        .screen-preview { background: #fff; padding: 12px; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+        .screen-preview svg { max-width: 100%; max-height: 300px; }
+        .screen-info { padding: 14px; }
+        .screen-info h3 { font-size: 0.92rem; margin-bottom: 4px; }
+        .screen-info .desc { color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; }
+        .screen-info .components { display: flex; flex-wrap: wrap; gap: 4px; }
+        .screen-info .comp-tag { background: #8b5cf615; color: #a78bfa; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; }
+        .screen-actions { padding: 0 14px 14px; display: flex; gap: 6px; }
+        .screen-actions button { padding: 6px 12px; background: #0f0f1a; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: inherit; }
+        .screen-actions button:hover { border-color: #8b5cf6; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; border-bottom: 1px solid #2a2a3e; }
+        .tab { padding: 10px 18px; background: none; border: none; color: #64748b; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit; }
+        .tab.active { color: #a78bfa; border-bottom-color: #7c3aed; }
+        .tab:hover { color: #e2e8f0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Color scheme */
+        .color-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .color-swatch { text-align: center; }
+        .color-swatch .swatch { width: 56px; height: 56px; border-radius: 12px; border: 2px solid #2a2a3e; margin-bottom: 4px; }
+        .color-swatch .hex { font-size: 0.7rem; color: #94a3b8; }
+        .color-swatch .label { font-size: 0.68rem; color: #64748b; }
+        .color-suggestion { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
+        /* Typography */
+        .typo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .typo-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .typo-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Design principles */
+        .principle-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .principle-card h4 { font-size: 0.88rem; color: #a78bfa; margin-bottom: 4px; }
+        .principle-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Improvements */
+        .improve-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .improve-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .improve-card p { color: #94a3b8; font-size: 0.82rem; }
+        .improve-card .impact { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .improve-card .impact.high { background: #8b5cf620; color: #a78bfa; }
+        .improve-card .impact.medium { background: #94a3b815; color: #94a3b8; }
+        .improve-card .impact.low { background: #64748b15; color: #64748b; }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; margin-bottom: 10px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #1a1a2e; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input-row input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input-row input:focus { outline: none; border-color: #8b5cf6; }
+        .qa-input-row button { padding: 12px 20px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .new-btn:hover { border-color: #8b5cf6; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .screens-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🎨 <span>MockupAI</span></h1>
+        <p>Describe your app idea — AI generates wireframe mockups</p>
+    </div>
+    <div class="container">
+        <!-- Input -->
+        <div id="inputSection">
+            <div class="form-group">
+                <label>Describe your app or website idea</label>
+                <textarea id="descInput" placeholder="e.g., A meal planning app where users can set dietary preferences, get weekly meal suggestions, generate shopping lists, and track nutrition. Include social features for sharing recipes."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>App Type</label>
+                    <select id="typeSelect">
+                        <option value="">Auto-detect</option>
+                        <option value="mobile-app">Mobile App</option>
+                        <option value="web-app">Web App</option>
+                        <option value="landing-page">Landing Page</option>
+                        <option value="dashboard">Dashboard</option>
+                        <option value="e-commerce">E-commerce</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Design Style</label>
+                    <select id="styleSelect">
+                        <option value="modern minimal">Modern Minimal</option>
+                        <option value="bold colorful">Bold & Colorful</option>
+                        <option value="corporate professional">Corporate Professional</option>
+                        <option value="playful friendly">Playful & Friendly</option>
+                        <option value="dark sleek">Dark & Sleek</option>
+                        <option value="clean white">Clean White</option>
+                    </select>
+                </div>
+            </div>
+            <button class="generate-btn" onclick="generate()">Generate Wireframes →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Designing your wireframes...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="project-name" id="projectName"></div>
+                <div class="project-type" id="projectType"></div>
+                <div class="flow-text" id="flowText"></div>
+            </div>
+
+            <!-- Screens -->
+            <div class="screens-grid" id="screensGrid"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('design')">Design System</button>
+                <button class="tab" onclick="switchTab('principles')">Design Principles</button>
+                <button class="tab" onclick="switchTab('improvements')">Improvements</button>
+                <button class="tab" onclick="switchTab('qa')">Design Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-design"></div>
+            <div class="tab-content" id="tab-principles"></div>
+            <div class="tab-content" id="tab-improvements"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages"></div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="Ask about design, layout, UX, or implementation..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+
+            <div style="text-align:center"><button class="new-btn" onclick="resetApp()">← New Mockup</button></div>
+        </div>
+    </div>
+
+    <script>
+        let analysisResult = null, qaHistory = [];
+
+        async function generate() {
+            const desc = document.getElementById('descInput').value.trim();
+            if (!desc) return alert('Please describe your app idea');
+
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                const body = {
+                    mode: 'generate',
+                    description: desc,
+                    appType: document.getElementById('typeSelect').value,
+                    style: document.getElementById('styleSelect').value
+                };
+
+                const resp = await fetch('/api/mockupai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse response');
+
+                analysisResult = data;
+                renderResults(data);
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'mockupai', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                alert('Generation failed: ' + err.message);
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function renderResults(d) {
+            document.getElementById('projectName').textContent = d.projectName || 'Your Mockup';
+            document.getElementById('projectType').textContent = (d.projectType || 'web-app').replace('-', ' ').toUpperCase();
+            document.getElementById('flowText').textContent = d.userFlowDiagram || '';
+
+            // Screens
+            const sg = document.getElementById('screensGrid');
+            sg.innerHTML = '';
+            if (d.screens?.length) {
+                d.screens.forEach((s, i) => {
+                    const comps = (s.components || []).map(c => `<span class="comp-tag">${c}</span>`).join('');
+                    let svgHtml = '';
+                    if (s.svg) {
+                        try {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(s.svg, 'image/svg+xml');
+                            const svgEl = doc.querySelector('svg');
+                            if (svgEl && !doc.querySelector('parsererror')) {
+                                svgHtml = svgEl.outerHTML;
+                            }
+                        } catch (e) {}
+                    }
+                    sg.innerHTML += `<div class="screen-card"><div class="screen-preview">${svgHtml || '<div style="color:#6c757d;font-size:0.8rem">Wireframe preview</div>'}</div><div class="screen-info"><h3>${s.name}</h3><div class="desc">${s.description || ''}</div><div class="components">${comps}</div></div><div class="screen-actions"><button onclick="copySVG(${i})">Copy SVG</button><button onclick="downloadSVG(${i})">Download</button></div></div>`;
+                });
+            }
+
+            // Design system (color + typography)
+            const td = document.getElementById('tab-design');
+            td.innerHTML = '';
+            if (d.colorScheme) {
+                const cs = d.colorScheme;
+                td.innerHTML += '<h3 style="margin-bottom:12px;font-size:0.95rem">Color Scheme</h3><div class="color-grid">';
+                for (const [key, val] of Object.entries(cs)) {
+                    if (key === 'suggestion') continue;
+                    td.innerHTML += `<div class="color-swatch"><div class="swatch" style="background:${val}"></div><div class="hex">${val}</div><div class="label">${key}</div></div>`;
+                }
+                td.innerHTML += '</div>';
+                if (cs.suggestion) td.innerHTML += `<div class="color-suggestion">${cs.suggestion}</div>`;
+            }
+            if (d.typography) {
+                td.innerHTML += '<h3 style="margin:20px 0 10px;font-size:0.95rem">Typography</h3>';
+                td.innerHTML += `<div class="typo-card"><h4>Headings: ${d.typography.headingFont || ''}</h4><p>Body: ${d.typography.bodyFont || ''}</p></div>`;
+                if (d.typography.reasoning) td.innerHTML += `<div class="typo-card"><p>${d.typography.reasoning}</p></div>`;
+            }
+
+            // Design principles
+            const tp = document.getElementById('tab-principles');
+            tp.innerHTML = '';
+            if (d.designPrinciples?.length) {
+                d.designPrinciples.forEach(p => {
+                    tp.innerHTML += `<div class="principle-card"><h4>${p.principle}</h4><p>${p.application || ''}</p></div>`;
+                });
+            }
+
+            // Improvements
+            const ti = document.getElementById('tab-improvements');
+            ti.innerHTML = '';
+            if (d.improvementSuggestions?.length) {
+                d.improvementSuggestions.forEach(s => {
+                    ti.innerHTML += `<div class="improve-card"><h4>${s.area}</h4><p>${s.suggestion || ''}</p><span class="impact ${s.impact || 'medium'}">${(s.impact || 'medium').toUpperCase()} IMPACT</span></div>`;
+                });
+            }
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function copySVG(idx) {
+            const svg = analysisResult?.screens?.[idx]?.svg;
+            if (svg) { navigator.clipboard.writeText(svg); alert('SVG copied to clipboard!'); }
+        }
+
+        function downloadSVG(idx) {
+            const screen = analysisResult?.screens?.[idx];
+            if (!screen?.svg) return;
+            const blob = new Blob([screen.svg], { type: 'image/svg+xml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${(screen.name || 'wireframe').toLowerCase().replace(/\s+/g, '-')}.svg`;
+            a.click();
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/mockupai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(analysisResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').innerHTML = data.answer || 'Sorry, could not answer that.';
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'mockupai', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = 'Error: ' + err.message;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetApp() {
+            analysisResult = null; qaHistory = [];
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('descInput').value = '';
+            document.getElementById('qaMessages').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
