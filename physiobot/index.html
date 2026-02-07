@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysioBot AI — Free AI Physical Therapy & Rehab Plan Generator</title>
+    <meta name="description" content="Describe your pain or injury — AI creates a phased rehabilitation plan with exercises, sets, reps, daily routines, and recovery timeline. 100% free.">
+    <meta property="og:title" content="PhysioBot AI — Free AI Rehab Plan Generator">
+    <meta property="og:description" content="Describe your injury, select body area and pain level — get a progressive rehab plan with exercises, routines, and recovery tips.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/physiobot/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/physiobot/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #0ea5e915; border: 1px solid #0ea5e930; color: #0ea5e9; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #38bdf8, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn {
+            display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #0ea5e930; }
+
+        .disclaimer { max-width: 700px; margin: 0 auto; padding: 0 24px 20px; }
+        .disclaimer p { background: #f59e0b10; border: 1px solid #f59e0b25; border-radius: 10px; padding: 10px 16px; font-size: 0.75rem; color: #fbbf24; text-align: center; line-height: 1.5; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #0ea5e915; border: 1px solid #0ea5e930; color: #0ea5e9; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #0ea5e9; font-size: 1.5rem; margin: 16px 0; }
+        .demo-assessment { text-align: center; background: #f59e0b10; border: 1px solid #f59e0b25; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .demo-assessment .level { font-size: 1rem; font-weight: 700; color: #fbbf24; }
+        .demo-assessment .desc { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
+
+        .demo-exercise { background: #0f0f1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+        .demo-exercise .name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+        .demo-exercise .detail { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; }
+        .demo-exercise .stats { font-size: 0.75rem; color: #38bdf8; font-weight: 600; margin-top: 6px; }
+
+        .areas { max-width: 900px; margin: 0 auto; padding: 40px 24px; text-align: center; }
+        .areas h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .area-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .area-tag { background: #1a1a2e; border: 1px solid #2a2a3e; padding: 10px 18px; border-radius: 10px; font-size: 0.85rem; color: #94a3b8; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px;
+            text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;
+        }
+        .tool-card:hover { border-color: #0ea5e9; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #0ea5e9; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.8rem; }
+            .features, .tools-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Rehab Plan</span> Generator</h1>
+        <p>Describe your pain or injury — AI creates a phased rehabilitation plan with specific exercises, sets, reps, daily routines, do's and don'ts, and a recovery timeline.</p>
+        <a href="app.html" class="cta-btn">Build My Rehab Plan →</a>
+    </div>
+
+    <div class="disclaimer">
+        <p>⚠️ Not a substitute for professional medical or physical therapy care. Consult a healthcare provider before starting any rehab program.</p>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">📋</div>
+            <h3>Phased Rehab Plan</h3>
+            <p>Progressive phases from pain management to full recovery — with specific exercises for each stage.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🏋️</div>
+            <h3>Detailed Exercises</h3>
+            <p>Step-by-step instructions with sets, reps, hold times, frequency, and form tips for every exercise.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">📅</div>
+            <h3>Daily Routine</h3>
+            <p>Morning, afternoon, and evening activities — plus ice vs heat guidance and do's and don'ts.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Knee pain after running, moderate severity</p>
+        <div class="demo-card">
+            <div class="demo-tags">
+                <div class="demo-tag">🦵 Knee</div>
+                <div class="demo-tag">😣 Pain Level 6/10</div>
+                <div class="demo-tag">📅 1-2 Weeks</div>
+                <div class="demo-tag">🏃 Active Runner</div>
+            </div>
+            <div class="demo-arrow">↓</div>
+            <div class="demo-assessment">
+                <div class="level">⚠️ Moderate — Likely Runner's Knee (Patellofemoral Syndrome)</div>
+                <div class="desc">The lateral knee pain aggravated by stairs and running suggests IT band involvement. Recovery expected in 3-6 weeks with proper rehabilitation.</div>
+            </div>
+            <div class="demo-exercise">
+                <div class="name">Quad Sets</div>
+                <div class="detail">Sit with leg extended. Tighten the quad by pressing the back of your knee into the floor. Focus on engaging the VMO (inner quad).</div>
+                <div class="stats">3 sets × 10 reps · Hold 5 sec · 2x daily</div>
+            </div>
+            <div class="demo-exercise">
+                <div class="name">IT Band Foam Rolling</div>
+                <div class="detail">Lie on your side with the foam roller under your outer thigh. Roll slowly from hip to just above the knee. Pause on tender spots.</div>
+                <div class="stats">3 passes · 30 sec each · After activity</div>
+            </div>
+            <div class="demo-exercise">
+                <div class="name">Clamshells</div>
+                <div class="detail">Lie on your side with knees bent 45°. Keep feet together and lift your top knee. Strengthens hip abductors to reduce knee stress.</div>
+                <div class="stats">3 sets × 15 reps · Each side · Daily</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="areas">
+        <h2>Every Body Area Covered</h2>
+        <div class="area-tags">
+            <div class="area-tag">🦵 Knee</div>
+            <div class="area-tag">🔙 Lower Back</div>
+            <div class="area-tag">💪 Shoulder</div>
+            <div class="area-tag">🦶 Ankle</div>
+            <div class="area-tag">🤚 Wrist</div>
+            <div class="area-tag">🦴 Hip</div>
+            <div class="area-tag">🏋️ Neck</div>
+            <div class="area-tag">🦵 Hamstring</div>
+            <div class="area-tag">💪 Elbow</div>
+            <div class="area-tag">🔙 Upper Back</div>
+            <div class="area-tag">+ Any area</div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/gymplan/" class="tool-card">
+                <h3>💪 GymPlan AI</h3>
+                <p>Get a personalized workout program matched to your goals, experience, and equipment.</p>
+            </a>
+            <a href="/sleepcoach/" class="tool-card">
+                <h3>😴 SleepCoach AI</h3>
+                <p>Analyze your sleep habits and get a personalized protocol with routines and a 4-week plan.</p>
+            </a>
+            <a href="/mealplanner/" class="tool-card">
+                <h3>🥗 MealPlanner</h3>
+                <p>Get a full weekly meal plan with recipes, macros, and grocery list for any diet.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>PhysioBot AI is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhysioBot — AI Physical Therapy & Rehab Plan</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .header { padding: 20px 24px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #38bdf8, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { border-color: #0ea5e9; color: #e2e8f0; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+        .form-label { font-size: 0.8rem; font-weight: 600; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+        .form-section { margin-bottom: 20px; }
+
+        .text-area {
+            width: 100%; padding: 14px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; min-height: 90px; line-height: 1.6;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus { outline: none; border-color: #0ea5e9; }
+        .text-area::placeholder { color: #4a5568; }
+
+        .text-input {
+            width: 100%; padding: 10px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+        }
+        .text-input:focus { outline: none; border-color: #0ea5e9; }
+        .text-input::placeholder { color: #4a5568; }
+
+        .options-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .option-group select, .option-group input {
+            width: 100%; padding: 10px 12px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .option-group select:focus, .option-group input:focus { outline: none; border-color: #0ea5e9; }
+
+        /* Body area chips */
+        .body-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .body-chip {
+            padding: 8px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 20px;
+            font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .body-chip:hover { border-color: #0ea5e9; color: #e2e8f0; }
+        .body-chip.active { background: #0ea5e915; border-color: #0ea5e9; color: #38bdf8; font-weight: 600; }
+
+        /* Pain slider */
+        .pain-slider-wrap { margin-bottom: 20px; }
+        .pain-slider { width: 100%; -webkit-appearance: none; height: 6px; border-radius: 3px; background: linear-gradient(to right, #10b981, #f59e0b, #ef4444); outline: none; }
+        .pain-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid #0ea5e9; cursor: pointer; }
+        .pain-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7rem; color: #64748b; }
+        .pain-value { text-align: center; font-size: 1.5rem; font-weight: 800; color: #38bdf8; margin-bottom: 8px; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #fff;
+            font-weight: 700; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #0ea5e930; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .disclaimer-bar {
+            background: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 10px; padding: 10px 16px;
+            font-size: 0.75rem; color: #fbbf24; margin-bottom: 20px; line-height: 1.5;
+        }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #0ea5e9; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        /* Assessment banner */
+        .assessment-banner { border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+        .assessment-banner.mild { background: #10b98115; border: 1px solid #10b98130; }
+        .assessment-banner.moderate { background: #f59e0b15; border: 1px solid #f59e0b30; }
+        .assessment-banner.severe { background: #ef444415; border: 1px solid #ef444430; }
+        .severity-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .severity-label.mild { color: #34d399; }
+        .severity-label.moderate { color: #fbbf24; }
+        .severity-label.severe { color: #f87171; }
+        .assessment-text { font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 8px; }
+        .doctor-note { font-size: 0.8rem; color: #fbbf24; font-weight: 600; margin-top: 8px; }
+        .timeline { font-size: 0.85rem; color: #38bdf8; font-weight: 600; margin-top: 8px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #2a2a3e; overflow-x: auto; }
+        .tab {
+            padding: 10px 18px; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer;
+            border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .tab:hover { color: #94a3b8; }
+        .tab.active { color: #38bdf8; border-bottom-color: #0ea5e9; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Phase section */
+        .phase-section { margin-bottom: 28px; }
+        .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+        .phase-num { width: 32px; height: 32px; background: #0ea5e920; color: #38bdf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+        .phase-name { font-size: 1.05rem; font-weight: 700; }
+        .phase-meta { font-size: 0.8rem; color: #64748b; margin-left: 44px; margin-bottom: 16px; }
+
+        /* Exercise cards */
+        .exercise-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .exercise-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .exercise-name { font-weight: 700; font-size: 0.95rem; }
+        .exercise-target { font-size: 0.7rem; color: #0ea5e9; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .exercise-instructions { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 10px; }
+        .exercise-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+        .exercise-stat { font-size: 0.75rem; }
+        .exercise-stat .label { color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .exercise-stat .value { color: #38bdf8; font-weight: 700; }
+        .exercise-tip { font-size: 0.8rem; color: #fbbf24; margin-top: 8px; padding-top: 8px; border-top: 1px solid #2a2a3e; }
+
+        /* Do/Don't */
+        .do-dont-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .do-card, .dont-card { border-radius: 12px; padding: 16px; }
+        .do-card { background: #10b98110; border: 1px solid #10b98125; }
+        .dont-card { background: #ef444410; border: 1px solid #ef444420; }
+        .do-card h4 { color: #34d399; font-size: 0.85rem; margin-bottom: 10px; }
+        .dont-card h4 { color: #f87171; font-size: 0.85rem; margin-bottom: 10px; }
+        .do-card li, .dont-card li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; padding: 3px 0; list-style: none; padding-left: 16px; position: relative; }
+        .do-card li::before { content: '✓'; position: absolute; left: 0; color: #34d399; font-weight: 700; }
+        .dont-card li::before { content: '✗'; position: absolute; left: 0; color: #f87171; font-weight: 700; }
+
+        /* Routine */
+        .routine-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .routine-card h4 { font-size: 0.85rem; color: #38bdf8; margin-bottom: 8px; }
+        .routine-card li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; padding: 3px 0; list-style: none; padding-left: 16px; position: relative; }
+        .routine-card li::before { content: '→'; position: absolute; left: 0; color: #0ea5e9; }
+
+        /* Info cards */
+        .info-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .info-card h4 { font-size: 0.85rem; color: #38bdf8; margin-bottom: 8px; }
+        .info-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+
+        .warning-item {
+            background: #ef444410; border: 1px solid #ef444420; border-radius: 10px; padding: 10px 16px;
+            font-size: 0.85rem; color: #fca5a5; margin-bottom: 8px; line-height: 1.5;
+        }
+        .progress-item {
+            background: #10b98110; border: 1px solid #10b98125; border-radius: 10px; padding: 10px 16px;
+            font-size: 0.85rem; color: #6ee7b7; margin-bottom: 8px; line-height: 1.5;
+        }
+
+        /* Q&A */
+        .qa-container { max-width: 680px; margin: 0 auto; }
+        .qa-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; max-height: 400px; overflow-y: auto; padding: 4px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+        .qa-msg.user { background: #0ea5e920; border: 1px solid #0ea5e930; align-self: flex-end; color: #e2e8f0; }
+        .qa-msg.ai { background: #1a1a2e; border: 1px solid #2a2a3e; align-self: flex-start; color: #cbd5e1; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .qa-input:focus { outline: none; border-color: #0ea5e9; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error { display: none; text-align: center; padding: 40px; }
+        .error.active { display: block; }
+        .error p { color: #f87171; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: 1fr; }
+            .do-dont-grid { grid-template-columns: 1fr; }
+            .tabs { gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PhysioBot <span>AI</span></h1>
+        <button class="header-btn" onclick="resetAll()">+ New Plan</button>
+    </div>
+
+    <div class="container">
+        <!-- Input Form -->
+        <div id="inputForm">
+            <div class="disclaimer-bar">
+                ⚠️ This tool provides general exercise guidance only — it is NOT a substitute for professional medical or physical therapy care. Consult a healthcare provider before starting any rehab program.
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Body Area</label>
+                <div class="body-grid">
+                    <div class="body-chip" data-area="neck">Neck</div>
+                    <div class="body-chip" data-area="shoulder">Shoulder</div>
+                    <div class="body-chip active" data-area="lower back">Lower Back</div>
+                    <div class="body-chip" data-area="upper back">Upper Back</div>
+                    <div class="body-chip" data-area="knee">Knee</div>
+                    <div class="body-chip" data-area="hip">Hip</div>
+                    <div class="body-chip" data-area="ankle/foot">Ankle/Foot</div>
+                    <div class="body-chip" data-area="wrist/hand">Wrist/Hand</div>
+                    <div class="body-chip" data-area="elbow">Elbow</div>
+                    <div class="body-chip" data-area="hamstring">Hamstring</div>
+                    <div class="body-chip" data-area="calf">Calf</div>
+                    <div class="body-chip" data-area="groin">Groin</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Describe your pain or injury</label>
+                <textarea class="text-area" id="injuryInput" placeholder="Tell us what's going on... e.g. 'Sharp pain in my right knee when going down stairs. Started after a long run last week. Slight swelling on the outside of the knee. No popping or locking.'"></textarea>
+            </div>
+
+            <div class="pain-slider-wrap">
+                <label class="form-label">Pain Level</label>
+                <div class="pain-value" id="painValue">5</div>
+                <input type="range" class="pain-slider" id="painSlider" min="1" max="10" value="5" oninput="document.getElementById('painValue').textContent=this.value">
+                <div class="pain-labels"><span>1 — Mild</span><span>5 — Moderate</span><span>10 — Severe</span></div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label class="form-label">How Long?</label>
+                    <select id="durationSelect">
+                        <option value="just happened">Just happened</option>
+                        <option value="a few days">Few days</option>
+                        <option value="1-2 weeks" selected>1-2 weeks</option>
+                        <option value="2-4 weeks">2-4 weeks</option>
+                        <option value="1-3 months">1-3 months</option>
+                        <option value="3+ months (chronic)">3+ months</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Activity Level</label>
+                    <select id="activitySelect">
+                        <option value="sedentary">Sedentary</option>
+                        <option value="lightly active">Lightly Active</option>
+                        <option value="moderately active" selected>Moderately Active</option>
+                        <option value="very active / athlete">Very Active</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Age Range</label>
+                    <select id="ageSelect">
+                        <option value="18-25">18-25</option>
+                        <option value="26-35">26-35</option>
+                        <option value="36-45" selected>36-45</option>
+                        <option value="46-55">46-55</option>
+                        <option value="56-65">56-65</option>
+                        <option value="65+">65+</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Recovery Goals (optional)</label>
+                <input class="text-input" id="goalsInput" placeholder="e.g. 'Get back to running 5K, play soccer again, sit at desk without pain'">
+            </div>
+
+            <button class="generate-btn" onclick="generate()">Build My Rehab Plan →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Building your personalized rehab plan...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error" id="errorView">
+            <p id="errorMsg">Something went wrong.</p>
+            <button class="generate-btn" style="max-width:300px;margin:0 auto;" onclick="resetAll()">Try Again</button>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="resultsView">
+            <div class="assessment-banner" id="assessmentBanner">
+                <div class="severity-label" id="severityLabel"></div>
+                <div class="assessment-text" id="assessmentText"></div>
+                <div class="doctor-note" id="doctorNote"></div>
+                <div class="timeline" id="timeline"></div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="exercises">Exercises</div>
+                <div class="tab" data-tab="routine">Daily Routine</div>
+                <div class="tab" data-tab="dodont">Do / Don't</div>
+                <div class="tab" data-tab="recovery">Recovery</div>
+                <div class="tab" data-tab="qa">Ask PT</div>
+            </div>
+
+            <div class="tab-content active" id="tab-exercises">
+                <div id="phasesList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-routine">
+                <div id="routineContent"></div>
+                <div class="info-card" id="iceHeatCard" style="margin-top:16px;"></div>
+            </div>
+
+            <div class="tab-content" id="tab-dodont">
+                <div class="do-dont-grid" id="doDontGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tab-recovery">
+                <h4 style="font-size:0.9rem;color:#38bdf8;margin-bottom:12px;">Signs You're Ready to Progress</h4>
+                <div id="progressList"></div>
+                <h4 style="font-size:0.9rem;color:#f87171;margin:20px 0 12px;">Stop & See a Doctor If...</h4>
+                <div id="warningList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">Ask about your rehab — exercise modifications, pain management, or when to progress.</p>
+                    <div class="qa-messages" id="qaMessages"></div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="Can I still go to the gym while doing this plan?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSend" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="disclaimer-bar" style="margin-top:24px;">
+                ⚠️ This is AI-generated guidance, not medical advice. Consult a licensed physical therapist or physician before starting any rehabilitation program.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+
+        // Body area chips
+        document.querySelectorAll('.body-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.body-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function showView(view) {
+            document.getElementById('inputForm').style.display = view === 'input' ? 'block' : 'none';
+            document.getElementById('loadingView').classList.toggle('active', view === 'loading');
+            document.getElementById('errorView').classList.toggle('active', view === 'error');
+            document.getElementById('resultsView').classList.toggle('active', view === 'results');
+        }
+
+        async function generate() {
+            const injury = document.getElementById('injuryInput').value.trim();
+            if (!injury) { document.getElementById('injuryInput').focus(); return; }
+
+            const bodyArea = document.querySelector('.body-chip.active')?.dataset.area || 'not specified';
+            const painLevel = document.getElementById('painSlider').value;
+            const duration = document.getElementById('durationSelect').value;
+            const activityLevel = document.getElementById('activitySelect').value;
+            const age = document.getElementById('ageSelect').value;
+            const goals = document.getElementById('goalsInput').value.trim();
+
+            showView('loading');
+
+            try {
+                const resp = await fetch('/api/physiobot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', injury, bodyArea, painLevel, duration, activityLevel, age, goals: goals || undefined })
+                });
+                const data = await resp.json();
+
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                resultData = data;
+                renderResults(data);
+                showView('results');
+                chargeCredits('generate');
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Failed to generate plan.';
+                showView('error');
+            }
+        }
+
+        function renderResults(data) {
+            // Assessment banner
+            const sev = (data.severity || 'moderate').toLowerCase();
+            const banner = document.getElementById('assessmentBanner');
+            banner.className = 'assessment-banner ' + sev;
+            const sevLabel = document.getElementById('severityLabel');
+            sevLabel.textContent = sev.toUpperCase() + ' — ' + (data.severityNote || '');
+            sevLabel.className = 'severity-label ' + sev;
+            document.getElementById('assessmentText').textContent = data.assessment || '';
+            document.getElementById('doctorNote').textContent = data.seeDoctor ? ('🩺 ' + (data.doctorNote || 'Consider seeing a doctor.')) : '';
+            document.getElementById('timeline').textContent = data.timelineEstimate ? ('⏱ Expected recovery: ' + data.timelineEstimate) : '';
+
+            // Phases & exercises
+            const phasesList = document.getElementById('phasesList');
+            phasesList.innerHTML = '';
+            if (data.phases?.length) {
+                data.phases.forEach(phase => {
+                    let html = `<div class="phase-section">
+                        <div class="phase-header"><div class="phase-num">${phase.phase}</div><div class="phase-name">${esc(phase.name)}</div></div>
+                        <div class="phase-meta">${esc(phase.duration)} — ${esc(phase.goal)}</div>`;
+                    if (phase.exercises?.length) {
+                        phase.exercises.forEach(ex => {
+                            html += `<div class="exercise-card">
+                                <div class="exercise-top">
+                                    <div class="exercise-name">${esc(ex.name)}</div>
+                                    <div class="exercise-target">${esc(ex.targetArea)}</div>
+                                </div>
+                                <div class="exercise-instructions">${esc(ex.instructions)}</div>
+                                <div class="exercise-stats">
+                                    ${ex.sets ? `<div class="exercise-stat"><div class="label">Sets</div><div class="value">${esc(ex.sets)}</div></div>` : ''}
+                                    ${ex.reps ? `<div class="exercise-stat"><div class="label">Reps</div><div class="value">${esc(ex.reps)}</div></div>` : ''}
+                                    ${ex.holdTime ? `<div class="exercise-stat"><div class="label">Hold</div><div class="value">${esc(ex.holdTime)}</div></div>` : ''}
+                                    ${ex.frequency ? `<div class="exercise-stat"><div class="label">Frequency</div><div class="value">${esc(ex.frequency)}</div></div>` : ''}
+                                </div>
+                                ${ex.tip ? `<div class="exercise-tip">💡 ${esc(ex.tip)}</div>` : ''}
+                            </div>`;
+                        });
+                    }
+                    html += '</div>';
+                    phasesList.innerHTML += html;
+                });
+            }
+
+            // Daily routine
+            const routineContent = document.getElementById('routineContent');
+            routineContent.innerHTML = '';
+            if (data.dailyRoutine) {
+                ['morning', 'afternoon', 'evening'].forEach(time => {
+                    if (data.dailyRoutine[time]?.length) {
+                        let html = `<div class="routine-card"><h4>${time.charAt(0).toUpperCase() + time.slice(1)}</h4><ul>`;
+                        data.dailyRoutine[time].forEach(item => html += `<li>${esc(item)}</li>`);
+                        html += '</ul></div>';
+                        routineContent.innerHTML += html;
+                    }
+                });
+            }
+
+            // Ice/heat
+            const iceHeatCard = document.getElementById('iceHeatCard');
+            iceHeatCard.innerHTML = data.iceOrHeat ? `<h4>🧊 Ice vs Heat</h4><p>${esc(data.iceOrHeat)}</p>` : '';
+
+            // Do/Don't
+            const doDontGrid = document.getElementById('doDontGrid');
+            doDontGrid.innerHTML = '';
+            let doHtml = '<div class="do-card"><h4>✅ Do This</h4><ul>';
+            if (data.doList?.length) data.doList.forEach(d => doHtml += `<li>${esc(d)}</li>`);
+            doHtml += '</ul></div>';
+            let dontHtml = '<div class="dont-card"><h4>❌ Don\'t Do This</h4><ul>';
+            if (data.dontList?.length) data.dontList.forEach(d => dontHtml += `<li>${esc(d)}</li>`);
+            dontHtml += '</ul></div>';
+            doDontGrid.innerHTML = doHtml + dontHtml;
+
+            // Recovery
+            const progressList = document.getElementById('progressList');
+            progressList.innerHTML = '';
+            if (data.progressionSigns?.length) {
+                data.progressionSigns.forEach(s => progressList.innerHTML += `<div class="progress-item">✓ ${esc(s)}</div>`);
+            }
+            const warningList = document.getElementById('warningList');
+            warningList.innerHTML = '';
+            if (data.warningSignals?.length) {
+                data.warningSignals.forEach(w => warningList.innerHTML += `<div class="warning-item">🚩 ${esc(w)}</div>`);
+            }
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            document.getElementById('qaSend').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaTyping" style="color:#64748b;">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/physiobot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(resultData), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaTyping')?.remove();
+
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: answer });
+
+                msgs.innerHTML += `<div class="qa-msg ai">${fmtMd(answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+                chargeCredits('qa');
+            } catch (err) {
+                document.getElementById('qaTyping')?.remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#f87171;">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSend').disabled = false;
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function fmtMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code style="background:#0f0f1a;padding:2px 6px;border-radius:4px;font-size:0.85em;">$1</code>').replace(/\n/g,'<br>'); }
+
+        function resetAll() {
+            resultData = null;
+            qaHistory = [];
+            document.getElementById('qaMessages').innerHTML = '';
+            showView('input');
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'physiobot', feature, chargeId: Date.now().toString(), amount: 5 }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
