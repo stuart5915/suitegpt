@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsletterAI — AI Email Newsletter Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .header { padding: 20px 24px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #2dd4bf, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { border-color: #14b8a6; color: #e2e8f0; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+        .form-label { font-size: 0.8rem; font-weight: 600; color: #14b8a6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+        .form-section { margin-bottom: 20px; }
+
+        .text-area {
+            width: 100%; padding: 14px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; min-height: 90px; line-height: 1.6;
+        }
+        .text-area:focus { outline: none; border-color: #14b8a6; }
+        .text-area::placeholder { color: #4a5568; }
+
+        .text-input {
+            width: 100%; padding: 10px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif;
+        }
+        .text-input:focus { outline: none; border-color: #14b8a6; }
+        .text-input::placeholder { color: #4a5568; }
+
+        .options-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .option-group select {
+            width: 100%; padding: 10px 12px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif;
+        }
+        .option-group select:focus { outline: none; border-color: #14b8a6; }
+
+        .format-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .format-chip {
+            padding: 8px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 20px;
+            font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .format-chip:hover { border-color: #14b8a6; }
+        .format-chip.active { background: #14b8a615; border-color: #14b8a6; color: #2dd4bf; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #2dd4bf, #14b8a6); color: #fff;
+            font-weight: 700; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #14b8a630; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #14b8a6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #2a2a3e; overflow-x: auto; }
+        .tab { padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tab:hover { color: #94a3b8; }
+        .tab.active { color: #2dd4bf; border-bottom-color: #14b8a6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Subject line */
+        .subject-bar { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+        .subject-label { font-size: 0.7rem; color: #14b8a6; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
+        .subject-main { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .subject-preview { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; }
+        .subject-alts { display: flex; flex-direction: column; gap: 4px; }
+        .subject-alt { font-size: 0.8rem; color: #94a3b8; padding: 6px 12px; background: #0f0f1a; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .subject-alt:hover { color: #2dd4bf; }
+
+        /* Email preview */
+        .email-preview {
+            background: #fff; color: #1a1a2e; border-radius: 14px; padding: 32px; max-width: 640px; margin: 0 auto;
+            font-size: 0.9rem; line-height: 1.8;
+        }
+        .email-greeting { font-size: 0.95rem; margin-bottom: 16px; }
+        .email-hook { font-size: 0.95rem; margin-bottom: 20px; font-weight: 500; }
+        .email-section { margin-bottom: 24px; }
+        .email-section h3 { font-size: 1.05rem; color: #14b8a6; margin-bottom: 8px; font-weight: 700; }
+        .email-section p { color: #334155; margin-bottom: 8px; }
+        .email-callout {
+            background: #f0fdfa; border-left: 3px solid #14b8a6; padding: 12px 16px; margin: 12px 0;
+            font-size: 0.9rem; color: #0f766e; font-weight: 600; border-radius: 0 8px 8px 0;
+        }
+        .email-cta-wrap { text-align: center; margin: 24px 0; }
+        .email-cta-context { font-size: 0.85rem; color: #475569; margin-bottom: 12px; }
+        .email-cta-btn {
+            display: inline-block; padding: 14px 32px; background: #14b8a6; color: #fff;
+            font-weight: 700; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+        }
+        .email-closing { font-size: 0.9rem; color: #475569; margin-top: 20px; }
+        .email-ps { font-size: 0.85rem; color: #64748b; margin-top: 16px; font-style: italic; }
+        .copy-email-btn {
+            display: block; margin: 16px auto 0; padding: 10px 24px; background: #1a1a2e; border: 1px solid #2a2a3e;
+            color: #94a3b8; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+        }
+        .copy-email-btn:hover { border-color: #14b8a6; color: #2dd4bf; }
+
+        /* Tips */
+        .tip-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .tip-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+        .next-ideas { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+        .next-idea { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 16px; font-size: 0.85rem; color: #cbd5e1; }
+        .next-idea span { color: #14b8a6; font-weight: 700; margin-right: 8px; }
+
+        /* Metrics */
+        .metrics-row { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+        .metric { text-align: center; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 20px; }
+        .metric .val { font-size: 1.2rem; font-weight: 800; color: #2dd4bf; }
+        .metric .lbl { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Q&A */
+        .qa-container { max-width: 680px; margin: 0 auto; }
+        .qa-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; max-height: 400px; overflow-y: auto; padding: 4px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+        .qa-msg.user { background: #14b8a620; border: 1px solid #14b8a630; align-self: flex-end; color: #e2e8f0; }
+        .qa-msg.ai { background: #1a1a2e; border: 1px solid #2a2a3e; align-self: flex-start; color: #cbd5e1; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .qa-input:focus { outline: none; border-color: #14b8a6; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #2dd4bf, #14b8a6); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error { display: none; text-align: center; padding: 40px; }
+        .error.active { display: block; }
+        .error p { color: #f87171; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: 1fr; }
+            .email-preview { padding: 20px; }
+            .metrics-row { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Newsletter<span>AI</span></h1>
+        <button class="header-btn" onclick="resetAll()">+ New Newsletter</button>
+    </div>
+
+    <div class="container">
+        <div id="inputForm">
+            <div class="form-section">
+                <label class="form-label">Newsletter Topic / Theme</label>
+                <textarea class="text-area" id="topicInput" placeholder="What's this newsletter about? e.g. '5 AI tools that will save small business owners 10+ hours per week — include real examples and how to get started with each one'"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Newsletter Format</label>
+                <div class="format-grid">
+                    <div class="format-chip active" data-format="educational / value-driven">Educational</div>
+                    <div class="format-chip" data-format="curated links and resources">Curated Links</div>
+                    <div class="format-chip" data-format="industry news roundup">News Roundup</div>
+                    <div class="format-chip" data-format="personal story + lesson">Story + Lesson</div>
+                    <div class="format-chip" data-format="how-to / tutorial">How-To Guide</div>
+                    <div class="format-chip" data-format="product update / announcement">Product Update</div>
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label class="form-label">Tone</label>
+                    <select id="toneSelect">
+                        <option value="professional but friendly">Professional & Friendly</option>
+                        <option value="casual and conversational">Casual</option>
+                        <option value="authoritative and expert">Authoritative</option>
+                        <option value="witty and entertaining">Witty</option>
+                        <option value="warm and personal">Warm & Personal</option>
+                        <option value="urgent and action-driven">Urgent</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Frequency</label>
+                    <select id="frequencySelect">
+                        <option value="weekly" selected>Weekly</option>
+                        <option value="daily">Daily</option>
+                        <option value="bi-weekly">Bi-Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Audience</label>
+                    <input class="text-input" id="audienceInput" placeholder="e.g. 'SaaS founders'">
+                </div>
+            </div>
+
+            <div class="options-row" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-section" style="margin-bottom:0;">
+                    <label class="form-label">Brand / Sender Name (optional)</label>
+                    <input class="text-input" id="brandInput" placeholder="e.g. 'The Growth Letter'">
+                </div>
+                <div class="form-section" style="margin-bottom:0;">
+                    <label class="form-label">Call-to-Action (optional)</label>
+                    <input class="text-input" id="ctaInput" placeholder="e.g. 'Sign up for our course'">
+                </div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <button class="generate-btn" onclick="generate()">Generate Newsletter →</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Writing your newsletter...</p>
+        </div>
+
+        <div class="error" id="errorView">
+            <p id="errorMsg">Something went wrong.</p>
+            <button class="generate-btn" style="max-width:300px;margin:0 auto;" onclick="resetAll()">Try Again</button>
+        </div>
+
+        <div class="results" id="resultsView">
+            <div class="subject-bar" id="subjectBar"></div>
+
+            <div class="metrics-row" id="metricsRow"></div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="preview">Email Preview</div>
+                <div class="tab" data-tab="tips">Sending Tips</div>
+                <div class="tab" data-tab="qa">Email Strategist</div>
+            </div>
+
+            <div class="tab-content active" id="tab-preview">
+                <div class="email-preview" id="emailPreview"></div>
+                <button class="copy-email-btn" onclick="copyEmail()">📋 Copy Full Newsletter</button>
+            </div>
+
+            <div class="tab-content" id="tab-tips">
+                <div id="tipsContent"></div>
+                <h4 style="font-size:0.9rem;color:#2dd4bf;margin:20px 0 12px;">Next Issue Ideas</h4>
+                <div class="next-ideas" id="nextIdeas"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">Ask about your newsletter — improve copy, strategy, list growth, or deliverability.</p>
+                    <div class="qa-messages" id="qaMessages"></div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="How can I increase my open rate?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSend" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let nlData = null;
+        let qaHistory = [];
+
+        document.querySelectorAll('.format-chip').forEach(c => {
+            c.addEventListener('click', () => {
+                document.querySelectorAll('.format-chip').forEach(x => x.classList.remove('active'));
+                c.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function showView(v) {
+            document.getElementById('inputForm').style.display = v === 'input' ? 'block' : 'none';
+            document.getElementById('loadingView').classList.toggle('active', v === 'loading');
+            document.getElementById('errorView').classList.toggle('active', v === 'error');
+            document.getElementById('resultsView').classList.toggle('active', v === 'results');
+        }
+
+        async function generate() {
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) { document.getElementById('topicInput').focus(); return; }
+
+            const format = document.querySelector('.format-chip.active')?.dataset.format || 'educational';
+            const tone = document.getElementById('toneSelect').value;
+            const frequency = document.getElementById('frequencySelect').value;
+            const audience = document.getElementById('audienceInput').value.trim();
+            const brandName = document.getElementById('brandInput').value.trim();
+            const cta = document.getElementById('ctaInput').value.trim();
+
+            showView('loading');
+
+            try {
+                const resp = await fetch('/api/newsletter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', topic, format, tone, frequency, audience: audience || undefined, brandName: brandName || undefined, cta: cta || undefined })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected format');
+
+                nlData = data;
+                renderResults(data);
+                showView('results');
+                chargeCredits('generate');
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Failed to generate newsletter.';
+                showView('error');
+            }
+        }
+
+        function renderResults(d) {
+            // Subject line
+            const sb = document.getElementById('subjectBar');
+            sb.innerHTML = `<div class="subject-label">Subject Line</div>
+                <div class="subject-main">${esc(d.subjectLine)}</div>
+                <div class="subject-preview">${esc(d.previewText)}</div>
+                ${d.subjectAlts?.length ? '<div class="subject-label" style="margin-top:8px;">Alternatives</div><div class="subject-alts">' + d.subjectAlts.map(a => `<div class="subject-alt" onclick="navigator.clipboard.writeText('${esc(a).replace(/'/g,"\\'")}');this.style.color='#2dd4bf'">${esc(a)}</div>`).join('') + '</div>' : ''}`;
+
+            // Metrics
+            const mr = document.getElementById('metricsRow');
+            mr.innerHTML = '';
+            if (d.metrics) {
+                if (d.metrics.wordCount) mr.innerHTML += `<div class="metric"><div class="val">${d.metrics.wordCount}</div><div class="lbl">Words</div></div>`;
+                if (d.metrics.readTime) mr.innerHTML += `<div class="metric"><div class="val">${d.metrics.readTime}</div><div class="lbl">Read Time</div></div>`;
+                if (d.metrics.sections) mr.innerHTML += `<div class="metric"><div class="val">${d.metrics.sections}</div><div class="lbl">Sections</div></div>`;
+            }
+
+            // Email preview
+            const ep = document.getElementById('emailPreview');
+            let html = '';
+            if (d.newsletter) {
+                const n = d.newsletter;
+                if (n.greeting) html += `<div class="email-greeting">${esc(n.greeting)}</div>`;
+                if (n.hook) html += `<div class="email-hook">${esc(n.hook)}</div>`;
+                if (n.sections?.length) {
+                    n.sections.forEach(s => {
+                        html += `<div class="email-section"><h3>${esc(s.heading)}</h3>`;
+                        const paras = (s.body || '').split(/\n\n+/);
+                        paras.forEach(p => html += `<p>${esc(p.trim())}</p>`);
+                        if (s.callout) html += `<div class="email-callout">${esc(s.callout)}</div>`;
+                        html += '</div>';
+                    });
+                }
+                if (n.cta) {
+                    html += `<div class="email-cta-wrap">`;
+                    if (n.cta.context) html += `<div class="email-cta-context">${esc(n.cta.context)}</div>`;
+                    html += `<div class="email-cta-btn">${esc(n.cta.buttonText || n.cta.text)}</div></div>`;
+                }
+                if (n.closing) html += `<div class="email-closing">${esc(n.closing)}</div>`;
+                if (n.psLine) html += `<div class="email-ps">P.S. ${esc(n.psLine)}</div>`;
+            }
+            ep.innerHTML = html;
+
+            // Tips
+            const tc = document.getElementById('tipsContent');
+            tc.innerHTML = '';
+            if (d.sendingTips?.length) {
+                d.sendingTips.forEach((t, i) => tc.innerHTML += `<div class="tip-card"><p><strong>${i + 1}.</strong> ${esc(t)}</p></div>`);
+            }
+
+            const ni = document.getElementById('nextIdeas');
+            ni.innerHTML = '';
+            if (d.nextIssueIdeas?.length) {
+                d.nextIssueIdeas.forEach((idea, i) => ni.innerHTML += `<div class="next-idea"><span>${i + 1}</span>${esc(idea)}</div>`);
+            }
+        }
+
+        function copyEmail() {
+            if (!nlData?.newsletter) return;
+            const n = nlData.newsletter;
+            let text = `Subject: ${nlData.subjectLine}\n\n`;
+            if (n.greeting) text += n.greeting + '\n\n';
+            if (n.hook) text += n.hook + '\n\n';
+            if (n.sections?.length) {
+                n.sections.forEach(s => {
+                    text += `## ${s.heading}\n\n${s.body}\n\n`;
+                    if (s.callout) text += `> ${s.callout}\n\n`;
+                });
+            }
+            if (n.cta) text += `${n.cta.context || ''}\n[${n.cta.buttonText || n.cta.text}]\n\n`;
+            if (n.closing) text += n.closing + '\n\n';
+            if (n.psLine) text += 'P.S. ' + n.psLine + '\n';
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-email-btn');
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy Full Newsletter', 2000);
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            document.getElementById('qaSend').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaTyping" style="color:#64748b;">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/newsletter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(nlData), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaTyping')?.remove();
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${fmtMd(answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+                chargeCredits('qa');
+            } catch (err) {
+                document.getElementById('qaTyping')?.remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#f87171;">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSend').disabled = false;
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function fmtMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+        function resetAll() { nlData = null; qaHistory = []; document.getElementById('qaMessages').innerHTML = ''; showView('input'); }
+        function chargeCredits(f) { if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'newsletter', feature: f, chargeId: Date.now().toString(), amount: 5 }, '*'); }
+    </script>
+</body>
+</html>
