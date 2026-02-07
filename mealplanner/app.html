@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MealPlanner — AI Weekly Meal Plans | SUITE</title>
+    <meta name="description" content="Enter your dietary goals and get a complete weekly meal plan with recipes, macros, and grocery list — powered by AI.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header h1 span { color: #22c55e; }
+        .header p { color: #94a3b8; margin-top: 6px; font-size: 0.9rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group select, .form-group input, .form-group textarea {
+            background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: #22c55e; }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; transition: all 0.2s;
+        }
+        .chip:hover { border-color: #22c55e; color: #e2e8f0; }
+        .chip.active { background: #22c55e; color: #000; border-color: #22c55e; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #22c55e, #16a34a); color: #000;
+            transition: opacity 0.2s; font-family: inherit;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #22c55e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        .results { display: none; }
+
+        .overview-card { background: linear-gradient(135deg, #22c55e15, #16a34a10); border: 1px solid #22c55e30; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .overview-card h2 { color: #22c55e; font-size: 1.2rem; margin-bottom: 8px; }
+        .overview-card p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
+        .macro-bar { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+        .macro-item { background: #0f0f1a; border-radius: 10px; padding: 12px 18px; text-align: center; flex: 1; min-width: 100px; }
+        .macro-item .val { font-size: 1.3rem; font-weight: 700; color: #22c55e; }
+        .macro-item .lbl { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; white-space: nowrap; transition: all 0.2s;
+        }
+        .tab:hover { border-color: #22c55e; color: #e2e8f0; }
+        .tab.active { background: #22c55e; color: #000; border-color: #22c55e; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .day-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .day-card h3 { color: #22c55e; font-size: 1rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .meal-item { background: #0f0f1a; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+        .meal-type { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #22c55e; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .meal-name { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+        .meal-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; }
+        .meal-meta span { display: flex; align-items: center; gap: 4px; }
+        .meal-ingredients { font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; }
+        .meal-ingredients strong { color: #e2e8f0; }
+        .meal-instructions { font-size: 0.8rem; color: #64748b; line-height: 1.5; }
+        .day-totals { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a3e; }
+        .day-totals span { font-size: 0.75rem; color: #94a3b8; }
+        .day-totals span strong { color: #22c55e; }
+
+        .grocery-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .grocery-section h3 { color: #22c55e; font-size: 0.95rem; margin-bottom: 12px; text-transform: capitalize; }
+        .grocery-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .grocery-item { font-size: 0.85rem; color: #94a3b8; padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+        .grocery-item::before { content: ''; width: 14px; height: 14px; border: 1.5px solid #2a2a3e; border-radius: 4px; flex-shrink: 0; }
+
+        .tips-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+        .tips-card h3 { color: #22c55e; font-size: 0.95rem; margin-bottom: 12px; }
+        .tip-item { font-size: 0.85rem; color: #94a3b8; padding: 8px 0; border-bottom: 1px solid #1a1a2e; line-height: 1.5; }
+
+        .sub-card { background: #0f0f1a; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+        .sub-card .original { color: #94a3b8; font-size: 0.85rem; }
+        .sub-card .arrow { color: #22c55e; margin: 4px 0; font-size: 0.8rem; }
+        .sub-card .substitute { color: #e2e8f0; font-size: 0.85rem; font-weight: 600; }
+        .sub-card .reason { color: #64748b; font-size: 0.75rem; margin-top: 4px; }
+
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #22c55e20; border: 1px solid #22c55e30; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input-row input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; }
+        .qa-input-row input:focus { border-color: #22c55e; }
+        .qa-input-row button { padding: 12px 24px; border: none; border-radius: 10px; background: #22c55e; color: #000; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; transition: all 0.2s; font-family: inherit;
+        }
+        .action-btn:hover { border-color: #22c55e; color: #e2e8f0; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 14px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 16px; }
+        .raw-output { background: #0f0f1a; border-radius: 10px; padding: 16px; white-space: pre-wrap; font-size: 0.8rem; color: #94a3b8; max-height: 500px; overflow-y: auto; }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .grocery-list { grid-template-columns: 1fr; }
+            .macro-bar { flex-direction: column; }
+            .qa-msg.user { margin-left: 10px; }
+            .qa-msg.ai { margin-right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥗 <span>MealPlanner</span></h1>
+            <p>AI-powered weekly meal plans with recipes, macros & grocery lists</p>
+        </div>
+
+        <div id="inputSection" class="input-section">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Diet Type</label>
+                    <select id="dietSelect">
+                        <option value="balanced">Balanced</option>
+                        <option value="high-protein">High Protein</option>
+                        <option value="low-carb">Low Carb / Keto</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="mediterranean">Mediterranean</option>
+                        <option value="paleo">Paleo</option>
+                        <option value="whole30">Whole30</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Goal</label>
+                    <select id="goalSelect">
+                        <option value="maintain weight">Maintain Weight</option>
+                        <option value="lose weight">Lose Weight</option>
+                        <option value="build muscle">Build Muscle</option>
+                        <option value="eat healthier">Eat Healthier</option>
+                        <option value="save money">Budget-Friendly</option>
+                        <option value="meal prep friendly">Meal Prep Friendly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Servings Per Meal</label>
+                    <select id="peopleSelect">
+                        <option value="1">1 Person</option>
+                        <option value="2" selected>2 People</option>
+                        <option value="3">3 People</option>
+                        <option value="4">4 People (Family)</option>
+                        <option value="6">6 People</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Days to Plan</label>
+                    <select id="daysSelect">
+                        <option value="3">3 Days</option>
+                        <option value="5">5 Days (Weekdays)</option>
+                        <option value="7" selected>7 Days (Full Week)</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Allergies / Restrictions</label>
+                    <div class="chip-group" id="allergyChips">
+                        <div class="chip" data-val="gluten-free">Gluten-Free</div>
+                        <div class="chip" data-val="dairy-free">Dairy-Free</div>
+                        <div class="chip" data-val="nut-free">Nut-Free</div>
+                        <div class="chip" data-val="shellfish-free">No Shellfish</div>
+                        <div class="chip" data-val="egg-free">Egg-Free</div>
+                        <div class="chip" data-val="soy-free">Soy-Free</div>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Additional Preferences (optional)</label>
+                    <textarea id="prefsInput" placeholder="e.g., I hate broccoli, prefer quick meals under 30 min, love spicy food..."></textarea>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Meal Plan</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Creating your personalized meal plan...</p>
+        </div>
+
+        <div id="errorSection" style="display:none;"></div>
+
+        <div id="resultsSection" class="results">
+            <div id="overviewCard" class="overview-card"></div>
+
+            <div class="action-bar">
+                <button class="action-btn" onclick="copyFullPlan()">📋 Copy Full Plan</button>
+                <button class="action-btn" onclick="newPlan()">🔄 New Plan</button>
+            </div>
+
+            <div class="tabs" id="resultTabs">
+                <div class="tab active" data-tab="meals" onclick="switchTab('meals')">Meals</div>
+                <div class="tab" data-tab="grocery" onclick="switchTab('grocery')">Grocery List</div>
+                <div class="tab" data-tab="tips" onclick="switchTab('tips')">Tips</div>
+                <div class="tab" data-tab="swaps" onclick="switchTab('swaps')">Substitutions</div>
+                <div class="tab" data-tab="qa" onclick="switchTab('qa')">Q&A</div>
+            </div>
+
+            <div id="mealsTab" class="tab-content active"></div>
+            <div id="groceryTab" class="tab-content"></div>
+            <div id="tipsTab" class="tab-content"></div>
+            <div id="swapsTab" class="tab-content"></div>
+            <div id="qaTab" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me anything about your meal plan — substitutions, nutrition info, cooking tips, or adjustments!</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input type="text" id="qaInput" placeholder="e.g., Can I swap chicken for tofu on Tuesday?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlan = null;
+        let qaHistory = [];
+        const selectedAllergies = new Set();
+
+        document.querySelectorAll('#allergyChips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('active');
+                const val = chip.dataset.val;
+                if (selectedAllergies.has(val)) selectedAllergies.delete(val);
+                else selectedAllergies.add(val);
+            });
+        });
+
+        async function generate() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                chargeCredits('generate');
+
+                const body = {
+                    mode: 'generate',
+                    diet: document.getElementById('dietSelect').value,
+                    goal: document.getElementById('goalSelect').value,
+                    people: document.getElementById('peopleSelect').value,
+                    days: parseInt(document.getElementById('daysSelect').value),
+                    allergies: [...selectedAllergies].join(', ') || 'none',
+                    preferences: document.getElementById('prefsInput').value.trim() || ''
+                };
+
+                const resp = await fetch('/api/mealplanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                if (data.raw) {
+                    document.getElementById('errorSection').innerHTML = `<div class="raw-output">${data.raw}</div>`;
+                    document.getElementById('errorSection').style.display = 'block';
+                } else {
+                    currentPlan = data;
+                    renderResults(data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorSection').innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(data) {
+            // Overview
+            const ov = document.getElementById('overviewCard');
+            ov.innerHTML = `
+                <h2>${data.planName || 'Your Meal Plan'}</h2>
+                <p>${data.overview || ''}</p>
+                <div class="macro-bar">
+                    <div class="macro-item"><div class="val">${data.dailyCalories || '—'}</div><div class="lbl">Daily Calories</div></div>
+                    ${data.macroSplit ? `
+                        <div class="macro-item"><div class="val">${data.macroSplit.protein || '—'}</div><div class="lbl">Protein</div></div>
+                        <div class="macro-item"><div class="val">${data.macroSplit.carbs || '—'}</div><div class="lbl">Carbs</div></div>
+                        <div class="macro-item"><div class="val">${data.macroSplit.fat || '—'}</div><div class="lbl">Fat</div></div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Day tabs for meals
+            const mealsTab = document.getElementById('mealsTab');
+            if (data.days?.length) {
+                // Day selector
+                let dayTabs = '<div class="tabs" style="margin-bottom:16px;">';
+                data.days.forEach((d, i) => {
+                    const short = d.day?.slice(0, 3) || `Day ${i+1}`;
+                    dayTabs += `<div class="tab ${i===0?'active':''}" onclick="switchDay(${i})" data-day="${i}">${short}</div>`;
+                });
+                dayTabs += '</div>';
+
+                let dayCards = '';
+                data.days.forEach((d, i) => {
+                    dayCards += `<div class="day-card" id="dayCard${i}" style="${i>0?'display:none':''}">
+                        <h3>📅 ${d.day || 'Day '+(i+1)}</h3>`;
+                    if (d.meals?.length) {
+                        d.meals.forEach(m => {
+                            dayCards += `<div class="meal-item">
+                                <div class="meal-type">${m.type || ''}</div>
+                                <div class="meal-name">${m.name || ''}</div>
+                                <div class="meal-meta">
+                                    ${m.calories ? `<span>🔥 ${m.calories} cal</span>` : ''}
+                                    ${m.prepTime ? `<span>⏱️ ${m.prepTime}</span>` : ''}
+                                    ${m.macros ? `<span>💪 P:${m.macros.protein || '?'} C:${m.macros.carbs || '?'} F:${m.macros.fat || '?'}</span>` : ''}
+                                </div>
+                                ${m.ingredients?.length ? `<div class="meal-ingredients"><strong>Ingredients:</strong> ${m.ingredients.join(', ')}</div>` : ''}
+                                ${m.instructions ? `<div class="meal-instructions">${m.instructions}</div>` : ''}
+                            </div>`;
+                        });
+                    }
+                    if (d.dailyTotal) {
+                        dayCards += `<div class="day-totals">
+                            <span>Total: <strong>${d.dailyTotal.calories || '?'} cal</strong></span>
+                            <span>Protein: <strong>${d.dailyTotal.protein || '?'}</strong></span>
+                            <span>Carbs: <strong>${d.dailyTotal.carbs || '?'}</strong></span>
+                            <span>Fat: <strong>${d.dailyTotal.fat || '?'}</strong></span>
+                        </div>`;
+                    }
+                    dayCards += '</div>';
+                });
+                mealsTab.innerHTML = dayTabs + dayCards;
+            } else {
+                mealsTab.innerHTML = '<p style="color:#94a3b8;">No meal data available.</p>';
+            }
+
+            // Grocery list
+            const groceryTab = document.getElementById('groceryTab');
+            if (data.groceryList) {
+                let html = '';
+                for (const [category, items] of Object.entries(data.groceryList)) {
+                    if (items?.length) {
+                        html += `<div class="grocery-section">
+                            <h3>${category}</h3>
+                            <div class="grocery-list">${items.map(it => `<div class="grocery-item">${it}</div>`).join('')}</div>
+                        </div>`;
+                    }
+                }
+                groceryTab.innerHTML = html || '<p style="color:#94a3b8;">No grocery list available.</p>';
+            }
+
+            // Tips
+            const tipsTab = document.getElementById('tipsTab');
+            if (data.tips?.length) {
+                tipsTab.innerHTML = `<div class="tips-card"><h3>💡 Meal Prep Tips</h3>${data.tips.map(t => `<div class="tip-item">• ${t}</div>`).join('')}</div>`;
+            }
+
+            // Substitutions
+            const swapsTab = document.getElementById('swapsTab');
+            if (data.substitutions?.length) {
+                swapsTab.innerHTML = data.substitutions.map(s => `
+                    <div class="sub-card">
+                        <div class="original">${s.original}</div>
+                        <div class="arrow">↓ swap with</div>
+                        <div class="substitute">${s.substitute}</div>
+                        <div class="reason">${s.reason || ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                swapsTab.innerHTML = '<p style="color:#94a3b8;">No substitutions suggested.</p>';
+            }
+        }
+
+        function switchDay(idx) {
+            document.querySelectorAll('#mealsTab .day-card').forEach((c, i) => c.style.display = i === idx ? '' : 'none');
+            document.querySelectorAll('#mealsTab .tabs .tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#resultTabs .tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.querySelector(`#resultTabs .tab[data-tab="${tab}"]`).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+
+                const resp = await fetch('/api/mealplanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'qa',
+                        question: q,
+                        history: qaHistory,
+                        context: currentPlan ? JSON.stringify(currentPlan).slice(0, 50000) : ''
+                    })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'model', content: answer });
+                document.getElementById('qaLoading').innerHTML = answer.replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `Error: ${err.message}`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function copyFullPlan() {
+            if (!currentPlan) return;
+            let text = `${currentPlan.planName || 'Meal Plan'}\n${'='.repeat(40)}\n\n`;
+            text += `${currentPlan.overview || ''}\n\nDaily Calories: ${currentPlan.dailyCalories || '?'}\n\n`;
+            if (currentPlan.days) {
+                currentPlan.days.forEach(d => {
+                    text += `\n--- ${d.day} ---\n`;
+                    d.meals?.forEach(m => {
+                        text += `\n${m.type}: ${m.name} (${m.calories || '?'} cal, ${m.prepTime || '?'})\n`;
+                        if (m.ingredients?.length) text += `  Ingredients: ${m.ingredients.join(', ')}\n`;
+                        if (m.instructions) text += `  Instructions: ${m.instructions}\n`;
+                    });
+                });
+            }
+            if (currentPlan.groceryList) {
+                text += `\n\n${'='.repeat(40)}\nGROCERY LIST\n${'='.repeat(40)}\n`;
+                for (const [cat, items] of Object.entries(currentPlan.groceryList)) {
+                    if (items?.length) text += `\n${cat.toUpperCase()}:\n${items.map(i => `  □ ${i}`).join('\n')}\n`;
+                }
+            }
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy Full Plan', 2000);
+        }
+
+        function newPlan() {
+            currentPlan = null;
+            qaHistory = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me anything about your meal plan!</div>';
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'mealplanner',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: 5
+                }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
