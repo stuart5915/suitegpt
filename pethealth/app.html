@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetHealth AI — Pet Symptom Checker</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .header { padding: 20px 24px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .header-btn:hover { border-color: #10b981; color: #e2e8f0; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+        .form-label { font-size: 0.8rem; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+        .form-section { margin-bottom: 20px; }
+
+        .text-area {
+            width: 100%; padding: 14px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; min-height: 90px; line-height: 1.6;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus { outline: none; border-color: #10b981; }
+        .text-area::placeholder { color: #4a5568; }
+
+        .text-input {
+            width: 100%; padding: 10px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; transition: border-color 0.2s;
+        }
+        .text-input:focus { outline: none; border-color: #10b981; }
+        .text-input::placeholder { color: #4a5568; }
+
+        .options-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .option-group select {
+            width: 100%; padding: 10px 12px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: 'Inter', sans-serif; cursor: pointer;
+        }
+        .option-group select:focus { outline: none; border-color: #10b981; }
+
+        /* Pet type chips */
+        .pet-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .pet-chip {
+            padding: 10px 18px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px;
+            font-size: 0.85rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .pet-chip:hover { border-color: #10b981; color: #e2e8f0; }
+        .pet-chip.active { background: #10b98115; border-color: #10b981; color: #34d399; font-weight: 600; }
+
+        /* Symptom chips */
+        .symptom-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+        .symptom-chip {
+            padding: 6px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 20px;
+            font-size: 0.75rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .symptom-chip:hover { border-color: #10b981; }
+        .symptom-chip.active { background: #10b98115; border-color: #10b981; color: #34d399; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #34d399, #10b981); color: #fff;
+            font-weight: 700; font-size: 1rem; border: none; border-radius: 12px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #10b98130; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Disclaimer bar */
+        .disclaimer-bar {
+            background: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 10px; padding: 10px 16px;
+            font-size: 0.75rem; color: #fbbf24; margin-bottom: 20px; line-height: 1.5;
+        }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        /* Urgency banner */
+        .urgency-banner { border-radius: 14px; padding: 20px; margin-bottom: 24px; text-align: center; }
+        .urgency-banner.low { background: #10b98115; border: 1px solid #10b98130; }
+        .urgency-banner.moderate { background: #f59e0b15; border: 1px solid #f59e0b30; }
+        .urgency-banner.high { background: #f9731615; border: 1px solid #f9731630; }
+        .urgency-banner.emergency { background: #ef444415; border: 1px solid #ef444430; animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0%, 100% { border-color: #ef444430; } 50% { border-color: #ef4444; } }
+        .urgency-icon { font-size: 2rem; margin-bottom: 8px; }
+        .urgency-label { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .urgency-label.low { color: #34d399; }
+        .urgency-label.moderate { color: #fbbf24; }
+        .urgency-label.high { color: #fb923c; }
+        .urgency-label.emergency { color: #f87171; }
+        .urgency-summary { font-size: 0.9rem; color: #94a3b8; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #2a2a3e; overflow-x: auto; }
+        .tab {
+            padding: 10px 18px; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer;
+            border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .tab:hover { color: #94a3b8; }
+        .tab.active { color: #34d399; border-bottom-color: #10b981; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Cause cards */
+        .cause-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .cause-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .cause-name { font-weight: 700; font-size: 0.95rem; }
+        .cause-likelihood { font-size: 0.7rem; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+        .cause-likelihood.common { background: #10b98120; color: #34d399; }
+        .cause-likelihood.possible { background: #f59e0b20; color: #fbbf24; }
+        .cause-likelihood.less { background: #64748b20; color: #94a3b8; }
+        .cause-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 8px; }
+        .cause-watch { font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; padding-left: 12px; border-left: 2px solid #10b981; }
+
+        /* Action items */
+        .action-list { display: flex; flex-direction: column; gap: 8px; }
+        .action-item {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 16px;
+            font-size: 0.85rem; color: #cbd5e1; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5;
+        }
+        .action-num { min-width: 24px; height: 24px; background: #10b98120; color: #34d399; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+
+        /* Remedy cards */
+        .remedy-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .remedy-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; color: #34d399; }
+        .remedy-detail { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+
+        /* Warning items */
+        .warning-list { display: flex; flex-direction: column; gap: 8px; }
+        .warning-item {
+            background: #ef444410; border: 1px solid #ef444420; border-radius: 10px; padding: 12px 16px;
+            font-size: 0.85rem; color: #fca5a5; display: flex; align-items: center; gap: 10px; line-height: 1.5;
+        }
+
+        /* Info cards */
+        .info-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .info-card h4 { font-size: 0.85rem; color: #34d399; margin-bottom: 8px; }
+        .info-card p, .info-card li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+        .info-card ul { list-style: none; }
+        .info-card ul li { padding: 4px 0; padding-left: 16px; position: relative; }
+        .info-card ul li::before { content: '→'; position: absolute; left: 0; color: #10b981; }
+
+        /* Q&A */
+        .qa-container { max-width: 680px; margin: 0 auto; }
+        .qa-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; max-height: 400px; overflow-y: auto; padding: 4px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+        .qa-msg.user { background: #10b98120; border: 1px solid #10b98130; align-self: flex-end; color: #e2e8f0; }
+        .qa-msg.ai { background: #1a1a2e; border: 1px solid #2a2a3e; align-self: flex-start; color: #cbd5e1; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; padding: 12px 16px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; color: #e2e8f0; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .qa-input:focus { outline: none; border-color: #10b981; }
+        .qa-send { padding: 12px 20px; background: linear-gradient(135deg, #34d399, #10b981); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error { display: none; text-align: center; padding: 40px; }
+        .error.active { display: block; }
+        .error p { color: #f87171; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .options-row { grid-template-columns: repeat(2, 1fr); }
+            .tabs { gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PetHealth <span>AI</span></h1>
+        <button class="header-btn" onclick="resetAll()">+ New Check</button>
+    </div>
+
+    <div class="container">
+        <!-- Input Form -->
+        <div id="inputForm">
+            <div class="disclaimer-bar">
+                ⚠️ This tool provides general guidance only — it is NOT a substitute for professional veterinary care. If your pet is in distress, contact your vet immediately.
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">What type of pet?</label>
+                <div class="pet-grid">
+                    <div class="pet-chip active" data-pet="dog">🐕 Dog</div>
+                    <div class="pet-chip" data-pet="cat">🐈 Cat</div>
+                    <div class="pet-chip" data-pet="bird">🐦 Bird</div>
+                    <div class="pet-chip" data-pet="rabbit">🐇 Rabbit</div>
+                    <div class="pet-chip" data-pet="hamster">🐹 Hamster</div>
+                    <div class="pet-chip" data-pet="fish">🐠 Fish</div>
+                    <div class="pet-chip" data-pet="reptile">🦎 Reptile</div>
+                    <div class="pet-chip" data-pet="guinea pig">🐹 Guinea Pig</div>
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label class="form-label">Breed</label>
+                    <input class="text-input" id="breedInput" placeholder="e.g. Golden Retriever">
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Age</label>
+                    <select id="ageSelect">
+                        <option value="unknown">Not sure</option>
+                        <option value="puppy/kitten (under 1 year)">Under 1 year</option>
+                        <option value="young (1-3 years)">1-3 years</option>
+                        <option value="adult (3-7 years)">3-7 years</option>
+                        <option value="senior (7+ years)">7+ years</option>
+                        <option value="geriatric (10+ years)">10+ years</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label class="form-label">Weight</label>
+                    <input class="text-input" id="weightInput" placeholder="e.g. 30 lbs">
+                </div>
+                <div class="option-group">
+                    <label class="form-label">How Long?</label>
+                    <select id="durationSelect">
+                        <option value="">Just started</option>
+                        <option value="a few hours">Few hours</option>
+                        <option value="since yesterday">Since yesterday</option>
+                        <option value="2-3 days">2-3 days</option>
+                        <option value="about a week">~1 week</option>
+                        <option value="more than a week">1+ weeks</option>
+                        <option value="recurring/chronic">Recurring</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Common Symptoms (click all that apply)</label>
+                <div class="symptom-grid" id="symptomChips">
+                    <div class="symptom-chip" data-symptom="vomiting">Vomiting</div>
+                    <div class="symptom-chip" data-symptom="diarrhea">Diarrhea</div>
+                    <div class="symptom-chip" data-symptom="not eating">Not eating</div>
+                    <div class="symptom-chip" data-symptom="lethargy">Lethargy</div>
+                    <div class="symptom-chip" data-symptom="limping">Limping</div>
+                    <div class="symptom-chip" data-symptom="scratching a lot">Excessive scratching</div>
+                    <div class="symptom-chip" data-symptom="coughing">Coughing</div>
+                    <div class="symptom-chip" data-symptom="sneezing">Sneezing</div>
+                    <div class="symptom-chip" data-symptom="drinking more water than usual">Excessive thirst</div>
+                    <div class="symptom-chip" data-symptom="frequent urination">Frequent urination</div>
+                    <div class="symptom-chip" data-symptom="shaking/trembling">Shaking</div>
+                    <div class="symptom-chip" data-symptom="whimpering/crying">Whimpering</div>
+                    <div class="symptom-chip" data-symptom="hair loss">Hair loss</div>
+                    <div class="symptom-chip" data-symptom="swelling">Swelling</div>
+                    <div class="symptom-chip" data-symptom="bad breath">Bad breath</div>
+                    <div class="symptom-chip" data-symptom="eye discharge">Eye discharge</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Describe what's happening</label>
+                <textarea class="text-area" id="symptomsInput" placeholder="Tell us everything you've noticed... e.g. 'My dog has been throwing up since this morning, yellowish vomit, won't eat breakfast, seems tired but still drinking water. He got into the trash last night.'"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Behavior changes (optional)</label>
+                <input class="text-input" id="behaviorInput" placeholder="e.g. 'Hiding under the bed, won't play, whining when picked up'">
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Analyze Symptoms →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Analyzing your pet's symptoms...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error" id="errorView">
+            <p id="errorMsg">Something went wrong.</p>
+            <button class="generate-btn" style="max-width:300px;margin:0 auto;" onclick="resetAll()">Try Again</button>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="resultsView">
+            <div class="urgency-banner" id="urgencyBanner">
+                <div class="urgency-icon" id="urgencyIcon"></div>
+                <div class="urgency-label" id="urgencyLabel"></div>
+                <div class="urgency-summary" id="urgencySummary"></div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="causes">Possible Causes</div>
+                <div class="tab" data-tab="actions">What To Do</div>
+                <div class="tab" data-tab="care">Home Care</div>
+                <div class="tab" data-tab="warnings">Warning Signs</div>
+                <div class="tab" data-tab="qa">Ask More</div>
+            </div>
+
+            <div class="tab-content active" id="tab-causes">
+                <div id="causesList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-actions">
+                <div class="action-list" id="actionsList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-care">
+                <div id="remediesList"></div>
+                <div class="info-card" id="dietCard" style="margin-top:16px;"></div>
+                <div class="info-card" style="margin-top:16px;">
+                    <h4>Prevention Tips</h4>
+                    <ul id="preventionList"></ul>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-warnings">
+                <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">If you see any of these signs, contact your vet immediately:</p>
+                <div class="warning-list" id="warningsList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">Ask follow-up questions about your pet's symptoms, care, or when to see the vet.</p>
+                    <div class="qa-messages" id="qaMessages"></div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="Should I take my pet to the emergency vet?" onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSend" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="disclaimer-bar" style="margin-top:24px;">
+                ⚠️ This is AI-generated guidance, not a veterinary diagnosis. Always consult a licensed veterinarian for your pet's health concerns.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+
+        // Pet type chips
+        document.querySelectorAll('.pet-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.pet-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        // Symptom chips toggle
+        document.querySelectorAll('.symptom-chip').forEach(chip => {
+            chip.addEventListener('click', () => chip.classList.toggle('active'));
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        function showView(view) {
+            document.getElementById('inputForm').style.display = view === 'input' ? 'block' : 'none';
+            document.getElementById('loadingView').classList.toggle('active', view === 'loading');
+            document.getElementById('errorView').classList.toggle('active', view === 'error');
+            document.getElementById('resultsView').classList.toggle('active', view === 'results');
+        }
+
+        async function analyze() {
+            const chipSymptoms = [...document.querySelectorAll('.symptom-chip.active')].map(c => c.dataset.symptom);
+            const textSymptoms = document.getElementById('symptomsInput').value.trim();
+            const allSymptoms = [...chipSymptoms, textSymptoms].filter(Boolean).join('. ');
+
+            if (!allSymptoms) { document.getElementById('symptomsInput').focus(); return; }
+
+            const petType = document.querySelector('.pet-chip.active')?.dataset.pet || 'dog';
+            const breed = document.getElementById('breedInput').value.trim();
+            const age = document.getElementById('ageSelect').value;
+            const weight = document.getElementById('weightInput').value.trim();
+            const duration = document.getElementById('durationSelect').value;
+            const behavior = document.getElementById('behaviorInput').value.trim();
+
+            showView('loading');
+
+            try {
+                const resp = await fetch('/api/pethealth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'analyze', petType, breed: breed || undefined, age, weight: weight || undefined, symptoms: allSymptoms, duration: duration || undefined, behavior: behavior || undefined })
+                });
+                const data = await resp.json();
+
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                resultData = data;
+                renderResults(data);
+                showView('results');
+                chargeCredits('analyze');
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Failed to analyze symptoms.';
+                showView('error');
+            }
+        }
+
+        function renderResults(data) {
+            // Urgency banner
+            const level = (data.urgencyLevel || 'moderate').toLowerCase();
+            const banner = document.getElementById('urgencyBanner');
+            banner.className = 'urgency-banner ' + level;
+            const icons = { low: '✅', moderate: '⚠️', high: '🔶', emergency: '🚨' };
+            document.getElementById('urgencyIcon').textContent = icons[level] || '⚠️';
+            const label = document.getElementById('urgencyLabel');
+            label.textContent = data.urgencyLabel || data.urgencyLevel || 'Unknown';
+            label.className = 'urgency-label ' + level;
+            document.getElementById('urgencySummary').textContent = data.summary || '';
+
+            // Possible causes
+            const causesList = document.getElementById('causesList');
+            causesList.innerHTML = '';
+            if (data.possibleCauses?.length) {
+                data.possibleCauses.forEach(c => {
+                    const lk = (c.likelihood || '').toLowerCase();
+                    const lkClass = lk.includes('common') ? 'common' : lk.includes('possible') ? 'possible' : 'less';
+                    causesList.innerHTML += `<div class="cause-card">
+                        <div class="cause-header">
+                            <div class="cause-name">${esc(c.condition)}</div>
+                            <div class="cause-likelihood ${lkClass}">${esc(c.likelihood)}</div>
+                        </div>
+                        <div class="cause-desc">${esc(c.description)}</div>
+                        <div class="cause-watch">${esc(c.signsToWatch)}</div>
+                    </div>`;
+                });
+            }
+
+            // Immediate actions
+            const actionsList = document.getElementById('actionsList');
+            actionsList.innerHTML = '';
+            if (data.immediateActions?.length) {
+                data.immediateActions.forEach((a, i) => {
+                    actionsList.innerHTML += `<div class="action-item"><div class="action-num">${i + 1}</div><div>${esc(a)}</div></div>`;
+                });
+            }
+
+            // Home remedies
+            const remediesList = document.getElementById('remediesList');
+            remediesList.innerHTML = '';
+            if (data.homeRemedies?.length) {
+                data.homeRemedies.forEach(r => {
+                    remediesList.innerHTML += `<div class="remedy-card"><div class="remedy-name">${esc(r.remedy)}</div><div class="remedy-detail">${esc(r.details)}</div></div>`;
+                });
+            }
+
+            // Diet
+            const dietCard = document.getElementById('dietCard');
+            dietCard.innerHTML = data.dietAdvice ? `<h4>Diet Advice</h4><p>${esc(data.dietAdvice)}</p>` : '';
+
+            // Prevention
+            const preventionList = document.getElementById('preventionList');
+            preventionList.innerHTML = '';
+            if (data.preventionTips?.length) {
+                data.preventionTips.forEach(t => preventionList.innerHTML += `<li>${esc(t)}</li>`);
+            }
+
+            // Warning signals
+            const warningsList = document.getElementById('warningsList');
+            warningsList.innerHTML = '';
+            if (data.warningSignals?.length) {
+                data.warningSignals.forEach(w => {
+                    warningsList.innerHTML += `<div class="warning-item">🚩 ${esc(w)}</div>`;
+                });
+            }
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            document.getElementById('qaSend').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaTyping" style="color:#64748b;">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/pethealth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(resultData), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaTyping')?.remove();
+
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'user', content: q }, { role: 'model', content: answer });
+
+                msgs.innerHTML += `<div class="qa-msg ai">${fmtMd(answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+                chargeCredits('qa');
+            } catch (err) {
+                document.getElementById('qaTyping')?.remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#f87171;">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSend').disabled = false;
+            }
+        }
+
+        function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function fmtMd(t) { return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`(.*?)`/g,'<code style="background:#0f0f1a;padding:2px 6px;border-radius:4px;font-size:0.85em;">$1</code>').replace(/\n/g,'<br>'); }
+
+        function resetAll() {
+            resultData = null;
+            qaHistory = [];
+            document.querySelectorAll('.symptom-chip').forEach(c => c.classList.remove('active'));
+            document.getElementById('qaMessages').innerHTML = '';
+            showView('input');
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'pethealth', feature, chargeId: Date.now().toString(), amount: 5 }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
