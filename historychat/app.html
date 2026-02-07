@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HistoryChat — Talk to Historical Figures | SUITE</title>
+    <meta name="description" content="Chat with Einstein, Cleopatra, Da Vinci, and more. AI brings historical figures to life with authentic conversations and real facts.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 800px; margin: 0 auto; padding: 16px; flex: 1; display: flex; flex-direction: column; width: 100%; }
+
+        .header { text-align: center; padding: 20px 0 12px; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; font-family: 'Playfair Display', serif; }
+        .header h1 span { color: #a855f7; }
+
+        .pick-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+        .pick-section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: #94a3b8; text-align: center; }
+
+        .figure-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+        .figure-btn {
+            padding: 14px 8px; border-radius: 12px; border: 1px solid #2a2a3e; background: #0f0f1a;
+            color: #94a3b8; font-size: 0.8rem; font-weight: 500; cursor: pointer; text-align: center;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .figure-btn:hover { border-color: #a855f7; color: #e2e8f0; }
+        .figure-btn.active { background: #a855f7; color: #fff; border-color: #a855f7; font-weight: 600; }
+        .figure-emoji { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+        .figure-name { font-size: 0.75rem; }
+        .figure-era { font-size: 0.6rem; color: #64748b; margin-top: 2px; }
+
+        .custom-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .custom-row input {
+            flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 14px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none;
+        }
+        .custom-row input:focus { border-color: #a855f7; }
+        .custom-row input::placeholder { color: #4a5568; }
+
+        .start-btn {
+            width: 100%; padding: 12px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+            font-family: inherit; transition: opacity 0.2s;
+        }
+        .start-btn:hover { opacity: 0.9; }
+        .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .chat-section { flex: 1; display: none; flex-direction: column; min-height: 0; }
+
+        .chat-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .chat-figure-label { display: flex; align-items: center; gap: 8px; }
+        .chat-figure-label .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #a855f7, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .chat-figure-label .name { font-weight: 700; font-family: 'Playfair Display', serif; font-size: 1rem; }
+        .chat-bar button {
+            padding: 6px 14px; border: 1px solid #2a2a3e; border-radius: 8px; background: #1a1a2e;
+            color: #94a3b8; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit;
+        }
+        .chat-bar button:hover { border-color: #a855f7; color: #e2e8f0; }
+
+        .messages { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 14px; }
+
+        .msg { max-width: 88%; }
+        .msg.user { align-self: flex-end; }
+        .msg.ai { align-self: flex-start; }
+
+        .msg-bubble { padding: 14px 18px; border-radius: 16px; font-size: 0.9rem; line-height: 1.7; }
+        .msg.user .msg-bubble { background: #a855f720; border: 1px solid #a855f740; border-bottom-right-radius: 4px; }
+        .msg.ai .msg-bubble { background: #1a1a2e; border: 1px solid #2a2a3e; border-bottom-left-radius: 4px; }
+
+        .msg-mood { font-size: 0.65rem; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; font-style: italic; }
+        .msg-reply { margin-bottom: 8px; font-family: 'Playfair Display', serif; font-size: 0.95rem; }
+
+        .historical-note {
+            background: #a855f710; border: 1px solid #a855f720; border-radius: 8px; padding: 8px 12px;
+            font-size: 0.75rem; color: #94a3b8; margin-top: 8px;
+        }
+        .historical-note strong { color: #a855f7; }
+
+        .typing-indicator { display: flex; gap: 4px; padding: 8px 0; }
+        .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #a855f7; animation: typing 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+
+        .input-bar { padding: 12px 0; display: flex; gap: 10px; }
+        .input-bar input {
+            flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none;
+        }
+        .input-bar input:focus { border-color: #a855f7; }
+        .input-bar button {
+            padding: 14px 24px; border: none; border-radius: 12px; background: linear-gradient(135deg, #a855f7, #7c3aed);
+            color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 0.9rem; transition: opacity 0.2s;
+        }
+        .input-bar button:hover { opacity: 0.9; }
+        .input-bar button:disabled { opacity: 0.5; }
+
+        .suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 8px; }
+        .suggestion {
+            padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; color: #a855f7; border: 1px solid #a855f730;
+            background: #a855f708; cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .suggestion:hover { background: #a855f720; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 12px; color: #fca5a5; font-size: 0.85rem; }
+
+        @media (max-width: 640px) {
+            .figure-grid { grid-template-columns: repeat(3, 1fr); }
+            .msg { max-width: 93%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ <span>HistoryChat</span></h1>
+        </div>
+
+        <div id="pickSection" class="pick-section">
+            <h2>Choose a historical figure to chat with</h2>
+            <div class="figure-grid" id="figureGrid">
+                <button class="figure-btn" data-figure="Albert Einstein"><span class="figure-emoji">🧪</span><span class="figure-name">Einstein</span><span class="figure-era">1879–1955</span></button>
+                <button class="figure-btn" data-figure="Cleopatra VII, Queen of Egypt"><span class="figure-emoji">👑</span><span class="figure-name">Cleopatra</span><span class="figure-era">69–30 BC</span></button>
+                <button class="figure-btn" data-figure="Leonardo da Vinci"><span class="figure-emoji">🎨</span><span class="figure-name">Da Vinci</span><span class="figure-era">1452–1519</span></button>
+                <button class="figure-btn" data-figure="Nikola Tesla"><span class="figure-emoji">⚡</span><span class="figure-name">Tesla</span><span class="figure-era">1856–1943</span></button>
+                <button class="figure-btn" data-figure="Marie Curie"><span class="figure-emoji">🔬</span><span class="figure-name">Marie Curie</span><span class="figure-era">1867–1934</span></button>
+                <button class="figure-btn" data-figure="Marcus Aurelius, Roman Emperor"><span class="figure-emoji">🏛️</span><span class="figure-name">Marcus Aurelius</span><span class="figure-era">121–180 AD</span></button>
+                <button class="figure-btn" data-figure="Frida Kahlo"><span class="figure-emoji">🖼️</span><span class="figure-name">Frida Kahlo</span><span class="figure-era">1907–1954</span></button>
+                <button class="figure-btn" data-figure="Sun Tzu, author of The Art of War"><span class="figure-emoji">⚔️</span><span class="figure-name">Sun Tzu</span><span class="figure-era">~544–496 BC</span></button>
+                <button class="figure-btn" data-figure="William Shakespeare"><span class="figure-emoji">🎭</span><span class="figure-name">Shakespeare</span><span class="figure-era">1564–1616</span></button>
+                <button class="figure-btn" data-figure="Ada Lovelace"><span class="figure-emoji">💻</span><span class="figure-name">Ada Lovelace</span><span class="figure-era">1815–1852</span></button>
+                <button class="figure-btn" data-figure="Napoleon Bonaparte"><span class="figure-emoji">🗡️</span><span class="figure-name">Napoleon</span><span class="figure-era">1769–1821</span></button>
+                <button class="figure-btn" data-figure="Genghis Khan"><span class="figure-emoji">🐎</span><span class="figure-name">Genghis Khan</span><span class="figure-era">1162–1227</span></button>
+            </div>
+            <div class="custom-row">
+                <input type="text" id="customFigure" placeholder="Or type any historical figure...">
+            </div>
+            <button class="start-btn" id="startBtn" onclick="startChat()" disabled>Choose someone to begin</button>
+        </div>
+
+        <div id="chatSection" class="chat-section">
+            <div class="chat-bar">
+                <div class="chat-figure-label">
+                    <div class="avatar" id="chatAvatar"></div>
+                    <span class="name" id="chatName"></span>
+                </div>
+                <button onclick="resetChat()">New Conversation</button>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="suggestions" id="suggestions"></div>
+            <div class="input-bar">
+                <input type="text" id="chatInput" placeholder="Ask anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFigure = '';
+        let selectedEmoji = '🏛️';
+        let rawHistory = [];
+
+        const figureSuggestions = {
+            'Albert Einstein': ['What inspired the theory of relativity?', 'Did you really fail math?', 'What do you think of quantum computers?'],
+            'Cleopatra VII, Queen of Egypt': ['How did you become ruler of Egypt?', 'Tell me about your relationship with Julius Caesar', 'What was Alexandria like?'],
+            'Leonardo da Vinci': ['Which was more important to you — art or science?', 'Tell me about the Mona Lisa', 'Did you actually design a flying machine?'],
+            'Nikola Tesla': ['What went wrong between you and Edison?', 'Tell me about your vision for wireless energy', 'What was your daily routine like?'],
+            'Marie Curie': ['What was it like being a woman in science?', 'How did you discover radium?', 'Tell me about winning two Nobel Prizes'],
+            'Marcus Aurelius, Roman Emperor': ['What is the most important Stoic principle?', 'How did you handle the pressure of ruling Rome?', 'What would you tell modern leaders?'],
+            'William Shakespeare': ['Which of your plays is your favorite?', 'Did you really write all those plays?', 'What was the Globe Theatre like?'],
+            'Sun Tzu, author of The Art of War': ['What is the supreme art of war?', 'How does your philosophy apply to business?', 'What makes a great leader?'],
+            'default': ['Tell me about your greatest achievement', 'What was daily life like in your time?', 'What would surprise you about the modern world?']
+        };
+
+        document.querySelectorAll('#figureGrid .figure-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#figureGrid .figure-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedFigure = btn.dataset.figure;
+                selectedEmoji = btn.querySelector('.figure-emoji').textContent;
+                document.getElementById('customFigure').value = '';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = `Chat with ${btn.querySelector('.figure-name').textContent} →`;
+            });
+        });
+
+        document.getElementById('customFigure').addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val) {
+                document.querySelectorAll('#figureGrid .figure-btn').forEach(b => b.classList.remove('active'));
+                selectedFigure = val;
+                selectedEmoji = '🏛️';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = `Chat with ${val} →`;
+            } else if (!document.querySelector('#figureGrid .figure-btn.active')) {
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('startBtn').textContent = 'Choose someone to begin';
+            }
+        });
+
+        function startChat() {
+            if (!selectedFigure) return;
+            document.getElementById('pickSection').style.display = 'none';
+            document.getElementById('chatSection').style.display = 'flex';
+            document.getElementById('chatAvatar').textContent = selectedEmoji;
+            document.getElementById('chatName').textContent = selectedFigure.split(',')[0];
+
+            // Show suggestions
+            const suggs = figureSuggestions[selectedFigure] || figureSuggestions['default'];
+            document.getElementById('suggestions').innerHTML = suggs.map(s =>
+                `<button class="suggestion" onclick="useSuggestion(this)">${s}</button>`
+            ).join('');
+
+            // Opening message
+            sendToAPI(`Hello! I'm excited to meet you. Please introduce yourself and tell me what you're most known for.`, true);
+        }
+
+        function useSuggestion(btn) {
+            document.getElementById('chatInput').value = btn.textContent;
+            btn.remove();
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            document.getElementById('suggestions').innerHTML = '';
+
+            addUserMessage(text);
+            await sendToAPI(text, false);
+        }
+
+        function addUserMessage(text) {
+            const msgs = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'msg user';
+            div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        async function sendToAPI(text, isOpener) {
+            const msgs = document.getElementById('messages');
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'msg ai';
+            typingDiv.id = 'typing';
+            typingDiv.innerHTML = `<div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+            msgs.appendChild(typingDiv);
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (!isOpener) chargeCredits('chat');
+
+                rawHistory.push({ role: 'user', content: text });
+
+                const resp = await fetch('/api/historychat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        figure: selectedFigure,
+                        message: text,
+                        history: rawHistory.slice(0, -1)
+                    })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                rawHistory.push({ role: 'model', content: data.reply || JSON.stringify(data) });
+
+                typingDiv.remove();
+                addAIMessage(data);
+
+            } catch (err) {
+                typingDiv.remove();
+                const errDiv = document.createElement('div');
+                errDiv.className = 'msg ai';
+                errDiv.innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                msgs.appendChild(errDiv);
+            } finally {
+                sendBtn.disabled = false;
+                document.getElementById('chatInput').focus();
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function addAIMessage(data) {
+            const msgs = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'msg ai';
+
+            let html = `<div class="msg-bubble">`;
+            if (data.mood) html += `<div class="msg-mood">${escapeHtml(data.mood)}</div>`;
+            html += `<div class="msg-reply">${escapeHtml(data.reply || '')}</div>`;
+            if (data.historicalNote) {
+                html += `<div class="historical-note"><strong>📜 Historical Note:</strong> ${escapeHtml(data.historicalNote)}</div>`;
+            }
+            html += `</div>`;
+
+            div.innerHTML = html;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetChat() {
+            rawHistory = [];
+            selectedFigure = '';
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('chatSection').style.display = 'none';
+            document.getElementById('pickSection').style.display = 'block';
+            document.querySelectorAll('#figureGrid .figure-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('customFigure').value = '';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = 'Choose someone to begin';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'historychat',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: 5
+                }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
