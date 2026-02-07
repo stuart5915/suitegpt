@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeRepair AI — Free AI Home Fix Guide | Photo Problem → Step-by-Step Repair</title>
+    <meta name="description" content="Photo anything broken in your home — AI diagnoses the issue and gives step-by-step repair instructions with tools, materials, cost estimates, and safety tips. 100% free.">
+    <meta property="og:title" content="HomeRepair AI — Free AI Home Fix Guide">
+    <meta property="og:description" content="Broken thing photo in, repair guide out — diagnosis, step-by-step fix, tools list, cost estimate, and safety warnings.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/homerepair/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/homerepair/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #c2410c15; border: 1px solid #c2410c30; color: #fb923c; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #fb923c, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #fb923c, #ea580c); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #ea580c30; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #c2410c15; border: 1px solid #c2410c30; color: #fb923c; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #fb923c; font-size: 1.5rem; margin: 16px 0; }
+
+        .demo-status { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .demo-status-card { flex: 1; min-width: 120px; background: #0f0f1a; border-radius: 12px; padding: 14px; text-align: center; }
+        .demo-status-card .val { font-size: 1rem; font-weight: 800; }
+        .demo-status-card .val.orange { color: #fb923c; }
+        .demo-status-card .val.green { color: #4ade80; }
+        .demo-status-card .val.blue { color: #60a5fa; }
+        .demo-status-card .lbl { font-size: 0.65rem; color: #94a3b8; margin-top: 2px; }
+
+        .demo-step { background: #0f0f1a; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; display: flex; gap: 12px; }
+        .demo-step .num { min-width: 28px; height: 28px; background: rgba(234,88,12,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #fb923c; }
+        .demo-step .body { flex: 1; }
+        .demo-step h4 { font-size: 0.9rem; margin-bottom: 4px; }
+        .demo-step p { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; }
+
+        .demo-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .demo-tool { background: #0f0f1a; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #fb923c; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #fb923c; text-decoration: none; }
+        @media (max-width: 640px) { .hero h1 { font-size: 1.8rem; } .features, .tools-grid { grid-template-columns: 1fr; } .demo-status { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Home Repair</span> Guide</h1>
+        <p>Photo anything broken — AI diagnoses the problem and gives you step-by-step repair instructions with tools, materials, cost estimates, and safety tips.</p>
+        <a href="app.html" class="cta-btn">Fix My Problem →</a>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">📸</div>
+            <h3>Photo → Diagnosis</h3>
+            <p>Snap a photo of the problem. AI identifies what's broken, what caused it, and how bad it is.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🔧</div>
+            <h3>Step-by-Step Fix</h3>
+            <p>Detailed repair instructions with pro tips, exact tools needed, and materials with cost estimates.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">⚠️</div>
+            <h3>Safety First</h3>
+            <p>Safety warnings for every repair. Tells you when to DIY and when to call a professional.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Photo of a leaky kitchen faucet</p>
+        <div class="demo-card">
+            <div class="demo-tags">
+                <div class="demo-tag">📸 Photo Upload</div>
+                <div class="demo-tag">🔧 Plumbing</div>
+                <div class="demo-tag">🟡 Minor</div>
+            </div>
+            <div class="demo-arrow">↓</div>
+
+            <div class="demo-status">
+                <div class="demo-status-card">
+                    <div class="val orange">Leaky Faucet</div>
+                    <div class="lbl">Worn cartridge/washer</div>
+                </div>
+                <div class="demo-status-card">
+                    <div class="val green">Beginner</div>
+                    <div class="lbl">DIY Difficulty</div>
+                </div>
+                <div class="demo-status-card">
+                    <div class="val blue">$5-15</div>
+                    <div class="lbl">Est. Cost</div>
+                </div>
+            </div>
+
+            <div class="demo-step">
+                <div class="num">1</div>
+                <div class="body"><h4>Turn Off Water Supply</h4><p>Find the shut-off valves under the sink and turn them clockwise until fully closed.</p></div>
+            </div>
+            <div class="demo-step">
+                <div class="num">2</div>
+                <div class="body"><h4>Remove the Faucet Handle</h4><p>Pop off the decorative cap, unscrew the handle screw, and pull the handle off.</p></div>
+            </div>
+            <div class="demo-step">
+                <div class="num">3</div>
+                <div class="body"><h4>Replace the Cartridge</h4><p>Pull out the old cartridge and take it to the hardware store to find an exact match.</p></div>
+            </div>
+
+            <div class="demo-tools">
+                <span class="demo-tool">🔧 Adjustable wrench</span>
+                <span class="demo-tool">🪛 Phillips screwdriver</span>
+                <span class="demo-tool">📦 Replacement cartridge</span>
+                <span class="demo-tool">🧴 Plumber's grease</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/plantdoctor/" class="tool-card">
+                <h3>🌿 PlantDoctor</h3>
+                <p>Photo your plant — get instant diagnosis, treatment plan, and complete care guide.</p>
+            </a>
+            <a href="/pethealth/" class="tool-card">
+                <h3>🐾 PetHealth AI</h3>
+                <p>Describe your pet's symptoms — get possible causes, urgency level, and vet questions.</p>
+            </a>
+            <a href="/travelplanner/" class="tool-card">
+                <h3>✈️ TravelPlanner AI</h3>
+                <p>Destination + budget — get a full itinerary with activities, restaurants, and tips.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>HomeRepair AI is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>
