@@ -10,7 +10,7 @@ export class SupabaseAdapter {
     private supabase: SupabaseClient;
 
     constructor() {
-        const url = process.env.SUPABASE_URL || 'https://kyojtmbjsfkfrdvulbyg.supabase.co';
+        const url = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
         this.supabase = createClient(url, key);
     }
