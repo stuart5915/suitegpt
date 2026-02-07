@@ -26,14 +26,9 @@
                     .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
                 return;
             }
-            // agentscape.app → load AgentScape game
+            // agentscape.app → redirect to /play (Vercel rewrite serves the game)
             if (window.location.hostname === 'agentscape.app' || window.location.hostname === 'www.agentscape.app') {
-                document.documentElement.style.visibility = 'hidden';
-                document.documentElement.style.opacity = '0';
-                fetch('/agentscape/client/index.html')
-                    .then(r => r.text())
-                    .then(html => { document.open(); document.write(html); document.close(); })
-                    .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
+                window.location.replace('/play');
                 return;
             }
             const isSuiteGPT = window.location.hostname === 'suitegpt.app' || window.location.hostname === 'www.suitegpt.app';
