@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinCheck — AI Skin Concern Analyzer</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .disclaimer-bar { background: #7f1d1d; border-bottom: 1px solid #991b1b; padding: 8px 16px; text-align: center; font-size: 0.72rem; color: #fca5a5; }
+        .app-header { padding: 20px 24px 12px; text-align: center; border-bottom: 1px solid #1a1a2e; }
+        .app-header h1 { font-size: 1.4rem; font-weight: 800; }
+        .app-header h1 span { background: linear-gradient(135deg, #84cc16, #65a30d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #64748b; font-size: 0.8rem; margin-top: 4px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Upload area */
+        .upload-section { margin-bottom: 24px; }
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #65a30d; background: #65a30d08; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 8px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone.has-image { padding: 16px; }
+        .upload-zone.has-image img { max-width: 100%; max-height: 300px; border-radius: 10px; }
+        .divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 16px 0; position: relative; }
+        .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #2a2a3e; }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        .form-group textarea, .form-group select { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; }
+        .form-group textarea { min-height: 80px; }
+        .form-group select { cursor: pointer; }
+        .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #65a30d; }
+        .analyze-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #65a30d, #4d7c0f); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
+        .analyze-btn:hover { transform: translateY(-1px); }
+        .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #65a30d; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; font-size: 0.9rem; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .condition-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+        .confidence-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px; }
+        .confidence-badge.high { background: #166534; color: #86efac; }
+        .confidence-badge.medium { background: #854d0e; color: #fde68a; }
+        .confidence-badge.low { background: #7f1d1d; color: #fca5a5; }
+        .urgency-banner { padding: 12px 16px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 0.9rem; margin-bottom: 20px; }
+        .urgency-banner.routine { background: #166534; color: #86efac; border: 1px solid #22863a; }
+        .urgency-banner.soon { background: #854d0e; color: #fde68a; border: 1px solid #a16207; }
+        .urgency-banner.urgent { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; }
+        .description-text { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; text-align: center; max-width: 600px; margin: 0 auto 24px; }
+
+        /* Characteristics */
+        .char-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 24px; }
+        .char-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px; }
+        .char-card .label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+        .char-card .obs { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        .char-card .sig { font-size: 0.75rem; color: #94a3b8; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; border-bottom: 1px solid #2a2a3e; padding-bottom: 0; }
+        .tab { padding: 10px 18px; background: none; border: none; color: #64748b; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.2s; font-family: inherit; }
+        .tab.active { color: #84cc16; border-bottom-color: #65a30d; }
+        .tab:hover { color: #e2e8f0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Condition cards */
+        .condition-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .condition-card .header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .condition-card .header h3 { font-size: 0.95rem; }
+        .condition-card .likelihood { padding: 2px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .condition-card .likelihood.high { background: #65a30d20; color: #84cc16; }
+        .condition-card .likelihood.medium { background: #fbbf2420; color: #fbbf24; }
+        .condition-card .likelihood.low { background: #94a3b820; color: #94a3b8; }
+        .condition-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        .condition-card .causes { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .condition-card .cause-tag { background: #0f0f1a; padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; color: #94a3b8; }
+
+        /* Remedy cards */
+        .remedy-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .remedy-card h4 { font-size: 0.9rem; color: #84cc16; margin-bottom: 6px; }
+        .remedy-card .how { color: #e2e8f0; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+        .remedy-card .timeline { color: #64748b; font-size: 0.78rem; font-style: italic; }
+
+        /* Warning cards */
+        .warning-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; gap: 12px; }
+        .warning-card .urgency-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+        .warning-card .urgency-dot.routine { background: #22c55e; }
+        .warning-card .urgency-dot.soon { background: #eab308; }
+        .warning-card .urgency-dot.urgent { background: #ef4444; }
+        .warning-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .warning-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Tips and avoid cards */
+        .tip-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .tip-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .tip-card p { color: #94a3b8; font-size: 0.82rem; }
+        .avoid-card { background: #1a1a2e; border: 1px solid #ef444430; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .avoid-card h4 { font-size: 0.88rem; color: #f87171; margin-bottom: 4px; }
+        .avoid-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; margin-bottom: 10px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #1a1a2e; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input-row input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input-row input:focus { outline: none; border-color: #65a30d; }
+        .qa-input-row button { padding: 12px 20px; background: linear-gradient(135deg, #65a30d, #4d7c0f); color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        /* Disclaimer */
+        .disclaimer-box { background: #7f1d1d20; border: 1px solid #991b1b40; border-radius: 12px; padding: 14px 16px; margin-top: 20px; font-size: 0.78rem; color: #fca5a5; line-height: 1.5; text-align: center; }
+
+        .new-btn { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; font-family: inherit; }
+        .new-btn:hover { border-color: #65a30d; }
+
+        @media (max-width: 640px) {
+            .char-grid { grid-template-columns: 1fr 1fr; }
+            .qa-msg.user { margin-left: 16px; }
+            .qa-msg.ai { margin-right: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="disclaimer-bar">Educational information only — NOT a medical diagnosis. Always consult a dermatologist.</div>
+    <div class="app-header">
+        <h1>🔬 <span>SkinCheck</span></h1>
+        <p>Photo your skin concern — AI provides educational insights</p>
+    </div>
+    <div class="container">
+        <!-- Input -->
+        <div id="inputSection">
+            <div class="upload-section">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="icon">📸</div>
+                    <h3>Upload a photo of your skin concern</h3>
+                    <p>Drag & drop or click to browse — JPG, PNG up to 4MB</p>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" style="display:none">
+            </div>
+            <div class="divider">OR describe it</div>
+            <div class="form-group">
+                <label>Describe your skin concern</label>
+                <textarea id="descInput" placeholder="e.g., Red, itchy patch on my forearm that appeared 3 days ago. Slightly raised and dry..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Concern Type (optional)</label>
+                <select id="concernSelect">
+                    <option value="">Auto-detect</option>
+                    <option value="acne">Acne / Breakout</option>
+                    <option value="rash">Rash / Irritation</option>
+                    <option value="mole">Mole / Spot</option>
+                    <option value="dryness">Dryness / Eczema</option>
+                    <option value="discoloration">Discoloration / Pigmentation</option>
+                    <option value="bite">Bug Bite / Sting</option>
+                    <option value="burn">Burn / Sunburn</option>
+                    <option value="wound">Cut / Wound</option>
+                    <option value="fungal">Fungal / Ringworm</option>
+                    <option value="wart">Wart / Growth</option>
+                    <option value="hives">Hives / Allergic Reaction</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">Analyze My Skin →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing your skin concern...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="condition-name" id="conditionName"></div>
+                <div id="confidenceBadge" class="confidence-badge"></div>
+                <div id="urgencyBanner" class="urgency-banner"></div>
+                <div class="description-text" id="descriptionText"></div>
+            </div>
+
+            <!-- Characteristics -->
+            <div class="char-grid" id="charGrid"></div>
+
+            <!-- Tabs -->
+            <div class="tabs" id="tabsBar">
+                <button class="tab active" onclick="switchTab('conditions')">Possible Conditions</button>
+                <button class="tab" onclick="switchTab('remedies')">Home Remedies</button>
+                <button class="tab" onclick="switchTab('warnings')">When to See Doctor</button>
+                <button class="tab" onclick="switchTab('tips')">Skincare Tips</button>
+                <button class="tab" onclick="switchTab('qa')">Derm Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-conditions"></div>
+            <div class="tab-content" id="tab-remedies"></div>
+            <div class="tab-content" id="tab-warnings"></div>
+            <div class="tab-content" id="tab-tips"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages"></div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="Ask about this condition, treatment, or prevention..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+
+            <div class="disclaimer-box" id="disclaimerBox"></div>
+            <div style="text-align:center"><button class="new-btn" onclick="resetApp()">← New Analysis</button></div>
+        </div>
+    </div>
+
+    <script>
+        let imageData = null, imageMimeType = null, analysisResult = null, qaHistory = [];
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) return alert('Image must be under 4MB');
+            imageMimeType = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                imageData = e.target.result.split(',')[1];
+                uploadZone.innerHTML = `<img src="${e.target.result}" alt="Skin concern photo">`;
+                uploadZone.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyze() {
+            const desc = document.getElementById('descInput').value.trim();
+            const concern = document.getElementById('concernSelect').value;
+            if (!imageData && !desc) return alert('Please upload a photo or describe your concern');
+
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                const body = { mode: 'analyze' };
+                if (imageData) { body.image = imageData; body.mimeType = imageMimeType; }
+                if (desc) body.description = desc;
+                if (concern) body.concern = concern;
+
+                const resp = await fetch('/api/skincheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse analysis');
+
+                analysisResult = data;
+                renderResults(data);
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'skincheck', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function renderResults(d) {
+            document.getElementById('conditionName').textContent = d.conditionDetected || 'Skin Analysis';
+            const cb = document.getElementById('confidenceBadge');
+            cb.textContent = `Confidence: ${(d.confidence || 'medium').toUpperCase()}`;
+            cb.className = `confidence-badge ${d.confidence || 'medium'}`;
+
+            const ub = document.getElementById('urgencyBanner');
+            const urgLabels = { routine: 'Routine — likely manageable with home care', soon: 'See a Doctor Soon — schedule an appointment', urgent: 'Urgent — seek medical attention promptly' };
+            ub.textContent = urgLabels[d.urgencyLevel] || urgLabels.routine;
+            ub.className = `urgency-banner ${d.urgencyLevel || 'routine'}`;
+
+            document.getElementById('descriptionText').textContent = d.description || '';
+
+            // Characteristics
+            const cg = document.getElementById('charGrid');
+            cg.innerHTML = '';
+            if (d.characteristics) {
+                for (const [key, val] of Object.entries(d.characteristics)) {
+                    if (!val) continue;
+                    cg.innerHTML += `<div class="char-card"><div class="label">${key}</div><div class="obs">${val.observation || ''}</div><div class="sig">${val.significance || ''}</div></div>`;
+                }
+            }
+
+            // Possible conditions
+            const tc = document.getElementById('tab-conditions');
+            tc.innerHTML = '';
+            if (d.possibleConditions?.length) {
+                d.possibleConditions.forEach(c => {
+                    const causes = (c.commonCauses || []).map(x => `<span class="cause-tag">${x}</span>`).join('');
+                    tc.innerHTML += `<div class="condition-card"><div class="header"><h3>${c.name}</h3><span class="likelihood ${c.likelihood || 'medium'}">${(c.likelihood || 'medium').toUpperCase()}</span></div><p>${c.description || ''}</p>${causes ? `<div class="causes">${causes}</div>` : ''}</div>`;
+                });
+            }
+
+            // Home remedies
+            const tr = document.getElementById('tab-remedies');
+            tr.innerHTML = '';
+            if (d.homeRemedies?.length) {
+                d.homeRemedies.forEach(r => {
+                    tr.innerHTML += `<div class="remedy-card"><h4>${r.remedy}</h4><div class="how">${r.howTo}</div><div class="timeline">${r.timeline}</div></div>`;
+                });
+            } else {
+                tr.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px">Consult a dermatologist for treatment recommendations.</p>';
+            }
+
+            // When to see doctor
+            const tw = document.getElementById('tab-warnings');
+            tw.innerHTML = '';
+            if (d.whenToSeeDoctor?.length) {
+                d.whenToSeeDoctor.forEach(w => {
+                    tw.innerHTML += `<div class="warning-card"><div class="urgency-dot ${w.urgency || 'routine'}"></div><div><h4>${w.sign}</h4><p>${w.reason}</p></div></div>`;
+                });
+            }
+
+            // Skincare tips + avoid list
+            const tt = document.getElementById('tab-tips');
+            tt.innerHTML = '';
+            if (d.skinCareTips?.length) {
+                d.skinCareTips.forEach(t => {
+                    tt.innerHTML += `<div class="tip-card"><h4>${t.tip}</h4><p>${t.why}</p></div>`;
+                });
+            }
+            if (d.avoidList?.length) {
+                tt.innerHTML += '<h3 style="margin:20px 0 12px;font-size:1rem;color:#f87171">Things to Avoid</h3>';
+                d.avoidList.forEach(a => {
+                    tt.innerHTML += `<div class="avoid-card"><h4>${a.item}</h4><p>${a.reason}</p></div>`;
+                });
+            }
+
+            // Disclaimer
+            document.getElementById('disclaimerBox').textContent = d.disclaimer || 'This is AI-generated educational information, NOT a medical diagnosis. Always consult a board-certified dermatologist.';
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/skincheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(analysisResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').innerHTML = data.answer || 'Sorry, I could not answer that.';
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'skincheck', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = 'Error: ' + err.message;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetApp() {
+            imageData = null; imageMimeType = null; analysisResult = null; qaHistory = [];
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('inputSection').style.display = 'block';
+            uploadZone.innerHTML = '<div class="icon">📸</div><h3>Upload a photo of your skin concern</h3><p>Drag & drop or click to browse — JPG, PNG up to 4MB</p>';
+            uploadZone.classList.remove('has-image');
+            document.getElementById('descInput').value = '';
+            document.getElementById('concernSelect').value = '';
+            document.getElementById('qaMessages').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

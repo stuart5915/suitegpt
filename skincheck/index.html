@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinCheck — Free AI Skin Concern Analyzer | Photo → Instant Insights</title>
+    <meta name="description" content="Photo your skin concern — AI identifies possible conditions, home remedies, when to see a doctor, and skincare tips. Educational tool, not a diagnosis. 100% free.">
+    <meta property="og:title" content="SkinCheck — Free AI Skin Concern Analyzer">
+    <meta property="og:description" content="Photo your skin concern — get possible conditions, home remedies, warning signs, and skincare tips. Educational AI tool.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/skincheck/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/skincheck/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+        .disclaimer-bar { background: #7f1d1d; border-bottom: 1px solid #991b1b; padding: 10px 24px; text-align: center; font-size: 0.78rem; color: #fca5a5; }
+        .hero { max-width: 1000px; margin: 0 auto; padding: 50px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #65a30d15; border: 1px solid #65a30d30; color: #84cc16; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #84cc16, #65a30d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #65a30d, #4d7c0f); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); }
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #65a30d15; border: 1px solid #65a30d30; color: #84cc16; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-urgency { text-align: center; margin: 16px 0; padding: 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; }
+        .demo-urgency.routine { background: #166534; color: #86efac; }
+        .demo-conditions { display: grid; gap: 10px; margin-bottom: 16px; }
+        .demo-condition { background: #0f0f1a; border-radius: 10px; padding: 14px 16px; }
+        .demo-condition .name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .demo-condition .likelihood { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; }
+        .demo-condition .likelihood.high { background: #65a30d20; color: #84cc16; }
+        .demo-condition .likelihood.medium { background: #fbbf2420; color: #fbbf24; }
+        .demo-condition .desc { color: #94a3b8; font-size: 0.82rem; line-height: 1.5; }
+        .demo-remedies { display: grid; gap: 8px; margin-bottom: 16px; }
+        .demo-remedy { background: #0f0f1a; border-radius: 10px; padding: 12px 16px; display: flex; gap: 10px; font-size: 0.82rem; }
+        .demo-remedy .icon { font-size: 1.2rem; flex-shrink: 0; }
+        .demo-remedy strong { color: #84cc16; }
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #84cc16; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; }
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #84cc16; text-decoration: none; }
+        @media (max-width: 640px) { .hero h1 { font-size: 1.8rem; } .features, .tools-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="disclaimer-bar">This tool provides educational information only — it is NOT a medical diagnosis. Always consult a dermatologist for proper evaluation.</div>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Skin Concern</span> Analyzer</h1>
+        <p>Photo your skin concern — AI identifies possible conditions, suggests home remedies, tells you when to see a doctor, and gives skincare tips. Educational tool only.</p>
+        <a href="app.html" class="cta-btn">Check My Skin →</a>
+    </div>
+    <div class="features">
+        <div class="feature-card"><div class="icon">📸</div><h3>Photo → Analysis</h3><p>Snap a photo of your skin concern. AI identifies possible conditions and characteristics.</p></div>
+        <div class="feature-card"><div class="icon">🏠</div><h3>Home Remedies</h3><p>Get safe, evidence-based home care suggestions with expected timelines.</p></div>
+        <div class="feature-card"><div class="icon">🩺</div><h3>Doctor Guidance</h3><p>Know when it's time to see a dermatologist — with clear warning signs explained.</p></div>
+    </div>
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Dry, flaky patch on forearm analysis</p>
+        <div class="demo-card">
+            <div class="demo-tags"><div class="demo-tag">🔍 Dryness</div><div class="demo-tag">💪 Forearm</div><div class="demo-tag">📊 Confidence: High</div></div>
+            <div class="demo-urgency routine">Urgency: Routine — manageable with home care</div>
+            <div class="demo-conditions">
+                <div class="demo-condition">
+                    <div class="name">Eczema (Atopic Dermatitis) <span class="likelihood high">HIGH</span></div>
+                    <div class="desc">Dry, itchy, flaky patches are characteristic of eczema. Common on forearms and inner elbows. Often triggered by dry weather, irritants, or stress.</div>
+                </div>
+                <div class="demo-condition">
+                    <div class="name">Contact Dermatitis <span class="likelihood medium">MEDIUM</span></div>
+                    <div class="desc">Could be a reaction to a new soap, detergent, or fabric. Location on forearm suggests possible contact with an irritant.</div>
+                </div>
+            </div>
+            <div class="demo-remedies">
+                <div class="demo-remedy"><span class="icon">🧴</span><div><strong>Moisturize heavily</strong> — Apply fragrance-free moisturizer (like CeraVe or Eucerin) right after showering. Results in 3-5 days.</div></div>
+                <div class="demo-remedy"><span class="icon">🚿</span><div><strong>Lukewarm showers</strong> — Avoid hot water which strips natural oils. Keep showers under 10 minutes.</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/formcheck/" class="tool-card"><h3>🏋️ FormCheck</h3><p>Photo your exercise form — AI scores technique and flags injury risks.</p></a>
+            <a href="/physiobot/" class="tool-card"><h3>🦴 PhysioBot</h3><p>Describe your pain — get rehab exercises and stretches.</p></a>
+            <a href="/nutriscan/" class="tool-card"><h3>🥗 NutriScan</h3><p>Photo your meal — instant nutrition breakdown and health score.</p></a>
+        </div>
+    </div>
+    <div class="footer"><p>SkinCheck is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p></div>
+</body>
+</html>
