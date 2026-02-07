@@ -641,7 +641,7 @@
 // ============================================================
 const SUPABASE_URL = 'https://kyojtmbjsfkfrdvulbyg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5b2p0bWJqc2ZrZnJkdnVsYnlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ3MjQzODMsImV4cCI6MjA1MDMwMDM4M30.a0GFIauG2t8F1Z-Im3zzGTfeyPGe1rAVZXJVCxpfXPk';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 
@@ -649,10 +649,10 @@ let currentUser = null;
 // Auth State
 // ============================================================
 async function initAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sb.auth.getSession();
     if (session) setUser(session.user);
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
         if (session) setUser(session.user);
         else clearUser();
     });
@@ -694,7 +694,7 @@ function closeAuthModal() {
 }
 
 async function signInGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: window.location.origin + '/home' }
     });
@@ -707,11 +707,11 @@ async function signInEmail() {
     if (!email || !password) return showAuthError('Enter email and password.');
     if (password.length < 6) return showAuthError('Password must be at least 6 characters.');
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
     if (!signInError) return;
 
     if (signInError.message.includes('Invalid login')) {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        const { error: signUpError } = await sb.auth.signUp({ email, password });
         if (signUpError) return showAuthError(signUpError.message);
         showAuthError('Check your email for a confirmation link.');
         document.getElementById('auth-error').style.color = 'var(--green)';
@@ -726,7 +726,7 @@ async function signInWallet() {
 }
 
 async function signOut() {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     clearUser();
 }
 
@@ -750,7 +750,7 @@ function handlePlayClick() {
 
 async function goToGame() {
     if (currentUser) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await sb.auth.getSession();
         if (session) {
             const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Player';
             window.location.href = '/play?token=' + encodeURIComponent(session.access_token) + '&name=' + encodeURIComponent(name);
@@ -766,7 +766,7 @@ async function goToGame() {
 async function loadLeaderboard() {
     const tbody = document.getElementById('lb-body');
     try {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from('agentscape_leaderboard')
             .select('*')
             .order('combat_level', { ascending: false })
@@ -804,7 +804,7 @@ async function loadDashboard() {
     document.getElementById('dash-content').style.display = 'block';
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from('agentscape_players')
             .select('*')
             .eq('supabase_user_id', currentUser.id)
