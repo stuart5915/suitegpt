@@ -102,22 +102,56 @@
         }
 
         /* Stats Panel */
-        #stats-content { padding: 8px; }
-        .stat-skill {
-            display: flex; align-items: center; gap: 6px;
-            padding: 4px 6px; border-bottom: 1px solid #2a2a2e;
-        }
-        .stat-skill-icon { font-size: 16px; width: 22px; text-align: center; }
-        .stat-skill-name { font-size: 11px; color: #9ca3af; flex: 1; }
-        .stat-skill-lvl { font-size: 13px; color: #fff; font-weight: bold; width: 26px; text-align: center; }
-        .stat-xp-bar { width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; margin-top: 2px; }
-        .stat-xp-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.3s; }
+        #stats-content { padding: 4px; }
         .stat-player-info {
             padding: 8px; text-align: center;
             border-bottom: 2px solid #4a4a50;
         }
         .stat-player-name { font-size: 13px; color: #fff; font-weight: bold; }
         .stat-combat-lvl { font-size: 11px; color: #eab308; }
+
+        /* OSRS-style Skill Grid */
+        .skill-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1px; background: #2a2a2e; border: 1px solid #2a2a2e;
+        }
+        .skill-cell {
+            background: #1a1a1f; padding: 3px 4px;
+            display: flex; align-items: center; gap: 3px;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: background 0.15s;
+        }
+        .skill-cell:hover { background: #252530; }
+        .skill-cell.skill-selected { background: #2a2a3a; box-shadow: inset 0 0 0 1px #6366f1; }
+        .skill-cell.skill-levelup { animation: skillFlash 1.5s ease-out; }
+        @keyframes skillFlash {
+            0%, 20% { background: #6366f144; }
+            100% { background: #1a1a1f; }
+        }
+        .skill-icon { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; }
+        .skill-lvl { font-size: 11px; color: #fff; font-weight: bold; margin-left: auto; }
+        .skill-xp-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 2px; background: #2a2a2e;
+        }
+        .skill-xp-fill { height: 100%; background: #6366f1; transition: width 0.3s; }
+        .skill-total {
+            text-align: center; padding: 6px; font-size: 11px;
+            color: #eab308; font-weight: bold;
+            border-top: 1px solid #3a3a40; background: #1a1a1f;
+        }
+        .skill-detail {
+            padding: 8px; background: #1a1a1f;
+            border-top: 1px solid #3a3a40;
+        }
+        .skill-detail-name {
+            font-size: 12px; color: #fff; font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .skill-detail-row {
+            font-size: 10px; color: #9ca3af; padding: 1px 0;
+        }
+        .skill-detail-row b { color: #fff; }
 
         /* Bottom Panel */
         #game-bottom {
@@ -1674,14 +1708,73 @@
         // ============================================================
         // === PLAYER STATE ===
         // ============================================================
+        // All 28 skills definition
+        const SKILLS = [
+            // Combat (7)
+            { id: 'attack',     name: 'Attack',     icon: '⚔️', category: 'combat' },
+            { id: 'strength',   name: 'Strength',   icon: '💪', category: 'combat' },
+            { id: 'defence',    name: 'Defence',     icon: '🛡️', category: 'combat' },
+            { id: 'hitpoints',  name: 'Hitpoints',   icon: '❤️', category: 'combat' },
+            { id: 'ranged',     name: 'Ranged',      icon: '🏹', category: 'combat' },
+            { id: 'prayer',     name: 'Prayer',      icon: '✨', category: 'combat' },
+            { id: 'magic',      name: 'Magic',       icon: '🔮', category: 'combat' },
+            // Gathering (6)
+            { id: 'woodcutting', name: 'Woodcutting', icon: '🪓', category: 'gathering' },
+            { id: 'mining',      name: 'Mining',      icon: '⛏️', category: 'gathering' },
+            { id: 'fishing',     name: 'Fishing',     icon: '🎣', category: 'gathering' },
+            { id: 'farming',     name: 'Farming',     icon: '🌱', category: 'gathering' },
+            { id: 'hunter',      name: 'Hunter',      icon: '🪤', category: 'gathering' },
+            { id: 'archaeology', name: 'Archaeology', icon: '🏺', category: 'gathering' },
+            // Artisan (7)
+            { id: 'cooking',    name: 'Cooking',     icon: '🍳', category: 'artisan' },
+            { id: 'smithing',   name: 'Smithing',    icon: '🔨', category: 'artisan' },
+            { id: 'fletching',  name: 'Fletching',   icon: '🪶', category: 'artisan' },
+            { id: 'firemaking', name: 'Firemaking',  icon: '🔥', category: 'artisan' },
+            { id: 'herblore',   name: 'Herblore',    icon: '🧪', category: 'artisan' },
+            { id: 'crafting',   name: 'Crafting',    icon: '✂️', category: 'artisan' },
+            { id: 'runecraft',  name: 'Runecraft',   icon: '🔷', category: 'artisan' },
+            // Support (5)
+            { id: 'agility',       name: 'Agility',       icon: '🏃', category: 'support' },
+            { id: 'thieving',      name: 'Thieving',      icon: '🤏', category: 'support' },
+            { id: 'slayer',        name: 'Slayer',        icon: '💀', category: 'support' },
+            { id: 'construction',  name: 'Construction',  icon: '🏗️', category: 'support' },
+            { id: 'dungeoneering', name: 'Dungeoneering', icon: '🚪', category: 'support' },
+            // Digital / AgentScape originals (3)
+            { id: 'coding',     name: 'Coding',     icon: '💻', category: 'digital' },
+            { id: 'hacking',    name: 'Hacking',    icon: '🔓', category: 'digital' },
+            { id: 'networking', name: 'Networking', icon: '🌐', category: 'digital' },
+        ];
+
+        // OSRS-style XP table (levels 1-99)
+        const XP_TABLE = [0];
+        (function buildXPTable() {
+            let pts = 0;
+            for (let lvl = 1; lvl < 99; lvl++) {
+                pts += Math.floor(lvl + 300 * Math.pow(2, lvl / 7));
+                XP_TABLE.push(Math.floor(pts / 4));
+            }
+        })();
+        function xpForLevel(lvl) { return XP_TABLE[Math.min(lvl - 1, XP_TABLE.length - 1)] || 0; }
+        function levelFromXP(xp) {
+            for (let i = XP_TABLE.length - 1; i >= 0; i--) {
+                if (xp >= XP_TABLE[i]) return i + 1;
+            }
+            return 1;
+        }
+
+        // Player stats - all 28 skills tracked
         const playerStats = {
             hp: 100, maxHp: 100, energy: 100, maxEnergy: 100,
-            attack: 1, strength: 1, defence: 1, hitpoints: 10,
-            attackXP: 0, strengthXP: 0, defenceXP: 0, hitpointsXP: 0,
-            combatLevel: 3, equippedWeapon: null, equippedSlot: -1,
+            combatLevel: 3,
+            equippedWeapon: null, equippedSlot: -1,
             equippedHelm: null, equippedHelmSlot: -1,
             equippedShield: null, equippedShieldSlot: -1,
         };
+        // Initialize all skill levels and XP
+        SKILLS.forEach(s => {
+            playerStats[s.id] = (s.id === 'hitpoints') ? 10 : 1;
+            playerStats[s.id + 'XP'] = (s.id === 'hitpoints') ? xpForLevel(10) : 0;
+        });
 
         const inventory = new Array(28).fill(null);
         let attackMode = false;
@@ -1843,51 +1936,77 @@
         // ============================================================
         // === XP / LEVELS ===
         // ============================================================
-        function xpForLevel(lvl) { return Math.floor(Math.pow(lvl, 2.5)); }
-        function levelFromXP(xp) {
-            let lvl = 1;
-            while (xpForLevel(lvl + 1) <= xp) lvl++;
-            return lvl;
-        }
         function gainXP(skill, amount) {
             const key = skill + 'XP';
-            const old = levelFromXP(playerStats[key]);
+            if (playerStats[key] === undefined) return;
+            const oldLvl = levelFromXP(playerStats[key]);
             playerStats[key] += amount;
-            const now = levelFromXP(playerStats[key]);
-            playerStats[skill] = now;
-            if (now > old) {
-                addChatMessage('system', `Congratulations! You've advanced a ${skill.charAt(0).toUpperCase()+skill.slice(1)} level! You are now level ${now}.`);
+            const newLvl = levelFromXP(playerStats[key]);
+            playerStats[skill] = newLvl;
+            if (newLvl > oldLvl) {
+                const skillDef = SKILLS.find(s => s.id === skill);
+                const name = skillDef ? skillDef.name : skill;
+                addChatMessage('system', `Congratulations! You've advanced a ${name} level! You are now level ${newLvl}.`);
+                // Flash effect on skill in panel
+                const el = document.getElementById('skill-' + skill);
+                if (el) { el.classList.add('skill-levelup'); setTimeout(() => el.classList.remove('skill-levelup'), 1500); }
             }
-            playerStats.combatLevel = Math.floor((playerStats.attack + playerStats.strength + playerStats.defence + playerStats.hitpoints) / 3) + 1;
+            // Recalculate combat level (OSRS formula)
+            const base = 0.25 * (playerStats.defence + playerStats.hitpoints + Math.floor(playerStats.prayer / 2));
+            const melee = 0.325 * (playerStats.attack + playerStats.strength);
+            const range = 0.325 * Math.floor(playerStats.ranged * 1.5);
+            const mage = 0.325 * Math.floor(playerStats.magic * 1.5);
+            playerStats.combatLevel = Math.floor(base + Math.max(melee, range, mage));
+            if (playerStats.combatLevel < 3) playerStats.combatLevel = 3;
             playerStats.maxHp = 10 + playerStats.hitpoints * 10;
             updateOrbs();
             renderStats();
         }
 
+        let selectedSkill = null;
         function renderStats() {
-            const skills = [
-                { name:'Attack', key:'attack', xpKey:'attackXP', icon:'\u2694\uFE0F' },
-                { name:'Strength', key:'strength', xpKey:'strengthXP', icon:'\u{1F4AA}' },
-                { name:'Defence', key:'defence', xpKey:'defenceXP', icon:'\u{1F6E1}\uFE0F' },
-                { name:'Hitpoints', key:'hitpoints', xpKey:'hitpointsXP', icon:'\u2764\uFE0F' },
-            ];
             const el = document.getElementById('stats-content');
-            el.innerHTML = skills.map(s => {
-                const lvl = playerStats[s.key];
-                const xp = playerStats[s.xpKey];
-                const cur = xpForLevel(lvl);
-                const next = xpForLevel(lvl + 1);
-                const pct = Math.min(100, ((xp - cur) / (next - cur)) * 100);
-                return `<div class="stat-skill">
-                    <span class="stat-skill-icon">${s.icon}</span>
-                    <span class="stat-skill-name">${s.name}</span>
-                    <span class="stat-skill-lvl">${lvl}</span>
-                </div>
-                <div style="padding:0 6px 6px;"><div class="stat-xp-bar"><div class="stat-xp-fill" style="width:${pct}%"></div></div>
-                <div style="font-size:8px;color:#6b7280;text-align:right">${xp} / ${next} XP</div></div>`;
-            }).join('');
+            let html = '<div class="skill-grid">';
+            SKILLS.forEach(s => {
+                const lvl = playerStats[s.id];
+                const xp = playerStats[s.id + 'XP'];
+                const curXp = xpForLevel(lvl);
+                const nextXp = xpForLevel(lvl + 1);
+                const pct = nextXp > curXp ? Math.min(100, ((xp - curXp) / (nextXp - curXp)) * 100) : 100;
+                const isSelected = selectedSkill === s.id;
+                html += `<div class="skill-cell${isSelected ? ' skill-selected' : ''}" id="skill-${s.id}" onclick="selectSkill('${s.id}')">
+                    <span class="skill-icon">${s.icon}</span>
+                    <span class="skill-lvl">${lvl}</span>
+                    <div class="skill-xp-bar"><div class="skill-xp-fill" style="width:${pct}%"></div></div>
+                </div>`;
+            });
+            html += '</div>';
+            // Total level
+            const totalLevel = SKILLS.reduce((sum, s) => sum + playerStats[s.id], 0);
+            html += `<div class="skill-total">Total Level: ${totalLevel}</div>`;
+            // Selected skill detail
+            if (selectedSkill) {
+                const s = SKILLS.find(sk => sk.id === selectedSkill);
+                if (s) {
+                    const lvl = playerStats[s.id];
+                    const xp = playerStats[s.id + 'XP'];
+                    const nextXp = xpForLevel(lvl + 1);
+                    html += `<div class="skill-detail">
+                        <div class="skill-detail-name">${s.icon} ${s.name}</div>
+                        <div class="skill-detail-row">Level: <b>${lvl}</b></div>
+                        <div class="skill-detail-row">XP: <b>${xp.toLocaleString()}</b></div>
+                        <div class="skill-detail-row">Next level: <b>${nextXp.toLocaleString()}</b></div>
+                        <div class="skill-detail-row">Remaining: <b>${(nextXp - xp).toLocaleString()}</b></div>
+                    </div>`;
+                }
+            }
+            el.innerHTML = html;
             document.getElementById('statCombatLvl').textContent = playerStats.combatLevel;
         }
+        window.selectSkill = function(id) {
+            selectedSkill = selectedSkill === id ? null : id;
+            renderStats();
+        };
 
         // ============================================================
         // === CHAT SYSTEM ===
