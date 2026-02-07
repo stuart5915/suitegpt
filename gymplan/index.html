@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymPlan AI — Free AI Workout Generator | Personalized Training Programs</title>
+    <meta name="description" content="Get a personalized workout plan in seconds. AI builds programs for muscle building, fat loss, strength, and more — tailored to your equipment and experience level. 100% free.">
+    <meta property="og:title" content="GymPlan AI — Personalized Workout Generator">
+    <meta property="og:description" content="Tell us your goals, equipment, and experience — AI builds a complete weekly workout program with exercises, sets, reps, and progression.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/gymplan/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/gymplan/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #dc262615; border: 1px solid #dc262630; color: #dc2626; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #dc2626, #b91c1c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 600px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn {
+            display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #dc262630; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #dc262615; border: 1px solid #dc262630; color: #dc2626; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #dc2626; font-size: 1.5rem; margin: 16px 0; }
+        .demo-day { background: #0f0f1a; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .demo-day h4 { color: #dc2626; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; }
+        .demo-exercise { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a2e; font-size: 0.85rem; }
+        .demo-exercise .name { color: #e2e8f0; }
+        .demo-exercise .prescription { color: #dc2626; font-weight: 600; font-size: 0.8rem; }
+
+        .goals-section { max-width: 900px; margin: 0 auto; padding: 40px 24px; text-align: center; }
+        .goals-section h2 { font-size: 1.5rem; margin-bottom: 20px; }
+        .goals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .goal-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; }
+        .goal-card .emoji { font-size: 1.5rem; margin-bottom: 6px; }
+        .goal-card h3 { font-size: 0.9rem; margin-bottom: 4px; }
+        .goal-card p { color: #94a3b8; font-size: 0.75rem; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px;
+            text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;
+        }
+        .tool-card:hover { border-color: #dc2626; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #dc2626; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.8rem; }
+            .features, .tools-grid, .goals-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Workout Plan</span> Generator</h1>
+        <p>Tell us your fitness goal, equipment, and experience level — get a complete weekly training program with exercises, sets, reps, rest times, and a 4-week progression plan.</p>
+        <a href="app.html" class="cta-btn">Generate Your Plan →</a>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">🏋️</div>
+            <h3>Complete Programs</h3>
+            <p>Full weekly split with warm-up, exercises, cool-down, and progression — not just random exercises.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🎯</div>
+            <h3>Goal-Specific</h3>
+            <p>Build muscle, lose fat, gain strength, improve endurance — each program is optimized for your goal.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🔧</div>
+            <h3>Any Equipment</h3>
+            <p>Full gym, dumbbells only, bodyweight, home gym, or resistance bands — works with what you have.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Build Muscle, 4 days/week, Full Gym, Intermediate</p>
+        <div class="demo-card">
+            <div class="demo-tags">
+                <div class="demo-tag">💪 Build Muscle</div>
+                <div class="demo-tag">📅 4 Days/Week</div>
+                <div class="demo-tag">🏋️ Full Gym</div>
+                <div class="demo-tag">📊 Intermediate</div>
+            </div>
+            <div class="demo-arrow">↓</div>
+            <div class="demo-day">
+                <h4>Day 1 — Upper Body Push (Chest, Shoulders, Triceps)</h4>
+                <div class="demo-exercise"><span class="name">Barbell Bench Press</span><span class="prescription">4 × 8-10</span></div>
+                <div class="demo-exercise"><span class="name">Incline Dumbbell Press</span><span class="prescription">3 × 10-12</span></div>
+                <div class="demo-exercise"><span class="name">Overhead Press</span><span class="prescription">3 × 8-10</span></div>
+                <div class="demo-exercise"><span class="name">Cable Lateral Raises</span><span class="prescription">3 × 12-15</span></div>
+                <div class="demo-exercise"><span class="name">Tricep Rope Pushdowns</span><span class="prescription">3 × 12-15</span></div>
+                <div class="demo-exercise"><span class="name">Dips</span><span class="prescription">3 × 8-12</span></div>
+            </div>
+            <div class="demo-day">
+                <h4>Day 2 — Lower Body (Quads, Hamstrings, Glutes)</h4>
+                <div class="demo-exercise"><span class="name">Barbell Back Squat</span><span class="prescription">4 × 6-8</span></div>
+                <div class="demo-exercise"><span class="name">Romanian Deadlift</span><span class="prescription">3 × 10-12</span></div>
+                <div class="demo-exercise"><span class="name">Leg Press</span><span class="prescription">3 × 10-12</span></div>
+                <div class="demo-exercise"><span class="name">Walking Lunges</span><span class="prescription">3 × 12/leg</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="goals-section">
+        <h2>Programs For Every Goal</h2>
+        <div class="goals-grid">
+            <div class="goal-card"><div class="emoji">💪</div><h3>Build Muscle</h3><p>Hypertrophy-focused with progressive overload</p></div>
+            <div class="goal-card"><div class="emoji">🔥</div><h3>Lose Fat</h3><p>High-intensity circuits with strength preservation</p></div>
+            <div class="goal-card"><div class="emoji">🏆</div><h3>Build Strength</h3><p>Low rep, heavy compound lifts with long rest</p></div>
+            <div class="goal-card"><div class="emoji">❤️</div><h3>General Fitness</h3><p>Balanced mix of strength, cardio, and mobility</p></div>
+            <div class="goal-card"><div class="emoji">🏃</div><h3>Endurance</h3><p>High rep, minimal rest, cardio integration</p></div>
+            <div class="goal-card"><div class="emoji">🧘</div><h3>Flexibility</h3><p>Dynamic stretching, yoga flows, mobility work</p></div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/mealplanner/" class="tool-card">
+                <h3>🥗 MealPlanner</h3>
+                <p>Get a full weekly meal plan with recipes, macros, and grocery list to match your training.</p>
+            </a>
+            <a href="/resumeforge/" class="tool-card">
+                <h3>📄 ResumeForge</h3>
+                <p>Build a professional resume optimized for ATS systems and hiring managers.</p>
+            </a>
+            <a href="/quizmaker/" class="tool-card">
+                <h3>📝 QuizMaker</h3>
+                <p>Paste study material and get instant quizzes with multiple choice and short answer.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>GymPlan AI is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymPlan AI — Personalized Workout Programs | SUITE</title>
+    <meta name="description" content="Get a personalized workout plan tailored to your goals, equipment, and experience level — powered by AI.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header h1 span { color: #dc2626; }
+        .header p { color: #94a3b8; margin-top: 6px; font-size: 0.9rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group select, .form-group input, .form-group textarea {
+            background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: #dc2626; }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; transition: all 0.2s;
+        }
+        .chip:hover { border-color: #dc2626; color: #e2e8f0; }
+        .chip.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+        .generate-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff;
+            transition: opacity 0.2s; font-family: inherit;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #dc2626; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+
+        .program-header { background: linear-gradient(135deg, #dc262615, #b91c1c10); border: 1px solid #dc262630; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .program-header h2 { color: #dc2626; font-size: 1.3rem; margin-bottom: 6px; }
+        .program-header p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
+        .program-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+        .program-meta span { background: #0f0f1a; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; color: #94a3b8; }
+
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; transition: all 0.2s; font-family: inherit;
+        }
+        .action-btn:hover { border-color: #dc2626; color: #e2e8f0; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; white-space: nowrap; transition: all 0.2s;
+        }
+        .tab:hover { border-color: #dc2626; color: #e2e8f0; }
+        .tab.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+        .day-content { display: none; }
+        .day-content.active { display: block; }
+
+        .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .day-header h3 { color: #dc2626; font-size: 1.1rem; }
+        .day-header .time { font-size: 0.8rem; color: #94a3b8; background: #0f0f1a; padding: 4px 12px; border-radius: 6px; }
+
+        .exercise-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+        .exercise-num { width: 32px; height: 32px; border-radius: 50%; background: #dc262620; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .exercise-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .exercise-info .muscle { font-size: 0.7rem; color: #dc2626; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .exercise-info .notes { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .exercise-stats { text-align: right; }
+        .exercise-stats .stat { font-size: 0.8rem; color: #94a3b8; }
+        .exercise-stats .stat strong { color: #e2e8f0; }
+
+        .section-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .section-card h3 { color: #dc2626; font-size: 0.95rem; margin-bottom: 12px; }
+        .section-card li { color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-top: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #dc262620; border: 1px solid #dc262630; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input-row input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; }
+        .qa-input-row input:focus { border-color: #dc2626; }
+        .qa-input-row button { padding: 12px 24px; border: none; border-radius: 10px; background: #dc2626; color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 14px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 16px; }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .exercise-card { grid-template-columns: auto 1fr; }
+            .exercise-stats { grid-column: 1 / -1; text-align: left; display: flex; gap: 12px; }
+            .qa-msg.user { margin-left: 10px; }
+            .qa-msg.ai { margin-right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💪 <span>GymPlan AI</span></h1>
+            <p>Personalized workout programs tailored to your goals</p>
+        </div>
+
+        <div id="inputSection" class="input-section">
+            <div class="form-group full" style="margin-bottom: 16px;">
+                <label>Fitness Goal</label>
+                <div class="chip-group" id="goalChips">
+                    <div class="chip" data-val="build muscle">Build Muscle</div>
+                    <div class="chip" data-val="lose fat">Lose Fat</div>
+                    <div class="chip" data-val="build strength">Build Strength</div>
+                    <div class="chip" data-val="general fitness">General Fitness</div>
+                    <div class="chip" data-val="improve endurance">Endurance</div>
+                    <div class="chip" data-val="increase flexibility">Flexibility</div>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Experience Level</label>
+                    <select id="levelSelect">
+                        <option value="beginner">Beginner (0-6 months)</option>
+                        <option value="intermediate" selected>Intermediate (6 months - 2 years)</option>
+                        <option value="advanced">Advanced (2+ years)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Days Per Week</label>
+                    <select id="daysSelect">
+                        <option value="3">3 Days</option>
+                        <option value="4" selected>4 Days</option>
+                        <option value="5">5 Days</option>
+                        <option value="6">6 Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Equipment Available</label>
+                    <select id="equipmentSelect">
+                        <option value="full gym" selected>Full Gym</option>
+                        <option value="dumbbells only">Dumbbells Only</option>
+                        <option value="bodyweight only">Bodyweight Only</option>
+                        <option value="home gym (barbell + dumbbells + bench)">Home Gym</option>
+                        <option value="resistance bands">Resistance Bands</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Session Duration</label>
+                    <select id="durationSelect">
+                        <option value="30 minutes">30 Minutes</option>
+                        <option value="45 minutes" selected>45 Minutes</option>
+                        <option value="60 minutes">60 Minutes</option>
+                        <option value="75 minutes">75 Minutes</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Injuries / Limitations (optional)</label>
+                    <textarea id="limitationsInput" placeholder="e.g., bad left knee, lower back pain, can't do overhead press..."></textarea>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Workout Plan</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Building your workout program...</p>
+        </div>
+
+        <div id="errorSection" style="display:none;"></div>
+
+        <div id="resultsSection" class="results">
+            <div id="programHeader" class="program-header"></div>
+
+            <div class="action-bar">
+                <button class="action-btn" onclick="copyPlan()">📋 Copy Full Plan</button>
+                <button class="action-btn" onclick="newPlan()">🔄 New Plan</button>
+            </div>
+
+            <div id="warmupSection" class="section-card" style="display:none;"></div>
+
+            <div class="tabs" id="dayTabs"></div>
+            <div id="daysContainer"></div>
+
+            <div id="cooldownSection" class="section-card" style="display:none;"></div>
+            <div id="progressionSection" class="section-card" style="display:none;"></div>
+            <div id="tipsSection" class="section-card" style="display:none;"></div>
+
+            <div class="qa-section">
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-msg ai">Ask me anything — exercise alternatives, form tips, progression advice, or how to modify the plan!</div>
+                </div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="e.g., What can I replace squats with?" onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlan = null;
+        let selectedGoal = '';
+        let qaHistory = [];
+
+        document.querySelectorAll('#goalChips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('#goalChips .chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                selectedGoal = chip.dataset.val;
+            });
+        });
+
+        async function generate() {
+            if (!selectedGoal) { alert('Please select a fitness goal.'); return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                chargeCredits('generate');
+
+                const resp = await fetch('/api/gymplan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate',
+                        goal: selectedGoal,
+                        level: document.getElementById('levelSelect').value,
+                        daysPerWeek: parseInt(document.getElementById('daysSelect').value),
+                        equipment: document.getElementById('equipmentSelect').value,
+                        duration: document.getElementById('durationSelect').value,
+                        limitations: document.getElementById('limitationsInput').value.trim()
+                    })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                if (data.raw) {
+                    document.getElementById('errorSection').innerHTML = `<div class="error-msg">${data.raw}</div>`;
+                    document.getElementById('errorSection').style.display = 'block';
+                    document.getElementById('inputSection').style.display = 'block';
+                } else {
+                    currentPlan = data;
+                    renderPlan(data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorSection').innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function renderPlan(data) {
+            // Header
+            document.getElementById('programHeader').innerHTML = `
+                <h2>${data.programName || 'Your Workout Plan'}</h2>
+                <p>${data.overview || ''}</p>
+                <div class="program-meta">
+                    <span>🎯 ${data.goal || selectedGoal}</span>
+                    <span>📊 ${(data.level || '').charAt(0).toUpperCase() + (data.level || '').slice(1)}</span>
+                    <span>📅 ${data.daysPerWeek || '?'} days/week</span>
+                    <span>⏱️ ${data.programDuration || '4 weeks'}</span>
+                </div>
+            `;
+
+            // Warmup
+            if (data.warmup) {
+                const ws = document.getElementById('warmupSection');
+                ws.innerHTML = `<h3>🔥 Warm-Up (${data.warmup.duration || '5-10 min'})</h3>
+                    <ul>${(data.warmup.exercises || []).map(e => `<li>${e}</li>`).join('')}</ul>`;
+                ws.style.display = 'block';
+            }
+
+            // Day tabs
+            const tabsEl = document.getElementById('dayTabs');
+            const container = document.getElementById('daysContainer');
+            tabsEl.innerHTML = '';
+            container.innerHTML = '';
+
+            if (data.days?.length) {
+                data.days.forEach((day, i) => {
+                    tabsEl.innerHTML += `<div class="tab ${i === 0 ? 'active' : ''}" data-day="${i}" onclick="switchDay(${i})">${day.day || 'Day ' + (i + 1)}</div>`;
+
+                    let exerciseHtml = '';
+                    if (day.exercises?.length) {
+                        day.exercises.forEach((ex, ei) => {
+                            exerciseHtml += `<div class="exercise-card">
+                                <div class="exercise-num">${ei + 1}</div>
+                                <div class="exercise-info">
+                                    <h4>${ex.name || ''}</h4>
+                                    <div class="muscle">${ex.muscleGroup || ''}</div>
+                                    ${ex.notes ? `<div class="notes">${ex.notes}</div>` : ''}
+                                </div>
+                                <div class="exercise-stats">
+                                    <div class="stat"><strong>${ex.sets || '?'}</strong> sets</div>
+                                    <div class="stat"><strong>${ex.reps || '?'}</strong> reps</div>
+                                    <div class="stat">${ex.rest || '?'} rest</div>
+                                </div>
+                            </div>`;
+                        });
+                    }
+
+                    container.innerHTML += `<div class="day-content ${i === 0 ? 'active' : ''}" id="dayContent${i}">
+                        <div class="day-header">
+                            <h3>${day.name || day.day || ''} ${day.focus ? `— ${day.focus}` : ''}</h3>
+                            ${day.estimatedTime ? `<span class="time">⏱️ ${day.estimatedTime}</span>` : ''}
+                        </div>
+                        ${exerciseHtml}
+                    </div>`;
+                });
+            }
+
+            // Cooldown
+            if (data.cooldown) {
+                const cs = document.getElementById('cooldownSection');
+                cs.innerHTML = `<h3>🧊 Cool-Down (${data.cooldown.duration || '5 min'})</h3>
+                    <ul>${(data.cooldown.exercises || []).map(e => `<li>${e}</li>`).join('')}</ul>`;
+                cs.style.display = 'block';
+            }
+
+            // Progression
+            if (data.progressionPlan?.length) {
+                const ps = document.getElementById('progressionSection');
+                ps.innerHTML = `<h3>📈 Progression Plan</h3><ul>${data.progressionPlan.map(p => `<li>${p}</li>`).join('')}</ul>`;
+                ps.style.display = 'block';
+            }
+
+            // Tips
+            if (data.tips?.length) {
+                const ts = document.getElementById('tipsSection');
+                ts.innerHTML = `<h3>💡 Tips</h3><ul>${data.tips.map(t => `<li>${t}</li>`).join('')}</ul>`;
+                ts.style.display = 'block';
+            }
+        }
+
+        function switchDay(idx) {
+            document.querySelectorAll('.day-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+            document.querySelectorAll('#dayTabs .tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+        }
+
+        function copyPlan() {
+            if (!currentPlan) return;
+            let text = `${currentPlan.programName || 'Workout Plan'}\n${'='.repeat(40)}\n${currentPlan.overview || ''}\n\n`;
+
+            if (currentPlan.warmup) {
+                text += `WARM-UP (${currentPlan.warmup.duration || ''}):\n${(currentPlan.warmup.exercises || []).map(e => `  • ${e}`).join('\n')}\n\n`;
+            }
+
+            currentPlan.days?.forEach(day => {
+                text += `--- ${day.day}: ${day.name || ''} ---\nFocus: ${day.focus || ''} | Time: ${day.estimatedTime || '?'}\n\n`;
+                day.exercises?.forEach((ex, i) => {
+                    text += `  ${i + 1}. ${ex.name} — ${ex.sets} sets × ${ex.reps} reps (${ex.rest} rest)\n`;
+                    if (ex.notes) text += `     ${ex.notes}\n`;
+                });
+                text += '\n';
+            });
+
+            if (currentPlan.progressionPlan?.length) {
+                text += `PROGRESSION:\n${currentPlan.progressionPlan.map(p => `  • ${p}`).join('\n')}\n`;
+            }
+
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy Full Plan', 2000);
+        }
+
+        function newPlan() {
+            currentPlan = null;
+            qaHistory = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me anything about your workout plan!</div>';
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/gymplan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'qa',
+                        question: q,
+                        history: qaHistory,
+                        context: currentPlan ? JSON.stringify(currentPlan).slice(0, 50000) : ''
+                    })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                const answer = data.answer || data.error || 'No response';
+                qaHistory.push({ role: 'model', content: answer });
+                document.getElementById('qaLoading').innerHTML = answer.replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `Error: ${err.message}`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'gymplan',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: 5
+                }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
