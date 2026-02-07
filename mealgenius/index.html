@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MealGenius — Free AI Meal Generator | Photo Fridge → Instant Recipes</title>
+    <meta name="description" content="Photo your fridge or pantry — AI identifies every ingredient and generates delicious meals you can make right now, with full recipes and nutrition info. 100% free.">
+    <meta property="og:title" content="MealGenius — Free AI Meal Generator">
+    <meta property="og:description" content="Fridge photo in, meal ideas out — recipes, nutrition, prep times, and tips to reduce food waste. All from what you already have.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/mealgenius/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/mealgenius/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #eab30815; border: 1px solid #eab30830; color: #facc15; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #facc15, #eab308); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #facc15, #eab308); color: #000; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #eab30830; }
+
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #eab30815; border: 1px solid #eab30830; color: #facc15; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #facc15; font-size: 1.5rem; margin: 16px 0; }
+
+        .demo-ingredients { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .demo-ingredient { background: #0f0f1a; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; }
+        .demo-ingredient .cat { font-size: 0.65rem; color: #94a3b8; }
+
+        .demo-meal { background: #0f0f1a; border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+        .demo-meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .demo-meal h4 { font-size: 1rem; }
+        .demo-meal-meta { display: flex; gap: 10px; font-size: 0.75rem; color: #94a3b8; }
+        .demo-meal .desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+        .demo-meal-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .demo-meal-tag { font-size: 0.7rem; background: #eab30810; border: 1px solid #eab30820; color: #facc15; padding: 3px 8px; border-radius: 6px; }
+
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #facc15; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #facc15; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.8rem; }
+            .features, .tools-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Meal</span> Generator</h1>
+        <p>Photo your fridge or pantry — AI identifies every ingredient and generates delicious meals you can make right now, with full recipes and nutrition info.</p>
+        <a href="app.html" class="cta-btn">Generate Meals →</a>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="icon">📸</div>
+            <h3>Photo → Meals</h3>
+            <p>Snap a photo of your fridge or pantry. AI spots every ingredient and creates meals from what you have.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">👨‍🍳</div>
+            <h3>Full Recipes</h3>
+            <p>Step-by-step cooking instructions with prep times, difficulty levels, and helpful chef tips.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">♻️</div>
+            <h3>Zero Waste</h3>
+            <p>Prioritizes ingredients about to expire. Storage tips and waste-reduction suggestions included.</p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Photo of a fridge with chicken, rice, peppers, onion, cheese, and eggs</p>
+        <div class="demo-card">
+            <div class="demo-tags">
+                <div class="demo-tag">📸 Photo Upload</div>
+                <div class="demo-tag">🍳 6 Ingredients Found</div>
+                <div class="demo-tag">🍽️ 3 Meals Generated</div>
+            </div>
+            <div class="demo-arrow">↓</div>
+
+            <div class="demo-ingredients">
+                <div class="demo-ingredient">🍗 Chicken Breast <span class="cat">protein</span></div>
+                <div class="demo-ingredient">🍚 White Rice <span class="cat">grain</span></div>
+                <div class="demo-ingredient">🫑 Bell Peppers <span class="cat">vegetable</span></div>
+                <div class="demo-ingredient">🧅 Yellow Onion <span class="cat">vegetable</span></div>
+                <div class="demo-ingredient">🧀 Cheddar Cheese <span class="cat">dairy</span></div>
+                <div class="demo-ingredient">🥚 Eggs (6) <span class="cat">protein</span></div>
+            </div>
+
+            <div class="demo-meal">
+                <div class="demo-meal-header">
+                    <h4>🍳 Chicken Fried Rice</h4>
+                    <div class="demo-meal-meta"><span>⏱️ 25 min</span><span>🔥 420 cal</span><span>⭐ Easy</span></div>
+                </div>
+                <div class="desc">Savory fried rice with diced chicken, scrambled egg, peppers, and onion. A one-pan weeknight winner.</div>
+                <div class="demo-meal-tags">
+                    <span class="demo-meal-tag">quick</span>
+                    <span class="demo-meal-tag">one-pan</span>
+                    <span class="demo-meal-tag">high protein</span>
+                </div>
+            </div>
+
+            <div class="demo-meal">
+                <div class="demo-meal-header">
+                    <h4>🌯 Cheesy Chicken Fajita Bowl</h4>
+                    <div class="demo-meal-meta"><span>⏱️ 30 min</span><span>🔥 510 cal</span><span>⭐ Easy</span></div>
+                </div>
+                <div class="desc">Seasoned chicken strips with sautéed peppers and onions over rice, topped with melted cheddar.</div>
+                <div class="demo-meal-tags">
+                    <span class="demo-meal-tag">comfort food</span>
+                    <span class="demo-meal-tag">meal prep</span>
+                </div>
+            </div>
+
+            <div class="demo-meal">
+                <div class="demo-meal-header">
+                    <h4>🥘 Stuffed Pepper Skillet</h4>
+                    <div class="demo-meal-meta"><span>⏱️ 35 min</span><span>🔥 380 cal</span><span>⭐ Medium</span></div>
+                </div>
+                <div class="desc">Deconstructed stuffed peppers — chicken, rice, and onion filling with melted cheese on top.</div>
+                <div class="demo-meal-tags">
+                    <span class="demo-meal-tag">healthy</span>
+                    <span class="demo-meal-tag">family friendly</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/nutriscan/" class="tool-card">
+                <h3>📸 NutriScan</h3>
+                <p>Photo your food — get instant calories, macros, micronutrients, and diet compatibility.</p>
+            </a>
+            <a href="/mealplanner/" class="tool-card">
+                <h3>🍽️ MealPlanner AI</h3>
+                <p>Enter your diet and goals — get a full weekly meal plan with recipes and grocery list.</p>
+            </a>
+            <a href="/gymplan/" class="tool-card">
+                <h3>💪 GymPlan AI</h3>
+                <p>Get a personalized workout program based on your goals, experience, and equipment.</p>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>MealGenius is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p>
+    </div>
+</body>
+</html>

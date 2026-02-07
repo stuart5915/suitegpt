@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MealGenius — AI Meal Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.8rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #facc15, #eab308); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+        /* Upload */
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #facc15; background: #eab30808; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 6px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone input { display: none; }
+        .preview-wrap { position: relative; display: none; margin-bottom: 16px; }
+        .preview-wrap img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; background: #1a1a2e; }
+        .preview-wrap .remove { position: absolute; top: 8px; right: 8px; background: #ef4444; color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; }
+
+        .or-divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 12px 0; font-weight: 600; }
+
+        .context-input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 70px; margin-bottom: 16px; }
+        .context-input:focus { outline: none; border-color: #facc15; }
+        .context-input::placeholder { color: #64748b; }
+
+        .options-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .option-group { flex: 1; min-width: 140px; }
+        .option-group label { display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+        .option-group select { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; }
+        .option-group select:focus { outline: none; border-color: #facc15; }
+
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #facc15, #eab308); color: #000; font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #eab30830; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 4px solid #2a2a3e; border-top: 4px solid #facc15; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        /* Results */
+        .results { display: none; }
+        .new-btn { display: inline-block; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: border-color 0.2s; }
+        .new-btn:hover { border-color: #facc15; }
+
+        /* Ingredients banner */
+        .ingredients-banner { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+        .ingredients-banner h3 { font-size: 0.9rem; margin-bottom: 10px; color: #facc15; }
+        .ingredient-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ingredient-chip { background: #0f0f1a; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; }
+        .ingredient-chip .fresh { color: #4ade80; font-size: 0.7rem; margin-left: 4px; }
+        .ingredient-chip .use-soon { color: #fbbf24; font-size: 0.7rem; margin-left: 4px; }
+        .ingredient-chip .expired { color: #f87171; font-size: 0.7rem; margin-left: 4px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #94a3b8; }
+        .tab.active { background: #eab30820; border-color: #eab308; color: #facc15; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Meal cards */
+        .meal-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+        .meal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .meal-header h3 { font-size: 1.05rem; }
+        .meal-meta { display: flex; gap: 12px; font-size: 0.75rem; color: #94a3b8; flex-wrap: wrap; }
+        .meal-meta span { white-space: nowrap; }
+        .meal-badges { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .meal-badge { font-size: 0.7rem; padding: 3px 10px; border-radius: 6px; font-weight: 600; }
+        .meal-badge.easy { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .meal-badge.medium { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .meal-badge.advanced { background: rgba(239,68,68,0.15); color: #f87171; }
+        .meal-badge.type { background: rgba(250,204,21,0.1); border: 1px solid rgba(250,204,21,0.2); color: #facc15; }
+
+        .meal-ingredients { margin-bottom: 12px; }
+        .meal-ingredients h4 { font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; }
+        .meal-ingredients .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+        .meal-ingredients .chip { background: #0f0f1a; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
+        .meal-ingredients .chip.missing { border: 1px dashed #64748b; color: #94a3b8; }
+
+        .meal-toggle { background: none; border: 1px solid #2a2a3e; color: #facc15; padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .meal-toggle:hover { background: #eab30815; }
+
+        .meal-steps { display: none; margin-top: 14px; }
+        .meal-steps.open { display: block; }
+        .step { background: #0f0f1a; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 12px; }
+        .step-num { min-width: 28px; height: 28px; background: #eab30820; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #facc15; }
+        .step-body { flex: 1; }
+        .step-body .action { font-size: 0.85rem; line-height: 1.5; }
+        .step-body .tip { font-size: 0.75rem; color: #facc15; margin-top: 4px; font-style: italic; }
+
+        .meal-nutrition { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+        .nutri-item { background: #0f0f1a; border-radius: 8px; padding: 8px 14px; text-align: center; }
+        .nutri-item .val { font-weight: 800; font-size: 0.9rem; }
+        .nutri-item .val.cal { color: #facc15; }
+        .nutri-item .val.p { color: #f87171; }
+        .nutri-item .val.c { color: #fbbf24; }
+        .nutri-item .val.f { color: #a78bfa; }
+        .nutri-item .lbl { font-size: 0.6rem; color: #94a3b8; }
+
+        /* Shopping / tips */
+        .card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+        .card h3 { font-size: 1rem; margin-bottom: 10px; }
+        .card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; }
+        .tip-item { background: #0f0f1a; border-left: 3px solid #facc15; border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px; }
+        .tip-item p { font-size: 0.85rem; line-height: 1.5; color: #e2e8f0; }
+        .shop-item { background: #0f0f1a; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .shop-item .name { font-weight: 600; font-size: 0.85rem; }
+        .shop-item .reason { font-size: 0.75rem; color: #94a3b8; }
+
+        /* QA */
+        .qa-container { display: flex; flex-direction: column; height: 400px; }
+        .qa-messages { flex: 1; overflow-y: auto; padding: 16px; background: #0f0f1a; border-radius: 12px; margin-bottom: 12px; }
+        .qa-msg { margin-bottom: 12px; }
+        .qa-msg.user { text-align: right; }
+        .qa-msg .bubble { display: inline-block; max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; text-align: left; }
+        .qa-msg.user .bubble { background: #eab308; color: #000; }
+        .qa-msg.assistant .bubble { background: #1a1a2e; color: #e2e8f0; }
+        .qa-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input:focus { outline: none; border-color: #facc15; }
+        .qa-input::placeholder { color: #64748b; }
+        .qa-send { padding: 12px 20px; background: #eab308; color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .qa-send:disabled { opacity: 0.5; }
+
+        @media (max-width: 640px) {
+            .options-row { flex-direction: column; }
+            .meal-nutrition { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Meal<span>Genius</span></h1>
+            <p>Photo your fridge — get meals you can make right now</p>
+        </div>
+
+        <!-- Upload View -->
+        <div id="uploadView">
+            <div class="upload-zone" id="dropZone">
+                <div class="icon">📸</div>
+                <h3>Drop a photo of your fridge or pantry</h3>
+                <p>or click to browse — JPG, PNG up to 4MB</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" alt="Ingredients preview">
+                <button class="remove" id="removeBtn">×</button>
+            </div>
+
+            <div class="or-divider">— OR TYPE YOUR INGREDIENTS —</div>
+
+            <textarea class="context-input" id="contextInput" placeholder="e.g. chicken breast, rice, bell peppers, onion, cheddar cheese, eggs, soy sauce..."></textarea>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label>Dietary Preference</label>
+                    <select id="dietarySelect">
+                        <option value="">No preference</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="keto">Keto / Low Carb</option>
+                        <option value="gluten-free">Gluten-Free</option>
+                        <option value="dairy-free">Dairy-Free</option>
+                        <option value="paleo">Paleo</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label>Servings</label>
+                    <select id="servingsSelect">
+                        <option value="1">1 person</option>
+                        <option value="2" selected>2 people</option>
+                        <option value="4">4 people</option>
+                        <option value="6">6 people</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">Generate Meals →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Identifying ingredients and creating meals...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="resultsView">
+            <button class="new-btn" id="newBtn">← New Ingredients</button>
+
+            <div class="ingredients-banner" id="ingredientsBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <div class="tab active" data-tab="meals">Meals</div>
+                <div class="tab" data-tab="shopping">Shopping List</div>
+                <div class="tab" data-tab="tips">Storage & Waste Tips</div>
+                <div class="tab" data-tab="qa">Chef Q&A</div>
+            </div>
+
+            <div class="tab-content active" id="tab-meals"></div>
+            <div class="tab-content" id="tab-shopping"></div>
+            <div class="tab-content" id="tab-tips"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg assistant"><div class="bubble">Ask me anything — substitutions, cooking techniques, how to modify a recipe, or what else to make with your ingredients!</div></div>
+                    </div>
+                    <div class="qa-row">
+                        <input class="qa-input" id="qaInput" placeholder="Ask the chef...">
+                        <button class="qa-send" id="qaSend">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let imageBase64 = null, imageMime = null, resultData = null, qaHistory = [];
+        const API = '/api/mealgenius';
+
+        // Upload
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4MB'); return; }
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const full = e.target.result;
+                imageBase64 = full.split(',')[1];
+                previewImg.src = full;
+                previewWrap.style.display = 'block';
+                dropZone.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('removeBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null;
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            fileInput.value = '';
+        });
+
+        // Submit
+        submitBtn.addEventListener('click', async () => {
+            const desc = document.getElementById('contextInput').value.trim();
+            if (!imageBase64 && !desc) { alert('Please upload a photo or type your ingredients'); return; }
+
+            document.getElementById('uploadView').style.display = 'none';
+            document.getElementById('loadingView').style.display = 'block';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'mealgenius', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const body = {
+                    mode: 'generate',
+                    dietary: document.getElementById('dietarySelect').value,
+                    servings: parseInt(document.getElementById('servingsSelect').value)
+                };
+                if (imageBase64) { body.image = imageBase64; body.mimeType = imageMime; }
+                if (desc) body.description = desc;
+
+                const resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+
+                if (data.raw) { renderRaw(data.raw); return; }
+                resultData = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error generating meals. Please try again.');
+                document.getElementById('loadingView').style.display = 'none';
+                document.getElementById('uploadView').style.display = 'block';
+            }
+        });
+
+        function renderRaw(text) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+            document.getElementById('ingredientsBanner').innerHTML = '';
+            document.getElementById('tab-meals').innerHTML = `<div class="card"><p style="white-space:pre-wrap">${text}</p></div>`;
+        }
+
+        function renderResults(d) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+
+            // Ingredients banner
+            if (d.ingredientsFound?.length) {
+                let chips = d.ingredientsFound.map(i => {
+                    const freshClass = i.freshness === 'use soon' ? 'use-soon' : i.freshness === 'expired' ? 'expired' : 'fresh';
+                    const freshLabel = i.freshness && i.freshness !== 'fresh' && i.freshness !== 'good' ? `<span class="${freshClass}">(${i.freshness})</span>` : '';
+                    return `<span class="ingredient-chip">${i.name} ${freshLabel}</span>`;
+                }).join('');
+                document.getElementById('ingredientsBanner').innerHTML = `<h3>🧊 ${d.ingredientsFound.length} Ingredients Found</h3><div class="ingredient-chips">${chips}</div>`;
+            }
+
+            // Meals tab
+            let mealsHTML = '';
+            if (d.meals?.length) {
+                d.meals.forEach((m, idx) => {
+                    const diffClass = m.difficulty === 'advanced' ? 'advanced' : m.difficulty === 'medium' ? 'medium' : 'easy';
+                    let usedChips = (m.ingredientsUsed || []).map(i => `<span class="chip">${i}</span>`).join('');
+                    let missingChips = (m.ingredientsMissing || []).map(i => `<span class="chip missing">${i}</span>`).join('');
+
+                    let stepsHTML = '';
+                    if (m.instructions?.length) {
+                        stepsHTML = m.instructions.map(s => `
+                            <div class="step">
+                                <div class="step-num">${s.step}</div>
+                                <div class="step-body">
+                                    <div class="action">${s.action}</div>
+                                    ${s.tip ? `<div class="tip">💡 ${s.tip}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+
+                    let nutriHTML = '';
+                    if (m.nutrition) {
+                        const n = m.nutrition;
+                        nutriHTML = `<div class="meal-nutrition">
+                            <div class="nutri-item"><div class="val cal">${n.calories || '—'}</div><div class="lbl">Calories</div></div>
+                            <div class="nutri-item"><div class="val p">${n.protein || '—'}</div><div class="lbl">Protein</div></div>
+                            <div class="nutri-item"><div class="val c">${n.carbs || '—'}</div><div class="lbl">Carbs</div></div>
+                            <div class="nutri-item"><div class="val f">${n.fat || '—'}</div><div class="lbl">Fat</div></div>
+                        </div>`;
+                    }
+
+                    let tagsHTML = (m.tags || []).map(t => `<span class="meal-badge type">${t}</span>`).join('');
+
+                    mealsHTML += `
+                        <div class="meal-card">
+                            <div class="meal-header">
+                                <h3>${m.name}</h3>
+                                <div class="meal-meta">
+                                    ${m.prepTime ? `<span>🔪 Prep: ${m.prepTime}</span>` : ''}
+                                    ${m.cookTime ? `<span>🔥 Cook: ${m.cookTime}</span>` : ''}
+                                    <span>🍽️ ${m.servings || 2} servings</span>
+                                </div>
+                            </div>
+                            <div class="meal-badges">
+                                <span class="meal-badge ${diffClass}">${m.difficulty || 'easy'}</span>
+                                ${m.type ? `<span class="meal-badge type">${m.type}</span>` : ''}
+                                ${tagsHTML}
+                            </div>
+                            <div class="meal-ingredients">
+                                <h4>Using:</h4>
+                                <div class="chips">${usedChips}</div>
+                                ${missingChips ? `<h4 style="margin-top:6px">Optional extras:</h4><div class="chips">${missingChips}</div>` : ''}
+                            </div>
+                            ${nutriHTML}
+                            <button class="meal-toggle" onclick="toggleSteps(${idx})">Show Recipe →</button>
+                            <div class="meal-steps" id="steps-${idx}">${stepsHTML}</div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('tab-meals').innerHTML = mealsHTML;
+
+            // Shopping tab
+            let shopHTML = '';
+            if (d.shoppingList?.length) {
+                d.shoppingList.forEach(s => {
+                    shopHTML += `<div class="shop-item"><span class="name">🛒 ${s.item}</span><span class="reason">${s.reason}</span></div>`;
+                });
+            } else {
+                shopHTML = '<div class="card"><p>No shopping needed — you have everything for these meals!</p></div>';
+            }
+            document.getElementById('tab-shopping').innerHTML = shopHTML;
+
+            // Tips tab
+            let tipsHTML = '';
+            if (d.storageTips?.length) {
+                tipsHTML += '<div class="card"><h3>🧊 Storage Tips</h3>';
+                d.storageTips.forEach(t => { tipsHTML += `<div class="tip-item"><p>${t}</p></div>`; });
+                tipsHTML += '</div>';
+            }
+            if (d.wasteReduction?.length) {
+                tipsHTML += '<div class="card"><h3>♻️ Waste Reduction</h3>';
+                d.wasteReduction.forEach(t => { tipsHTML += `<div class="tip-item"><p>${t}</p></div>`; });
+                tipsHTML += '</div>';
+            }
+            if (!tipsHTML) tipsHTML = '<div class="card"><p>No specific tips — your ingredients look well-managed!</p></div>';
+            document.getElementById('tab-tips').innerHTML = tipsHTML;
+        }
+
+        function toggleSteps(idx) {
+            const el = document.getElementById('steps-' + idx);
+            el.classList.toggle('open');
+            const btn = el.previousElementSibling;
+            btn.textContent = el.classList.contains('open') ? 'Hide Recipe ←' : 'Show Recipe →';
+        }
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+
+        // New
+        document.getElementById('newBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null; resultData = null; qaHistory = [];
+            fileInput.value = '';
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            document.getElementById('contextInput').value = '';
+            document.getElementById('resultsView').style.display = 'none';
+            document.getElementById('uploadView').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg assistant"><div class="bubble">Ask me anything — substitutions, cooking techniques, how to modify a recipe, or what else to make with your ingredients!</div></div>';
+            document.querySelectorAll('.tab')[0].click();
+        });
+
+        // Q&A
+        const qaInput = document.getElementById('qaInput');
+        const qaSend = document.getElementById('qaSend');
+        const qaMessages = document.getElementById('qaMessages');
+
+        async function sendQA() {
+            const q = qaInput.value.trim();
+            if (!q) return;
+            qaInput.value = '';
+            qaSend.disabled = true;
+
+            qaMessages.innerHTML += `<div class="qa-msg user"><div class="bubble">${q}</div></div>`;
+            qaMessages.innerHTML += `<div class="qa-msg assistant" id="qaTyping"><div class="bubble">Thinking...</div></div>`;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'mealgenius', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: resultData ? JSON.stringify(resultData) : null })
+                });
+                const data = await resp.json();
+                const answer = data.answer || 'Sorry, I couldn\'t answer that.';
+
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">${answer.replace(/\n/g, '<br>')}</div></div>`;
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">Sorry, something went wrong. Please try again.</div></div>`;
+            }
+            qaSend.disabled = false;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+        }
+
+        qaSend.addEventListener('click', sendQA);
+        qaInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQA(); } });
+    </script>
+</body>
+</html>
