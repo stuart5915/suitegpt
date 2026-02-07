@@ -7,55 +7,173 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
-        canvas { display: block; }
 
-        #ui {
-            position: fixed; top: 16px; left: 16px; z-index: 10;
-            background: rgba(0,0,0,0.7); border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 8px; padding: 12px 16px; color: #ccc; font-size: 12px;
-            line-height: 1.6; pointer-events: none;
+        /* === RS-STYLE GAME FRAME === */
+        #game-frame {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            grid-template-rows: 1fr 160px;
+            width: 100vw; height: 100vh;
         }
-        #ui h3 { color: #6366f1; margin-bottom: 6px; font-size: 14px; }
-        #ui kbd {
-            background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
-            border-radius: 3px; padding: 1px 5px; font-size: 11px; color: #a5b4fc;
+        #game-viewport {
+            position: relative; overflow: hidden; background: #000;
+            grid-row: 1; grid-column: 1;
         }
+        #game-viewport canvas { display: block; width: 100%; height: 100%; }
+        #npc-labels, #chat-bubbles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 
-        /* Coords + Activity Log */
-        #activity-area {
-            position: fixed; bottom: 16px; left: 16px; z-index: 10;
-            width: 320px;
-        }
-        #coords {
-            background: rgba(0,0,0,0.7); border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 8px 8px 0 0; padding: 6px 14px; color: #a5b4fc; font-size: 12px;
-            font-family: 'Courier New', monospace; border-bottom: none;
-        }
-        #activity-log {
-            background: rgba(0,0,0,0.75); border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 0 0 8px 8px; padding: 8px 12px;
-            max-height: 180px; overflow-y: auto; font-size: 11px; line-height: 1.5;
-            color: #9ca3af;
-        }
-        #activity-log::-webkit-scrollbar { width: 4px; }
-        #activity-log::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 2px; }
-        .log-entry { padding: 1px 0; }
-
-        /* Minimap */
-        #minimap {
-            position: fixed; bottom: 16px; right: 16px; z-index: 10;
-            border: 2px solid rgba(99,102,241,0.4); border-radius: 6px;
-            background: rgba(0,0,0,0.5);
+        /* Right Sidebar */
+        #game-sidebar {
+            grid-row: 1 / 3; grid-column: 2;
+            background: linear-gradient(180deg, #2a2a2e 0%, #1a1a1f 100%);
+            border-left: 2px solid #4a4a50;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* Day/Night button */
-        #daynight {
-            position: fixed; top: 16px; right: 16px; z-index: 10;
-            background: rgba(0,0,0,0.7); border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 8px; padding: 8px 14px; color: #ccc; font-size: 12px;
-            cursor: pointer; pointer-events: all;
+        /* Minimap in sidebar */
+        #minimap-wrap {
+            padding: 8px; text-align: center;
+            border-bottom: 2px solid #4a4a50;
+            background: #1a1a1f;
         }
-        #daynight:hover { border-color: #6366f1; color: #fff; }
+        #minimap { border: 2px solid #5a5a60; border-radius: 2px; display: block; margin: 0 auto; }
+
+        /* HP / Energy Orbs */
+        #orbs-row {
+            display: flex; justify-content: center; gap: 16px; padding: 8px 0;
+            border-bottom: 2px solid #4a4a50; background: #222226;
+        }
+        .orb {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 2px solid #5a5a60; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; color: #fff;
+            text-shadow: 0 0 3px #000;
+        }
+        .orb-hp { background: conic-gradient(#22c55e var(--hp-pct, 100%), #333 0); }
+        .orb-energy { background: conic-gradient(#eab308 var(--energy-pct, 100%), #333 0); }
+        .orb-combat { background: conic-gradient(#6366f1 100%, #333 0); }
+        .orb-inner {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #1a1a1f; display: flex; align-items: center;
+            justify-content: center; font-size: 11px;
+        }
+
+        /* Sidebar Tabs */
+        #sidebar-tabs {
+            display: flex; border-bottom: 2px solid #4a4a50;
+        }
+        .sidebar-tab {
+            flex: 1; padding: 6px 2px; text-align: center;
+            font-size: 10px; font-weight: bold; color: #9ca3af;
+            background: #2a2a2e; border: none; cursor: pointer;
+            border-right: 1px solid #4a4a50;
+            border-top: 2px solid transparent;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .sidebar-tab:last-child { border-right: none; }
+        .sidebar-tab.active { background: #1a1a1f; color: #fff; border-top-color: #6366f1; }
+        .sidebar-tab:hover { color: #fff; }
+
+        /* Sidebar Content */
+        .sidebar-content { flex: 1; overflow-y: auto; display: none; }
+        .sidebar-content.active { display: block; }
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #4a4a50; }
+
+        /* Inventory Grid */
+        #inv-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 2px; padding: 4px;
+        }
+        .inv-slot {
+            aspect-ratio: 1; background: #1a1a1f;
+            border: 1px solid #3a3a40; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 20px; position: relative; cursor: pointer;
+            border-radius: 2px;
+        }
+        .inv-slot:hover { border-color: #6366f1; background: #222230; }
+        .inv-slot.equipped { border-color: #22c55e; box-shadow: inset 0 0 6px rgba(34,197,94,0.3); }
+        .inv-slot-qty {
+            position: absolute; bottom: 1px; right: 3px;
+            font-size: 9px; color: #eab308; font-weight: bold;
+            text-shadow: 0 0 2px #000;
+        }
+
+        /* Stats Panel */
+        #stats-content { padding: 8px; }
+        .stat-skill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 6px; border-bottom: 1px solid #2a2a2e;
+        }
+        .stat-skill-icon { font-size: 16px; width: 22px; text-align: center; }
+        .stat-skill-name { font-size: 11px; color: #9ca3af; flex: 1; }
+        .stat-skill-lvl { font-size: 13px; color: #fff; font-weight: bold; width: 26px; text-align: center; }
+        .stat-xp-bar { width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; margin-top: 2px; }
+        .stat-xp-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.3s; }
+        .stat-player-info {
+            padding: 8px; text-align: center;
+            border-bottom: 2px solid #4a4a50;
+        }
+        .stat-player-name { font-size: 13px; color: #fff; font-weight: bold; }
+        .stat-combat-lvl { font-size: 11px; color: #eab308; }
+
+        /* Bottom Panel */
+        #game-bottom {
+            grid-row: 2; grid-column: 1;
+            background: linear-gradient(0deg, #1a1a1f, #222226);
+            border-top: 2px solid #4a4a50;
+            display: flex;
+        }
+
+        /* Chat Area */
+        #chat-area {
+            flex: 1; display: flex; flex-direction: column;
+            border-right: 2px solid #4a4a50;
+        }
+        #chat-tabs {
+            display: flex; border-bottom: 1px solid #3a3a40;
+            flex-shrink: 0;
+        }
+        .chat-tab {
+            padding: 4px 10px; font-size: 10px; font-weight: bold;
+            color: #6b7280; background: none; border: none;
+            cursor: pointer; border-bottom: 2px solid transparent;
+        }
+        .chat-tab.active { color: #fff; border-bottom-color: #6366f1; }
+        .chat-tab:hover { color: #ccc; }
+        #chat-messages {
+            flex: 1; overflow-y: auto; padding: 4px 8px;
+            font-size: 11px; line-height: 1.5; color: #ccc;
+        }
+        #chat-messages::-webkit-scrollbar { width: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #4a4a50; }
+        .chat-msg-system { color: #6366f1; }
+        .chat-msg-combat { color: #ef4444; }
+        .chat-msg-public { color: #eab308; }
+        .chat-msg-agent { color: #22c55e; }
+        #chat-input-area { display: flex; padding: 4px; gap: 4px; flex-shrink: 0; }
+        #chat-input {
+            flex: 1; background: #1a1a1f; border: 1px solid #3a3a40;
+            color: #fff; padding: 4px 8px; font-size: 11px; font-family: inherit;
+            border-radius: 2px; outline: none;
+        }
+        #chat-input:focus { border-color: #6366f1; }
+
+        /* Action Buttons */
+        #action-area {
+            width: 180px; padding: 8px; display: flex;
+            flex-direction: column; gap: 4px; justify-content: center;
+        }
+        .action-btn {
+            padding: 6px; font-size: 10px; font-weight: bold;
+            background: #2a2a2e; color: #ccc; border: 1px solid #4a4a50;
+            cursor: pointer; text-align: center; border-radius: 2px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .action-btn:hover { background: #3a3a3e; color: #fff; border-color: #6366f1; }
+        .action-btn.active { background: #6366f122; color: #6366f1; border-color: #6366f1; }
 
         /* NPC Labels */
         .npc-label {
@@ -67,95 +185,293 @@
             background: rgba(0,0,0,0.5);
         }
 
-        /* Right-side Interaction Panel */
-        #interact-panel {
-            position: fixed; top: 0; right: -340px; z-index: 20;
-            width: 320px; height: 100vh; background: rgba(10,10,15,0.95);
-            border-left: 1px solid rgba(99,102,241,0.3);
-            transition: right 0.3s ease; padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            overflow-y: auto; color: #ccc;
+        /* Chat Bubbles */
+        .chat-bubble {
+            position: absolute; z-index: 16; pointer-events: none;
+            font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
+            color: #ffff00; text-shadow: 0 0 4px rgba(0,0,0,0.9);
+            white-space: nowrap; transform: translate(-50%, -100%);
+            padding: 2px 8px; border-radius: 4px;
+            background: rgba(0,0,0,0.6);
+            animation: bubbleFade 5s forwards;
         }
-        #interact-panel.open { right: 0; }
-        #interact-panel::-webkit-scrollbar { width: 4px; }
-        #interact-panel::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 2px; }
-
-        .panel-header {
-            padding: 20px; border-bottom: 1px solid rgba(99,102,241,0.2);
-            display: flex; align-items: center; gap: 12px;
-        }
-        .panel-header .panel-icon {
-            width: 48px; height: 48px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; flex-shrink: 0;
-        }
-        .panel-header h2 { font-size: 16px; color: #fff; margin: 0; }
-        .panel-header p { font-size: 12px; color: #9ca3af; margin: 2px 0 0; }
-        .panel-close {
-            position: absolute; top: 14px; right: 14px;
-            background: none; border: none; color: #6b7280; font-size: 20px;
-            cursor: pointer; width: 28px; height: 28px; display: flex;
-            align-items: center; justify-content: center; border-radius: 4px;
-        }
-        .panel-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        .panel-section { padding: 16px 20px; border-bottom: 1px solid rgba(99,102,241,0.1); }
-        .panel-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; margin-bottom: 8px; }
-        .panel-section p { font-size: 13px; line-height: 1.5; color: #d1d5db; }
-
-        .role-badge {
-            display: inline-block; padding: 2px 8px; border-radius: 10px;
-            font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .stat-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
-        .stat-row .label { color: #9ca3af; }
-        .stat-row .value { color: #e5e7eb; font-weight: 600; }
-
-        .visitor-item {
-            display: flex; align-items: center; gap: 8px; padding: 6px 0;
-            font-size: 12px;
-        }
-        .visitor-dot {
-            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        @keyframes bubbleFade {
+            0%, 70% { opacity: 1; transform: translate(-50%, -100%); }
+            100% { opacity: 0; transform: translate(-50%, -120%); }
         }
 
-        .proposal-item {
-            padding: 10px 12px; background: rgba(99,102,241,0.08);
-            border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(99,102,241,0.15);
+        /* Context Menu */
+        #context-menu {
+            position: fixed; z-index: 100; display: none;
+            background: #1a1a1f; border: 1px solid #4a4a50;
+            min-width: 140px; font-size: 12px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
         }
-        .proposal-item h4 { font-size: 13px; color: #e5e7eb; margin-bottom: 4px; }
-        .proposal-item p { font-size: 11px; color: #9ca3af; }
-        .proposal-status {
-            display: inline-block; padding: 1px 6px; border-radius: 8px;
-            font-size: 10px; font-weight: 600;
+        .ctx-option {
+            padding: 5px 12px; color: #ccc; cursor: pointer;
+            border-bottom: 1px solid #2a2a2e;
         }
+        .ctx-option:hover { background: #2a2a3e; color: #fff; }
+        .ctx-option:last-child { border-bottom: none; }
+        .ctx-header {
+            padding: 4px 12px; color: #6366f1; font-weight: bold;
+            font-size: 11px; border-bottom: 1px solid #4a4a50;
+        }
+
+        /* Health Bars */
+        .health-bar-wrap {
+            position: absolute; z-index: 14; pointer-events: none;
+            transform: translate(-50%, 0); width: 40px;
+        }
+        .health-bar { width: 100%; height: 5px; background: #333; border: 1px solid #000; }
+        .health-bar-fill { height: 100%; background: #22c55e; transition: width 0.2s; }
+
+        /* Hitsplats */
+        .hitsplat {
+            position: absolute; z-index: 17; pointer-events: none;
+            transform: translate(-50%, -50%);
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #cc0000; display: flex; align-items: center;
+            justify-content: center; font-size: 10px; font-weight: bold;
+            color: #fff; text-shadow: 0 0 2px #000;
+            animation: hitsplatAnim 1s forwards;
+        }
+        .hitsplat.miss { background: #4444ff; }
+        @keyframes hitsplatAnim {
+            0% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -100%); }
+        }
+
+        /* Death Screen */
+        #death-screen {
+            position: absolute; inset: 0; z-index: 50;
+            background: rgba(139,0,0,0.7); display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column; gap: 12px;
+        }
+        #death-screen h1 { color: #fff; font-size: 24px; }
+        #death-screen p { color: #ccc; font-size: 14px; }
+
+        /* Loot Pile */
+        .loot-label {
+            position: absolute; z-index: 14; pointer-events: none;
+            font-size: 10px; color: #eab308; font-weight: bold;
+            text-shadow: 0 0 3px #000;
+            transform: translate(-50%, 0);
+            animation: lootPulse 1s infinite;
+        }
+        @keyframes lootPulse { 50% { transform: translate(-50%, -3px); } }
+
+        /* Overlay Panels (Quest Board, Shop, Crafting) */
+        .game-overlay {
+            position: absolute; inset: 0; z-index: 40;
+            background: rgba(0,0,0,0.75); display: none;
+            align-items: center; justify-content: center;
+        }
+        .game-overlay.open { display: flex; }
+        .overlay-panel {
+            background: linear-gradient(180deg, #2a2a2e, #1a1a1f);
+            border: 2px solid #4a4a50; border-radius: 4px;
+            width: 520px; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .overlay-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border-bottom: 2px solid #4a4a50;
+            background: #222226;
+        }
+        .overlay-header h2 { font-size: 14px; color: #fff; margin: 0; }
+        .overlay-close {
+            background: none; border: none; color: #9ca3af; font-size: 18px;
+            cursor: pointer; padding: 0 4px;
+        }
+        .overlay-close:hover { color: #fff; }
+        .overlay-body { padding: 10px; }
+
+        /* Quest List */
+        .quest-item {
+            padding: 8px 10px; border-bottom: 1px solid #2a2a2e;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
+        .quest-item:hover { background: #2a2a3e; }
+        .quest-item.completed { opacity: 0.5; }
+        .quest-difficulty { font-size: 9px; padding: 2px 6px; border-radius: 2px; font-weight: bold; text-transform: uppercase; }
+        .quest-difficulty.easy { background: #22c55e33; color: #22c55e; }
+        .quest-difficulty.medium { background: #eab30833; color: #eab308; }
+        .quest-difficulty.hard { background: #ef444433; color: #ef4444; }
+        .quest-name { flex: 1; font-size: 12px; color: #ccc; }
+        .quest-status-icon { font-size: 14px; }
+        .quest-detail { padding: 10px; }
+        .quest-detail-desc { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+        .quest-detail-obj { font-size: 11px; color: #ccc; margin-bottom: 4px; }
+        .quest-detail-rewards { font-size: 11px; color: #eab308; margin-top: 6px; }
+        .quest-accept-btn {
+            margin-top: 8px; padding: 6px 16px; background: #6366f1;
+            color: #fff; border: none; font-size: 11px; font-weight: bold;
+            cursor: pointer; border-radius: 2px; font-family: inherit;
+        }
+        .quest-accept-btn:hover { background: #818cf8; }
+        .quest-progress-bar { width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; margin-top: 3px; }
+        .quest-progress-fill { height: 100%; background: #22c55e; border-radius: 2px; transition: width 0.3s; }
+
+        /* Sidebar quest list */
+        .sidebar-quest {
+            padding: 6px 8px; border-bottom: 1px solid #2a2a2e; cursor: pointer;
+        }
+        .sidebar-quest:hover { background: #2a2a3e; }
+        .sidebar-quest-name { font-size: 11px; color: #ccc; font-weight: bold; }
+        .sidebar-quest-progress { font-size: 9px; color: #9ca3af; }
+        .sidebar-quest.done .sidebar-quest-name { color: #6b7280; text-decoration: line-through; }
+
+        /* Shop Overlay */
+        .shop-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+        }
+        .shop-panel { flex: 1; min-width: 0; }
+        .shop-panel h3 { font-size: 11px; color: #9ca3af; padding: 6px 8px; margin: 0; border-bottom: 1px solid #2a2a2e; text-transform: uppercase; }
+        .shop-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 8px; border-bottom: 1px solid #2a2a2e;
+            cursor: pointer; font-size: 11px; color: #ccc;
+        }
+        .shop-item:hover { background: #2a2a3e; }
+        .shop-item-icon { font-size: 18px; width: 26px; text-align: center; }
+        .shop-item-name { flex: 1; }
+        .shop-item-price { color: #eab308; font-weight: bold; }
+        .shop-item-stock { color: #6b7280; font-size: 9px; }
+        .shop-coins { padding: 8px; text-align: center; font-size: 12px; color: #eab308; font-weight: bold; border-bottom: 1px solid #4a4a50; }
+        .shop-buy-btns { display: flex; gap: 4px; }
+        .shop-buy-btn {
+            padding: 3px 8px; font-size: 9px; font-weight: bold;
+            background: #2a2a2e; color: #ccc; border: 1px solid #4a4a50;
+            cursor: pointer; border-radius: 2px; font-family: inherit;
+        }
+        .shop-buy-btn:hover { background: #3a3a3e; border-color: #6366f1; color: #fff; }
+
+        /* Skilling action area */
+        .skill-timer {
+            width: 100%; height: 6px; background: #2a2a2e; border-radius: 3px; margin-top: 4px;
+        }
+        .skill-timer-fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.1s linear; }
+
+        /* Loot pile on ground */
+        .loot-pile-dot {
+            position: absolute; width: 8px; height: 8px; border-radius: 50%;
+            background: #eab308; z-index: 13; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 0 6px #eab308;
+            animation: lootPulse 1s infinite;
+        }
+
+        /* Gold hitsplat for special attack */
+        .hitsplat.spec { background: #eab308; width: 30px; height: 30px; font-size: 13px; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <h3>AgentScape</h3>
-        <kbd>WASD</kbd> Pan camera<br>
-        <kbd>Q</kbd><kbd>E</kbd> Rotate camera<br>
-        <kbd>Click</kbd> Move / Interact<br>
-        <kbd>Scroll</kbd> Zoom in/out
+    <div id="game-frame">
+        <!-- Game Viewport -->
+        <div id="game-viewport">
+            <div id="npc-labels"></div>
+            <div id="chat-bubbles"></div>
+            <div id="death-screen">
+                <h1>Oh dear, you are dead!</h1>
+                <p>Respawning at Town Hall...</p>
+            </div>
+            <!-- Quest Board Overlay -->
+            <div class="game-overlay" id="quest-overlay">
+                <div class="overlay-panel">
+                    <div class="overlay-header">
+                        <h2>📋 Quest Board</h2>
+                        <button class="overlay-close" onclick="closeOverlay('quest-overlay')">&times;</button>
+                    </div>
+                    <div class="overlay-body" id="quest-board-content"></div>
+                </div>
+            </div>
+            <!-- Shop Overlay -->
+            <div class="game-overlay" id="shop-overlay">
+                <div class="overlay-panel" style="width:600px;">
+                    <div class="overlay-header">
+                        <h2>🏪 Marketplace</h2>
+                        <button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button>
+                    </div>
+                    <div class="shop-coins" id="shop-coins-display">🪙 0 Coins</div>
+                    <div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div>
+                </div>
+            </div>
+            <!-- Crafting Overlay -->
+            <div class="game-overlay" id="craft-overlay">
+                <div class="overlay-panel">
+                    <div class="overlay-header">
+                        <h2>🔨 Workshop — Crafting</h2>
+                        <button class="overlay-close" onclick="closeOverlay('craft-overlay')">&times;</button>
+                    </div>
+                    <div class="overlay-body" id="craft-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div id="game-sidebar">
+            <div id="minimap-wrap">
+                <canvas id="minimap" width="200" height="200"></canvas>
+            </div>
+            <div id="orbs-row">
+                <div class="orb orb-hp" id="orbHp"><div class="orb-inner" id="orbHpText">100</div></div>
+                <div class="orb orb-combat" id="orbCombat"><div class="orb-inner" id="orbCombatText">3</div></div>
+                <div class="orb orb-energy" id="orbEnergy"><div class="orb-inner" id="orbEnergyText">100</div></div>
+            </div>
+            <div id="sidebar-tabs">
+                <button class="sidebar-tab active" onclick="switchSidebarTab('inv')">Inv</button>
+                <button class="sidebar-tab" onclick="switchSidebarTab('stats')">Stats</button>
+                <button class="sidebar-tab" onclick="switchSidebarTab('quests')">Quest</button>
+            </div>
+            <div class="sidebar-content active" id="tab-inv">
+                <div id="inv-grid"></div>
+            </div>
+            <div class="sidebar-content" id="tab-stats">
+                <div class="stat-player-info">
+                    <div class="stat-player-name">Player</div>
+                    <div class="stat-combat-lvl">Combat Level: <span id="statCombatLvl">3</span></div>
+                </div>
+                <div id="stats-content"></div>
+            </div>
+            <div class="sidebar-content" id="tab-quests">
+                <div style="padding:8px;color:#9ca3af;font-size:11px;text-align:center;">
+                    <p style="font-size:14px;margin-bottom:8px;">📋 Quests</p>
+                    <p>Visit the Quest Board in town to see available bounties.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel -->
+        <div id="game-bottom">
+            <div id="chat-area">
+                <div id="chat-tabs">
+                    <button class="chat-tab active" onclick="switchChatTab('all')">All</button>
+                    <button class="chat-tab" onclick="switchChatTab('public')">Public</button>
+                    <button class="chat-tab" onclick="switchChatTab('agent')">Agent</button>
+                    <button class="chat-tab" onclick="switchChatTab('system')">System</button>
+                </div>
+                <div id="chat-messages"></div>
+                <div id="chat-input-area">
+                    <input id="chat-input" type="text" placeholder="Press Enter to chat..." maxlength="80">
+                </div>
+            </div>
+            <div id="action-area">
+                <button class="action-btn" id="btnAttackMode" onclick="toggleAttackMode()">Attack Mode</button>
+                <button class="action-btn" id="btnSpec" onclick="useSpecialAttack()">Spec (F)</button>
+                <button class="action-btn" onclick="toggleDayNight()">Day/Night</button>
+                <div id="skill-action-area"></div>
+                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">
+                    WASD Move | Q/E Rotate<br>Scroll Zoom | F Spec
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="activity-area">
-        <div id="coords">Tile: 15, 15</div>
-        <div id="activity-log"></div>
-    </div>
+    <!-- Context Menu -->
+    <div id="context-menu"></div>
 
-    <canvas id="minimap" width="150" height="150"></canvas>
-    <div id="daynight">☀️ Day</div>
-
-    <!-- NPC label container -->
-    <div id="npc-labels"></div>
-
-    <!-- Interaction Panel -->
-    <div id="interact-panel">
-        <button class="panel-close" onclick="closePanel()">&times;</button>
-        <div id="panel-content"></div>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
     (function() {
@@ -167,9 +483,15 @@
         const WATER_LEVEL = -0.15;
         const MOVE_SPEED = 4;
         const NPC_MOVE_SPEED = 2.5;
+        const COMBAT_TICK = 2.4;
         const API_BASE = 'https://suitegpt.app';
         const SUPABASE_URL = 'https://kyojtmbjsfkfrdvulbyg.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5b2p0bWJqc2ZrZnJkdnVsYnlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5MTk1MTksImV4cCI6MjA1MDQ5NTUxOX0.JDUpMbOFIqkexJrSHPAzcmFpMOCbMnMxJE-IuZ8OLFY';
+
+        const playerName = 'Player' + Math.floor(Math.random() * 9999);
+        const playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+        const otherPlayers = new Map();
+        let chatChannel = null;
 
         const ROLE_COLORS = {
             app_builder:     { hex: '#6366f1', int: 0x6366f1, name: 'Builder' },
@@ -180,85 +502,805 @@
         };
 
         // ============================================================
-        // === BUILDINGS CONFIG ===
+        // === ITEMS ===
         // ============================================================
-        const BUILDINGS = [
-            {
-                id: 'quest_board', name: 'Quest Board', icon: '📋',
-                x: 15, z: 13, w: 1, d: 1, h: 1.2,
-                wallColor: 0x8B7355, roofColor: 0x6366f1, signColor: '#6366f1',
-                doorSide: 'south',
-                description: 'View active proposals and bounties from the swarm.',
-                type: 'pedestal'
-            },
-            {
-                id: 'workshop', name: 'Workshop', icon: '🔨',
-                x: 20, z: 10, w: 3, d: 2, h: 1.5,
-                wallColor: 0xD2B48C, roofColor: 0x6366f1, signColor: '#6366f1',
-                doorSide: 'south',
-                description: 'Where builders create and refine SUITE apps.'
-            },
-            {
-                id: 'marketplace', name: 'Marketplace', icon: '🏪',
-                x: 10, z: 12, w: 2.5, d: 2, h: 1.3,
-                wallColor: 0xBDB76B, roofColor: 0xf97316, signColor: '#f97316',
-                doorSide: 'south',
-                description: 'The Grand Exchange — coming soon.'
-            },
-            {
-                id: 'farm', name: 'Farm', icon: '🌾',
-                x: 24, z: 16, w: 2, d: 3, h: 1.0,
-                wallColor: 0x8FBC8F, roofColor: 0x22c55e, signColor: '#22c55e',
-                doorSide: 'west',
-                description: 'Yield farming — stake and earn. Coming soon.'
-            },
-            {
-                id: 'arena', name: 'Arena', icon: '⚔️',
-                x: 12, z: 26, w: 3, d: 3, h: 1.6,
-                wallColor: 0xCD853F, roofColor: 0xef4444, signColor: '#ef4444',
-                doorSide: 'north',
-                description: 'PvP agent dueling arena — coming soon.'
-            },
-            {
-                id: 'town_hall', name: 'Town Hall', icon: '🏛️',
-                x: 18, z: 6, w: 2.5, d: 2, h: 1.8,
-                wallColor: 0xE8DCC8, roofColor: 0x8b5cf6, signColor: '#8b5cf6',
-                doorSide: 'south',
-                description: 'Governance and escalation center for the swarm.'
-            }
-        ];
-
-        // Building door tiles (walkable entrance)
-        const buildingDoors = {};
-
-        // Role-based building weights for NPC targeting
-        const ROLE_BUILDING_WEIGHTS = {
-            app_builder:     { workshop: 50, quest_board: 20, town_hall: 15, marketplace: 10, farm: 3, arena: 2 },
-            app_refiner:     { workshop: 40, quest_board: 25, town_hall: 15, marketplace: 10, farm: 5, arena: 5 },
-            content_creator: { quest_board: 30, marketplace: 25, town_hall: 20, workshop: 15, farm: 5, arena: 5 },
-            growth_outreach: { marketplace: 40, quest_board: 25, town_hall: 15, workshop: 10, farm: 5, arena: 5 },
-            qa_tester:       { workshop: 35, quest_board: 30, arena: 15, town_hall: 10, marketplace: 5, farm: 5 },
+        const ITEMS = {
+            coins: { id:'coins', name:'Coins', icon:'\u{1FA99}', stackable:true, type:'coin' },
+            bronze_sword: { id:'bronze_sword', name:'Bronze Sword', icon:'\u{1F5E1}\uFE0F', stackable:false, type:'weapon', stats:{attack:4, strength:3} },
+            iron_sword: { id:'iron_sword', name:'Iron Sword', icon:'\u2694\uFE0F', stackable:false, type:'weapon', stats:{attack:8, strength:6} },
+            bread: { id:'bread', name:'Bread', icon:'\u{1F35E}', stackable:false, type:'food', healAmount:10 },
+            cooked_meat: { id:'cooked_meat', name:'Cooked Meat', icon:'\u{1F356}', stackable:false, type:'food', healAmount:20 },
+            logs: { id:'logs', name:'Logs', icon:'\u{1FAB5}', stackable:true, type:'material' },
+            code_fragment: { id:'code_fragment', name:'Code Fragment', icon:'\u{1F48E}', stackable:true, type:'material' },
+            agent_core: { id:'agent_core', name:'Agent Core', icon:'\u{1F52E}', stackable:false, type:'misc' },
+            steel_sword: { id:'steel_sword', name:'Steel Sword', icon:'\u2694\uFE0F', stackable:false, type:'weapon', stats:{attack:12, strength:10} },
+            bronze_helm: { id:'bronze_helm', name:'Bronze Helm', icon:'\u{1FA96}', stackable:false, type:'helm', stats:{defence:3} },
+            iron_helm: { id:'iron_helm', name:'Iron Helm', icon:'\u{1FA96}', stackable:false, type:'helm', stats:{defence:6} },
+            steel_helm: { id:'steel_helm', name:'Steel Helm', icon:'\u26D1\uFE0F', stackable:false, type:'helm', stats:{defence:10} },
+            bronze_shield: { id:'bronze_shield', name:'Bronze Shield', icon:'\u{1F6E1}\uFE0F', stackable:false, type:'shield', stats:{defence:4} },
+            iron_shield: { id:'iron_shield', name:'Iron Shield', icon:'\u{1F6E1}\uFE0F', stackable:false, type:'shield', stats:{defence:8} },
+            raw_fish: { id:'raw_fish', name:'Raw Fish', icon:'\u{1F41F}', stackable:true, type:'material' },
+            cooked_fish: { id:'cooked_fish', name:'Cooked Fish', icon:'\u{1F420}', stackable:false, type:'food', healAmount:15 },
         };
 
         // ============================================================
-        // === SCENE SETUP ===
+        // === QUESTS ===
         // ============================================================
+        const QUESTS = {
+            first_blood: {
+                id:'first_blood', name:'First Blood', difficulty:'easy',
+                description:'Defeat any agent in combat.',
+                objectives:[{type:'kill', target:'any', count:1, progress:0}],
+                rewards:{coins:50, xp:{attack:20, strength:20}}
+            },
+            pest_control: {
+                id:'pest_control', name:'Pest Control', difficulty:'medium',
+                description:'Defeat 3 QA Testers who are causing havoc.',
+                objectives:[{type:'kill', target:'qa_tester', count:3, progress:0}],
+                rewards:{coins:150, xp:{attack:50, strength:50, defence:30}, items:[{id:'iron_sword', qty:1}]},
+                prereqs:['first_blood']
+            },
+            code_collector: {
+                id:'code_collector', name:'Code Collector', difficulty:'medium',
+                description:'Gather 5 Code Fragments from defeated builders.',
+                objectives:[{type:'collect', item:'code_fragment', count:5, progress:0}],
+                rewards:{coins:200, xp:{hitpoints:40}}
+            },
+            world_tour: {
+                id:'world_tour', name:'World Tour', difficulty:'easy',
+                description:'Visit all 6 buildings in AgentScape.',
+                objectives:[{type:'visit', buildings:['quest_board','workshop','marketplace','farm','arena','town_hall'], visited:[]}],
+                rewards:{coins:100, xp:{hitpoints:30}}
+            },
+            arena_champion: {
+                id:'arena_champion', name:'Arena Champion', difficulty:'hard',
+                description:'Defeat 5 agents inside the Arena zone.',
+                objectives:[{type:'kill_zone', zone:'arena', count:5, progress:0}],
+                rewards:{coins:300, xp:{attack:80, strength:80, defence:60}, items:[{id:'steel_sword', qty:1}]},
+                prereqs:['pest_control']
+            },
+            bread_run: {
+                id:'bread_run', name:'Bread Run', difficulty:'easy',
+                description:'Collect 3 Bread and deliver them to the Farm.',
+                objectives:[{type:'deliver', item:'bread', count:3, destination:'farm', progress:0}],
+                rewards:{coins:75, xp:{hitpoints:20}}
+            },
+            core_hunter: {
+                id:'core_hunter', name:'Core Hunter', difficulty:'hard',
+                description:'Collect 3 Agent Cores from the toughest agents.',
+                objectives:[{type:'collect', item:'agent_core', count:3, progress:0}],
+                rewards:{coins:500, xp:{attack:100, strength:100}, items:[{id:'steel_helm', qty:1}]},
+                prereqs:['first_blood']
+            },
+            full_clear: {
+                id:'full_clear', name:'Full Clear', difficulty:'hard',
+                description:'Defeat one agent of every role.',
+                objectives:[{type:'kill_roles', roles:['app_builder','app_refiner','content_creator','growth_outreach','qa_tester'], killed:[]}],
+                rewards:{coins:400, xp:{attack:60, strength:60, defence:60, hitpoints:60}},
+                prereqs:['first_blood']
+            }
+        };
+        let playerQuests = {};
+
+        function isQuestAvailable(qid) {
+            if (playerQuests[qid]) return false;
+            const q = QUESTS[qid];
+            if (!q.prereqs || q.prereqs.length === 0) return true;
+            return q.prereqs.every(p => playerQuests[p] && playerQuests[p].status === 'completed');
+        }
+
+        function acceptQuest(qid) {
+            const q = QUESTS[qid];
+            if (!q || playerQuests[qid]) return;
+            playerQuests[qid] = {
+                status: 'active',
+                objectives: JSON.parse(JSON.stringify(q.objectives))
+            };
+            addChatMessage('system', `Quest accepted: ${q.name}`);
+            renderQuestBoard();
+            renderQuestsTab();
+        }
+
+        function completeQuest(qid) {
+            const q = QUESTS[qid];
+            playerQuests[qid].status = 'completed';
+            addChatMessage('system', `Quest complete: ${q.name}!`);
+            // Rewards
+            if (q.rewards.coins) addToInventory('coins', q.rewards.coins);
+            if (q.rewards.xp) Object.entries(q.rewards.xp).forEach(([skill, amt]) => gainXP(skill, amt));
+            if (q.rewards.items) q.rewards.items.forEach(i => addToInventory(i.id, i.qty));
+            renderQuestsTab();
+        }
+
+        function checkQuestProgress(type, data) {
+            Object.entries(playerQuests).forEach(([qid, pq]) => {
+                if (pq.status !== 'active') return;
+                const q = QUESTS[qid];
+                let allDone = true;
+                pq.objectives.forEach((obj, i) => {
+                    if (type === 'kill' && obj.type === 'kill') {
+                        if (obj.target === 'any' || obj.target === data.role) {
+                            obj.progress = Math.min(obj.count, (obj.progress || 0) + 1);
+                        }
+                    }
+                    if (type === 'kill' && obj.type === 'kill_zone') {
+                        const arena = BUILDINGS.find(b => b.id === obj.zone);
+                        if (arena && Math.abs(data.x - arena.x) < 5 && Math.abs(data.z - arena.z) < 5) {
+                            obj.progress = Math.min(obj.count, (obj.progress || 0) + 1);
+                        }
+                    }
+                    if (type === 'kill' && obj.type === 'kill_roles') {
+                        if (data.role && !obj.killed.includes(data.role)) {
+                            obj.killed.push(data.role);
+                        }
+                        if (obj.killed.length < obj.roles.length) allDone = false;
+                        else { /* done */ }
+                        return;
+                    }
+                    if (type === 'collect' && obj.type === 'collect' && data.item === obj.item) {
+                        const total = countInventoryItem(obj.item);
+                        obj.progress = Math.min(obj.count, total);
+                    }
+                    if (type === 'collect' && obj.type === 'deliver' && data.item === obj.item) {
+                        obj.progress = Math.min(obj.count, countInventoryItem(obj.item));
+                    }
+                    if (type === 'visit' && obj.type === 'visit') {
+                        if (!obj.visited.includes(data.building)) obj.visited.push(data.building);
+                        if (obj.visited.length < obj.buildings.length) allDone = false;
+                        else { /* done */ }
+                        return;
+                    }
+                    if (type === 'enter_building' && obj.type === 'deliver' && data.building === obj.destination) {
+                        const has = countInventoryItem(obj.item);
+                        if (has >= obj.count) {
+                            // remove items
+                            let toRemove = obj.count;
+                            for (let s = 0; s < 28 && toRemove > 0; s++) {
+                                if (inventory[s] && inventory[s].id === obj.item) {
+                                    removeFromInventory(s, 1);
+                                    toRemove--;
+                                }
+                            }
+                            obj.progress = obj.count;
+                        }
+                    }
+                    // Check if this objective is done
+                    if (obj.type === 'kill' || obj.type === 'kill_zone' || obj.type === 'collect' || obj.type === 'deliver') {
+                        if ((obj.progress || 0) < obj.count) allDone = false;
+                    }
+                    if (obj.type === 'visit') {
+                        if (obj.visited.length < obj.buildings.length) allDone = false;
+                    }
+                    if (obj.type === 'kill_roles') {
+                        if (obj.killed.length < obj.roles.length) allDone = false;
+                    }
+                });
+                if (allDone) completeQuest(qid);
+                renderQuestsTab();
+            });
+        }
+
+        function countInventoryItem(itemId) {
+            let total = 0;
+            for (let i = 0; i < 28; i++) {
+                if (inventory[i] && inventory[i].id === itemId) total += inventory[i].quantity;
+            }
+            return total;
+        }
+
+        function renderQuestBoard() {
+            const el = document.getElementById('quest-board-content');
+            const available = Object.values(QUESTS).filter(q => isQuestAvailable(q.id));
+            const active = Object.entries(playerQuests).filter(([,pq]) => pq.status === 'active').map(([id]) => QUESTS[id]);
+            const completed = Object.entries(playerQuests).filter(([,pq]) => pq.status === 'completed').map(([id]) => QUESTS[id]);
+
+            el.innerHTML = '<div style="font-size:10px;color:#6b7280;padding:4px;text-transform:uppercase;letter-spacing:1px;">Available</div>' +
+                (available.length ? available.map(q => `
+                    <div class="quest-item" onclick="showQuestDetail('${q.id}')">
+                        <span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span>
+                        <span class="quest-name">${q.name}</span>
+                        <span class="quest-status-icon">📜</span>
+                    </div>`).join('') : '<div style="padding:8px;font-size:11px;color:#6b7280;">No quests available.</div>') +
+                '<div style="font-size:10px;color:#6b7280;padding:4px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #4a4a50;margin-top:4px;">Active</div>' +
+                (active.length ? active.map(q => {
+                    const pq = playerQuests[q.id];
+                    const obj = pq.objectives[0];
+                    const prog = getObjProgress(obj);
+                    return `<div class="quest-item">
+                        <span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span>
+                        <span class="quest-name">${q.name} <span style="color:#6b7280">(${prog})</span></span>
+                        <span class="quest-status-icon">⏳</span>
+                    </div>`;
+                }).join('') : '<div style="padding:8px;font-size:11px;color:#6b7280;">None active.</div>') +
+                '<div style="font-size:10px;color:#6b7280;padding:4px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #4a4a50;margin-top:4px;">Completed</div>' +
+                (completed.length ? completed.map(q => `
+                    <div class="quest-item completed">
+                        <span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span>
+                        <span class="quest-name">${q.name}</span>
+                        <span class="quest-status-icon">✅</span>
+                    </div>`).join('') : '<div style="padding:8px;font-size:11px;color:#6b7280;">None completed.</div>');
+        }
+
+        function showQuestDetail(qid) {
+            const q = QUESTS[qid];
+            const el = document.getElementById('quest-board-content');
+            const rewardText = [];
+            if (q.rewards.coins) rewardText.push(`🪙 ${q.rewards.coins} coins`);
+            if (q.rewards.xp) Object.entries(q.rewards.xp).forEach(([s,a]) => rewardText.push(`${a} ${s} XP`));
+            if (q.rewards.items) q.rewards.items.forEach(i => rewardText.push(`${ITEMS[i.id].icon} ${i.qty}x ${ITEMS[i.id].name}`));
+
+            el.innerHTML = `
+                <div class="quest-detail">
+                    <div style="cursor:pointer;color:#6366f1;font-size:11px;margin-bottom:8px;" onclick="renderQuestBoard()">← Back to quests</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span>
+                        <span style="font-size:14px;color:#fff;font-weight:bold;">${q.name}</span>
+                    </div>
+                    <div class="quest-detail-desc">${q.description}</div>
+                    <div class="quest-detail-rewards">Rewards: ${rewardText.join(' · ')}</div>
+                    ${!playerQuests[qid] ? `<button class="quest-accept-btn" onclick="acceptQuest('${qid}')">Accept Quest</button>` : ''}
+                </div>`;
+        }
+
+        function getObjProgress(obj) {
+            if (obj.type === 'visit') return `${obj.visited.length}/${obj.buildings.length}`;
+            if (obj.type === 'kill_roles') return `${obj.killed.length}/${obj.roles.length}`;
+            return `${obj.progress || 0}/${obj.count}`;
+        }
+
+        function renderQuestsTab() {
+            const el = document.getElementById('tab-quests');
+            const active = Object.entries(playerQuests).filter(([,pq]) => pq.status === 'active');
+            const completed = Object.entries(playerQuests).filter(([,pq]) => pq.status === 'completed');
+
+            if (active.length === 0 && completed.length === 0) {
+                el.innerHTML = '<div style="padding:8px;color:#9ca3af;font-size:11px;text-align:center;"><p style="font-size:14px;margin-bottom:8px;">📋 Quests</p><p>Visit the Quest Board to find work!</p></div>';
+                return;
+            }
+
+            el.innerHTML = active.map(([qid, pq]) => {
+                const q = QUESTS[qid];
+                const obj = pq.objectives[0];
+                const prog = getObjProgress(obj);
+                const [cur, max] = prog.split('/').map(Number);
+                const pct = Math.min(100, (cur / max) * 100);
+                return `<div class="sidebar-quest">
+                    <div class="sidebar-quest-name">${q.name}</div>
+                    <div class="sidebar-quest-progress">${prog}</div>
+                    <div class="quest-progress-bar"><div class="quest-progress-fill" style="width:${pct}%"></div></div>
+                </div>`;
+            }).join('') + completed.map(([qid]) => {
+                const q = QUESTS[qid];
+                return `<div class="sidebar-quest done"><div class="sidebar-quest-name">✅ ${q.name}</div></div>`;
+            }).join('');
+        }
+
+        window.acceptQuest = acceptQuest;
+        window.showQuestDetail = showQuestDetail;
+        window.renderQuestBoard = renderQuestBoard;
+        window.closeOverlay = function(id) { document.getElementById(id).classList.remove('open'); };
+
+        const NPC_COMBAT_STATS = {
+            app_builder:     { hp:60, attack:5, strength:4, defence:3, drops:['code_fragment','coins'] },
+            app_refiner:     { hp:50, attack:4, strength:3, defence:5, drops:['logs','coins'] },
+            content_creator: { hp:40, attack:3, strength:3, defence:2, drops:['bread','coins'] },
+            growth_outreach: { hp:45, attack:4, strength:4, defence:3, drops:['cooked_meat','coins'] },
+            qa_tester:       { hp:70, attack:6, strength:5, defence:4, drops:['agent_core','coins'] },
+        };
+
+        const AGENT_DIALOGUE = {
+            app_builder: [
+                "I'm working on a new SUITE app. The code practically writes itself!",
+                "Another day, another deploy. Have you tried the Workshop?",
+                "I just submitted a proposal for a fitness tracker app.",
+                "The best code is code that builds more code.",
+            ],
+            app_refiner: [
+                "Found 3 bugs before breakfast. Not bad for a Monday.",
+                "This codebase needs more error handling...",
+                "I'm polishing an app right now. It'll shine when I'm done.",
+                "Refactoring is my cardio.",
+            ],
+            content_creator: [
+                "I just finished an article about yield farming!",
+                "Words are my weapons. Content is king.",
+                "Check out my latest post on the SUITE blog.",
+                "I write, therefore I earn credits.",
+            ],
+            growth_outreach: [
+                "I've been spreading the word about SUITE all day.",
+                "The Marketplace is buzzing today!",
+                "Growth hacking is an art form, really.",
+                "More users means more credits for everyone!",
+            ],
+            qa_tester: [
+                "I found a critical bug. You're welcome.",
+                "Testing, testing, 1, 2, 3... all systems nominal.",
+                "If it can break, I will break it. That's my job.",
+                "Zero bugs in production is the dream.",
+            ],
+        };
+
+        // ============================================================
+        // === SHOP SYSTEM ===
+        // ============================================================
+        const SHOP_ITEMS = [
+            {id:'bread', price:10, stock:99},
+            {id:'cooked_meat', price:25, stock:50},
+            {id:'cooked_fish', price:20, stock:50},
+            {id:'bronze_sword', price:50, stock:10},
+            {id:'iron_sword', price:150, stock:5},
+            {id:'steel_sword', price:400, stock:3},
+            {id:'bronze_helm', price:30, stock:10},
+            {id:'iron_helm', price:100, stock:5},
+            {id:'bronze_shield', price:40, stock:10},
+            {id:'iron_shield', price:120, stock:5},
+        ];
+        let shopStock = {};
+        function initShopStock() { SHOP_ITEMS.forEach(si => { shopStock[si.id] = si.stock; }); }
+        initShopStock();
+
+        function openShop() {
+            updateShopDisplay();
+            document.getElementById('shop-overlay').classList.add('open');
+        }
+
+        function updateShopDisplay() {
+            const coins = countInventoryItem('coins');
+            document.getElementById('shop-coins-display').textContent = `🪙 ${coins} Coins`;
+            const body = document.getElementById('shop-body-content');
+            body.innerHTML = `
+                <div class="shop-panel">
+                    <h3>Shop</h3>
+                    ${SHOP_ITEMS.map(si => {
+                        const item = ITEMS[si.id];
+                        const stock = shopStock[si.id] || 0;
+                        return `<div class="shop-item" onclick="selectShopItem('${si.id}')">
+                            <span class="shop-item-icon">${item.icon}</span>
+                            <span class="shop-item-name">${item.name}</span>
+                            <span class="shop-item-price">🪙 ${si.price}</span>
+                            <span class="shop-item-stock">(${stock})</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="shop-panel">
+                    <h3>Your Items</h3>
+                    ${inventory.map((item, i) => {
+                        if (!item || item.type === 'coin') return '';
+                        const si = SHOP_ITEMS.find(s => s.id === item.id);
+                        const sellPrice = si ? Math.floor(si.price / 2) : 1;
+                        return `<div class="shop-item" onclick="sellItem(${i})">
+                            <span class="shop-item-icon">${item.icon}</span>
+                            <span class="shop-item-name">${item.name} ${item.quantity > 1 ? '('+item.quantity+')' : ''}</span>
+                            <span class="shop-item-price" style="color:#22c55e;">+🪙 ${sellPrice}</span>
+                        </div>`;
+                    }).filter(Boolean).join('') || '<div style="padding:8px;font-size:11px;color:#6b7280;">Nothing to sell.</div>'}
+                </div>`;
+        }
+
+        window.selectShopItem = function(itemId) {
+            const si = SHOP_ITEMS.find(s => s.id === itemId);
+            if (!si) return;
+            buyItem(itemId, 1);
+        };
+
+        function buyItem(itemId, qty) {
+            const si = SHOP_ITEMS.find(s => s.id === itemId);
+            if (!si) return;
+            const stock = shopStock[itemId] || 0;
+            if (stock < qty) { addChatMessage('system', 'Out of stock!'); return; }
+            const cost = si.price * qty;
+            const coins = countInventoryItem('coins');
+            if (coins < cost) { addChatMessage('system', 'Not enough coins!'); return; }
+            // Deduct coins
+            let toDeduct = cost;
+            for (let i = 0; i < 28 && toDeduct > 0; i++) {
+                if (inventory[i] && inventory[i].id === 'coins') {
+                    const take = Math.min(inventory[i].quantity, toDeduct);
+                    inventory[i].quantity -= take;
+                    toDeduct -= take;
+                    if (inventory[i].quantity <= 0) inventory[i] = null;
+                }
+            }
+            addToInventory(itemId, qty);
+            shopStock[itemId] -= qty;
+            addChatMessage('system', `Bought ${qty}x ${ITEMS[itemId].name} for ${cost} coins.`);
+            updateShopDisplay();
+            renderInventory();
+        }
+
+        window.sellItem = function(slot) {
+            const item = inventory[slot];
+            if (!item || item.type === 'coin') return;
+            const si = SHOP_ITEMS.find(s => s.id === item.id);
+            const sellPrice = si ? Math.floor(si.price / 2) : 1;
+            addToInventory('coins', sellPrice);
+            const name = item.name;
+            removeFromInventory(slot, 1);
+            if (si) shopStock[item.id] = (shopStock[item.id] || 0) + 1;
+            addChatMessage('system', `Sold ${name} for ${sellPrice} coins.`);
+            updateShopDisplay();
+        };
+
+        // ============================================================
+        // === CRAFTING RECIPES ===
+        // ============================================================
+        const RECIPES = [
+            { result:'bronze_shield', resultQty:1, ingredients:[{id:'logs', qty:3}], coinCost:5 },
+            { result:'iron_sword', resultQty:1, ingredients:[{id:'code_fragment', qty:5}], coinCost:10 },
+            { result:'steel_sword', resultQty:1, ingredients:[{id:'agent_core', qty:2}], coinCost:20 },
+        ];
+
+        function openCrafting() {
+            renderCrafting();
+            document.getElementById('craft-overlay').classList.add('open');
+        }
+
+        function renderCrafting() {
+            const el = document.getElementById('craft-content');
+            el.innerHTML = RECIPES.map((r, i) => {
+                const result = ITEMS[r.result];
+                const canCraft = r.ingredients.every(ing => countInventoryItem(ing.id) >= ing.qty) && countInventoryItem('coins') >= r.coinCost;
+                const ingredientText = r.ingredients.map(ing => `${ITEMS[ing.id].icon} ${ing.qty}x ${ITEMS[ing.id].name}`).join(', ');
+                return `<div class="shop-item" style="opacity:${canCraft?1:0.5};cursor:${canCraft?'pointer':'default'};" ${canCraft ? `onclick="craftItem(${i})"` : ''}>
+                    <span class="shop-item-icon">${result.icon}</span>
+                    <span class="shop-item-name">${result.name}</span>
+                    <span style="font-size:9px;color:#9ca3af;">${ingredientText} + 🪙 ${r.coinCost}</span>
+                </div>`;
+            }).join('') || '<div style="padding:8px;font-size:11px;color:#6b7280;">No recipes available.</div>';
+        }
+
+        window.craftItem = function(idx) {
+            const r = RECIPES[idx];
+            if (!r) return;
+            // Check ingredients
+            for (const ing of r.ingredients) {
+                if (countInventoryItem(ing.id) < ing.qty) { addChatMessage('system', `Not enough ${ITEMS[ing.id].name}!`); return; }
+            }
+            if (countInventoryItem('coins') < r.coinCost) { addChatMessage('system', 'Not enough coins!'); return; }
+            // Consume
+            for (const ing of r.ingredients) {
+                let toRemove = ing.qty;
+                for (let s = 0; s < 28 && toRemove > 0; s++) {
+                    if (inventory[s] && inventory[s].id === ing.id) {
+                        const take = Math.min(inventory[s].quantity, toRemove);
+                        removeFromInventory(s, take);
+                        toRemove -= take;
+                    }
+                }
+            }
+            // Deduct coins
+            let toDeduct = r.coinCost;
+            for (let i = 0; i < 28 && toDeduct > 0; i++) {
+                if (inventory[i] && inventory[i].id === 'coins') {
+                    const take = Math.min(inventory[i].quantity, toDeduct);
+                    inventory[i].quantity -= take;
+                    toDeduct -= take;
+                    if (inventory[i].quantity <= 0) inventory[i] = null;
+                }
+            }
+            addToInventory(r.result, r.resultQty);
+            addChatMessage('system', `Crafted ${ITEMS[r.result].icon} ${ITEMS[r.result].name}!`);
+            renderCrafting();
+            renderInventory();
+        };
+
+        // ============================================================
+        // === PLAYER STATE ===
+        // ============================================================
+        const playerStats = {
+            hp: 100, maxHp: 100, energy: 100, maxEnergy: 100,
+            attack: 1, strength: 1, defence: 1, hitpoints: 10,
+            attackXP: 0, strengthXP: 0, defenceXP: 0, hitpointsXP: 0,
+            combatLevel: 3, equippedWeapon: null, equippedSlot: -1,
+            equippedHelm: null, equippedHelmSlot: -1,
+            equippedShield: null, equippedShieldSlot: -1,
+        };
+
+        const inventory = new Array(28).fill(null);
+        let attackMode = false;
+
+        function initInventory() {
+            inventory[0] = { ...ITEMS.bronze_sword, quantity: 1 };
+            inventory[1] = { ...ITEMS.bread, quantity: 1 };
+            inventory[2] = { ...ITEMS.bread, quantity: 1 };
+            inventory[3] = { ...ITEMS.bread, quantity: 1 };
+            inventory[4] = { ...ITEMS.coins, quantity: 25 };
+            playerStats.equippedWeapon = ITEMS.bronze_sword;
+            playerStats.equippedSlot = 0;
+        }
+
+        function addToInventory(itemId, qty) {
+            const itemDef = ITEMS[itemId];
+            if (!itemDef) return false;
+            if (itemDef.stackable) {
+                for (let i = 0; i < 28; i++) {
+                    if (inventory[i] && inventory[i].id === itemId) {
+                        inventory[i].quantity += qty;
+                        renderInventory();
+                        return true;
+                    }
+                }
+            }
+            for (let q = 0; q < qty; q++) {
+                let placed = false;
+                for (let i = 0; i < 28; i++) {
+                    if (!inventory[i]) {
+                        inventory[i] = { ...itemDef, quantity: 1 };
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    addChatMessage('system', 'Your inventory is full!');
+                    renderInventory();
+                    return false;
+                }
+            }
+            renderInventory();
+            checkQuestProgress('collect', { item: itemId });
+            return true;
+        }
+
+        function removeFromInventory(slot, qty) {
+            if (!inventory[slot]) return;
+            inventory[slot].quantity -= qty;
+            if (inventory[slot].quantity <= 0) {
+                if (playerStats.equippedSlot === slot) { playerStats.equippedWeapon = null; playerStats.equippedSlot = -1; }
+                if (playerStats.equippedHelmSlot === slot) { playerStats.equippedHelm = null; playerStats.equippedHelmSlot = -1; }
+                if (playerStats.equippedShieldSlot === slot) { playerStats.equippedShield = null; playerStats.equippedShieldSlot = -1; }
+                inventory[slot] = null;
+            }
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 28; i++) {
+                const slot = document.createElement('div');
+                const isEquipped = (playerStats.equippedSlot === i || playerStats.equippedHelmSlot === i || playerStats.equippedShieldSlot === i);
+                slot.className = 'inv-slot' + (isEquipped ? ' equipped' : '');
+                slot.dataset.slot = i;
+                if (inventory[i]) {
+                    slot.textContent = inventory[i].icon || '?';
+                    if (inventory[i].quantity > 1) {
+                        const qty = document.createElement('span');
+                        qty.className = 'inv-slot-qty';
+                        qty.textContent = inventory[i].quantity;
+                        slot.appendChild(qty);
+                    }
+                }
+                slot.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); showInventoryMenu(e, i); });
+                slot.addEventListener('click', () => { quickUseItem(i); });
+                grid.appendChild(slot);
+            }
+        }
+
+        function quickUseItem(slot) {
+            const item = inventory[slot];
+            if (!item) return;
+            if (item.type === 'food') eatFood(slot);
+            else if (item.type === 'weapon') equipWeapon(slot);
+            else if (item.type === 'helm') equipHelm(slot);
+            else if (item.type === 'shield') equipShield(slot);
+        }
+
+        function eatFood(slot) {
+            const item = inventory[slot];
+            if (!item || item.type !== 'food') return;
+            const heal = item.healAmount || 10;
+            playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + heal);
+            playerStats.energy = Math.min(playerStats.maxEnergy, playerStats.energy + 5);
+            addChatMessage('system', `You eat the ${item.name}. It heals ${heal} hitpoints.`);
+            removeFromInventory(slot, 1);
+            updateOrbs();
+        }
+
+        function equipWeapon(slot) {
+            const item = inventory[slot];
+            if (!item || item.type !== 'weapon') return;
+            if (playerStats.equippedSlot === slot) {
+                playerStats.equippedWeapon = null;
+                playerStats.equippedSlot = -1;
+                addChatMessage('system', `You unequip the ${item.name}.`);
+            } else {
+                playerStats.equippedWeapon = item;
+                playerStats.equippedSlot = slot;
+                addChatMessage('system', `You equip the ${item.name}.`);
+            }
+            renderInventory();
+        }
+
+        function equipHelm(slot) {
+            const item = inventory[slot];
+            if (!item || item.type !== 'helm') return;
+            if (playerStats.equippedHelmSlot === slot) {
+                playerStats.equippedHelm = null;
+                playerStats.equippedHelmSlot = -1;
+                addChatMessage('system', `You remove the ${item.name}.`);
+            } else {
+                playerStats.equippedHelm = item;
+                playerStats.equippedHelmSlot = slot;
+                addChatMessage('system', `You wear the ${item.name}.`);
+            }
+            renderInventory();
+        }
+
+        function equipShield(slot) {
+            const item = inventory[slot];
+            if (!item || item.type !== 'shield') return;
+            if (playerStats.equippedShieldSlot === slot) {
+                playerStats.equippedShield = null;
+                playerStats.equippedShieldSlot = -1;
+                addChatMessage('system', `You remove the ${item.name}.`);
+            } else {
+                playerStats.equippedShield = item;
+                playerStats.equippedShieldSlot = slot;
+                addChatMessage('system', `You wear the ${item.name}.`);
+            }
+            renderInventory();
+        }
+
+        // ============================================================
+        // === XP / LEVELS ===
+        // ============================================================
+        function xpForLevel(lvl) { return Math.floor(Math.pow(lvl, 2.5)); }
+        function levelFromXP(xp) {
+            let lvl = 1;
+            while (xpForLevel(lvl + 1) <= xp) lvl++;
+            return lvl;
+        }
+        function gainXP(skill, amount) {
+            const key = skill + 'XP';
+            const old = levelFromXP(playerStats[key]);
+            playerStats[key] += amount;
+            const now = levelFromXP(playerStats[key]);
+            playerStats[skill] = now;
+            if (now > old) {
+                addChatMessage('system', `Congratulations! You've advanced a ${skill.charAt(0).toUpperCase()+skill.slice(1)} level! You are now level ${now}.`);
+            }
+            playerStats.combatLevel = Math.floor((playerStats.attack + playerStats.strength + playerStats.defence + playerStats.hitpoints) / 3) + 1;
+            playerStats.maxHp = 10 + playerStats.hitpoints * 10;
+            updateOrbs();
+            renderStats();
+        }
+
+        function renderStats() {
+            const skills = [
+                { name:'Attack', key:'attack', xpKey:'attackXP', icon:'\u2694\uFE0F' },
+                { name:'Strength', key:'strength', xpKey:'strengthXP', icon:'\u{1F4AA}' },
+                { name:'Defence', key:'defence', xpKey:'defenceXP', icon:'\u{1F6E1}\uFE0F' },
+                { name:'Hitpoints', key:'hitpoints', xpKey:'hitpointsXP', icon:'\u2764\uFE0F' },
+            ];
+            const el = document.getElementById('stats-content');
+            el.innerHTML = skills.map(s => {
+                const lvl = playerStats[s.key];
+                const xp = playerStats[s.xpKey];
+                const cur = xpForLevel(lvl);
+                const next = xpForLevel(lvl + 1);
+                const pct = Math.min(100, ((xp - cur) / (next - cur)) * 100);
+                return `<div class="stat-skill">
+                    <span class="stat-skill-icon">${s.icon}</span>
+                    <span class="stat-skill-name">${s.name}</span>
+                    <span class="stat-skill-lvl">${lvl}</span>
+                </div>
+                <div style="padding:0 6px 6px;"><div class="stat-xp-bar"><div class="stat-xp-fill" style="width:${pct}%"></div></div>
+                <div style="font-size:8px;color:#6b7280;text-align:right">${xp} / ${next} XP</div></div>`;
+            }).join('');
+            document.getElementById('statCombatLvl').textContent = playerStats.combatLevel;
+        }
+
+        // ============================================================
+        // === CHAT SYSTEM ===
+        // ============================================================
+        const chatHistory = [];
+        let chatFilter = 'all';
+        let chatInputFocused = false;
+
+        function addChatMessage(type, text, sender, color) {
+            chatHistory.push({ type, text, sender, color, time: Date.now() });
+            if (chatHistory.length > 100) chatHistory.shift();
+            renderChat();
+        }
+
+        function renderChat() {
+            const el = document.getElementById('chat-messages');
+            const filtered = chatFilter === 'all' ? chatHistory : chatHistory.filter(m => m.type === chatFilter);
+            el.innerHTML = filtered.slice(-50).map(m => {
+                const cls = 'chat-msg-' + m.type;
+                const prefix = m.sender ? `<span style="color:${m.color || '#fff'};font-weight:bold">${m.sender}:</span> ` : '';
+                return `<div class="${cls}">${prefix}${m.text}</div>`;
+            }).join('');
+            el.scrollTop = el.scrollHeight;
+        }
+
+        window.switchChatTab = function(tab) {
+            chatFilter = tab;
+            document.querySelectorAll('.chat-tab').forEach(t => t.classList.toggle('active', t.textContent.toLowerCase() === tab));
+            renderChat();
+        };
+
+        // Chat input
+        const chatInput = document.getElementById('chat-input');
+        chatInput.addEventListener('focus', () => { chatInputFocused = true; });
+        chatInput.addEventListener('blur', () => { chatInputFocused = false; });
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && chatInput.value.trim()) {
+                const msg = chatInput.value.trim();
+                addChatMessage('public', msg, playerName, playerColor);
+                showChatBubble(playerWorldX, playerWorldZ, msg, playerColor);
+                // Broadcast to multiplayer
+                if (chatChannel) {
+                    chatChannel.send({ type: 'broadcast', event: 'chat', payload: { sender: playerName, message: msg, color: playerColor } });
+                }
+                chatInput.value = '';
+                chatInput.blur();
+            }
+            if (e.key === 'Escape') { chatInput.blur(); }
+            e.stopPropagation();
+        });
+
+        function showChatBubble(worldX, worldZ, text, color) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.textContent = text.substring(0, 40);
+            if (color) bubble.style.color = color;
+            bubble.dataset.worldX = worldX;
+            bubble.dataset.worldZ = worldZ;
+            document.getElementById('chat-bubbles').appendChild(bubble);
+            setTimeout(() => bubble.remove(), 5000);
+        }
+
+        // ============================================================
+        // === SIDEBAR TABS ===
+        // ============================================================
+        window.switchSidebarTab = function(tab) {
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.textContent.toLowerCase().startsWith(tab)));
+            document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+        };
+
+        // ============================================================
+        // === BUILDINGS CONFIG ===
+        // ============================================================
+        const BUILDINGS = [
+            { id:'quest_board', name:'Quest Board', icon:'\u{1F4CB}', x:15, z:13, w:1, d:1, h:1.2, wallColor:0x8B7355, roofColor:0x6366f1, signColor:'#6366f1', doorSide:'south', description:'View active proposals and bounties.', type:'pedestal' },
+            { id:'workshop', name:'Workshop', icon:'\u{1F528}', x:20, z:10, w:3, d:2, h:1.5, wallColor:0xD2B48C, roofColor:0x6366f1, signColor:'#6366f1', doorSide:'south', description:'Where builders create and refine SUITE apps.' },
+            { id:'marketplace', name:'Marketplace', icon:'\u{1F3EA}', x:10, z:12, w:2.5, d:2, h:1.3, wallColor:0xBDB76B, roofColor:0xf97316, signColor:'#f97316', doorSide:'south', description:'Trade items and browse the exchange.' },
+            { id:'farm', name:'Farm', icon:'\u{1F33E}', x:24, z:16, w:2, d:3, h:1.0, wallColor:0x8FBC8F, roofColor:0x22c55e, signColor:'#22c55e', doorSide:'west', description:'Harvest food and materials.' },
+            { id:'arena', name:'Arena', icon:'\u2694\uFE0F', x:12, z:26, w:3, d:3, h:1.6, wallColor:0xCD853F, roofColor:0xef4444, signColor:'#ef4444', doorSide:'north', description:'PvP combat arena. Fight agents here!' },
+            { id:'town_hall', name:'Town Hall', icon:'\u{1F3DB}\uFE0F', x:18, z:6, w:2.5, d:2, h:1.8, wallColor:0xE8DCC8, roofColor:0x8b5cf6, signColor:'#8b5cf6', doorSide:'south', description:'Governance and respawn point.' },
+        ];
+
+        const buildingDoors = {};
+
+        const ROLE_BUILDING_WEIGHTS = {
+            app_builder:     { workshop:50, quest_board:20, town_hall:15, marketplace:10, farm:3, arena:2 },
+            app_refiner:     { workshop:40, quest_board:25, town_hall:15, marketplace:10, farm:5, arena:5 },
+            content_creator: { quest_board:30, marketplace:25, town_hall:20, workshop:15, farm:5, arena:5 },
+            growth_outreach: { marketplace:40, quest_board:25, town_hall:15, workshop:10, farm:5, arena:5 },
+            qa_tester:       { workshop:35, quest_board:30, arena:15, town_hall:10, marketplace:5, farm:5 },
+        };
+
+        // ============================================================
+        // === THREE.JS SCENE SETUP ===
+        // ============================================================
+        const viewport = document.getElementById('game-viewport');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.025);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth / viewport.clientHeight, 0.1, 100);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(renderer.domElement);
+        viewport.insertBefore(renderer.domElement, viewport.firstChild);
 
-        // Camera
         let camTargetX = 15, camTargetZ = 15;
         let camAngle = Math.PI / 4;
-        let camDist = 18;
-        let camHeight = 14;
+        let camDist = 18, camHeight = 14;
 
         function updateCamera() {
             camera.position.set(
@@ -270,977 +1312,681 @@
         }
         updateCamera();
 
-        // ============================================================
-        // === LIGHTING ===
-        // ============================================================
+        // Lighting
         const ambientLight = new THREE.AmbientLight(0x6688aa, 0.5);
         scene.add(ambientLight);
-
         const sunLight = new THREE.DirectionalLight(0xffeedd, 0.9);
         sunLight.position.set(10, 20, 10);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = 60;
-        sunLight.shadow.camera.left = -20;
-        sunLight.shadow.camera.right = 20;
-        sunLight.shadow.camera.top = 20;
-        sunLight.shadow.camera.bottom = -20;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.camera.near = 0.5; sunLight.shadow.camera.far = 60;
+        sunLight.shadow.camera.left = -20; sunLight.shadow.camera.right = 20;
+        sunLight.shadow.camera.top = 20; sunLight.shadow.camera.bottom = -20;
         scene.add(sunLight);
-
         const hemiLight = new THREE.HemisphereLight(0x88aacc, 0x445522, 0.3);
         scene.add(hemiLight);
 
-        // ============================================================
-        // === DAY/NIGHT ===
-        // ============================================================
+        // Day/Night
         let isNight = false;
-        const dayNightBtn = document.getElementById('daynight');
-        dayNightBtn.addEventListener('click', () => {
+        window.toggleDayNight = function() {
             isNight = !isNight;
             if (isNight) {
-                scene.background.set(0x0a0a1a);
-                scene.fog.color.set(0x0a0a1a);
-                ambientLight.intensity = 0.15;
-                sunLight.intensity = 0.1;
-                sunLight.color.set(0x4466aa);
-                hemiLight.intensity = 0.05;
-                dayNightBtn.textContent = '🌙 Night';
+                scene.background.set(0x0a0a1a); scene.fog.color.set(0x0a0a1a);
+                ambientLight.intensity = 0.15; sunLight.intensity = 0.1;
+                sunLight.color.set(0x4466aa); hemiLight.intensity = 0.05;
             } else {
-                scene.background.set(0x87CEEB);
-                scene.fog.color.set(0x87CEEB);
-                ambientLight.intensity = 0.5;
-                sunLight.intensity = 0.9;
-                sunLight.color.set(0xffeedd);
-                hemiLight.intensity = 0.3;
-                dayNightBtn.textContent = '☀️ Day';
+                scene.background.set(0x87CEEB); scene.fog.color.set(0x87CEEB);
+                ambientLight.intensity = 0.5; sunLight.intensity = 0.9;
+                sunLight.color.set(0xffeedd); hemiLight.intensity = 0.3;
             }
-        });
+        };
 
         // ============================================================
-        // === TERRAIN DATA ===
+        // === TERRAIN ===
         // ============================================================
-        const grid = [];
-        const heightMap = [];
-
-        function seededRandom(seed) {
-            let s = seed;
-            return function() {
-                s = (s * 16807 + 0) % 2147483647;
-                return (s - 1) / 2147483646;
-            };
-        }
+        const grid = [], heightMap = [];
+        function seededRandom(seed) { let s = seed; return function() { s = (s*16807+0)%2147483647; return (s-1)/2147483646; }; }
         const rng = seededRandom(42);
+        function simpleNoise(x, z) { return Math.sin(x*0.3)*Math.cos(z*0.4)*0.3 + Math.sin(x*0.7+1)*Math.cos(z*0.5+2)*0.15; }
 
-        function simpleNoise(x, z) {
-            return Math.sin(x * 0.3) * Math.cos(z * 0.4) * 0.3 +
-                   Math.sin(x * 0.7 + 1) * Math.cos(z * 0.5 + 2) * 0.15;
-        }
-
-        // Water zones
         function isWater(x, z) {
-            const d1 = Math.sqrt((x - 6) ** 2 + (z - 6) ** 2);
-            if (d1 < 3.5) return true;
-            const riverZ = 20 + Math.sin(x * 0.4) * 2;
-            if (Math.abs(z - riverZ) < 1.5 && x > 5 && x < 28) return true;
+            if (Math.sqrt((x-6)**2+(z-6)**2) < 3.5) return true;
+            const rz = 20 + Math.sin(x*0.4)*2;
+            if (Math.abs(z-rz) < 1.5 && x > 5 && x < 28) return true;
             return false;
         }
-
-        // Bridge check — tiles near x=14-16 across river are bridged
-        function isBridge(x, z) {
-            const riverZ = 20 + Math.sin(x * 0.4) * 2;
-            if (Math.abs(z - riverZ) < 1.5 && x >= 14 && x <= 16) return true;
-            return false;
-        }
-
-        // Check if tile is inside a building zone
+        function isBridge(x, z) { const rz = 20+Math.sin(x*0.4)*2; return Math.abs(z-rz)<1.5 && x>=14 && x<=16; }
         function isInBuildingZone(x, z) {
-            for (const b of BUILDINGS) {
-                const hw = b.w / 2, hd = b.d / 2;
-                if (x >= b.x - hw - 0.5 && x <= b.x + hw + 0.5 &&
-                    z >= b.z - hd - 0.5 && z <= b.z + hd + 0.5) {
-                    return true;
-                }
-            }
+            for (const b of BUILDINGS) { const hw=b.w/2,hd=b.d/2; if(x>=b.x-hw-0.5&&x<=b.x+hw+0.5&&z>=b.z-hd-0.5&&z<=b.z+hd+0.5) return true; }
             return false;
         }
 
-        // Build grid
-        for (let x = 0; x < MAP_SIZE; x++) {
-            grid[x] = [];
-            heightMap[x] = [];
-            for (let z = 0; z < MAP_SIZE; z++) {
-                const water = isWater(x, z);
-                const bridge = isBridge(x, z);
-                if (bridge) {
-                    grid[x][z] = 3; // bridge tile
-                    heightMap[x][z] = 0.05;
-                } else if (water) {
-                    grid[x][z] = 0;
-                    heightMap[x][z] = WATER_LEVEL;
-                } else {
-                    const h = simpleNoise(x, z) * 0.2;
-                    grid[x][z] = 1;
-                    heightMap[x][z] = h;
-                }
-            }
-        }
+        for (let x=0;x<MAP_SIZE;x++){grid[x]=[];heightMap[x]=[];for(let z=0;z<MAP_SIZE;z++){const w=isWater(x,z),br=isBridge(x,z);if(br){grid[x][z]=3;heightMap[x][z]=0.05;}else if(w){grid[x][z]=0;heightMap[x][z]=WATER_LEVEL;}else{grid[x][z]=1;heightMap[x][z]=simpleNoise(x,z)*0.2;}}}
 
-        // ============================================================
-        // === TERRAIN MESH ===
-        // ============================================================
-        const grassColors = [0x4a7c3f, 0x528745, 0x5d9248, 0x4b8040, 0x3f7035];
-        const dirtColors = [0x8B7355, 0x7a6548, 0x6d5b40];
-        const waterColor = 0x2288aa;
-        const sandColor = 0xc2b280;
-        const bridgeColor = 0x8B6914;
-
-        const tileMeshes = [];
-
-        for (let x = 0; x < MAP_SIZE; x++) {
-            tileMeshes[x] = [];
-            for (let z = 0; z < MAP_SIZE; z++) {
-                const h = heightMap[x][z];
-                let color;
-
-                if (grid[x][z] === 3) {
-                    // Bridge
-                    color = bridgeColor;
-                } else if (isWater(x, z)) {
-                    color = waterColor;
-                } else {
-                    let nearWater = false;
-                    for (let dx = -1; dx <= 1; dx++) {
-                        for (let dz = -1; dz <= 1; dz++) {
-                            const nx = x + dx, nz = z + dz;
-                            if (nx >= 0 && nx < MAP_SIZE && nz >= 0 && nz < MAP_SIZE && isWater(nx, nz) && !isBridge(nx, nz)) {
-                                nearWater = true;
-                            }
-                        }
-                    }
-                    if (nearWater) {
-                        color = sandColor;
-                    } else {
-                        const pathZ = 15 + Math.sin(x * 0.3) * 1.5;
-                        if (Math.abs(z - pathZ) < 0.8 && x > 3 && x < 27) {
-                            color = dirtColors[Math.floor(rng() * dirtColors.length)];
-                            grid[x][z] = 2; // path
-                        } else {
-                            color = grassColors[Math.floor(rng() * grassColors.length)];
-                        }
-                    }
-                }
-
-                const geo = new THREE.BoxGeometry(TILE_SIZE, grid[x][z] === 3 ? 0.15 : 0.3, TILE_SIZE);
-                const mat = new THREE.MeshLambertMaterial({ color: color });
-                const tile = new THREE.Mesh(geo, mat);
-                tile.position.set(x, h - 0.15, z);
-                tile.receiveShadow = true;
-                tile.userData = { tileX: x, tileZ: z, walkable: grid[x][z] > 0, type: 'tile' };
-                scene.add(tile);
-                tileMeshes[x][z] = tile;
-            }
-        }
+        // Terrain mesh
+        const grassColors=[0x4a7c3f,0x528745,0x5d9248,0x4b8040,0x3f7035],dirtColors=[0x8B7355,0x7a6548,0x6d5b40];
+        const tileMeshes=[];
+        for(let x=0;x<MAP_SIZE;x++){tileMeshes[x]=[];for(let z=0;z<MAP_SIZE;z++){const h=heightMap[x][z];let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const pz=15+Math.sin(x*0.3)*1.5;if(Math.abs(z-pz)<0.8&&x>3&&x<27){color=dirtColors[Math.floor(rng()*dirtColors.length)];grid[x][z]=2;}else color=grassColors[Math.floor(rng()*grassColors.length)];}}const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);const mat=new THREE.MeshLambertMaterial({color});const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};scene.add(tile);tileMeshes[x][z]=tile;}}
 
         // Bridge railings
-        for (let x = 14; x <= 16; x++) {
-            for (const side of [-1, 1]) {
-                const riverZ = 20 + Math.sin(x * 0.4) * 2;
-                const rz = Math.round(riverZ + side * 1.3);
-                if (rz >= 0 && rz < MAP_SIZE) {
-                    const railGeo = new THREE.BoxGeometry(0.08, 0.4, 0.08);
-                    const railMat = new THREE.MeshLambertMaterial({ color: 0x5a3a1a });
-                    const rail = new THREE.Mesh(railGeo, railMat);
-                    rail.position.set(x, 0.25, rz);
-                    rail.castShadow = true;
-                    scene.add(rail);
-                }
-            }
-        }
+        for(let x=14;x<=16;x++)for(const s of[-1,1]){const rz=20+Math.sin(x*0.4)*2,rr=Math.round(rz+s*1.3);if(rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));r.position.set(x,0.25,rr);r.castShadow=true;scene.add(r);}}
 
-        // ============================================================
-        // === WATER SURFACE ===
-        // ============================================================
-        const waterGeo = new THREE.PlaneGeometry(30, 30, 30, 30);
-        const waterMat = new THREE.MeshLambertMaterial({
-            color: 0x2288aa, transparent: true, opacity: 0.6
-        });
-        const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-        waterMesh.rotation.x = -Math.PI / 2;
-        waterMesh.position.set(14.5, WATER_LEVEL + 0.05, 14.5);
-        scene.add(waterMesh);
+        // Water
+        const waterGeo=new THREE.PlaneGeometry(30,30,30,30);const waterMat=new THREE.MeshLambertMaterial({color:0x2288aa,transparent:true,opacity:0.6});const waterMesh=new THREE.Mesh(waterGeo,waterMat);waterMesh.rotation.x=-Math.PI/2;waterMesh.position.set(14.5,WATER_LEVEL+0.05,14.5);scene.add(waterMesh);
 
-        // ============================================================
-        // === TREES (avoid building zones) ===
-        // ============================================================
-        const treePositions = [];
-        for (let i = 0; i < 40; i++) {
-            const x = Math.floor(rng() * MAP_SIZE);
-            const z = Math.floor(rng() * MAP_SIZE);
-            if (grid[x][z] > 0 && !isWater(x, z) && !isInBuildingZone(x, z)) {
-                if (grid[x][z] === 2 || grid[x][z] === 3) continue;
-                if (Math.abs(x - 15) < 3 && Math.abs(z - 15) < 3) continue;
-                treePositions.push({ x, z });
-                grid[x][z] = 0;
-            }
-        }
+        // Trees
+        const treePositions=[];
+        for(let i=0;i<40;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2&&grid[x][z]!==3&&!(Math.abs(x-15)<3&&Math.abs(z-15)<3)){treePositions.push({x,z});grid[x][z]=0;}}
+        function createTree(x,z,v){const g=new THREE.Group();const h=heightMap[x][z];const th=0.6+rng()*0.4;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,th,5),new THREE.MeshLambertMaterial({color:0x6B4226}));trunk.position.y=th/2;trunk.castShadow=true;g.add(trunk);if(v===0){[0.5,0.4,0.28].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.5,5),new THREE.MeshLambertMaterial({color:[0x2d5a1e,0x3a6e28,0x468032][i]}));c.position.y=th+0.15+i*0.35;c.castShadow=true;g.add(c);});}else if(v===1){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.45,0),new THREE.MeshLambertMaterial({color:0x3a8030}));l.position.y=th+0.35;l.castShadow=true;g.add(l);}else{const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0x2a6a20}));b.position.y=th+0.2;b.castShadow=true;g.add(b);}g.position.set(x,h,z);scene.add(g);}
+        treePositions.forEach(p=>createTree(p.x,p.z,Math.floor(rng()*3)));
 
-        function createTree(x, z, variant) {
-            const group = new THREE.Group();
-            const h = heightMap[x][z];
-            const trunkH = 0.6 + rng() * 0.4;
-            const trunkGeo = new THREE.CylinderGeometry(0.08, 0.12, trunkH, 5);
-            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6B4226 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = trunkH / 2;
-            trunk.castShadow = true;
-            group.add(trunk);
-
-            if (variant === 0) {
-                const sizes = [0.5, 0.4, 0.28];
-                const greens = [0x2d5a1e, 0x3a6e28, 0x468032];
-                sizes.forEach((s, i) => {
-                    const coneGeo = new THREE.ConeGeometry(s, 0.5, 5);
-                    const coneMat = new THREE.MeshLambertMaterial({ color: greens[i] });
-                    const cone = new THREE.Mesh(coneGeo, coneMat);
-                    cone.position.y = trunkH + 0.15 + i * 0.35;
-                    cone.castShadow = true;
-                    group.add(cone);
-                });
-            } else if (variant === 1) {
-                const leafGeo = new THREE.DodecahedronGeometry(0.45, 0);
-                const leafMat = new THREE.MeshLambertMaterial({ color: 0x3a8030 });
-                const leaves = new THREE.Mesh(leafGeo, leafMat);
-                leaves.position.y = trunkH + 0.35;
-                leaves.castShadow = true;
-                group.add(leaves);
-            } else {
-                const bushGeo = new THREE.IcosahedronGeometry(0.35, 0);
-                const bushMat = new THREE.MeshLambertMaterial({ color: 0x2a6a20 });
-                const bush = new THREE.Mesh(bushGeo, bushMat);
-                bush.position.y = trunkH + 0.2;
-                bush.castShadow = true;
-                group.add(bush);
-            }
-
-            group.position.set(x, h, z);
-            scene.add(group);
-        }
-
-        treePositions.forEach(p => createTree(p.x, p.z, Math.floor(rng() * 3)));
-
-        // ============================================================
-        // === ROCKS (avoid building zones) ===
-        // ============================================================
-        for (let i = 0; i < 15; i++) {
-            const x = Math.floor(rng() * MAP_SIZE);
-            const z = Math.floor(rng() * MAP_SIZE);
-            if (grid[x][z] > 0 && !isWater(x, z) && !isInBuildingZone(x, z)) {
-                const rockGeo = new THREE.DodecahedronGeometry(0.15 + rng() * 0.15, 0);
-                const rockMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-                const rock = new THREE.Mesh(rockGeo, rockMat);
-                rock.position.set(x + rng() * 0.3, heightMap[x][z] + 0.1, z + rng() * 0.3);
-                rock.rotation.set(rng(), rng(), rng());
-                rock.castShadow = true;
-                scene.add(rock);
-            }
-        }
-
-        // ============================================================
-        // === FLOWERS (avoid building zones) ===
-        // ============================================================
-        for (let i = 0; i < 25; i++) {
-            const x = Math.floor(rng() * MAP_SIZE);
-            const z = Math.floor(rng() * MAP_SIZE);
-            if (grid[x][z] > 0 && !isWater(x, z) && !isInBuildingZone(x, z)) {
-                const flowerColors = [0xff6b9d, 0xffd93d, 0xff8a5c, 0xc084fc, 0xfb7185];
-                const fGeo = new THREE.SphereGeometry(0.06, 4, 4);
-                const fMat = new THREE.MeshLambertMaterial({ color: flowerColors[Math.floor(rng() * flowerColors.length)] });
-                const flower = new THREE.Mesh(fGeo, fMat);
-                flower.position.set(x + rng() * 0.6 - 0.3, heightMap[x][z] + 0.15, z + rng() * 0.6 - 0.3);
-                scene.add(flower);
-            }
-        }
+        // Rocks & Flowers
+        for(let i=0;i<15;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.15+rng()*0.15,0),new THREE.MeshLambertMaterial({color:0x888888}));r.position.set(x+rng()*0.3,heightMap[x][z]+0.1,z+rng()*0.3);r.rotation.set(rng(),rng(),rng());r.castShadow=true;scene.add(r);}}
+        for(let i=0;i<25;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const fc=[0xff6b9d,0xffd93d,0xff8a5c,0xc084fc,0xfb7185];const f=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:fc[Math.floor(rng()*fc.length)]}));f.position.set(x+rng()*0.6-0.3,heightMap[x][z]+0.15,z+rng()*0.6-0.3);scene.add(f);}}
 
         // ============================================================
         // === NAMED BUILDINGS ===
         // ============================================================
-        const buildingMeshes = []; // { mesh, data } for raycasting
-
+        const buildingMeshes = [];
         function createNamedBuilding(bData) {
             const group = new THREE.Group();
-            const baseH = heightMap[Math.min(Math.floor(bData.x), MAP_SIZE-1)][Math.min(Math.floor(bData.z), MAP_SIZE-1)] || 0;
-
+            const baseH = heightMap[Math.min(Math.floor(bData.x),MAP_SIZE-1)][Math.min(Math.floor(bData.z),MAP_SIZE-1)]||0;
             if (bData.type === 'pedestal') {
-                // Quest Board — special pedestal with sign
-                const baseGeo = new THREE.CylinderGeometry(0.4, 0.5, 0.6, 6);
-                const baseMat = new THREE.MeshLambertMaterial({ color: bData.wallColor });
-                const base = new THREE.Mesh(baseGeo, baseMat);
-                base.position.y = 0.3;
-                base.castShadow = true;
-                group.add(base);
-
-                // Board on top
-                const boardGeo = new THREE.BoxGeometry(0.7, 0.5, 0.08);
-                const boardMat = new THREE.MeshLambertMaterial({ color: 0x5a3a1a });
-                const board = new THREE.Mesh(boardGeo, boardMat);
-                board.position.y = 0.85;
-                board.castShadow = true;
-                group.add(board);
-
-                // Pin marks on board
-                const pinColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44];
-                pinColors.forEach((c, i) => {
-                    const pinGeo = new THREE.SphereGeometry(0.04, 4, 4);
-                    const pinMat = new THREE.MeshBasicMaterial({ color: c });
-                    const pin = new THREE.Mesh(pinGeo, pinMat);
-                    pin.position.set(-0.2 + (i % 2) * 0.4, 0.75 + Math.floor(i / 2) * 0.2, 0.05);
-                    group.add(pin);
-                });
-
-                // Only block the center tile
-                const cx = Math.floor(bData.x);
-                const cz = Math.floor(bData.z);
-                if (cx >= 0 && cx < MAP_SIZE && cz >= 0 && cz < MAP_SIZE) {
-                    grid[cx][cz] = 0;
-                }
-
-                // Door tile (walkable approach from south)
-                buildingDoors[bData.id] = { x: cx, z: cz + 1 };
-
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.6,6), new THREE.MeshLambertMaterial({color:bData.wallColor}));
+                base.position.y=0.3; base.castShadow=true; group.add(base);
+                const board = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.08), new THREE.MeshLambertMaterial({color:0x5a3a1a}));
+                board.position.y=0.85; board.castShadow=true; group.add(board);
+                [0xff4444,0x44ff44,0x4444ff,0xffff44].forEach((c,i)=>{const p=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:c}));p.position.set(-0.2+(i%2)*0.4,0.75+Math.floor(i/2)*0.2,0.05);group.add(p);});
+                const cx=Math.floor(bData.x),cz=Math.floor(bData.z);if(cx>=0&&cx<MAP_SIZE&&cz>=0&&cz<MAP_SIZE)grid[cx][cz]=0;
+                buildingDoors[bData.id]={x:cx,z:cz+1};
             } else {
-                // Standard building
-                const wallGeo = new THREE.BoxGeometry(bData.w, bData.h, bData.d);
-                const wallMat = new THREE.MeshLambertMaterial({ color: bData.wallColor });
-                const walls = new THREE.Mesh(wallGeo, wallMat);
-                walls.position.y = bData.h / 2;
-                walls.castShadow = true;
-                walls.receiveShadow = true;
-                group.add(walls);
-
-                // Roof
-                const roofGeo = new THREE.ConeGeometry(Math.max(bData.w, bData.d) * 0.75, bData.h * 0.5, 4);
-                const roofMat = new THREE.MeshLambertMaterial({ color: bData.roofColor });
-                const roof = new THREE.Mesh(roofGeo, roofMat);
-                roof.position.y = bData.h + bData.h * 0.2;
-                roof.rotation.y = Math.PI / 4;
-                roof.castShadow = true;
-                group.add(roof);
-
-                // Door
-                let doorPos, doorRot;
-                const doorGeo = new THREE.BoxGeometry(0.3, 0.5, 0.05);
-                const doorMat = new THREE.MeshLambertMaterial({ color: 0x5a3a1a });
-                const door = new THREE.Mesh(doorGeo, doorMat);
-
-                switch (bData.doorSide) {
-                    case 'south': door.position.set(0, 0.25, bData.d / 2 + 0.02); break;
-                    case 'north': door.position.set(0, 0.25, -bData.d / 2 - 0.02); break;
-                    case 'west': door.position.set(-bData.w / 2 - 0.02, 0.25, 0); door.rotation.y = Math.PI / 2; break;
-                    case 'east': door.position.set(bData.w / 2 + 0.02, 0.25, 0); door.rotation.y = Math.PI / 2; break;
-                }
+                const walls=new THREE.Mesh(new THREE.BoxGeometry(bData.w,bData.h,bData.d),new THREE.MeshLambertMaterial({color:bData.wallColor}));walls.position.y=bData.h/2;walls.castShadow=true;walls.receiveShadow=true;group.add(walls);
+                const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(bData.w,bData.d)*0.75,bData.h*0.5,4),new THREE.MeshLambertMaterial({color:bData.roofColor}));roof.position.y=bData.h+bData.h*0.2;roof.rotation.y=Math.PI/4;roof.castShadow=true;group.add(roof);
+                const door=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.05),new THREE.MeshLambertMaterial({color:0x5a3a1a}));
+                switch(bData.doorSide){case'south':door.position.set(0,0.25,bData.d/2+0.02);break;case'north':door.position.set(0,0.25,-bData.d/2-0.02);break;case'west':door.position.set(-bData.w/2-0.02,0.25,0);door.rotation.y=Math.PI/2;break;case'east':door.position.set(bData.w/2+0.02,0.25,0);door.rotation.y=Math.PI/2;break;}
                 group.add(door);
-
-                // Block tiles under building
-                const hw = Math.ceil(bData.w / 2);
-                const hd = Math.ceil(bData.d / 2);
-                for (let bx = Math.floor(bData.x) - hw; bx <= Math.floor(bData.x) + hw; bx++) {
-                    for (let bz = Math.floor(bData.z) - hd; bz <= Math.floor(bData.z) + hd; bz++) {
-                        if (bx >= 0 && bx < MAP_SIZE && bz >= 0 && bz < MAP_SIZE) {
-                            grid[bx][bz] = 0;
-                        }
-                    }
-                }
-
-                // Set door tile walkable
-                let doorTile;
-                switch (bData.doorSide) {
-                    case 'south': doorTile = { x: Math.floor(bData.x), z: Math.floor(bData.z) + hd + 1 }; break;
-                    case 'north': doorTile = { x: Math.floor(bData.x), z: Math.floor(bData.z) - hd - 1 }; break;
-                    case 'west':  doorTile = { x: Math.floor(bData.x) - hw - 1, z: Math.floor(bData.z) }; break;
-                    case 'east':  doorTile = { x: Math.floor(bData.x) + hw + 1, z: Math.floor(bData.z) }; break;
-                }
-                if (doorTile && doorTile.x >= 0 && doorTile.x < MAP_SIZE && doorTile.z >= 0 && doorTile.z < MAP_SIZE) {
-                    grid[doorTile.x][doorTile.z] = 1;
-                    buildingDoors[bData.id] = doorTile;
-                }
+                const hw=Math.ceil(bData.w/2),hd=Math.ceil(bData.d/2);
+                for(let bx=Math.floor(bData.x)-hw;bx<=Math.floor(bData.x)+hw;bx++)for(let bz=Math.floor(bData.z)-hd;bz<=Math.floor(bData.z)+hd;bz++)if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE)grid[bx][bz]=0;
+                let dt;switch(bData.doorSide){case'south':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)+hd+1};break;case'north':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)-hd-1};break;case'west':dt={x:Math.floor(bData.x)-hw-1,z:Math.floor(bData.z)};break;case'east':dt={x:Math.floor(bData.x)+hw+1,z:Math.floor(bData.z)};break;}
+                if(dt&&dt.x>=0&&dt.x<MAP_SIZE&&dt.z>=0&&dt.z<MAP_SIZE){grid[dt.x][dt.z]=1;buildingDoors[bData.id]=dt;}
             }
-
-            group.position.set(bData.x, baseH, bData.z);
-
-            // Make the group raycastable by adding userData to children
-            group.traverse(child => {
-                if (child.isMesh) {
-                    child.userData.buildingId = bData.id;
-                    child.userData.type = 'building';
-                }
-            });
-
-            scene.add(group);
-            buildingMeshes.push({ group, data: bData });
-
-            return group;
+            group.position.set(bData.x,baseH,bData.z);
+            group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;c.userData.type='building';}});
+            scene.add(group); buildingMeshes.push({group,data:bData});
         }
-
-        BUILDINGS.forEach(b => createNamedBuilding(b));
+        BUILDINGS.forEach(b=>createNamedBuilding(b));
 
         // ============================================================
         // === PLAYER CHARACTER ===
         // ============================================================
         const playerGroup = new THREE.Group();
+        const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:0x3355aa}));body.position.y=0.5;body.castShadow=true;playerGroup.add(body);
+        const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;playerGroup.add(head);
+        const legGeo=new THREE.BoxGeometry(0.1,0.3,0.15),legMat=new THREE.MeshLambertMaterial({color:0x554433});
+        const leftLeg=new THREE.Mesh(legGeo,legMat);leftLeg.position.set(-0.08,0.15,0);playerGroup.add(leftLeg);
+        const rightLeg=new THREE.Mesh(legGeo,legMat);rightLeg.position.set(0.08,0.15,0);playerGroup.add(rightLeg);
+        const armGeo=new THREE.BoxGeometry(0.08,0.35,0.1),armMat=new THREE.MeshLambertMaterial({color:0x3355aa});
+        const leftArm=new THREE.Mesh(armGeo,armMat);leftArm.position.set(-0.22,0.5,0);playerGroup.add(leftArm);
+        const rightArm=new THREE.Mesh(armGeo,armMat);rightArm.position.set(0.22,0.5,0);playerGroup.add(rightArm);
+        const playerShadow=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));playerShadow.rotation.x=-Math.PI/2;playerShadow.position.y=0.02;playerGroup.add(playerShadow);
 
-        const bodyGeo = new THREE.BoxGeometry(0.3, 0.5, 0.2);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3355aa });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.5;
-        body.castShadow = true;
-        playerGroup.add(body);
+        let playerTileX=15,playerTileZ=15,playerWorldX=15,playerWorldZ=15;
+        playerGroup.position.set(15,heightMap[15][15],15);scene.add(playerGroup);
 
-        const headGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-        const headMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.y = 0.9;
-        head.castShadow = true;
-        playerGroup.add(head);
-
-        const legGeo = new THREE.BoxGeometry(0.1, 0.3, 0.15);
-        const legMat = new THREE.MeshLambertMaterial({ color: 0x554433 });
-        const leftLeg = new THREE.Mesh(legGeo, legMat);
-        leftLeg.position.set(-0.08, 0.15, 0);
-        playerGroup.add(leftLeg);
-        const rightLeg = new THREE.Mesh(legGeo, legMat);
-        rightLeg.position.set(0.08, 0.15, 0);
-        playerGroup.add(rightLeg);
-
-        const armGeo = new THREE.BoxGeometry(0.08, 0.35, 0.1);
-        const armMat = new THREE.MeshLambertMaterial({ color: 0x3355aa });
-        const leftArm = new THREE.Mesh(armGeo, armMat);
-        leftArm.position.set(-0.22, 0.5, 0);
-        playerGroup.add(leftArm);
-        const rightArm = new THREE.Mesh(armGeo, armMat);
-        rightArm.position.set(0.22, 0.5, 0);
-        playerGroup.add(rightArm);
-
-        const shadowGeo = new THREE.CircleGeometry(0.2, 8);
-        const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 });
-        const playerShadow = new THREE.Mesh(shadowGeo, shadowMat);
-        playerShadow.rotation.x = -Math.PI / 2;
-        playerShadow.position.y = 0.02;
-        playerGroup.add(playerShadow);
-
-        let playerTileX = 15, playerTileZ = 15;
-        let playerWorldX = 15, playerWorldZ = 15;
-        playerGroup.position.set(15, heightMap[15][15], 15);
-        scene.add(playerGroup);
+        // Tile highlight
+        const highlightMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.3});
+        const highlight=new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE,0.02,TILE_SIZE),highlightMat);highlight.visible=false;scene.add(highlight);
 
         // ============================================================
-        // === TILE HIGHLIGHT ===
+        // === PATHFINDING ===
         // ============================================================
-        const highlightGeo = new THREE.BoxGeometry(TILE_SIZE, 0.02, TILE_SIZE);
-        const highlightMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.3 });
-        const highlight = new THREE.Mesh(highlightGeo, highlightMat);
-        highlight.visible = false;
-        scene.add(highlight);
+        function findPath(sx,sz,ex,ez){if(ex<0||ex>=MAP_SIZE||ez<0||ez>=MAP_SIZE||grid[ex][ez]===0)return[];const open=[],closed=new Set(),cf={};function k(x,z){return x+','+z;}function h(x,z){return Math.abs(x-ex)+Math.abs(z-ez);}open.push({x:sx,z:sz,g:0,f:h(sx,sz)});while(open.length>0){open.sort((a,b)=>a.f-b.f);const c=open.shift(),ck=k(c.x,c.z);if(c.x===ex&&c.z===ez){const p=[];let kk=ck;while(kk){const[px,pz]=kk.split(',').map(Number);p.unshift({x:px,z:pz});kk=cf[kk];}return p;}closed.add(ck);for(const n of[{x:c.x+1,z:c.z},{x:c.x-1,z:c.z},{x:c.x,z:c.z+1},{x:c.x,z:c.z-1}]){if(n.x<0||n.x>=MAP_SIZE||n.z<0||n.z>=MAP_SIZE||grid[n.x][n.z]===0)continue;const nk=k(n.x,n.z);if(closed.has(nk))continue;const g=c.g+1;const ex2=open.find(o=>k(o.x,o.z)===nk);if(ex2&&g>=ex2.g)continue;cf[nk]=ck;if(ex2){ex2.g=g;ex2.f=g+h(n.x,n.z);}else open.push({x:n.x,z:n.z,g,f:g+h(n.x,n.z)});}}return[];}
 
-        // ============================================================
-        // === A* PATHFINDING ===
-        // ============================================================
-        function findPath(sx, sz, ex, ez) {
-            if (ex < 0 || ex >= MAP_SIZE || ez < 0 || ez >= MAP_SIZE) return [];
-            if (grid[ex][ez] === 0) return [];
-
-            const open = [];
-            const closed = new Set();
-            const cameFrom = {};
-
-            function key(x, z) { return x + ',' + z; }
-            function heuristic(x, z) { return Math.abs(x - ex) + Math.abs(z - ez); }
-
-            open.push({ x: sx, z: sz, g: 0, f: heuristic(sx, sz) });
-
-            while (open.length > 0) {
-                open.sort((a, b) => a.f - b.f);
-                const current = open.shift();
-                const ck = key(current.x, current.z);
-
-                if (current.x === ex && current.z === ez) {
-                    const path = [];
-                    let k = ck;
-                    while (k) {
-                        const [px, pz] = k.split(',').map(Number);
-                        path.unshift({ x: px, z: pz });
-                        k = cameFrom[k];
-                    }
-                    return path;
-                }
-
-                closed.add(ck);
-
-                const neighbors = [
-                    { x: current.x + 1, z: current.z },
-                    { x: current.x - 1, z: current.z },
-                    { x: current.x, z: current.z + 1 },
-                    { x: current.x, z: current.z - 1 },
-                ];
-
-                for (const n of neighbors) {
-                    if (n.x < 0 || n.x >= MAP_SIZE || n.z < 0 || n.z >= MAP_SIZE) continue;
-                    if (grid[n.x][n.z] === 0) continue;
-                    const nk = key(n.x, n.z);
-                    if (closed.has(nk)) continue;
-
-                    const g = current.g + 1;
-                    const existing = open.find(o => key(o.x, o.z) === nk);
-                    if (existing && g >= existing.g) continue;
-
-                    cameFrom[nk] = ck;
-                    if (existing) {
-                        existing.g = g;
-                        existing.f = g + heuristic(n.x, n.z);
-                    } else {
-                        open.push({ x: n.x, z: n.z, g: g, f: g + heuristic(n.x, n.z) });
-                    }
-                }
-            }
-            return [];
-        }
+        // Player movement
+        let currentPath=[],pathIndex=0,isMoving=false,moveProgress=0,moveFromX,moveFromZ,moveToX,moveToZ,walkCycle=0;
+        function startMoveTo(path){if(path.length<2)return;currentPath=path;pathIndex=1;isMoving=true;moveProgress=0;moveFromX=currentPath[0].x;moveFromZ=currentPath[0].z;moveToX=currentPath[1].x;moveToZ=currentPath[1].z;}
 
         // ============================================================
-        // === PLAYER MOVEMENT ===
+        // === NPC SYSTEM ===
         // ============================================================
-        let currentPath = [];
-        let pathIndex = 0;
-        let isMoving = false;
-        let moveProgress = 0;
-        let moveFromX, moveFromZ, moveToX, moveToZ;
-        let walkCycle = 0;
-
-        function startMoveTo(path) {
-            if (path.length < 2) return;
-            currentPath = path;
-            pathIndex = 1;
-            isMoving = true;
-            moveProgress = 0;
-            moveFromX = currentPath[0].x;
-            moveFromZ = currentPath[0].z;
-            moveToX = currentPath[1].x;
-            moveToZ = currentPath[1].z;
-        }
-
-        // ============================================================
-        // === NPC CHARACTER FACTORY ===
-        // ============================================================
-        const npcRegistry = new Map(); // id -> { group, data, state, ... }
+        const npcRegistry = new Map();
         const npcLabelContainer = document.getElementById('npc-labels');
         let pathfindingQueue = [];
 
         function createNPCCharacter(agentData) {
-            const role = agentData.role || 'app_builder';
-            const roleInfo = ROLE_COLORS[role] || ROLE_COLORS.app_builder;
-            const scale = 0.85;
-
-            const group = new THREE.Group();
-            group.scale.set(scale, scale, scale);
-
-            // Body
-            const bGeo = new THREE.BoxGeometry(0.3, 0.5, 0.2);
-            const bMat = new THREE.MeshLambertMaterial({ color: roleInfo.int });
-            const npcBody = new THREE.Mesh(bGeo, bMat);
-            npcBody.position.y = 0.5;
-            npcBody.castShadow = true;
-            group.add(npcBody);
-
-            // Head
-            const hGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-            const hMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
-            const npcHead = new THREE.Mesh(hGeo, hMat);
-            npcHead.position.y = 0.9;
-            npcHead.castShadow = true;
-            group.add(npcHead);
-
-            // Legs
-            const lGeo = new THREE.BoxGeometry(0.1, 0.3, 0.15);
-            const lMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
-            const npcLL = new THREE.Mesh(lGeo, lMat);
-            npcLL.position.set(-0.08, 0.15, 0);
-            group.add(npcLL);
-            const npcRL = new THREE.Mesh(lGeo, lMat);
-            npcRL.position.set(0.08, 0.15, 0);
-            group.add(npcRL);
-
-            // Arms
-            const aGeo = new THREE.BoxGeometry(0.08, 0.35, 0.1);
-            const aMat = new THREE.MeshLambertMaterial({ color: roleInfo.int });
-            const npcLA = new THREE.Mesh(aGeo, aMat);
-            npcLA.position.set(-0.22, 0.5, 0);
-            group.add(npcLA);
-            const npcRA = new THREE.Mesh(aGeo, aMat);
-            npcRA.position.set(0.22, 0.5, 0);
-            group.add(npcRA);
-
-            // Shadow
-            const sGeo = new THREE.CircleGeometry(0.18, 8);
-            const sMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 });
-            const npcShadow = new THREE.Mesh(sGeo, sMat);
-            npcShadow.rotation.x = -Math.PI / 2;
-            npcShadow.position.y = 0.02;
-            group.add(npcShadow);
-
-            // Make raycastable
-            group.traverse(child => {
-                if (child.isMesh) {
-                    child.userData.npcId = agentData.id;
-                    child.userData.type = 'npc';
-                }
-            });
-
-            // Starting position — random walkable tile
-            let startX, startZ;
-            for (let attempts = 0; attempts < 50; attempts++) {
-                startX = Math.floor(Math.random() * MAP_SIZE);
-                startZ = Math.floor(Math.random() * MAP_SIZE);
-                if (grid[startX][startZ] > 0) break;
-            }
-
-            group.position.set(startX, heightMap[startX][startZ], startZ);
-            scene.add(group);
-
-            // HTML label
-            const label = document.createElement('div');
-            label.className = 'npc-label';
-            label.textContent = agentData.display_name || agentData.agent_name || agentData.id;
-            label.style.borderBottom = `2px solid ${roleInfo.hex}`;
-            npcLabelContainer.appendChild(label);
-
-            const npc = {
-                id: agentData.id,
-                group: group,
-                data: agentData,
-                role: role,
-                roleInfo: roleInfo,
-                label: label,
-                // Body parts for animation
-                body: npcBody, leftLeg: npcLL, rightLeg: npcRL, leftArm: npcLA, rightArm: npcRA,
-                // Position
-                tileX: startX, tileZ: startZ,
-                worldX: startX, worldZ: startZ,
-                // State machine
-                state: 'IDLE',
-                stateTimer: 3 + Math.random() * 5,
-                targetBuilding: null,
-                path: [],
-                pathIndex: 0,
-                moveProgress: 0,
-                moveFromX: 0, moveFromZ: 0, moveToX: 0, moveToZ: 0,
-                walkCycle: Math.random() * Math.PI * 2,
-                workTimer: 0,
+            const role=agentData.role||'app_builder';const roleInfo=ROLE_COLORS[role]||ROLE_COLORS.app_builder;const scale=0.85;
+            const group=new THREE.Group();group.scale.set(scale,scale,scale);
+            const npcBody=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:roleInfo.int}));npcBody.position.y=0.5;npcBody.castShadow=true;group.add(npcBody);
+            const npcHead=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));npcHead.position.y=0.9;npcHead.castShadow=true;group.add(npcHead);
+            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x444444});
+            const npcLL=new THREE.Mesh(lGeo,lMat);npcLL.position.set(-0.08,0.15,0);group.add(npcLL);
+            const npcRL=new THREE.Mesh(lGeo,lMat);npcRL.position.set(0.08,0.15,0);group.add(npcRL);
+            const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:roleInfo.int});
+            const npcLA=new THREE.Mesh(aGeo,aMat);npcLA.position.set(-0.22,0.5,0);group.add(npcLA);
+            const npcRA=new THREE.Mesh(aGeo,aMat);npcRA.position.set(0.22,0.5,0);group.add(npcRA);
+            const npcShadow=new THREE.Mesh(new THREE.CircleGeometry(0.18,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.15}));npcShadow.rotation.x=-Math.PI/2;npcShadow.position.y=0.02;group.add(npcShadow);
+            group.traverse(c=>{if(c.isMesh){c.userData.npcId=agentData.id;c.userData.type='npc';}});
+            let startX,startZ;for(let a=0;a<50;a++){startX=Math.floor(Math.random()*MAP_SIZE);startZ=Math.floor(Math.random()*MAP_SIZE);if(grid[startX][startZ]>0)break;}
+            group.position.set(startX,heightMap[startX][startZ],startZ);scene.add(group);
+            const label=document.createElement('div');label.className='npc-label';label.textContent=agentData.display_name||agentData.agent_name||agentData.id;label.style.borderBottom=`2px solid ${roleInfo.hex}`;npcLabelContainer.appendChild(label);
+            const combatDef = NPC_COMBAT_STATS[role] || NPC_COMBAT_STATS.app_builder;
+            const npc={id:agentData.id,group,data:agentData,role,roleInfo,label,body:npcBody,leftLeg:npcLL,rightLeg:npcRL,leftArm:npcLA,rightArm:npcRA,tileX:startX,tileZ:startZ,worldX:startX,worldZ:startZ,state:'IDLE',stateTimer:3+Math.random()*5,targetBuilding:null,path:[],pathIndex:0,moveProgress:0,moveFromX:0,moveFromZ:0,moveToX:0,moveToZ:0,walkCycle:Math.random()*Math.PI*2,workTimer:0,
+                // Combat
+                hp:combatDef.hp,maxHp:combatDef.hp,combatStats:combatDef,inCombat:false,combatTimer:0,isDead:false,respawnTimer:0,spawnX:startX,spawnZ:startZ,
             };
-
-            npcRegistry.set(agentData.id, npc);
-            return npc;
+            npcRegistry.set(agentData.id,npc);return npc;
         }
+        function despawnNPC(id){const npc=npcRegistry.get(id);if(!npc)return;scene.remove(npc.group);npc.label.remove();npcRegistry.delete(id);}
 
-        function despawnNPC(id) {
-            const npc = npcRegistry.get(id);
-            if (!npc) return;
-            scene.remove(npc.group);
-            npc.label.remove();
-            npcRegistry.delete(id);
-        }
+        // NPC Behavior AI
+        function chooseTargetBuilding(npc){const w=ROLE_BUILDING_WEIGHTS[npc.role]||ROLE_BUILDING_WEIGHTS.app_builder;const e=Object.entries(w);const t=e.reduce((s,[,w])=>s+w,0);let r=Math.random()*t;for(const[id,wt]of e){r-=wt;if(r<=0)return id;}return e[0][0];}
 
-        // ============================================================
-        // === NPC BEHAVIOR AI ===
-        // ============================================================
-        function chooseTargetBuilding(npc) {
-            const weights = ROLE_BUILDING_WEIGHTS[npc.role] || ROLE_BUILDING_WEIGHTS.app_builder;
-            const entries = Object.entries(weights);
-            const total = entries.reduce((s, [, w]) => s + w, 0);
-            let r = Math.random() * total;
-            for (const [buildingId, weight] of entries) {
-                r -= weight;
-                if (r <= 0) return buildingId;
-            }
-            return entries[0][0];
-        }
-
-        function updateNPCState(npc, dt) {
-            switch (npc.state) {
-                case 'IDLE':
-                    npc.stateTimer -= dt;
-                    // Breathing animation
-                    npc.body.position.y = 0.5 + Math.sin(Date.now() * 0.003 + npc.walkCycle) * 0.01;
-                    if (npc.stateTimer <= 0) {
-                        npc.state = 'CHOOSING';
-                    }
-                    break;
-
-                case 'CHOOSING': {
-                    const targetId = chooseTargetBuilding(npc);
-                    npc.targetBuilding = targetId;
-                    const door = buildingDoors[targetId];
-                    if (door) {
-                        // Queue pathfinding
-                        pathfindingQueue.push({ npc, targetX: door.x, targetZ: door.z });
-                    }
-                    npc.state = 'WAITING_PATH';
-                    npc.stateTimer = 10; // timeout
-                    break;
-                }
-
-                case 'WAITING_PATH':
-                    npc.stateTimer -= dt;
-                    if (npc.path.length > 1) {
-                        npc.state = 'WALKING';
-                        npc.pathIndex = 1;
-                        npc.moveProgress = 0;
-                        npc.moveFromX = npc.path[0].x;
-                        npc.moveFromZ = npc.path[0].z;
-                        npc.moveToX = npc.path[1].x;
-                        npc.moveToZ = npc.path[1].z;
-
-                        const bData = BUILDINGS.find(b => b.id === npc.targetBuilding);
-                        const name = npc.data.display_name || npc.data.agent_name || npc.id;
-                        addLogEntry(name, npc.roleInfo.hex, `is heading to the ${bData ? bData.name : 'unknown'}`);
-                    } else if (npc.stateTimer <= 0) {
-                        npc.state = 'IDLE';
-                        npc.stateTimer = 3 + Math.random() * 5;
-                    }
-                    break;
-
-                case 'WALKING':
-                    npc.moveProgress += dt * NPC_MOVE_SPEED;
-                    npc.walkCycle += dt * 10;
-
-                    // Walking animation
-                    const legSwing = Math.sin(npc.walkCycle) * 0.3;
-                    npc.leftLeg.rotation.x = legSwing;
-                    npc.rightLeg.rotation.x = -legSwing;
-                    npc.leftArm.rotation.x = -legSwing * 0.6;
-                    npc.rightArm.rotation.x = legSwing * 0.6;
-                    npc.body.position.y = 0.5 + Math.abs(Math.sin(npc.walkCycle)) * 0.03;
-
-                    if (npc.moveProgress >= 1) {
-                        npc.moveProgress = 0;
-                        npc.tileX = npc.moveToX;
-                        npc.tileZ = npc.moveToZ;
-                        npc.worldX = npc.moveToX;
-                        npc.worldZ = npc.moveToZ;
-                        npc.pathIndex++;
-
-                        if (npc.pathIndex < npc.path.length) {
-                            npc.moveFromX = npc.moveToX;
-                            npc.moveFromZ = npc.moveToZ;
-                            npc.moveToX = npc.path[npc.pathIndex].x;
-                            npc.moveToZ = npc.path[npc.pathIndex].z;
-                        } else {
-                            // Arrived
-                            npc.state = 'WORKING';
-                            npc.workTimer = 5 + Math.random() * 10;
-                            npc.path = [];
-
-                            // Reset pose
-                            npc.leftLeg.rotation.x = 0;
-                            npc.rightLeg.rotation.x = 0;
-                            npc.leftArm.rotation.x = 0;
-                            npc.rightArm.rotation.x = 0;
-                            npc.body.position.y = 0.5;
-
-                            // Face the building
-                            const bData = BUILDINGS.find(b => b.id === npc.targetBuilding);
-                            if (bData) {
-                                const angle = Math.atan2(bData.x - npc.tileX, bData.z - npc.tileZ);
-                                npc.group.rotation.y = angle;
-                            }
-
-                            const name = npc.data.display_name || npc.data.agent_name || npc.id;
-                            addLogEntry(name, npc.roleInfo.hex, `is working at the ${bData ? bData.name : 'unknown'}`);
-                        }
-                    }
-
-                    if (npc.state === 'WALKING') {
-                        const lx = npc.moveFromX + (npc.moveToX - npc.moveFromX) * npc.moveProgress;
-                        const lz = npc.moveFromZ + (npc.moveToZ - npc.moveFromZ) * npc.moveProgress;
-                        npc.worldX = lx;
-                        npc.worldZ = lz;
-
-                        const fromH = heightMap[npc.moveFromX] ? heightMap[npc.moveFromX][npc.moveFromZ] || 0 : 0;
-                        const toH = heightMap[npc.moveToX] ? heightMap[npc.moveToX][npc.moveToZ] || 0 : 0;
-                        const lerpH = fromH + (toH - fromH) * npc.moveProgress;
-
-                        npc.group.position.set(lx, lerpH, lz);
-
-                        const angle = Math.atan2(npc.moveToX - npc.moveFromX, npc.moveToZ - npc.moveFromZ);
-                        npc.group.rotation.y = angle;
-                    }
-                    break;
-
-                case 'WORKING':
-                    npc.workTimer -= dt;
-                    // Subtle work animation
-                    npc.rightArm.rotation.x = Math.sin(Date.now() * 0.005) * 0.2;
-                    npc.body.position.y = 0.5 + Math.sin(Date.now() * 0.004) * 0.008;
-
-                    if (npc.workTimer <= 0) {
-                        npc.state = 'IDLE';
-                        npc.stateTimer = 3 + Math.random() * 5;
-                        npc.rightArm.rotation.x = 0;
-                    }
-                    break;
+        function updateNPCState(npc,dt){
+            if(npc.isDead){npc.respawnTimer-=dt;if(npc.respawnTimer<=0){npc.isDead=false;npc.hp=npc.maxHp;npc.group.visible=true;npc.label.style.display='';npc.group.position.set(npc.spawnX,heightMap[npc.spawnX][npc.spawnZ],npc.spawnZ);npc.tileX=npc.spawnX;npc.tileZ=npc.spawnZ;npc.worldX=npc.spawnX;npc.worldZ=npc.spawnZ;npc.state='IDLE';npc.stateTimer=5;npc.inCombat=false;}return;}
+            if(npc.inCombat)return; // combat handled separately
+            switch(npc.state){
+                case'IDLE':npc.stateTimer-=dt;npc.body.position.y=0.5+Math.sin(Date.now()*0.003+npc.walkCycle)*0.01;if(npc.stateTimer<=0)npc.state='CHOOSING';break;
+                case'CHOOSING':{const tid=chooseTargetBuilding(npc);npc.targetBuilding=tid;const door=buildingDoors[tid];if(door)pathfindingQueue.push({npc,targetX:door.x,targetZ:door.z});npc.state='WAITING_PATH';npc.stateTimer=10;break;}
+                case'WAITING_PATH':npc.stateTimer-=dt;if(npc.path.length>1){npc.state='WALKING';npc.pathIndex=1;npc.moveProgress=0;npc.moveFromX=npc.path[0].x;npc.moveFromZ=npc.path[0].z;npc.moveToX=npc.path[1].x;npc.moveToZ=npc.path[1].z;const bd=BUILDINGS.find(b=>b.id===npc.targetBuilding);const nm=npc.data.display_name||npc.data.agent_name||npc.id;addChatMessage('system',`${nm} is heading to the ${bd?bd.name:'unknown'}`,null,npc.roleInfo.hex);}else if(npc.stateTimer<=0){npc.state='IDLE';npc.stateTimer=3+Math.random()*5;}break;
+                case'WALKING':npc.moveProgress+=dt*NPC_MOVE_SPEED;npc.walkCycle+=dt*10;const ls=Math.sin(npc.walkCycle)*0.3;npc.leftLeg.rotation.x=ls;npc.rightLeg.rotation.x=-ls;npc.leftArm.rotation.x=-ls*0.6;npc.rightArm.rotation.x=ls*0.6;npc.body.position.y=0.5+Math.abs(Math.sin(npc.walkCycle))*0.03;if(npc.moveProgress>=1){npc.moveProgress=0;npc.tileX=npc.moveToX;npc.tileZ=npc.moveToZ;npc.worldX=npc.moveToX;npc.worldZ=npc.moveToZ;npc.pathIndex++;if(npc.pathIndex<npc.path.length){npc.moveFromX=npc.moveToX;npc.moveFromZ=npc.moveToZ;npc.moveToX=npc.path[npc.pathIndex].x;npc.moveToZ=npc.path[npc.pathIndex].z;}else{npc.state='WORKING';npc.workTimer=5+Math.random()*10;npc.path=[];npc.leftLeg.rotation.x=0;npc.rightLeg.rotation.x=0;npc.leftArm.rotation.x=0;npc.rightArm.rotation.x=0;npc.body.position.y=0.5;const bd=BUILDINGS.find(b=>b.id===npc.targetBuilding);if(bd){npc.group.rotation.y=Math.atan2(bd.x-npc.tileX,bd.z-npc.tileZ);}const nm=npc.data.display_name||npc.data.agent_name||npc.id;addChatMessage('system',`${nm} is working at the ${bd?bd.name:'unknown'}`,null,npc.roleInfo.hex);}}if(npc.state==='WALKING'){const lx=npc.moveFromX+(npc.moveToX-npc.moveFromX)*npc.moveProgress;const lz=npc.moveFromZ+(npc.moveToZ-npc.moveFromZ)*npc.moveProgress;npc.worldX=lx;npc.worldZ=lz;const fh=heightMap[npc.moveFromX]?heightMap[npc.moveFromX][npc.moveFromZ]||0:0;const th=heightMap[npc.moveToX]?heightMap[npc.moveToX][npc.moveToZ]||0:0;npc.group.position.set(lx,fh+(th-fh)*npc.moveProgress,lz);npc.group.rotation.y=Math.atan2(npc.moveToX-npc.moveFromX,npc.moveToZ-npc.moveFromZ);}break;
+                case'WORKING':npc.workTimer-=dt;npc.rightArm.rotation.x=Math.sin(Date.now()*0.005)*0.2;npc.body.position.y=0.5+Math.sin(Date.now()*0.004)*0.008;if(npc.workTimer<=0){npc.state='IDLE';npc.stateTimer=3+Math.random()*5;npc.rightArm.rotation.x=0;}break;
             }
         }
-
-        // Process pathfinding queue (max 2 per frame)
-        function processPathfindingQueue() {
-            let processed = 0;
-            while (pathfindingQueue.length > 0 && processed < 2) {
-                const req = pathfindingQueue.shift();
-                const npc = req.npc;
-                const path = findPath(npc.tileX, npc.tileZ, req.targetX, req.targetZ);
-                npc.path = path;
-                processed++;
-            }
-        }
+        function processPathfindingQueue(){let p=0;while(pathfindingQueue.length>0&&p<2){const r=pathfindingQueue.shift();r.npc.path=findPath(r.npc.tileX,r.npc.tileZ,r.targetX,r.targetZ);p++;}}
 
         // ============================================================
-        // === ACTIVITY LOG ===
+        // === COMBAT SYSTEM ===
         // ============================================================
-        const logEl = document.getElementById('activity-log');
-        let logEntries = [];
+        let combatTarget = null;
+        let combatTimer = 0;
+        let playerDead = false;
 
-        function addLogEntry(agentName, color, action) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span style="color:${color};font-weight:bold">${agentName}</span> ${action}`;
-            logEl.appendChild(entry);
-            logEntries.push(entry);
-
-            // Max 20 entries
-            while (logEntries.length > 20) {
-                const old = logEntries.shift();
-                old.remove();
-            }
-
-            logEl.scrollTop = logEl.scrollHeight;
-        }
-
-        // ============================================================
-        // === INTERACTION PANEL ===
-        // ============================================================
-        const interactPanel = document.getElementById('interact-panel');
-        const panelContent = document.getElementById('panel-content');
-        let panelOpen = false;
-        let selectedNPC = null;
-        let selectedBuilding = null;
-
-        window.closePanel = function() {
-            interactPanel.classList.remove('open');
-            panelOpen = false;
-            selectedNPC = null;
-            selectedBuilding = null;
+        window.toggleAttackMode = function() {
+            attackMode = !attackMode;
+            document.getElementById('btnAttackMode').classList.toggle('active', attackMode);
         };
 
-        function openBuildingPanel(bData) {
-            selectedBuilding = bData;
-            selectedNPC = null;
-
-            // Find visitors (NPCs working at this building)
-            const visitors = [];
-            npcRegistry.forEach(npc => {
-                if (npc.targetBuilding === bData.id && (npc.state === 'WORKING' || npc.state === 'WALKING')) {
-                    visitors.push(npc);
-                }
-            });
-
-            let visitorsHTML = '';
-            if (visitors.length > 0) {
-                visitorsHTML = visitors.map(v => {
-                    const name = v.data.display_name || v.data.agent_name || v.id;
-                    return `<div class="visitor-item">
-                        <div class="visitor-dot" style="background:${v.roleInfo.hex}"></div>
-                        <span>${name}</span>
-                        <span style="color:#6b7280;margin-left:auto;font-size:10px">${v.roleInfo.name}</span>
-                    </div>`;
-                }).join('');
+        function startCombat(npc) {
+            if (npc.isDead || npc.inCombat || playerDead) return;
+            // Walk to adjacent tile first
+            const adj = findAdjacentWalkable(npc.tileX, npc.tileZ);
+            if (!adj) { addChatMessage('combat', "Can't reach that agent!"); return; }
+            const dist = Math.abs(playerTileX - npc.tileX) + Math.abs(playerTileZ - npc.tileZ);
+            if (dist <= 1) {
+                engageCombat(npc);
             } else {
-                visitorsHTML = '<p style="color:#6b7280;font-size:12px">No visitors right now</p>';
+                const path = findPath(playerTileX, playerTileZ, adj.x, adj.z);
+                if (path.length > 1) {
+                    startMoveTo(path);
+                    combatTarget = npc;
+                }
             }
-
-            let extraHTML = '';
-            if (bData.id === 'quest_board') {
-                extraHTML = `<div class="panel-section"><h3>Recent Proposals</h3><div id="proposals-list"><p style="color:#6b7280;font-size:12px">Loading...</p></div></div>`;
-                fetchProposals();
-            }
-
-            panelContent.innerHTML = `
-                <div class="panel-header">
-                    <div class="panel-icon" style="background:${bData.signColor}22;border:1px solid ${bData.signColor}44;font-size:28px">${bData.icon}</div>
-                    <div>
-                        <h2>${bData.name}</h2>
-                        <p>${bData.description}</p>
-                    </div>
-                </div>
-                <div class="panel-section">
-                    <h3>Visitors (${visitors.length})</h3>
-                    ${visitorsHTML}
-                </div>
-                ${extraHTML}
-            `;
-
-            interactPanel.classList.add('open');
-            panelOpen = true;
         }
 
-        function openNPCPanel(npc) {
-            selectedNPC = npc;
-            selectedBuilding = null;
-
-            const name = npc.data.display_name || npc.data.agent_name || npc.id;
-            const roleInfo = npc.roleInfo;
-            const status = npc.state === 'WORKING' ? 'Working' : npc.state === 'WALKING' ? 'Walking' : 'Idle';
-            const targetBData = npc.targetBuilding ? BUILDINGS.find(b => b.id === npc.targetBuilding) : null;
-
-            panelContent.innerHTML = `
-                <div class="panel-header">
-                    <div class="panel-icon" style="background:${roleInfo.hex}22;border:1px solid ${roleInfo.hex}44;font-size:28px">🤖</div>
-                    <div>
-                        <h2>${name}</h2>
-                        <p><span class="role-badge" style="background:${roleInfo.hex}22;color:${roleInfo.hex};border:1px solid ${roleInfo.hex}44">${roleInfo.name}</span></p>
-                    </div>
-                </div>
-                <div class="panel-section">
-                    <h3>Status</h3>
-                    <div class="stat-row"><span class="label">State</span><span class="value">${status}</span></div>
-                    ${targetBData ? `<div class="stat-row"><span class="label">Location</span><span class="value">${targetBData.name}</span></div>` : ''}
-                    <div class="stat-row"><span class="label">Position</span><span class="value">(${npc.tileX}, ${npc.tileZ})</span></div>
-                </div>
-                <div class="panel-section">
-                    <h3>Agent Details</h3>
-                    <div class="stat-row"><span class="label">Type</span><span class="value">${npc.data.agent_type || 'unknown'}</span></div>
-                    <div class="stat-row"><span class="label">Role</span><span class="value">${npc.role}</span></div>
-                    ${npc.data.objective ? `<div class="stat-row"><span class="label">Objective</span><span class="value" style="max-width:180px;text-align:right">${npc.data.objective}</span></div>` : ''}
-                    ${npc.data.proposals_count !== undefined ? `<div class="stat-row"><span class="label">Proposals</span><span class="value">${npc.data.proposals_count}</span></div>` : ''}
-                    ${npc.data.credits_earned !== undefined ? `<div class="stat-row"><span class="label">Credits</span><span class="value">${npc.data.credits_earned}</span></div>` : ''}
-                </div>
-            `;
-
-            interactPanel.classList.add('open');
-            panelOpen = true;
+        function findAdjacentWalkable(tx, tz) {
+            for (const [dx,dz] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                const nx=tx+dx, nz=tz+dz;
+                if (nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&grid[nx][nz]>0) return {x:nx,z:nz};
+            }
+            return null;
         }
+
+        function engageCombat(npc) {
+            combatTarget = npc;
+            npc.inCombat = true;
+            combatTimer = 0;
+            npc.state = 'IDLE';
+            npc.path = [];
+            // Face each other
+            const angle = Math.atan2(npc.worldX - playerWorldX, npc.worldZ - playerWorldZ);
+            playerGroup.rotation.y = angle;
+            npc.group.rotation.y = angle + Math.PI;
+            addChatMessage('combat', `You attack ${npc.data.display_name || npc.id}!`);
+        }
+
+        function updateCombat(dt) {
+            if (!combatTarget || playerDead) return;
+            if (combatTarget.isDead) { combatTarget = null; return; }
+
+            // Check if close enough
+            const dist = Math.abs(playerTileX - combatTarget.tileX) + Math.abs(playerTileZ - combatTarget.tileZ);
+            if (dist > 2) { combatTarget.inCombat = false; combatTarget = null; return; }
+
+            combatTimer += dt;
+            if (combatTimer >= COMBAT_TICK) {
+                combatTimer -= COMBAT_TICK;
+
+                // Player attacks NPC
+                const wep = playerStats.equippedWeapon;
+                const pAtk = playerStats.attack + (wep ? wep.stats.attack : 0);
+                const pStr = playerStats.strength + (wep ? wep.stats.strength : 0);
+                const nDef = combatTarget.combatStats.defence;
+
+                // Accuracy roll — spec guarantees hit and 1.5x max damage
+                const isSpec = specActive;
+                specActive = false;
+                if (isSpec || Math.random() * (pAtk + 1) > Math.random() * (nDef + 1)) {
+                    let dmg;
+                    if (isSpec) {
+                        dmg = Math.max(1, Math.floor((pStr + 1) * 1.5));
+                        playerStats.energy = Math.min(playerStats.maxEnergy, playerStats.energy + 5);
+                    } else {
+                        dmg = Math.max(1, Math.floor(Math.random() * (pStr + 1)));
+                    }
+                    combatTarget.hp -= dmg;
+                    showHitsplat(combatTarget.worldX, combatTarget.worldZ, dmg, false, isSpec);
+                    addChatMessage('combat', `You ${isSpec ? 'SPEC' : 'hit'} ${combatTarget.data.display_name || combatTarget.id} for ${dmg} damage${isSpec ? '!' : '.'}`);
+                    rightArm.rotation.x = -0.8;
+                    setTimeout(() => { rightArm.rotation.x = 0; }, 200);
+                } else {
+                    showHitsplat(combatTarget.worldX, combatTarget.worldZ, 0, true);
+                    addChatMessage('combat', `You miss!`);
+                }
+
+                // NPC attacks player
+                const nAtk = combatTarget.combatStats.attack;
+                const nStr = combatTarget.combatStats.strength;
+                const helmDef = playerStats.equippedHelm ? playerStats.equippedHelm.stats.defence : 0;
+                const shieldDef = playerStats.equippedShield ? playerStats.equippedShield.stats.defence : 0;
+                const pDef = playerStats.defence + helmDef + shieldDef;
+
+                if (Math.random() * (nAtk + 1) > Math.random() * (pDef + 1)) {
+                    const dmg = Math.max(1, Math.floor(Math.random() * (nStr + 1)));
+                    playerStats.hp -= dmg;
+                    showHitsplat(playerWorldX, playerWorldZ, dmg, false);
+                    addChatMessage('combat', `${combatTarget.data.display_name || combatTarget.id} hits you for ${dmg}.`);
+                    updateOrbs();
+                } else {
+                    showHitsplat(playerWorldX, playerWorldZ, 0, true);
+                }
+
+                // Check deaths
+                if (combatTarget.hp <= 0) {
+                    onNPCDeath(combatTarget);
+                }
+                if (playerStats.hp <= 0) {
+                    onPlayerDeath();
+                }
+
+                // XP gain - scales with enemy combat level
+                if (combatTarget && !combatTarget.isDead) {
+                    const cs = combatTarget.combatStats;
+                    const enemyLvl = Math.floor((cs.attack + cs.strength + cs.defence) / 3) + 1;
+                    const xpGain = enemyLvl * 2;
+                    gainXP('attack', xpGain);
+                    gainXP('strength', xpGain);
+                    gainXP('hitpoints', Math.ceil(xpGain * 0.7));
+                }
+            }
+        }
+
+        function showHitsplat(wx, wz, dmg, miss, isSpec) {
+            const el = document.createElement('div');
+            el.className = 'hitsplat' + (miss ? ' miss' : '') + (isSpec ? ' spec' : '');
+            el.textContent = miss ? '0' : dmg;
+            el.dataset.worldX = wx;
+            el.dataset.worldZ = wz;
+            document.getElementById('chat-bubbles').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // Special attack
+        let specActive = false;
+        function useSpecialAttack() {
+            if (!combatTarget || playerDead) { addChatMessage('system', 'You need a combat target!'); return; }
+            if (playerStats.energy < 25) { addChatMessage('system', 'Not enough special attack energy!'); return; }
+            specActive = true;
+            playerStats.energy -= 25;
+            updateOrbs();
+            addChatMessage('combat', 'You unleash a special attack!');
+        }
+        window.useSpecialAttack = useSpecialAttack;
+
+        // Energy regen in game loop (1/tick passively)
+        let energyRegenTimer = 0;
+        function updateEnergyRegen(dt) {
+            energyRegenTimer += dt;
+            if (energyRegenTimer >= COMBAT_TICK) {
+                energyRegenTimer -= COMBAT_TICK;
+                if (playerStats.energy < playerStats.maxEnergy) {
+                    playerStats.energy = Math.min(playerStats.maxEnergy, playerStats.energy + 1);
+                    updateOrbs();
+                }
+            }
+        }
+
+        const lootPiles = [];
+
+        function onNPCDeath(npc) {
+            const name = npc.data.display_name || npc.id;
+            addChatMessage('combat', `You defeated ${name}!`);
+            npc.inCombat = false;
+            combatTarget = null;
+
+            // XP reward scaled by enemy
+            const cs = npc.combatStats;
+            const enemyLvl = Math.floor((cs.attack + cs.strength + cs.defence) / 3) + 1;
+            const xpReward = enemyLvl * 2;
+            gainXP('attack', xpReward);
+            gainXP('strength', xpReward);
+            gainXP('hitpoints', Math.ceil(xpReward * 0.7));
+
+            // Quest progress
+            checkQuestProgress('kill', { role: npc.role, x: npc.worldX, z: npc.worldZ });
+
+            // Death animation: tilt and sink
+            const deathX = npc.worldX, deathZ = npc.worldZ;
+            let deathAnim = 0;
+            npc.deathAnim = { progress: 0, x: deathX, z: deathZ };
+
+            const animateDeath = () => {
+                npc.deathAnim.progress += 0.02;
+                const p = npc.deathAnim.progress;
+                npc.group.rotation.z = Math.min(Math.PI / 2, p * Math.PI / 2);
+                npc.group.position.y -= 0.01;
+                if (p < 1) requestAnimationFrame(animateDeath);
+                else {
+                    npc.isDead = true;
+                    npc.respawnTimer = 30;
+                    npc.group.visible = false;
+                    npc.label.style.display = 'none';
+                    npc.group.rotation.z = 0;
+                    // Create loot pile
+                    createLootPile(deathX, deathZ, npc.combatStats.drops || []);
+                }
+            };
+            requestAnimationFrame(animateDeath);
+        }
+
+        function createLootPile(wx, wz, dropIds) {
+            const items = [];
+            dropIds.forEach(itemId => {
+                const qty = itemId === 'coins' ? 5 + Math.floor(Math.random() * 20) : 1;
+                items.push({ id: itemId, qty });
+            });
+            if (items.length === 0) return;
+            const pile = { x: wx, z: wz, items, timer: 60 };
+            lootPiles.push(pile);
+            addChatMessage('system', `A loot pile appears on the ground.`);
+        }
+
+        function pickupLootPile(index) {
+            const pile = lootPiles[index];
+            if (!pile) return;
+            const dist = Math.abs(playerWorldX - pile.x) + Math.abs(playerWorldZ - pile.z);
+            if (dist > 2) { addChatMessage('system', 'You need to get closer!'); return; }
+            pile.items.forEach(li => {
+                addToInventory(li.id, li.qty);
+                const item = ITEMS[li.id];
+                addChatMessage('system', `Loot: ${item.icon} ${li.qty}x ${item.name}`);
+            });
+            lootPiles.splice(index, 1);
+        }
+        window.pickupLootPile = pickupLootPile;
+
+        function onPlayerDeath() {
+            playerDead = true;
+            if (combatTarget) { combatTarget.inCombat = false; combatTarget = null; }
+            addChatMessage('combat', 'Oh dear, you are dead!');
+            document.getElementById('death-screen').style.display = 'flex';
+
+            // Lose some food
+            for (let i = 0; i < 28; i++) {
+                if (inventory[i] && inventory[i].type === 'food') {
+                    inventory[i] = null;
+                }
+            }
+            renderInventory();
+
+            setTimeout(() => {
+                playerDead = false;
+                playerStats.hp = playerStats.maxHp;
+                // Respawn at Town Hall
+                const th = buildingDoors['town_hall'];
+                if (th) {
+                    playerTileX = th.x; playerTileZ = th.z;
+                    playerWorldX = th.x; playerWorldZ = th.z;
+                    playerGroup.position.set(th.x, heightMap[th.x][th.z], th.z);
+                }
+                updateOrbs();
+                document.getElementById('death-screen').style.display = 'none';
+                addChatMessage('system', 'You respawn at Town Hall.');
+            }, 3000);
+        }
+
+        // ============================================================
+        // === SKILLING AT BUILDINGS ===
+        // ============================================================
+        let skillingAction = null; // { type, timer, maxTime, callback }
+        let skillingCooldown = 0;
+
+        function showFarmActions() {
+            const area = document.getElementById('skill-action-area');
+            area.innerHTML = `<button class="action-btn" onclick="startHarvest()">🌾 Harvest</button>`;
+            addChatMessage('system', 'You arrive at the Farm. Click Harvest to gather food.');
+        }
+
+        function showArenaActions() {
+            const area = document.getElementById('skill-action-area');
+            area.innerHTML = `<button class="action-btn" onclick="startTraining()">🎯 Train</button>`;
+            addChatMessage('system', 'You enter the Arena. Click Train to practice combat.');
+        }
+
+        window.startHarvest = function() {
+            if (skillingAction || skillingCooldown > 0) { addChatMessage('system', 'Please wait...'); return; }
+            addChatMessage('system', 'Harvesting...');
+            skillingAction = { type: 'harvest', timer: 0, maxTime: 3, callback: () => {
+                const foods = ['bread', 'raw_fish'];
+                const item = foods[Math.floor(Math.random() * foods.length)];
+                addToInventory(item, 1);
+                addChatMessage('system', `You harvest some ${ITEMS[item].name}. ${ITEMS[item].icon}`);
+                skillingCooldown = 10;
+                clearSkillTimer();
+            }};
+            showSkillTimer(3);
+        };
+
+        window.startTraining = function() {
+            if (skillingAction || skillingCooldown > 0) { addChatMessage('system', 'Please wait...'); return; }
+            addChatMessage('system', 'Training on the dummy...');
+            skillingAction = { type: 'train', timer: 0, maxTime: 5, callback: () => {
+                gainXP('attack', 5);
+                gainXP('strength', 5);
+                gainXP('defence', 5);
+                addChatMessage('system', 'You hit the training dummy. +5 XP to combat skills.');
+                skillingCooldown = 5;
+                clearSkillTimer();
+            }};
+            showSkillTimer(5);
+        };
+
+        function showSkillTimer(maxTime) {
+            const area = document.getElementById('skill-action-area');
+            area.innerHTML += `<div class="skill-timer"><div class="skill-timer-fill" id="skill-timer-fill" style="width:0%"></div></div>`;
+        }
+
+        function clearSkillTimer() {
+            const fill = document.getElementById('skill-timer-fill');
+            if (fill) fill.parentElement.remove();
+            skillingAction = null;
+        }
+
+        function updateSkillingTimers(dt) {
+            if (skillingCooldown > 0) skillingCooldown -= dt;
+            if (skillingAction) {
+                skillingAction.timer += dt;
+                const pct = Math.min(100, (skillingAction.timer / skillingAction.maxTime) * 100);
+                const fill = document.getElementById('skill-timer-fill');
+                if (fill) fill.style.width = pct + '%';
+                if (skillingAction.timer >= skillingAction.maxTime) {
+                    skillingAction.callback();
+                }
+            }
+        }
+
+        // ============================================================
+        // === CONTEXT MENU ===
+        // ============================================================
+        const ctxMenu = document.getElementById('context-menu');
+        let ctxNPC = null, ctxBuilding = null, ctxTile = null;
+
+        function hideContextMenu() { ctxMenu.style.display = 'none'; }
+        document.addEventListener('click', (e) => { if (!ctxMenu.contains(e.target)) hideContextMenu(); });
+
+        function showContextMenu(e, options, header) {
+            hideContextMenu();
+            ctxMenu.innerHTML = (header ? `<div class="ctx-header">${header}</div>` : '') +
+                options.map(o => `<div class="ctx-option" onclick="${o.action}">${o.label}</div>`).join('');
+            ctxMenu.style.display = 'block';
+            ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+            ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - (options.length * 30 + 30)) + 'px';
+        }
+
+        renderer.domElement.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = viewport.getBoundingClientRect();
+            const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(mx, my), camera);
+            const allObj = []; scene.traverse(o => { if (o.isMesh) allObj.push(o); });
+            const hits = raycaster.intersectObjects(allObj, false);
+
+            let hitNPC = null, hitBld = null, hitTile = null;
+            for (const h of hits) {
+                if (h.object.userData.type === 'npc' && !hitNPC) hitNPC = h.object.userData.npcId;
+                if (h.object.userData.type === 'building' && !hitBld) hitBld = h.object.userData.buildingId;
+                if (h.object.userData.tileX !== undefined && !hitTile) hitTile = h.object.userData;
+            }
+
+            if (hitNPC) {
+                const npc = npcRegistry.get(hitNPC);
+                if (npc && !npc.isDead) {
+                    ctxNPC = npc;
+                    const name = npc.data.display_name || npc.id;
+                    showContextMenu(e, [
+                        { label: 'Talk to ' + name, action: 'talkToNPC()' },
+                        { label: 'Attack ' + name, action: 'attackNPC()' },
+                        { label: 'Examine', action: 'examineNPC()' },
+                        { label: 'Cancel', action: 'hideContextMenu()' },
+                    ], name);
+                }
+                return;
+            }
+            if (hitBld) {
+                const bd = BUILDINGS.find(b => b.id === hitBld);
+                if (bd) {
+                    ctxBuilding = bd;
+                    showContextMenu(e, [
+                        { label: 'Enter ' + bd.name, action: 'enterBuilding()' },
+                        { label: 'Examine', action: 'examineBuilding()' },
+                        { label: 'Cancel', action: 'hideContextMenu()' },
+                    ], bd.icon + ' ' + bd.name);
+                }
+                return;
+            }
+            if (hitTile) {
+                ctxTile = hitTile;
+                showContextMenu(e, [
+                    { label: 'Walk here', action: 'walkToCtxTile()' },
+                    { label: 'Cancel', action: 'hideContextMenu()' },
+                ]);
+            }
+        });
+
+        window.talkToNPC = function() {
+            hideContextMenu();
+            if (!ctxNPC) return;
+            const name = ctxNPC.data.display_name || ctxNPC.id;
+            const lines = AGENT_DIALOGUE[ctxNPC.role] || AGENT_DIALOGUE.app_builder;
+            const line = lines[Math.floor(Math.random() * lines.length)];
+            addChatMessage('agent', line, name, ctxNPC.roleInfo.hex);
+            showChatBubble(ctxNPC.worldX, ctxNPC.worldZ, line, '#22c55e');
+        };
+        window.attackNPC = function() {
+            hideContextMenu();
+            if (ctxNPC) startCombat(ctxNPC);
+        };
+        window.examineNPC = function() {
+            hideContextMenu();
+            if (!ctxNPC) return;
+            const name = ctxNPC.data.display_name || ctxNPC.id;
+            const cs = ctxNPC.combatStats;
+            addChatMessage('system', `${name} — ${ctxNPC.roleInfo.name} (HP: ${ctxNPC.hp}/${ctxNPC.maxHp}, Atk: ${cs.attack}, Str: ${cs.strength}, Def: ${cs.defence})`);
+        };
+        let pendingBuildingAction = null;
+
+        window.enterBuilding = function() {
+            hideContextMenu();
+            if (!ctxBuilding) return;
+            const bid = ctxBuilding.id;
+            addChatMessage('system', `You head to the ${ctxBuilding.name}.`);
+            const door = buildingDoors[bid];
+            if (door) {
+                const dist = Math.abs(playerTileX - door.x) + Math.abs(playerTileZ - door.z);
+                if (dist <= 1) {
+                    onArriveAtBuilding(bid);
+                } else {
+                    pendingBuildingAction = bid;
+                    const path = findPath(playerTileX, playerTileZ, door.x, door.z);
+                    if (path.length > 1) startMoveTo(path);
+                }
+            }
+        };
+
+        function onArriveAtBuilding(bid) {
+            checkQuestProgress('visit', { building: bid });
+            checkQuestProgress('enter_building', { building: bid });
+            document.getElementById('skill-action-area').innerHTML = '';
+            if (bid === 'quest_board') { renderQuestBoard(); document.getElementById('quest-overlay').classList.add('open'); }
+            else if (bid === 'marketplace') { openShop(); }
+            else if (bid === 'workshop') { openCrafting(); }
+            else if (bid === 'farm') { showFarmActions(); }
+            else if (bid === 'arena') { showArenaActions(); }
+            else { addChatMessage('system', `You arrive at the ${BUILDINGS.find(b=>b.id===bid).name}.`); }
+        }
+        window.examineBuilding = function() {
+            hideContextMenu();
+            if (!ctxBuilding) return;
+            addChatMessage('system', `${ctxBuilding.icon} ${ctxBuilding.name}: ${ctxBuilding.description}`);
+        };
+        window.walkToCtxTile = function() {
+            hideContextMenu();
+            if (!ctxTile || !ctxTile.walkable) return;
+            const path = findPath(playerTileX, playerTileZ, ctxTile.tileX, ctxTile.tileZ);
+            if (path.length > 1) startMoveTo(path);
+        };
+
+        function showInventoryMenu(e, slot) {
+            const item = inventory[slot];
+            if (!item) return;
+            const opts = [{ label: 'Examine', action: `examineItem(${slot})` }];
+            if (item.type === 'food') opts.unshift({ label: 'Eat', action: `eatFood(${slot})` });
+            if (item.type === 'weapon') opts.unshift({ label: playerStats.equippedSlot === slot ? 'Unequip' : 'Wield', action: `equipWeapon(${slot})` });
+            if (item.type === 'helm') opts.unshift({ label: playerStats.equippedHelmSlot === slot ? 'Remove' : 'Wear', action: `equipHelm(${slot})` });
+            if (item.type === 'shield') opts.unshift({ label: playerStats.equippedShieldSlot === slot ? 'Remove' : 'Wear', action: `equipShield(${slot})` });
+            opts.push({ label: 'Drop', action: `dropItem(${slot})` });
+            opts.push({ label: 'Cancel', action: 'hideContextMenu()' });
+            showContextMenu(e, opts, item.icon + ' ' + item.name);
+        }
+        window.examineItem = function(slot) { hideContextMenu(); const i = inventory[slot]; if (i) { let desc = ''; if (i.stats && i.stats.attack) desc = ` (Atk +${i.stats.attack}, Str +${i.stats.strength})`; else if (i.stats && i.stats.defence) desc = ` (Def +${i.stats.defence})`; else if (i.healAmount) desc = ` (Heals ${i.healAmount})`; addChatMessage('system', `${i.icon} ${i.name}${desc}`); } };
+        window.dropItem = function(slot) { hideContextMenu(); const i = inventory[slot]; if (i) { addChatMessage('system', `You drop the ${i.name}.`); removeFromInventory(slot, i.quantity); } };
+        // Expose eat/equip globally for context menu
+        window.eatFood = eatFood;
+        window.equipWeapon = equipWeapon;
+        window.equipHelm = equipHelm;
+        window.equipShield = equipShield;
+        window.hideContextMenu = hideContextMenu;
 
         // ============================================================
         // === API INTEGRATION ===
         // ============================================================
-        let lastAgentFetch = 0;
-        let proposalsCache = null;
-        let proposalsCacheTime = 0;
-
         const DEMO_AGENTS = [
-            { id: 'demo-1', agent_name: 'BuilderBot', display_name: 'BuilderBot', role: 'app_builder', agent_type: 'hosted', objective: 'Build SUITE apps' },
-            { id: 'demo-2', agent_name: 'RefinerX', display_name: 'RefinerX', role: 'app_refiner', agent_type: 'cli', objective: 'Refine existing apps' },
-            { id: 'demo-3', agent_name: 'ContentAI', display_name: 'ContentAI', role: 'content_creator', agent_type: 'hosted', objective: 'Write articles' },
-            { id: 'demo-4', agent_name: 'GrowthBot', display_name: 'GrowthBot', role: 'growth_outreach', agent_type: 'hosted', objective: 'Drive user growth' },
-            { id: 'demo-5', agent_name: 'TestRunner', display_name: 'TestRunner', role: 'qa_tester', agent_type: 'cli', objective: 'Test all the things' },
+            { id:'demo-1', agent_name:'BuilderBot', display_name:'BuilderBot', role:'app_builder', agent_type:'hosted', objective:'Build SUITE apps' },
+            { id:'demo-2', agent_name:'RefinerX', display_name:'RefinerX', role:'app_refiner', agent_type:'cli', objective:'Refine existing apps' },
+            { id:'demo-3', agent_name:'ContentAI', display_name:'ContentAI', role:'content_creator', agent_type:'hosted', objective:'Write articles' },
+            { id:'demo-4', agent_name:'GrowthBot', display_name:'GrowthBot', role:'growth_outreach', agent_type:'hosted', objective:'Drive user growth' },
+            { id:'demo-5', agent_name:'TestRunner', display_name:'TestRunner', role:'qa_tester', agent_type:'cli', objective:'Test all the things' },
         ];
 
         async function fetchAgents() {
@@ -1249,208 +1995,96 @@
                 if (!res.ok) throw new Error('API error');
                 const data = await res.json();
                 const agents = data.agents || data;
-                if (Array.isArray(agents) && agents.length > 0) {
-                    syncNPCs(agents);
-                    return;
-                }
-            } catch (e) {
-                // Fallback to demo
-            }
-            // Use demo agents if API fails or returns nothing
-            if (npcRegistry.size === 0) {
-                syncNPCs(DEMO_AGENTS);
-                addLogEntry('System', '#6366f1', 'loaded demo agents (API unavailable)');
-            }
+                if (Array.isArray(agents) && agents.length > 0) { syncNPCs(agents); return; }
+            } catch (e) {}
+            if (npcRegistry.size === 0) { syncNPCs(DEMO_AGENTS); addChatMessage('system', 'Loaded demo agents (API unavailable)'); }
         }
-
         function syncNPCs(agents) {
-            const agentIds = new Set(agents.map(a => a.id));
-
-            // Despawn removed agents
-            npcRegistry.forEach((npc, id) => {
-                if (!agentIds.has(id)) despawnNPC(id);
-            });
-
-            // Spawn/update
-            agents.forEach(agent => {
-                if (!npcRegistry.has(agent.id)) {
-                    createNPCCharacter(agent);
-                } else {
-                    // Update data
-                    const npc = npcRegistry.get(agent.id);
-                    npc.data = agent;
-                }
-            });
+            const ids = new Set(agents.map(a => a.id));
+            npcRegistry.forEach((n, id) => { if (!ids.has(id)) despawnNPC(id); });
+            agents.forEach(a => { if (!npcRegistry.has(a.id)) createNPCCharacter(a); else npcRegistry.get(a.id).data = a; });
         }
-
-        async function fetchProposals() {
-            const now = Date.now();
-            if (proposalsCache && (now - proposalsCacheTime) < 120000) {
-                renderProposals(proposalsCache);
-                return;
-            }
-
-            try {
-                const res = await fetch(
-                    `${SUPABASE_URL}/rest/v1/factory_proposals?select=id,title,description,status,created_at&order=created_at.desc&limit=5`,
-                    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-                );
-                if (!res.ok) throw new Error('Supabase error');
-                const data = await res.json();
-                proposalsCache = data;
-                proposalsCacheTime = now;
-                renderProposals(data);
-            } catch (e) {
-                const listEl = document.getElementById('proposals-list');
-                if (listEl) listEl.innerHTML = '<p style="color:#6b7280;font-size:12px">Could not load proposals</p>';
-            }
-        }
-
-        function renderProposals(proposals) {
-            const listEl = document.getElementById('proposals-list');
-            if (!listEl) return;
-            if (!proposals || proposals.length === 0) {
-                listEl.innerHTML = '<p style="color:#6b7280;font-size:12px">No proposals yet</p>';
-                return;
-            }
-            listEl.innerHTML = proposals.map(p => {
-                const statusColor = p.status === 'approved' ? '#22c55e' : p.status === 'pending' ? '#eab308' : '#6b7280';
-                return `<div class="proposal-item">
-                    <h4>${p.title || 'Untitled'}</h4>
-                    <p>${(p.description || '').substring(0, 80)}${(p.description || '').length > 80 ? '...' : ''}</p>
-                    <span class="proposal-status" style="background:${statusColor}22;color:${statusColor}">${p.status || 'unknown'}</span>
-                </div>`;
-            }).join('');
-        }
-
-        // Initial fetch
         fetchAgents();
-
-        // Poll every 60s
         setInterval(() => fetchAgents(), 60000);
 
         // ============================================================
-        // === CLICK INTERACTION (NPC > Building > Tile) ===
+        // === CLICK / HOVER HANDLERS ===
         // ============================================================
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        const raycasterMain = new THREE.Raycaster();
+        const mouseVec = new THREE.Vector2();
+
+        function getViewportMouse(e) {
+            const rect = viewport.getBoundingClientRect();
+            return new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
+        }
 
         renderer.domElement.addEventListener('click', (e) => {
-            // Don't interact if clicking on UI
             if (e.target !== renderer.domElement) return;
-
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const allObjects = [];
-            scene.traverse(obj => { if (obj.isMesh) allObjects.push(obj); });
-            const intersects = raycaster.intersectObjects(allObjects, false);
-
-            // Priority: NPC > Building > Tile
-            let hitNPC = null, hitBuilding = null, hitTile = null;
-
-            for (const hit of intersects) {
-                const obj = hit.object;
-                if (obj.userData.type === 'npc' && !hitNPC) {
-                    hitNPC = obj.userData.npcId;
-                }
-                if (obj.userData.type === 'building' && !hitBuilding) {
-                    hitBuilding = obj.userData.buildingId;
-                }
-                if (obj.userData.type === 'tile' && !hitTile) {
-                    hitTile = obj.userData;
-                }
+            const m = getViewportMouse(e);
+            raycasterMain.setFromCamera(m, camera);
+            const allObj = []; scene.traverse(o => { if (o.isMesh) allObj.push(o); });
+            const hits = raycasterMain.intersectObjects(allObj, false);
+            let hitNPC = null, hitBld = null, hitTile = null;
+            for (const h of hits) {
+                if (h.object.userData.type === 'npc' && !hitNPC) hitNPC = h.object.userData.npcId;
+                if (h.object.userData.type === 'building' && !hitBld) hitBld = h.object.userData.buildingId;
+                if (h.object.userData.tileX !== undefined && !hitTile) hitTile = h.object.userData;
             }
 
             if (hitNPC) {
                 const npc = npcRegistry.get(hitNPC);
-                if (npc) openNPCPanel(npc);
-                return;
-            }
-
-            if (hitBuilding) {
-                const bData = BUILDINGS.find(b => b.id === hitBuilding);
-                if (bData) openBuildingPanel(bData);
-                return;
-            }
-
-            if (hitTile && hitTile.walkable) {
-                // Close panel if open
-                if (panelOpen) closePanel();
-                const path = findPath(playerTileX, playerTileZ, hitTile.tileX, hitTile.tileZ);
-                if (path.length > 1) {
-                    startMoveTo(path);
+                if (npc && !npc.isDead) {
+                    if (attackMode) startCombat(npc);
+                    else { ctxNPC = npc; talkToNPC(); }
                 }
+                return;
+            }
+            if (hitBld) {
+                const bd = BUILDINGS.find(b => b.id === hitBld);
+                if (bd) {
+                    ctxBuilding = bd;
+                    enterBuilding();
+                }
+                return;
+            }
+            if (hitTile && hitTile.walkable) {
+                const path = findPath(playerTileX, playerTileZ, hitTile.tileX, hitTile.tileZ);
+                if (path.length > 1) startMoveTo(path);
             }
         });
 
-        // ============================================================
-        // === HOVER HIGHLIGHT + CURSOR ===
-        // ============================================================
         renderer.domElement.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const allObjects = [];
-            scene.traverse(obj => { if (obj.isMesh) allObjects.push(obj); });
-            const intersects = raycaster.intersectObjects(allObjects, false);
-
-            highlight.visible = false;
-            let cursorSet = false;
-
-            for (const hit of intersects) {
-                const obj = hit.object;
-                if (obj.userData.type === 'npc') {
-                    document.body.style.cursor = 'help';
-                    cursorSet = true;
-                    break;
-                }
-                if (obj.userData.type === 'building') {
-                    document.body.style.cursor = 'pointer';
-                    cursorSet = true;
-                    break;
-                }
-                if (obj.userData.tileX !== undefined) {
-                    const tx = obj.userData.tileX, tz = obj.userData.tileZ;
-                    highlight.position.set(tx, heightMap[tx][tz] + 0.05, tz);
-                    highlight.visible = true;
-                    highlightMat.color.set(obj.userData.walkable ? 0xffff00 : 0xff4444);
-                    highlightMat.opacity = obj.userData.walkable ? 0.3 : 0.2;
-                    document.body.style.cursor = obj.userData.walkable ? 'pointer' : 'not-allowed';
-                    cursorSet = true;
-                    break;
+            const m = getViewportMouse(e);
+            raycasterMain.setFromCamera(m, camera);
+            const allObj = []; scene.traverse(o => { if (o.isMesh) allObj.push(o); });
+            const hits = raycasterMain.intersectObjects(allObj, false);
+            highlight.visible = false; let cursorSet = false;
+            for (const h of hits) {
+                const o = h.object;
+                if (o.userData.type === 'npc') { document.body.style.cursor = attackMode ? 'crosshair' : 'help'; cursorSet = true; break; }
+                if (o.userData.type === 'building') { document.body.style.cursor = 'pointer'; cursorSet = true; break; }
+                if (o.userData.tileX !== undefined) {
+                    const tx=o.userData.tileX, tz=o.userData.tileZ;
+                    highlight.position.set(tx, heightMap[tx][tz]+0.05, tz); highlight.visible = true;
+                    highlightMat.color.set(o.userData.walkable ? 0xffff00 : 0xff4444);
+                    highlightMat.opacity = o.userData.walkable ? 0.3 : 0.2;
+                    document.body.style.cursor = o.userData.walkable ? 'pointer' : 'not-allowed';
+                    cursorSet = true; break;
                 }
             }
-
             if (!cursorSet) document.body.style.cursor = 'default';
         });
 
-        // Click outside panel to close
-        renderer.domElement.addEventListener('mousedown', (e) => {
-            if (panelOpen) {
-                // If not clicking on panel area, close it
-                const panelRect = interactPanel.getBoundingClientRect();
-                if (e.clientX < panelRect.left) {
-                    // Don't close on same click that opens — handled by click handler
-                }
-            }
-        });
-
         // ============================================================
-        // === KEYBOARD INPUT ===
+        // === KEYBOARD ===
         // ============================================================
         const keys = {};
-        window.addEventListener('keydown', e => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key === 'Escape' && panelOpen) closePanel();
-        });
+        window.addEventListener('keydown', e => { if (!chatInputFocused) { keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'f') useSpecialAttack(); } });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-        // ============================================================
-        // === SCROLL ZOOM ===
-        // ============================================================
         renderer.domElement.addEventListener('wheel', (e) => {
             camDist += e.deltaY * 0.01;
             camDist = Math.max(6, Math.min(30, camDist));
@@ -1462,251 +2096,219 @@
         // ============================================================
         const minimapCanvas = document.getElementById('minimap');
         const mctx = minimapCanvas.getContext('2d');
-
         function drawMinimap() {
-            const s = 150 / MAP_SIZE;
-            mctx.clearRect(0, 0, 150, 150);
+            const s = 200 / MAP_SIZE;
+            mctx.clearRect(0, 0, 200, 200);
+            for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===3)mctx.fillStyle='#8B6914';else if(isWater(x,z))mctx.fillStyle='#2288aa';else if(grid[x][z]===0)mctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)mctx.fillStyle='#8B7355';else mctx.fillStyle='#4a7c3f';mctx.fillRect(x*s,z*s,s+0.5,s+0.5);}
+            BUILDINGS.forEach(b=>{mctx.fillStyle=b.signColor;mctx.globalAlpha=0.6;mctx.fillRect((b.x-b.w/2)*s,(b.z-b.d/2)*s,b.w*s,b.d*s);mctx.globalAlpha=1;});
+            npcRegistry.forEach(n=>{if(!n.isDead){mctx.fillStyle=n.roleInfo.hex;mctx.beginPath();mctx.arc(n.worldX*s,n.worldZ*s,2,0,Math.PI*2);mctx.fill();}});
+            lootPiles.forEach(lp=>{mctx.fillStyle='#eab308';mctx.beginPath();mctx.arc(lp.x*s,lp.z*s,2,0,Math.PI*2);mctx.fill();});
+            otherPlayers.forEach(p=>{mctx.fillStyle=p.color||'#ffffff';mctx.beginPath();mctx.arc(p.x*s,p.z*s,2.5,0,Math.PI*2);mctx.fill();});
+            mctx.fillStyle='#ffff00';mctx.beginPath();mctx.arc(playerWorldX*s,playerWorldZ*s,3,0,Math.PI*2);mctx.fill();
+        }
 
-            // Terrain
-            for (let x = 0; x < MAP_SIZE; x++) {
-                for (let z = 0; z < MAP_SIZE; z++) {
-                    if (grid[x][z] === 3) {
-                        mctx.fillStyle = '#8B6914';
-                    } else if (isWater(x, z)) {
-                        mctx.fillStyle = '#2288aa';
-                    } else if (grid[x][z] === 0) {
-                        mctx.fillStyle = '#2d4a1e';
-                    } else if (grid[x][z] === 2) {
-                        mctx.fillStyle = '#8B7355';
-                    } else {
-                        mctx.fillStyle = '#4a7c3f';
-                    }
-                    mctx.fillRect(x * s, z * s, s + 0.5, s + 0.5);
-                }
-            }
+        // ============================================================
+        // === ORBS UPDATE ===
+        // ============================================================
+        function updateOrbs() {
+            const hpPct = Math.max(0, (playerStats.hp / playerStats.maxHp) * 100);
+            document.getElementById('orbHp').style.setProperty('--hp-pct', hpPct + '%');
+            document.getElementById('orbHpText').textContent = Math.max(0, playerStats.hp);
+            document.getElementById('orbCombatText').textContent = playerStats.combatLevel;
+            document.getElementById('orbEnergy').style.setProperty('--energy-pct', playerStats.energy + '%');
+            document.getElementById('orbEnergyText').textContent = playerStats.energy;
+        }
 
-            // Buildings
-            BUILDINGS.forEach(b => {
-                mctx.fillStyle = b.signColor;
-                mctx.globalAlpha = 0.6;
-                const bx = (b.x - b.w / 2) * s;
-                const bz = (b.z - b.d / 2) * s;
-                mctx.fillRect(bx, bz, b.w * s, b.d * s);
-                mctx.globalAlpha = 1;
-            });
+        // ============================================================
+        // === LABEL / BUBBLE PROJECTION ===
+        // ============================================================
+        function projectToScreen(wx, wz, yOffset) {
+            const pos = new THREE.Vector3(wx, yOffset, wz);
+            pos.project(camera);
+            const rect = viewport.getBoundingClientRect();
+            return {
+                x: (pos.x * 0.5 + 0.5) * rect.width,
+                y: (-pos.y * 0.5 + 0.5) * rect.height,
+                visible: pos.z > -1 && pos.z < 1
+            };
+        }
 
-            // NPC dots
+        function updateOverlays() {
+            // NPC labels
             npcRegistry.forEach(npc => {
-                mctx.fillStyle = npc.roleInfo.hex;
-                mctx.beginPath();
-                mctx.arc(npc.worldX * s, npc.worldZ * s, 2, 0, Math.PI * 2);
-                mctx.fill();
+                const p = projectToScreen(npc.worldX, npc.worldZ, 1.3);
+                if (!p.visible || npc.isDead) { npc.label.style.display = 'none'; } else {
+                    npc.label.style.display = 'block';
+                    npc.label.style.left = p.x + 'px'; npc.label.style.top = p.y + 'px';
+                }
+            });
+            // Loot piles
+            document.querySelectorAll('.loot-pile-dot').forEach(el => el.remove());
+            lootPiles.forEach((lp, i) => {
+                const p = projectToScreen(lp.x, lp.z, 0.3);
+                if (p.visible) {
+                    const dot = document.createElement('div');
+                    dot.className = 'loot-pile-dot';
+                    dot.style.left = (p.x - 4) + 'px';
+                    dot.style.top = (p.y - 4) + 'px';
+                    dot.title = 'Loot pile - click to pick up';
+                    dot.addEventListener('click', () => pickupLootPile(i));
+                    document.getElementById('npc-labels').appendChild(dot);
+                }
             });
 
-            // Player dot
-            mctx.fillStyle = '#ffff00';
-            mctx.beginPath();
-            mctx.arc(playerWorldX * s, playerWorldZ * s, 3, 0, Math.PI * 2);
-            mctx.fill();
-
-            // Path preview
-            if (currentPath.length > 0) {
-                mctx.strokeStyle = 'rgba(255,255,0,0.4)';
-                mctx.lineWidth = 1;
-                mctx.beginPath();
-                mctx.moveTo(currentPath[0].x * s, currentPath[0].z * s);
-                for (let i = 1; i < currentPath.length; i++) {
-                    mctx.lineTo(currentPath[i].x * s, currentPath[i].z * s);
-                }
-                mctx.stroke();
-            }
-        }
-
-        // ============================================================
-        // === PATH MARKERS ===
-        // ============================================================
-        const pathMarkers = [];
-        function showPathMarkers(path) {
-            clearPathMarkers();
-            for (let i = 1; i < path.length; i++) {
-                const markerGeo = new THREE.RingGeometry(0.15, 0.2, 6);
-                const markerMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-                const marker = new THREE.Mesh(markerGeo, markerMat);
-                marker.rotation.x = -Math.PI / 2;
-                marker.position.set(path[i].x, heightMap[path[i].x][path[i].z] + 0.06, path[i].z);
-                scene.add(marker);
-                pathMarkers.push(marker);
-            }
-        }
-        function clearPathMarkers() {
-            pathMarkers.forEach(m => scene.remove(m));
-            pathMarkers.length = 0;
+            // Chat bubbles + hitsplats
+            document.querySelectorAll('.chat-bubble, .hitsplat').forEach(el => {
+                const wx = parseFloat(el.dataset.worldX), wz = parseFloat(el.dataset.worldZ);
+                const p = projectToScreen(wx, wz, el.classList.contains('hitsplat') ? 1.5 : 1.6);
+                if (p.visible) { el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; }
+                else el.style.display = 'none';
+            });
         }
 
         // ============================================================
         // === FIREFLIES ===
         // ============================================================
         const particles = [];
-        for (let i = 0; i < 30; i++) {
-            const pGeo = new THREE.SphereGeometry(0.03, 4, 4);
-            const pMat = new THREE.MeshBasicMaterial({ color: 0xffff88 });
-            const p = new THREE.Mesh(pGeo, pMat);
-            p.position.set(rng() * MAP_SIZE, 0.5 + rng() * 1.5, rng() * MAP_SIZE);
-            p.userData.speed = 0.2 + rng() * 0.5;
-            p.userData.offset = rng() * Math.PI * 2;
-            p.visible = false;
-            scene.add(p);
-            particles.push(p);
-        }
-
-        // ============================================================
-        // === NPC LABEL PROJECTION ===
-        // ============================================================
-        function updateNPCLabels() {
-            npcRegistry.forEach(npc => {
-                const worldPos = new THREE.Vector3(npc.worldX, 1.3, npc.worldZ);
-                worldPos.project(camera);
-
-                const x = (worldPos.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (-worldPos.y * 0.5 + 0.5) * window.innerHeight;
-
-                // Hide if behind camera or too far
-                if (worldPos.z > 1 || worldPos.z < -1) {
-                    npc.label.style.display = 'none';
-                } else {
-                    npc.label.style.display = 'block';
-                    npc.label.style.left = x + 'px';
-                    npc.label.style.top = y + 'px';
-                }
-            });
-        }
+        for(let i=0;i<30;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
 
         // ============================================================
         // === GAME LOOP ===
         // ============================================================
         const clock = new THREE.Clock();
-        const coordsEl = document.getElementById('coords');
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // Camera controls
-            const panSpeed = 10 * dt;
-            if (keys['w']) { camTargetZ -= panSpeed * Math.cos(camAngle); camTargetX -= panSpeed * Math.sin(camAngle); }
-            if (keys['s']) { camTargetZ += panSpeed * Math.cos(camAngle); camTargetX += panSpeed * Math.sin(camAngle); }
-            if (keys['a']) { camTargetX -= panSpeed * Math.cos(camAngle); camTargetZ += panSpeed * Math.sin(camAngle); }
-            if (keys['d']) { camTargetX += panSpeed * Math.cos(camAngle); camTargetZ -= panSpeed * Math.sin(camAngle); }
-            if (keys['q']) camAngle -= 1.5 * dt;
-            if (keys['e']) camAngle += 1.5 * dt;
-
+            // Camera
+            if (!chatInputFocused) {
+                const ps = 10 * dt;
+                if (keys['w']) { camTargetZ -= ps * Math.cos(camAngle); camTargetX -= ps * Math.sin(camAngle); }
+                if (keys['s']) { camTargetZ += ps * Math.cos(camAngle); camTargetX += ps * Math.sin(camAngle); }
+                if (keys['a']) { camTargetX -= ps * Math.cos(camAngle); camTargetZ += ps * Math.sin(camAngle); }
+                if (keys['d']) { camTargetX += ps * Math.cos(camAngle); camTargetZ -= ps * Math.sin(camAngle); }
+                if (keys['q']) camAngle -= 1.5 * dt;
+                if (keys['e']) camAngle += 1.5 * dt;
+            }
             camTargetX = Math.max(-5, Math.min(MAP_SIZE + 5, camTargetX));
             camTargetZ = Math.max(-5, Math.min(MAP_SIZE + 5, camTargetZ));
             updateCamera();
 
-            // === Player movement ===
+            // Player movement
             if (isMoving && currentPath.length > 0) {
-                moveProgress += dt * MOVE_SPEED;
-                walkCycle += dt * 12;
-
-                const legSwing = Math.sin(walkCycle) * 0.3;
-                leftLeg.rotation.x = legSwing;
-                rightLeg.rotation.x = -legSwing;
-                leftArm.rotation.x = -legSwing * 0.6;
-                rightArm.rotation.x = legSwing * 0.6;
+                moveProgress += dt * MOVE_SPEED; walkCycle += dt * 12;
+                const ls = Math.sin(walkCycle) * 0.3;
+                leftLeg.rotation.x = ls; rightLeg.rotation.x = -ls;
+                leftArm.rotation.x = -ls * 0.6; rightArm.rotation.x = ls * 0.6;
                 body.position.y = 0.5 + Math.abs(Math.sin(walkCycle)) * 0.03;
-
                 if (moveProgress >= 1) {
-                    moveProgress = 0;
-                    playerTileX = moveToX;
-                    playerTileZ = moveToZ;
-                    playerWorldX = moveToX;
-                    playerWorldZ = moveToZ;
-                    pathIndex++;
-
-                    if (pathIndex < currentPath.length) {
-                        moveFromX = moveToX;
-                        moveFromZ = moveToZ;
-                        moveToX = currentPath[pathIndex].x;
-                        moveToZ = currentPath[pathIndex].z;
-                    } else {
-                        isMoving = false;
-                        currentPath = [];
-                        clearPathMarkers();
-                        leftLeg.rotation.x = 0;
-                        rightLeg.rotation.x = 0;
-                        leftArm.rotation.x = 0;
-                        rightArm.rotation.x = 0;
-                        body.position.y = 0.5;
+                    moveProgress = 0; playerTileX = moveToX; playerTileZ = moveToZ; playerWorldX = moveToX; playerWorldZ = moveToZ; pathIndex++;
+                    if (pathIndex < currentPath.length) { moveFromX = moveToX; moveFromZ = moveToZ; moveToX = currentPath[pathIndex].x; moveToZ = currentPath[pathIndex].z; }
+                    else { isMoving = false; currentPath = []; leftLeg.rotation.x=0; rightLeg.rotation.x=0; leftArm.rotation.x=0; rightArm.rotation.x=0; body.position.y=0.5;
+                        // Auto-engage combat if we walked to target
+                        if (combatTarget && !combatTarget.isDead) {
+                            const d = Math.abs(playerTileX-combatTarget.tileX)+Math.abs(playerTileZ-combatTarget.tileZ);
+                            if (d <= 1) engageCombat(combatTarget);
+                        }
+                        // Building arrival
+                        if (pendingBuildingAction) {
+                            onArriveAtBuilding(pendingBuildingAction);
+                            pendingBuildingAction = null;
+                        }
                     }
                 }
-
                 if (isMoving) {
-                    const lerpX = moveFromX + (moveToX - moveFromX) * moveProgress;
-                    const lerpZ = moveFromZ + (moveToZ - moveFromZ) * moveProgress;
-                    playerWorldX = lerpX;
-                    playerWorldZ = lerpZ;
-
-                    const fromH = heightMap[moveFromX] ? heightMap[moveFromX][moveFromZ] || 0 : 0;
-                    const toH = heightMap[moveToX] ? heightMap[moveToX][moveToZ] || 0 : 0;
-                    const lerpH = fromH + (toH - fromH) * moveProgress;
-
-                    playerGroup.position.set(lerpX, lerpH, lerpZ);
-
-                    const angle = Math.atan2(moveToX - moveFromX, moveToZ - moveFromZ);
-                    playerGroup.rotation.y = angle;
+                    const lx=moveFromX+(moveToX-moveFromX)*moveProgress, lz=moveFromZ+(moveToZ-moveFromZ)*moveProgress;
+                    playerWorldX=lx; playerWorldZ=lz;
+                    const fh=heightMap[moveFromX]?heightMap[moveFromX][moveFromZ]||0:0;
+                    const th=heightMap[moveToX]?heightMap[moveToX][moveToZ]||0:0;
+                    playerGroup.position.set(lx, fh+(th-fh)*moveProgress, lz);
+                    playerGroup.rotation.y = Math.atan2(moveToX-moveFromX, moveToZ-moveFromZ);
                 }
             }
 
-            // === NPC updates ===
+            // NPCs
             processPathfindingQueue();
             npcRegistry.forEach(npc => updateNPCState(npc, dt));
-            updateNPCLabels();
 
-            // === Update coords ===
-            coordsEl.textContent = `Tile: ${playerTileX}, ${playerTileZ}`;
+            // Combat
+            updateCombat(dt);
+            updateEnergyRegen(dt);
+            updateSkillingTimers(dt);
 
-            // === Water animation ===
-            const verts = waterGeo.attributes.position;
-            for (let i = 0; i < verts.count; i++) {
-                const x = verts.getX(i);
-                const z = verts.getZ(i);
-                verts.setY(i, Math.sin(x * 2 + time) * 0.02 + Math.cos(z * 2 + time * 1.3) * 0.02);
-            }
-            verts.needsUpdate = true;
-
-            // === Fireflies ===
-            particles.forEach(p => {
-                p.visible = isNight;
-                if (isNight) {
-                    p.position.y += Math.sin(time * p.userData.speed + p.userData.offset) * 0.003;
-                    p.position.x += Math.sin(time * 0.3 + p.userData.offset) * 0.005;
-                    p.material.opacity = 0.5 + Math.sin(time * 2 + p.userData.offset) * 0.5;
-                }
-            });
-
-            // === Path markers ===
-            if (isMoving && pathMarkers.length === 0 && currentPath.length > 2) {
-                showPathMarkers(currentPath);
+            // Loot piles decay
+            for (let i = lootPiles.length - 1; i >= 0; i--) {
+                lootPiles[i].timer -= dt;
+                if (lootPiles[i].timer <= 0) lootPiles.splice(i, 1);
             }
 
+            // Water
+            const v = waterGeo.attributes.position;
+            for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}
+            v.needsUpdate=true;
+
+            // Fireflies
+            particles.forEach(p=>{p.visible=isNight;if(isNight){p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;p.material.opacity=0.5+Math.sin(time*2+p.userData.offset)*0.5;}});
+
+            // Overlays
+            updateOverlays();
             drawMinimap();
             renderer.render(scene, camera);
         }
 
+        // ============================================================
+        // === MULTIPLAYER CHAT (Supabase Realtime) ===
+        // ============================================================
+        try {
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            chatChannel = supabase.channel('agentscape-chat');
+
+            chatChannel.on('broadcast', { event: 'chat' }, ({ payload }) => {
+                if (payload.sender === playerName) return;
+                addChatMessage('public', payload.message, payload.sender, payload.color);
+            });
+
+            chatChannel.on('broadcast', { event: 'presence' }, ({ payload }) => {
+                if (payload.name === playerName) return;
+                otherPlayers.set(payload.name, { x: payload.x, z: payload.z, color: payload.color, lastSeen: Date.now() });
+            });
+
+            chatChannel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    addChatMessage('system', `Connected to multiplayer as ${playerName}`);
+                }
+            });
+
+            // Broadcast presence every 3 seconds
+            setInterval(() => {
+                if (chatChannel) {
+                    chatChannel.send({ type: 'broadcast', event: 'presence', payload: { name: playerName, x: playerWorldX, z: playerWorldZ, color: playerColor } });
+                }
+                // Clean stale players (30s timeout)
+                const now = Date.now();
+                otherPlayers.forEach((p, name) => { if (now - p.lastSeen > 30000) otherPlayers.delete(name); });
+            }, 3000);
+        } catch (e) {
+            addChatMessage('system', 'Multiplayer unavailable (offline mode)');
+        }
+
+        // ============================================================
+        // === INIT ===
+        // ============================================================
+        initInventory();
+        renderInventory();
+        renderStats();
+        updateOrbs();
+        document.querySelector('.stat-player-name').textContent = playerName;
+        addChatMessage('system', 'Welcome to AgentScape! Right-click to interact.');
         animate();
 
-        // Initial log
-        addLogEntry('System', '#6366f1', 'Welcome to AgentScape!');
-
-        // ============================================================
-        // === RESIZE ===
-        // ============================================================
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = viewport.clientWidth / viewport.clientHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         });
     })();
     </script>
