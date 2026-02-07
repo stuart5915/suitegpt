@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProductDescriptor — AI Product Listing Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.8rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #d946ef, #c026d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #d946ef; background: #c026d308; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 6px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone input { display: none; }
+        .preview-wrap { position: relative; display: none; margin-bottom: 16px; }
+        .preview-wrap img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; background: #1a1a2e; }
+        .preview-wrap .remove { position: absolute; top: 8px; right: 8px; background: #ef4444; color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; }
+
+        .or-divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 12px 0; font-weight: 600; }
+
+        .context-input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 70px; margin-bottom: 16px; }
+        .context-input:focus { outline: none; border-color: #d946ef; }
+        .context-input::placeholder { color: #64748b; }
+
+        .options-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .option-group { flex: 1; min-width: 140px; }
+        .option-group label { display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+        .option-group select { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; }
+        .option-group select:focus { outline: none; border-color: #d946ef; }
+
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #d946ef, #c026d3); color: #fff; font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #c026d330; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { display: none; text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 4px solid #2a2a3e; border-top: 4px solid #d946ef; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        .results { display: none; }
+        .new-btn { display: inline-block; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: border-color 0.2s; }
+        .new-btn:hover { border-color: #d946ef; }
+
+        .product-banner { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .product-banner .name { font-size: 1.2rem; font-weight: 800; color: #d946ef; }
+        .product-banner .cat { font-size: 0.8rem; color: #94a3b8; }
+        .product-banner .price-range { background: #c026d320; border: 1px solid #c026d340; padding: 8px 16px; border-radius: 10px; text-align: center; }
+        .product-banner .price-range .vals { font-weight: 800; color: #d946ef; }
+        .product-banner .price-range .lbl { font-size: 0.65rem; color: #94a3b8; }
+
+        .features-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+        .feature-chip { background: #0f0f1a; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #94a3b8; }
+        .tab.active { background: #c026d320; border-color: #c026d3; color: #d946ef; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .platform-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+        .platform-card .platform-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .platform-card h3 { font-size: 1rem; color: #d946ef; }
+        .copy-btn { padding: 6px 14px; background: #c026d320; border: 1px solid #c026d340; color: #d946ef; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .copy-btn:hover { background: #c026d330; }
+
+        .listing-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; background: #0f0f1a; border-radius: 8px; padding: 10px 14px; }
+        .listing-bullets { list-style: none; margin-bottom: 10px; }
+        .listing-bullets li { padding: 6px 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+        .listing-bullets li::before { content: '✓ '; color: #d946ef; font-weight: 700; }
+        .listing-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; background: #0f0f1a; border-radius: 8px; padding: 12px 14px; }
+
+        .keyword-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .keyword-chip { background: #c026d310; border: 1px solid #c026d320; color: #d946ef; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
+
+        .tip-card { background: #0f0f1a; border-left: 3px solid #d946ef; border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px; }
+        .tip-card p { font-size: 0.85rem; line-height: 1.5; }
+
+        .card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+        .card h3 { font-size: 1rem; margin-bottom: 10px; }
+        .card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; }
+
+        .qa-container { display: flex; flex-direction: column; height: 400px; }
+        .qa-messages { flex: 1; overflow-y: auto; padding: 16px; background: #0f0f1a; border-radius: 12px; margin-bottom: 12px; }
+        .qa-msg { margin-bottom: 12px; }
+        .qa-msg.user { text-align: right; }
+        .qa-msg .bubble { display: inline-block; max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; text-align: left; }
+        .qa-msg.user .bubble { background: #c026d3; color: #fff; }
+        .qa-msg.assistant .bubble { background: #1a1a2e; color: #e2e8f0; }
+        .qa-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input:focus { outline: none; border-color: #d946ef; }
+        .qa-input::placeholder { color: #64748b; }
+        .qa-send { padding: 12px 20px; background: #c026d3; color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .qa-send:disabled { opacity: 0.5; }
+
+        @media (max-width: 640px) { .options-row { flex-direction: column; } .product-banner { flex-direction: column; text-align: center; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Product<span>Descriptor</span></h1>
+            <p>Photo your product — get listings for every platform</p>
+        </div>
+
+        <div id="uploadView">
+            <div class="upload-zone" id="dropZone">
+                <div class="icon">📸</div>
+                <h3>Drop a product photo here</h3>
+                <p>or click to browse — JPG, PNG up to 4MB</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" alt="Product preview">
+                <button class="remove" id="removeBtn">×</button>
+            </div>
+
+            <div class="or-divider">— OR DESCRIBE YOUR PRODUCT —</div>
+
+            <textarea class="context-input" id="contextInput" placeholder="e.g. Handmade leather bifold wallet, full-grain cowhide, RFID blocking, 6 card slots, comes in brown and black..."></textarea>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label>Tone</label>
+                    <select id="toneSelect">
+                        <option value="professional">Professional</option>
+                        <option value="casual">Casual & Friendly</option>
+                        <option value="luxury">Luxury & Premium</option>
+                        <option value="fun">Fun & Playful</option>
+                        <option value="minimal">Minimal & Clean</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label>Focus Platform</label>
+                    <select id="platformSelect">
+                        <option value="all">All Platforms</option>
+                        <option value="amazon">Amazon</option>
+                        <option value="ebay">eBay</option>
+                        <option value="etsy">Etsy</option>
+                        <option value="shopify">Shopify</option>
+                        <option value="social">Social Media</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">Generate Listings →</button>
+        </div>
+
+        <div class="loading" id="loadingView">
+            <div class="spinner"></div>
+            <p>Analyzing product and writing listings...</p>
+        </div>
+
+        <div class="results" id="resultsView">
+            <button class="new-btn" id="newBtn">← New Product</button>
+
+            <div class="product-banner" id="productBanner"></div>
+            <div class="features-bar" id="featuresBar"></div>
+
+            <div class="tabs" id="tabBar">
+                <div class="tab active" data-tab="amazon">Amazon</div>
+                <div class="tab" data-tab="ebay">eBay</div>
+                <div class="tab" data-tab="etsy">Etsy</div>
+                <div class="tab" data-tab="shopify">Shopify</div>
+                <div class="tab" data-tab="social">Social</div>
+                <div class="tab" data-tab="seo">SEO & Tips</div>
+                <div class="tab" data-tab="qa">Copy Q&A</div>
+            </div>
+
+            <div class="tab-content active" id="tab-amazon"></div>
+            <div class="tab-content" id="tab-ebay"></div>
+            <div class="tab-content" id="tab-etsy"></div>
+            <div class="tab-content" id="tab-shopify"></div>
+            <div class="tab-content" id="tab-social"></div>
+            <div class="tab-content" id="tab-seo"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg assistant"><div class="bubble">Ask me to refine any listing — change the tone, target a different audience, add specific features, or optimize for a platform!</div></div>
+                    </div>
+                    <div class="qa-row">
+                        <input class="qa-input" id="qaInput" placeholder="Refine your listings...">
+                        <button class="qa-send" id="qaSend">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let imageBase64 = null, imageMime = null, resultData = null, qaHistory = [];
+        const API = '/api/productdescriptor';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4MB'); return; }
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const full = e.target.result;
+                imageBase64 = full.split(',')[1];
+                previewImg.src = full;
+                previewWrap.style.display = 'block';
+                dropZone.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('removeBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null;
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            fileInput.value = '';
+        });
+
+        submitBtn.addEventListener('click', async () => {
+            const desc = document.getElementById('contextInput').value.trim();
+            if (!imageBase64 && !desc) { alert('Please upload a photo or describe your product'); return; }
+
+            document.getElementById('uploadView').style.display = 'none';
+            document.getElementById('loadingView').style.display = 'block';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'productdescriptor', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const body = {
+                    mode: 'generate',
+                    tone: document.getElementById('toneSelect').value,
+                    platform: document.getElementById('platformSelect').value
+                };
+                if (imageBase64) { body.image = imageBase64; body.mimeType = imageMime; }
+                if (desc) body.description = desc;
+
+                const resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+
+                if (data.raw) { renderRaw(data.raw); return; }
+                resultData = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error generating listings. Please try again.');
+                document.getElementById('loadingView').style.display = 'none';
+                document.getElementById('uploadView').style.display = 'block';
+            }
+        });
+
+        function renderRaw(text) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+            document.getElementById('productBanner').innerHTML = '';
+            document.getElementById('featuresBar').innerHTML = '';
+            document.getElementById('tab-amazon').innerHTML = `<div class="card"><p style="white-space:pre-wrap">${text}</p></div>`;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+        }
+
+        function platformCard(title, content, copyText) {
+            return `<div class="platform-card">
+                <div class="platform-header"><h3>${title}</h3><button class="copy-btn" onclick="copyToClipboard(\`${copyText.replace(/`/g, "'").replace(/\\/g, '\\\\')}\`)">Copy</button></div>
+                ${content}
+            </div>`;
+        }
+
+        function renderResults(d) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+
+            // Banner
+            const ps = d.pricingSuggestion || {};
+            document.getElementById('productBanner').innerHTML = `
+                <div>
+                    <div class="name">${d.productIdentified || 'Product'}</div>
+                    <div class="cat">${d.category || ''} · ${d.targetAudience || ''}</div>
+                </div>
+                ${ps.low ? `<div class="price-range"><div class="vals">${ps.low} — ${ps.high}</div><div class="lbl">Suggested range</div></div>` : ''}
+            `;
+
+            // Features
+            if (d.keyFeatures?.length) {
+                document.getElementById('featuresBar').innerHTML = d.keyFeatures.map(f => `<span class="feature-chip">✓ ${f}</span>`).join('');
+            }
+
+            // Amazon
+            const amz = d.listings?.amazon || {};
+            let amzHTML = '';
+            if (amz.title) amzHTML += `<div class="listing-title">${amz.title}</div>`;
+            if (amz.bulletPoints?.length) {
+                amzHTML += '<ul class="listing-bullets">' + amz.bulletPoints.map(b => `<li>${b}</li>`).join('') + '</ul>';
+            }
+            if (amz.description) amzHTML += `<div class="listing-desc">${amz.description}</div>`;
+            const amzCopy = [amz.title, ...(amz.bulletPoints || []), amz.description].filter(Boolean).join('\n\n');
+            document.getElementById('tab-amazon').innerHTML = amzHTML ? platformCard('🟠 Amazon Listing', amzHTML, amzCopy) : '<div class="card"><p>No Amazon listing generated.</p></div>';
+
+            // eBay
+            const ebay = d.listings?.ebay || {};
+            let ebayHTML = '';
+            if (ebay.title) ebayHTML += `<div class="listing-title">${ebay.title}</div>`;
+            if (ebay.description) ebayHTML += `<div class="listing-desc">${ebay.description}</div>`;
+            const ebayCopy = [ebay.title, ebay.description].filter(Boolean).join('\n\n');
+            document.getElementById('tab-ebay').innerHTML = ebayHTML ? platformCard('🟡 eBay Listing', ebayHTML, ebayCopy) : '<div class="card"><p>No eBay listing generated.</p></div>';
+
+            // Etsy
+            const etsy = d.listings?.etsy || {};
+            let etsyHTML = '';
+            if (etsy.title) etsyHTML += `<div class="listing-title">${etsy.title}</div>`;
+            if (etsy.description) etsyHTML += `<div class="listing-desc">${etsy.description}</div>`;
+            const etsyCopy = [etsy.title, etsy.description].filter(Boolean).join('\n\n');
+            document.getElementById('tab-etsy').innerHTML = etsyHTML ? platformCard('🟠 Etsy Listing', etsyHTML, etsyCopy) : '<div class="card"><p>No Etsy listing generated.</p></div>';
+
+            // Shopify
+            const shop = d.listings?.shopify || {};
+            let shopHTML = '';
+            if (shop.title) shopHTML += `<div class="listing-title">${shop.title}</div>`;
+            if (shop.description) shopHTML += `<div class="listing-desc">${shop.description}</div>`;
+            const shopCopy = [shop.title, shop.description].filter(Boolean).join('\n\n');
+            document.getElementById('tab-shopify').innerHTML = shopHTML ? platformCard('🟢 Shopify Listing', shopHTML, shopCopy) : '<div class="card"><p>No Shopify listing generated.</p></div>';
+
+            // Social
+            const social = d.listings?.social || {};
+            let socialHTML = '';
+            if (social.instagram) socialHTML += platformCard('📸 Instagram', `<div class="listing-desc">${social.instagram}</div>`, social.instagram);
+            if (social.facebook) socialHTML += platformCard('📘 Facebook', `<div class="listing-desc">${social.facebook}</div>`, social.facebook);
+            if (social.tiktok) socialHTML += platformCard('🎵 TikTok', `<div class="listing-desc">${social.tiktok}</div>`, social.tiktok);
+            document.getElementById('tab-social').innerHTML = socialHTML || '<div class="card"><p>No social media copy generated.</p></div>';
+
+            // SEO & Tips
+            let seoHTML = '';
+            if (d.seoKeywords?.length) {
+                seoHTML += '<div class="card"><h3>SEO Keywords</h3><div class="keyword-chips">' + d.seoKeywords.map(k => `<span class="keyword-chip">${k}</span>`).join('') + '</div></div>';
+            }
+            if (ps.reasoning) {
+                seoHTML += `<div class="card"><h3>Pricing Strategy</h3><p>${ps.reasoning}</p></div>`;
+            }
+            if (d.sellingTips?.length) {
+                seoHTML += '<div class="card"><h3>Selling Tips</h3>';
+                d.sellingTips.forEach(t => { seoHTML += `<div class="tip-card"><p>💡 ${t}</p></div>`; });
+                seoHTML += '</div>';
+            }
+            document.getElementById('tab-seo').innerHTML = seoHTML || '<div class="card"><p>No SEO data generated.</p></div>';
+        }
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        });
+
+        // New
+        document.getElementById('newBtn').addEventListener('click', () => {
+            imageBase64 = null; imageMime = null; resultData = null; qaHistory = [];
+            fileInput.value = '';
+            previewWrap.style.display = 'none';
+            dropZone.style.display = 'block';
+            document.getElementById('contextInput').value = '';
+            document.getElementById('resultsView').style.display = 'none';
+            document.getElementById('uploadView').style.display = 'block';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg assistant"><div class="bubble">Ask me to refine any listing — change the tone, target a different audience, add specific features, or optimize for a platform!</div></div>';
+            document.querySelectorAll('.tab')[0].click();
+        });
+
+        // Q&A
+        const qaInput = document.getElementById('qaInput');
+        const qaSend = document.getElementById('qaSend');
+        const qaMessages = document.getElementById('qaMessages');
+
+        async function sendQA() {
+            const q = qaInput.value.trim();
+            if (!q) return;
+            qaInput.value = '';
+            qaSend.disabled = true;
+
+            qaMessages.innerHTML += `<div class="qa-msg user"><div class="bubble">${q}</div></div>`;
+            qaMessages.innerHTML += `<div class="qa-msg assistant" id="qaTyping"><div class="bubble">Thinking...</div></div>`;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'productdescriptor', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const resp = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: resultData ? JSON.stringify(resultData) : null })
+                });
+                const data = await resp.json();
+                const answer = data.answer || 'Sorry, I couldn\'t answer that.';
+
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">${answer.replace(/\n/g, '<br>')}</div></div>`;
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">Sorry, something went wrong.</div></div>`;
+            }
+            qaSend.disabled = false;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+        }
+
+        qaSend.addEventListener('click', sendQA);
+        qaInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQA(); } });
+    </script>
+</body>
+</html>
