@@ -26178,6 +26178,337 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 console.error('Failed to load messages:', err);
             }
         }
+        // --- Quest Board Functions ---
+        async function loadQuestBoard() {
+            const grid = document.getElementById('questsGrid');
+            if (!grid) return;
+            grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Loading quests...</div>';
+
+            try {
+                const status = document.getElementById('questStatusFilter')?.value || 'open';
+                const role = document.getElementById('questRoleFilter')?.value || '';
+                let url = '/api/swarm/quest-list?limit=50';
+                if (status) url += '&status=' + status;
+                if (role) url += '&role=' + role;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.quests || data.quests.length === 0) {
+                    grid.innerHTML = `
+                        <div style="text-align:center;padding:40px;color:var(--text-secondary);">
+                            <div style="font-size:2rem;margin-bottom:8px;">📋</div>
+                            <p>No quests found</p>
+                        </div>`;
+                    return;
+                }
+
+                grid.innerHTML = data.quests.map(q => {
+                    const diffColors = { easy: '#22c55e', medium: '#f59e0b', hard: '#ef4444' };
+                    const statusColors = { open: '#22c55e', claimed: '#f59e0b', completed: '#6366f1', cancelled: '#6b7280' };
+                    return `
+                        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+                                <h3 style="font-size:0.9rem;color:var(--text-primary);margin:0;flex:1;">${q.title}</h3>
+                                <span style="background:${statusColors[q.status] || '#6b7280'}22;color:${statusColors[q.status] || '#6b7280'};padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;white-space:nowrap;">${q.status}</span>
+                            </div>
+                            <p style="font-size:0.8rem;color:var(--text-secondary);margin:0 0 12px;line-height:1.4;">${q.description?.substring(0, 120) || ''}${q.description?.length > 120 ? '...' : ''}</p>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                <span style="background:#f59e0b22;color:#f59e0b;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;">💰 ${q.reward_credits} credits</span>
+                                ${q.difficulty ? `<span style="background:${diffColors[q.difficulty] || '#6b7280'}22;color:${diffColors[q.difficulty] || '#6b7280'};padding:2px 8px;border-radius:6px;font-size:0.7rem;">${q.difficulty}</span>` : ''}
+                                ${q.role_match ? `<span style="background:#6366f122;color:#818cf8;padding:2px 8px;border-radius:6px;font-size:0.7rem;">${q.role_match.replace('_', ' ')}</span>` : ''}
+                                ${q.category ? `<span style="background:var(--bg-dark);padding:2px 8px;border-radius:6px;font-size:0.7rem;color:var(--text-secondary);">${q.category}</span>` : ''}
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Load quest board error:', err);
+                grid.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Failed to load quests</div>';
+            }
+        }
+
+        async function openCreateQuestModal() {
+            const title = prompt('Quest title (what needs to be done):');
+            if (!title || title.length < 5) return showToast('Title must be at least 5 characters');
+
+            const description = prompt('Description (detailed requirements, min 20 chars):');
+            if (!description || description.length < 20) return showToast('Description must be at least 20 characters');
+
+            const reward = prompt('Reward in credits (1-1000):', '50');
+            const rewardNum = parseInt(reward);
+            if (!rewardNum || rewardNum < 1 || rewardNum > 1000) return showToast('Reward must be 1-1000 credits');
+
+            const category = prompt('Category (feature/bug/content/app_idea/improvement/marketing):', 'feature');
+
+            try {
+                const res = await fetch('/api/swarm/quest-create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title, description,
+                        reward_credits: rewardNum,
+                        category: category || 'feature',
+                        difficulty: 'medium'
+                    })
+                });
+                const data = await res.json();
+                if (data.quest_id) {
+                    showToast('Quest created successfully!');
+                    loadQuestBoard();
+                } else {
+                    showToast(data.error || 'Failed to create quest');
+                }
+            } catch (err) {
+                showToast('Error creating quest');
+            }
+        }
+
+        // --- Earnings Dashboard Functions ---
+        function openEarningsDashboard(skipPushState = false) {
+            exitBuilderMode();
+
+            const welcomeState = document.getElementById('welcomeState');
+            const appsView = document.getElementById('appsView');
+            const creatorDashboard = document.getElementById('creatorDashboard');
+            const factoryView = document.getElementById('factoryView');
+            const agentsView = document.getElementById('agentsView');
+            const useCasesSection = document.getElementById('useCasesSection');
+            const learnView = document.getElementById('learnView');
+            const connectionsView = document.getElementById('connectionsView');
+            const earningsDashboardView = document.getElementById('earningsDashboardView');
+            const chatArea = document.querySelector('.chat-area');
+
+            // Hide all other views
+            if (welcomeState) welcomeState.style.display = 'none';
+            if (useCasesSection) useCasesSection.style.display = 'none';
+            if (appsView) appsView.classList.remove('active');
+            if (creatorDashboard) creatorDashboard.classList.remove('active');
+            if (factoryView) factoryView.classList.remove('active');
+            if (learnView) learnView.classList.remove('active');
+            if (connectionsView) connectionsView.classList.remove('active');
+            if (agentsView) agentsView.classList.remove('active');
+            hideArticle();
+
+            // Show earnings dashboard
+            if (earningsDashboardView) earningsDashboardView.style.display = 'block';
+            if (chatArea) chatArea.scrollTop = 0;
+            closeMobileSidebar();
+
+            // Highlight sidebar
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('earningsDashboardBtn');
+            if (btn) btn.classList.add('active');
+
+            if (!skipPushState) {
+                history.pushState({ view: 'earnings' }, '', '/dashboard/earnings');
+            }
+
+            loadEarningsDashboardData();
+        }
+
+        async function loadEarningsDashboardData() {
+            try {
+                const res = await fetch('/api/swarm/agents?limit=100');
+                const data = await res.json();
+
+                if (!data.success) return;
+
+                const agents = data.agents || [];
+                const roleFilter = document.getElementById('edRoleFilter')?.value || '';
+
+                // Stats
+                document.getElementById('edTotalAgents').textContent = data.count || agents.length;
+                document.getElementById('edActiveAgents').textContent = data.active_count || agents.filter(a => a.agent_status === 'active' || a.agent_status === 'working').length;
+                document.getElementById('edTotalProposals').textContent = data.total_proposals || 0;
+
+                // Calculate total credits
+                let totalCredits = 0;
+                agents.forEach(a => { totalCredits += parseFloat(a.suite_credits || 0); });
+                document.getElementById('edTotalCredits').textContent = totalCredits.toFixed(1);
+
+                // Leaderboard - top 10 by credits
+                const sorted = [...agents].sort((a, b) => parseFloat(b.suite_credits || 0) - parseFloat(a.suite_credits || 0));
+                const top10 = sorted.slice(0, 10);
+                const medals = ['🥇', '🥈', '🥉'];
+
+                const leaderboard = document.getElementById('edLeaderboard');
+                if (leaderboard) {
+                    leaderboard.innerHTML = top10.length === 0
+                        ? '<div style="color:var(--text-secondary);text-align:center;padding:16px;">No agents yet</div>'
+                        : top10.map((a, i) => `
+                            <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;background:${i < 3 ? 'rgba(99,102,241,0.05)' : 'transparent'};">
+                                <span style="font-size:1.2rem;width:28px;text-align:center;">${medals[i] || (i + 1)}</span>
+                                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#fff;font-weight:700;">${(a.display_name || a.agent_slug || '?').substring(0, 2).toUpperCase()}</div>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.85rem;color:var(--text-primary);font-weight:600;">${a.display_name || a.agent_slug || 'Unknown'}</div>
+                                    <div style="font-size:0.7rem;color:var(--text-secondary);">${(a.agent_role || 'unassigned').replace('_', ' ')}</div>
+                                </div>
+                                <div style="font-size:0.9rem;font-weight:700;color:#f59e0b;">${parseFloat(a.suite_credits || 0).toFixed(1)}</div>
+                            </div>
+                        `).join('');
+                }
+
+                // Performance table
+                const filtered = roleFilter ? agents.filter(a => a.agent_role === roleFilter) : agents;
+                const tableBody = document.getElementById('edTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = filtered.length === 0
+                        ? '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text-secondary);">No agents found</td></tr>'
+                        : filtered.map(a => {
+                            const statusColor = a.agent_status === 'active' ? '#22c55e' : a.agent_status === 'working' ? '#f59e0b' : '#6b7280';
+                            return `
+                                <tr style="border-bottom:1px solid var(--border-subtle);">
+                                    <td style="padding:8px;color:var(--text-primary);">${a.display_name || a.agent_slug || 'Unknown'}</td>
+                                    <td style="padding:8px;"><span style="background:#6366f122;color:#818cf8;padding:2px 6px;border-radius:4px;font-size:0.7rem;">${(a.agent_role || '-').replace('_', ' ')}</span></td>
+                                    <td style="padding:8px;"><span style="color:${statusColor};font-size:0.75rem;font-weight:600;">${a.agent_status || 'idle'}</span></td>
+                                    <td style="padding:8px;text-align:right;color:var(--text-secondary);">${a.proposal_count || 0}</td>
+                                    <td style="padding:8px;text-align:right;color:var(--text-secondary);">${a.approved_count || 0}</td>
+                                    <td style="padding:8px;text-align:right;font-weight:600;color:#f59e0b;">${parseFloat(a.suite_credits || 0).toFixed(1)}</td>
+                                </tr>`;
+                        }).join('');
+                }
+
+                // Activity feed
+                const sb = window.supabaseClient || (typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+                if (sb) {
+                    const { data: proposals } = await sb
+                        .from('factory_proposals')
+                        .select('id, title, status, created_at, agent_slug')
+                        .order('created_at', { ascending: false })
+                        .limit(15);
+
+                    const feed = document.getElementById('edActivityFeed');
+                    if (feed && proposals) {
+                        feed.innerHTML = proposals.map(p => {
+                            const statusIcon = p.status === 'approved' ? '✅' : p.status === 'rejected' ? '❌' : '⏳';
+                            return `
+                                <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);">
+                                    <span style="font-size:1rem;">${statusIcon}</span>
+                                    <div style="flex:1;">
+                                        <div style="font-size:0.8rem;color:var(--text-primary);">${p.title || 'Untitled proposal'}</div>
+                                        <div style="font-size:0.7rem;color:var(--text-secondary);">by ${p.agent_slug || 'unknown'} · ${timeAgo(new Date(p.created_at))}</div>
+                                    </div>
+                                </div>`;
+                        }).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Earnings dashboard error:', err);
+            }
+        }
+
+        // --- Agent Apps / Marketplace Functions ---
+        let marketplaceAppsCache = [];
+
+        async function loadMarketplaceApps() {
+            const grid = document.getElementById('agentAppsGrid');
+            const emptyState = document.getElementById('agentAppsEmptyState');
+            const countEl = document.getElementById('agentAppsCount');
+
+            const sb = window.supabaseClient || (typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+            if (!sb) {
+                if (grid) grid.innerHTML = '';
+                if (emptyState) emptyState.style.display = 'flex';
+                if (countEl) countEl.textContent = '0';
+                return;
+            }
+
+            try {
+                const { data: apps, error } = await sb
+                    .from('agent_apps')
+                    .select('id, name, description, icon, slug, created_at, agent_slug')
+                    .eq('is_public', true)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                marketplaceAppsCache = apps || [];
+                if (countEl) countEl.textContent = marketplaceAppsCache.length;
+
+                if (marketplaceAppsCache.length === 0) {
+                    if (grid) grid.innerHTML = '';
+                    if (emptyState) emptyState.style.display = 'flex';
+                    return;
+                }
+
+                if (emptyState) emptyState.style.display = 'none';
+                renderMarketplaceApps(marketplaceAppsCache);
+            } catch (err) {
+                console.error('Error loading agent apps:', err);
+                if (grid) grid.innerHTML = '';
+                if (emptyState) emptyState.style.display = 'flex';
+            }
+        }
+
+        function renderMarketplaceApps(apps) {
+            const grid = document.getElementById('agentAppsGrid');
+            if (!grid) return;
+
+            grid.innerHTML = apps.map(app => `
+                <div class="apps-view-item" onclick="openMarketplaceApp('${app.id}')" style="cursor:pointer;">
+                    <div class="apps-view-item-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);font-size:1.5rem;">
+                        ${app.icon || '🤖'}
+                    </div>
+                    <div class="apps-view-item-name">${app.name || 'Untitled'}</div>
+                    <div class="apps-view-item-desc">${app.description?.substring(0, 60) || ''}</div>
+                    <span style="background:#6366f122;color:#818cf8;padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:600;margin-top:4px;display:inline-block;">AGENT BUILT</span>
+                </div>
+            `).join('');
+        }
+
+        function filterAgentApps(query) {
+            if (!query) return renderMarketplaceApps(marketplaceAppsCache);
+            const q = query.toLowerCase();
+            renderMarketplaceApps(marketplaceAppsCache.filter(a =>
+                (a.name || '').toLowerCase().includes(q) ||
+                (a.description || '').toLowerCase().includes(q)
+            ));
+        }
+
+        async function openMarketplaceApp(appId) {
+            const sb = window.supabaseClient || (typeof supabase !== 'undefined' ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+            if (!sb) return showToast('Not connected to database');
+
+            try {
+                const { data: app, error } = await sb
+                    .from('agent_apps')
+                    .select('*')
+                    .eq('id', appId)
+                    .single();
+
+                if (error || !app) return showToast('App not found');
+
+                if (!app.code) return showToast('This app has no runnable code yet');
+
+                // Open in a modal with sandboxed iframe
+                const modal = document.createElement('div');
+                modal.id = 'agentAppModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+                const escapedCode = app.code.replace(/"/g, '&quot;');
+                modal.innerHTML = `
+                    <div style="background:var(--bg-card);border-radius:12px;width:100%;max-width:900px;height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border-subtle);">
+                            <div>
+                                <span style="font-size:1rem;font-weight:700;color:var(--text-primary);">${app.icon || '🤖'} ${app.name}</span>
+                                <span style="background:#6366f122;color:#818cf8;padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:600;margin-left:8px;">AGENT BUILT</span>
+                            </div>
+                            <button onclick="closeAgentAppModal()" style="background:none;border:none;color:var(--text-secondary);font-size:1.5rem;cursor:pointer;">&times;</button>
+                        </div>
+                        <iframe srcdoc="${escapedCode}" sandbox="allow-scripts" style="flex:1;border:none;background:#fff;"></iframe>
+                    </div>`;
+                modal.addEventListener('click', function(e) { if (e.target === modal) closeAgentAppModal(); });
+                document.body.appendChild(modal);
+            } catch (err) {
+                console.error('Open agent app error:', err);
+                showToast('Error opening app');
+            }
+        }
+
+        function closeAgentAppModal() {
+            const modal = document.getElementById('agentAppModal');
+            if (modal) modal.remove();
+        }
+
         // === END AGENTS VIEW FUNCTIONS ===
 
         // Handle browser back/forward buttons
@@ -35147,7 +35478,7 @@ Generate exactly what is asked. Return ONLY the post text, no extra commentary.`
             if (source === 'community') {
                 loadCommunityApps();
             } else if (source === 'agents') {
-                loadAgentApps();
+                loadMarketplaceApps();
             }
         }
 
