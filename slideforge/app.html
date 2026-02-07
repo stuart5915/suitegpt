@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlideForge — AI Presentation Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-container { max-width: 800px; margin: 0 auto; padding: 24px; }
+
+        .app-header { text-align: center; margin-bottom: 32px; padding-top: 20px; }
+        .app-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+        .app-header h1 span { background: linear-gradient(135deg, #a3e635, #84cc16); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #a3e635; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group textarea, .form-group input, .form-group select {
+            width: 100%; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea:focus, .form-group input:focus, .form-group select:focus { outline: none; border-color: #84cc16; }
+        .form-group textarea { min-height: 160px; resize: vertical; line-height: 1.6; }
+        .form-group select { cursor: pointer; }
+        .form-group select option { background: #0f0f1a; }
+        .form-hint { font-size: 0.75rem; color: #64748b; margin-top: 6px; line-height: 1.4; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #a3e635, #84cc16);
+            color: #000; font-weight: 700; font-size: 1rem; border: none; border-radius: 12px;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(132, 204, 22, 0.3); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #84cc16; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; font-size: 0.9rem; }
+
+        .results-section { display: none; }
+
+        .deck-header { margin-bottom: 20px; }
+        .deck-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+        .deck-subtitle { color: #94a3b8; font-size: 0.9rem; }
+        .deck-meta { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+        .deck-meta-item { background: rgba(132, 204, 22, 0.1); border: 1px solid rgba(132, 204, 22, 0.2); padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; color: #a3e635; }
+
+        /* Slide navigator */
+        .slide-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .slide-num-btn {
+            width: 34px; height: 34px; border-radius: 8px; border: 1px solid #2a2a3e; background: #1a1a2e;
+            color: #64748b; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .slide-num-btn.active { background: rgba(132, 204, 22, 0.15); border-color: #84cc16; color: #a3e635; }
+        .slide-num-btn:hover:not(.active) { border-color: #84cc16; color: #a3e635; }
+        .slide-arrow {
+            padding: 8px 14px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px;
+            color: #94a3b8; cursor: pointer; font-weight: 700; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .slide-arrow:hover { border-color: #84cc16; color: #a3e635; }
+
+        /* Slide card */
+        .slide-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+        }
+        .slide-type-bar {
+            padding: 8px 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            color: #a3e635; background: rgba(132, 204, 22, 0.08); border-bottom: 1px solid #2a2a3e;
+        }
+        .slide-body { padding: 24px; }
+        .slide-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 6px; }
+        .slide-subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 16px; }
+        .slide-bullets { list-style: none; }
+        .slide-bullets li {
+            padding: 8px 0; border-bottom: 1px solid #0f0f1a; font-size: 0.85rem; line-height: 1.5;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .slide-bullets li:last-child { border-bottom: none; }
+        .bullet-dot { width: 6px; height: 6px; background: #84cc16; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
+
+        .slide-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .slide-extra-box { background: #0f0f1a; border-radius: 10px; padding: 14px; }
+        .slide-extra-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 700; }
+        .slide-extra-text { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; }
+
+        .copy-slide-btn {
+            margin-top: 12px; padding: 8px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 8px; color: #94a3b8; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+        }
+        .copy-slide-btn:hover { border-color: #84cc16; color: #a3e635; }
+
+        /* Tabs for tips */
+        .tab-bar { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+        .tab-btn {
+            flex: 1; padding: 10px 10px; background: transparent; border: none; color: #64748b;
+            font-weight: 600; font-size: 0.78rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn.active { background: rgba(132, 204, 22, 0.15); color: #a3e635; }
+        .tab-btn:hover:not(.active) { color: #94a3b8; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .tip-item {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            padding: 14px 18px; margin-bottom: 8px; font-size: 0.85rem; line-height: 1.5;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+
+        .outline-item {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px;
+            padding: 12px 18px; margin-bottom: 6px; font-size: 0.85rem; display: flex; gap: 10px; align-items: center;
+        }
+        .outline-num { width: 28px; height: 28px; background: rgba(132, 204, 22, 0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #a3e635; flex-shrink: 0; }
+
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: #a3e635; }
+
+        .copy-all-btn {
+            padding: 12px 24px; background: linear-gradient(135deg, #a3e635, #84cc16);
+            color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .copy-all-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(132, 204, 22, 0.3); }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: rgba(132, 204, 22, 0.1); border: 1px solid rgba(132, 204, 22, 0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input {
+            flex: 1; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem;
+        }
+        .qa-input:focus { outline: none; border-color: #84cc16; }
+        .qa-send {
+            padding: 12px 20px; background: linear-gradient(135deg, #a3e635, #84cc16);
+            color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
+        }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .new-btn {
+            display: inline-block; margin-top: 20px; padding: 12px 28px; background: #1a1a2e;
+            border: 1px solid #2a2a3e; color: #94a3b8; font-weight: 600; font-size: 0.85rem;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .new-btn:hover { border-color: #84cc16; color: #a3e635; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .form-row { grid-template-columns: 1fr; }
+            .slide-extras { grid-template-columns: 1fr; }
+            .slide-nav { gap: 4px; }
+            .slide-num-btn { width: 28px; height: 28px; font-size: 0.65rem; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <h1>Slide<span>Forge</span></h1>
+            <p>Paste your notes or describe a topic — AI generates a complete presentation with slides, speaker notes, and design tips</p>
+        </div>
+
+        <!-- Input -->
+        <div id="inputSection" class="input-section">
+            <h2>Your Presentation Content</h2>
+
+            <div class="form-group">
+                <label>Notes, Outline, or Topic</label>
+                <textarea id="notesInput" placeholder="Paste your notes, bullet points, or just describe the topic. The more detail you provide, the better the slides.
+
+Example: 'Q3 sales results — revenue up 23% YoY, new enterprise clients include Acme Corp and TechStart, churn reduced to 3.2%, expanding to APAC next quarter, need $2M budget approval for new hires...'"></textarea>
+                <div class="form-hint">Works with raw notes, outlines, meeting minutes, or just a topic description</div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Slide Count</label>
+                    <select id="countInput">
+                        <option value="6-8 slides">Short (6-8)</option>
+                        <option value="10-14 slides" selected>Standard (10-14)</option>
+                        <option value="16-20 slides">Detailed (16-20)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Style</label>
+                    <select id="styleInput">
+                        <option value="professional">Professional</option>
+                        <option value="startup/pitch">Startup / Pitch</option>
+                        <option value="academic">Academic</option>
+                        <option value="creative">Creative</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="data-heavy">Data-Heavy</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Audience</label>
+                    <select id="audienceInput">
+                        <option value="general">General</option>
+                        <option value="executives/leadership">Executives</option>
+                        <option value="investors">Investors</option>
+                        <option value="technical team">Technical</option>
+                        <option value="clients/customers">Clients</option>
+                        <option value="students">Students</option>
+                        <option value="conference attendees">Conference</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generateSlides()">Generate My Slides →</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Building your presentation...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="results-section">
+            <div id="deckHeader" class="deck-header"></div>
+
+            <!-- Slide navigator -->
+            <div id="slideNav" class="slide-nav"></div>
+            <div id="slideDisplay"></div>
+
+            <div style="margin-bottom: 24px;">
+                <button class="copy-all-btn" onclick="copyAllSlides()">📋 Copy All Slides</button>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('outline')">Outline</button>
+                <button class="tab-btn" onclick="switchTab('design')">Design Tips</button>
+                <button class="tab-btn" onclick="switchTab('presenting')">Presenting Tips</button>
+                <button class="tab-btn" onclick="switchTab('qa')">Presentation Coach</button>
+            </div>
+
+            <div id="tab-outline" class="tab-content active"></div>
+            <div id="tab-design" class="tab-content"></div>
+            <div id="tab-presenting" class="tab-content"></div>
+            <div id="tab-qa" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">I'm your presentation coach. Ask me about slide design, storytelling, delivery techniques, or how to improve specific slides.</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input type="text" class="qa-input" id="qaInput" placeholder="Ask about your presentation..." onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSendBtn" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="new-btn" onclick="resetApp()">← Create New Presentation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+        let currentSlide = 0;
+        let qaHistory = [];
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'slideforge',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function generateSlides() {
+            const notes = document.getElementById('notesInput').value.trim();
+            if (!notes) { alert('Please enter your notes or topic.'); return; }
+
+            document.getElementById('inputSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('generateBtn').disabled = true;
+
+            try {
+                chargeCredits('generate');
+
+                const resp = await fetch('/api/slideforge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate',
+                        notes,
+                        slideCount: document.getElementById('countInput').value,
+                        style: document.getElementById('styleInput').value,
+                        audience: document.getElementById('audienceInput').value
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                currentResult = data;
+                currentSlide = 0;
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('inputSection').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function renderResults(d) {
+            // Header
+            document.getElementById('deckHeader').innerHTML = `
+                <div class="deck-title">${d.title || 'Your Presentation'}</div>
+                <div class="deck-subtitle">${d.subtitle || ''}</div>
+                <div class="deck-meta">
+                    <span class="deck-meta-item">${d.slides?.length || 0} slides</span>
+                    <span class="deck-meta-item">${d.estimatedDuration || '~15 min'}</span>
+                </div>
+            `;
+
+            // Slide navigator
+            const slides = d.slides || [];
+            let navHtml = '<button class="slide-arrow" onclick="navSlide(-1)">←</button>';
+            slides.forEach((s, i) => {
+                navHtml += `<button class="slide-num-btn ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})">${i + 1}</button>`;
+            });
+            navHtml += '<button class="slide-arrow" onclick="navSlide(1)">→</button>';
+            document.getElementById('slideNav').innerHTML = navHtml;
+
+            renderSlide(0);
+
+            // Outline tab
+            document.getElementById('tab-outline').innerHTML = `
+                <div class="section-title">Presentation Outline</div>
+                ${(d.outline || []).map((o, i) => `
+                    <div class="outline-item"><div class="outline-num">${i + 1}</div>${o}</div>
+                `).join('')}
+            `;
+
+            // Design tips tab
+            document.getElementById('tab-design').innerHTML = `
+                <div class="section-title">Design Recommendations</div>
+                ${(d.designTips || []).map(t => `<div class="tip-item"><span>🎨</span>${t}</div>`).join('')}
+            `;
+
+            // Presenting tips tab
+            document.getElementById('tab-presenting').innerHTML = `
+                <div class="section-title">Presentation Tips</div>
+                ${(d.presentationTips || []).map(t => `<div class="tip-item"><span>🎤</span>${t}</div>`).join('')}
+            `;
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function renderSlide(index) {
+            const slides = currentResult.slides || [];
+            if (index < 0 || index >= slides.length) return;
+            currentSlide = index;
+
+            const s = slides[index];
+            document.getElementById('slideDisplay').innerHTML = `
+                <div class="slide-card">
+                    <div class="slide-type-bar">Slide ${s.slideNumber || index + 1} — ${s.type || 'content'}</div>
+                    <div class="slide-body">
+                        <div class="slide-title">${s.title || ''}</div>
+                        ${s.subtitle ? `<div class="slide-subtitle">${s.subtitle}</div>` : ''}
+                        ${s.bullets?.length ? `
+                            <ul class="slide-bullets">
+                                ${s.bullets.map(b => `<li><span class="bullet-dot"></span>${b}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        <div class="slide-extras">
+                            ${s.speakerNotes ? `
+                                <div class="slide-extra-box">
+                                    <div class="slide-extra-label">🎤 Speaker Notes</div>
+                                    <div class="slide-extra-text">${s.speakerNotes}</div>
+                                </div>
+                            ` : ''}
+                            ${s.visualSuggestion ? `
+                                <div class="slide-extra-box">
+                                    <div class="slide-extra-label">🖼️ Visual Suggestion</div>
+                                    <div class="slide-extra-text">${s.visualSuggestion}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${s.transition ? `<div style="margin-top:12px;font-size:0.75rem;color:#64748b;">→ <em>${s.transition}</em></div>` : ''}
+                        <button class="copy-slide-btn" onclick="copySlide(${index})">📋 Copy This Slide</button>
+                    </div>
+                </div>
+            `;
+
+            // Update nav buttons
+            document.querySelectorAll('.slide-num-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+        }
+
+        function goToSlide(i) { renderSlide(i); }
+        function navSlide(dir) {
+            const slides = currentResult.slides || [];
+            const next = currentSlide + dir;
+            if (next >= 0 && next < slides.length) renderSlide(next);
+        }
+
+        function copySlide(index) {
+            const s = (currentResult.slides || [])[index];
+            if (!s) return;
+            let text = `--- Slide ${s.slideNumber || index + 1}: ${s.title} ---\n`;
+            if (s.subtitle) text += `${s.subtitle}\n`;
+            text += '\n';
+            (s.bullets || []).forEach(b => { text += `• ${b}\n`; });
+            if (s.speakerNotes) text += `\nSpeaker Notes: ${s.speakerNotes}\n`;
+            if (s.visualSuggestion) text += `Visual: ${s.visualSuggestion}\n`;
+            navigator.clipboard.writeText(text);
+            event.target.textContent = '✓ Copied!';
+            setTimeout(() => { event.target.textContent = '📋 Copy This Slide'; }, 1500);
+        }
+
+        function copyAllSlides() {
+            const slides = currentResult.slides || [];
+            let text = `# ${currentResult.title || 'Presentation'}\n${currentResult.subtitle || ''}\n\n`;
+            slides.forEach((s, i) => {
+                text += `--- Slide ${s.slideNumber || i + 1}: ${s.title} ---\n`;
+                if (s.subtitle) text += `${s.subtitle}\n`;
+                text += '\n';
+                (s.bullets || []).forEach(b => { text += `• ${b}\n`; });
+                if (s.speakerNotes) text += `\nSpeaker Notes: ${s.speakerNotes}\n`;
+                if (s.visualSuggestion) text += `Visual: ${s.visualSuggestion}\n`;
+                text += '\n';
+            });
+            navigator.clipboard.writeText(text);
+            event.target.textContent = '✓ All Slides Copied!';
+            setTimeout(() => { event.target.textContent = '📋 Copy All Slides'; }, 1500);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${question}</div>`;
+            input.value = '';
+            document.getElementById('qaSendBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/slideforge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question, context: JSON.stringify(currentResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').remove();
+                const answer = data.answer || data.error || 'No response received.';
+                msgs.innerHTML += `<div class="qa-msg ai">${answer.replace(/\n/g, '<br>')}</div>`;
+                qaHistory.push({ role: 'user', content: question });
+                qaHistory.push({ role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSendBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            currentResult = null;
+            currentSlide = 0;
+            qaHistory = [];
+            document.getElementById('notesInput').value = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">I\'m your presentation coach. Ask me about slide design, storytelling, or delivery.</div>';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === 0));
+        }
+    </script>
+</body>
+</html>
