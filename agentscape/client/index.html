@@ -396,9 +396,12 @@
         let myWorldX=15,myWorldZ=15;
 
         // Other player meshes
-        const otherPlayerMeshes = new Map(); // sessionId -> { mesh, label }
+        const otherPlayerMeshes = new Map(); // sessionId -> { mesh, label, targetX, targetZ, targetH, targetRot }
         // NPC meshes
-        const npcMeshes = new Map(); // npcId -> { mesh, label }
+        const npcMeshes = new Map(); // npcId -> { mesh, label, targetX, targetZ, targetH, targetRot }
+        // My character lerp targets
+        let myTargetX=15, myTargetZ=15, myTargetH=0, myTargetRot=0, myIsMoving=false;
+        const LERP_SPEED = 8; // higher = snappier
 
         function createNPCMesh(npcState){
             const role = npcState.role || 'app_builder';
@@ -463,8 +466,9 @@
                         myWorldX=player.x;myWorldZ=player.z;
                         const tx=player.tileX,tz=player.tileZ;
                         const h=heightMap[tx]?heightMap[tx][tz]||0:0;
-                        myChar.group.position.set(player.x,h,player.z);
-                        myChar.group.rotation.y=player.rotation;
+                        const oldX=myTargetX, oldZ=myTargetZ;
+                        myTargetX=player.x;myTargetZ=player.z;myTargetH=h;myTargetRot=player.rotation;
+                        myIsMoving=(Math.abs(player.x-oldX)>0.01||Math.abs(player.z-oldZ)>0.01);
                         if(player.isDead){document.getElementById('death-screen').style.display='flex';}
                         else{document.getElementById('death-screen').style.display='none';}
                     });
@@ -476,10 +480,12 @@
                     mesh.group.position.set(player.x,0,player.z);
                     scene.add(mesh.group);
                     const label=document.createElement('div');label.className='npc-label';label.textContent=player.name;label.style.borderBottom='2px solid '+player.color;document.getElementById('npc-labels').appendChild(label);
-                    otherPlayerMeshes.set(sessionId,{...mesh,label,state:player});
+                    otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false});
                     player.onChange(()=>{
                         const m=otherPlayerMeshes.get(sessionId);
-                        if(m){const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;m.group.position.set(player.x,h,player.z);m.group.rotation.y=player.rotation;m.group.visible=!player.isDead;}
+                        if(m){const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
+                        m.isMoving=(Math.abs(player.x-m.targetX)>0.01||Math.abs(player.z-m.targetZ)>0.01);
+                        m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;}
                     });
                 }
             });
@@ -491,14 +497,14 @@
             // NPCs
             room.state.npcs.onAdd((npc, id)=>{
                 const mesh=createNPCMesh(npc);
-                npcMeshes.set(id,{...mesh,state:npc});
+                npcMeshes.set(id,{...mesh,state:npc,targetX:npc.x,targetZ:npc.z,targetH:0,targetRot:npc.rotation,isMoving:false});
                 npc.onChange(()=>{
                     const m=npcMeshes.get(id);
                     if(!m)return;
                     const tx=npc.tileX,tz=npc.tileZ;
                     const h=heightMap[tx]?heightMap[tx][tz]||0:0;
-                    m.group.position.set(npc.x,h,npc.z);
-                    m.group.rotation.y=npc.rotation;
+                    m.isMoving=(Math.abs(npc.x-m.targetX)>0.01||Math.abs(npc.z-m.targetZ)>0.01);
+                    m.targetX=npc.x;m.targetZ=npc.z;m.targetH=h;m.targetRot=npc.rotation;
                     m.group.visible=!npc.isDead;
                     m.label.style.display=npc.isDead?'none':'block';
                 });
@@ -778,6 +784,31 @@
             const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;
             // Fireflies
             particles.forEach(p=>{p.visible=isNight;if(isNight){p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;p.material.opacity=0.5+Math.sin(time*2+p.userData.offset)*0.5;}});
+            // Smooth interpolation for all characters
+            const lerpAmt = 1 - Math.exp(-LERP_SPEED * dt);
+            // My character
+            myChar.group.position.x += (myTargetX - myChar.group.position.x) * lerpAmt;
+            myChar.group.position.y += (myTargetH - myChar.group.position.y) * lerpAmt;
+            myChar.group.position.z += (myTargetZ - myChar.group.position.z) * lerpAmt;
+            myChar.group.rotation.y += (myTargetRot - myChar.group.rotation.y) * lerpAmt;
+            if(myIsMoving){const wb=time*8;myChar.leftLeg.rotation.x=Math.sin(wb)*0.5;myChar.rightLeg.rotation.x=-Math.sin(wb)*0.5;myChar.leftArm.rotation.x=-Math.sin(wb)*0.4;myChar.rightArm.rotation.x=Math.sin(wb)*0.4;}
+            else{myChar.leftLeg.rotation.x*=0.9;myChar.rightLeg.rotation.x*=0.9;myChar.leftArm.rotation.x*=0.9;myChar.rightArm.rotation.x*=0.9;}
+            // Other players
+            otherPlayerMeshes.forEach(m=>{
+                m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;
+                m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;
+                m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;
+                m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
+                if(m.isMoving&&m.leftLeg){const wb=time*8;m.leftLeg.rotation.x=Math.sin(wb)*0.5;m.rightLeg.rotation.x=-Math.sin(wb)*0.5;m.leftArm.rotation.x=-Math.sin(wb)*0.4;m.rightArm.rotation.x=Math.sin(wb)*0.4;}
+                else if(m.leftLeg){m.leftLeg.rotation.x*=0.9;m.rightLeg.rotation.x*=0.9;m.leftArm.rotation.x*=0.9;m.rightArm.rotation.x*=0.9;}
+            });
+            // NPCs
+            npcMeshes.forEach(m=>{
+                m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;
+                m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;
+                m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;
+                m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
+            });
             updateOverlays();
             drawMinimap();
             renderer.render(scene,camera);
