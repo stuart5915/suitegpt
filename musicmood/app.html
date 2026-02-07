@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicMood — AI Playlist Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { padding: 20px 24px 12px; text-align: center; border-bottom: 1px solid #1a1a2e; }
+        .app-header h1 { font-size: 1.4rem; font-weight: 800; }
+        .app-header h1 span { background: linear-gradient(135deg, #fb7185, #e11d48); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #64748b; font-size: 0.8rem; margin-top: 4px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        .form-group textarea, .form-group select, .form-group input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group select { cursor: pointer; }
+        .form-group textarea:focus, .form-group select:focus, .form-group input:focus { outline: none; border-color: #f43f5e; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; font-family: inherit; }
+        .generate-btn:hover { transform: translateY(-1px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f43f5e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .playlist-name { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+        .playlist-desc { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; max-width: 600px; margin: 0 auto 12px; }
+        .mood-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; }
+        .mood-tag { background: #f43f5e15; border: 1px solid #f43f5e30; color: #fb7185; padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+
+        /* Track list */
+        .track-list { margin-bottom: 24px; }
+        .track-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; transition: border-color 0.2s; }
+        .track-item:hover { border-color: #f43f5e40; }
+        .track-num { color: #64748b; font-weight: 800; font-size: 0.85rem; width: 24px; text-align: center; flex-shrink: 0; }
+        .track-info { flex: 1; min-width: 0; }
+        .track-info .title { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-info .artist { color: #94a3b8; font-size: 0.8rem; }
+        .track-info .album { color: #64748b; font-size: 0.72rem; }
+        .track-meta { text-align: right; flex-shrink: 0; }
+        .track-meta .genre { color: #fb7185; font-size: 0.7rem; font-weight: 600; }
+        .track-meta .duration { color: #64748b; font-size: 0.75rem; }
+        .track-meta .year { color: #64748b; font-size: 0.68rem; }
+        .track-why { display: none; color: #94a3b8; font-size: 0.78rem; margin-top: 6px; line-height: 1.4; padding-top: 6px; border-top: 1px solid #2a2a3e; }
+        .track-item.expanded .track-why { display: block; }
+        .track-search { display: none; margin-top: 6px; }
+        .track-item.expanded .track-search { display: block; }
+        .track-search a { color: #fb7185; font-size: 0.75rem; text-decoration: none; }
+        .track-search a:hover { text-decoration: underline; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; border-bottom: 1px solid #2a2a3e; }
+        .tab { padding: 10px 18px; background: none; border: none; color: #64748b; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit; }
+        .tab.active { color: #fb7185; border-bottom-color: #e11d48; }
+        .tab:hover { color: #e2e8f0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Genre breakdown */
+        .genre-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .genre-bar .name { font-size: 0.82rem; width: 100px; flex-shrink: 0; }
+        .genre-bar .track { flex: 1; height: 10px; background: #2a2a3e; border-radius: 5px; overflow: hidden; }
+        .genre-bar .fill { height: 100%; background: linear-gradient(90deg, #f43f5e, #e11d48); border-radius: 5px; }
+        .genre-bar .pct { font-size: 0.75rem; color: #94a3b8; width: 35px; text-align: right; }
+        .genre-reason { color: #64748b; font-size: 0.78rem; margin-top: 2px; margin-left: 110px; margin-bottom: 6px; }
+
+        /* Mood progression */
+        .phase-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .phase-card h4 { font-size: 0.9rem; color: #fb7185; margin-bottom: 4px; }
+        .phase-card .tracks-label { color: #64748b; font-size: 0.72rem; margin-bottom: 4px; }
+        .phase-card p { color: #94a3b8; font-size: 0.82rem; line-height: 1.5; }
+
+        /* Listening suggestions */
+        .listen-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .listen-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .listen-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Similar playlists */
+        .similar-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .similar-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .similar-card p { color: #94a3b8; font-size: 0.82rem; }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; margin-bottom: 10px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #1a1a2e; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input-row input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input-row input:focus { outline: none; border-color: #f43f5e; }
+        .qa-input-row button { padding: 12px 20px; background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .new-btn:hover { border-color: #f43f5e; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .track-item { flex-wrap: wrap; } .qa-msg.user { margin-left: 16px; } .qa-msg.ai { margin-right: 16px; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🎵 <span>MusicMood</span></h1>
+        <p>Describe your mood — AI creates your perfect playlist</p>
+    </div>
+    <div class="container">
+        <!-- Input -->
+        <div id="inputSection">
+            <div class="form-group">
+                <label>What's your mood?</label>
+                <textarea id="moodInput" placeholder="e.g., Relaxed Sunday morning, making coffee with rain outside. Want something warm and unhurried..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Activity (optional)</label>
+                    <select id="activitySelect">
+                        <option value="">General listening</option>
+                        <option value="working">Working / Studying</option>
+                        <option value="workout">Working Out</option>
+                        <option value="driving">Driving</option>
+                        <option value="cooking">Cooking</option>
+                        <option value="relaxing">Relaxing / Unwinding</option>
+                        <option value="party">Party / Social</option>
+                        <option value="sleeping">Falling Asleep</option>
+                        <option value="meditation">Meditation / Yoga</option>
+                        <option value="running">Running / Jogging</option>
+                        <option value="reading">Reading</option>
+                        <option value="date">Date Night</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Energy Level (optional)</label>
+                    <select id="energySelect">
+                        <option value="">Match my mood</option>
+                        <option value="very low">Very Low — barely awake</option>
+                        <option value="low">Low — chill and mellow</option>
+                        <option value="medium">Medium — steady groove</option>
+                        <option value="high">High — energetic and upbeat</option>
+                        <option value="very high">Very High — maximum hype</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Preferred genres (optional)</label>
+                <input type="text" id="genresInput" placeholder="e.g., indie, jazz, lo-fi, R&B, classical...">
+            </div>
+            <button class="generate-btn" onclick="generate()">Generate My Playlist →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Curating your perfect playlist...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="playlist-name" id="playlistName"></div>
+                <div class="playlist-desc" id="playlistDesc"></div>
+                <div class="mood-tags" id="moodTags"></div>
+            </div>
+
+            <!-- Track list -->
+            <div class="track-list" id="trackList"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('genres')">Genre Breakdown</button>
+                <button class="tab" onclick="switchTab('flow')">Mood Flow</button>
+                <button class="tab" onclick="switchTab('listen')">Listening Tips</button>
+                <button class="tab" onclick="switchTab('similar')">Similar Playlists</button>
+                <button class="tab" onclick="switchTab('qa')">Music Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-genres"></div>
+            <div class="tab-content" id="tab-flow"></div>
+            <div class="tab-content" id="tab-listen"></div>
+            <div class="tab-content" id="tab-similar"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages"></div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="Ask for more songs, different vibes, or music recommendations..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+
+            <div style="text-align:center"><button class="new-btn" onclick="resetApp()">← New Playlist</button></div>
+        </div>
+    </div>
+
+    <script>
+        let analysisResult = null, qaHistory = [];
+
+        async function generate() {
+            const mood = document.getElementById('moodInput').value.trim();
+            if (!mood) return alert('Please describe your mood');
+
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                const body = {
+                    mode: 'generate',
+                    mood,
+                    activity: document.getElementById('activitySelect').value,
+                    energy: document.getElementById('energySelect').value,
+                    genres: document.getElementById('genresInput').value.trim()
+                };
+
+                const resp = await fetch('/api/musicmood', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse response');
+
+                analysisResult = data;
+                renderResults(data);
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'musicmood', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                alert('Generation failed: ' + err.message);
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function renderResults(d) {
+            document.getElementById('playlistName').textContent = d.playlistName || 'Your Playlist';
+            document.getElementById('playlistDesc').textContent = d.playlistDescription || '';
+
+            // Mood tags
+            const mt = document.getElementById('moodTags');
+            mt.innerHTML = '';
+            if (d.moodAnalysis) {
+                const ma = d.moodAnalysis;
+                mt.innerHTML += `<span class="mood-tag">${ma.primaryMood || ''}</span>`;
+                mt.innerHTML += `<span class="mood-tag">Energy: ${ma.energy || ''}</span>`;
+                mt.innerHTML += `<span class="mood-tag">Tempo: ${ma.tempo || ''}</span>`;
+                (ma.keywords || []).slice(0, 3).forEach(k => { mt.innerHTML += `<span class="mood-tag">${k}</span>`; });
+            }
+
+            // Tracks
+            const tl = document.getElementById('trackList');
+            tl.innerHTML = '';
+            if (d.tracks?.length) {
+                d.tracks.forEach((t, i) => {
+                    const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(t.spotifySearchQuery || t.title + ' ' + t.artist)}`;
+                    tl.innerHTML += `<div class="track-item" onclick="this.classList.toggle('expanded')"><span class="track-num">${i + 1}</span><div class="track-info"><div class="title">${t.title}</div><div class="artist">${t.artist}</div><div class="album">${t.album || ''} ${t.year ? '(' + t.year + ')' : ''}</div><div class="track-why">${t.whyItFits || ''}</div><div class="track-search"><a href="${searchUrl}" target="_blank" rel="noopener">Search on Spotify &rarr;</a></div></div><div class="track-meta"><div class="genre">${t.genre || ''}</div><div class="duration">${t.duration || ''}</div></div></div>`;
+                });
+            }
+
+            // Genre breakdown
+            const tg = document.getElementById('tab-genres');
+            tg.innerHTML = '';
+            if (d.genreBreakdown?.length) {
+                d.genreBreakdown.forEach(g => {
+                    tg.innerHTML += `<div class="genre-bar"><span class="name">${g.genre}</span><div class="track"><div class="fill" style="width:${g.percentage}%"></div></div><span class="pct">${g.percentage}%</span></div><div class="genre-reason">${g.reasoning || ''}</div>`;
+                });
+            }
+
+            // Mood flow
+            const tf = document.getElementById('tab-flow');
+            tf.innerHTML = '';
+            if (d.flowDescription) {
+                tf.innerHTML += `<div class="phase-card"><p>${d.flowDescription}</p></div>`;
+            }
+            if (d.moodProgression?.length) {
+                d.moodProgression.forEach(p => {
+                    tf.innerHTML += `<div class="phase-card"><h4>${p.phase}</h4><div class="tracks-label">Tracks ${p.tracks}</div><p>${p.vibe || ''}</p></div>`;
+                });
+            }
+
+            // Listening suggestions
+            const tli = document.getElementById('tab-listen');
+            tli.innerHTML = '';
+            if (d.listeningSuggestions) {
+                const ls = d.listeningSuggestions;
+                if (ls.bestTime) tli.innerHTML += `<div class="listen-card"><h4>Best Time</h4><p>${ls.bestTime}</p></div>`;
+                if (ls.setting) tli.innerHTML += `<div class="listen-card"><h4>Ideal Setting</h4><p>${ls.setting}</p></div>`;
+                if (ls.activity) tli.innerHTML += `<div class="listen-card"><h4>Pair With</h4><p>${ls.activity}</p></div>`;
+            }
+
+            // Similar playlists
+            const ts = document.getElementById('tab-similar');
+            ts.innerHTML = '';
+            if (d.similarPlaylists?.length) {
+                d.similarPlaylists.forEach(p => {
+                    ts.innerHTML += `<div class="similar-card"><h4>${p.name}</h4><p>${p.description || ''}</p></div>`;
+                });
+            }
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/musicmood', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(analysisResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').innerHTML = data.answer || 'Sorry, could not answer that.';
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'musicmood', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = 'Error: ' + err.message;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetApp() {
+            analysisResult = null; qaHistory = [];
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('moodInput').value = '';
+            document.getElementById('genresInput').value = '';
+            document.getElementById('activitySelect').value = '';
+            document.getElementById('energySelect').value = '';
+            document.getElementById('qaMessages').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
