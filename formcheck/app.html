@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormCheck — AI Exercise Form Analyzer</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #f97316; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        .disclaimer-bar { background: #fbbf2410; border: 1px solid #fbbf2430; border-radius: 10px; padding: 10px 16px; font-size: 0.75rem; color: #fbbf24; text-align: center; margin-bottom: 20px; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 14px; padding: 50px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #f97316; background: #f9731608; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone p { color: #94a3b8; font-size: 0.9rem; }
+        .upload-zone .sub { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .upload-zone input { display: none; }
+        .upload-zone .file-info { color: #fb923c; font-weight: 600; margin-top: 8px; font-size: 0.85rem; }
+        .preview-img { max-width: 100%; max-height: 250px; border-radius: 12px; margin-top: 12px; }
+
+        .or-divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 16px 0; position: relative; }
+        .or-divider::before, .or-divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #2a2a3e; }
+        .or-divider::before { left: 0; }
+        .or-divider::after { right: 0; }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #f97316; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Score Banner */
+        .score-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
+        .exercise-name { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+        .muscle-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+        .muscle-tag { background: #f9731620; border: 1px solid #f9731640; color: #fb923c; padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+        .score-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; margin: 0 auto 12px; }
+        .score-circle .num { font-size: 2rem; font-weight: 800; }
+        .score-circle .grade { font-size: 0.75rem; font-weight: 700; }
+        .score-circle.a { background: #10b98120; border: 3px solid #10b981; }
+        .score-circle.a .num { color: #34d399; }
+        .score-circle.b { background: #3b82f620; border: 3px solid #3b82f6; }
+        .score-circle.b .num { color: #60a5fa; }
+        .score-circle.c { background: #fbbf2420; border: 3px solid #fbbf24; }
+        .score-circle.c .num { color: #fbbf24; }
+        .score-circle.d, .score-circle.f { background: #ef444420; border: 3px solid #ef4444; }
+        .score-circle.d .num, .score-circle.f .num { color: #f87171; }
+        .safety-badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+        .safety-badge.safe { background: #10b98120; color: #34d399; }
+        .safety-badge.caution { background: #fbbf2420; color: #fbbf24; }
+        .safety-badge.risk { background: #ef444420; color: #f87171; }
+
+        /* Form Analysis Bars */
+        .form-bars { display: grid; gap: 10px; }
+        .form-bar { display: flex; align-items: center; gap: 12px; }
+        .form-bar .name { font-size: 0.82rem; width: 90px; color: #94a3b8; text-transform: capitalize; }
+        .form-bar .track { flex: 1; height: 10px; background: #2a2a3e; border-radius: 5px; overflow: hidden; }
+        .form-bar .fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .form-bar .fill.good { background: linear-gradient(90deg, #10b981, #34d399); }
+        .form-bar .fill.ok { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .form-bar .fill.bad { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .form-bar .score-num { font-size: 0.8rem; font-weight: 700; width: 30px; text-align: right; }
+        .form-bar .detail { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+        /* Corrections */
+        .correction-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+        .correction-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .priority-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .priority-badge.high { background: #ef444420; color: #f87171; }
+        .priority-badge.medium { background: #fbbf2420; color: #fbbf24; }
+        .priority-badge.low { background: #10b98120; color: #34d399; }
+        .correction-header h4 { font-size: 0.9rem; }
+        .correction-body { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 8px; }
+        .correction-cue { background: #f9731610; border-left: 3px solid #f97316; padding: 8px 12px; border-radius: 4px; font-size: 0.82rem; color: #fb923c; font-weight: 600; }
+        .correction-why { font-size: 0.78rem; color: #64748b; margin-top: 6px; font-style: italic; }
+
+        /* Positives */
+        .positive-card { background: #10b98110; border: 1px solid #10b98130; border-radius: 12px; padding: 14px; margin-bottom: 8px; font-size: 0.85rem; color: #34d399; display: flex; align-items: flex-start; gap: 8px; }
+        .positive-card::before { content: '✓'; font-weight: 700; flex-shrink: 0; }
+
+        /* Injury Risks */
+        .risk-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .risk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .risk-header h4 { font-size: 0.9rem; }
+        .risk-header .area { font-size: 0.75rem; color: #fb923c; }
+        .risk-severity { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; }
+        .risk-severity.high { background: #ef444420; color: #f87171; }
+        .risk-severity.medium { background: #fbbf2420; color: #fbbf24; }
+        .risk-severity.low { background: #10b98120; color: #34d399; }
+        .risk-prevention { font-size: 0.82rem; color: #94a3b8; margin-top: 6px; }
+
+        /* Progression */
+        .prog-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .prog-card h4 { font-size: 0.9rem; margin-bottom: 4px; }
+        .prog-card p { font-size: 0.82rem; color: #94a3b8; }
+        .related-card { background: #0f0f1a; border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+        .related-card h4 { font-size: 0.85rem; color: #fb923c; margin-bottom: 4px; }
+        .related-card p { font-size: 0.78rem; color: #94a3b8; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #f9731620; border: 1px solid #f9731630; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input button { padding: 12px 20px; background: #f97316; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #f97316; color: #f97316; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; display: none; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🏋️ Form<span>Check</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="disclaimer-bar">AI form analysis is not a replacement for a certified personal trainer. Use as supplementary guidance only.</div>
+
+        <div class="input-section" id="inputSection">
+            <h2>Upload Your Exercise Photo</h2>
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">📸</div>
+                <p>Drop a photo of your exercise form</p>
+                <p class="sub">JPG, PNG up to 4MB — mid-rep is best</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <div class="file-info" id="fileInfo"></div>
+                <img id="previewImg" class="preview-img" style="display:none;">
+            </div>
+            <div class="or-divider">OR</div>
+            <div class="form-group">
+                <label>Describe Your Form (if no photo)</label>
+                <textarea id="description" placeholder="e.g. Doing barbell back squats with 135 lbs. Feet shoulder-width apart. Feeling my knees cave in at the bottom."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Exercise (optional — AI will auto-detect)</label>
+                <select id="exercise">
+                    <option value="">Auto-detect</option>
+                    <option value="squat">Squat</option>
+                    <option value="deadlift">Deadlift</option>
+                    <option value="bench-press">Bench Press</option>
+                    <option value="overhead-press">Overhead Press</option>
+                    <option value="barbell-row">Barbell Row</option>
+                    <option value="pull-up">Pull-Up / Chin-Up</option>
+                    <option value="push-up">Push-Up</option>
+                    <option value="lunge">Lunge</option>
+                    <option value="plank">Plank</option>
+                    <option value="bicep-curl">Bicep Curl</option>
+                    <option value="shoulder-press">Shoulder Press</option>
+                    <option value="hip-thrust">Hip Thrust</option>
+                    <option value="romanian-deadlift">Romanian Deadlift</option>
+                    <option value="lat-pulldown">Lat Pulldown</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Check My Form →</button>
+        </div>
+
+        <div class="loading" id="loading"><div class="spinner"></div><p>Analyzing your form...</p></div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Check</button>
+            <div class="score-banner" id="scoreBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="analysis">Form Analysis</button>
+                <button class="tab" data-tab="corrections">Corrections</button>
+                <button class="tab" data-tab="safety">Safety & Risks</button>
+                <button class="tab" data-tab="progression">Progression</button>
+                <button class="tab" data-tab="qa">Coach Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-analysis"><div id="analysisContent"></div></div>
+            <div class="tab-content" id="tab-corrections"><div id="correctionsContent"></div></div>
+            <div class="tab-content" id="tab-safety"><div id="safetyContent"></div></div>
+            <div class="tab-content" id="tab-progression"><div id="progressionContent"></div></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about your form — I can explain corrections in more detail, suggest mobility drills, or recommend alternative exercises.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. What mobility drills help with knee cave?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null, qaHistory = [], imageData = null, imageMime = null;
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Max 4MB'); return; }
+            document.getElementById('fileInfo').textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById('previewImg').src = e.target.result; document.getElementById('previewImg').style.display = 'block'; imageData = e.target.result.split(',')[1]; };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function analyze() {
+            const desc = document.getElementById('description').value.trim();
+            if (!imageData && !desc) { uploadZone.style.borderColor = '#ef4444'; return; }
+
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'formcheck', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+
+                const body = { mode: 'analyze', exercise: document.getElementById('exercise').value, description: desc };
+                if (imageData) { body.image = imageData; body.mimeType = imageMime; }
+
+                const resp = await fetch('/api/formcheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function getGradeClass(grade) { return (grade || 'C')[0].toLowerCase(); }
+        function getBarClass(score) { return score >= 80 ? 'good' : score >= 60 ? 'ok' : 'bad'; }
+
+        function renderResults(data) {
+            const gc = getGradeClass(data.overallGrade);
+            const sr = (data.safetyRating || 'safe').toLowerCase();
+            document.getElementById('scoreBanner').innerHTML = `
+                <div class="exercise-name">${data.exerciseDetected || 'Exercise'}</div>
+                <div class="muscle-tags">${(data.muscleGroups || []).map(m => `<span class="muscle-tag">${m}</span>`).join('')}</div>
+                <div class="score-circle ${gc}">
+                    <div class="num">${data.overallScore || '?'}</div>
+                    <div class="grade">Grade ${data.overallGrade || '?'}</div>
+                </div>
+                <span class="safety-badge ${sr}">${sr.toUpperCase()}</span>
+            `;
+
+            // Form Analysis Bars
+            const fa = data.formAnalysis || {};
+            let barsHtml = '<div class="form-bars">';
+            for (const [key, val] of Object.entries(fa)) {
+                const v = val || {};
+                barsHtml += `
+                    <div>
+                        <div class="form-bar">
+                            <span class="name">${key}</span>
+                            <div class="track"><div class="fill ${getBarClass(v.score || 0)}" style="width:${v.score || 0}%"></div></div>
+                            <span class="score-num">${v.score || 0}</span>
+                        </div>
+                        <div style="margin-left:102px;"><span class="detail">${v.detail || ''}</span></div>
+                    </div>
+                `;
+            }
+            barsHtml += '</div>';
+            // Positives
+            if (data.whatYoureDoingWell?.length) {
+                barsHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;color:#34d399;">What You\'re Doing Well</h3>';
+                barsHtml += data.whatYoureDoingWell.map(p => `<div class="positive-card">${p}</div>`).join('');
+            }
+            document.getElementById('analysisContent').innerHTML = barsHtml;
+
+            // Corrections
+            document.getElementById('correctionsContent').innerHTML = (data.corrections || []).map(c => `
+                <div class="correction-card">
+                    <div class="correction-header">
+                        <span class="priority-badge ${(c.priority||'medium').toLowerCase()}">${(c.priority||'MEDIUM').toUpperCase()}</span>
+                        <h4>${c.issue}</h4>
+                    </div>
+                    <div class="correction-body">${c.fix || ''}</div>
+                    ${c.cue ? `<div class="correction-cue">"${c.cue}"</div>` : ''}
+                    ${c.why ? `<div class="correction-why">${c.why}</div>` : ''}
+                </div>
+            `).join('') || '<p style="color:#34d399;text-align:center;padding:40px;">Great form! No major corrections needed.</p>';
+
+            // Safety
+            let safetyHtml = (data.injuryRisks || []).map(r => `
+                <div class="risk-card">
+                    <div class="risk-header">
+                        <div><h4>${r.risk}</h4><span class="area">${r.area || ''}</span></div>
+                        <span class="risk-severity ${(r.severity||'low').toLowerCase()}">${(r.severity||'LOW').toUpperCase()}</span>
+                    </div>
+                    <div class="risk-prevention">${r.prevention || ''}</div>
+                </div>
+            `).join('');
+            if (!safetyHtml) safetyHtml = '<p style="color:#34d399;text-align:center;padding:40px;">No significant injury risks detected. Keep it up!</p>';
+            document.getElementById('safetyContent').innerHTML = safetyHtml;
+
+            // Progression
+            let progHtml = (data.progressionTips || []).map(p => `
+                <div class="prog-card"><h4>${p.tip}</h4><p>${p.when || ''}</p></div>
+            `).join('');
+            if (data.relatedExercises?.length) {
+                progHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;">Related Exercises</h3>';
+                progHtml += data.relatedExercises.map(r => `<div class="related-card"><h4>${r.exercise}</h4><p>${r.benefit || ''}</p></div>`).join('');
+            }
+            document.getElementById('progressionContent').innerHTML = progHtml || '<p style="color:#64748b;text-align:center;padding:40px;">No progression tips available.</p>';
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'formcheck', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                const resp = await fetch('/api/formcheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) }) });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally { document.getElementById('qaBtn').disabled = false; msgs.scrollTop = msgs.scrollHeight; }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = []; imageData = null;
+            document.getElementById('previewImg').style.display = 'none';
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about your form — I can explain corrections in more detail, suggest mobility drills, or recommend alternative exercises.</div>';
+        }
+    </script>
+</body>
+</html>
