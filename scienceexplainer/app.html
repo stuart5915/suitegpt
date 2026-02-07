@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScienceExplainer — AI Science Educator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-container { max-width: 800px; margin: 0 auto; padding: 24px; }
+
+        .app-header { text-align: center; margin-bottom: 32px; padding-top: 20px; }
+        .app-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+        .app-header h1 span { background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #22d3ee; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group textarea, .form-group input, .form-group select {
+            width: 100%; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        .form-group textarea:focus, .form-group input:focus, .form-group select:focus { outline: none; border-color: #06b6d4; }
+        .form-group textarea { min-height: 80px; resize: vertical; line-height: 1.6; }
+        .form-group select { cursor: pointer; }
+        .form-group select option { background: #0f0f1a; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .quick-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .quick-chip {
+            padding: 8px 14px; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px;
+            font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .quick-chip:hover { border-color: #06b6d4; color: #22d3ee; }
+
+        .generate-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            color: #000; font-weight: 700; font-size: 1rem; border: none; border-radius: 12px;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(6, 182, 212, 0.3); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #06b6d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; font-size: 0.9rem; }
+
+        .results-section { display: none; }
+
+        .result-header { margin-bottom: 24px; }
+        .result-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+        .result-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+        .result-badge { padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .result-badge.branch { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .result-badge.difficulty { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+        .tldr-box {
+            background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 14px;
+            padding: 18px 22px; margin-bottom: 24px;
+        }
+        .tldr-label { font-size: 0.7rem; color: #06b6d4; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .tldr-text { font-size: 1.05rem; font-weight: 600; line-height: 1.5; }
+
+        .tab-bar { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+        .tab-btn {
+            flex: 1; padding: 10px 10px; background: transparent; border: none; color: #64748b;
+            font-weight: 600; font-size: 0.78rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn.active { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .tab-btn:hover:not(.active) { color: #94a3b8; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .section-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 22px; margin-bottom: 14px; }
+        .section-heading { font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; color: #22d3ee; }
+        .section-content { font-size: 0.9rem; color: #cbd5e1; line-height: 1.8; white-space: pre-wrap; }
+
+        .callout-box { margin-top: 14px; border-radius: 10px; padding: 14px 18px; font-size: 0.85rem; line-height: 1.5; }
+        .callout-box.analogy { background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+        .callout-box.funfact { background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.2); color: #fde68a; }
+        .callout-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .callout-box.analogy .callout-label { color: #8b5cf6; }
+        .callout-box.funfact .callout-label { color: #facc15; }
+
+        .term-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; }
+        .term-word { font-weight: 700; font-size: 0.9rem; color: #22d3ee; margin-bottom: 4px; }
+        .term-def { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; }
+
+        .example-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; font-size: 0.85rem; line-height: 1.5; display: flex; gap: 10px; }
+
+        .myth-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-bottom: 10px; }
+        .myth-text { font-size: 0.85rem; color: #f87171; margin-bottom: 8px; display: flex; gap: 8px; }
+        .reality-text { font-size: 0.85rem; color: #22c55e; display: flex; gap: 8px; }
+
+        .deeper-chip {
+            display: inline-block; padding: 10px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; font-size: 0.8rem; color: #94a3b8; cursor: pointer; transition: all 0.2s;
+            margin: 0 8px 8px 0;
+        }
+        .deeper-chip:hover { border-color: #06b6d4; color: #22d3ee; }
+
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 14px; color: #22d3ee; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input {
+            flex: 1; padding: 12px 16px; background: #0f0f1a; border: 1px solid #2a2a3e;
+            border-radius: 10px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem;
+        }
+        .qa-input:focus { outline: none; border-color: #06b6d4; }
+        .qa-send {
+            padding: 12px 20px; background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            color: #000; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
+        }
+        .qa-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .new-btn {
+            display: inline-block; margin-top: 20px; padding: 12px 28px; background: #1a1a2e;
+            border: 1px solid #2a2a3e; color: #94a3b8; font-weight: 600; font-size: 0.85rem;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .new-btn:hover { border-color: #06b6d4; color: #22d3ee; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .form-row { grid-template-columns: 1fr; }
+            .tab-btn { font-size: 0.7rem; padding: 8px 8px; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <h1>Science<span>Explainer</span></h1>
+            <p>Ask any science question — get a clear, engaging explanation with analogies and examples</p>
+        </div>
+
+        <!-- Input -->
+        <div id="inputSection" class="input-section">
+            <h2>What Do You Want to Understand?</h2>
+
+            <div class="form-group">
+                <label>Popular Questions (click to use)</label>
+                <div class="quick-chips">
+                    <div class="quick-chip" data-q="Why is the sky blue?">Why is the sky blue?</div>
+                    <div class="quick-chip" data-q="How does gravity work?">How does gravity work?</div>
+                    <div class="quick-chip" data-q="What is quantum entanglement?">Quantum entanglement</div>
+                    <div class="quick-chip" data-q="How do vaccines work?">How do vaccines work?</div>
+                    <div class="quick-chip" data-q="What causes lightning?">What causes lightning?</div>
+                    <div class="quick-chip" data-q="How does DNA replication work?">DNA replication</div>
+                    <div class="quick-chip" data-q="What is dark matter?">What is dark matter?</div>
+                    <div class="quick-chip" data-q="How do black holes form?">Black holes</div>
+                    <div class="quick-chip" data-q="What is the theory of relativity?">Relativity</div>
+                    <div class="quick-chip" data-q="How does photosynthesis work?">Photosynthesis</div>
+                    <div class="quick-chip" data-q="What causes the northern lights?">Northern lights</div>
+                    <div class="quick-chip" data-q="How does evolution by natural selection work?">Evolution</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Your Question</label>
+                <textarea id="questionInput" placeholder="Ask anything — How does CRISPR gene editing work? Why do we dream? What happens inside a nuclear reactor?"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Subject (optional)</label>
+                    <select id="subjectInput">
+                        <option value="">Auto-detect</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Astronomy">Astronomy</option>
+                        <option value="Earth Science">Earth Science</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Math">Math</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Environmental Science">Environmental Science</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Explanation Level</label>
+                    <select id="levelInput">
+                        <option value="explain like I'm 10">ELI10 — Super simple</option>
+                        <option value="general audience" selected>General — Clear for anyone</option>
+                        <option value="high school student">High School level</option>
+                        <option value="college student">College level</option>
+                        <option value="expert/technical">Expert — Full technical depth</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="explainBtn" onclick="explainTopic()">Explain This →</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Preparing your explanation...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="results-section">
+            <div id="resultHeader" class="result-header"></div>
+            <div id="tldrBox" class="tldr-box"></div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('explanation')">Explanation</button>
+                <button class="tab-btn" onclick="switchTab('terms')">Key Terms</button>
+                <button class="tab-btn" onclick="switchTab('examples')">Real World</button>
+                <button class="tab-btn" onclick="switchTab('myths')">Myths vs Facts</button>
+                <button class="tab-btn" onclick="switchTab('deeper')">Go Deeper</button>
+                <button class="tab-btn" onclick="switchTab('qa')">Ask More</button>
+            </div>
+
+            <div id="tab-explanation" class="tab-content active"></div>
+            <div id="tab-terms" class="tab-content"></div>
+            <div id="tab-examples" class="tab-content"></div>
+            <div id="tab-myths" class="tab-content"></div>
+            <div id="tab-deeper" class="tab-content"></div>
+            <div id="tab-qa" class="tab-content">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Want to go deeper? Ask me anything about this topic — I'll explain it with the same clarity and examples.</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input type="text" class="qa-input" id="qaInput" placeholder="Ask a follow-up question..." onkeydown="if(event.key==='Enter')askQuestion()">
+                        <button class="qa-send" id="qaSendBtn" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="new-btn" onclick="resetApp()">← Ask Another Question</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+        let qaHistory = [];
+
+        // Quick chips
+        document.querySelectorAll('.quick-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.getElementById('questionInput').value = chip.dataset.q;
+            });
+        });
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'scienceexplainer',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function explainTopic() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) { alert('Please enter a science question.'); return; }
+
+            document.getElementById('inputSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('explainBtn').disabled = true;
+
+            try {
+                chargeCredits('explain');
+
+                const resp = await fetch('/api/scienceexplainer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'explain',
+                        question,
+                        subject: document.getElementById('subjectInput').value,
+                        level: document.getElementById('levelInput').value
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Unexpected response format');
+
+                currentResult = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('inputSection').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('explainBtn').disabled = false;
+            }
+        }
+
+        function renderResults(d) {
+            // Header
+            document.getElementById('resultHeader').innerHTML = `
+                <div class="result-title">${d.title || 'Science Explanation'}</div>
+                <div class="result-meta">
+                    ${d.branch ? `<span class="result-badge branch">${d.branch}</span>` : ''}
+                    ${d.difficulty ? `<span class="result-badge difficulty">${d.difficulty}</span>` : ''}
+                </div>
+            `;
+
+            // TL;DR
+            document.getElementById('tldrBox').innerHTML = `
+                <div class="tldr-label">TL;DR</div>
+                <div class="tldr-text">${d.tldr || ''}</div>
+            `;
+
+            // Explanation tab
+            document.getElementById('tab-explanation').innerHTML = (d.explanation || []).map(s => `
+                <div class="section-card">
+                    <div class="section-heading">${s.heading}</div>
+                    <div class="section-content">${s.content}</div>
+                    ${s.analogy ? `<div class="callout-box analogy"><div class="callout-label">🔗 Analogy</div>${s.analogy}</div>` : ''}
+                    ${s.funFact ? `<div class="callout-box funfact"><div class="callout-label">💡 Fun Fact</div>${s.funFact}</div>` : ''}
+                </div>
+            `).join('');
+
+            // Key Terms tab
+            document.getElementById('tab-terms').innerHTML = `
+                <div class="section-title">Key Terms</div>
+                ${(d.keyTerms || []).map(t => `
+                    <div class="term-card">
+                        <div class="term-word">${t.term}</div>
+                        <div class="term-def">${t.definition}</div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Real World tab
+            document.getElementById('tab-examples').innerHTML = `
+                <div class="section-title">Real-World Examples</div>
+                ${(d.realWorldExamples || []).map(e => `
+                    <div class="example-item"><span>🌍</span>${e}</div>
+                `).join('')}
+            `;
+
+            // Myths tab
+            document.getElementById('tab-myths').innerHTML = `
+                <div class="section-title">Common Misconceptions</div>
+                ${(d.commonMisconceptions || []).map(m => `
+                    <div class="myth-card">
+                        <div class="myth-text"><span>❌</span><div><strong>Myth:</strong> ${m.myth}</div></div>
+                        <div class="reality-text"><span>✅</span><div><strong>Reality:</strong> ${m.reality}</div></div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Go Deeper tab
+            document.getElementById('tab-deeper').innerHTML = `
+                <div class="section-title">Go Deeper — Explore These Next</div>
+                <div>
+                    ${(d.goDeeper || []).map(q => `<div class="deeper-chip" onclick="askDeeper(this.textContent)">${q}</div>`).join('')}
+                </div>
+            `;
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function askDeeper(question) {
+            // Switch to Q&A tab and pre-fill
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 5));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === 5));
+            document.getElementById('qaInput').value = question;
+            document.getElementById('qaInput').focus();
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${question}</div>`;
+            input.value = '';
+            document.getElementById('qaSendBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                chargeCredits('qa');
+                const resp = await fetch('/api/scienceexplainer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question2: question, context: JSON.stringify(currentResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').remove();
+                const answer = data.answer || data.error || 'No response received.';
+                msgs.innerHTML += `<div class="qa-msg ai">${answer.replace(/\n/g, '<br>')}</div>`;
+                qaHistory.push({ role: 'user', content: question });
+                qaHistory.push({ role: 'assistant', content: answer });
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai">Error: ${err.message}</div>`;
+            } finally {
+                document.getElementById('qaSendBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            currentResult = null;
+            qaHistory = [];
+            document.getElementById('questionInput').value = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Want to go deeper? Ask me anything about this topic.</div>';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('inputSection').classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === 0));
+        }
+    </script>
+</body>
+</html>
