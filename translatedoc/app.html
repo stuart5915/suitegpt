@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TranslateDoc — AI Document Translator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #f59e0b; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .app-header .back:hover { color: #f59e0b; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .input-modes { display: flex; gap: 8px; margin-bottom: 16px; }
+        .mode-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #2a2a3e; background: none; color: #94a3b8; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .mode-btn.active { background: #f59e0b20; border-color: #f59e0b; color: #fbbf24; }
+        .text-input-area { display: block; }
+        .photo-input-area { display: none; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .form-group select:focus, .form-group textarea:focus { border-color: #f59e0b; }
+        .form-group textarea { resize: vertical; min-height: 160px; }
+
+        /* Photo Upload */
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 14px; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #f59e0b; background: #f59e0b08; }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .upload-zone p { color: #94a3b8; font-size: 0.9rem; }
+        .upload-zone .file-info { color: #fbbf24; font-weight: 600; margin-top: 8px; font-size: 0.85rem; }
+        .upload-zone input { display: none; }
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 12px; }
+
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; margin-top: 8px; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Loading */
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f59e0b; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #f59e0b; color: #000; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Translation Banner */
+        .trans-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .lang-badge { background: #f59e0b20; border: 1px solid #f59e0b40; color: #fbbf24; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; }
+        .arrow-icon { color: #f59e0b; font-size: 1.3rem; }
+        .word-count { color: #94a3b8; font-size: 0.8rem; }
+        .conf-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .conf-badge.high { background: #10b98120; color: #34d399; }
+        .conf-badge.medium { background: #fbbf2420; color: #fbbf24; }
+
+        /* Side-by-side */
+        .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .side-col { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; overflow: hidden; }
+        .side-col-header { background: #0f0f1a; padding: 12px 16px; font-size: 0.8rem; font-weight: 700; color: #fbbf24; border-bottom: 1px solid #2a2a3e; display: flex; align-items: center; justify-content: space-between; }
+        .copy-btn { background: #f59e0b20; border: 1px solid #f59e0b40; color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .copy-btn:hover { background: #f59e0b40; }
+        .side-col-body { padding: 16px; font-size: 0.85rem; line-height: 1.7; color: #e2e8f0; max-height: 500px; overflow-y: auto; white-space: pre-wrap; }
+
+        /* Sections */
+        .section-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+        .section-card .section-num { display: inline-block; background: #f59e0b; color: #000; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.75rem; font-weight: 700; margin-right: 8px; }
+        .section-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .section-text { background: #0f0f1a; border-radius: 8px; padding: 12px; font-size: 0.82rem; line-height: 1.6; }
+        .section-text.original { color: #94a3b8; }
+        .section-text.translated { color: #e2e8f0; }
+        .section-note { margin-top: 8px; padding: 8px 12px; background: #f59e0b10; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 0.78rem; color: #fbbf24; }
+
+        /* Glossary */
+        .glossary-grid { display: grid; gap: 8px; }
+        .glossary-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .glossary-item .src { color: #94a3b8; font-size: 0.85rem; }
+        .glossary-item .tgt { color: #e2e8f0; font-weight: 600; font-size: 0.85rem; }
+        .glossary-item .ctx { grid-column: 1 / -1; color: #64748b; font-size: 0.78rem; font-style: italic; }
+
+        /* Alternatives */
+        .alt-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+        .alt-card h4 { font-size: 0.9rem; margin-bottom: 8px; color: #fbbf24; }
+        .alt-option { padding: 6px 0; font-size: 0.85rem; color: #94a3b8; }
+        .alt-option.recommended { color: #34d399; font-weight: 600; }
+        .alt-reason { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+
+        /* Cultural Notes */
+        .culture-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+        .culture-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #f59e0b20; border: 1px solid #f59e0b30; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input input:focus { border-color: #f59e0b; }
+        .qa-input button { padding: 12px 20px; background: #f59e0b; color: #000; border: none; border-radius: 10px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+        .qa-input button:disabled { opacity: 0.5; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #f59e0b; color: #f59e0b; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; font-size: 0.9rem; display: none; }
+
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } .side-by-side, .section-pair { grid-template-columns: 1fr; } .glossary-item { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🌍 Translate<span>Doc</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Translate Your Document</h2>
+            <div class="input-modes">
+                <button class="mode-btn active" onclick="setMode('text')">📝 Paste Text</button>
+                <button class="mode-btn" onclick="setMode('photo')">📸 Photo</button>
+            </div>
+
+            <div class="text-input-area" id="textArea">
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <div class="form-group">
+                        <label>Text to Translate *</label>
+                        <textarea id="textInput" placeholder="Paste your document, email, article, or any text here..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="photo-input-area" id="photoArea">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="icon">📸</div>
+                    <p>Drop an image of your document here</p>
+                    <p style="font-size:0.75rem; color:#64748b; margin-top:4px;">or click to browse — JPG, PNG up to 4MB</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                    <div class="file-info" id="fileInfo"></div>
+                    <img id="previewImg" class="preview-img" style="display:none;">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Source Language</label>
+                    <select id="sourceLang">
+                        <option value="auto">Auto-Detect</option>
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="French">French</option>
+                        <option value="German">German</option>
+                        <option value="Italian">Italian</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="Chinese">Chinese (Mandarin)</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="Korean">Korean</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Russian">Russian</option>
+                        <option value="Dutch">Dutch</option>
+                        <option value="Swedish">Swedish</option>
+                        <option value="Turkish">Turkish</option>
+                        <option value="Polish">Polish</option>
+                        <option value="Thai">Thai</option>
+                        <option value="Vietnamese">Vietnamese</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Target Language *</label>
+                    <select id="targetLang">
+                        <option value="Spanish">Spanish</option>
+                        <option value="English">English</option>
+                        <option value="French">French</option>
+                        <option value="German">German</option>
+                        <option value="Italian">Italian</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="Chinese">Chinese (Mandarin)</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="Korean">Korean</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Russian">Russian</option>
+                        <option value="Dutch">Dutch</option>
+                        <option value="Swedish">Swedish</option>
+                        <option value="Turkish">Turkish</option>
+                        <option value="Polish">Polish</option>
+                        <option value="Thai">Thai</option>
+                        <option value="Vietnamese">Vietnamese</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tone</label>
+                    <select id="tone">
+                        <option value="neutral">Neutral</option>
+                        <option value="formal">Formal</option>
+                        <option value="casual">Casual</option>
+                    </select>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="translate()">Translate →</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Translating your document...</p>
+        </div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Translation</button>
+            <div class="trans-banner" id="transBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="translation">Translation</button>
+                <button class="tab" data-tab="sections">Section by Section</button>
+                <button class="tab" data-tab="glossary">Glossary</button>
+                <button class="tab" data-tab="notes">Notes & Alternatives</button>
+                <button class="tab" data-tab="qa">Translator Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-translation">
+                <div class="side-by-side" id="sideBySide"></div>
+            </div>
+            <div class="tab-content" id="tab-sections">
+                <div id="sectionsContent"></div>
+            </div>
+            <div class="tab-content" id="tab-glossary">
+                <div class="glossary-grid" id="glossaryContent"></div>
+            </div>
+            <div class="tab-content" id="tab-notes">
+                <div id="notesContent"></div>
+            </div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about the translation — I can clarify word choices, suggest alternative phrasings, or explain cultural nuances.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Is there a more formal way to say that?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+        let imageData = null;
+        let imageMime = null;
+        let currentMode = 'text';
+
+        // Input mode toggle
+        function setMode(m) {
+            currentMode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('textArea').style.display = m === 'text' ? 'block' : 'none';
+            document.getElementById('photoArea').style.display = m === 'photo' ? 'block' : 'none';
+        }
+
+        // Photo upload
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('File must be under 4MB'); return; }
+            document.getElementById('fileInfo').textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.getElementById('previewImg');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                imageData = e.target.result.split(',')[1];
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function translate() {
+            const text = document.getElementById('textInput').value.trim();
+            const targetLang = document.getElementById('targetLang').value;
+
+            if (currentMode === 'text' && !text) { document.getElementById('textInput').style.borderColor = '#ef4444'; return; }
+            if (currentMode === 'photo' && !imageData) { uploadZone.style.borderColor = '#ef4444'; return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'translatedoc', feature: 'translate', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const body = {
+                    mode: 'translate',
+                    targetLang,
+                    sourceLang: document.getElementById('sourceLang').value,
+                    tone: document.getElementById('tone').value
+                };
+                if (currentMode === 'text') body.text = text;
+                else { body.image = imageData; body.mimeType = imageMime; }
+
+                const resp = await fetch('/api/translatedoc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse response. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const conf = (data.confidence || 'high').toLowerCase();
+            const wc = data.wordCount || {};
+            document.getElementById('transBanner').innerHTML = `
+                <span class="lang-badge">${data.sourceLanguage || 'Source'}</span>
+                <span class="arrow-icon">→</span>
+                <span class="lang-badge">${data.targetLanguage || 'Target'}</span>
+                <span class="conf-badge ${conf}">${conf.toUpperCase()} CONFIDENCE</span>
+                <span class="word-count">${wc.source || '?'} → ${wc.translated || '?'} words</span>
+            `;
+
+            // Side-by-side
+            document.getElementById('sideBySide').innerHTML = `
+                <div class="side-col">
+                    <div class="side-col-header">Original <button class="copy-btn" onclick="copyText('original')">Copy</button></div>
+                    <div class="side-col-body" id="originalText">${data.sourceText || (data.sections || []).map(s => s.original).join('\n\n')}</div>
+                </div>
+                <div class="side-col">
+                    <div class="side-col-header">Translation <button class="copy-btn" onclick="copyText('translated')">Copy</button></div>
+                    <div class="side-col-body" id="translatedText">${data.translatedText || (data.sections || []).map(s => s.translated).join('\n\n')}</div>
+                </div>
+            `;
+
+            // Sections
+            document.getElementById('sectionsContent').innerHTML = (data.sections || []).map((s, i) => `
+                <div class="section-card">
+                    <span class="section-num">${s.id || i + 1}</span> Section ${s.id || i + 1}
+                    <div class="section-pair">
+                        <div class="section-text original">${s.original || ''}</div>
+                        <div class="section-text translated">${s.translated || ''}</div>
+                    </div>
+                    ${s.notes ? `<div class="section-note">${s.notes}</div>` : ''}
+                </div>
+            `).join('');
+
+            // Glossary
+            document.getElementById('glossaryContent').innerHTML = (data.glossary || []).map(g => `
+                <div class="glossary-item">
+                    <div class="src">${g.source}</div>
+                    <div class="tgt">${g.translated}</div>
+                    ${g.context ? `<div class="ctx">${g.context}</div>` : ''}
+                </div>
+            `).join('');
+
+            // Notes & Alternatives
+            let notesHtml = '';
+            if (data.culturalNotes?.length) {
+                notesHtml += '<h3 style="font-size:1rem; margin-bottom:12px;">Cultural Notes</h3>';
+                notesHtml += data.culturalNotes.map(n => `<div class="culture-card"><p>${n}</p></div>`).join('');
+            }
+            if (data.alternativeTranslations?.length) {
+                notesHtml += '<h3 style="font-size:1rem; margin:20px 0 12px;">Alternative Translations</h3>';
+                notesHtml += data.alternativeTranslations.map(a => `
+                    <div class="alt-card">
+                        <h4>"${a.phrase}"</h4>
+                        ${(a.alternatives || []).map(alt => `<div class="alt-option ${alt === a.recommended ? 'recommended' : ''}">${alt === a.recommended ? '✓ ' : ''}${alt}</div>`).join('')}
+                        ${a.reason ? `<div class="alt-reason">${a.reason}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            document.getElementById('notesContent').innerHTML = notesHtml || '<p style="color:#64748b; text-align:center; padding:40px;">No cultural notes for this translation.</p>';
+        }
+
+        function copyText(which) {
+            const el = document.getElementById(which === 'original' ? 'originalText' : 'translatedText');
+            navigator.clipboard.writeText(el.textContent);
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'translatedoc', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+                const resp = await fetch('/api/translatedoc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                qaHistory.push({ role: 'assistant', content: data.answer || 'No response' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally {
+                document.getElementById('qaBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = []; imageData = null; imageMime = null;
+            document.getElementById('previewImg').style.display = 'none';
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about the translation — I can clarify word choices, suggest alternative phrasings, or explain cultural nuances.</div>';
+        }
+    </script>
+</body>
+</html>
