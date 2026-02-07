@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCards — Free AI Flashcard Generator | Photo Notes → Instant Flashcards</title>
+    <meta name="description" content="Photo your notes or textbook — AI generates smart flashcards with questions, answers, hints, and study tips. Perfect for exam prep. 100% free.">
+    <meta property="og:title" content="StudyCards — Free AI Flashcard Generator">
+    <meta property="og:description" content="Notes photo in, flashcards out — questions, answers, hints, difficulty levels, and study strategies. Instant exam prep.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/studycards/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/studycards/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #6d28d915; border: 1px solid #6d28d930; color: #a78bfa; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #7c3aed30; }
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #6d28d915; border: 1px solid #6d28d930; color: #a78bfa; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #a78bfa; font-size: 1.5rem; margin: 16px 0; }
+        .demo-flashcard { background: #0f0f1a; border-radius: 14px; padding: 20px; margin-bottom: 10px; cursor: pointer; transition: transform 0.2s; }
+        .demo-flashcard:hover { transform: scale(1.01); }
+        .demo-flashcard .front { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+        .demo-flashcard .back { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; padding-top: 8px; border-top: 1px solid #2a2a3e; }
+        .demo-flashcard .diff { display: inline-block; font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-bottom: 6px; }
+        .demo-flashcard .diff.easy { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .demo-flashcard .diff.medium { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .demo-flashcard .diff.hard { background: rgba(239,68,68,0.15); color: #f87171; }
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #a78bfa; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #a78bfa; text-decoration: none; }
+        @media (max-width: 640px) { .hero h1 { font-size: 1.8rem; } .features, .tools-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Flashcard</span> Generator</h1>
+        <p>Photo your notes or textbook — AI creates smart flashcards with questions, answers, hints, and difficulty levels. Instant exam prep.</p>
+        <a href="app.html" class="cta-btn">Generate Flashcards →</a>
+    </div>
+    <div class="features">
+        <div class="feature-card"><div class="icon">📸</div><h3>Photo → Flashcards</h3><p>Snap your notes, textbook, or slides. AI reads the content and creates targeted flashcards.</p></div>
+        <div class="feature-card"><div class="icon">🧠</div><h3>Smart Cards</h3><p>Mix of definitions, concepts, applications, and comparisons. Hints included for when you're stuck.</p></div>
+        <div class="feature-card"><div class="icon">📊</div><h3>Study Mode</h3><p>Flip through cards one at a time, track which ones you know, and focus on what you don't.</p></div>
+    </div>
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Photo of biology notes on cell division</p>
+        <div class="demo-card">
+            <div class="demo-tags"><div class="demo-tag">📸 Photo Upload</div><div class="demo-tag">🧬 Biology</div><div class="demo-tag">🃏 15 Cards</div></div>
+            <div class="demo-arrow">↓</div>
+            <div class="demo-flashcard"><span class="diff easy">EASY</span><div class="front">What are the two main types of cell division?</div><div class="back">Mitosis (growth/repair — produces 2 identical cells) and Meiosis (reproduction — produces 4 unique gametes with half the chromosomes).</div></div>
+            <div class="demo-flashcard"><span class="diff medium">MEDIUM</span><div class="front">List the phases of mitosis in order.</div><div class="back">Prophase → Metaphase → Anaphase → Telophase (remember: PMAT). Each phase has distinct chromosome behaviors.</div></div>
+            <div class="demo-flashcard"><span class="diff hard">HARD</span><div class="front">How does crossing over in meiosis increase genetic diversity?</div><div class="back">During Prophase I, homologous chromosomes exchange segments of DNA, creating new gene combinations not found in either parent.</div></div>
+        </div>
+    </div>
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/tutorbot/" class="tool-card"><h3>📚 TutorBot</h3><p>Photo any homework — get step-by-step solutions with explanations.</p></a>
+            <a href="/quizmaker/" class="tool-card"><h3>📝 QuizMaker</h3><p>Paste any material — AI generates tests with multiple choice and short answer.</p></a>
+            <a href="/mathsolver/" class="tool-card"><h3>📐 MathSolver</h3><p>Photo any math problem — solved step by step with formulas and verification.</p></a>
+        </div>
+    </div>
+    <div class="footer"><p>StudyCards is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p></div>
+</body>
+</html>

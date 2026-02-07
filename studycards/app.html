@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyCards — AI Flashcard Generator</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.8rem; font-weight: 800; }
+        .header h1 span { background: linear-gradient(135deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #a78bfa; background: #7c3aed08; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 6px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone input { display: none; }
+        .preview-wrap { position: relative; display: none; margin-bottom: 16px; }
+        .preview-wrap img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; background: #1a1a2e; }
+        .preview-wrap .remove { position: absolute; top: 8px; right: 8px; background: #ef4444; color: #fff; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; }
+        .or-divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 12px 0; font-weight: 600; }
+        .context-input { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 80px; margin-bottom: 16px; }
+        .context-input:focus { outline: none; border-color: #a78bfa; }
+        .context-input::placeholder { color: #64748b; }
+        .options-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .option-group { flex: 1; min-width: 140px; }
+        .option-group label { display: block; font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+        .option-group select { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; }
+        .option-group select:focus { outline: none; border-color: #a78bfa; }
+        .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px #7c3aed30; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { display: none; text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 4px solid #2a2a3e; border-top: 4px solid #a78bfa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: #94a3b8; }
+
+        .results { display: none; }
+        .new-btn { display: inline-block; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: border-color 0.2s; }
+        .new-btn:hover { border-color: #a78bfa; }
+
+        .source-banner { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
+        .source-banner .topic { font-size: 1.1rem; font-weight: 800; color: #a78bfa; }
+        .source-banner .meta { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #94a3b8; }
+        .tab.active { background: #7c3aed20; border-color: #7c3aed; color: #a78bfa; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Study mode - single card flip */
+        .study-mode { text-align: center; }
+        .study-progress { font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px; }
+        .study-progress .current { color: #a78bfa; font-weight: 700; }
+        .flashcard { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 40px 30px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.3s, box-shadow 0.3s; margin-bottom: 16px; }
+        .flashcard:hover { box-shadow: 0 4px 20px rgba(124,58,237,0.15); }
+        .flashcard .side-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; }
+        .flashcard .content { font-size: 1.1rem; line-height: 1.6; max-width: 600px; }
+        .flashcard .hint-text { font-size: 0.8rem; color: #a78bfa; margin-top: 12px; font-style: italic; }
+        .flashcard .diff-badge { display: inline-block; font-size: 0.65rem; padding: 2px 10px; border-radius: 4px; font-weight: 600; margin-top: 10px; }
+        .diff-badge.easy { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .diff-badge.medium { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .diff-badge.hard { background: rgba(239,68,68,0.15); color: #f87171; }
+        .study-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .study-btn { padding: 10px 24px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; transition: all 0.2s; }
+        .study-btn:hover { border-color: #a78bfa; }
+        .study-btn.flip { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+        .study-btn.know { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+        .study-btn.dont { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+
+        /* All cards list */
+        .card-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 8px; cursor: pointer; }
+        .card-item .front { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+        .card-item .back { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; display: none; padding-top: 8px; border-top: 1px solid #2a2a3e; }
+        .card-item.open .back { display: block; }
+        .card-item .card-meta { display: flex; gap: 6px; margin-bottom: 6px; }
+
+        .card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+        .card h3 { font-size: 1rem; margin-bottom: 10px; }
+        .card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.6; }
+        .tip-card { background: #0f0f1a; border-left: 3px solid #a78bfa; border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px; }
+        .tip-card p { font-size: 0.85rem; line-height: 1.5; }
+        .term-item { background: #0f0f1a; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px; }
+        .term-item .term { font-weight: 700; font-size: 0.85rem; color: #a78bfa; }
+        .term-item .def { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+
+        .qa-container { display: flex; flex-direction: column; height: 400px; }
+        .qa-messages { flex: 1; overflow-y: auto; padding: 16px; background: #0f0f1a; border-radius: 12px; margin-bottom: 12px; }
+        .qa-msg { margin-bottom: 12px; }
+        .qa-msg.user { text-align: right; }
+        .qa-msg .bubble { display: inline-block; max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; text-align: left; }
+        .qa-msg.user .bubble { background: #7c3aed; color: #fff; }
+        .qa-msg.assistant .bubble { background: #1a1a2e; color: #e2e8f0; }
+        .qa-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input:focus { outline: none; border-color: #a78bfa; }
+        .qa-input::placeholder { color: #64748b; }
+        .qa-send { padding: 12px 20px; background: #7c3aed; color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        .qa-send:disabled { opacity: 0.5; }
+
+        @media (max-width: 640px) { .options-row { flex-direction: column; } .flashcard { padding: 30px 20px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🃏 Study<span>Cards</span></h1>
+            <p>Photo your notes — get instant flashcards</p>
+        </div>
+
+        <div id="uploadView">
+            <div class="upload-zone" id="dropZone">
+                <div class="icon">📸</div>
+                <h3>Drop a photo of your notes or textbook</h3>
+                <p>or click to browse — JPG, PNG up to 4MB</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" alt="Notes preview">
+                <button class="remove" id="removeBtn">×</button>
+            </div>
+            <div class="or-divider">— OR PASTE YOUR NOTES —</div>
+            <textarea class="context-input" id="contextInput" placeholder="Paste your study material, notes, or key concepts here..."></textarea>
+            <div class="options-row">
+                <div class="option-group"><label>Number of Cards</label><select id="countSelect"><option value="10">10 cards</option><option value="15" selected>15 cards</option><option value="20">20 cards</option><option value="30">30 cards</option></select></div>
+                <div class="option-group"><label>Difficulty</label><select id="diffSelect"><option value="mixed" selected>Mixed</option><option value="easy">Easy (definitions)</option><option value="medium">Medium (concepts)</option><option value="hard">Hard (application)</option></select></div>
+            </div>
+            <button class="submit-btn" id="submitBtn">Generate Flashcards →</button>
+        </div>
+
+        <div class="loading" id="loadingView"><div class="spinner"></div><p>Creating flashcards from your notes...</p></div>
+
+        <div class="results" id="resultsView">
+            <button class="new-btn" id="newBtn">← New Notes</button>
+            <div class="source-banner" id="sourceBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <div class="tab active" data-tab="study">Study Mode</div>
+                <div class="tab" data-tab="all">All Cards</div>
+                <div class="tab" data-tab="terms">Key Terms</div>
+                <div class="tab" data-tab="tips">Study Tips</div>
+                <div class="tab" data-tab="qa">Study Coach</div>
+            </div>
+
+            <div class="tab-content active" id="tab-study"><div class="study-mode" id="studyMode"></div></div>
+            <div class="tab-content" id="tab-all"></div>
+            <div class="tab-content" id="tab-terms"></div>
+            <div class="tab-content" id="tab-tips"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-container">
+                    <div class="qa-messages" id="qaMessages"><div class="qa-msg assistant"><div class="bubble">Ask me to explain any card, quiz you on the material, or dive deeper into any concept!</div></div></div>
+                    <div class="qa-row"><input class="qa-input" id="qaInput" placeholder="Ask about the material..."><button class="qa-send" id="qaSend">Ask</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let imageBase64 = null, imageMime = null, resultData = null, qaHistory = [];
+        let cards = [], currentIdx = 0, isFlipped = false, known = new Set();
+        const API = '/api/studycards';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Image must be under 4MB'); return; }
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => { const full = e.target.result; imageBase64 = full.split(',')[1]; previewImg.src = full; previewWrap.style.display = 'block'; dropZone.style.display = 'none'; };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('removeBtn').addEventListener('click', () => { imageBase64 = null; imageMime = null; previewWrap.style.display = 'none'; dropZone.style.display = 'block'; fileInput.value = ''; });
+
+        submitBtn.addEventListener('click', async () => {
+            const desc = document.getElementById('contextInput').value.trim();
+            if (!imageBase64 && !desc) { alert('Please upload a photo or paste your notes'); return; }
+            document.getElementById('uploadView').style.display = 'none';
+            document.getElementById('loadingView').style.display = 'block';
+
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'studycards', feature: 'generate', chargeId: Date.now().toString(), amount: 5 }, '*');
+
+                const body = { mode: 'generate', cardCount: parseInt(document.getElementById('countSelect').value), difficulty: document.getElementById('diffSelect').value };
+                if (imageBase64) { body.image = imageBase64; body.mimeType = imageMime; }
+                if (desc) body.description = desc;
+
+                const resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.raw) { renderRaw(data.raw); return; }
+                resultData = data;
+                cards = data.cards || [];
+                currentIdx = 0; isFlipped = false; known = new Set();
+                renderResults(data);
+            } catch (err) {
+                alert('Error generating flashcards. Please try again.');
+                document.getElementById('loadingView').style.display = 'none';
+                document.getElementById('uploadView').style.display = 'block';
+            }
+        });
+
+        function renderRaw(text) { document.getElementById('loadingView').style.display = 'none'; document.getElementById('resultsView').style.display = 'block'; document.getElementById('sourceBanner').innerHTML = ''; document.getElementById('tab-study').innerHTML = `<div class="card"><p style="white-space:pre-wrap">${text}</p></div>`; }
+
+        function renderResults(d) {
+            document.getElementById('loadingView').style.display = 'none';
+            document.getElementById('resultsView').style.display = 'block';
+
+            document.getElementById('sourceBanner').innerHTML = `<div class="topic">${d.topic || d.sourceDetected || 'Study Material'}</div><div class="meta">${d.subject || ''} · ${cards.length} flashcards</div>`;
+
+            renderStudyCard();
+
+            // All cards list
+            let allHTML = '';
+            cards.forEach((c, i) => {
+                const dClass = c.difficulty === 'hard' ? 'hard' : c.difficulty === 'medium' ? 'medium' : 'easy';
+                allHTML += `<div class="card-item" onclick="this.classList.toggle('open')"><div class="card-meta"><span class="diff-badge ${dClass}">${c.difficulty || 'medium'}</span></div><div class="front">${c.front}</div><div class="back">${c.back}${c.hint ? '<br><em style="color:#a78bfa">💡 ' + c.hint + '</em>' : ''}</div></div>`;
+            });
+            document.getElementById('tab-all').innerHTML = allHTML;
+
+            // Key terms
+            let termsHTML = '';
+            if (d.keyTerms?.length) {
+                d.keyTerms.forEach(t => { termsHTML += `<div class="term-item"><div class="term">${t.term}</div><div class="def">${t.definition}</div></div>`; });
+            }
+            if (d.connections?.length) {
+                termsHTML += '<div class="card"><h3>Connections</h3>';
+                d.connections.forEach(c => { termsHTML += `<div class="tip-card"><p>🔗 ${c}</p></div>`; });
+                termsHTML += '</div>';
+            }
+            document.getElementById('tab-terms').innerHTML = termsHTML || '<div class="card"><p>No key terms extracted.</p></div>';
+
+            // Study tips
+            let tipsHTML = '';
+            if (d.studyTips?.length) { d.studyTips.forEach(t => { tipsHTML += `<div class="tip-card"><p>📚 ${t}</p></div>`; }); }
+            document.getElementById('tab-tips').innerHTML = tipsHTML || '<div class="card"><p>No study tips generated.</p></div>';
+        }
+
+        function renderStudyCard() {
+            if (!cards.length) return;
+            const c = cards[currentIdx];
+            const dClass = c.difficulty === 'hard' ? 'hard' : c.difficulty === 'medium' ? 'medium' : 'easy';
+            const knownCount = known.size;
+
+            document.getElementById('studyMode').innerHTML = `
+                <div class="study-progress"><span class="current">${currentIdx + 1}</span> / ${cards.length} · ${knownCount} known</div>
+                <div class="flashcard" onclick="flipCard()">
+                    <div class="side-label">${isFlipped ? 'ANSWER' : 'QUESTION'}</div>
+                    <div class="content">${isFlipped ? c.back : c.front}</div>
+                    ${!isFlipped && c.hint ? '<div class="hint-text">💡 Hint: ' + c.hint + '</div>' : ''}
+                    <span class="diff-badge ${dClass}">${c.difficulty || 'medium'}</span>
+                </div>
+                <div class="study-controls">
+                    <button class="study-btn" onclick="prevCard()">← Prev</button>
+                    <button class="study-btn flip" onclick="flipCard()">Flip Card</button>
+                    ${isFlipped ? '<button class="study-btn know" onclick="markKnown()">✓ Know It</button><button class="study-btn dont" onclick="markDont()">✕ Study More</button>' : ''}
+                    <button class="study-btn" onclick="nextCard()">Next →</button>
+                </div>
+            `;
+        }
+
+        function flipCard() { isFlipped = !isFlipped; renderStudyCard(); }
+        function nextCard() { currentIdx = (currentIdx + 1) % cards.length; isFlipped = false; renderStudyCard(); }
+        function prevCard() { currentIdx = (currentIdx - 1 + cards.length) % cards.length; isFlipped = false; renderStudyCard(); }
+        function markKnown() { known.add(currentIdx); nextCard(); }
+        function markDont() { nextCard(); }
+
+        // Tabs
+        document.getElementById('tabBar').addEventListener('click', e => { const tab = e.target.closest('.tab'); if (!tab) return; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); tab.classList.add('active'); document.getElementById('tab-' + tab.dataset.tab).classList.add('active'); });
+
+        // New
+        document.getElementById('newBtn').addEventListener('click', () => { imageBase64 = null; imageMime = null; resultData = null; qaHistory = []; cards = []; currentIdx = 0; isFlipped = false; known = new Set(); fileInput.value = ''; previewWrap.style.display = 'none'; dropZone.style.display = 'block'; document.getElementById('contextInput').value = ''; document.getElementById('resultsView').style.display = 'none'; document.getElementById('uploadView').style.display = 'block'; document.getElementById('qaMessages').innerHTML = '<div class="qa-msg assistant"><div class="bubble">Ask me to explain any card, quiz you on the material, or dive deeper into any concept!</div></div>'; document.querySelectorAll('.tab')[0].click(); });
+
+        // Q&A
+        const qaInput = document.getElementById('qaInput');
+        const qaSend = document.getElementById('qaSend');
+        const qaMessages = document.getElementById('qaMessages');
+
+        async function sendQA() {
+            const q = qaInput.value.trim(); if (!q) return; qaInput.value = ''; qaSend.disabled = true;
+            qaMessages.innerHTML += `<div class="qa-msg user"><div class="bubble">${q}</div></div>`;
+            qaMessages.innerHTML += `<div class="qa-msg assistant" id="qaTyping"><div class="bubble">Thinking...</div></div>`;
+            qaMessages.scrollTop = qaMessages.scrollHeight;
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'studycards', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                const resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: resultData ? JSON.stringify(resultData) : null }) });
+                const data = await resp.json(); const answer = data.answer || 'Sorry, I couldn\'t answer that.';
+                document.getElementById('qaTyping').remove();
+                qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">${answer.replace(/\n/g, '<br>')}</div></div>`;
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: answer });
+            } catch (err) { document.getElementById('qaTyping').remove(); qaMessages.innerHTML += `<div class="qa-msg assistant"><div class="bubble">Sorry, something went wrong.</div></div>`; }
+            qaSend.disabled = false; qaMessages.scrollTop = qaMessages.scrollHeight;
+        }
+        qaSend.addEventListener('click', sendQA);
+        qaInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQA(); } });
+    </script>
+</body>
+</html>
