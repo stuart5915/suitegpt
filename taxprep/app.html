@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxPrep AI — AI Tax Deduction Finder</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #9333ea; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        .disclaimer-bar { background: #fbbf2410; border: 1px solid #fbbf2430; border-radius: 10px; padding: 10px 16px; font-size: 0.75rem; color: #fbbf24; text-align: center; margin-bottom: 20px; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .input-modes { display: flex; gap: 8px; margin-bottom: 16px; }
+        .mode-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #2a2a3e; background: none; color: #94a3b8; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .mode-btn.active { background: #9333ea20; border-color: #9333ea; color: #a855f7; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .form-group textarea { resize: vertical; min-height: 140px; }
+
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 14px; padding: 40px 24px; text-align: center; cursor: pointer; display: none; margin-bottom: 16px; }
+        .upload-zone:hover { border-color: #9333ea; }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .upload-zone input { display: none; }
+        .upload-zone .file-info { color: #a855f7; font-weight: 600; margin-top: 8px; font-size: 0.85rem; }
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 12px; }
+
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #9333ea, #7e22ce); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #9333ea; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #9333ea; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Refund Banner */
+        .refund-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
+        .refund-amount { font-size: 2.2rem; font-weight: 800; }
+        .refund-amount.positive { color: #34d399; }
+        .refund-amount.negative { color: #f87171; }
+        .refund-label { color: #94a3b8; font-size: 0.85rem; margin-top: 4px; }
+        .tax-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+        .tax-stat { text-align: center; }
+        .tax-stat .val { font-size: 1.1rem; font-weight: 700; color: #a855f7; }
+        .tax-stat .lbl { font-size: 0.7rem; color: #64748b; }
+
+        /* Deductions Tab */
+        .deduction-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .deduction-info { flex: 1; }
+        .deduction-info h4 { font-size: 0.9rem; margin-bottom: 4px; }
+        .deduction-info .category { font-size: 0.75rem; color: #a855f7; font-weight: 600; }
+        .deduction-info .doc { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .deduction-amount { font-size: 1.1rem; font-weight: 700; color: #34d399; }
+        .confidence { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; margin-left: 8px; }
+        .confidence.high { background: #10b98120; color: #34d399; }
+        .confidence.medium { background: #fbbf2420; color: #fbbf24; }
+        .confidence.low { background: #ef444420; color: #f87171; }
+
+        /* Standard vs Itemized */
+        .comparison-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .comparison-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .comparison-option { background: #0f0f1a; border-radius: 10px; padding: 16px; text-align: center; border: 2px solid transparent; }
+        .comparison-option.recommended { border-color: #9333ea; }
+        .comparison-option h4 { font-size: 0.9rem; margin-bottom: 8px; }
+        .comparison-option .amount { font-size: 1.3rem; font-weight: 700; color: #a855f7; }
+        .comparison-option .rec-badge { display: inline-block; background: #9333ea; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; }
+
+        /* Credits */
+        .credit-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .credit-card .info h4 { font-size: 0.9rem; margin-bottom: 4px; }
+        .credit-card .info p { font-size: 0.78rem; color: #94a3b8; }
+        .credit-card .amount { font-size: 1.1rem; font-weight: 700; color: #34d399; }
+        .credit-card.ineligible { opacity: 0.5; }
+        .credit-card.ineligible .amount { color: #64748b; text-decoration: line-through; }
+
+        /* Tips */
+        .tip-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px; margin-bottom: 10px; font-size: 0.85rem; color: #94a3b8; line-height: 1.5; display: flex; align-items: flex-start; gap: 10px; }
+        .tip-card::before { content: '💡'; flex-shrink: 0; }
+        .deadline-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .deadline-card .date { color: #f87171; font-weight: 700; font-size: 0.85rem; }
+        .deadline-card .desc { color: #94a3b8; font-size: 0.85rem; }
+        .missing-card { background: #fbbf2410; border: 1px solid #fbbf2430; border-radius: 10px; padding: 12px 16px; font-size: 0.82rem; color: #fbbf24; margin-bottom: 8px; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #9333ea20; border: 1px solid #9333ea30; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input button { padding: 12px 20px; background: #9333ea; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #9333ea; color: #9333ea; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; display: none; }
+
+        @media (max-width: 640px) { .form-row, .comparison-row { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🧾 Tax<span>Prep</span> AI</h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="disclaimer-bar">Educational tool only — not tax advice. Always consult a licensed CPA before filing.</div>
+
+        <div class="input-section" id="inputSection">
+            <h2>Enter Your Tax Information</h2>
+            <div class="input-modes">
+                <button class="mode-btn active" onclick="setMode('text')">📝 Describe Situation</button>
+                <button class="mode-btn" onclick="setMode('photo')">📸 Photo Document</button>
+            </div>
+
+            <div id="textArea">
+                <div class="form-group full">
+                    <label>Tax Situation *</label>
+                    <textarea id="textInput" placeholder="Describe your tax situation, income sources, expenses, etc.&#10;&#10;Example:&#10;- Freelance web developer, $85K from 1099 clients&#10;- Home office 200 sq ft&#10;- Health insurance $400/mo&#10;- Computer + software $3,200&#10;- No W-2 income, single, no dependents"></textarea>
+                </div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">📸</div>
+                <p>Drop a photo of your W-2, 1099, or receipt</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <div class="file-info" id="fileInfo"></div>
+                <img id="previewImg" class="preview-img" style="display:none;">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Filing Status</label>
+                    <select id="filingStatus">
+                        <option value="single">Single</option>
+                        <option value="married-joint">Married Filing Jointly</option>
+                        <option value="married-separate">Married Filing Separately</option>
+                        <option value="head-of-household">Head of Household</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Annual Income</label>
+                    <input type="text" id="income" placeholder="e.g. $85,000">
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Find Deductions →</button>
+        </div>
+
+        <div class="loading" id="loading"><div class="spinner"></div><p>Analyzing your tax situation...</p></div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Analysis</button>
+            <div class="refund-banner" id="refundBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="deductions">Deductions</button>
+                <button class="tab" data-tab="credits">Credits</button>
+                <button class="tab" data-tab="breakdown">Tax Breakdown</button>
+                <button class="tab" data-tab="tips">Tips & Deadlines</button>
+                <button class="tab" data-tab="qa">Tax Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-deductions"><div id="deductionsContent"></div></div>
+            <div class="tab-content" id="tab-credits"><div id="creditsContent"></div></div>
+            <div class="tab-content" id="tab-breakdown"><div id="breakdownContent"></div></div>
+            <div class="tab-content" id="tab-tips"><div id="tipsContent"></div></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me tax questions — deduction strategies, what records to keep, filing deadlines, or anything about your tax situation. Remember: I'm not a CPA!</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Can I deduct my car payments as a business expense?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null, qaHistory = [], imageData = null, imageMime = null, currentMode = 'text';
+
+        function setMode(m) {
+            currentMode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('textArea').style.display = m === 'text' ? 'block' : 'none';
+            document.getElementById('uploadZone').style.display = m === 'photo' ? 'block' : 'none';
+        }
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => e.preventDefault());
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('Max 4MB'); return; }
+            document.getElementById('fileInfo').textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById('previewImg').src = e.target.result; document.getElementById('previewImg').style.display = 'block'; imageData = e.target.result.split(',')[1]; };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        function fmt(n) { return typeof n === 'number' ? '$' + n.toLocaleString() : n || '$0'; }
+
+        async function analyze() {
+            const text = document.getElementById('textInput').value.trim();
+            if (currentMode === 'text' && !text) { document.getElementById('textInput').style.borderColor = '#ef4444'; return; }
+            if (currentMode === 'photo' && !imageData) return;
+
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'taxprep', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+
+                const body = { mode: 'analyze', filingStatus: document.getElementById('filingStatus').value, income: document.getElementById('income').value };
+                if (currentMode === 'text') body.text = text;
+                else { body.image = imageData; body.mimeType = imageMime; }
+
+                const resp = await fetch('/api/taxprep', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const te = data.taxEstimate || {};
+            const refund = te.estimatedRefund || 0;
+            document.getElementById('refundBanner').innerHTML = `
+                <div class="refund-amount ${refund >= 0 ? 'positive' : 'negative'}">${refund >= 0 ? '+' : ''}${fmt(refund)}</div>
+                <div class="refund-label">${refund >= 0 ? 'Estimated Refund' : 'Estimated Amount Owed'}</div>
+                <div class="tax-meta">
+                    <div class="tax-stat"><div class="val">${fmt(te.taxableIncome)}</div><div class="lbl">Taxable Income</div></div>
+                    <div class="tax-stat"><div class="val">${fmt(te.federalTax)}</div><div class="lbl">Federal Tax</div></div>
+                    <div class="tax-stat"><div class="val">${te.effectiveRate || '?'}</div><div class="lbl">Effective Rate</div></div>
+                    <div class="tax-stat"><div class="val">${te.marginalBracket || '?'}</div><div class="lbl">Bracket</div></div>
+                </div>
+            `;
+
+            // Deductions
+            const svi = data.standardVsItemized || {};
+            let dedHtml = `
+                <div class="comparison-card">
+                    <div class="comparison-row">
+                        <div class="comparison-option ${svi.recommendation === 'standard' ? 'recommended' : ''}">
+                            <h4>Standard Deduction</h4>
+                            <div class="amount">${fmt(svi.standardDeduction)}</div>
+                            ${svi.recommendation === 'standard' ? '<div class="rec-badge">RECOMMENDED</div>' : ''}
+                        </div>
+                        <div class="comparison-option ${svi.recommendation === 'itemized' ? 'recommended' : ''}">
+                            <h4>Itemized Deductions</h4>
+                            <div class="amount">${fmt(svi.itemizedTotal)}</div>
+                            ${svi.recommendation === 'itemized' ? '<div class="rec-badge">RECOMMENDED</div>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            dedHtml += (data.deductions || []).map(d => `
+                <div class="deduction-card">
+                    <div class="deduction-info">
+                        <h4>${d.item}</h4>
+                        <div class="category">${d.category} · ${d.type || 'itemized'}</div>
+                        ${d.documentation ? `<div class="doc">📎 ${d.documentation}</div>` : ''}
+                    </div>
+                    <div>
+                        <span class="deduction-amount">${fmt(d.amount)}</span>
+                        <span class="confidence ${(d.confidence||'high').toLowerCase()}">${(d.confidence||'high').toUpperCase()}</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('deductionsContent').innerHTML = dedHtml;
+
+            // Credits
+            document.getElementById('creditsContent').innerHTML = (data.credits || []).map(c => `
+                <div class="credit-card ${c.eligible ? '' : 'ineligible'}">
+                    <div class="info"><h4>${c.credit}</h4><p>${c.reason || ''}</p></div>
+                    <div class="amount">${fmt(c.amount)}</div>
+                </div>
+            `).join('') || '<p style="color:#64748b;text-align:center;padding:40px;">No tax credits identified.</p>';
+
+            // Breakdown
+            const inc = data.income || {};
+            document.getElementById('breakdownContent').innerHTML = `
+                <div class="comparison-card">
+                    <h3 style="font-size:0.95rem;margin-bottom:12px;color:#a855f7;">Income Breakdown</h3>
+                    ${Object.entries(inc).filter(([k,v]) => v && k !== 'total').map(([k,v]) => `
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;border-bottom:1px solid #2a2a3e;">
+                            <span style="color:#94a3b8;text-transform:capitalize;">${k.replace(/([A-Z])/g, ' $1')}</span>
+                            <span style="font-weight:600;">${fmt(v)}</span>
+                        </div>
+                    `).join('')}
+                    <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:0.95rem;font-weight:700;">
+                        <span>Total Income</span><span>${fmt(inc.total)}</span>
+                    </div>
+                </div>
+                <div class="comparison-card">
+                    <h3 style="font-size:0.95rem;margin-bottom:12px;color:#a855f7;">Tax Calculation</h3>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;"><span style="color:#94a3b8;">Federal Tax</span><span>${fmt(te.federalTax)}</span></div>
+                    ${te.selfEmploymentTax ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;"><span style="color:#94a3b8;">Self-Employment Tax</span><span>${fmt(te.selfEmploymentTax)}</span></div>` : ''}
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;border-top:1px solid #2a2a3e;"><span style="color:#94a3b8;">Total Tax</span><span style="font-weight:700;">${fmt(te.totalTax)}</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;"><span style="color:#94a3b8;">Already Withheld</span><span style="color:#34d399;">${fmt(te.withheld)}</span></div>
+                </div>
+            `;
+
+            // Tips
+            let tipsHtml = '';
+            if (data.filingTips?.length) {
+                tipsHtml += data.filingTips.map(t => `<div class="tip-card">${t}</div>`).join('');
+            }
+            if (data.deadlines?.length) {
+                tipsHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;">Deadlines</h3>';
+                tipsHtml += data.deadlines.map(d => `<div class="deadline-card"><span class="date">${d.date}</span><span class="desc">${d.description}</span></div>`).join('');
+            }
+            if (data.missingInfo?.length) {
+                tipsHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;">Missing Information</h3>';
+                tipsHtml += data.missingInfo.map(m => `<div class="missing-card">⚠️ ${m}</div>`).join('');
+            }
+            document.getElementById('tipsContent').innerHTML = tipsHtml || '<p style="color:#64748b;text-align:center;padding:40px;">No additional tips.</p>';
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'taxprep', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                const resp = await fetch('/api/taxprep', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) }) });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally { document.getElementById('qaBtn').disabled = false; msgs.scrollTop = msgs.scrollHeight; }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = []; imageData = null;
+            document.getElementById('previewImg').style.display = 'none';
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me tax questions — deduction strategies, what records to keep, filing deadlines, or anything about your tax situation. Remember: I\'m not a CPA!</div>';
+        }
+    </script>
+</body>
+</html>
