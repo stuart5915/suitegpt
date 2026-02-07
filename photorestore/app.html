@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoRestore — AI Photo Restoration Guide</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { padding: 20px 24px 12px; text-align: center; border-bottom: 1px solid #1a1a2e; }
+        .app-header h1 { font-size: 1.4rem; font-weight: 800; }
+        .app-header h1 span { background: linear-gradient(135deg, #d4a574, #b8860b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header p { color: #64748b; font-size: 0.8rem; margin-top: 4px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Upload */
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 16px; padding: 48px 24px; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 16px; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #d4a574; background: #d4a57408; }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+        .upload-zone h3 { font-size: 1.1rem; margin-bottom: 8px; }
+        .upload-zone p { color: #64748b; font-size: 0.85rem; }
+        .upload-zone.has-image { padding: 16px; }
+        .upload-zone.has-image img { max-width: 100%; max-height: 300px; border-radius: 10px; }
+        .divider { text-align: center; color: #64748b; font-size: 0.8rem; margin: 16px 0; position: relative; }
+        .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #2a2a3e; }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        .form-group textarea { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 80px; }
+        .form-group textarea:focus { outline: none; border-color: #d4a574; }
+        .analyze-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #d4a574, #b8860b); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; font-family: inherit; }
+        .analyze-btn:hover { transform: translateY(-1px); }
+        .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 60px 24px; }
+        .loading.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #d4a574; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .era-badge { display: inline-block; background: #92400e20; border: 1px solid #92400e40; color: #d4a574; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-bottom: 8px; }
+        .condition-score { font-size: 2.5rem; font-weight: 800; margin-bottom: 4px; }
+        .condition-label { color: #94a3b8; font-size: 0.9rem; margin-bottom: 8px; }
+        .plan-summary { color: #94a3b8; font-size: 0.88rem; line-height: 1.6; max-width: 600px; margin: 0 auto 24px; }
+
+        /* Damage grid */
+        .damage-grid { display: grid; gap: 10px; margin-bottom: 24px; }
+        .damage-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .damage-item .info h4 { font-size: 0.88rem; margin-bottom: 3px; }
+        .damage-item .info p { color: #64748b; font-size: 0.78rem; }
+        .damage-item .badges { display: flex; gap: 6px; align-items: center; }
+        .sev-badge { padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .sev-badge.minor { background: #22c55e20; color: #86efac; }
+        .sev-badge.moderate { background: #fbbf2420; color: #fbbf24; }
+        .sev-badge.severe { background: #ef444420; color: #f87171; }
+        .diff-badge { padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: #94a3b815; color: #94a3b8; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; border-bottom: 1px solid #2a2a3e; }
+        .tab { padding: 10px 18px; background: none; border: none; color: #64748b; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit; }
+        .tab.active { color: #d4a574; border-bottom-color: #b8860b; }
+        .tab:hover { color: #e2e8f0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Step cards */
+        .step-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 14px; }
+        .step-num { background: linear-gradient(135deg, #d4a574, #b8860b); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+        .step-card h4 { font-size: 0.92rem; margin-bottom: 4px; }
+        .step-card .desc { color: #94a3b8; font-size: 0.83rem; line-height: 1.5; margin-bottom: 6px; }
+        .step-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+        .step-meta span { font-size: 0.7rem; padding: 2px 8px; background: #0f0f1a; border-radius: 6px; color: #64748b; }
+
+        /* Color corrections */
+        .color-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .color-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .color-card p { color: #94a3b8; font-size: 0.82rem; }
+        .color-card .amount { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; background: #d4a57420; color: #d4a574; }
+
+        /* Tool cards */
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .tool-card .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .tool-card h4 { font-size: 0.92rem; }
+        .tool-card .type { padding: 2px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .tool-card .type.free { background: #22c55e20; color: #86efac; }
+        .tool-card .type.paid { background: #ef444420; color: #f87171; }
+        .tool-card .type.freemium { background: #fbbf2420; color: #fbbf24; }
+        .tool-card p { color: #94a3b8; font-size: 0.82rem; }
+        .tool-card .skill { color: #64748b; font-size: 0.75rem; margin-top: 4px; }
+
+        /* Enhancement/Preservation tips */
+        .tip-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+        .tip-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+        .tip-card p { color: #94a3b8; font-size: 0.82rem; }
+        .tip-card .priority { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .tip-card .priority.high { background: #d4a57420; color: #d4a574; }
+        .tip-card .priority.medium { background: #94a3b815; color: #94a3b8; }
+        .tip-card .priority.low { background: #64748b15; color: #64748b; }
+
+        /* Q&A */
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; margin-bottom: 10px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #1a1a2e; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input-row input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; }
+        .qa-input-row input:focus { outline: none; border-color: #d4a574; }
+        .qa-input-row button { padding: 12px 20px; background: linear-gradient(135deg, #d4a574, #b8860b); color: #fff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #e2e8f0; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .new-btn:hover { border-color: #d4a574; }
+
+        @media (max-width: 640px) { .damage-item { flex-direction: column; gap: 8px; align-items: flex-start; } .qa-msg.user { margin-left: 16px; } .qa-msg.ai { margin-right: 16px; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>📷 <span>PhotoRestore</span></h1>
+        <p>Upload an old or damaged photo — AI creates your restoration plan</p>
+    </div>
+    <div class="container">
+        <!-- Input -->
+        <div id="inputSection">
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📷</div>
+                <h3>Upload your old or damaged photo</h3>
+                <p>Drag & drop or click to browse — JPG, PNG up to 4MB</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+            <div class="divider">OR describe the photo</div>
+            <div class="form-group">
+                <label>Describe the photo and its condition</label>
+                <textarea id="descInput" placeholder="e.g., A 1970s family portrait, faded to yellow, with a large crease through the center and water stains on the bottom..."></textarea>
+            </div>
+            <button class="analyze-btn" onclick="analyze()">Analyze & Create Restoration Plan →</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing photo condition...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <div class="era-badge" id="eraBadge"></div>
+                <div class="condition-score" id="conditionScore"></div>
+                <div class="condition-label" id="conditionLabel"></div>
+                <div class="plan-summary" id="planSummary"></div>
+            </div>
+
+            <!-- Damage list -->
+            <div class="damage-grid" id="damageGrid"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('steps')">Restoration Steps</button>
+                <button class="tab" onclick="switchTab('color')">Color Correction</button>
+                <button class="tab" onclick="switchTab('tools')">Recommended Tools</button>
+                <button class="tab" onclick="switchTab('tips')">Tips & Preservation</button>
+                <button class="tab" onclick="switchTab('qa')">Restoration Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-steps"></div>
+            <div class="tab-content" id="tab-color"></div>
+            <div class="tab-content" id="tab-tools"></div>
+            <div class="tab-content" id="tab-tips"></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-messages" id="qaMessages"></div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="Ask about restoration techniques, tools, or this photo..." onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+
+            <div style="text-align:center"><button class="new-btn" onclick="resetApp()">← New Photo</button></div>
+        </div>
+    </div>
+
+    <script>
+        let imageData = null, imageMimeType = null, analysisResult = null, qaHistory = [];
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) return alert('Image must be under 4MB');
+            imageMimeType = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                imageData = e.target.result.split(',')[1];
+                uploadZone.innerHTML = `<img src="${e.target.result}" alt="Photo to restore">`;
+                uploadZone.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyze() {
+            const desc = document.getElementById('descInput').value.trim();
+            if (!imageData && !desc) return alert('Please upload a photo or describe it');
+
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                const body = { mode: 'analyze' };
+                if (imageData) { body.image = imageData; body.mimeType = imageMimeType; }
+                if (desc) body.description = desc;
+
+                const resp = await fetch('/api/photorestore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse analysis');
+
+                analysisResult = data;
+                renderResults(data);
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'photorestore', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function renderResults(d) {
+            const pa = d.photoAssessment || {};
+            document.getElementById('eraBadge').textContent = `${pa.era || 'Unknown Era'} — ${pa.originalFormat || 'Unknown Format'}`;
+            document.getElementById('conditionScore').innerHTML = `<span style="color:#d4a574">${pa.conditionScore || '?'}</span><span style="font-size:1rem;color:#64748b">/100</span>`;
+            document.getElementById('conditionLabel').textContent = `Condition: ${(pa.condition || 'fair').charAt(0).toUpperCase() + (pa.condition || 'fair').slice(1)}`;
+            document.getElementById('planSummary').textContent = d.overallPlan || '';
+
+            // Damage grid
+            const dg = document.getElementById('damageGrid');
+            dg.innerHTML = '';
+            if (d.damageDetected?.length) {
+                d.damageDetected.forEach(dm => {
+                    dg.innerHTML += `<div class="damage-item"><div class="info"><h4>${dm.type}</h4><p>${dm.location || ''}</p></div><div class="badges"><span class="sev-badge ${dm.severity || 'moderate'}">${(dm.severity || 'moderate').toUpperCase()}</span><span class="diff-badge">${dm.difficulty || 'moderate'}</span></div></div>`;
+                });
+            }
+
+            // Restoration steps
+            const ts = document.getElementById('tab-steps');
+            ts.innerHTML = '';
+            if (d.restorationSteps?.length) {
+                d.restorationSteps.forEach(s => {
+                    ts.innerHTML += `<div class="step-card"><div class="step-num">${s.step}</div><div><h4>${s.title}</h4><div class="desc">${s.description}</div><div class="step-meta"><span>${s.tool || ''}</span><span>${s.difficulty || ''}</span><span>${s.timeEstimate || ''}</span></div></div></div>`;
+                });
+            }
+
+            // Color correction
+            const tc = document.getElementById('tab-color');
+            tc.innerHTML = '';
+            if (d.colorAnalysis) {
+                const ca = d.colorAnalysis;
+                tc.innerHTML += `<div class="color-card"><h4>Current State</h4><p>${ca.currentState || ''}</p></div>`;
+                tc.innerHTML += `<div class="color-card"><h4>Estimated Original Colors</h4><p>${ca.originalColors || ''}</p></div>`;
+                if (ca.corrections?.length) {
+                    tc.innerHTML += '<h3 style="margin:16px 0 10px;font-size:0.95rem">Corrections</h3>';
+                    ca.corrections.forEach(c => {
+                        tc.innerHTML += `<div class="color-card"><h4>${c.adjustment}</h4><p>${c.direction}</p><span class="amount">${c.amount}</span></div>`;
+                    });
+                }
+            }
+
+            // Tools
+            const tt = document.getElementById('tab-tools');
+            tt.innerHTML = '';
+            if (d.softwareRecommendations?.length) {
+                tt.innerHTML += '<h3 style="margin-bottom:10px;font-size:0.95rem">Software</h3>';
+                d.softwareRecommendations.forEach(t => {
+                    tt.innerHTML += `<div class="tool-card"><div class="header"><h4>${t.name}</h4><span class="type ${t.type || 'free'}">${(t.type || 'free').toUpperCase()}</span></div><p>${t.bestFor || ''}</p><div class="skill">Skill: ${t.skillLevel || 'beginner'}</div></div>`;
+                });
+            }
+            if (d.aiToolRecommendations?.length) {
+                tt.innerHTML += '<h3 style="margin:20px 0 10px;font-size:0.95rem">AI Tools</h3>';
+                d.aiToolRecommendations.forEach(t => {
+                    tt.innerHTML += `<div class="tool-card"><h4>${t.name}</h4><p>${t.capability || ''}</p><div class="skill">${t.bestFor || ''}</div></div>`;
+                });
+            }
+
+            // Tips & preservation
+            const tp = document.getElementById('tab-tips');
+            tp.innerHTML = '';
+            if (d.enhancementTips?.length) {
+                tp.innerHTML += '<h3 style="margin-bottom:10px;font-size:0.95rem">Enhancement Tips</h3>';
+                d.enhancementTips.forEach(t => {
+                    tp.innerHTML += `<div class="tip-card"><h4>${t.tip}</h4><p>${t.impact || ''}</p><span class="priority ${t.priority || 'medium'}">${(t.priority || 'medium').toUpperCase()}</span></div>`;
+                });
+            }
+            if (d.preservationTips?.length) {
+                tp.innerHTML += '<h3 style="margin:20px 0 10px;font-size:0.95rem">Preservation Tips</h3>';
+                d.preservationTips.forEach(t => {
+                    tp.innerHTML += `<div class="tip-card"><h4>${t.tip}</h4><p>${t.why || ''}</p></div>`;
+                });
+            }
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const resp = await fetch('/api/photorestore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, context: JSON.stringify(analysisResult), history: qaHistory })
+                });
+                const data = await resp.json();
+                document.getElementById('qaLoading').innerHTML = data.answer || 'Sorry, could not answer that.';
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'photorestore', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = 'Error: ' + err.message;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetApp() {
+            imageData = null; imageMimeType = null; analysisResult = null; qaHistory = [];
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('inputSection').style.display = 'block';
+            uploadZone.innerHTML = '<div class="icon">📷</div><h3>Upload your old or damaged photo</h3><p>Drag & drop or click to browse — JPG, PNG up to 4MB</p>';
+            uploadZone.classList.remove('has-image');
+            document.getElementById('descInput').value = '';
+            document.getElementById('qaMessages').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
