@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LanguageBuddy — AI Language Practice | SUITE</title>
+    <meta name="description" content="Practice any language with AI conversation. Get real-time corrections, vocabulary, and grammar tips as you chat.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 800px; margin: 0 auto; padding: 16px; flex: 1; display: flex; flex-direction: column; width: 100%; }
+
+        .header { text-align: center; padding: 20px 0 12px; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; }
+        .header h1 span { color: #f43f5e; }
+
+        .setup-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+        .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .setup-group { display: flex; flex-direction: column; gap: 4px; }
+        .setup-group.full { grid-column: 1 / -1; }
+        .setup-group label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .setup-group select {
+            background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 12px;
+            color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none;
+        }
+        .setup-group select:focus { border-color: #f43f5e; }
+
+        .lang-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .lang-btn {
+            padding: 10px 8px; border-radius: 10px; border: 1px solid #2a2a3e; background: #0f0f1a;
+            color: #94a3b8; font-size: 0.8rem; font-weight: 500; cursor: pointer; text-align: center;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .lang-btn:hover { border-color: #f43f5e; color: #e2e8f0; }
+        .lang-btn.active { background: #f43f5e; color: #fff; border-color: #f43f5e; font-weight: 600; }
+        .lang-flag { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+
+        .start-btn {
+            width: 100%; padding: 12px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff;
+            font-family: inherit; transition: opacity 0.2s;
+        }
+        .start-btn:hover { opacity: 0.9; }
+        .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .chat-section { flex: 1; display: none; flex-direction: column; min-height: 0; }
+        .chat-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .chat-bar .lang-label { font-size: 0.85rem; font-weight: 600; color: #f43f5e; }
+        .chat-bar .level-label { font-size: 0.75rem; color: #94a3b8; background: #1a1a2e; padding: 4px 12px; border-radius: 6px; }
+        .chat-bar button {
+            padding: 6px 14px; border: 1px solid #2a2a3e; border-radius: 8px; background: #1a1a2e;
+            color: #94a3b8; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit;
+        }
+        .chat-bar button:hover { border-color: #f43f5e; color: #e2e8f0; }
+
+        .messages { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 12px; }
+
+        .msg { max-width: 85%; }
+        .msg.user { align-self: flex-end; }
+        .msg.ai { align-self: flex-start; }
+
+        .msg-bubble { padding: 14px 18px; border-radius: 16px; font-size: 0.9rem; line-height: 1.6; }
+        .msg.user .msg-bubble { background: #f43f5e25; border: 1px solid #f43f5e40; border-bottom-right-radius: 4px; }
+        .msg.ai .msg-bubble { background: #1a1a2e; border: 1px solid #2a2a3e; border-bottom-left-radius: 4px; }
+
+        .msg-reply { font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
+        .msg-translation { font-size: 0.8rem; color: #94a3b8; font-style: italic; cursor: pointer; display: none; }
+        .msg-translation.show { display: block; }
+        .toggle-translation { font-size: 0.7rem; color: #f43f5e; cursor: pointer; margin-top: 4px; background: none; border: none; font-family: inherit; padding: 0; }
+        .toggle-translation:hover { text-decoration: underline; }
+
+        .corrections { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a3e; }
+        .correction-item { background: #0f0f1a; border-radius: 8px; padding: 10px; margin-bottom: 6px; font-size: 0.8rem; }
+        .correction-item .wrong { color: #ef4444; text-decoration: line-through; }
+        .correction-item .right { color: #22c55e; font-weight: 600; }
+        .correction-item .why { color: #94a3b8; margin-top: 2px; font-size: 0.75rem; }
+
+        .vocab-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .vocab-chip {
+            background: #f43f5e15; border: 1px solid #f43f5e30; border-radius: 8px; padding: 4px 10px;
+            font-size: 0.7rem; color: #f43f5e; cursor: pointer; position: relative;
+        }
+        .vocab-chip:hover .vocab-tooltip { display: block; }
+        .vocab-tooltip {
+            display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 8px 12px;
+            white-space: nowrap; font-size: 0.75rem; color: #e2e8f0; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .vocab-tooltip .vt-word { font-weight: 600; color: #f43f5e; }
+        .vocab-tooltip .vt-meaning { color: #94a3b8; }
+        .vocab-tooltip .vt-pron { color: #64748b; font-style: italic; }
+
+        .tip-bar { background: #f43f5e10; border: 1px solid #f43f5e20; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 0.75rem; color: #94a3b8; }
+        .tip-bar strong { color: #f43f5e; }
+
+        .input-bar { padding: 12px 0; display: flex; gap: 10px; }
+        .input-bar input {
+            flex: 1; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 14px 16px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none;
+        }
+        .input-bar input:focus { border-color: #f43f5e; }
+        .input-bar button {
+            padding: 14px 24px; border: none; border-radius: 12px; background: linear-gradient(135deg, #f43f5e, #e11d48);
+            color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 0.9rem; transition: opacity 0.2s;
+        }
+        .input-bar button:hover { opacity: 0.9; }
+        .input-bar button:disabled { opacity: 0.5; }
+
+        .typing-indicator { display: flex; gap: 4px; padding: 8px 0; }
+        .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #f43f5e; animation: typing 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 12px; color: #fca5a5; font-size: 0.85rem; }
+
+        @media (max-width: 640px) {
+            .lang-grid { grid-template-columns: repeat(3, 1fr); }
+            .setup-grid { grid-template-columns: 1fr; }
+            .msg { max-width: 92%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗣️ <span>LanguageBuddy</span></h1>
+        </div>
+
+        <div id="setupSection" class="setup-section">
+            <div class="setup-group full" style="margin-bottom: 16px;">
+                <label>Choose a Language</label>
+                <div class="lang-grid" id="langGrid">
+                    <button class="lang-btn" data-lang="Spanish"><span class="lang-flag">🇪🇸</span>Spanish</button>
+                    <button class="lang-btn" data-lang="French"><span class="lang-flag">🇫🇷</span>French</button>
+                    <button class="lang-btn" data-lang="German"><span class="lang-flag">🇩🇪</span>German</button>
+                    <button class="lang-btn" data-lang="Italian"><span class="lang-flag">🇮🇹</span>Italian</button>
+                    <button class="lang-btn" data-lang="Portuguese"><span class="lang-flag">🇧🇷</span>Portuguese</button>
+                    <button class="lang-btn" data-lang="Japanese"><span class="lang-flag">🇯🇵</span>Japanese</button>
+                    <button class="lang-btn" data-lang="Korean"><span class="lang-flag">🇰🇷</span>Korean</button>
+                    <button class="lang-btn" data-lang="Mandarin Chinese"><span class="lang-flag">🇨🇳</span>Mandarin</button>
+                    <button class="lang-btn" data-lang="Arabic"><span class="lang-flag">🇸🇦</span>Arabic</button>
+                    <button class="lang-btn" data-lang="Hindi"><span class="lang-flag">🇮🇳</span>Hindi</button>
+                    <button class="lang-btn" data-lang="Russian"><span class="lang-flag">🇷🇺</span>Russian</button>
+                    <button class="lang-btn" data-lang="Dutch"><span class="lang-flag">🇳🇱</span>Dutch</button>
+                </div>
+            </div>
+            <div class="setup-grid">
+                <div class="setup-group">
+                    <label>Your Level</label>
+                    <select id="levelSelect">
+                        <option value="beginner">Beginner (A1)</option>
+                        <option value="elementary">Elementary (A2)</option>
+                        <option value="intermediate" selected>Intermediate (B1)</option>
+                        <option value="upper-intermediate">Upper-Intermediate (B2)</option>
+                        <option value="advanced">Advanced (C1)</option>
+                    </select>
+                </div>
+                <div class="setup-group">
+                    <label>Conversation Scenario</label>
+                    <select id="scenarioSelect">
+                        <option value="">Free Conversation</option>
+                        <option value="ordering at a restaurant">At a Restaurant</option>
+                        <option value="shopping at a store">Shopping</option>
+                        <option value="asking for directions">Asking Directions</option>
+                        <option value="checking into a hotel">Hotel Check-in</option>
+                        <option value="meeting someone new">Meeting Someone</option>
+                        <option value="job interview">Job Interview</option>
+                        <option value="making a phone call">Phone Call</option>
+                        <option value="visiting a doctor">Doctor Visit</option>
+                        <option value="booking travel tickets">Booking Travel</option>
+                    </select>
+                </div>
+            </div>
+            <button class="start-btn" id="startBtn" onclick="startChat()" disabled>Select a language to start</button>
+        </div>
+
+        <div id="chatSection" class="chat-section">
+            <div class="chat-bar">
+                <span class="lang-label" id="chatLangLabel"></span>
+                <span class="level-label" id="chatLevelLabel"></span>
+                <button onclick="resetChat()">New Session</button>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="input-bar">
+                <input type="text" id="chatInput" placeholder="Type in any language..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedLang = '';
+        let chatHistory = [];
+        let rawHistory = [];
+
+        // Language selection
+        document.querySelectorAll('#langGrid .lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#langGrid .lang-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedLang = btn.dataset.lang;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = `Start practicing ${selectedLang} →`;
+            });
+        });
+
+        function startChat() {
+            if (!selectedLang) return;
+            document.getElementById('setupSection').style.display = 'none';
+            document.getElementById('chatSection').style.display = 'flex';
+            document.getElementById('chatLangLabel').textContent = `${selectedLang}`;
+            document.getElementById('chatLevelLabel').textContent = document.getElementById('levelSelect').selectedOptions[0].text;
+
+            const scenario = document.getElementById('scenarioSelect').value;
+            const level = document.getElementById('levelSelect').value;
+
+            // Send opening message
+            const opener = scenario
+                ? `Hi! I want to practice ${selectedLang}. Let's do a ${scenario} scenario. Start the conversation in ${selectedLang} and I'll respond.`
+                : `Hi! I want to practice ${selectedLang}. Start a conversation with me in ${selectedLang} about anything interesting.`;
+
+            sendToAPI(opener, true);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+
+            addUserMessage(text);
+            await sendToAPI(text, false);
+        }
+
+        function addUserMessage(text) {
+            const msgs = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'msg user';
+            div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        async function sendToAPI(text, isOpener) {
+            const msgs = document.getElementById('messages');
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+
+            // Typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'msg ai';
+            typingDiv.id = 'typing';
+            typingDiv.innerHTML = `<div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+            msgs.appendChild(typingDiv);
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (!isOpener) chargeCredits('chat');
+
+                rawHistory.push({ role: 'user', content: text });
+
+                const resp = await fetch('/api/languagebuddy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: selectedLang,
+                        level: document.getElementById('levelSelect').value,
+                        scenario: document.getElementById('scenarioSelect').value,
+                        message: text,
+                        history: rawHistory.slice(0, -1)
+                    })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                rawHistory.push({ role: 'model', content: data.reply || JSON.stringify(data) });
+
+                typingDiv.remove();
+                addAIMessage(data);
+
+            } catch (err) {
+                typingDiv.remove();
+                const errDiv = document.createElement('div');
+                errDiv.className = 'msg ai';
+                errDiv.innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                msgs.appendChild(errDiv);
+            } finally {
+                sendBtn.disabled = false;
+                document.getElementById('chatInput').focus();
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function addAIMessage(data) {
+            const msgs = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'msg ai';
+
+            const id = Date.now();
+            let html = `<div class="msg-bubble">`;
+            html += `<div class="msg-reply">${escapeHtml(data.reply || '')}</div>`;
+
+            if (data.translation) {
+                html += `<button class="toggle-translation" onclick="document.getElementById('trans-${id}').classList.toggle('show');this.textContent=this.textContent==='Show translation'?'Hide translation':'Show translation'">Show translation</button>`;
+                html += `<div class="msg-translation" id="trans-${id}">${escapeHtml(data.translation)}</div>`;
+            }
+
+            // Corrections
+            if (data.corrections?.length) {
+                html += `<div class="corrections">`;
+                data.corrections.forEach(c => {
+                    html += `<div class="correction-item">
+                        <span class="wrong">${escapeHtml(c.original || '')}</span> → <span class="right">${escapeHtml(c.corrected || '')}</span>
+                        <div class="why">${escapeHtml(c.explanation || '')}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Vocabulary
+            if (data.vocabulary?.length) {
+                html += `<div class="vocab-row">`;
+                data.vocabulary.forEach(v => {
+                    html += `<span class="vocab-chip">${escapeHtml(v.word || '')}
+                        <span class="vocab-tooltip">
+                            <div class="vt-word">${escapeHtml(v.word || '')}</div>
+                            <div class="vt-meaning">${escapeHtml(v.translation || '')}</div>
+                            ${v.pronunciation ? `<div class="vt-pron">${escapeHtml(v.pronunciation)}</div>` : ''}
+                        </span>
+                    </span>`;
+                });
+                html += `</div>`;
+            }
+
+            // Tip
+            if (data.tip) {
+                html += `<div class="tip-bar"><strong>💡 Tip:</strong> ${escapeHtml(data.tip)}</div>`;
+            }
+
+            html += `</div>`;
+            div.innerHTML = html;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function resetChat() {
+            chatHistory = [];
+            rawHistory = [];
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('chatSection').style.display = 'none';
+            document.getElementById('setupSection').style.display = 'block';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function chargeCredits(feature) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'languagebuddy',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: 5
+                }, '*');
+            }
+        }
+    </script>
+</body>
+</html>
