@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetingMind — AI Meeting Summarizer</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #10b981; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .app-header .back:hover { color: #10b981; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .input-modes { display: flex; gap: 8px; margin-bottom: 16px; }
+        .mode-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #2a2a3e; background: none; color: #94a3b8; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .mode-btn.active { background: #10b98120; border-color: #10b981; color: #34d399; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .form-group select:focus, .form-group textarea:focus { border-color: #10b981; }
+        .form-group textarea { resize: vertical; min-height: 200px; }
+
+        .upload-zone { border: 2px dashed #2a2a3e; border-radius: 14px; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; display: none; }
+        .upload-zone:hover { border-color: #10b981; }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .upload-zone input { display: none; }
+        .upload-zone .file-info { color: #34d399; font-weight: 600; margin-top: 8px; font-size: 0.85rem; }
+        .preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 12px; }
+
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #10b981; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Meeting Banner */
+        .meeting-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .meeting-banner h2 { font-size: 1.2rem; margin-bottom: 6px; }
+        .meeting-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .meta-chip { background: #10b98120; border: 1px solid #10b98140; color: #34d399; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .sentiment-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .sentiment-badge.positive { background: #10b98120; color: #34d399; }
+        .sentiment-badge.neutral { background: #64748b20; color: #94a3b8; }
+        .sentiment-badge.mixed { background: #fbbf2420; color: #fbbf24; }
+        .sentiment-badge.tense { background: #ef444420; color: #f87171; }
+        .one-liner { color: #94a3b8; font-size: 0.9rem; font-style: italic; }
+        .participants { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .participant { background: #2a2a3e; color: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; }
+
+        /* Summary Tab */
+        .summary-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .summary-card h3 { font-size: 0.95rem; margin-bottom: 12px; color: #34d399; }
+        .summary-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.7; }
+        .key-outcome { background: #10b98110; border-left: 3px solid #10b981; padding: 12px 16px; border-radius: 4px; margin-top: 16px; font-size: 0.85rem; color: #34d399; }
+
+        /* Action Items Tab */
+        .action-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px; }
+        .action-check { width: 20px; height: 20px; border: 2px solid #2a2a3e; border-radius: 4px; flex-shrink: 0; margin-top: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .action-check.done { background: #10b981; border-color: #10b981; color: #fff; }
+        .action-body { flex: 1; }
+        .action-body .task { font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+        .action-body .task.done { text-decoration: line-through; color: #64748b; }
+        .action-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+        .action-owner { background: #10b98120; color: #34d399; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .action-deadline { background: #2a2a3e; color: #94a3b8; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
+        .action-priority { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; }
+        .action-priority.high { background: #ef444420; color: #f87171; }
+        .action-priority.medium { background: #fbbf2420; color: #fbbf24; }
+        .action-priority.low { background: #10b98120; color: #34d399; }
+
+        /* Decisions Tab */
+        .decision-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .decision-card h4 { font-size: 0.9rem; margin-bottom: 6px; }
+        .decision-card .context { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin-bottom: 6px; }
+        .decision-card .owner { font-size: 0.78rem; color: #34d399; }
+
+        /* Discussions Tab */
+        .discussion-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+        .discussion-card h4 { font-size: 0.9rem; margin-bottom: 8px; color: #34d399; }
+        .discussion-card .disc-summary { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 8px; }
+        .discussion-card .disc-outcome { background: #0f0f1a; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; color: #e2e8f0; }
+
+        /* Email Tab */
+        .email-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .email-subject { background: #0f0f1a; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; font-weight: 600; }
+        .email-body { font-size: 0.85rem; color: #94a3b8; line-height: 1.7; white-space: pre-wrap; }
+        .copy-email { padding: 10px 20px; background: #10b98120; border: 1px solid #10b98140; color: #34d399; border-radius: 8px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-top: 16px; }
+        .copy-email:hover { background: #10b98140; }
+
+        /* Risks */
+        .risk-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .risk-card .risk-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+        .risk-card .risk-label::before { content: '⚠️'; }
+        .risk-card .mitigation { font-size: 0.82rem; color: #34d399; padding: 8px 12px; background: #10b98110; border-radius: 6px; margin-top: 8px; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #10b98120; border: 1px solid #10b98130; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input input:focus { border-color: #10b981; }
+        .qa-input button { padding: 12px 20px; background: #10b981; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #10b981; color: #10b981; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; font-size: 0.9rem; display: none; }
+
+        @media (max-width: 640px) { .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🧠 Meeting<span>Mind</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Paste Your Meeting Notes</h2>
+            <div class="input-modes">
+                <button class="mode-btn active" onclick="setMode('text')">📝 Paste Notes</button>
+                <button class="mode-btn" onclick="setMode('photo')">📸 Photo</button>
+            </div>
+
+            <div id="textArea">
+                <div class="form-group">
+                    <label>Meeting Notes / Transcript *</label>
+                    <textarea id="textInput" placeholder="Paste your meeting notes, transcript, or minutes here...&#10;&#10;Example:&#10;Attendees: Sarah, Mike, Lisa, Tom, Jane&#10;Topic: Q3 Product Planning&#10;&#10;Sarah opened by reviewing Q2 results..."></textarea>
+                </div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">📸</div>
+                <p>Drop a photo of meeting notes or whiteboard</p>
+                <input type="file" id="fileInput" accept="image/*">
+                <div class="file-info" id="fileInfo"></div>
+                <img id="previewImg" class="preview-img" style="display:none;">
+            </div>
+
+            <div class="form-group">
+                <label>Meeting Type</label>
+                <select id="meetingType">
+                    <option value="general">General Meeting</option>
+                    <option value="standup">Standup / Daily</option>
+                    <option value="planning">Planning / Strategy</option>
+                    <option value="review">Review / Retrospective</option>
+                    <option value="client">Client Call</option>
+                    <option value="interview">Interview</option>
+                    <option value="brainstorm">Brainstorm</option>
+                    <option value="board">Board Meeting</option>
+                </select>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Analyze Meeting →</button>
+        </div>
+
+        <div class="loading" id="loading"><div class="spinner"></div><p>Analyzing your meeting...</p></div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Meeting</button>
+            <div class="meeting-banner" id="meetingBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="summary">Summary</button>
+                <button class="tab" data-tab="actions">Action Items</button>
+                <button class="tab" data-tab="decisions">Decisions</button>
+                <button class="tab" data-tab="discussions">Discussions</button>
+                <button class="tab" data-tab="email">Follow-Up Email</button>
+                <button class="tab" data-tab="qa">Assistant Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-summary"><div id="summaryContent"></div></div>
+            <div class="tab-content" id="tab-actions"><div id="actionsContent"></div></div>
+            <div class="tab-content" id="tab-decisions"><div id="decisionsContent"></div></div>
+            <div class="tab-content" id="tab-discussions"><div id="discussionsContent"></div></div>
+            <div class="tab-content" id="tab-email"><div id="emailContent"></div></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about the meeting — I can help draft emails, refine action items, prepare for the next meeting, or answer questions.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Draft a Slack message summarizing the key decisions" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null;
+        let qaHistory = [];
+        let imageData = null;
+        let imageMime = null;
+        let currentMode = 'text';
+
+        function setMode(m) {
+            currentMode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('textArea').style.display = m === 'text' ? 'block' : 'none';
+            document.getElementById('uploadZone').style.display = m === 'photo' ? 'block' : 'none';
+        }
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); });
+        uploadZone.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            if (file.size > 4 * 1024 * 1024) { alert('File must be under 4MB'); return; }
+            document.getElementById('fileInfo').textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+            imageMime = file.type;
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('previewImg').style.display = 'block';
+                imageData = e.target.result.split(',')[1];
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function analyze() {
+            const text = document.getElementById('textInput').value.trim();
+            if (currentMode === 'text' && !text) { document.getElementById('textInput').style.borderColor = '#ef4444'; return; }
+            if (currentMode === 'photo' && !imageData) { return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'meetingmind', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+
+                const body = { mode: 'analyze', meetingType: document.getElementById('meetingType').value };
+                if (currentMode === 'text') body.text = text;
+                else { body.image = imageData; body.mimeType = imageMime; }
+
+                const resp = await fetch('/api/meetingmind', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const s = data.sentiment || 'neutral';
+            document.getElementById('meetingBanner').innerHTML = `
+                <h2>${data.meetingTitle || 'Meeting Summary'}</h2>
+                <div class="meeting-meta">
+                    <span class="meta-chip">${data.meetingType || 'general'}</span>
+                    ${data.date ? `<span class="meta-chip">${data.date}</span>` : ''}
+                    ${data.duration ? `<span class="meta-chip">${data.duration}</span>` : ''}
+                    <span class="sentiment-badge ${s}">${s.toUpperCase()}</span>
+                </div>
+                <div class="one-liner">${data.summary?.oneLiner || ''}</div>
+                <div class="participants">${(data.participants || []).map(p => `<span class="participant">${p}</span>`).join('')}</div>
+            `;
+
+            // Summary
+            const sum = data.summary || {};
+            document.getElementById('summaryContent').innerHTML = `
+                <div class="summary-card">
+                    <h3>Overview</h3>
+                    <p>${(sum.overview || '').replace(/\n/g, '<br>')}</p>
+                    ${sum.keyOutcome ? `<div class="key-outcome"><strong>Key Outcome:</strong> ${sum.keyOutcome}</div>` : ''}
+                </div>
+            `;
+
+            // Actions
+            document.getElementById('actionsContent').innerHTML = (data.actionItems || []).map((a, i) => `
+                <div class="action-card">
+                    <div class="action-check" onclick="toggleAction(this, ${i})" id="check-${i}"></div>
+                    <div class="action-body">
+                        <div class="task" id="task-${i}">${a.task}</div>
+                        <div class="action-meta">
+                            ${a.owner ? `<span class="action-owner">${a.owner}</span>` : ''}
+                            ${a.deadline ? `<span class="action-deadline">${a.deadline}</span>` : ''}
+                            <span class="action-priority ${(a.priority || 'medium').toLowerCase()}">${(a.priority || 'medium').toUpperCase()}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('') || '<p style="color:#64748b; text-align:center; padding:40px;">No action items found.</p>';
+
+            // Decisions
+            document.getElementById('decisionsContent').innerHTML = (data.decisions || []).map(d => `
+                <div class="decision-card">
+                    <h4>${d.decision}</h4>
+                    <div class="context">${d.context || ''}</div>
+                    ${d.owner ? `<div class="owner">Owner: ${d.owner}</div>` : ''}
+                </div>
+            `).join('') || '<p style="color:#64748b; text-align:center; padding:40px;">No decisions recorded.</p>';
+
+            // Discussions
+            let discHtml = (data.keyDiscussions || []).map(d => `
+                <div class="discussion-card">
+                    <h4>${d.topic}</h4>
+                    <div class="disc-summary">${d.summary || ''}</div>
+                    ${d.outcome ? `<div class="disc-outcome"><strong>Outcome:</strong> ${d.outcome}</div>` : ''}
+                </div>
+            `).join('');
+            if (data.risks?.length) {
+                discHtml += '<h3 style="font-size:1rem; margin:20px 0 12px; color:#f87171;">Risks & Concerns</h3>';
+                discHtml += data.risks.map(r => `
+                    <div class="risk-card">
+                        <div class="risk-label">${r.risk}</div>
+                        ${r.mitigation ? `<div class="mitigation">Mitigation: ${r.mitigation}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            document.getElementById('discussionsContent').innerHTML = discHtml || '<p style="color:#64748b; text-align:center; padding:40px;">No discussions found.</p>';
+
+            // Email
+            const email = data.followUpEmail || {};
+            document.getElementById('emailContent').innerHTML = `
+                <div class="email-card">
+                    <div class="email-subject">Subject: ${email.subject || 'Meeting Recap'}</div>
+                    <div class="email-body">${(email.body || '').replace(/\n/g, '<br>')}</div>
+                    <button class="copy-email" onclick="copyEmail()">📋 Copy Email</button>
+                </div>
+            `;
+
+            // Next meeting
+            if (data.nextMeeting) {
+                const nm = data.nextMeeting;
+                document.getElementById('emailContent').innerHTML += `
+                    <div style="margin-top:16px; background:#1a1a2e; border:1px solid #2a2a3e; border-radius:14px; padding:16px;">
+                        <h3 style="font-size:0.95rem; color:#34d399; margin-bottom:10px;">Next Meeting Suggestions</h3>
+                        ${nm.suggestedDate ? `<p style="font-size:0.85rem; color:#94a3b8; margin-bottom:8px;">Suggested: ${nm.suggestedDate}</p>` : ''}
+                        ${(nm.suggestedTopics || []).map(t => `<div style="padding:4px 0; font-size:0.85rem; color:#e2e8f0;">• ${t}</div>`).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function toggleAction(el, idx) {
+            el.classList.toggle('done');
+            el.textContent = el.classList.contains('done') ? '✓' : '';
+            document.getElementById('task-' + idx).classList.toggle('done');
+        }
+
+        function copyEmail() {
+            const email = resultData?.followUpEmail || {};
+            const text = `Subject: ${email.subject || ''}\n\n${email.body || ''}`;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-email');
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy Email', 1500);
+            });
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'suite-charge-credits', appId: 'meetingmind', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                }
+                const resp = await fetch('/api/meetingmind', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) })
+                });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q });
+                qaHistory.push({ role: 'assistant', content: data.answer || '' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally {
+                document.getElementById('qaBtn').disabled = false;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = []; imageData = null;
+            document.getElementById('previewImg').style.display = 'none';
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about the meeting — I can help draft emails, refine action items, prepare for the next meeting, or answer questions.</div>';
+        }
+    </script>
+</body>
+</html>

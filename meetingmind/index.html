@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetingMind — Free AI Meeting Summarizer | Notes → Summary, Actions & Follow-Up Email</title>
+    <meta name="description" content="Paste meeting notes — AI generates summary, action items with owners, decisions, risks, and a follow-up email. 100% free.">
+    <meta property="og:title" content="MeetingMind — Free AI Meeting Summarizer">
+    <meta property="og:description" content="Meeting notes in, actionable intelligence out — summary, decisions, action items, risks, and auto-generated follow-up email.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/meetingmind/">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/meetingmind/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+        .hero { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; text-align: center; }
+        .badge { display: inline-block; background: #10b98115; border: 1px solid #10b98130; color: #34d399; padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+        .hero h1 span { background: linear-gradient(135deg, #34d399, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.1rem; color: #94a3b8; max-width: 620px; margin: 0 auto 32px; line-height: 1.6; }
+        .cta-btn { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; font-size: 1.05rem; border-radius: 12px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px #05966930; }
+        .features { max-width: 900px; margin: 0 auto; padding: 40px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 24px; text-align: center; }
+        .feature-card .icon { font-size: 2rem; margin-bottom: 12px; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .feature-card p { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; }
+        .demo-section { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+        .demo-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+        .demo-section .subtitle { text-align: center; color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .demo-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .demo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .demo-tag { background: #10b98115; border: 1px solid #10b98130; color: #34d399; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .demo-arrow { text-align: center; color: #34d399; font-size: 1.5rem; margin: 16px 0; }
+        .demo-result { background: #0f0f1a; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .demo-result h4 { font-size: 0.85rem; color: #34d399; margin-bottom: 8px; }
+        .demo-result p { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; }
+        .demo-action { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 0.82rem; }
+        .demo-action .owner { background: #10b98120; color: #34d399; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .demo-action .priority { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; }
+        .demo-action .priority.high { background: #ef444420; color: #f87171; }
+        .demo-action .priority.medium { background: #fbbf2420; color: #fbbf24; }
+        .more-tools { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+        .more-tools h2 { text-align: center; font-size: 1.5rem; margin-bottom: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .tool-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+        .tool-card:hover { border-color: #34d399; transform: translateY(-2px); }
+        .tool-card h3 { font-size: 0.95rem; margin-bottom: 6px; }
+        .tool-card p { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; }
+        .footer { text-align: center; padding: 40px 24px; border-top: 1px solid #1a1a2e; color: #64748b; font-size: 0.8rem; }
+        .footer a { color: #34d399; text-decoration: none; }
+        @media (max-width: 640px) { .hero h1 { font-size: 1.8rem; } .features, .tools-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="badge">FREE AI TOOL — NO SIGN-UP REQUIRED</div>
+        <h1>AI <span>Meeting</span> Summarizer</h1>
+        <p>Paste your meeting notes or transcript — AI extracts summary, decisions, action items with owners, risks, and generates a follow-up email.</p>
+        <a href="app.html" class="cta-btn">Analyze Meeting →</a>
+    </div>
+    <div class="features">
+        <div class="feature-card"><div class="icon">📋</div><h3>Action Items</h3><p>Every task extracted with owner, deadline, and priority. Never lose a follow-up again.</p></div>
+        <div class="feature-card"><div class="icon">✉️</div><h3>Follow-Up Email</h3><p>Auto-generated professional recap email ready to send to attendees.</p></div>
+        <div class="feature-card"><div class="icon">⚠️</div><h3>Risks & Decisions</h3><p>All decisions logged, open risks flagged with suggested mitigations.</p></div>
+    </div>
+    <div class="demo-section">
+        <h2>See It In Action</h2>
+        <p class="subtitle">Q3 product planning meeting notes</p>
+        <div class="demo-card">
+            <div class="demo-tags"><div class="demo-tag">📝 Meeting Notes</div><div class="demo-tag">🏢 Product Planning</div><div class="demo-tag">👥 5 Attendees</div></div>
+            <div class="demo-arrow">↓</div>
+            <div class="demo-result">
+                <h4>SUMMARY</h4>
+                <p>Team aligned on Q3 priorities: mobile app redesign launches Aug 15, API v2 pushed to Q4 due to resource constraints. Sarah taking point on user research for checkout flow redesign.</p>
+            </div>
+            <div class="demo-result">
+                <h4>ACTION ITEMS</h4>
+                <div class="demo-action"><span class="priority high">HIGH</span> Finalize mobile redesign mockups <span class="owner">Sarah</span> by Aug 1</div>
+                <div class="demo-action"><span class="priority high">HIGH</span> Schedule API v2 scoping with backend team <span class="owner">Mike</span> by Jul 20</div>
+                <div class="demo-action"><span class="priority medium">MED</span> Send updated timeline to stakeholders <span class="owner">Lisa</span> this week</div>
+            </div>
+            <div class="demo-result">
+                <h4>FOLLOW-UP EMAIL</h4>
+                <p style="font-style:italic;">"Hi team, Great meeting today. Here's a quick recap of what we decided and next steps..."</p>
+            </div>
+        </div>
+    </div>
+    <div class="more-tools">
+        <h2>More Free AI Tools</h2>
+        <div class="tools-grid">
+            <a href="/docdigest/" class="tool-card"><h3>📋 DocDigest</h3><p>Upload a PDF — get summary, key points, and action items.</p></a>
+            <a href="/emailcraft/" class="tool-card"><h3>✉️ EmailCraft</h3><p>Describe your email — AI writes it in seconds with the right tone.</p></a>
+            <a href="/slideforge/" class="tool-card"><h3>📊 SlideForge</h3><p>Paste notes — get a complete slide deck with speaker notes.</p></a>
+        </div>
+    </div>
+    <div class="footer"><p>MeetingMind is part of the <a href="https://suitegpt.app">SUITE</a> ecosystem — free AI tools for everyone.</p></div>
+</body>
+</html>
