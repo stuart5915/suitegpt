@@ -206,7 +206,15 @@
         // ============================================================
         const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:2567' : 'wss://play.agentscape.app';
         const MAP_SIZE = 30, TILE_SIZE = 1, WATER_LEVEL = -0.15, MOVE_SPEED = 4, NPC_MOVE_SPEED = 2.5;
-        const playerName = 'Player' + Math.floor(Math.random() * 9999);
+
+        // Read auth params from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('token');
+        const authName = urlParams.get('name');
+        const authEntityType = urlParams.get('entityType');
+        const authApiKey = urlParams.get('apiKey');
+
+        const playerName = authName || 'Player' + Math.floor(Math.random() * 9999);
         const playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
         let room = null, mySessionId = null, attackMode = false;
 
@@ -434,7 +442,11 @@
             try{
                 connStatus.textContent='Connecting...';connStatus.className='connecting';
                 const client = new Colyseus.Client(WS_URL);
-                room = await client.joinOrCreate('agentscape',{name:playerName,color:playerColor});
+                const joinOptions = {name:playerName, color:playerColor};
+                if (authToken) joinOptions.supabaseToken = authToken;
+                if (authEntityType) joinOptions.entityType = authEntityType;
+                if (authApiKey) joinOptions.apiKey = authApiKey;
+                room = await client.joinOrCreate('agentscape', joinOptions);
                 mySessionId = room.sessionId;
                 connStatus.textContent='Connected';connStatus.className='connected';
                 addChat('system','Connected to AgentScape multiplayer!');

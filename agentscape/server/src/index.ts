@@ -9,6 +9,7 @@ import { monitor } from '@colyseus/monitor';
 import express from 'express';
 import cors from 'cors';
 import { AgentScapeRoom } from './rooms/AgentScapeRoom';
+import { SupabaseAdapter } from './persistence/SupabaseAdapter';
 
 const app = express();
 
@@ -29,6 +30,20 @@ app.use(express.json());
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+});
+
+// Verify agent API key endpoint
+const supabaseAdapter = new SupabaseAdapter();
+app.post('/verify-agent', async (req, res) => {
+    const { apiKey } = req.body;
+    if (!apiKey) {
+        return res.status(400).json({ error: 'Missing apiKey' });
+    }
+    const agent = await supabaseAdapter.authenticateAgent(apiKey);
+    if (!agent) {
+        return res.status(401).json({ error: 'Invalid API key' });
+    }
+    res.json(agent);
 });
 
 // Colyseus monitor (admin panel)

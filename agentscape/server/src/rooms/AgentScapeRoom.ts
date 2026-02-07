@@ -131,6 +131,27 @@ export class AgentScapeRoom extends Room<GameState> {
             player.supabaseUserId = agentInfo.id;
         }
 
+        // Human auth — verify Supabase token for persistent saves
+        if (options?.supabaseToken && !player.supabaseUserId) {
+            try {
+                const user = await this.supabase.verifyToken(options.supabaseToken);
+                if (user) {
+                    player.supabaseUserId = user.id;
+                    if (!options.name || options.name.startsWith('Player')) {
+                        player.name = user.user_metadata?.full_name || user.email?.split('@')[0] || player.name;
+                    }
+                    // Load saved data
+                    const saved = await this.supabase.loadPlayerByUserId(user.id);
+                    if (saved) {
+                        this.supabase.restorePlayer(player, saved);
+                        console.log(`[AgentScapeRoom] Restored save for ${player.name} (${user.id})`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[AgentScapeRoom] Token verification failed, continuing as guest');
+            }
+        }
+
         // Find walkable spawn
         let sx = 15, sz = 15;
         if (this.map.grid[sx][sz] === 0) {

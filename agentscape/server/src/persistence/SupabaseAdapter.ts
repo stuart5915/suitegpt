@@ -41,7 +41,47 @@ export class SupabaseAdapter {
         return data;
     }
 
+    async verifyToken(token: string): Promise<any | null> {
+        const { data: { user }, error } = await this.supabase.auth.getUser(token);
+        if (error || !user) return null;
+        return user;
+    }
+
+    async loadPlayerByUserId(userId: string): Promise<any | null> {
+        const { data, error } = await this.supabase
+            .from('agentscape_players')
+            .select('*')
+            .eq('supabase_user_id', userId)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error || !data) return null;
+        return data;
+    }
+
+    restorePlayer(player: PlayerSchema, saved: any): void {
+        player.hp = saved.hp ?? player.hp;
+        player.maxHp = saved.max_hp ?? player.maxHp;
+        player.energy = saved.energy ?? player.energy;
+        player.attack = saved.attack ?? player.attack;
+        player.strength = saved.strength ?? player.strength;
+        player.defence = saved.defence ?? player.defence;
+        player.hitpoints = saved.hitpoints ?? player.hitpoints;
+        player.attackXP = saved.attack_xp ?? player.attackXP;
+        player.strengthXP = saved.strength_xp ?? player.strengthXP;
+        player.defenceXP = saved.defence_xp ?? player.defenceXP;
+        player.hitpointsXP = saved.hitpoints_xp ?? player.hitpointsXP;
+        player.combatLevel = saved.combat_level ?? player.combatLevel;
+        player.coins = saved.coins ?? player.coins;
+        player.equippedWeaponSlot = saved.equipped_weapon_slot ?? player.equippedWeaponSlot;
+        player.equippedHelmSlot = saved.equipped_helm_slot ?? player.equippedHelmSlot;
+        player.equippedShieldSlot = saved.equipped_shield_slot ?? player.equippedShieldSlot;
+    }
+
     async savePlayer(player: PlayerSchema): Promise<boolean> {
+        // Skip saving guests (no supabaseUserId)
+        if (!player.supabaseUserId) return true;
         const inventoryData = [];
         for (let i = 0; i < player.inventory.length; i++) {
             const item = player.inventory[i];
