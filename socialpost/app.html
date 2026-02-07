@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialPost AI — Social Media Content Calendar | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-header { background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(219,39,119,0.08)); border-bottom: 1px solid rgba(236,72,153,0.2); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #ec4899, #db2777); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header span { font-size: 0.8rem; color: #94a3b8; }
+        .header-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #ec4899, #db2777); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: #ec4899; }
+        .input-section > p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        textarea { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; resize: vertical; outline: none; min-height: 100px; }
+        textarea:focus { border-color: #ec4899; }
+        textarea::placeholder { color: #4a5568; }
+        select { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; cursor: pointer; }
+        select:focus { border-color: #ec4899; }
+
+        .checkbox-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .check-item { display: flex; align-items: center; gap: 6px; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.82rem; color: #94a3b8; transition: all 0.2s; user-select: none; }
+        .check-item:hover { border-color: #ec4899; }
+        .check-item.active { background: rgba(236,72,153,0.12); border-color: #ec4899; color: #ec4899; }
+        .check-item input { display: none; }
+
+        .options-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .option-group { flex: 1; min-width: 180px; }
+
+        .generate-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(236,72,153,0.4); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 60px 20px; }
+        .processing.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #ec4899; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .strategy-bar { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+        .strategy-bar h3 { font-size: 0.85rem; color: #ec4899; font-weight: 700; margin-bottom: 6px; }
+        .strategy-bar p { font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; }
+        .pillars { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .pillar-tag { background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.3); color: #ec4899; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+
+        .day-tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 16px; overflow-x: auto; }
+        .day-tab { padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .day-tab:hover { color: #e2e8f0; }
+        .day-tab.active { background: rgba(236,72,153,0.15); color: #ec4899; }
+
+        .day-content { display: none; }
+        .day-content.active { display: block; }
+
+        .day-header { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+        .post-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-bottom: 12px; position: relative; }
+        .post-platform { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .platform-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; color: #fff; }
+        .platform-icon.twitter { background: #1da1f2; }
+        .platform-icon.instagram { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af); }
+        .platform-icon.linkedin { background: #0077b5; }
+        .platform-icon.facebook { background: #1877f2; }
+        .platform-name { font-size: 0.8rem; font-weight: 700; color: #e2e8f0; }
+        .post-time { font-size: 0.7rem; color: #64748b; margin-left: auto; }
+
+        .post-text { font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; white-space: pre-line; margin-bottom: 8px; }
+        .post-hashtags { font-size: 0.8rem; color: #ec4899; }
+        .post-idea { font-size: 0.8rem; color: #94a3b8; font-style: italic; margin-top: 6px; padding-top: 8px; border-top: 1px solid #1f1f35; }
+
+        .copy-btn { position: absolute; top: 12px; right: 12px; background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); color: #ec4899; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .copy-btn:hover { background: rgba(236,72,153,0.3); }
+
+        .tips-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-top: 16px; }
+        .tips-section h3 { font-size: 0.85rem; color: #ec4899; font-weight: 700; margin-bottom: 10px; }
+        .tips-section li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 6px; list-style: none; padding-left: 16px; position: relative; }
+        .tips-section li::before { content: '→'; position: absolute; left: 0; color: #ec4899; }
+
+        .hashtag-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-top: 12px; }
+        .hashtag-section h3 { font-size: 0.85rem; color: #ec4899; font-weight: 700; margin-bottom: 10px; }
+        .hashtag-group { margin-bottom: 10px; }
+        .hashtag-group-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+        .hashtag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        .hashtag-chip { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 12px; padding: 3px 10px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; }
+        .hashtag-chip:hover { border-color: #ec4899; color: #ec4899; }
+
+        /* Q&A */
+        .qa-tab-content { display: none; }
+        .qa-tab-content.active { display: block; }
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 14px; }
+        .qa-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; line-height: 1.5; }
+        .qa-msg.user { background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; color: #cbd5e1; white-space: pre-line; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; }
+        .qa-input:focus { border-color: #ec4899; }
+        .qa-send { background: linear-gradient(135deg, #ec4899, #db2777); border: none; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .bottom-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+        .new-btn { padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .new-btn:hover { border-color: #ec4899; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .options-row { flex-direction: column; }
+            .checkbox-row { flex-direction: column; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="header-icon">📱</div>
+        <div>
+            <h1>SocialPost AI</h1>
+            <span>Your business → a week of social content</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Input -->
+        <div id="inputView" class="input-section">
+            <h2>Describe your business</h2>
+            <p>Tell us about your brand and we'll generate a full week of posts.</p>
+
+            <div class="form-group">
+                <label>About your business</label>
+                <textarea id="businessInput" placeholder="What does your business do? Who is your audience? What's your brand voice?&#10;&#10;Example: 'FreshBean is a specialty coffee subscription. We source single-origin beans from small farms. Our audience is coffee enthusiasts aged 25-45 who care about quality and sustainability. Our brand voice is warm, knowledgeable, and a little nerdy about coffee.'"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Platforms</label>
+                <div class="checkbox-row" id="platformChecks">
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="twitter" checked>Twitter / X</label>
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="instagram" checked>Instagram</label>
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="linkedin" checked>LinkedIn</label>
+                    <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="facebook">Facebook</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Content pillars (select what matters)</label>
+                <div class="checkbox-row" id="pillarChecks">
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="educational" checked>Educational</label>
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="promotional" checked>Promotional</label>
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="behind-the-scenes" checked>Behind the Scenes</label>
+                    <label class="check-item active" onclick="toggleCheck(this)"><input type="checkbox" value="engagement" checked>Engagement</label>
+                    <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="storytelling">Storytelling</label>
+                    <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="user-generated">User Generated</label>
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <div class="form-group">
+                        <label>Tone</label>
+                        <select id="toneSelect">
+                            <option value="professional but approachable">Professional & Approachable</option>
+                            <option value="casual and fun">Casual & Fun</option>
+                            <option value="bold and edgy">Bold & Edgy</option>
+                            <option value="warm and empathetic">Warm & Empathetic</option>
+                            <option value="authoritative and expert">Authoritative & Expert</option>
+                            <option value="playful and witty">Playful & Witty</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="option-group">
+                    <div class="form-group">
+                        <label>Days to plan</label>
+                        <select id="daysSelect">
+                            <option value="5">5 days (weekdays)</option>
+                            <option value="7" selected>7 days (full week)</option>
+                            <option value="14">14 days (2 weeks)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Content Calendar</button>
+        </div>
+
+        <!-- Processing -->
+        <div id="processingView" class="processing">
+            <div class="spinner"></div>
+            <p style="color:#94a3b8">Creating your content calendar...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsView" class="results">
+            <div id="strategyBar" class="strategy-bar"></div>
+            <div id="dayTabs" class="day-tabs"></div>
+            <div id="dayContents"></div>
+
+            <div id="tipsSection"></div>
+            <div id="hashtagSection"></div>
+
+            <!-- Q&A -->
+            <div class="qa-section" style="margin-top: 16px;">
+                <h3 style="font-size:0.85rem; color:#ec4899; font-weight:700; margin-bottom:12px;">Ask for changes or more content</h3>
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-msg ai">Your content calendar is ready! Want me to adjust any posts, create more variations, or suggest content ideas for specific topics?</div>
+                </div>
+                <div class="qa-input-row">
+                    <input class="qa-input" id="qaInput" placeholder="e.g., Make the LinkedIn posts more casual..." onkeydown="if(event.key==='Enter')askQuestion()" />
+                    <button class="qa-send" onclick="askQuestion()">Send</button>
+                </div>
+            </div>
+
+            <div class="bottom-row">
+                <button class="new-btn" onclick="reset()">← New Calendar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBusiness = '';
+        let currentData = null;
+        let qaHistory = [];
+
+        function toggleCheck(el) {
+            el.classList.toggle('active');
+            el.querySelector('input').checked = el.classList.contains('active');
+        }
+
+        function getChecked(containerId) {
+            return [...document.querySelectorAll(`#${containerId} input:checked`)].map(i => i.value);
+        }
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'socialpost',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function generate() {
+            const business = document.getElementById('businessInput').value.trim();
+            if (!business) return;
+            currentBusiness = business;
+
+            const platforms = getChecked('platformChecks');
+            const pillars = getChecked('pillarChecks');
+            const tone = document.getElementById('toneSelect').value;
+            const days = parseInt(document.getElementById('daysSelect').value);
+
+            if (platforms.length === 0) { alert('Select at least one platform'); return; }
+
+            document.getElementById('inputView').classList.add('hidden');
+            document.getElementById('processingView').classList.add('active');
+            chargeCredits('generate');
+
+            try {
+                const resp = await fetch('/api/socialpost', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'generate', business, tone, platforms, pillars, days })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                currentData = data;
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('processingView').classList.remove('active');
+                document.getElementById('inputView').classList.remove('hidden');
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            // Strategy
+            document.getElementById('strategyBar').innerHTML = `
+                <h3>Content Strategy</h3>
+                <p>${esc(data.strategy || '')}</p>
+                ${data.contentPillars ? `<div class="pillars">${data.contentPillars.map(p => `<span class="pillar-tag">${esc(p)}</span>`).join('')}</div>` : ''}
+            `;
+
+            // Day tabs
+            const cal = data.calendar || [];
+            document.getElementById('dayTabs').innerHTML = cal.map((day, i) =>
+                `<button class="day-tab ${i === 0 ? 'active' : ''}" onclick="switchDay(${i})">Day ${day.day}${day.dayLabel ? ' · ' + day.dayLabel : ''}</button>`
+            ).join('');
+
+            // Day contents
+            let html = '';
+            cal.forEach((day, i) => {
+                html += `<div class="day-content ${i === 0 ? 'active' : ''}" id="day-${i}">`;
+                html += `<div class="day-header">${esc(day.theme || '')}</div>`;
+
+                const posts = day.posts || {};
+                for (const [platform, post] of Object.entries(posts)) {
+                    if (!post) continue;
+                    const text = post.text || post.caption || '';
+                    const hashtags = post.hashtags || [];
+                    const time = post.bestTime || '';
+                    const idea = post.contentIdea || '';
+
+                    html += `<div class="post-card">
+                        <button class="copy-btn" onclick="copyPost(this)">Copy</button>
+                        <div class="post-platform">
+                            <div class="platform-icon ${platform}">${platformEmoji(platform)}</div>
+                            <span class="platform-name">${platformName(platform)}</span>
+                            ${time ? `<span class="post-time">${esc(time)}</span>` : ''}
+                        </div>
+                        <div class="post-text">${esc(text)}</div>
+                        ${hashtags.length ? `<div class="post-hashtags">${hashtags.map(h => h.startsWith('#') ? esc(h) : '#' + esc(h)).join(' ')}</div>` : ''}
+                        ${idea ? `<div class="post-idea">Content idea: ${esc(idea)}</div>` : ''}
+                    </div>`;
+                }
+                html += '</div>';
+            });
+            document.getElementById('dayContents').innerHTML = html;
+
+            // Tips
+            if (data.tips?.length) {
+                document.getElementById('tipsSection').innerHTML = `<div class="tips-section"><h3>Pro Tips</h3><ul>${data.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+            }
+
+            // Hashtags
+            if (data.hashtagStrategy) {
+                const hs = data.hashtagStrategy;
+                let hhtml = '<div class="hashtag-section"><h3>Hashtag Strategy</h3>';
+                for (const [group, tags] of Object.entries(hs)) {
+                    if (tags?.length) {
+                        hhtml += `<div class="hashtag-group"><div class="hashtag-group-label">${esc(group)}</div><div class="hashtag-list">${tags.map(t => `<span class="hashtag-chip" onclick="copyTag(this)">${esc(t.startsWith('#') ? t : '#' + t)}</span>`).join('')}</div></div>`;
+                    }
+                }
+                hhtml += '</div>';
+                document.getElementById('hashtagSection').innerHTML = hhtml;
+            }
+        }
+
+        function switchDay(idx) {
+            document.querySelectorAll('.day-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+            document.querySelectorAll('.day-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+        }
+
+        function platformEmoji(p) {
+            return { twitter: 'X', instagram: 'IG', linkedin: 'in', facebook: 'f' }[p] || p[0].toUpperCase();
+        }
+        function platformName(p) {
+            return { twitter: 'Twitter / X', instagram: 'Instagram', linkedin: 'LinkedIn', facebook: 'Facebook' }[p] || p;
+        }
+
+        function copyPost(btn) {
+            const card = btn.closest('.post-card');
+            const text = card.querySelector('.post-text').textContent + '\n' + (card.querySelector('.post-hashtags')?.textContent || '');
+            navigator.clipboard.writeText(text.trim());
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        function copyTag(el) {
+            navigator.clipboard.writeText(el.textContent);
+            el.style.borderColor = '#ec4899';
+            el.style.color = '#ec4899';
+            setTimeout(() => { el.style.borderColor = ''; el.style.color = ''; }, 1000);
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading" style="opacity:0.5">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            qaHistory.push({ role: 'user', content: q });
+            chargeCredits('qa');
+
+            try {
+                const resp = await fetch('/api/socialpost', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', business: currentBusiness, question: q, history: qaHistory })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error);
+
+                document.getElementById('qaLoading').remove();
+                qaHistory.push({ role: 'assistant', content: data.answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${esc(data.answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#ef4444">Error: ${esc(err.message)}</div>`;
+            }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function reset() {
+            document.getElementById('resultsView').classList.remove('active');
+            document.getElementById('inputView').classList.remove('hidden');
+            qaHistory = [];
+            currentData = null;
+        }
+    </script>
+</body>
+</html>
