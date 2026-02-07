@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelPlanner AI — AI Trip Itinerary Generator | SUITE</title>
+    <meta name="description" content="Enter a destination and budget — get a complete day-by-day itinerary with activities, restaurants, transport, and local tips.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; }
+        .header h1 span { color: #f97316; }
+        .header p { color: #94a3b8; margin-top: 6px; font-size: 0.9rem; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select, .form-group textarea {
+            background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px;
+            color: #e2e8f0; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #f97316; }
+
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 8px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; transition: all 0.2s;
+        }
+        .chip:hover { border-color: #f97316; color: #e2e8f0; }
+        .chip.active { background: #f97316; color: #000; border-color: #f97316; font-weight: 600; }
+
+        .generate-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff;
+            transition: opacity 0.2s; font-family: inherit;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .results { display: none; }
+
+        .trip-header { background: linear-gradient(135deg, #f9731615, #ea580c10); border: 1px solid #f9731630; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .trip-header h2 { color: #f97316; font-size: 1.3rem; margin-bottom: 6px; }
+        .trip-header p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
+        .trip-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+        .trip-meta span { background: #0f0f1a; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; color: #94a3b8; }
+
+        .budget-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .budget-item { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; text-align: center; }
+        .budget-item .val { font-size: 1.1rem; font-weight: 700; color: #f97316; }
+        .budget-item .lbl { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px; }
+
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn {
+            padding: 10px 20px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            border: 1px solid #2a2a3e; background: #1a1a2e; color: #94a3b8; transition: all 0.2s; font-family: inherit;
+        }
+        .action-btn:hover { border-color: #f97316; color: #e2e8f0; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab {
+            padding: 10px 18px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; white-space: nowrap; transition: all 0.2s;
+        }
+        .tab:hover { border-color: #f97316; color: #e2e8f0; }
+        .tab.active { background: #f97316; color: #000; border-color: #f97316; }
+
+        .day-content { display: none; }
+        .day-content.active { display: block; }
+
+        .day-title { color: #f97316; font-size: 1.1rem; margin-bottom: 16px; font-weight: 700; }
+
+        .activity-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: grid; grid-template-columns: 70px 1fr; gap: 14px; }
+        .activity-time { font-size: 0.8rem; font-weight: 700; color: #f97316; padding-top: 2px; }
+        .activity-info h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .activity-desc { font-size: 0.8rem; color: #94a3b8; line-height: 1.5; margin-bottom: 6px; }
+        .activity-meta { display: flex; gap: 12px; font-size: 0.75rem; color: #64748b; }
+        .activity-tip { font-size: 0.7rem; color: #f97316; margin-top: 6px; font-style: italic; }
+
+        .meals-card { background: #0f0f1a; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .meals-card h4 { color: #f97316; font-size: 0.8rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meal-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a2e; font-size: 0.85rem; }
+        .meal-item:last-child { border: none; }
+        .meal-name { font-weight: 600; }
+        .meal-cuisine { color: #94a3b8; font-size: 0.75rem; }
+        .meal-tip { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+
+        .transport-note { background: #f9731610; border: 1px solid #f9731620; border-radius: 8px; padding: 10px; font-size: 0.8rem; color: #94a3b8; margin-bottom: 16px; }
+
+        .info-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+        .info-section h3 { color: #f97316; font-size: 0.95rem; margin-bottom: 12px; }
+        .info-section li { color: #94a3b8; font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+
+        .accom-card { background: #0f0f1a; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+        .accom-type { font-size: 0.75rem; font-weight: 700; color: #f97316; text-transform: uppercase; }
+        .accom-area { font-size: 0.9rem; font-weight: 600; margin: 2px 0; }
+        .accom-price { font-size: 0.8rem; color: #94a3b8; }
+        .accom-tip { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-top: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #f9731620; border: 1px solid #f9731630; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 10px; }
+        .qa-input-row input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px; color: #e2e8f0; font-size: 0.85rem; font-family: inherit; outline: none; }
+        .qa-input-row input:focus { border-color: #f97316; }
+        .qa-input-row button { padding: 12px 24px; border: none; border-radius: 10px; background: #f97316; color: #000; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        .error-msg { background: #dc262620; border: 1px solid #dc262640; border-radius: 10px; padding: 14px; color: #fca5a5; font-size: 0.85rem; }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .budget-bar { grid-template-columns: 1fr 1fr; }
+            .activity-card { grid-template-columns: 60px 1fr; }
+            .qa-msg.user { margin-left: 10px; }
+            .qa-msg.ai { margin-right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ <span>TravelPlanner AI</span></h1>
+            <p>Destination + budget → complete day-by-day itinerary</p>
+        </div>
+
+        <div id="inputSection" class="input-section">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Where are you going?</label>
+                    <input type="text" id="destinationInput" placeholder="e.g., Tokyo, Japan">
+                </div>
+                <div class="form-group">
+                    <label>Trip Length</label>
+                    <select id="daysSelect">
+                        <option value="3">3 Days (Weekend)</option>
+                        <option value="5" selected>5 Days</option>
+                        <option value="7">7 Days (One Week)</option>
+                        <option value="10">10 Days</option>
+                        <option value="14">14 Days (Two Weeks)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Budget Level</label>
+                    <select id="budgetSelect">
+                        <option value="budget — hostels, street food, free activities">Budget</option>
+                        <option value="moderate — mid-range hotels, local restaurants" selected>Moderate</option>
+                        <option value="luxury — upscale hotels, fine dining, VIP experiences">Luxury</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Who's Going?</label>
+                    <select id="travelersSelect">
+                        <option value="solo traveler">Solo</option>
+                        <option value="couple" selected>Couple</option>
+                        <option value="family with kids">Family with Kids</option>
+                        <option value="group of friends">Group of Friends</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Start Date (optional)</label>
+                    <input type="text" id="dateInput" placeholder="e.g., March 2026">
+                </div>
+                <div class="form-group full">
+                    <label>Interests (select all that apply)</label>
+                    <div class="chip-group" id="interestChips">
+                        <div class="chip active" data-val="sightseeing">Sightseeing</div>
+                        <div class="chip" data-val="food & dining">Food & Dining</div>
+                        <div class="chip" data-val="history & culture">History</div>
+                        <div class="chip" data-val="nature & outdoors">Nature</div>
+                        <div class="chip" data-val="nightlife">Nightlife</div>
+                        <div class="chip" data-val="shopping">Shopping</div>
+                        <div class="chip" data-val="adventure & sports">Adventure</div>
+                        <div class="chip" data-val="art & museums">Art & Museums</div>
+                        <div class="chip" data-val="relaxation & spa">Relaxation</div>
+                    </div>
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Plan My Trip</button>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Planning your perfect trip...</p>
+        </div>
+
+        <div id="errorSection" style="display:none;"></div>
+
+        <div id="resultsSection" class="results">
+            <div id="tripHeader" class="trip-header"></div>
+            <div id="budgetBar" class="budget-bar"></div>
+
+            <div class="action-bar">
+                <button class="action-btn" onclick="copyItinerary()">📋 Copy Itinerary</button>
+                <button class="action-btn" onclick="newTrip()">🔄 New Trip</button>
+            </div>
+
+            <div class="tabs" id="dayTabs"></div>
+            <div id="daysContainer"></div>
+
+            <div id="tipsSection" class="info-section" style="display:none;"></div>
+            <div id="packingSection" class="info-section" style="display:none;"></div>
+            <div id="accomSection" class="info-section" style="display:none;"></div>
+
+            <div class="qa-section">
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-msg ai">Ask me anything — restaurant alternatives, hidden gems, transport advice, or itinerary changes!</div>
+                </div>
+                <div class="qa-input-row">
+                    <input type="text" id="qaInput" placeholder="e.g., What's the best way to get from the airport?" onkeydown="if(event.key==='Enter')askQuestion()">
+                    <button onclick="askQuestion()">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTrip = null;
+        let qaHistory = [];
+        const selectedInterests = new Set(['sightseeing']);
+
+        document.querySelectorAll('#interestChips .chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('active');
+                const val = chip.dataset.val;
+                if (selectedInterests.has(val)) selectedInterests.delete(val); else selectedInterests.add(val);
+            });
+        });
+
+        async function generate() {
+            const dest = document.getElementById('destinationInput').value.trim();
+            if (!dest) { alert('Please enter a destination.'); return; }
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+
+            try {
+                chargeCredits('generate');
+                const resp = await fetch('/api/travelplanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'generate', destination: dest,
+                        days: parseInt(document.getElementById('daysSelect').value),
+                        budget: document.getElementById('budgetSelect').value,
+                        travelers: document.getElementById('travelersSelect').value,
+                        interests: [...selectedInterests].join(', '),
+                        startDate: document.getElementById('dateInput').value.trim()
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+                if (data.raw) {
+                    document.getElementById('errorSection').innerHTML = `<div class="error-msg">${data.raw}</div>`;
+                    document.getElementById('errorSection').style.display = 'block';
+                    document.getElementById('inputSection').style.display = 'block';
+                } else {
+                    currentTrip = data;
+                    renderTrip(data);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('errorSection').innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('inputSection').style.display = 'block';
+            } finally {
+                document.getElementById('loadingSection').style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function renderTrip(d) {
+            document.getElementById('tripHeader').innerHTML = `
+                <h2>${d.tripName || 'Your Trip'}</h2>
+                <p>${d.overview || ''}</p>
+                <div class="trip-meta">
+                    <span>📍 ${d.destination || ''}</span>
+                    <span>📅 ${d.days?.length || '?'} Days</span>
+                    ${d.bestTimeToVisit ? `<span>🌤️ ${d.bestTimeToVisit}</span>` : ''}
+                </div>
+            `;
+
+            if (d.estimatedBudget) {
+                const b = d.estimatedBudget;
+                document.getElementById('budgetBar').innerHTML = `
+                    <div class="budget-item"><div class="val">${b.total || '?'}</div><div class="lbl">Total Est.</div></div>
+                    <div class="budget-item"><div class="val">${b.accommodation || '?'}</div><div class="lbl">Hotels</div></div>
+                    <div class="budget-item"><div class="val">${b.food || '?'}</div><div class="lbl">Food</div></div>
+                    <div class="budget-item"><div class="val">${b.activities || '?'}</div><div class="lbl">Activities</div></div>
+                    <div class="budget-item"><div class="val">${b.transport || '?'}</div><div class="lbl">Transport</div></div>
+                    <div class="budget-item"><div class="val">${b.misc || '?'}</div><div class="lbl">Misc</div></div>
+                `;
+            }
+
+            const tabs = document.getElementById('dayTabs');
+            const container = document.getElementById('daysContainer');
+            tabs.innerHTML = ''; container.innerHTML = '';
+
+            (d.days || []).forEach((day, i) => {
+                tabs.innerHTML += `<div class="tab ${i===0?'active':''}" onclick="switchDay(${i})">Day ${day.day||i+1}</div>`;
+
+                let html = `<div class="day-content ${i===0?'active':''}" id="dayContent${i}">`;
+                html += `<div class="day-title">Day ${day.day||i+1}: ${day.title||''}</div>`;
+
+                if (day.transport) html += `<div class="transport-note">🚌 ${day.transport}</div>`;
+
+                (day.activities||[]).forEach(a => {
+                    html += `<div class="activity-card">
+                        <div class="activity-time">${a.time||''}</div>
+                        <div class="activity-info">
+                            <h4>${a.activity||''}</h4>
+                            <div class="activity-desc">${a.description||''}</div>
+                            <div class="activity-meta">
+                                ${a.duration?`<span>⏱️ ${a.duration}</span>`:''}
+                                ${a.cost?`<span>💰 ${a.cost}</span>`:''}
+                            </div>
+                            ${a.tip?`<div class="activity-tip">💡 ${a.tip}</div>`:''}
+                        </div>
+                    </div>`;
+                });
+
+                if (day.meals) {
+                    html += `<div class="meals-card"><h4>🍽️ Where to Eat</h4>`;
+                    for (const [type, m] of Object.entries(day.meals)) {
+                        if (m && m.name) {
+                            html += `<div class="meal-item"><div><div class="meal-name">${type.charAt(0).toUpperCase()+type.slice(1)}: ${m.name}</div><div class="meal-cuisine">${m.cuisine||''} ${m.priceRange||''}</div>${m.tip?`<div class="meal-tip">💡 ${m.tip}</div>`:''}</div></div>`;
+                        }
+                    }
+                    html += `</div>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            });
+
+            if (d.localTips?.length) {
+                const el = document.getElementById('tipsSection');
+                el.innerHTML = `<h3>🌍 Local Tips</h3><ul>${d.localTips.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+                el.style.display = 'block';
+            }
+            if (d.packingEssentials?.length) {
+                const el = document.getElementById('packingSection');
+                el.innerHTML = `<h3>🎒 Packing Essentials</h3><ul>${d.packingEssentials.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+                el.style.display = 'block';
+            }
+            if (d.accommodationTips?.length) {
+                const el = document.getElementById('accomSection');
+                el.innerHTML = `<h3>🏨 Where to Stay</h3>${d.accommodationTips.map(a=>`<div class="accom-card"><div class="accom-type">${a.type||''}</div><div class="accom-area">${a.area||''}</div><div class="accom-price">${a.priceRange||''}</div><div class="accom-tip">${a.tip||''}</div></div>`).join('')}`;
+                el.style.display = 'block';
+            }
+        }
+
+        function switchDay(idx) {
+            document.querySelectorAll('.day-content').forEach((c,i)=>c.classList.toggle('active',i===idx));
+            document.querySelectorAll('#dayTabs .tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+        }
+
+        function copyItinerary() {
+            if (!currentTrip) return;
+            const d = currentTrip;
+            let text = `${d.tripName||'Trip'}\n${'='.repeat(40)}\n${d.overview||''}\n\n`;
+            if (d.estimatedBudget) text += `Budget: ${d.estimatedBudget.total||'?'}\n\n`;
+            (d.days||[]).forEach(day=>{
+                text += `--- Day ${day.day}: ${day.title||''} ---\n`;
+                (day.activities||[]).forEach(a=>{ text += `  ${a.time}: ${a.activity} (${a.duration||'?'}, ${a.cost||'free'})\n    ${a.description||''}\n`; });
+                if(day.meals){ for(const[t,m] of Object.entries(day.meals)){ if(m?.name) text+=`  ${t}: ${m.name} (${m.cuisine||''} ${m.priceRange||''})\n`; }}
+                text+='\n';
+            });
+            navigator.clipboard.writeText(text);
+            event.target.textContent='✓ Copied!';
+            setTimeout(()=>event.target.textContent='📋 Copy Itinerary',2000);
+        }
+
+        function newTrip() {
+            currentTrip=null; qaHistory=[];
+            document.getElementById('resultsSection').style.display='none';
+            document.getElementById('inputSection').style.display='block';
+            document.getElementById('qaMessages').innerHTML='<div class="qa-msg ai">Ask me anything about your trip!</div>';
+        }
+
+        async function askQuestion() {
+            const input=document.getElementById('qaInput'); const q=input.value.trim(); if(!q) return; input.value='';
+            const msgs=document.getElementById('qaMessages');
+            msgs.innerHTML+=`<div class="qa-msg user">${q}</div><div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop=msgs.scrollHeight;
+            try {
+                chargeCredits('qa');
+                const resp=await fetch('/api/travelplanner',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'qa',question:q,history:qaHistory,context:currentTrip?JSON.stringify(currentTrip).slice(0,50000):''})});
+                const data=await resp.json(); qaHistory.push({role:'user',content:q});
+                const answer=data.answer||data.error||'No response'; qaHistory.push({role:'model',content:answer});
+                document.getElementById('qaLoading').innerHTML=answer.replace(/\n/g,'<br>');
+            } catch(err){ document.getElementById('qaLoading').innerHTML=`Error: ${err.message}`; }
+            msgs.scrollTop=msgs.scrollHeight;
+        }
+
+        function chargeCredits(feature) {
+            if(window.parent!==window) window.parent.postMessage({type:'suite-charge-credits',appId:'travelplanner',feature,chargeId:Date.now().toString(),amount:5},'*');
+        }
+    </script>
+</body>
+</html>
