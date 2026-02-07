@@ -27,6 +27,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Redirect root to game client (play.agentscape.app → agentscape.app/play)
+app.get('/', (req, res) => {
+    const qs = Object.keys(req.query).length ? '?' + new URLSearchParams(req.query as any).toString() : '';
+    res.redirect(302, 'https://agentscape.app/play' + qs);
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
