@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CopyWriter AI — Marketing Copy Generator | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-header { background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(234,88,12,0.08)); border-bottom: 1px solid rgba(249,115,22,0.2); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header span { font-size: 0.8rem; color: #94a3b8; }
+        .header-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #f97316, #ea580c); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input View */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #f97316; }
+
+        textarea { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; resize: vertical; outline: none; transition: border-color 0.2s; }
+        textarea:focus { border-color: #f97316; }
+        textarea::placeholder { color: #4a5568; }
+        .product-input { min-height: 120px; }
+
+        .options-row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .option-group { flex: 1; min-width: 180px; }
+        .option-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        select { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; cursor: pointer; }
+        select:focus { border-color: #f97316; }
+
+        .audience-input { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .audience-input:focus { border-color: #f97316; }
+
+        .mode-tabs { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+        .mode-tab { padding: 8px 16px; border-radius: 8px; border: 1px solid #2a2a3e; background: #0f0f1a; color: #94a3b8; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .mode-tab:hover { border-color: #f97316; color: #e2e8f0; }
+        .mode-tab.active { background: rgba(249,115,22,0.15); border-color: #f97316; color: #f97316; }
+
+        .generate-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(249,115,22,0.4); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 60px 20px; }
+        .processing.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing p { color: #94a3b8; font-size: 0.95rem; }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .results-tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .results-tab { padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .results-tab:hover { color: #e2e8f0; }
+        .results-tab.active { background: rgba(249,115,22,0.15); color: #f97316; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .copy-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-bottom: 12px; position: relative; }
+        .copy-card h3 { font-size: 0.85rem; font-weight: 700; color: #f97316; margin-bottom: 10px; }
+        .copy-card p, .copy-card li { font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; }
+        .copy-card ul { list-style: none; padding: 0; }
+        .copy-card ul li { padding: 8px 0; border-bottom: 1px solid #1f1f35; }
+        .copy-card ul li:last-child { border-bottom: none; }
+
+        .copy-btn { position: absolute; top: 12px; right: 12px; background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3); color: #f97316; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+        .copy-btn:hover { background: rgba(249,115,22,0.3); }
+
+        .variation { background: #0f0f1a; border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 0.88rem; color: #cbd5e1; line-height: 1.5; }
+        .variation-label { font-size: 0.7rem; font-weight: 700; color: #f97316; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .headline-display { font-size: 1.5rem; font-weight: 800; color: #fff; line-height: 1.3; margin-bottom: 8px; }
+        .tagline-display { font-size: 1.1rem; color: #f97316; font-weight: 600; font-style: italic; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 14px; }
+        .qa-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; line-height: 1.5; }
+        .qa-msg.user { background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.2); color: #e2e8f0; margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; color: #cbd5e1; margin-right: 40px; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; }
+        .qa-input:focus { border-color: #f97316; }
+        .qa-send { background: linear-gradient(135deg, #f97316, #ea580c); border: none; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { margin-top: 20px; padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .new-btn:hover { border-color: #f97316; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .options-row { flex-direction: column; }
+            .mode-tabs { flex-direction: column; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="header-icon">✍️</div>
+        <div>
+            <h1>CopyWriter AI</h1>
+            <span>Product details in → marketing copy out</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Input View -->
+        <div id="inputView" class="input-section">
+            <h2>Describe your product or service</h2>
+            <textarea class="product-input" id="productInput" placeholder="What are you selling? Include key features, benefits, pricing, what makes it unique...&#10;&#10;Example: 'SleepRight is a $49 smart pillow that tracks your sleep stages using built-in sensors. It gently vibrates to adjust your position when it detects snoring. Made from memory foam with cooling gel. Target: adults 25-55 who want better sleep without wearing a device.'"></textarea>
+
+            <div class="options-row">
+                <div class="option-group">
+                    <label>Tone</label>
+                    <select id="toneSelect">
+                        <option value="professional">Professional</option>
+                        <option value="casual">Casual & Friendly</option>
+                        <option value="bold">Bold & Provocative</option>
+                        <option value="luxury">Luxury & Premium</option>
+                        <option value="playful">Playful & Fun</option>
+                        <option value="urgent">Urgent & Scarcity</option>
+                        <option value="empathetic">Empathetic & Warm</option>
+                        <option value="technical">Technical & Precise</option>
+                    </select>
+                </div>
+                <div class="option-group">
+                    <label>Target Audience</label>
+                    <input class="audience-input" id="audienceInput" placeholder="e.g., small business owners, new parents, gamers..." />
+                </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Generate</label>
+                <div class="mode-tabs">
+                    <button class="mode-tab active" data-mode="generate">Full Copy Suite</button>
+                    <button class="mode-tab" data-mode="google-ad">Google Ads</button>
+                    <button class="mode-tab" data-mode="facebook-ad">Facebook Ads</button>
+                    <button class="mode-tab" data-mode="social-post">Social Posts</button>
+                    <button class="mode-tab" data-mode="email-subject">Email Subjects</button>
+                    <button class="mode-tab" data-mode="landing-hero">Landing Page</button>
+                    <button class="mode-tab" data-mode="product-desc">Product Desc</button>
+                    <button class="mode-tab" data-mode="tagline">Taglines</button>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generate()">Generate Marketing Copy</button>
+        </div>
+
+        <!-- Processing -->
+        <div id="processingView" class="processing">
+            <div class="spinner"></div>
+            <p id="processingText">Crafting your copy...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsView" class="results">
+            <div id="resultsTabs" class="results-tabs"></div>
+            <div id="resultsContent"></div>
+            <button class="new-btn" onclick="reset()">← New Copy</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProduct = '';
+        let currentResults = null;
+        let selectedMode = 'generate';
+        let qaHistory = [];
+
+        // Mode tab switching
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                selectedMode = tab.dataset.mode;
+            });
+        });
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'copywriter',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function generate() {
+            const product = document.getElementById('productInput').value.trim();
+            if (!product) return;
+            currentProduct = product;
+
+            const tone = document.getElementById('toneSelect').value;
+            const audience = document.getElementById('audienceInput').value.trim();
+
+            document.getElementById('inputView').classList.add('hidden');
+            document.getElementById('processingView').classList.add('active');
+            document.getElementById('processingText').textContent = selectedMode === 'generate' ? 'Generating full copy suite...' : 'Generating copy...';
+
+            chargeCredits('generate');
+
+            try {
+                const body = selectedMode === 'generate'
+                    ? { mode: 'generate', product, tone, audience }
+                    : { mode: 'single', product, tone, audience, format: selectedMode };
+
+                const resp = await fetch('/api/copywriter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                currentResults = data;
+                if (selectedMode === 'generate') {
+                    renderFullResults(data);
+                } else {
+                    renderSingleResults(data, selectedMode);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+                reset();
+            }
+        }
+
+        function renderFullResults(data) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            const tabs = ['Overview', 'Ad Copy', 'Landing Page', 'Social Posts', 'Email', 'Q&A'];
+            const tabsEl = document.getElementById('resultsTabs');
+            tabsEl.innerHTML = tabs.map((t, i) =>
+                `<button class="results-tab ${i === 0 ? 'active' : ''}" onclick="switchTab(${i})">${t}</button>`
+            ).join('');
+
+            const content = document.getElementById('resultsContent');
+            content.innerHTML = `
+                <!-- Overview -->
+                <div class="tab-content active" id="tab-0">
+                    <div class="copy-card">
+                        <div class="headline-display">${esc(data.headline || '')}</div>
+                        <div class="tagline-display">${esc(data.tagline || '')}</div>
+                    </div>
+                    <div class="copy-card">
+                        <h3>Elevator Pitch</h3>
+                        <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                        <p>${esc(data.elevatorPitch || '')}</p>
+                    </div>
+                    ${data.emailSubjects ? `<div class="copy-card">
+                        <h3>Email Subject Lines</h3>
+                        <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                        <ul>${data.emailSubjects.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+                    </div>` : ''}
+                </div>
+
+                <!-- Ad Copy -->
+                <div class="tab-content" id="tab-1">
+                    ${renderAdSection('Google Ads', data.adCopy?.google)}
+                    ${renderAdSection('Facebook / Instagram Ads', data.adCopy?.facebook)}
+                    ${renderAdSection('LinkedIn Ads', data.adCopy?.linkedin)}
+                </div>
+
+                <!-- Landing Page -->
+                <div class="tab-content" id="tab-2">
+                    ${data.landingPage ? `
+                        <div class="copy-card">
+                            <h3>Hero Section</h3>
+                            <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                            <p>${esc(data.landingPage.hero || '')}</p>
+                        </div>
+                        <div class="copy-card">
+                            <h3>Benefits</h3>
+                            <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                            <ul>${(data.landingPage.benefits || []).map(b => `<li>✓ ${esc(b)}</li>`).join('')}</ul>
+                        </div>
+                        <div class="copy-card">
+                            <h3>Call to Action</h3>
+                            <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                            <p>${esc(data.landingPage.cta || '')}</p>
+                        </div>
+                    ` : '<div class="copy-card"><p>No landing page copy generated.</p></div>'}
+                </div>
+
+                <!-- Social Posts -->
+                <div class="tab-content" id="tab-3">
+                    ${renderAdSection('Twitter / X', data.socialPosts?.twitter)}
+                    ${renderAdSection('Instagram', data.socialPosts?.instagram)}
+                    ${renderAdSection('LinkedIn', data.socialPosts?.linkedin)}
+                </div>
+
+                <!-- Email -->
+                <div class="tab-content" id="tab-4">
+                    ${data.emailSubjects ? `<div class="copy-card">
+                        <h3>Subject Line Variations</h3>
+                        <button class="copy-btn" onclick="copyText(this)">Copy All</button>
+                        ${data.emailSubjects.map((s, i) => `<div class="variation"><span class="variation-label">Option ${i + 1}</span><br>${esc(s)}</div>`).join('')}
+                    </div>` : ''}
+                </div>
+
+                <!-- Q&A -->
+                <div class="tab-content" id="tab-5">
+                    <div class="qa-section">
+                        <div class="qa-messages" id="qaMessages">
+                            <div class="qa-msg ai">I generated your marketing copy! Ask me anything — want different angles, need copy for a specific channel, or want me to adjust the tone?</div>
+                        </div>
+                        <div class="qa-input-row">
+                            <input class="qa-input" id="qaInput" placeholder="Ask about your marketing copy..." onkeydown="if(event.key==='Enter')askQuestion()" />
+                            <button class="qa-send" onclick="askQuestion()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSingleResults(data, format) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            const tabsEl = document.getElementById('resultsTabs');
+            tabsEl.innerHTML = `<button class="results-tab active">Results</button><button class="results-tab" onclick="switchTab(1)">Q&A</button>`;
+
+            const content = document.getElementById('resultsContent');
+            let html = '<div class="tab-content active" id="tab-0">';
+
+            if (data.ads) {
+                html += data.ads.map((ad, i) => `<div class="copy-card"><h3>Variation ${i + 1}</h3><button class="copy-btn" onclick="copyText(this)">Copy</button>${typeof ad === 'string' ? `<p>${esc(ad)}</p>` : `<p><strong>${esc(ad.headline || '')}</strong></p><p>${esc(ad.desc1 || '')} ${esc(ad.desc2 || '')}</p>`}</div>`).join('');
+            } else if (data.heroes) {
+                html += data.heroes.map((h, i) => `<div class="copy-card"><h3>Variation ${i + 1}</h3><button class="copy-btn" onclick="copyText(this)">Copy</button><div class="headline-display" style="font-size:1.2rem">${esc(h.headline || '')}</div><p>${esc(h.subheadline || '')}</p><p style="color:#f97316;font-weight:700;margin-top:8px">${esc(h.cta || '')}</p></div>`).join('');
+            } else if (data.subjects) {
+                html += `<div class="copy-card"><h3>Email Subject Lines</h3><button class="copy-btn" onclick="copyText(this)">Copy All</button>${data.subjects.map((s, i) => `<div class="variation"><span class="variation-label">Option ${i + 1}</span><br>${esc(s)}</div>`).join('')}</div>`;
+            } else if (data.taglines) {
+                html += `<div class="copy-card"><h3>Taglines</h3><button class="copy-btn" onclick="copyText(this)">Copy All</button>${data.taglines.map((t, i) => `<div class="variation"><span class="variation-label">${i + 1}</span><br>${esc(t)}</div>`).join('')}</div>`;
+            } else if (data.twitter || data.instagram || data.linkedin) {
+                html += renderAdSection('Twitter / X', data.twitter) + renderAdSection('Instagram', data.instagram) + renderAdSection('LinkedIn', data.linkedin);
+            } else if (data.short || data.medium || data.long) {
+                ['short', 'medium', 'long'].forEach(len => {
+                    if (data[len]) html += `<div class="copy-card"><h3>${len.charAt(0).toUpperCase() + len.slice(1)} Description</h3><button class="copy-btn" onclick="copyText(this)">Copy</button><p>${esc(data[len])}</p></div>`;
+                });
+            } else if (data.raw) {
+                html += `<div class="copy-card"><p style="white-space:pre-wrap">${esc(data.raw)}</p></div>`;
+            }
+
+            html += '</div>';
+            html += `<div class="tab-content" id="tab-1">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Your copy is ready! Ask me to adjust tone, try different angles, or generate more variations.</div>
+                    </div>
+                    <div class="qa-input-row">
+                        <input class="qa-input" id="qaInput" placeholder="Ask about your copy..." onkeydown="if(event.key==='Enter')askQuestion()" />
+                        <button class="qa-send" onclick="askQuestion()">Send</button>
+                    </div>
+                </div>
+            </div>`;
+
+            content.innerHTML = html;
+        }
+
+        function renderAdSection(title, items) {
+            if (!items || !items.length) return '';
+            return `<div class="copy-card">
+                <h3>${title}</h3>
+                <button class="copy-btn" onclick="copyText(this)">Copy All</button>
+                ${items.map((item, i) => `<div class="variation"><span class="variation-label">Variation ${i + 1}</span><br>${esc(item)}</div>`).join('')}
+            </div>`;
+        }
+
+        function switchTab(idx) {
+            document.querySelectorAll('.results-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading" style="opacity:0.5">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            qaHistory.push({ role: 'user', content: q });
+            chargeCredits('qa');
+
+            try {
+                const resp = await fetch('/api/copywriter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', product: currentProduct, question: q, history: qaHistory })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error);
+
+                document.getElementById('qaLoading').remove();
+                qaHistory.push({ role: 'assistant', content: data.answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${esc(data.answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#ef4444">Error: ${esc(err.message)}</div>`;
+            }
+        }
+
+        function copyText(btn) {
+            const card = btn.closest('.copy-card');
+            const text = card.innerText.replace('Copy All', '').replace('Copy', '').trim();
+            navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = btn.dataset.orig || 'Copy', 1500);
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function reset() {
+            document.getElementById('resultsView').classList.remove('active');
+            document.getElementById('inputView').classList.remove('hidden');
+            qaHistory = [];
+            currentResults = null;
+        }
+    </script>
+</body>
+</html>
