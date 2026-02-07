@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewResponder — AI Review Response Generator | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-header { background: linear-gradient(135deg, rgba(5,150,105,0.15), rgba(4,120,87,0.08)); border-bottom: 1px solid rgba(5,150,105,0.2); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #059669, #047857); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header span { font-size: 0.8rem; color: #94a3b8; }
+        .header-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #059669, #047857); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: #059669; }
+        .input-section > p { font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 180px; }
+        input[type="text"], select { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        input:focus, select:focus { border-color: #059669; }
+
+        .reviews-list { display: grid; gap: 12px; }
+        .review-entry { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; position: relative; }
+        .review-entry-header { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .review-num { font-size: 0.75rem; font-weight: 700; color: #059669; }
+        .star-select { display: flex; gap: 2px; }
+        .star { cursor: pointer; font-size: 1.1rem; color: #2a2a3e; transition: color 0.15s; }
+        .star.filled { color: #fbbf24; }
+        .star:hover { color: #fbbf24; }
+        .platform-select { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 6px; padding: 4px 8px; color: #94a3b8; font-size: 0.75rem; font-family: inherit; outline: none; }
+        .remove-review { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #4a5568; font-size: 1rem; cursor: pointer; }
+        .remove-review:hover { color: #ef4444; }
+        textarea { width: 100%; background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; resize: vertical; min-height: 70px; outline: none; }
+        textarea:focus { border-color: #059669; }
+        textarea::placeholder { color: #4a5568; }
+
+        .add-review-btn { display: flex; align-items: center; gap: 6px; background: rgba(5,150,105,0.1); border: 1px dashed rgba(5,150,105,0.3); border-radius: 10px; padding: 12px; color: #059669; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; justify-content: center; margin-top: 8px; }
+        .add-review-btn:hover { background: rgba(5,150,105,0.2); }
+
+        .generate-btn { width: 100%; margin-top: 20px; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #059669, #047857); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(5,150,105,0.4); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 60px 20px; }
+        .processing.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #059669; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        .response-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; margin-bottom: 16px; overflow: hidden; }
+        .response-original { background: #0f0f1a; padding: 16px 20px; border-bottom: 1px solid #2a2a3e; }
+        .response-original-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .sentiment-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .sentiment-positive { background: rgba(5,150,105,0.15); color: #10b981; }
+        .sentiment-negative { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .sentiment-mixed { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .response-original-stars { color: #fbbf24; font-size: 0.85rem; }
+        .response-original p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; font-style: italic; }
+
+        .response-body { padding: 20px; position: relative; }
+        .response-body p { font-size: 0.9rem; color: #e2e8f0; line-height: 1.7; }
+        .response-tip { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a3e; font-size: 0.8rem; color: #059669; }
+
+        .copy-btn { position: absolute; top: 14px; right: 14px; background: rgba(5,150,105,0.15); border: 1px solid rgba(5,150,105,0.3); color: #059669; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .copy-btn:hover { background: rgba(5,150,105,0.3); }
+
+        .tips-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-top: 16px; }
+        .tips-card h3 { font-size: 0.85rem; font-weight: 700; color: #059669; margin-bottom: 10px; }
+        .tips-card li { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 6px; list-style: none; padding-left: 16px; position: relative; }
+        .tips-card li::before { content: '→'; position: absolute; left: 0; color: #059669; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-top: 16px; }
+        .qa-section h3 { font-size: 0.85rem; color: #059669; font-weight: 700; margin-bottom: 12px; }
+        .qa-messages { max-height: 350px; overflow-y: auto; margin-bottom: 14px; }
+        .qa-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; line-height: 1.5; }
+        .qa-msg.user { background: rgba(5,150,105,0.12); border: 1px solid rgba(5,150,105,0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; color: #cbd5e1; white-space: pre-line; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; }
+        .qa-input:focus { border-color: #059669; }
+        .qa-send { background: linear-gradient(135deg, #059669, #047857); border: none; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { margin-top: 20px; padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .new-btn:hover { border-color: #059669; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .form-row { flex-direction: column; }
+            .qa-msg.user { margin-left: 20px; }
+            .qa-msg.ai { margin-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="header-icon">💬</div>
+        <div>
+            <h1>ReviewResponder</h1>
+            <span>Paste reviews → professional responses</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Input -->
+        <div id="inputView" class="input-section">
+            <h2>Paste your customer reviews</h2>
+            <p>Add one or more reviews and we'll draft the perfect response for each.</p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Business name</label>
+                    <input type="text" id="businessName" placeholder="e.g., Joe's Coffee Shop" />
+                </div>
+                <div class="form-group">
+                    <label>Business type</label>
+                    <input type="text" id="businessType" placeholder="e.g., coffee shop, dentist, SaaS" />
+                </div>
+                <div class="form-group">
+                    <label>Response tone</label>
+                    <select id="toneSelect">
+                        <option value="professional and warm">Professional & Warm</option>
+                        <option value="casual and friendly">Casual & Friendly</option>
+                        <option value="formal and corporate">Formal & Corporate</option>
+                        <option value="empathetic and caring">Empathetic & Caring</option>
+                        <option value="enthusiastic and grateful">Enthusiastic & Grateful</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reviews</label>
+                <div class="reviews-list" id="reviewsList"></div>
+                <button class="add-review-btn" onclick="addReview()">+ Add another review</button>
+            </div>
+
+            <button class="generate-btn" onclick="generate()">Generate Responses</button>
+        </div>
+
+        <!-- Processing -->
+        <div id="processingView" class="processing">
+            <div class="spinner"></div>
+            <p style="color:#94a3b8">Crafting your responses...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsView" class="results">
+            <div id="responsesContainer"></div>
+            <div id="tipsContainer"></div>
+
+            <div class="qa-section">
+                <h3>Need help with reviews?</h3>
+                <div class="qa-messages" id="qaMessages">
+                    <div class="qa-msg ai">Responses are ready! Ask me for rewrites, help with a tricky review, or review management tips.</div>
+                </div>
+                <div class="qa-input-row">
+                    <input class="qa-input" id="qaInput" placeholder="e.g., How should I handle fake reviews?" onkeydown="if(event.key==='Enter')askQuestion()" />
+                    <button class="qa-send" onclick="askQuestion()">Send</button>
+                </div>
+            </div>
+
+            <button class="new-btn" onclick="reset()">← New Reviews</button>
+        </div>
+    </div>
+
+    <script>
+        let reviewCount = 0;
+        let qaHistory = [];
+
+        function addReview() {
+            const list = document.getElementById('reviewsList');
+            const idx = reviewCount++;
+            const div = document.createElement('div');
+            div.className = 'review-entry';
+            div.id = `review-${idx}`;
+            div.innerHTML = `
+                <button class="remove-review" onclick="removeReview(${idx})" title="Remove">&times;</button>
+                <div class="review-entry-header">
+                    <span class="review-num">Review ${idx + 1}</span>
+                    <div class="star-select" id="stars-${idx}">
+                        ${[1,2,3,4,5].map(s => `<span class="star" data-val="${s}" onclick="setStars(${idx},${s})">★</span>`).join('')}
+                    </div>
+                    <select class="platform-select" id="platform-${idx}">
+                        <option value="">Platform</option>
+                        <option value="Google">Google</option>
+                        <option value="Yelp">Yelp</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="TripAdvisor">TripAdvisor</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <textarea id="text-${idx}" placeholder="Paste the customer review here..."></textarea>
+            `;
+            list.appendChild(div);
+        }
+
+        function removeReview(idx) {
+            const el = document.getElementById(`review-${idx}`);
+            if (el) el.remove();
+        }
+
+        function setStars(idx, val) {
+            const container = document.getElementById(`stars-${idx}`);
+            if (!container) return;
+            container.dataset.rating = val;
+            container.querySelectorAll('.star').forEach(s => {
+                s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+            });
+        }
+
+        function getReviews() {
+            const entries = document.querySelectorAll('.review-entry');
+            const reviews = [];
+            entries.forEach(entry => {
+                const id = entry.id.replace('review-', '');
+                const text = document.getElementById(`text-${id}`)?.value.trim();
+                if (!text) return;
+                const stars = document.getElementById(`stars-${id}`);
+                const platform = document.getElementById(`platform-${id}`)?.value;
+                reviews.push({
+                    text,
+                    rating: stars?.dataset.rating ? parseInt(stars.dataset.rating) : null,
+                    platform: platform || null
+                });
+            });
+            return reviews;
+        }
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'suite-charge-credits',
+                    appId: 'reviewresponder',
+                    feature: feature,
+                    chargeId: Date.now().toString(),
+                    amount: amount || 5
+                }, '*');
+            }
+        }
+
+        async function generate() {
+            const reviews = getReviews();
+            if (!reviews.length) { alert('Add at least one review'); return; }
+
+            const businessName = document.getElementById('businessName').value.trim();
+            const businessType = document.getElementById('businessType').value.trim();
+            const tone = document.getElementById('toneSelect').value;
+
+            document.getElementById('inputView').classList.add('hidden');
+            document.getElementById('processingView').classList.add('active');
+            chargeCredits('respond');
+
+            try {
+                const resp = await fetch('/api/reviewresponder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'respond', reviews, businessName, businessType, tone })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+
+                renderResults(data, reviews);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('processingView').classList.remove('active');
+                document.getElementById('inputView').classList.remove('hidden');
+            }
+        }
+
+        function renderResults(data, reviews) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            const responses = data.responses || [];
+            let html = '';
+            responses.forEach((r, i) => {
+                const review = reviews[r.reviewIndex ?? i] || reviews[i];
+                const sentClass = r.sentiment === 'positive' ? 'sentiment-positive' : r.sentiment === 'negative' ? 'sentiment-negative' : 'sentiment-mixed';
+                const stars = r.rating || review?.rating;
+
+                html += `<div class="response-card">
+                    <div class="response-original">
+                        <div class="response-original-header">
+                            <span class="sentiment-badge ${sentClass}">${esc(r.sentiment || 'review')}</span>
+                            ${stars ? `<span class="response-original-stars">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}</span>` : ''}
+                        </div>
+                        <p>"${esc(review?.text || '')}"</p>
+                    </div>
+                    <div class="response-body">
+                        <button class="copy-btn" onclick="copyResponse(this)">Copy</button>
+                        <p>${esc(r.response || '')}</p>
+                        ${r.tips ? `<div class="response-tip">Tip: ${esc(r.tips)}</div>` : ''}
+                    </div>
+                </div>`;
+            });
+            document.getElementById('responsesContainer').innerHTML = html;
+
+            if (data.overallTips?.length) {
+                document.getElementById('tipsContainer').innerHTML = `<div class="tips-card"><h3>Review Management Tips</h3><ul>${data.overallTips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+            }
+        }
+
+        function copyResponse(btn) {
+            const body = btn.closest('.response-body');
+            const text = body.querySelector('p').textContent;
+            navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading" style="opacity:0.5">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            qaHistory.push({ role: 'user', content: q });
+            chargeCredits('qa');
+
+            try {
+                const resp = await fetch('/api/reviewresponder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'qa',
+                        question: q,
+                        history: qaHistory,
+                        businessName: document.getElementById('businessName').value.trim(),
+                        businessType: document.getElementById('businessType').value.trim()
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error);
+
+                document.getElementById('qaLoading').remove();
+                qaHistory.push({ role: 'assistant', content: data.answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${esc(data.answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#ef4444">Error: ${esc(err.message)}</div>`;
+            }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function reset() {
+            document.getElementById('resultsView').classList.remove('active');
+            document.getElementById('inputView').classList.remove('hidden');
+            qaHistory = [];
+        }
+
+        // Start with one review entry
+        addReview();
+    </script>
+</body>
+</html>
