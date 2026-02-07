@@ -15,6 +15,7 @@ const app = express();
 
 app.use(cors({
     origin: [
+        'https://play.agentscape.app',
         'https://agentscape.app',
         'https://www.agentscape.app',
         'https://suitegpt.app',
