@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>50 Free AI Tools — SUITE by Stuart Hollinger</title>
+    <meta name="description" content="50 AI-powered tools, all free, no sign-up. From form checking to tax prep, logo design to playlist generation. Built with SUITE.">
+    <meta property="og:title" content="I built 50 AI tools — all free, no sign-up">
+    <meta property="og:description" content="Photo → form check. Mood → playlist. PDF → summary. Resume → rewrite. 50 AI tools covering health, education, business, creative, marketing, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://suitegpt.app/apps/">
+    <meta property="og:image" content="https://suitegpt.app/suitegpt-logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="I built 50 AI tools — all free, no sign-up">
+    <meta name="twitter:description" content="Photo → form check. Mood → playlist. PDF → summary. Resume → rewrite. 50 AI-powered tools, all free.">
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link rel="canonical" href="https://suitegpt.app/apps/">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; }
+        a { text-decoration: none; color: inherit; }
+
+        /* Hero */
+        .hero { max-width: 1100px; margin: 0 auto; padding: 60px 24px 20px; text-align: center; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: #6366f115; border: 1px solid #6366f130; color: #a5b4fc; padding: 8px 20px; border-radius: 24px; font-size: 0.78rem; font-weight: 600; margin-bottom: 24px; }
+        .hero-badge .dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .hero h1 { font-size: 3.5rem; font-weight: 900; line-height: 1.1; margin-bottom: 16px; letter-spacing: -0.02em; }
+        .hero h1 .num { background: linear-gradient(135deg, #6366f1, #a78bfa, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.15rem; color: #94a3b8; max-width: 600px; margin: 0 auto 32px; line-height: 1.7; }
+        .hero-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 8px; }
+
+        /* Stats */
+        .stats { display: flex; justify-content: center; gap: 40px; margin-bottom: 48px; flex-wrap: wrap; }
+        .stat { text-align: center; }
+        .stat .num { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat .label { font-size: 0.78rem; color: #64748b; font-weight: 600; margin-top: 2px; }
+
+        /* Category */
+        .category { max-width: 1100px; margin: 0 auto; padding: 0 24px 48px; }
+        .category-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #1e1e32; }
+        .category-icon { font-size: 1.4rem; }
+        .category-header h2 { font-size: 1.2rem; font-weight: 800; }
+        .category-header .count { background: #6366f120; color: #a5b4fc; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; }
+
+        /* App grid */
+        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+        .app-card { background: #12121e; border: 1px solid #1e1e32; border-radius: 14px; padding: 18px 20px; display: flex; align-items: flex-start; gap: 14px; transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s; cursor: pointer; position: relative; overflow: hidden; }
+        .app-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
+        .app-card:hover { border-color: #2e2e48; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .app-icon { font-size: 1.6rem; flex-shrink: 0; width: 36px; text-align: center; margin-top: 1px; }
+        .app-info { flex: 1; min-width: 0; }
+        .app-info h3 { font-size: 0.92rem; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+        .app-info h3 .vision { font-size: 0.55rem; background: #6366f125; color: #a5b4fc; padding: 1px 6px; border-radius: 4px; font-weight: 700; flex-shrink: 0; }
+        .app-info p { font-size: 0.78rem; color: #64748b; line-height: 1.45; }
+        .app-arrow { color: #2e2e48; font-size: 0.9rem; transition: color 0.2s, transform 0.2s; flex-shrink: 0; margin-top: 4px; }
+        .app-card:hover .app-arrow { color: #6366f1; transform: translateX(3px); }
+
+        /* Accent colors per card */
+        .app-card[data-color="orange"]::before { background: #f97316; }
+        .app-card[data-color="red"]::before { background: #ef4444; }
+        .app-card[data-color="blue"]::before { background: #3b82f6; }
+        .app-card[data-color="green"]::before { background: #22c55e; }
+        .app-card[data-color="purple"]::before { background: #8b5cf6; }
+        .app-card[data-color="pink"]::before { background: #ec4899; }
+        .app-card[data-color="cyan"]::before { background: #06b6d4; }
+        .app-card[data-color="indigo"]::before { background: #6366f1; }
+        .app-card[data-color="teal"]::before { background: #14b8a6; }
+        .app-card[data-color="lime"]::before { background: #84cc16; }
+        .app-card[data-color="amber"]::before { background: #f59e0b; }
+        .app-card[data-color="rose"]::before { background: #f43f5e; }
+        .app-card[data-color="emerald"]::before { background: #10b981; }
+        .app-card[data-color="sky"]::before { background: #0ea5e9; }
+        .app-card[data-color="violet"]::before { background: #7c3aed; }
+        .app-card[data-color="fuchsia"]::before { background: #d946ef; }
+        .app-card[data-color="slate"]::before { background: #64748b; }
+        .app-card[data-color="sepia"]::before { background: #b8860b; }
+        .app-card[data-color="olive"]::before { background: #65a30d; }
+        .app-card[data-color="yellow"]::before { background: #eab308; }
+
+        /* Footer */
+        .footer { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; text-align: center; border-top: 1px solid #1e1e32; }
+        .footer-logo { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+        .footer-logo span { background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .footer p { color: #475569; font-size: 0.8rem; line-height: 1.6; }
+        .footer a { color: #6366f1; }
+        .footer-cta { display: inline-block; margin-top: 20px; padding: 12px 28px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-radius: 10px; font-weight: 700; font-size: 0.9rem; transition: transform 0.2s; }
+        .footer-cta:hover { transform: translateY(-2px); }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .stats { gap: 24px; }
+            .stat .num { font-size: 1.5rem; }
+            .app-grid { grid-template-columns: 1fr; }
+        }
+        @media (min-width: 1200px) {
+            .app-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="hero-badge"><span class="dot"></span> All 50 tools live and free</div>
+    <h1><span class="num">50</span> AI Tools,<br>Zero Sign-Up</h1>
+    <p>Every tool is free, runs in your browser, and works instantly. Photo analysis, document processing, business planning, creative design — powered by AI.</p>
+    <p class="hero-sub">Built by Stuart Hollinger with SUITE</p>
+</div>
+
+<div class="stats">
+    <div class="stat"><div class="num">50</div><div class="label">AI TOOLS</div></div>
+    <div class="stat"><div class="num">$0</div><div class="label">ALWAYS FREE</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">SIGN-UPS NEEDED</div></div>
+    <div class="stat"><div class="num">7</div><div class="label">CATEGORIES</div></div>
+</div>
+
+<!-- Health & Wellness -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">💪</span>
+        <h2>Health & Wellness</h2>
+        <span class="count">8 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/formcheck/app.html" class="app-card" data-color="orange">
+            <div class="app-icon">🏋️</div>
+            <div class="app-info"><h3>FormCheck AI <span class="vision">VISION</span></h3><p>Photo your exercise form — AI scores technique, flags injury risks, gives coaching cues</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/gymplan/app.html" class="app-card" data-color="red">
+            <div class="app-icon">🏃</div>
+            <div class="app-info"><h3>GymPlan AI</h3><p>Describe your goals — get a personalized workout program with sets, reps, and progression</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/physiobot/app.html" class="app-card" data-color="sky">
+            <div class="app-icon">🦴</div>
+            <div class="app-info"><h3>PhysioBot</h3><p>Describe your pain — get a phased rehab plan with exercises, routines, and recovery timeline</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/nutriscan/app.html" class="app-card" data-color="green">
+            <div class="app-icon">🥗</div>
+            <div class="app-info"><h3>NutriScan <span class="vision">VISION</span></h3><p>Photo your food — instant calories, macros, micronutrients, and diet compatibility</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/sleepcoach/app.html" class="app-card" data-color="indigo">
+            <div class="app-icon">😴</div>
+            <div class="app-info"><h3>SleepCoach AI</h3><p>Analyze your sleep habits — get a personalized protocol with routines and a 4-week plan</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/skincheck/app.html" class="app-card" data-color="olive">
+            <div class="app-icon">🔬</div>
+            <div class="app-info"><h3>SkinCheck <span class="vision">VISION</span></h3><p>Photo your skin concern — possible conditions, home remedies, when to see a doctor</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/pethealth/app.html" class="app-card" data-color="emerald">
+            <div class="app-icon">🐾</div>
+            <div class="app-info"><h3>PetHealth AI</h3><p>Describe your pet's symptoms — get possible causes, urgency level, and home care tips</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/symptommap/app.html" class="app-card" data-color="rose">
+            <div class="app-icon">🩺</div>
+            <div class="app-info"><h3>SymptomMap</h3><p>Describe symptoms — get possible causes, urgency level, red flags, and doctor questions</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Education -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">📚</span>
+        <h2>Education & Learning</h2>
+        <span class="count">8 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/tutorbot/app.html" class="app-card" data-color="blue">
+            <div class="app-icon">📖</div>
+            <div class="app-info"><h3>TutorBot <span class="vision">VISION</span></h3><p>Photo your homework or type a problem — get step-by-step solutions with explanations</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/quizmaker/app.html" class="app-card" data-color="sky">
+            <div class="app-icon">❓</div>
+            <div class="app-info"><h3>QuizMaker</h3><p>Paste study material — AI generates quizzes with multiple choice, true/false, and short answer</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/languagebuddy/app.html" class="app-card" data-color="rose">
+            <div class="app-icon">🌍</div>
+            <div class="app-info"><h3>LanguageBuddy</h3><p>Practice any language with AI — real-time corrections, vocabulary, and grammar tips</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/historychat/app.html" class="app-card" data-color="violet">
+            <div class="app-icon">🏛️</div>
+            <div class="app-info"><h3>HistoryChat</h3><p>Chat with Einstein, Cleopatra, Da Vinci — AI brings historical figures to life</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/scienceexplainer/app.html" class="app-card" data-color="cyan">
+            <div class="app-icon">🧪</div>
+            <div class="app-info"><h3>ScienceExplainer</h3><p>Ask any science question — get a clear explanation with analogies, examples, and fun facts</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/mathsolver/app.html" class="app-card" data-color="teal">
+            <div class="app-icon">➗</div>
+            <div class="app-info"><h3>MathSolver <span class="vision">VISION</span></h3><p>Photo any math problem — step-by-step solution with formulas, verification, and practice</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/studycards/app.html" class="app-card" data-color="purple">
+            <div class="app-icon">📇</div>
+            <div class="app-info"><h3>StudyCards <span class="vision">VISION</span></h3><p>Photo your notes or textbook — AI generates smart flashcards with study mode</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/essaycoach/app.html" class="app-card" data-color="purple">
+            <div class="app-icon">✍️</div>
+            <div class="app-info"><h3>EssayCoach</h3><p>Paste your essay — get scores, grammar fixes, rewrites, and writing coaching</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Business & Finance -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">💼</span>
+        <h2>Business & Finance</h2>
+        <span class="count">7 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/bizplan/app.html" class="app-card" data-color="cyan">
+            <div class="app-icon">📋</div>
+            <div class="app-info"><h3>BizPlan AI</h3><p>Describe your idea — get a complete business plan with market analysis and financials</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/pitchdeck/app.html" class="app-card" data-color="pink">
+            <div class="app-icon">🎯</div>
+            <div class="app-info"><h3>PitchDeck AI</h3><p>Describe your startup — get a 12-slide pitch deck with speaker notes and investor Q&A</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/taxprep/app.html" class="app-card" data-color="violet">
+            <div class="app-icon">💰</div>
+            <div class="app-info"><h3>TaxPrep AI <span class="vision">VISION</span></h3><p>Upload tax docs or describe your situation — find deductions, estimate your refund</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/competitorspy/app.html" class="app-card" data-color="cyan">
+            <div class="app-icon">🔍</div>
+            <div class="app-info"><h3>CompetitorSpy</h3><p>Describe your business — AI maps competitors, SWOT analysis, and winning strategies</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/priceoptimizer/app.html" class="app-card" data-color="pink">
+            <div class="app-icon">💲</div>
+            <div class="app-info"><h3>PriceOptimizer</h3><p>Describe your product — optimal pricing with tiers, psychology, and revenue projections</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/invoiceai/app.html" class="app-card" data-color="indigo">
+            <div class="app-icon">🧾</div>
+            <div class="app-info"><h3>InvoiceAI <span class="vision">VISION</span></h3><p>Photo any receipt or invoice — AI extracts line items, totals, and categorizes expenses</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/portfoliogpt/app.html" class="app-card" data-color="amber">
+            <div class="app-icon">📊</div>
+            <div class="app-info"><h3>PortfolioGPT</h3><p>Describe investments — risk scoring, diversification analysis, and rebalancing actions</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Productivity -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">⚡</span>
+        <h2>Productivity & Docs</h2>
+        <span class="count">8 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/docdigest/app.html" class="app-card" data-color="indigo">
+            <div class="app-icon">📄</div>
+            <div class="app-info"><h3>DocDigest</h3><p>Upload any PDF — get instant summary, key points, and action items</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/contractreader/app.html" class="app-card" data-color="amber">
+            <div class="app-icon">📑</div>
+            <div class="app-info"><h3>ContractReader</h3><p>Upload any contract — get red flags, obligations, key dates, and plain-English summary</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/resumeforge/app.html" class="app-card" data-color="emerald">
+            <div class="app-icon">📝</div>
+            <div class="app-info"><h3>ResumeForge</h3><p>Upload resume + job posting — match score, keyword gaps, rewritten bullets, cover letter</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/emailcraft/app.html" class="app-card" data-color="blue">
+            <div class="app-icon">✉️</div>
+            <div class="app-info"><h3>EmailCraft</h3><p>Describe any situation — AI writes the perfect professional email</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/meetingmind/app.html" class="app-card" data-color="emerald">
+            <div class="app-icon">🤝</div>
+            <div class="app-info"><h3>MeetingMind <span class="vision">VISION</span></h3><p>Paste meeting notes — AI extracts summary, action items, decisions, and follow-up email</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/translatedoc/app.html" class="app-card" data-color="amber">
+            <div class="app-icon">🌐</div>
+            <div class="app-info"><h3>TranslateDoc <span class="vision">VISION</span></h3><p>Photo or paste text — AI translates with formatting, glossary, and cultural notes</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/legaldraft/app.html" class="app-card" data-color="slate">
+            <div class="app-icon">⚖️</div>
+            <div class="app-info"><h3>LegalDraft</h3><p>Select a document type — AI generates NDAs, contracts, privacy policies, and more</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/codementor/app.html" class="app-card" data-color="lime">
+            <div class="app-icon">💻</div>
+            <div class="app-info"><h3>CodeMentor</h3><p>Paste code — get instant AI review with scores, bugs, security issues, and fixes</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Creative -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">🎨</span>
+        <h2>Creative & Design</h2>
+        <span class="count">8 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/logoforge/app.html" class="app-card" data-color="red">
+            <div class="app-icon">✨</div>
+            <div class="app-info"><h3>LogoForge</h3><p>Describe your brand — AI generates logo concepts with SVG previews and color palettes</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/thumbnailai/app.html" class="app-card" data-color="blue">
+            <div class="app-icon">🖼️</div>
+            <div class="app-info"><h3>ThumbnailAI</h3><p>Describe your video — AI generates click-worthy thumbnail concepts with text overlays</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/photorestore/app.html" class="app-card" data-color="sepia">
+            <div class="app-icon">📷</div>
+            <div class="app-info"><h3>PhotoRestore <span class="vision">VISION</span></h3><p>Upload an old photo — AI analyzes damage, creates a step-by-step restoration plan</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/mockupai/app.html" class="app-card" data-color="purple">
+            <div class="app-icon">🎯</div>
+            <div class="app-info"><h3>MockupAI</h3><p>Describe your app idea — AI generates wireframe mockups and a full design system</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/musicmood/app.html" class="app-card" data-color="rose">
+            <div class="app-icon">🎵</div>
+            <div class="app-info"><h3>MusicMood</h3><p>Describe your mood — AI curates a playlist with real songs and Spotify search links</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/storyforge/app.html" class="app-card" data-color="fuchsia">
+            <div class="app-icon">📖</div>
+            <div class="app-info"><h3>StoryForge</h3><p>Give AI a premise — get a complete story with characters, dialogue, and vivid prose</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/slideforge/app.html" class="app-card" data-color="lime">
+            <div class="app-icon">📊</div>
+            <div class="app-info"><h3>SlideForge</h3><p>Paste notes or describe a topic — get a complete slide deck with speaker notes</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/brandkit/app.html" class="app-card" data-color="purple">
+            <div class="app-icon">🏷️</div>
+            <div class="app-info"><h3>BrandKit AI</h3><p>Enter your brand name — get colors, typography, voice guidelines, and visual direction</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Marketing -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">📢</span>
+        <h2>Marketing & Content</h2>
+        <span class="count">6 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/adcopy/app.html" class="app-card" data-color="orange">
+            <div class="app-icon">📣</div>
+            <div class="app-info"><h3>AdCopy AI</h3><p>Describe your product — high-converting ad copy for Facebook, Google, Instagram, and more</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/socialpost/app.html" class="app-card" data-color="pink">
+            <div class="app-icon">📱</div>
+            <div class="app-info"><h3>SocialPost AI</h3><p>Describe your business — get a week of social media posts for every platform</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/copywriter/app.html" class="app-card" data-color="orange">
+            <div class="app-icon">✏️</div>
+            <div class="app-info"><h3>CopyWriter AI</h3><p>Describe your product — get ad copy, landing pages, taglines, and social posts</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/reviewresponder/app.html" class="app-card" data-color="emerald">
+            <div class="app-icon">💬</div>
+            <div class="app-info"><h3>ReviewResponder</h3><p>Paste customer reviews — get professional, personalized responses instantly</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/productdescriptor/app.html" class="app-card" data-color="fuchsia">
+            <div class="app-icon">🏷️</div>
+            <div class="app-info"><h3>ProductDescriptor <span class="vision">VISION</span></h3><p>Photo your product — optimized listings for Amazon, eBay, Etsy, and Shopify</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/newsletter/app.html" class="app-card" data-color="teal">
+            <div class="app-icon">📰</div>
+            <div class="app-info"><h3>NewsletterAI</h3><p>Describe your topic — get a complete email newsletter with subject lines and CTAs</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Home & Lifestyle -->
+<div class="category">
+    <div class="category-header">
+        <span class="category-icon">🏠</span>
+        <h2>Home & Lifestyle</h2>
+        <span class="count">5 tools</span>
+    </div>
+    <div class="app-grid">
+        <a href="/homerepair/app.html" class="app-card" data-color="orange">
+            <div class="app-icon">🔧</div>
+            <div class="app-info"><h3>HomeRepair AI <span class="vision">VISION</span></h3><p>Photo anything broken — diagnosis, step-by-step fix, tools list, and cost estimate</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/plantdoctor/app.html" class="app-card" data-color="rose">
+            <div class="app-icon">🌱</div>
+            <div class="app-info"><h3>PlantDoctor <span class="vision">VISION</span></h3><p>Photo your plant — instant diagnosis, treatment plan, and complete care guide</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/mealgenius/app.html" class="app-card" data-color="yellow">
+            <div class="app-icon">🍳</div>
+            <div class="app-info"><h3>MealGenius <span class="vision">VISION</span></h3><p>Photo your fridge — AI identifies ingredients and generates meals with full recipes</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/mealplanner/app.html" class="app-card" data-color="green">
+            <div class="app-icon">🥘</div>
+            <div class="app-info"><h3>MealPlanner</h3><p>Enter your diet and goals — full weekly meal plan with recipes, macros, and grocery list</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+        <a href="/travelplanner/app.html" class="app-card" data-color="orange">
+            <div class="app-icon">✈️</div>
+            <div class="app-info"><h3>TravelPlanner AI</h3><p>Pick a destination and budget — complete day-by-day itinerary with restaurants and tips</p></div>
+            <span class="app-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="footer-logo"><span>SUITE</span></div>
+    <p>50 AI tools built by <a href="https://suitegpt.app">Stuart Hollinger</a>.<br>Every tool is free, forever. No sign-up, no paywall, no catch.</p>
+    <a href="https://suitegpt.app" class="footer-cta">Visit SUITE →</a>
+</div>
+
+</body>
+</html>
