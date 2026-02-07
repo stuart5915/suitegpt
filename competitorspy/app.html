@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompetitorSpy — AI Competitive Analysis</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #06b6d4; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .generate-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #06b6d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #06b6d4; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Business Banner */
+        .biz-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        .biz-banner h2 { font-size: 1.3rem; margin-bottom: 6px; }
+        .biz-banner .pos { color: #94a3b8; font-size: 0.9rem; margin-bottom: 8px; }
+        .biz-banner .uvp { color: #22d3ee; font-size: 0.85rem; font-weight: 600; }
+
+        /* Competitors Tab */
+        .comp-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+        .comp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .comp-header h3 { font-size: 1rem; }
+        .comp-header .size { color: #94a3b8; font-size: 0.75rem; }
+        .threat-badge { padding: 3px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .threat-badge.high { background: #ef444420; color: #f87171; }
+        .threat-badge.medium { background: #fbbf2420; color: #fbbf24; }
+        .threat-badge.low { background: #10b98120; color: #34d399; }
+        .comp-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .comp-list { list-style: none; }
+        .comp-list li { font-size: 0.82rem; padding: 3px 0; color: #94a3b8; display: flex; align-items: flex-start; gap: 6px; }
+        .comp-list li.strength::before { content: '+'; color: #34d399; font-weight: 700; }
+        .comp-list li.weakness::before { content: '−'; color: #f87171; font-weight: 700; }
+        .comp-meta { margin-top: 10px; font-size: 0.8rem; color: #64748b; }
+        .comp-diff { margin-top: 8px; padding: 8px 12px; background: #06b6d410; border-radius: 8px; font-size: 0.82rem; color: #22d3ee; }
+
+        /* SWOT */
+        .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .swot-card { border-radius: 14px; padding: 18px; }
+        .swot-card h3 { font-size: 0.9rem; margin-bottom: 10px; }
+        .swot-card ul { list-style: none; }
+        .swot-card ul li { font-size: 0.85rem; padding: 4px 0; line-height: 1.5; }
+        .swot-card.s { background: #10b98110; border: 1px solid #10b98130; }
+        .swot-card.s h3 { color: #34d399; }
+        .swot-card.w { background: #ef444410; border: 1px solid #ef444430; }
+        .swot-card.w h3 { color: #f87171; }
+        .swot-card.o { background: #3b82f610; border: 1px solid #3b82f630; }
+        .swot-card.o h3 { color: #60a5fa; }
+        .swot-card.t { background: #fbbf2410; border: 1px solid #fbbf2430; }
+        .swot-card.t h3 { color: #fbbf24; }
+
+        /* Market Gaps */
+        .gap-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .gap-card h4 { font-size: 0.9rem; margin-bottom: 6px; }
+        .gap-card p { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; }
+        .gap-card .diff { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-top: 8px; }
+        .gap-card .diff.easy { background: #10b98120; color: #34d399; }
+        .gap-card .diff.medium { background: #fbbf2420; color: #fbbf24; }
+        .gap-card .diff.hard { background: #ef444420; color: #f87171; }
+
+        /* Strategies */
+        .strat-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+        .strat-card h4 { font-size: 0.9rem; margin-bottom: 6px; }
+        .strat-card .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .strat-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #06b6d420; color: #22d3ee; }
+        .strat-tag.impact-high { background: #10b98120; color: #34d399; }
+
+        /* Pricing */
+        .pricing-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .pricing-card h3 { font-size: 0.95rem; margin-bottom: 12px; color: #22d3ee; }
+        .pricing-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; }
+
+        /* Key Takeaways */
+        .takeaway { background: #06b6d410; border-left: 3px solid #06b6d4; padding: 12px 16px; border-radius: 4px; margin-bottom: 8px; font-size: 0.85rem; color: #22d3ee; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #06b6d420; border: 1px solid #06b6d430; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input button { padding: 12px 20px; background: #06b6d4; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #06b6d4; color: #06b6d4; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; display: none; }
+
+        @media (max-width: 640px) { .form-row, .comp-body, .swot-grid { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🔍 Competitor<span>Spy</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Describe Your Business</h2>
+            <div class="form-group">
+                <label>Business Description *</label>
+                <textarea id="business" placeholder="e.g. A specialty coffee shop in Austin, TX focused on single-origin pour-overs with a cozy co-working atmosphere. Open 6 months, growing but need to stand out."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Industry</label>
+                    <select id="industry">
+                        <option value="">Auto-detect</option>
+                        <option value="technology">Technology / SaaS</option>
+                        <option value="ecommerce">E-commerce / Retail</option>
+                        <option value="food">Food & Beverage</option>
+                        <option value="health">Healthcare / Wellness</option>
+                        <option value="finance">Finance / Fintech</option>
+                        <option value="education">Education / EdTech</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="agency">Marketing / Agency</option>
+                        <option value="consulting">Consulting / Services</option>
+                        <option value="fitness">Fitness / Sports</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Known Competitors (optional)</label>
+                    <input type="text" id="competitors" placeholder="e.g. Starbucks, Blue Bottle, Local Roaster Co.">
+                </div>
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Analyze Competition →</button>
+        </div>
+
+        <div class="loading" id="loading"><div class="spinner"></div><p>Mapping your competitive landscape...</p></div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Analysis</button>
+            <div class="biz-banner" id="bizBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="competitors">Competitors</button>
+                <button class="tab" data-tab="swot">SWOT</button>
+                <button class="tab" data-tab="gaps">Market Gaps</button>
+                <button class="tab" data-tab="strategy">Strategies</button>
+                <button class="tab" data-tab="qa">Strategy Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-competitors"><div id="compContent"></div></div>
+            <div class="tab-content" id="tab-swot"><div id="swotContent"></div></div>
+            <div class="tab-content" id="tab-gaps"><div id="gapsContent"></div></div>
+            <div class="tab-content" id="tab-strategy"><div id="stratContent"></div></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about your competitive landscape — specific competitors, pricing strategies, positioning, or how to differentiate.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. How should I price against Starbucks?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null, qaHistory = [];
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function analyze() {
+            const biz = document.getElementById('business').value.trim();
+            if (!biz) { document.getElementById('business').style.borderColor = '#ef4444'; return; }
+
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'competitorspy', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+
+                const resp = await fetch('/api/competitorspy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'analyze',
+                        business: biz,
+                        industry: document.getElementById('industry').value,
+                        competitors: document.getElementById('competitors').value.trim()
+                    })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const bs = data.businessSummary || {};
+            document.getElementById('bizBanner').innerHTML = `
+                <h2>${bs.name || 'Your Business'}</h2>
+                <div class="pos">${bs.positioning || ''}</div>
+                <div class="uvp">${bs.uniqueValueProp || ''}</div>
+            `;
+
+            // Competitors
+            document.getElementById('compContent').innerHTML = (data.competitors || []).map(c => `
+                <div class="comp-card">
+                    <div class="comp-header">
+                        <div><h3>${c.name}</h3><span class="size">${c.size || ''}</span></div>
+                        <span class="threat-badge ${(c.threatLevel||'medium').toLowerCase()}">${(c.threatLevel||'MEDIUM').toUpperCase()} THREAT</span>
+                    </div>
+                    <div class="comp-body">
+                        <ul class="comp-list">${(c.strengths || []).map(s => `<li class="strength">${s}</li>`).join('')}</ul>
+                        <ul class="comp-list">${(c.weaknesses || []).map(w => `<li class="weakness">${w}</li>`).join('')}</ul>
+                    </div>
+                    ${c.pricing ? `<div class="comp-meta">Pricing: ${c.pricing}</div>` : ''}
+                    ${c.keyDifferentiator ? `<div class="comp-diff">${c.keyDifferentiator}</div>` : ''}
+                </div>
+            `).join('');
+
+            // SWOT
+            const swot = data.swot || {};
+            document.getElementById('swotContent').innerHTML = `
+                <div class="swot-grid">
+                    <div class="swot-card s"><h3>Strengths</h3><ul>${(swot.strengths||[]).map(s=>`<li>+ ${s}</li>`).join('')}</ul></div>
+                    <div class="swot-card w"><h3>Weaknesses</h3><ul>${(swot.weaknesses||[]).map(s=>`<li>− ${s}</li>`).join('')}</ul></div>
+                    <div class="swot-card o"><h3>Opportunities</h3><ul>${(swot.opportunities||[]).map(s=>`<li>→ ${s}</li>`).join('')}</ul></div>
+                    <div class="swot-card t"><h3>Threats</h3><ul>${(swot.threats||[]).map(s=>`<li>! ${s}</li>`).join('')}</ul></div>
+                </div>
+                ${data.pricingAnalysis ? `
+                    <div class="pricing-card" style="margin-top:20px;">
+                        <h3>Pricing Analysis</h3>
+                        <p><strong>Market Range:</strong> ${data.pricingAnalysis.marketRange || ''}</p>
+                        <p><strong>Your Position:</strong> ${data.pricingAnalysis.yourPosition || ''}</p>
+                        <p><strong>Recommendation:</strong> ${data.pricingAnalysis.recommendation || ''}</p>
+                    </div>
+                ` : ''}
+            `;
+
+            // Market Gaps
+            document.getElementById('gapsContent').innerHTML = (data.marketGaps || []).map(g => `
+                <div class="gap-card">
+                    <h4>${g.gap}</h4>
+                    <p>${g.opportunity || ''}</p>
+                    <span class="diff ${(g.difficulty||'medium').toLowerCase()}">${(g.difficulty||'medium').toUpperCase()}</span>
+                </div>
+            `).join('') || '<p style="color:#64748b;text-align:center;padding:40px;">No gaps identified.</p>';
+
+            // Strategies + Takeaways
+            let stratHtml = (data.strategies || []).map(s => `
+                <div class="strat-card">
+                    <h4>${s.strategy}</h4>
+                    <div class="tags">
+                        <span class="strat-tag">${s.type || 'general'}</span>
+                        <span class="strat-tag ${s.impact === 'high' ? 'impact-high' : ''}">${(s.impact||'medium').toUpperCase()} IMPACT</span>
+                        <span class="strat-tag">${s.timeframe || 'medium'} term</span>
+                    </div>
+                </div>
+            `).join('');
+            if (data.keyTakeaways?.length) {
+                stratHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;">Key Takeaways</h3>';
+                stratHtml += data.keyTakeaways.map(t => `<div class="takeaway">${t}</div>`).join('');
+            }
+            document.getElementById('stratContent').innerHTML = stratHtml;
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'competitorspy', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                const resp = await fetch('/api/competitorspy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) }) });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally { document.getElementById('qaBtn').disabled = false; msgs.scrollTop = msgs.scrollHeight; }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = [];
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about your competitive landscape — specific competitors, pricing strategies, positioning, or how to differentiate.</div>';
+        }
+    </script>
+</body>
+</html>
