@@ -26,6 +26,16 @@
                     .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
                 return;
             }
+            // play.agentscape.app → load game client
+            if (window.location.hostname === 'play.agentscape.app') {
+                document.documentElement.style.visibility = 'hidden';
+                document.documentElement.style.opacity = '0';
+                fetch('/agentscape/client/index.html')
+                    .then(r => r.text())
+                    .then(html => { document.open(); document.write(html); document.close(); })
+                    .catch(() => { document.documentElement.style.visibility = 'visible'; document.documentElement.style.opacity = '1'; });
+                return;
+            }
             // agentscape.app → redirect to /home (landing page)
             if (window.location.hostname === 'agentscape.app' || window.location.hostname === 'www.agentscape.app') {
                 window.location.replace('/home');
