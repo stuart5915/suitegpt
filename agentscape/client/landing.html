@@ -648,19 +648,30 @@ const SUPABASE_URL = 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3ODk3MTgsImV4cCI6MjA4MzM2NTcxOH0.DcLpWs8Lf1s4Flf54J5LubokSYrd7h-XvI_X0jj6bLM';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let currentUser = null;
+let currentUser = null;   // Supabase user
+let telegramUser = null;  // Telegram user (from localStorage)
 
 // ============================================================
 // Auth State
 // ============================================================
 async function initAuth() {
+    // Check Supabase session
     const { data: { session } } = await sb.auth.getSession();
     if (session) setUser(session.user);
 
     sb.auth.onAuthStateChange((event, session) => {
         if (session) setUser(session.user);
-        else clearUser();
+        else if (!telegramUser) clearUser();
     });
+
+    // Check Telegram localStorage
+    const tgStored = localStorage.getItem('telegram_user');
+    if (tgStored && !currentUser) {
+        try {
+            telegramUser = JSON.parse(tgStored);
+            setTelegramUser(telegramUser);
+        } catch (e) {}
+    }
 }
 
 function setUser(user) {
@@ -676,8 +687,21 @@ function setUser(user) {
     loadDashboard();
 }
 
+function setTelegramUser(tgUser) {
+    telegramUser = tgUser;
+    document.getElementById('auth-signed-out').style.display = 'none';
+    document.getElementById('auth-signed-in').style.display = 'block';
+    const name = tgUser.username || tgUser.first_name || 'Player';
+    document.getElementById('user-display-name').textContent = name;
+    document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+    document.getElementById('btn-play-auth').textContent = 'Enter World';
+    document.getElementById('btn-play-auth').onclick = () => goToGame();
+    closeAuthModal();
+}
+
 function clearUser() {
     currentUser = null;
+    telegramUser = null;
     document.getElementById('auth-signed-out').style.display = 'block';
     document.getElementById('auth-signed-in').style.display = 'none';
     document.getElementById('btn-play-auth').textContent = 'Enter World';
@@ -725,9 +749,48 @@ async function signInEmail() {
     }
 }
 
-async function signInTelegram() {
-    showAuthError('Telegram login coming soon.');
-    document.getElementById('auth-error').style.color = 'var(--yellow)';
+function signInTelegram() {
+    const botId = '8341049569';
+    const botUsername = 'SUITEHubBot';
+    closeAuthModal();
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        window.location.href = 'tg://resolve?domain=' + botUsername + '&start=login';
+        setTimeout(() => {
+            window.location.href = 'https://t.me/' + botUsername + '?start=login';
+        }, 500);
+    } else {
+        if (!window.Telegram || !window.Telegram.Login) {
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.onload = () => openTelegramAuth(botId);
+            document.head.appendChild(script);
+        } else {
+            openTelegramAuth(botId);
+        }
+    }
+}
+
+function openTelegramAuth(botId) {
+    window.Telegram.Login.auth(
+        { bot_id: botId, request_access: true },
+        (user) => {
+            if (user) {
+                const tgUser = {
+                    id: user.id,
+                    username: user.username || user.first_name,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    photo_url: user.photo_url,
+                    auth_date: user.auth_date,
+                    hash: user.hash
+                };
+                localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+                setTelegramUser(tgUser);
+            }
+        }
+    );
 }
 
 async function signInWallet() {
@@ -737,6 +800,7 @@ async function signInWallet() {
 
 async function signOut() {
     await sb.auth.signOut();
+    localStorage.removeItem('telegram_user');
     clearUser();
 }
 
@@ -751,7 +815,7 @@ function showAuthError(msg) {
 // Play Actions
 // ============================================================
 function handlePlayClick() {
-    if (currentUser) {
+    if (currentUser || telegramUser) {
         goToGame();
     } else {
         openAuthModal();
@@ -766,6 +830,11 @@ async function goToGame() {
             window.location.href = '/play?token=' + encodeURIComponent(session.access_token) + '&name=' + encodeURIComponent(name);
             return;
         }
+    }
+    if (telegramUser) {
+        const name = telegramUser.username || telegramUser.first_name || 'Player';
+        window.location.href = '/play?name=' + encodeURIComponent(name) + '&tgId=' + encodeURIComponent(telegramUser.id);
+        return;
     }
     window.location.href = '/play';
 }
