@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMentor — AI Code Review & Improvement | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+
+        .app-header { background: linear-gradient(135deg, rgba(132,204,22,0.15), rgba(101,163,13,0.08)); border-bottom: 1px solid rgba(132,204,22,0.2); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #84cc16, #65a30d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .app-header span { font-size: 0.8rem; color: #94a3b8; }
+        .header-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #84cc16, #65a30d); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+        /* Input */
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; }
+        .input-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #84cc16; }
+        .code-input { width: 100%; min-height: 250px; background: #0d1117; border: 1px solid #2a2a3e; border-radius: 10px; padding: 16px; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6; resize: vertical; outline: none; tab-size: 4; }
+        .code-input:focus { border-color: #84cc16; }
+        .code-input::placeholder { color: #4a5568; }
+
+        .options-row { display: flex; gap: 12px; margin-top: 14px; align-items: end; }
+        .option-group { flex: 1; }
+        .option-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        select { width: 100%; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        select:focus { border-color: #84cc16; }
+
+        .generate-btn { width: 100%; margin-top: 18px; padding: 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #84cc16, #65a30d); color: #000; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(132,204,22,0.4); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 60px 20px; }
+        .processing.active { display: block; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #84cc16; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.active { display: block; }
+
+        /* Score card */
+        .score-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 16px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+        .score-ring { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+        .score-ring svg { transform: rotate(-90deg); }
+        .score-ring .score-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.6rem; font-weight: 800; }
+        .score-details { flex: 1; min-width: 200px; }
+        .score-details .lang { font-size: 0.75rem; font-weight: 700; color: #84cc16; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .score-details p { font-size: 0.88rem; color: #94a3b8; line-height: 1.5; }
+        .sub-scores { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .sub-score { background: #0f0f1a; border-radius: 8px; padding: 8px 12px; text-align: center; min-width: 80px; }
+        .sub-score .label { font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .sub-score .val { font-size: 1rem; font-weight: 700; color: #84cc16; }
+
+        .results-tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 16px; overflow-x: auto; }
+        .results-tab { padding: 10px 14px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .results-tab:hover { color: #e2e8f0; }
+        .results-tab.active { background: rgba(132,204,22,0.15); color: #84cc16; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+        .card h3 { font-size: 0.85rem; font-weight: 700; color: #84cc16; margin-bottom: 10px; }
+
+        .bug-card { border-left: 3px solid; padding-left: 15px; }
+        .bug-card.critical { border-color: #ef4444; }
+        .bug-card.warning { border-color: #f59e0b; }
+        .bug-card.info { border-color: #3b82f6; }
+        .severity-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+        .severity-badge.critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .severity-badge.warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .severity-badge.info { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .severity-badge.high { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .severity-badge.medium { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .severity-badge.low { background: rgba(59,130,246,0.15); color: #3b82f6; }
+
+        .code-block { background: #0d1117; border: 1px solid #2a2a3e; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #c9d1d9; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; margin: 8px 0; }
+        .code-block.original { border-left: 3px solid #ef4444; }
+        .code-block.improved { border-left: 3px solid #84cc16; }
+        .code-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .code-label.red { color: #ef4444; }
+        .code-label.green { color: #84cc16; }
+
+        .card p, .card li { font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; }
+        .card ul { list-style: none; padding: 0; }
+        .card ul li { padding: 6px 0; border-bottom: 1px solid #1f1f35; }
+        .card ul li:last-child { border-bottom: none; }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .summary-item { background: #0f0f1a; border-radius: 8px; padding: 12px; text-align: center; }
+        .summary-item .label { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .summary-item .val { font-size: 1rem; color: #e2e8f0; font-weight: 700; margin-top: 2px; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 18px; }
+        .qa-section h3 { font-size: 0.85rem; color: #84cc16; font-weight: 700; margin-bottom: 12px; }
+        .qa-messages { max-height: 350px; overflow-y: auto; margin-bottom: 14px; }
+        .qa-msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; font-size: 0.88rem; line-height: 1.5; }
+        .qa-msg.user { background: rgba(132,204,22,0.12); border: 1px solid rgba(132,204,22,0.2); margin-left: 40px; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; margin-right: 40px; color: #cbd5e1; white-space: pre-wrap; }
+        .qa-input-row { display: flex; gap: 8px; }
+        .qa-input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.88rem; outline: none; }
+        .qa-input:focus { border-color: #84cc16; }
+        .qa-send { background: linear-gradient(135deg, #84cc16, #65a30d); border: none; color: #000; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        .new-btn { margin-top: 20px; padding: 12px 24px; border-radius: 10px; border: 1px solid #2a2a3e; background: #1a1a2e; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .new-btn:hover { border-color: #84cc16; }
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .score-card { flex-direction: column; text-align: center; }
+            .sub-scores { justify-content: center; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .options-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="header-icon">&lt;/&gt;</div>
+        <div>
+            <h1>CodeMentor</h1>
+            <span>Paste code → get review + improvements</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Input -->
+        <div id="inputView" class="input-section">
+            <h2>Paste your code</h2>
+            <textarea class="code-input" id="codeInput" placeholder="// Paste your code here...&#10;&#10;function example() {&#10;  // AI will review it for bugs, performance,&#10;  // security issues, and best practices&#10;}"></textarea>
+            <div class="options-row">
+                <div class="option-group">
+                    <label>Language</label>
+                    <select id="langSelect">
+                        <option value="">Auto-detect</option>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="TypeScript">TypeScript</option>
+                        <option value="Python">Python</option>
+                        <option value="Java">Java</option>
+                        <option value="C#">C#</option>
+                        <option value="Go">Go</option>
+                        <option value="Rust">Rust</option>
+                        <option value="PHP">PHP</option>
+                        <option value="Ruby">Ruby</option>
+                        <option value="Swift">Swift</option>
+                        <option value="Kotlin">Kotlin</option>
+                        <option value="C++">C++</option>
+                        <option value="SQL">SQL</option>
+                        <option value="HTML/CSS">HTML/CSS</option>
+                    </select>
+                </div>
+            </div>
+            <button class="generate-btn" onclick="review()">Review My Code</button>
+        </div>
+
+        <!-- Processing -->
+        <div id="processingView" class="processing">
+            <div class="spinner"></div>
+            <p style="color:#94a3b8">Analyzing your code...</p>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsView" class="results">
+            <div id="scoreCard" class="score-card"></div>
+            <div id="resultsTabs" class="results-tabs"></div>
+            <div id="resultsContent"></div>
+            <button class="new-btn" onclick="reset()">← Review New Code</button>
+        </div>
+    </div>
+
+    <script>
+        let currentCode = '';
+        let qaHistory = [];
+
+        function chargeCredits(feature, amount) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'suite-charge-credits', appId: 'codementor', feature, chargeId: Date.now().toString(), amount: amount || 5 }, '*');
+            }
+        }
+
+        function scoreColor(s) { return s >= 80 ? '#84cc16' : s >= 60 ? '#f59e0b' : '#ef4444'; }
+
+        async function review() {
+            const code = document.getElementById('codeInput').value.trim();
+            if (!code) return;
+            currentCode = code;
+            const language = document.getElementById('langSelect').value;
+
+            document.getElementById('inputView').classList.add('hidden');
+            document.getElementById('processingView').classList.add('active');
+            chargeCredits('review');
+
+            try {
+                const resp = await fetch('/api/codementor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'review', code, language })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'API error');
+                renderResults(data);
+            } catch (err) {
+                alert('Error: ' + err.message);
+                document.getElementById('processingView').classList.remove('active');
+                document.getElementById('inputView').classList.remove('hidden');
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById('processingView').classList.remove('active');
+            document.getElementById('resultsView').classList.add('active');
+
+            const score = data.overallScore || 0;
+            const color = scoreColor(score);
+            const circumference = 2 * Math.PI * 38;
+            const offset = circumference - (score / 100) * circumference;
+
+            const scores = data.scores || {};
+            document.getElementById('scoreCard').innerHTML = `
+                <div class="score-ring">
+                    <svg width="90" height="90"><circle cx="45" cy="45" r="38" fill="none" stroke="#2a2a3e" stroke-width="6"/><circle cx="45" cy="45" r="38" fill="none" stroke="${color}" stroke-width="6" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>
+                    <div class="score-num" style="color:${color}">${score}</div>
+                </div>
+                <div class="score-details">
+                    <div class="lang">${esc(data.language || 'Code')} Review</div>
+                    <p>${esc(data.scoreSummary || '')}</p>
+                    <div class="sub-scores">
+                        ${Object.entries(scores).map(([k, v]) => `<div class="sub-score"><div class="label">${esc(k)}</div><div class="val" style="color:${scoreColor(v)}">${v}</div></div>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            const tabs = ['Bugs', 'Improvements', 'Security', 'Strengths', 'Q&A'];
+            document.getElementById('resultsTabs').innerHTML = tabs.map((t, i) =>
+                `<button class="results-tab ${i === 0 ? 'active' : ''}" onclick="switchTab(${i})">${t}${i === 0 && data.bugs?.length ? ' (' + data.bugs.length + ')' : ''}${i === 2 && data.securityIssues?.length ? ' (' + data.securityIssues.length + ')' : ''}</button>`
+            ).join('');
+
+            document.getElementById('resultsContent').innerHTML = `
+                <!-- Bugs -->
+                <div class="tab-content active" id="tab-0">
+                    ${data.bugs?.length ? data.bugs.map(b => `
+                        <div class="card bug-card ${b.severity || 'info'}">
+                            <span class="severity-badge ${b.severity || 'info'}">${esc(b.severity || 'info')}</span>
+                            ${b.line ? `<div class="code-block">${esc(b.line)}</div>` : ''}
+                            <p>${esc(b.description || '')}</p>
+                            <p style="color:#84cc16; margin-top:6px"><strong>Fix:</strong> ${esc(b.fix || '')}</p>
+                        </div>
+                    `).join('') : '<div class="card"><p>No bugs found! Your code looks clean.</p></div>'}
+                </div>
+
+                <!-- Improvements -->
+                <div class="tab-content" id="tab-1">
+                    ${data.improvements?.length ? data.improvements.map(imp => `
+                        <div class="card">
+                            <h3>${esc(imp.category || 'Improvement')}</h3>
+                            <div class="code-label red">Before</div>
+                            <div class="code-block original">${esc(imp.original || '')}</div>
+                            <div class="code-label green">After</div>
+                            <div class="code-block improved">${esc(imp.improved || '')}</div>
+                            <p style="margin-top:8px; font-size:0.83rem; color:#94a3b8">${esc(imp.explanation || '')}</p>
+                        </div>
+                    `).join('') : '<div class="card"><p>No improvements suggested.</p></div>'}
+                </div>
+
+                <!-- Security -->
+                <div class="tab-content" id="tab-2">
+                    ${data.securityIssues?.length ? data.securityIssues.map(s => `
+                        <div class="card bug-card ${s.severity === 'high' ? 'critical' : s.severity === 'medium' ? 'warning' : 'info'}">
+                            <span class="severity-badge ${s.severity || 'medium'}">${esc(s.severity || 'medium')}</span>
+                            <p><strong>${esc(s.issue || '')}</strong></p>
+                            <p style="color:#84cc16; margin-top:6px">${esc(s.recommendation || '')}</p>
+                        </div>
+                    `).join('') : '<div class="card"><p>No security issues detected.</p></div>'}
+                </div>
+
+                <!-- Strengths -->
+                <div class="tab-content" id="tab-3">
+                    <div class="card">
+                        <h3>What you're doing well</h3>
+                        <ul>${(data.strengths || []).map(s => `<li style="color:#84cc16">✓ ${esc(s)}</li>`).join('')}</ul>
+                    </div>
+                    ${data.summary ? `<div class="summary-grid">
+                        <div class="summary-item"><div class="label">Lines</div><div class="val">${data.summary.linesOfCode || '—'}</div></div>
+                        <div class="summary-item"><div class="label">Complexity</div><div class="val">${esc(data.summary.complexity || '—')}</div></div>
+                        <div class="summary-item"><div class="label">Testability</div><div class="val">${esc(data.summary.testability || '—')}</div></div>
+                    </div>` : ''}
+                    ${data.nextSteps?.length ? `<div class="card" style="margin-top:12px"><h3>Next Steps</h3><ul>${data.nextSteps.map(s => `<li>→ ${esc(s)}</li>`).join('')}</ul></div>` : ''}
+                </div>
+
+                <!-- Q&A -->
+                <div class="tab-content" id="tab-4">
+                    <div class="qa-section">
+                        <h3>Ask about your code</h3>
+                        <div class="qa-messages" id="qaMessages">
+                            <div class="qa-msg ai">Code review is done! Ask me to explain any finding, suggest tests, refactor a specific function, or anything else about your code.</div>
+                        </div>
+                        <div class="qa-input-row">
+                            <input class="qa-input" id="qaInput" placeholder="e.g., How would I add unit tests for this?" onkeydown="if(event.key==='Enter')askQuestion()" />
+                            <button class="qa-send" onclick="askQuestion()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(idx) {
+            document.querySelectorAll('.results-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+            document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${esc(q)}</div>`;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading" style="opacity:0.5">Thinking...</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            qaHistory.push({ role: 'user', content: q });
+            chargeCredits('qa');
+            try {
+                const resp = await fetch('/api/codementor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'qa', code: currentCode, question: q, history: qaHistory })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error);
+                document.getElementById('qaLoading').remove();
+                qaHistory.push({ role: 'assistant', content: data.answer });
+                msgs.innerHTML += `<div class="qa-msg ai">${esc(data.answer)}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            } catch (err) {
+                document.getElementById('qaLoading').remove();
+                msgs.innerHTML += `<div class="qa-msg ai" style="color:#ef4444">Error: ${esc(err.message)}</div>`;
+            }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function reset() { document.getElementById('resultsView').classList.remove('active'); document.getElementById('inputView').classList.remove('hidden'); qaHistory = []; }
+    </script>
+</body>
+</html>
