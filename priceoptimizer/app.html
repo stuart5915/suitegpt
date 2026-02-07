@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PriceOptimizer — AI Pricing Strategy</title>
+    <link rel="icon" type="image/png" href="/suitegpt-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; }
+        .app-header { background: #1a1a2e; border-bottom: 1px solid #2a2a3e; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+        .app-header h1 { font-size: 1.1rem; font-weight: 700; }
+        .app-header h1 span { color: #ec4899; }
+        .app-header .back { color: #94a3b8; text-decoration: none; font-size: 0.85rem; margin-left: auto; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+        .input-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+        .input-section h2 { font-size: 1.1rem; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
+        .form-group input, .form-group select, .form-group textarea { background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .form-group textarea { resize: vertical; min-height: 120px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .generate-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading { text-align: center; padding: 60px 24px; display: none; }
+        .spinner { width: 48px; height: 48px; border: 3px solid #2a2a3e; border-top-color: #ec4899; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabs { display: flex; gap: 4px; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab { padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; color: #94a3b8; border: none; background: none; font-family: inherit; }
+        .tab.active { background: #ec4899; color: #fff; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+
+        .results { display: none; }
+        .results.visible { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Price Banner */
+        .price-banner { background: linear-gradient(135deg, #1a1a2e, #0f0f1a); border: 1px solid #2a2a3e; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .price-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .price-option { text-align: center; padding: 16px; background: #0f0f1a; border-radius: 12px; border: 2px solid transparent; }
+        .price-option.optimal { border-color: #ec4899; }
+        .price-option .label { font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-bottom: 6px; }
+        .price-option .amount { font-size: 1.6rem; font-weight: 800; color: #f472b6; }
+        .price-option .reason { font-size: 0.75rem; color: #64748b; margin-top: 6px; }
+        .price-option .opt-badge { display: inline-block; background: #ec4899; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; margin-top: 6px; }
+
+        /* Tiers Tab */
+        .tiers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .tier-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; text-align: center; }
+        .tier-card.popular { border-color: #ec4899; }
+        .tier-card h3 { font-size: 1rem; margin-bottom: 8px; }
+        .tier-card .price { font-size: 1.4rem; font-weight: 800; color: #f472b6; margin-bottom: 4px; }
+        .tier-card .target { font-size: 0.75rem; color: #64748b; margin-bottom: 12px; }
+        .tier-card .features { text-align: left; }
+        .tier-card .features li { font-size: 0.82rem; color: #94a3b8; padding: 3px 0; list-style: none; }
+        .tier-card .features li::before { content: '✓ '; color: #ec4899; }
+        .tier-card .margin { font-size: 0.75rem; color: #64748b; margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a3e; }
+
+        /* Strategies */
+        .strat-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 18px; margin-bottom: 12px; }
+        .strat-card h3 { font-size: 0.95rem; margin-bottom: 6px; color: #f472b6; }
+        .strat-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 8px; }
+        .strat-card .example { background: #0f0f1a; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; color: #e2e8f0; margin-bottom: 8px; }
+        .strat-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .strat-pros-cons ul { list-style: none; font-size: 0.78rem; }
+        .strat-pros-cons li { padding: 2px 0; }
+        .strat-pros-cons .pros li::before { content: '+ '; color: #34d399; }
+        .strat-pros-cons .cons li::before { content: '− '; color: #f87171; }
+
+        /* Psychology */
+        .psych-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 12px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .psych-card.inactive { opacity: 0.4; }
+        .psych-info h4 { font-size: 0.9rem; margin-bottom: 4px; }
+        .psych-info .example { font-size: 0.82rem; color: #f472b6; }
+        .psych-info .impact { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
+        .psych-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .psych-badge.yes { background: #10b98120; color: #34d399; }
+        .psych-badge.no { background: #64748b20; color: #64748b; }
+
+        /* Revenue */
+        .rev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .rev-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 18px; text-align: center; }
+        .rev-card h4 { font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; }
+        .rev-card .monthly { font-size: 1.3rem; font-weight: 800; color: #f472b6; }
+        .rev-card .annual { font-size: 0.9rem; color: #34d399; margin-top: 4px; }
+        .rev-card .assumptions { font-size: 0.7rem; color: #64748b; margin-top: 8px; }
+
+        /* Discounts */
+        .discount-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 18px; margin-bottom: 12px; }
+        .discount-card h3 { font-size: 0.95rem; margin-bottom: 10px; }
+        .discount-item { padding: 6px 0; font-size: 0.85rem; color: #94a3b8; display: flex; align-items: flex-start; gap: 8px; }
+        .discount-item.good::before { content: '✓'; color: #34d399; font-weight: 700; }
+        .discount-item.bad::before { content: '✗'; color: #f87171; font-weight: 700; }
+
+        /* Key Insights */
+        .insight { background: #ec489910; border-left: 3px solid #ec4899; padding: 12px 16px; border-radius: 4px; margin-bottom: 8px; font-size: 0.85rem; color: #f472b6; }
+
+        /* Q&A */
+        .qa-section { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 14px; padding: 20px; }
+        .qa-messages { max-height: 400px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .qa-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; }
+        .qa-msg.user { background: #ec489920; border: 1px solid #ec489930; align-self: flex-end; max-width: 80%; }
+        .qa-msg.ai { background: #0f0f1a; border: 1px solid #2a2a3e; }
+        .qa-input { display: flex; gap: 10px; }
+        .qa-input input { flex: 1; background: #0f0f1a; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: inherit; font-size: 0.85rem; outline: none; }
+        .qa-input button { padding: 12px 20px; background: #ec4899; color: #fff; border: none; border-radius: 10px; font-family: inherit; font-weight: 600; cursor: pointer; }
+
+        .new-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #1a1a2e; border: 1px solid #2a2a3e; color: #94a3b8; border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .new-btn:hover { border-color: #ec4899; color: #ec4899; }
+        .error { background: #ef444420; border: 1px solid #ef444440; border-radius: 12px; padding: 16px; color: #f87171; text-align: center; display: none; }
+
+        @media (max-width: 640px) { .form-row, .price-options, .rev-grid { grid-template-columns: 1fr; } .tiers-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>💰 Price<span>Optimizer</span></h1>
+        <a href="index.html" class="back">← Back</a>
+    </div>
+    <div class="container">
+        <div class="input-section" id="inputSection">
+            <h2>Describe Your Product or Service</h2>
+            <div class="form-group">
+                <label>Product / Service *</label>
+                <textarea id="product" placeholder="e.g. An email marketing SaaS for small businesses. Features include drag-and-drop email builder, contact management, automation workflows, A/B testing, and analytics dashboard."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Current Price (if any)</label>
+                    <input type="text" id="currentPrice" placeholder="e.g. $29/month">
+                </div>
+                <div class="form-group">
+                    <label>Business Model</label>
+                    <select id="businessModel">
+                        <option value="">Auto-detect</option>
+                        <option value="saas-subscription">SaaS / Subscription</option>
+                        <option value="one-time">One-Time Purchase</option>
+                        <option value="freemium">Freemium</option>
+                        <option value="marketplace">Marketplace</option>
+                        <option value="service">Service / Consulting</option>
+                        <option value="physical-product">Physical Product</option>
+                        <option value="digital-product">Digital Product</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Market</label>
+                <input type="text" id="targetMarket" placeholder="e.g. Small businesses, 1-50 employees, US market">
+            </div>
+            <button class="generate-btn" id="generateBtn" onclick="analyze()">Optimize Pricing →</button>
+        </div>
+
+        <div class="loading" id="loading"><div class="spinner"></div><p>Calculating optimal pricing...</p></div>
+
+        <div class="results" id="results">
+            <button class="new-btn" onclick="resetApp()">← New Product</button>
+            <div class="price-banner" id="priceBanner"></div>
+
+            <div class="tabs" id="tabBar">
+                <button class="tab active" data-tab="tiers">Pricing Tiers</button>
+                <button class="tab" data-tab="strategies">Strategies</button>
+                <button class="tab" data-tab="psychology">Psychology</button>
+                <button class="tab" data-tab="revenue">Revenue</button>
+                <button class="tab" data-tab="qa">Pricing Q&A</button>
+            </div>
+
+            <div class="tab-content active" id="tab-tiers"><div id="tiersContent"></div></div>
+            <div class="tab-content" id="tab-strategies"><div id="strategiesContent"></div></div>
+            <div class="tab-content" id="tab-psychology"><div id="psychContent"></div></div>
+            <div class="tab-content" id="tab-revenue"><div id="revenueContent"></div></div>
+            <div class="tab-content" id="tab-qa">
+                <div class="qa-section">
+                    <div class="qa-messages" id="qaMessages">
+                        <div class="qa-msg ai">Ask me about pricing — I can help with discount strategies, A/B test suggestions, pricing page copy, or competitor positioning.</div>
+                    </div>
+                    <div class="qa-input">
+                        <input type="text" id="qaInput" placeholder="e.g. Should I offer a free trial or a freemium tier?" onkeypress="if(event.key==='Enter')askQuestion()">
+                        <button onclick="askQuestion()" id="qaBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        let resultData = null, qaHistory = [];
+
+        document.getElementById('tabBar').addEventListener('click', e => {
+            if (!e.target.classList.contains('tab')) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tab-' + e.target.dataset.tab).classList.add('active');
+        });
+
+        async function analyze() {
+            const product = document.getElementById('product').value.trim();
+            if (!product) { document.getElementById('product').style.borderColor = '#ef4444'; return; }
+
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'priceoptimizer', feature: 'analyze', chargeId: Date.now().toString(), amount: 5 }, '*');
+
+                const resp = await fetch('/api/priceoptimizer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'analyze', product, currentPrice: document.getElementById('currentPrice').value, targetMarket: document.getElementById('targetMarket').value, businessModel: document.getElementById('businessModel').value })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                if (data.raw) throw new Error('Could not parse. Try again.');
+
+                resultData = data;
+                renderResults(data);
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('results').classList.add('visible');
+            } catch (err) {
+                document.getElementById('error').textContent = err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const pr = data.pricingRecommendation || {};
+            document.getElementById('priceBanner').innerHTML = `
+                <div class="price-options">
+                    <div class="price-option"><div class="label">Budget</div><div class="amount">${pr.budget?.price || '?'}</div><div class="reason">${pr.budget?.reasoning || ''}</div></div>
+                    <div class="price-option optimal"><div class="label">Optimal</div><div class="amount">${pr.optimal?.price || '?'}</div><div class="opt-badge">RECOMMENDED</div><div class="reason">${pr.optimal?.reasoning || ''}</div></div>
+                    <div class="price-option"><div class="label">Premium</div><div class="amount">${pr.premium?.price || '?'}</div><div class="reason">${pr.premium?.reasoning || ''}</div></div>
+                </div>
+            `;
+
+            // Tiers
+            const ts = data.tierStructure || {};
+            let tiersHtml = '';
+            if (ts.tiers?.length) {
+                tiersHtml = '<div class="tiers-grid">' + ts.tiers.map((t, i) => `
+                    <div class="tier-card ${i === 1 ? 'popular' : ''}">
+                        <h3>${t.name}</h3>
+                        <div class="price">${t.price}</div>
+                        <div class="target">${t.targetCustomer || ''}</div>
+                        <ul class="features">${(t.features || []).map(f => `<li>${f}</li>`).join('')}</ul>
+                        ${t.margin ? `<div class="margin">~${t.margin} margin</div>` : ''}
+                    </div>
+                `).join('') + '</div>';
+            }
+            if (data.competitorPricing?.length) {
+                tiersHtml += '<h3 style="font-size:1rem;margin:24px 0 12px;">Competitor Pricing</h3>';
+                tiersHtml += data.competitorPricing.map(c => `
+                    <div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                        <div><div style="font-weight:600;font-size:0.9rem;">${c.competitor}</div><div style="font-size:0.78rem;color:#94a3b8;">${c.positioning || ''}</div></div>
+                        <div style="font-weight:700;color:#f472b6;font-size:1rem;">${c.price}</div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('tiersContent').innerHTML = tiersHtml;
+
+            // Strategies
+            document.getElementById('strategiesContent').innerHTML = (data.pricingStrategies || []).map(s => `
+                <div class="strat-card">
+                    <h3>${s.strategy}</h3>
+                    <p>${s.description || ''}</p>
+                    ${s.example ? `<div class="example">${s.example}</div>` : ''}
+                    <div class="strat-pros-cons">
+                        <ul class="pros">${(s.pros || []).map(p => `<li>${p}</li>`).join('')}</ul>
+                        <ul class="cons">${(s.cons || []).map(c => `<li>${c}</li>`).join('')}</ul>
+                    </div>
+                    ${s.bestFor ? `<div style="font-size:0.78rem;color:#f472b6;margin-top:8px;">Best for: ${s.bestFor}</div>` : ''}
+                </div>
+            `).join('');
+
+            // Psychology
+            let psychHtml = (data.psychologicalPricing || []).map(p => `
+                <div class="psych-card ${p.applicable ? '' : 'inactive'}">
+                    <div class="psych-info">
+                        <h4>${p.technique}</h4>
+                        <div class="example">${p.example || ''}</div>
+                        <div class="impact">${p.impact || ''}</div>
+                    </div>
+                    <span class="psych-badge ${p.applicable ? 'yes' : 'no'}">${p.applicable ? 'APPLICABLE' : 'N/A'}</span>
+                </div>
+            `).join('');
+            // Discounts
+            const ds = data.discountStrategy || {};
+            if (ds.recommended?.length || ds.avoid?.length) {
+                psychHtml += `
+                    <div class="discount-card" style="margin-top:20px;">
+                        <h3>Discount Strategy</h3>
+                        ${(ds.recommended || []).map(d => `<div class="discount-item good">${d}</div>`).join('')}
+                        ${(ds.avoid || []).map(d => `<div class="discount-item bad">${d}</div>`).join('')}
+                        ${ds.timing ? `<div style="font-size:0.82rem;color:#f472b6;margin-top:8px;">Timing: ${ds.timing}</div>` : ''}
+                    </div>
+                `;
+            }
+            document.getElementById('psychContent').innerHTML = psychHtml;
+
+            // Revenue
+            const rp = data.revenueProjection || {};
+            let revHtml = '<div class="rev-grid">';
+            ['conservative', 'moderate', 'aggressive'].forEach(k => {
+                const r = rp[k] || {};
+                revHtml += `
+                    <div class="rev-card">
+                        <h4>${k.charAt(0).toUpperCase() + k.slice(1)}</h4>
+                        <div class="monthly">${r.monthly || '?'}</div>
+                        <div class="annual">${r.annual || '?'}/yr</div>
+                        <div class="assumptions">${r.assumptions || ''}</div>
+                    </div>
+                `;
+            });
+            revHtml += '</div>';
+            if (data.keyInsights?.length) {
+                revHtml += '<h3 style="font-size:1rem;margin:20px 0 12px;">Key Insights</h3>';
+                revHtml += data.keyInsights.map(i => `<div class="insight">${i}</div>`).join('');
+            }
+            document.getElementById('revenueContent').innerHTML = revHtml;
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('qaInput');
+            const q = input.value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('qaMessages');
+            msgs.innerHTML += `<div class="qa-msg user">${q}</div>`;
+            input.value = '';
+            document.getElementById('qaBtn').disabled = true;
+            msgs.innerHTML += `<div class="qa-msg ai" id="qaLoading"><em>Thinking...</em></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                if (window.parent !== window) window.parent.postMessage({ type: 'suite-charge-credits', appId: 'priceoptimizer', feature: 'qa', chargeId: Date.now().toString(), amount: 5 }, '*');
+                const resp = await fetch('/api/priceoptimizer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'qa', question: q, history: qaHistory, context: JSON.stringify(resultData) }) });
+                const data = await resp.json();
+                qaHistory.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer || '' });
+                document.getElementById('qaLoading').innerHTML = (data.answer || 'No response').replace(/\n/g, '<br>');
+            } catch (err) {
+                document.getElementById('qaLoading').innerHTML = `<span style="color:#f87171;">Error: ${err.message}</span>`;
+            } finally { document.getElementById('qaBtn').disabled = false; msgs.scrollTop = msgs.scrollHeight; }
+        }
+
+        function resetApp() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('error').style.display = 'none';
+            resultData = null; qaHistory = [];
+            document.getElementById('qaMessages').innerHTML = '<div class="qa-msg ai">Ask me about pricing — discount strategies, A/B test ideas, pricing page copy, or competitor positioning.</div>';
+        }
+    </script>
+</body>
+</html>
