@@ -284,7 +284,10 @@
                 <div class="modal-preview-img" id="modal-preview-img"></div>
                 <div class="preview-3d" id="preview-3d">
                     <div class="preview-3d-label">3D Preview</div>
-                    <div class="preview-3d-img" id="preview-3d-img" onclick="download3D()" title="Click to download .glb"></div>
+                    <div class="preview-3d-viewer" id="preview-3d-viewer">
+                        <model-viewer id="model-viewer-el" camera-controls auto-rotate shadow-intensity="1" exposure="1.2" style="width:100%;height:100%;background:transparent;"></model-viewer>
+                    </div>
+                    <div class="preview-3d-hint">Drag to rotate / Scroll to zoom</div>
                 </div>
                 <div class="modal-stats" id="modal-stats"></div>
             </div>
@@ -825,12 +828,17 @@ function openItemModal(itemId) {
     document.getElementById('btn-3d-row').style.display = asset?.imageData ? 'flex' : 'none';
     // Show 3D preview if model exists
     const preview3d = document.getElementById('preview-3d');
-    const preview3dImg = document.getElementById('preview-3d-img');
-    if (asset?.modelThumbnail) {
-        preview3dImg.innerHTML = `<img src="${asset.modelThumbnail}" alt="3D preview">`;
+    const modelViewer = document.getElementById('model-viewer-el');
+    if (asset?.modelUrl) {
+        const proxyUrl = `/api/proxy-model?url=${encodeURIComponent(asset.modelUrl)}`;
+        modelViewer.setAttribute('src', proxyUrl);
+        if (asset.modelThumbnail) {
+            modelViewer.setAttribute('poster', asset.modelThumbnail);
+        }
         preview3d.classList.add('visible');
     } else {
-        preview3dImg.innerHTML = '';
+        modelViewer.removeAttribute('src');
+        modelViewer.removeAttribute('poster');
         preview3d.classList.remove('visible');
     }
     // Show 3D download if model exists
