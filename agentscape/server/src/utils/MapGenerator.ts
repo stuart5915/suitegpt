@@ -9,7 +9,7 @@ import {
     MONSTERS, BOSSES,
 } from '../config';
 
-export type TileType = 0 | 1 | 2 | 3; // 0=unwalkable, 1=grass, 2=path, 3=bridge
+export type TileType = 0 | 1 | 2 | 3 | 4; // 0=unwalkable, 1=grass, 2=path, 3=bridge, 4=interior
 
 export interface GameMap {
     grid: TileType[][];
@@ -314,22 +314,40 @@ export function generateMap(): GameMap {
             if (cx >= 0 && cx < MAP_SIZE && cz >= 0 && cz < MAP_SIZE) grid[cx][cz] = 0;
             buildingDoors[b.id] = { x: cx, z: cz + 1 };
         } else {
+            const cx = Math.floor(b.x), cz = Math.floor(b.z);
             const hw = Math.ceil(b.w / 2), hd = Math.ceil(b.d / 2);
-            for (let bx = Math.floor(b.x) - hw; bx <= Math.floor(b.x) + hw; bx++) {
-                for (let bz = Math.floor(b.z) - hd; bz <= Math.floor(b.z) + hd; bz++) {
+            // Full footprint → unwalkable (walls)
+            for (let bx = cx - hw; bx <= cx + hw; bx++) {
+                for (let bz = cz - hd; bz <= cz + hd; bz++) {
                     if (bx >= 0 && bx < MAP_SIZE && bz >= 0 && bz < MAP_SIZE) {
                         grid[bx][bz] = 0;
                         heightMap[bx][bz] = 0;
                     }
                 }
             }
+            // Interior tiles → walkable (grid=4)
+            for (let bx = cx - (hw - 1); bx <= cx + (hw - 1); bx++) {
+                for (let bz = cz - (hd - 1); bz <= cz + (hd - 1); bz++) {
+                    if (bx >= 0 && bx < MAP_SIZE && bz >= 0 && bz < MAP_SIZE) {
+                        grid[bx][bz] = 4;
+                    }
+                }
+            }
+            // Doorway wall tile → walkable interior
+            switch (b.doorSide) {
+                case 'south': if (cz + hd >= 0 && cz + hd < MAP_SIZE) grid[cx][cz + hd] = 4; break;
+                case 'north': if (cz - hd >= 0 && cz - hd < MAP_SIZE) grid[cx][cz - hd] = 4; break;
+                case 'west':  if (cx - hw >= 0 && cx - hw < MAP_SIZE) grid[cx - hw][cz] = 4; break;
+                case 'east':  if (cx + hw >= 0 && cx + hw < MAP_SIZE) grid[cx + hw][cz] = 4; break;
+            }
 
+            // External door tile → walkable grass
             let dt: { x: number; z: number };
             switch (b.doorSide) {
-                case 'south': dt = { x: Math.floor(b.x), z: Math.floor(b.z) + hd + 1 }; break;
-                case 'north': dt = { x: Math.floor(b.x), z: Math.floor(b.z) - hd - 1 }; break;
-                case 'west':  dt = { x: Math.floor(b.x) - hw - 1, z: Math.floor(b.z) }; break;
-                case 'east':  dt = { x: Math.floor(b.x) + hw + 1, z: Math.floor(b.z) }; break;
+                case 'south': dt = { x: cx, z: cz + hd + 1 }; break;
+                case 'north': dt = { x: cx, z: cz - hd - 1 }; break;
+                case 'west':  dt = { x: cx - hw - 1, z: cz }; break;
+                case 'east':  dt = { x: cx + hw + 1, z: cz }; break;
             }
             if (dt.x >= 0 && dt.x < MAP_SIZE && dt.z >= 0 && dt.z < MAP_SIZE) {
                 grid[dt.x][dt.z] = 1;

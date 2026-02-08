@@ -40,7 +40,8 @@ export class MovementSystem {
     updatePlayerMovement(player: PlayerSchema, dt: number): void {
         if (!player.isMoving || player.pathQueue.length === 0) return;
 
-        player.moveProgress += dt * MOVE_SPEED;
+        const runMult = (player.isRunning && player.runEnergy > 0) ? 1.8 : 1.0;
+        player.moveProgress += dt * MOVE_SPEED * runMult;
 
         if (player.moveProgress >= 1) {
             player.moveProgress = 0;

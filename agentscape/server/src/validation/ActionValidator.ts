@@ -22,6 +22,8 @@ export type ActionType =
     | 'start_training'
     | 'pickup_loot'
     | 'drop_item'
+    | 'toggle_run'
+    | 'toggle_rest'
     | 'chat';
 
 export interface GameAction {
@@ -109,6 +111,10 @@ export class ActionValidator {
             }
 
             case 'use_special_attack':
+                return { valid: true };
+
+            case 'toggle_run':
+            case 'toggle_rest':
                 return { valid: true };
 
             case 'start_harvest':

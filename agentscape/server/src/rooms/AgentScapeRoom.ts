@@ -421,9 +421,36 @@ export class AgentScapeRoom extends Room<GameState> {
             }
         });
 
-        // 8. Energy regen
+        // 8. Special attack energy regen
         this.state.players.forEach((player) => {
             if (!player.isDead) this.combatSystem.updateEnergyRegen(player, dtSec);
+        });
+
+        // 8b. Run energy drain/regen
+        this.state.players.forEach((player) => {
+            if (player.isDead) return;
+            player.runEnergyTimer += dtSec;
+            if (player.runEnergyTimer >= 0.6) {
+                player.runEnergyTimer -= 0.6;
+                if (player.isRunning && player.isMoving) {
+                    // Drain while running and moving
+                    player.runEnergy = Math.max(0, player.runEnergy - 1);
+                    if (player.runEnergy <= 0) {
+                        player.isRunning = false;
+                    }
+                } else if (player.isResting) {
+                    // Fast regen while resting
+                    player.runEnergy = Math.min(100, player.runEnergy + 3);
+                } else if (!player.isMoving) {
+                    // Slow regen while standing still
+                    player.runEnergy = Math.min(100, player.runEnergy + 1);
+                }
+            }
+            // Cancel rest if player starts moving
+            if (player.isResting && player.isMoving) {
+                player.isResting = false;
+                player.state = 'walking';
+            }
         });
 
         // 9. Loot pile decay
@@ -458,6 +485,8 @@ export class AgentScapeRoom extends Room<GameState> {
         switch (action.type) {
             case 'move_to': {
                 const { tileX, tileZ } = action.payload;
+                // Cancel resting if moving
+                if (player.isResting) { player.isResting = false; }
                 // Cancel combat if moving away
                 if (player.combatTargetNpcId) {
                     const npc = this.state.npcs.get(player.combatTargetNpcId);
@@ -609,6 +638,38 @@ export class AgentScapeRoom extends Room<GameState> {
 
             case 'drop_item': {
                 this.inventorySystem.dropItem(player, action.payload.inventorySlot);
+                break;
+            }
+
+            case 'toggle_run': {
+                player.isRunning = !player.isRunning;
+                if (player.isRunning) player.isResting = false;
+                if (player.isRunning && player.runEnergy <= 0) {
+                    player.isRunning = false;
+                    client.send('system_message', { message: 'You have no run energy!' });
+                }
+                break;
+            }
+
+            case 'toggle_rest': {
+                if (player.isResting) {
+                    // Stop resting
+                    player.isResting = false;
+                    player.state = 'idle';
+                } else {
+                    // Start resting — stop moving, cancel combat
+                    player.isResting = true;
+                    player.isRunning = false;
+                    this.movementSystem.stopPlayerMove(player);
+                    if (player.combatTargetNpcId) {
+                        const npc = this.state.npcs.get(player.combatTargetNpcId);
+                        if (npc) this.combatSystem.disengageCombat(player, npc);
+                    }
+                    if (player.combatTargetMonsterId) {
+                        this.disengageMonsterCombat(player);
+                    }
+                    player.state = 'resting';
+                }
                 break;
             }
 

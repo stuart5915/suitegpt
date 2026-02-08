@@ -5,12 +5,12 @@
 export const MAP_SIZE = 200;
 export const TILE_SIZE = 1;
 export const WATER_LEVEL = -0.15;
-export const MOVE_SPEED = 4;
-export const NPC_MOVE_SPEED = 2.5;
-export const MONSTER_MOVE_SPEED = 2.0;
+export const MOVE_SPEED = 2.5;
+export const NPC_MOVE_SPEED = 1.8;
+export const MONSTER_MOVE_SPEED = 1.4;
 export const COMBAT_TICK = 2.4; // seconds between combat rounds
-export const TICK_RATE = 600; // ms per server tick
-export const COMBAT_TICK_INTERVAL = 4; // combat happens every 4th tick
+export const TICK_RATE = 100; // ms per server tick (10 updates/sec for smooth movement)
+export const COMBAT_TICK_INTERVAL = 24; // combat happens every 24th tick (~2.4s at 100ms ticks)
 export const MAX_INVENTORY_SLOTS = 28;
 export const SAVE_INTERVAL = 30_000; // batch save every 30s
 export const MAX_PLAYERS_PER_ROOM = 200;

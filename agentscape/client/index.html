@@ -31,8 +31,16 @@
         }
 
         /* Minimap in sidebar */
-        #minimap-wrap { padding: 8px; text-align: center; border-bottom: 2px solid #4a4a50; background: #1a1a1f; }
+        #minimap-wrap { padding: 8px; text-align: center; border-bottom: 2px solid #4a4a50; background: #1a1a1f; position: relative; }
         #minimap { border: 2px solid #5a5a60; border-radius: 2px; display: block; margin: 0 auto; }
+
+        /* Run Energy Orb */
+        #run-orb { position: absolute; bottom: 6px; right: 6px; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #5a5a60; background: conic-gradient(#f59e0b var(--run-pct, 100%), #333 0); display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: border-color 0.15s; z-index: 2; }
+        #run-orb:hover { border-color: #f59e0b; }
+        #run-orb.active { border-color: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+        #run-orb.resting { border-color: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+        #run-orb-inner { width: 24px; height: 24px; border-radius: 50%; background: #1a1a1f; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; font-weight: bold; text-shadow: 0 0 3px #000; pointer-events: none; }
+        #run-orb-icon { font-size: 12px; pointer-events: none; }
 
         /* HP / Energy Orbs */
         #orbs-row { display: flex; justify-content: center; gap: 16px; padding: 8px 0; border-bottom: 2px solid #4a4a50; background: #222226; }
@@ -353,7 +361,7 @@
             <div class="game-overlay" id="craft-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F528; Workshop &mdash; Crafting</h2><button class="overlay-close" onclick="closeOverlay('craft-overlay')">&times;</button></div><div class="overlay-body" id="craft-content"></div></div></div>
         </div>
         <div id="game-sidebar">
-            <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas></div>
+            <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas><div id="run-orb" title="Click: Toggle Run | Right-click: Rest"><div id="run-orb-inner"><span id="run-orb-icon">🏃</span></div></div></div>
             <div id="orbs-row">
                 <div class="orb orb-hp" id="orbHp"><div class="orb-inner" id="orbHpText">100</div></div>
                 <div class="orb orb-combat" id="orbCombat"><div class="orb-inner" id="orbCombatText">3</div></div>
@@ -764,7 +772,16 @@
 
         const mapCenter=Math.floor(MAP_SIZE/2);
         let camTargetX=mapCenter,camTargetZ=mapCenter,camAngle=Math.PI/4,camDist=22,camHeight=17;
-        function updateCamera(){camera.position.set(camTargetX+Math.sin(camAngle)*camDist,camHeight,camTargetZ+Math.cos(camAngle)*camDist);camera.lookAt(camTargetX,0,camTargetZ);}
+        let camSmoothX=mapCenter,camSmoothZ=mapCenter;
+        let camDt=0.016; // updated each frame from animate()
+        function updateCamera(){
+            // Smooth camera follow — lerp toward target instead of snapping
+            const camLerp=1-Math.exp(-5*camDt);
+            camSmoothX+=(camTargetX-camSmoothX)*camLerp;
+            camSmoothZ+=(camTargetZ-camSmoothZ)*camLerp;
+            camera.position.set(camSmoothX+Math.sin(camAngle)*camDist,camHeight,camSmoothZ+Math.cos(camAngle)*camDist);
+            camera.lookAt(camSmoothX,0,camSmoothZ);
+        }
         updateCamera();
 
         const ambientLight=new THREE.AmbientLight(0x6688aa,0.5);scene.add(ambientLight);
@@ -850,6 +867,7 @@
             const x0=cx*CHUNK_SIZE,z0=cz*CHUNK_SIZE;
             for(let lx=0;lx<CHUNK_SIZE;lx++)for(let lz=0;lz<CHUNK_SIZE;lz++){
                 const x=x0+lx,z=z0+lz;if(x>=MAP_SIZE||z>=MAP_SIZE)continue;
+                if(grid[x][z]===4)continue; // Interior floors rendered by building
                 const h=heightMap[x][z],color=terrainColors[x][z];
                 const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);
                 const mat=new THREE.MeshLambertMaterial({color});
@@ -898,7 +916,295 @@
 
         // Buildings
         const buildingDoors={};
-        function createNamedBuilding(bData){const group=new THREE.Group();const baseH=heightMap[Math.min(Math.floor(bData.x),MAP_SIZE-1)][Math.min(Math.floor(bData.z),MAP_SIZE-1)]||0;if(bData.type==='pedestal'){const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.6,6),new THREE.MeshLambertMaterial({color:bData.wallColor}));base.position.y=0.3;base.castShadow=true;group.add(base);const board=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));board.position.y=0.85;board.castShadow=true;group.add(board);[0xff4444,0x44ff44,0x4444ff,0xffff44].forEach((c,i)=>{const p=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:c}));p.position.set(-0.2+(i%2)*0.4,0.75+Math.floor(i/2)*0.2,0.05);group.add(p);});const cx=Math.floor(bData.x),cz=Math.floor(bData.z);if(cx>=0&&cx<MAP_SIZE&&cz>=0&&cz<MAP_SIZE)grid[cx][cz]=0;buildingDoors[bData.id]={x:cx,z:cz+1};}else{const walls=new THREE.Mesh(new THREE.BoxGeometry(bData.w,bData.h,bData.d),new THREE.MeshLambertMaterial({color:bData.wallColor}));walls.position.y=bData.h/2;walls.castShadow=true;walls.receiveShadow=true;group.add(walls);const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(bData.w,bData.d)*0.75,bData.h*0.5,4),new THREE.MeshLambertMaterial({color:bData.roofColor}));roof.position.y=bData.h+bData.h*0.2;roof.rotation.y=Math.PI/4;roof.castShadow=true;group.add(roof);const door=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.05),new THREE.MeshLambertMaterial({color:0x5a3a1a}));switch(bData.doorSide){case'south':door.position.set(0,0.25,bData.d/2+0.02);break;case'north':door.position.set(0,0.25,-bData.d/2-0.02);break;case'west':door.position.set(-bData.w/2-0.02,0.25,0);door.rotation.y=Math.PI/2;break;case'east':door.position.set(bData.w/2+0.02,0.25,0);door.rotation.y=Math.PI/2;break;}group.add(door);const hw=Math.ceil(bData.w/2),hd=Math.ceil(bData.d/2);for(let bx=Math.floor(bData.x)-hw;bx<=Math.floor(bData.x)+hw;bx++)for(let bz=Math.floor(bData.z)-hd;bz<=Math.floor(bData.z)+hd;bz++)if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE)grid[bx][bz]=0;let dt;switch(bData.doorSide){case'south':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)+hd+1};break;case'north':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)-hd-1};break;case'west':dt={x:Math.floor(bData.x)-hw-1,z:Math.floor(bData.z)};break;case'east':dt={x:Math.floor(bData.x)+hw+1,z:Math.floor(bData.z)};break;}if(dt&&dt.x>=0&&dt.x<MAP_SIZE&&dt.z>=0&&dt.z<MAP_SIZE){grid[dt.x][dt.z]=1;buildingDoors[bData.id]=dt;}}group.position.set(bData.x,baseH,bData.z);group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;c.userData.type='building';}});scene.add(group);}
+        const buildingRoofs=new Map(); // id → {roof, walls, bounds:{minX,maxX,minZ,maxZ}}
+
+        // Floor colors per building
+        const FLOOR_COLORS={
+            town_hall:0x6B4226, arena:0xC2B280, bank:0xCCCCCC, health_clinic:0x8B7355,
+            gym:0x7a6548, academy:0x8B6914, library:0x6B4226, exchange:0x8a8a8a,
+            marketplace:0x8B7355, workshop:0x777777, forge:0x555555, studio:0xBB9966,
+            gallery:0xDDDDDD, broadcast_tower:0x666666, ad_agency:0x8B7355,
+            farm:0x8B7355, tavern:0x5a3a1a, forest_outpost:0x6B8E23,
+            ruins_gate:0x6e6e6e, deep_entrance:0x2a1a3a
+        };
+
+        // Open-air buildings (no roof)
+        const OPEN_AIR=['arena','farm'];
+
+        // Furniture definitions per building
+        const BUILDING_FURNITURE={
+            town_hall:[
+                {type:'box',w:1.8,h:0.4,d:0.6,y:0.2,x:0,z:-0.3,color:0x5a3a1a},// long table
+                {type:'box',w:0.25,h:0.5,d:0.25,y:0.25,x:-0.5,z:0.5,color:0x5a3a1a},// chair
+                {type:'box',w:0.25,h:0.5,d:0.25,y:0.25,x:0.5,z:0.5,color:0x5a3a1a},// chair
+                {type:'box',w:0.06,h:0.8,d:0.02,y:0.4,x:-0.8,z:-1.0,color:0x8b5cf6},// banner L
+                {type:'box',w:0.06,h:0.8,d:0.02,y:0.4,x:0.8,z:-1.0,color:0x8b5cf6} // banner R
+            ],
+            arena:[
+                {type:'box',w:0.3,h:0.8,d:0.15,y:0.4,x:-1.2,z:-1.2,color:0x5a3a1a},// weapon rack
+                {type:'cyl',r:0.12,h:0.9,y:0.45,x:0.8,z:-0.8,color:0xBB9966},// dummy 1
+                {type:'box',w:0.4,h:0.04,d:0.4,y:0.02,x:0.8,z:-0.8,color:0x888888},// dummy base
+                {type:'cyl',r:0.12,h:0.9,y:0.45,x:-0.8,z:0.8,color:0xBB9966},// dummy 2
+                {type:'box',w:0.4,h:0.04,d:0.4,y:0.02,x:-0.8,z:0.8,color:0x888888} // dummy base 2
+            ],
+            bank:[
+                {type:'box',w:1.5,h:0.5,d:0.3,y:0.25,x:0,z:0,color:0xD4AF37},// counter
+                {type:'box',w:0.35,h:0.3,d:0.3,y:0.15,x:-0.4,z:-0.5,color:0xDAA520},// gold chest L
+                {type:'box',w:0.35,h:0.3,d:0.3,y:0.15,x:0.4,z:-0.5,color:0xDAA520} // gold chest R
+            ],
+            health_clinic:[
+                {type:'box',w:0.6,h:0.25,d:0.35,y:0.12,x:-0.5,z:-0.3,color:0xEEEEEE},// bed 1
+                {type:'box',w:0.6,h:0.25,d:0.35,y:0.12,x:0.5,z:-0.3,color:0xEEEEEE},// bed 2
+                {type:'box',w:0.3,h:0.6,d:0.15,y:0.3,x:0,z:-0.7,color:0x5a3a1a} // potion shelf
+            ],
+            gym:[
+                {type:'cyl',r:0.12,h:0.9,y:0.45,x:0,z:-0.3,color:0xBB9966},// dummy
+                {type:'cyl',r:0.06,h:0.15,y:0.08,x:-0.5,z:0.3,color:0x444444},// weight L
+                {type:'cyl',r:0.06,h:0.15,y:0.08,x:0.5,z:0.3,color:0x444444} // weight R
+            ],
+            academy:[
+                {type:'box',w:0.5,h:0.35,d:0.35,y:0.17,x:-0.5,z:0.2,color:0x5a3a1a},// desk 1
+                {type:'box',w:0.5,h:0.35,d:0.35,y:0.17,x:0.5,z:0.2,color:0x5a3a1a},// desk 2
+                {type:'box',w:1.2,h:0.7,d:0.06,y:0.5,x:0,z:-0.9,color:0x222222} // blackboard
+            ],
+            library:[
+                {type:'box',w:0.3,h:0.8,d:0.2,y:0.4,x:-0.5,z:-0.4,color:0x5a3a1a},// bookshelf L
+                {type:'box',w:0.25,h:0.12,d:0.18,y:0.55,x:-0.5,z:-0.4,color:0xcc3333},// books red
+                {type:'box',w:0.3,h:0.8,d:0.2,y:0.4,x:0.5,z:-0.4,color:0x5a3a1a},// bookshelf R
+                {type:'box',w:0.25,h:0.12,d:0.18,y:0.55,x:0.5,z:-0.4,color:0x3366cc},// books blue
+                {type:'box',w:0.6,h:0.3,d:0.4,y:0.15,x:0,z:0.3,color:0x6B4226} // reading table
+            ],
+            exchange:[
+                {type:'box',w:1.5,h:0.5,d:0.3,y:0.25,x:0,z:0,color:0x8B7355},// trading counter
+                {type:'box',w:0.25,h:0.05,d:0.15,y:0.53,x:0.3,z:0,color:0xBB9966} // ledger
+            ],
+            marketplace:[
+                {type:'box',w:0.35,h:0.35,d:0.35,y:0.17,x:-0.4,z:-0.3,color:0x8B6914},// crate 1
+                {type:'box',w:0.3,h:0.3,d:0.3,y:0.5,x:-0.4,z:-0.3,color:0x7a5c12},// crate 2 stacked
+                {type:'cyl',r:0.18,h:0.4,y:0.2,x:0.4,z:0.2,color:0x5a3a1a} // barrel
+            ],
+            workshop:[
+                {type:'box',w:1.0,h:0.45,d:0.5,y:0.22,x:0,z:-0.3,color:0x6B4226},// workbench
+                {type:'box',w:0.2,h:0.7,d:0.1,y:0.35,x:0.8,z:-0.7,color:0x5a3a1a} // tool rack
+            ],
+            forge:[
+                {type:'cyl',r:0.15,h:0.25,y:0.12,x:-0.3,z:-0.2,color:0x444444},// anvil base
+                {type:'box',w:0.3,h:0.08,d:0.2,y:0.28,x:-0.3,z:-0.2,color:0x555555},// anvil top
+                {type:'box',w:0.5,h:0.5,d:0.4,y:0.25,x:0.4,z:-0.3,color:0x8B4513,emissive:0xff4400,emissiveI:0.3} // furnace
+            ],
+            studio:[
+                {type:'box',w:0.4,h:0.5,d:0.03,y:0.5,x:-0.3,z:-0.5,color:0xEEEEDD,rotX:-0.2},// easel canvas
+                {type:'box',w:0.05,h:0.7,d:0.05,y:0.35,x:-0.3,z:-0.45,color:0x5a3a1a},// easel leg
+                {type:'cyl',r:0.04,h:0.1,y:0.05,x:0.3,z:0.3,color:0xcc3333},// paint pot red
+                {type:'cyl',r:0.04,h:0.1,y:0.05,x:0.45,z:0.3,color:0x3366cc},// paint pot blue
+                {type:'cyl',r:0.04,h:0.1,y:0.05,x:0.6,z:0.3,color:0x33aa55} // paint pot green
+            ],
+            gallery:[
+                {type:'cyl',r:0.12,h:0.5,y:0.25,x:-0.4,z:0,color:0xCCCCCC},// pedestal L
+                {type:'cyl',r:0.12,h:0.5,y:0.25,x:0.4,z:0,color:0xCCCCCC},// pedestal R
+                {type:'box',w:0.5,h:0.35,d:0.03,y:0.6,x:0,z:-0.6,color:0xcc6633} // painting
+            ],
+            broadcast_tower:[
+                {type:'box',w:0.7,h:0.4,d:0.4,y:0.2,x:0,z:0.2,color:0x444444},// console desk
+                {type:'cyl',r:0.06,h:0.5,y:0.25,x:0,z:-0.4,color:0x888888} // antenna base
+            ],
+            ad_agency:[
+                {type:'box',w:0.6,h:0.35,d:0.4,y:0.17,x:0,z:0.2,color:0x5a3a1a},// desk
+                {type:'box',w:0.5,h:0.4,d:0.04,y:0.5,x:0,z:-0.6,color:0xcc8833} // pinboard
+            ],
+            farm:[
+                {type:'box',w:0.5,h:0.4,d:0.4,y:0.2,x:-0.6,z:-0.6,color:0xDAA520},// hay bale
+                {type:'box',w:0.6,h:0.2,d:0.3,y:0.1,x:0.6,z:0,color:0x5a3a1a},// trough
+                {type:'box',w:0.08,h:0.6,d:0.08,y:0.3,x:-0.6,z:0.6,color:0x5a3a1a} // tool
+            ],
+            tavern:[
+                {type:'box',w:1.2,h:0.5,d:0.3,y:0.25,x:0,z:-0.3,color:0x5a3a1a},// bar counter
+                {type:'cyl',r:0.1,h:0.45,y:0.22,x:-0.4,z:0.3,color:0x5a3a1a},// stool L
+                {type:'cyl',r:0.1,h:0.45,y:0.22,x:0.4,z:0.3,color:0x5a3a1a},// stool R
+                {type:'cyl',r:0.15,h:0.35,y:0.17,x:0.6,z:-0.5,color:0x5a3a1a} // barrel
+            ],
+            forest_outpost:[
+                {type:'box',w:0.3,h:0.6,d:0.12,y:0.3,x:-0.3,z:-0.3,color:0x5a3a1a},// weapon rack
+                {type:'sphere',r:0.1,y:0.1,x:0.3,z:0.3,color:0xff6600,emissive:0xff4400,emissiveI:0.5},// campfire
+                {type:'box',w:0.3,h:0.25,d:0.25,y:0.12,x:0.3,z:-0.3,color:0x6B4226} // supply crate
+            ],
+            ruins_gate:[
+                {type:'cyl',r:0.12,h:0.5,y:0.25,x:-0.3,z:-0.2,color:0x888888},// broken pillar
+                {type:'box',w:0.3,h:0.2,d:0.25,y:0.1,x:0.3,z:0.2,color:0x6e5a3a} // ancient chest
+            ],
+            deep_entrance:[
+                {type:'cyl',r:0.06,h:0.4,y:0.2,x:-0.2,z:-0.2,color:0x8844aa},// crystal 1
+                {type:'cyl',r:0.05,h:0.3,y:0.15,x:0.2,z:0.1,color:0x6633cc},// crystal 2
+                {type:'cyl',r:0.04,h:0.25,y:0.12,x:0,z:0.3,color:0x9955dd},// crystal 3
+                {type:'sphere',r:0.15,y:0.3,x:0,z:0,color:0x8844aa,emissive:0x8844aa,emissiveI:0.6} // portal glow
+            ]
+        };
+
+        function addBuildingFurniture(id,group,bData){
+            const items=BUILDING_FURNITURE[id];
+            if(!items)return;
+            items.forEach(item=>{
+                let geo,mat;
+                const matOpts={color:item.color};
+                if(item.emissive){matOpts.emissive=item.emissive;matOpts.emissiveIntensity=item.emissiveI||0.3;}
+                mat=new THREE.MeshLambertMaterial(matOpts);
+                if(item.type==='box'){
+                    geo=new THREE.BoxGeometry(item.w,item.h,item.d);
+                }else if(item.type==='cyl'){
+                    geo=new THREE.CylinderGeometry(item.r,item.r,item.h,8);
+                }else if(item.type==='sphere'){
+                    geo=new THREE.SphereGeometry(item.r,8,8);
+                }
+                if(!geo)return;
+                const mesh=new THREE.Mesh(geo,mat);
+                mesh.position.set(item.x||0,item.y||0,item.z||0);
+                if(item.rotX)mesh.rotation.x=item.rotX;
+                mesh.castShadow=true;
+                mesh.userData.type='furniture';
+                group.add(mesh);
+            });
+        }
+
+        function createNamedBuilding(bData){
+            const group=new THREE.Group();
+            const baseH=heightMap[Math.min(Math.floor(bData.x),MAP_SIZE-1)][Math.min(Math.floor(bData.z),MAP_SIZE-1)]||0;
+
+            if(bData.type==='pedestal'){
+                // Pedestal buildings unchanged
+                const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.6,6),new THREE.MeshLambertMaterial({color:bData.wallColor}));
+                base.position.y=0.3;base.castShadow=true;group.add(base);
+                const board=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));
+                board.position.y=0.85;board.castShadow=true;group.add(board);
+                [0xff4444,0x44ff44,0x4444ff,0xffff44].forEach((c,i)=>{
+                    const p=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:c}));
+                    p.position.set(-0.2+(i%2)*0.4,0.75+Math.floor(i/2)*0.2,0.05);group.add(p);
+                });
+                const cx=Math.floor(bData.x),cz=Math.floor(bData.z);
+                if(cx>=0&&cx<MAP_SIZE&&cz>=0&&cz<MAP_SIZE)grid[cx][cz]=0;
+                buildingDoors[bData.id]={x:cx,z:cz+1};
+            }else{
+                const w=bData.w,h=bData.h,d=bData.d;
+                const hw=Math.ceil(w/2),hd=Math.ceil(d/2);
+                const cx=Math.floor(bData.x),cz=Math.floor(bData.z);
+                const wallThick=0.08;
+                const wallMat=new THREE.MeshLambertMaterial({color:bData.wallColor});
+                const doorGap=0.6;
+                const isOpenAir=OPEN_AIR.includes(bData.id);
+
+                // --- 4 thin walls with doorway gap ---
+                const sides=['north','south','east','west'];
+                sides.forEach(side=>{
+                    const isDoorSide=(bData.doorSide===side);
+                    if(side==='north'||side==='south'){
+                        const zPos=(side==='south')?d/2:-d/2;
+                        if(!isDoorSide){
+                            // Full wall
+                            const wm=new THREE.Mesh(new THREE.BoxGeometry(w,h,wallThick),wallMat);
+                            wm.position.set(0,h/2,zPos);wm.castShadow=true;wm.receiveShadow=true;group.add(wm);
+                        }else{
+                            // Split wall with door gap
+                            const halfW=(w-doorGap)/2;
+                            if(halfW>0.05){
+                                const wL=new THREE.Mesh(new THREE.BoxGeometry(halfW,h,wallThick),wallMat);
+                                wL.position.set(-(doorGap/2+halfW/2),h/2,zPos);wL.castShadow=true;group.add(wL);
+                                const wR=new THREE.Mesh(new THREE.BoxGeometry(halfW,h,wallThick),wallMat);
+                                wR.position.set(doorGap/2+halfW/2,h/2,zPos);wR.castShadow=true;group.add(wR);
+                            }
+                            // Door frame
+                            const frame=new THREE.Mesh(new THREE.BoxGeometry(doorGap+0.1,h,0.06),new THREE.MeshLambertMaterial({color:0x3a2a1a}));
+                            frame.position.set(0,h/2,zPos);frame.castShadow=true;group.add(frame);
+                            // Door opening (slightly recessed)
+                            const opening=new THREE.Mesh(new THREE.BoxGeometry(doorGap-0.04,h-0.1,0.08),new THREE.MeshLambertMaterial({color:0x111111}));
+                            opening.position.set(0,h/2-0.05,zPos);group.add(opening);
+                        }
+                    }else{
+                        const xPos=(side==='east')?w/2:-w/2;
+                        if(!isDoorSide){
+                            const wm=new THREE.Mesh(new THREE.BoxGeometry(wallThick,h,d),wallMat);
+                            wm.position.set(xPos,h/2,0);wm.castShadow=true;wm.receiveShadow=true;group.add(wm);
+                        }else{
+                            const halfD=(d-doorGap)/2;
+                            if(halfD>0.05){
+                                const wL=new THREE.Mesh(new THREE.BoxGeometry(wallThick,h,halfD),wallMat);
+                                wL.position.set(xPos,h/2,-(doorGap/2+halfD/2));wL.castShadow=true;group.add(wL);
+                                const wR=new THREE.Mesh(new THREE.BoxGeometry(wallThick,h,halfD),wallMat);
+                                wR.position.set(xPos,h/2,doorGap/2+halfD/2);wR.castShadow=true;group.add(wR);
+                            }
+                            const frame=new THREE.Mesh(new THREE.BoxGeometry(0.06,h,doorGap+0.1),new THREE.MeshLambertMaterial({color:0x3a2a1a}));
+                            frame.position.set(xPos,h/2,0);frame.castShadow=true;group.add(frame);
+                            const opening=new THREE.Mesh(new THREE.BoxGeometry(0.08,h-0.1,doorGap-0.04),new THREE.MeshLambertMaterial({color:0x111111}));
+                            opening.position.set(xPos,h/2-0.05,0);group.add(opening);
+                        }
+                    }
+                });
+
+                // --- Interior floor tiles ---
+                const floorColor=FLOOR_COLORS[bData.id]||0x8B7355;
+                const floorMat=new THREE.MeshLambertMaterial({color:floorColor});
+                for(let bx=cx-(hw-1);bx<=cx+(hw-1);bx++){
+                    for(let bz=cz-(hd-1);bz<=cz+(hd-1);bz++){
+                        if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE){
+                            const ft=new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE,0.04,TILE_SIZE),floorMat);
+                            ft.position.set(bx-bData.x,0.02,bz-bData.z);
+                            ft.receiveShadow=true;
+                            ft.userData={tileX:bx,tileZ:bz,walkable:true,type:'tile'};
+                            group.add(ft);
+                            terrainColors[bx][bz]=floorColor;
+                        }
+                    }
+                }
+
+                // --- Roof (cone) ---
+                const roof=new THREE.Mesh(
+                    new THREE.ConeGeometry(Math.max(w,d)*0.75,h*0.5,4),
+                    new THREE.MeshLambertMaterial({color:bData.roofColor})
+                );
+                roof.position.y=h+h*0.2;roof.rotation.y=Math.PI/4;roof.castShadow=true;
+                if(isOpenAir)roof.visible=false;
+                group.add(roof);
+
+                // --- Grid: footprint→0, interior→4, doorway wall→4, door tile→1 ---
+                for(let bx=cx-hw;bx<=cx+hw;bx++)
+                    for(let bz=cz-hd;bz<=cz+hd;bz++)
+                        if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE)grid[bx][bz]=0;
+                for(let bx=cx-(hw-1);bx<=cx+(hw-1);bx++)
+                    for(let bz=cz-(hd-1);bz<=cz+(hd-1);bz++)
+                        if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE)grid[bx][bz]=4;
+                // Doorway wall tile
+                switch(bData.doorSide){
+                    case'south':if(cz+hd<MAP_SIZE)grid[cx][cz+hd]=4;break;
+                    case'north':if(cz-hd>=0)grid[cx][cz-hd]=4;break;
+                    case'west':if(cx-hw>=0)grid[cx-hw][cz]=4;break;
+                    case'east':if(cx+hw<MAP_SIZE)grid[cx+hw][cz]=4;break;
+                }
+                // External door tile
+                let dt;
+                switch(bData.doorSide){
+                    case'south':dt={x:cx,z:cz+hd+1};break;
+                    case'north':dt={x:cx,z:cz-hd-1};break;
+                    case'west':dt={x:cx-hw-1,z:cz};break;
+                    case'east':dt={x:cx+hw+1,z:cz};break;
+                }
+                if(dt&&dt.x>=0&&dt.x<MAP_SIZE&&dt.z>=0&&dt.z<MAP_SIZE){
+                    grid[dt.x][dt.z]=1;
+                    buildingDoors[bData.id]=dt;
+                }
+
+                // --- Furniture ---
+                addBuildingFurniture(bData.id,group,bData);
+
+                // --- Store roof ref for visibility toggling ---
+                buildingRoofs.set(bData.id,{
+                    roof:roof,
+                    isOpenAir:isOpenAir,
+                    bounds:{minX:cx-hw,maxX:cx+hw,minZ:cz-hd,maxZ:cz+hd}
+                });
+            }
+
+            group.position.set(bData.x,baseH,bData.z);
+            group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;if(!c.userData.type)c.userData.type='building';}});
+            scene.add(group);
+        }
         BUILDINGS.forEach(b=>createNamedBuilding(b));
 
         // ============================================================
@@ -1013,13 +1319,19 @@
             const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
             if(hairCol){const hair=new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27),new THREE.MeshLambertMaterial({color:hairCol}));hair.position.y=1.04;g.add(hair);}
             const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x554433});
-            const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);
-            const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);
+            // Leg pivots at hip joints
+            const llPivot=new THREE.Group();llPivot.position.set(-0.08,0.30,0);
+            const llMesh=new THREE.Mesh(lGeo,lMat);llMesh.position.set(0,-0.15,0);llMesh.castShadow=true;llPivot.add(llMesh);g.add(llPivot);
+            const rlPivot=new THREE.Group();rlPivot.position.set(0.08,0.30,0);
+            const rlMesh=new THREE.Mesh(lGeo,lMat);rlMesh.position.set(0,-0.15,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);g.add(rlPivot);
+            // Arm pivots at shoulder joints
             const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:bodyCol});
-            const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);
-            const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);
+            const laPivot=new THREE.Group();laPivot.position.set(-0.22,0.72,0);
+            const laMesh=new THREE.Mesh(aGeo,aMat);laMesh.position.set(0,-0.175,0);laMesh.castShadow=true;laPivot.add(laMesh);g.add(laPivot);
+            const raPivot=new THREE.Group();raPivot.position.set(0.22,0.72,0);
+            const raMesh=new THREE.Mesh(aGeo,aMat);raMesh.position.set(0,-0.175,0);raMesh.castShadow=true;raPivot.add(raMesh);g.add(raPivot);
             const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
-            return{group:g,body,leftLeg:ll,rightLeg:rl,leftArm:la,rightArm:ra};
+            return{group:g,body,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,walkPhase:0,walkBlend:0};
         }
 
         const myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
@@ -1044,8 +1356,8 @@
         const npcMeshes=new Map();
         const monsterMeshes=new Map();
         const lootPileMeshes=new Map();
-        let myTargetX=100,myTargetZ=95,myTargetH=0,myTargetRot=0,myIsMoving=false;
-        const LERP_SPEED=8;
+        let myTargetX=100,myTargetZ=95,myTargetH=0,myTargetRot=0,myIsMoving=false,myIsResting=false;
+        const LERP_SPEED=5;
 
         function createNPCMesh(npcState){
             const role=npcState.role||'app_builder';
@@ -1054,14 +1366,22 @@
             const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:roleInfo.int}));body.position.y=0.5;body.castShadow=true;g.add(body);
             const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
             const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x444444});
-            const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);
+            // Leg pivots at hip joints
+            const llPivot=new THREE.Group();llPivot.position.set(-0.08,0.30,0);
+            const llMesh=new THREE.Mesh(lGeo,lMat);llMesh.position.set(0,-0.15,0);llMesh.castShadow=true;llPivot.add(llMesh);g.add(llPivot);
+            const rlPivot=new THREE.Group();rlPivot.position.set(0.08,0.30,0);
+            const rlMesh=new THREE.Mesh(lGeo,lMat);rlMesh.position.set(0,-0.15,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);g.add(rlPivot);
+            // Arm pivots at shoulder joints
             const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:roleInfo.int});
-            const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);
+            const laPivot=new THREE.Group();laPivot.position.set(-0.22,0.72,0);
+            const laMesh=new THREE.Mesh(aGeo,aMat);laMesh.position.set(0,-0.175,0);laMesh.castShadow=true;laPivot.add(laMesh);g.add(laPivot);
+            const raPivot=new THREE.Group();raPivot.position.set(0.22,0.72,0);
+            const raMesh=new THREE.Mesh(aGeo,aMat);raMesh.position.set(0,-0.175,0);raMesh.castShadow=true;raPivot.add(raMesh);g.add(raPivot);
             const sh=new THREE.Mesh(new THREE.CircleGeometry(0.18,8),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:0.15}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
             g.traverse(c=>{if(c.isMesh){c.userData.npcId=npcState.id;c.userData.type='npc';}});
             g.position.set(npcState.x,0,npcState.z);g.rotation.y=npcState.rotation||0;scene.add(g);
             const label=document.createElement('div');label.className='npc-label';label.textContent=npcState.name;label.style.borderBottom='2px solid '+roleInfo.hex;document.getElementById('npc-labels').appendChild(label);
-            return{group:g,body,leftLeg:ll,rightLeg:rl,leftArm:la,rightArm:ra,label};
+            return{group:g,body,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,label,walkPhase:0,walkBlend:0};
         }
 
         function createMonsterMesh(monsterState){
@@ -1115,6 +1435,16 @@
 
         function sendAction(type,payload){if(room)room.send('action',{type,payload:payload||{}});}
 
+        // Run orb click handlers
+        document.getElementById('run-orb').addEventListener('click',e=>{
+            e.preventDefault();e.stopPropagation();
+            sendAction('toggle_run');
+        });
+        document.getElementById('run-orb').addEventListener('contextmenu',e=>{
+            e.preventDefault();e.stopPropagation();
+            sendAction('toggle_rest');
+        });
+
         function setupRoomListeners(){
             // === PLAYERS ===
             room.state.players.onAdd((player,sessionId)=>{
@@ -1131,6 +1461,7 @@
                         const oldX=myTargetX,oldZ=myTargetZ;
                         myTargetX=player.x;myTargetZ=player.z;myTargetH=h;myTargetRot=player.rotation;
                         myIsMoving=(Math.abs(player.x-oldX)>0.01||Math.abs(player.z-oldZ)>0.01);
+                        myIsResting=player.isResting;
                         if(player.isDead){document.getElementById('death-screen').style.display='flex';}
                         else{document.getElementById('death-screen').style.display='none';}
                         // Update zone indicator
@@ -1147,12 +1478,12 @@
                     const mesh=createCharacterMesh(parseInt(player.color.replace('#',''),16)||0x3355aa);
                     mesh.group.position.set(player.x,0,player.z);scene.add(mesh.group);
                     const label=document.createElement('div');label.className='npc-label';label.textContent=player.name;label.style.borderBottom='2px solid '+player.color;document.getElementById('npc-labels').appendChild(label);
-                    otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false});
+                    otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false,isResting:false});
                     player.onChange(()=>{
                         const m=otherPlayerMeshes.get(sessionId);if(!m)return;
                         const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
                         m.isMoving=(Math.abs(player.x-m.targetX)>0.01||Math.abs(player.z-m.targetZ)>0.01);
-                        m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;
+                        m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;m.isResting=player.isResting;
                     });
                 }
             });
@@ -1237,6 +1568,14 @@
             document.getElementById('orbCombatText').textContent=p.combatLevel;
             document.getElementById('orbEnergy').style.setProperty('--energy-pct',p.energy+'%');
             document.getElementById('orbEnergyText').textContent=p.energy;
+            // Run energy orb
+            const runOrb=document.getElementById('run-orb');
+            if(p.runEnergy!==undefined){
+                runOrb.style.setProperty('--run-pct',p.runEnergy+'%');
+                runOrb.classList.toggle('active',p.isRunning);
+                runOrb.classList.toggle('resting',p.isResting);
+                document.getElementById('run-orb-icon').textContent=p.isResting?'💤':p.isRunning?'🏃':'🚶';
+            }
         }
 
         function renderInventoryFromState(p){
@@ -1407,6 +1746,79 @@
         }
 
         // ============================================================
+        // CLIENT A* PATHFINDING + PATH VISUALIZATION
+        // ============================================================
+        function clientFindPath(sx,sz,ex,ez){
+            if(ex<0||ex>=MAP_SIZE||ez<0||ez>=MAP_SIZE||grid[ex][ez]===0)return[];
+            const open=[],closed=new Set(),cameFrom={};
+            function key(x,z){return x+','+z;}
+            function h(x,z){return Math.abs(x-ex)+Math.abs(z-ez);}
+            open.push({x:sx,z:sz,g:0,f:h(sx,sz)});
+            while(open.length>0){
+                open.sort((a,b)=>a.f-b.f);
+                const cur=open.shift(),ck=key(cur.x,cur.z);
+                if(cur.x===ex&&cur.z===ez){
+                    const path=[];let kk=ck;
+                    while(kk){const[px,pz]=kk.split(',').map(Number);path.unshift({x:px,z:pz});kk=cameFrom[kk];}
+                    return path;
+                }
+                closed.add(ck);
+                const nb=[{x:cur.x+1,z:cur.z},{x:cur.x-1,z:cur.z},{x:cur.x,z:cur.z+1},{x:cur.x,z:cur.z-1}];
+                for(const n of nb){
+                    if(n.x<0||n.x>=MAP_SIZE||n.z<0||n.z>=MAP_SIZE||grid[n.x][n.z]===0)continue;
+                    const nk=key(n.x,n.z);if(closed.has(nk))continue;
+                    const g=cur.g+1,existing=open.find(o=>key(o.x,o.z)===nk);
+                    if(existing&&g>=existing.g)continue;
+                    cameFrom[nk]=ck;
+                    if(existing){existing.g=g;existing.f=g+h(n.x,n.z);}
+                    else open.push({x:n.x,z:n.z,g,f:g+h(n.x,n.z)});
+                }
+            }
+            return[];
+        }
+
+        // Path visualization state
+        const pathGroup=new THREE.Group();scene.add(pathGroup);
+        let destMarker=null;
+        const pathDotGeo=new THREE.CircleGeometry(0.15,8);
+        const pathDotMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.25});
+
+        function clearWalkPath(){
+            while(pathGroup.children.length>0){pathGroup.remove(pathGroup.children[0]);}
+            if(destMarker){scene.remove(destMarker);destMarker=null;}
+        }
+        function renderWalkPath(path,targetX,targetZ){
+            clearWalkPath();
+            // Path dots (skip first node = current position)
+            for(let i=1;i<path.length;i++){
+                const dot=new THREE.Mesh(pathDotGeo,pathDotMat);
+                dot.rotation.x=-Math.PI/2;
+                const px=path[i].x,pz=path[i].z;
+                const h=heightMap[px]?heightMap[px][pz]||0:0;
+                dot.position.set(px,h+0.05,pz);
+                dot.userData.pathIdx=i;dot.userData.px=px;dot.userData.pz=pz;
+                pathGroup.add(dot);
+            }
+            // Destination pulsing ring
+            const ringGeo=new THREE.TorusGeometry(0.3,0.04,8,24);
+            const ringMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.4});
+            destMarker=new THREE.Mesh(ringGeo,ringMat);
+            destMarker.rotation.x=-Math.PI/2;
+            const dh=heightMap[targetX]?heightMap[targetX][targetZ]||0:0;
+            destMarker.position.set(targetX,dh+0.06,targetZ);
+            destMarker.userData.baseScale=1;
+            scene.add(destMarker);
+        }
+
+        // Walk-to helper (usable from context menu eval)
+        window.walkToTile=function(tx,tz){
+            const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);
+            const p=clientFindPath(curTX,curTZ,tx,tz);
+            if(p.length>1)renderWalkPath(p,tx,tz);
+            sendAction('move_to',{tileX:tx,tileZ:tz});
+        };
+
+        // ============================================================
         // RAYCASTING & INPUT
         // ============================================================
         const raycasterMain=new THREE.Raycaster();
@@ -1426,8 +1838,8 @@
             }
             if(hitMonster){if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
             if(hitNPC){if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
-            if(hitBld){const door=buildingDoors[hitBld];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});return;}
-            if(hitTile&&hitTile.walkable){sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
+            if(hitBld){const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);sendAction('move_to',{tileX:door.x,tileZ:door.z});}return;}
+            if(hitTile&&hitTile.walkable){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
         renderer.domElement.addEventListener('contextmenu',e=>{
@@ -1453,7 +1865,7 @@
                 return;
             }
             if(hitBld){const bd=BUILDINGS.find(b=>b.id===hitBld);if(bd){showContextMenu(e,[{label:'Enter '+bd.name,action:"enterBuilding('"+hitBld+"')"},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}return;}
-            if(hitTile){showContextMenu(e,[{label:'Walk here',action:"sendAction('move_to',{tileX:"+hitTile.tileX+",tileZ:"+hitTile.tileZ+"})"},{label:'Cancel',action:'hideCtxMenu()'}]);}
+            if(hitTile){showContextMenu(e,[{label:'Walk here',action:"walkToTile("+hitTile.tileX+","+hitTile.tileZ+")"},{label:'Cancel',action:'hideCtxMenu()'}]);}
         });
 
         renderer.domElement.addEventListener('mousemove',e=>{
@@ -1489,7 +1901,7 @@
         // Pre-render minimap terrain to offscreen canvas (1px per tile)
         const minimapBG=document.createElement('canvas');minimapBG.width=MAP_SIZE;minimapBG.height=MAP_SIZE;
         const bgctx=minimapBG.getContext('2d');
-        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(x>=87&&x<=120&&z>=82&&z<=110&&grid[x][z]>0&&!isWater(x,z))bgctx.fillStyle='#808080';else if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===4)bgctx.fillStyle='#8B6914';else if(x>=87&&x<=120&&z>=82&&z<=110&&grid[x][z]>0&&!isWater(x,z))bgctx.fillStyle='#808080';else if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
         function drawMinimap(){
             const s=200/MAP_SIZE;mctx.clearRect(0,0,200,200);
             mctx.drawImage(minimapBG,0,0,200,200);
@@ -1517,18 +1929,51 @@
         // ============================================================
         // GAME LOOP (rendering only — logic on server)
         // ============================================================
+        // Blended walk/sit animation helper
+        function animateWalk(c,moving,dt,resting){
+            if(resting){
+                // Sitting pose: legs forward, body lowered, arms on knees
+                c.walkBlend=Math.max(0,c.walkBlend-4*dt);
+                const sit=c.sitBlend=(c.sitBlend||0)+3*dt;
+                const s=Math.min(1,sit);
+                c.leftLeg.rotation.x=-1.2*s;
+                c.rightLeg.rotation.x=-1.2*s;
+                c.leftArm.rotation.x=-0.4*s;
+                c.rightArm.rotation.x=-0.4*s;
+                c.body.position.y=0.5-0.18*s;
+            }else{
+                c.sitBlend=Math.max(0,(c.sitBlend||0)-4*dt);
+                const s=c.sitBlend;
+                c.walkBlend=Math.max(0,Math.min(1,c.walkBlend+(moving?6:-6)*dt));
+                if(moving)c.walkPhase+=dt*10;
+                const b=c.walkBlend,p=c.walkPhase;
+                c.leftLeg.rotation.x=Math.sin(p)*0.6*b + (-1.2*s);
+                c.rightLeg.rotation.x=-Math.sin(p)*0.6*b + (-1.2*s);
+                c.leftArm.rotation.x=-Math.sin(p)*0.5*b + (-0.4*s);
+                c.rightArm.rotation.x=Math.sin(p)*0.5*b + (-0.4*s);
+                c.body.position.y=0.5+Math.abs(Math.sin(p*2))*0.04*b - 0.18*s;
+            }
+        }
         const clock=new THREE.Clock();
         function animate(){
             requestAnimationFrame(animate);
             const dt=clock.getDelta();const time=clock.getElapsedTime();
-            // Camera follows player
+            // Camera follows player (smooth)
             camTargetX=myChar.group.position.x;
             camTargetZ=myChar.group.position.z;
+            camDt=dt;
             if(!chatInputFocused){
                 if(keys['q'])camAngle-=1.5*dt;
                 if(keys['e'])camAngle+=1.5*dt;
             }
             updateCamera();
+            // Roof hiding — hide roof when player is inside building
+            const ptx=Math.round(myChar.group.position.x),ptz=Math.round(myChar.group.position.z);
+            buildingRoofs.forEach((bg,id)=>{
+                if(bg.isOpenAir)return; // always hidden
+                const inside=ptx>=bg.bounds.minX&&ptx<=bg.bounds.maxX&&ptz>=bg.bounds.minZ&&ptz<=bg.bounds.maxZ;
+                bg.roof.visible=!inside;
+            });
             // Update chunks based on player position
             updateChunks(myChar.group.position.x,myChar.group.position.z);
             // Water animation
@@ -1544,18 +1989,33 @@
             myChar.group.position.y+=(myTargetH-myChar.group.position.y)*lerpAmt;
             myChar.group.position.z+=(myTargetZ-myChar.group.position.z)*lerpAmt;
             myChar.group.rotation.y+=(myTargetRot-myChar.group.rotation.y)*lerpAmt;
-            if(myIsMoving){const wb=time*8;myChar.leftLeg.rotation.x=Math.sin(wb)*0.5;myChar.rightLeg.rotation.x=-Math.sin(wb)*0.5;myChar.leftArm.rotation.x=-Math.sin(wb)*0.4;myChar.rightArm.rotation.x=Math.sin(wb)*0.4;}
-            else{myChar.leftLeg.rotation.x*=0.9;myChar.rightLeg.rotation.x*=0.9;myChar.leftArm.rotation.x*=0.9;myChar.rightArm.rotation.x*=0.9;}
+            animateWalk(myChar,myIsMoving,dt,myIsResting);
             // Other players
             otherPlayerMeshes.forEach(m=>{
                 m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
-                if(m.isMoving&&m.leftLeg){const wb=time*8;m.leftLeg.rotation.x=Math.sin(wb)*0.5;m.rightLeg.rotation.x=-Math.sin(wb)*0.5;m.leftArm.rotation.x=-Math.sin(wb)*0.4;m.rightArm.rotation.x=Math.sin(wb)*0.4;}
-                else if(m.leftLeg){m.leftLeg.rotation.x*=0.9;m.rightLeg.rotation.x*=0.9;m.leftArm.rotation.x*=0.9;m.rightArm.rotation.x*=0.9;}
+                if(m.leftLeg)animateWalk(m,m.isMoving,dt,m.isResting||false);
             });
             // NPCs
-            npcMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;});
+            npcMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
+                if(m.leftLeg)animateWalk(m,m.isMoving,dt,false);
+            });
             // Monsters
             monsterMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;});
+            // Path visualization cleanup + destination pulse
+            if(pathGroup.children.length>0){
+                const px=myChar.group.position.x,pz=myChar.group.position.z;
+                for(let i=pathGroup.children.length-1;i>=0;i--){
+                    const d=pathGroup.children[i];
+                    if(Math.abs(d.userData.px-px)<0.6&&Math.abs(d.userData.pz-pz)<0.6)pathGroup.remove(d);
+                }
+                if(!myIsMoving){clearWalkPath();}
+            }
+            if(destMarker){
+                const pulse=1+Math.sin(time*4)*0.15;
+                destMarker.scale.set(pulse,pulse,pulse);
+                destMarker.material.opacity=0.25+Math.sin(time*3)*0.15;
+                if(!myIsMoving){clearWalkPath();}
+            }
             updateOverlays();
             drawMinimap();
             renderer.render(scene,camera);

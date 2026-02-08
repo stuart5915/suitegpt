@@ -36,8 +36,15 @@ export class PlayerSchema extends Schema {
     @type('float32') rotation: number = 0;
     @type('boolean') isDead: boolean = false;
     @type('string') entityType: string = 'player'; // 'player' | 'agent'
+    @type('boolean') isRunning: boolean = false;
+    @type('boolean') isResting: boolean = false;
 
     // Private — filtered to owning client only
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') runEnergy: number = 100;
+
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
@@ -119,6 +126,7 @@ export class PlayerSchema extends Schema {
     @type('uint32') coins: number = 0; // quick accessor
 
     // Server-side only (not synced)
+    runEnergyTimer: number = 0;
     combatTargetNpcId: string | null = null;
     combatTargetMonsterId: string | null = null;
     combatTimer: number = 0;
