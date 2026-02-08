@@ -1241,18 +1241,13 @@
         function animate(){
             requestAnimationFrame(animate);
             const dt=clock.getDelta();const time=clock.getElapsedTime();
-            // Camera
+            // Camera follows player
+            camTargetX=myChar.group.position.x;
+            camTargetZ=myChar.group.position.z;
             if(!chatInputFocused){
-                const ps=10*dt;
-                if(keys['w']){camTargetZ-=ps*Math.cos(camAngle);camTargetX-=ps*Math.sin(camAngle);}
-                if(keys['s']){camTargetZ+=ps*Math.cos(camAngle);camTargetX+=ps*Math.sin(camAngle);}
-                if(keys['a']){camTargetX-=ps*Math.cos(camAngle);camTargetZ+=ps*Math.sin(camAngle);}
-                if(keys['d']){camTargetX+=ps*Math.cos(camAngle);camTargetZ-=ps*Math.sin(camAngle);}
                 if(keys['q'])camAngle-=1.5*dt;
                 if(keys['e'])camAngle+=1.5*dt;
             }
-            camTargetX=Math.max(-5,Math.min(MAP_SIZE+5,camTargetX));
-            camTargetZ=Math.max(-5,Math.min(MAP_SIZE+5,camTargetZ));
             updateCamera();
             // Water animation
             const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;
