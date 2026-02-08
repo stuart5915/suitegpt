@@ -163,9 +163,12 @@ export class SupabaseAdapter {
             updated_at: new Date().toISOString(),
         };
 
+        // Upsert by supabase_user_id for authenticated players so we don't
+        // create a new row every session. The unique partial index on
+        // supabase_user_id (migration 006) makes this work.
         const { error } = await this.supabase
             .from('agentscape_players')
-            .upsert(row, { onConflict: 'session_id' });
+            .upsert(row, { onConflict: 'supabase_user_id' });
 
         if (error) {
             console.error('Failed to save player:', error);
