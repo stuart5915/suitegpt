@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     // Validate path against whitelist
     const isAllowed = ALLOWED_PATHS.some(p => path === p || path.startsWith(p + '/'));
     if (!isAllowed) {
-        return res.status(403).json({ error: 'Path not allowed' });
+        return res.status(403).json({ error: 'Path not allowed', path });
     }
 
     try {
@@ -54,12 +54,26 @@ export default async function handler(req, res) {
             }
         });
 
-        const data = await upstream.json();
-        res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
-        return res.status(upstream.status).json(data);
+        const text = await upstream.text();
+
+        // Try to parse as JSON
+        try {
+            const data = JSON.parse(text);
+            res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+            return res.status(upstream.status).json(data);
+        } catch {
+            // Not JSON — return debug info
+            console.error('Clawnch non-JSON response:', upstream.status, text.slice(0, 500));
+            return res.status(502).json({
+                error: 'Upstream returned non-JSON',
+                upstreamStatus: upstream.status,
+                url,
+                preview: text.slice(0, 200)
+            });
+        }
 
     } catch (err) {
-        console.error('Clawnch proxy error:', err);
-        return res.status(502).json({ error: 'Upstream API error' });
+        console.error('Clawnch proxy fetch error:', err.message);
+        return res.status(502).json({ error: 'Upstream fetch failed', message: err.message });
     }
 }
