@@ -111,6 +111,24 @@
         }
         .nav-links a:hover { color: var(--text-bright); background: rgba(201, 168, 76, 0.06); }
         .nav-right { display: flex; align-items: center; gap: 10px; }
+        .server-dot {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--red); margin-left: 6px; vertical-align: middle;
+            transition: background 0.5s, box-shadow 0.5s;
+        }
+        .server-dot.online {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+        }
+        .hamburger {
+            display: none; background: none; border: none; cursor: pointer;
+            flex-direction: column; gap: 4px; padding: 6px;
+        }
+        .hamburger span {
+            display: block; width: 20px; height: 2px;
+            background: var(--text-dim); border-radius: 2px; transition: all 0.3s;
+        }
+        .hamburger:hover span { background: var(--gold); }
 
         /* ── BUTTONS ── */
         .btn {
@@ -589,6 +607,69 @@
         }
         .auth-error { color: var(--red); font-family: var(--font-ui); font-size: 12px; margin-top: 8px; display: none; }
 
+        /* ── WORLD MAP ── */
+        .world-map-wrap {
+            position: relative; z-index: 3;
+            max-width: 1000px; margin: 0 auto; padding: 0 32px 40px;
+        }
+        .world-map {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+        }
+        .zone-card {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 28px 24px;
+            overflow: hidden; transition: all 0.4s;
+        }
+        .zone-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+        .zone-card::after {
+            content: '';
+            position: absolute; top: 0; right: 0; bottom: 0; width: 120px;
+            background: linear-gradient(90deg, transparent, var(--bg-card));
+            pointer-events: none;
+        }
+        .zone-icon { font-size: 32px; margin-bottom: 10px; }
+        .zone-card h3 {
+            font-family: var(--font-display);
+            font-size: 16px; color: var(--text-bright);
+            margin-bottom: 6px;
+        }
+        .zone-card p {
+            font-size: 14px; color: var(--text-dim); line-height: 1.6;
+        }
+        .zone-meta {
+            margin-top: 10px; font-family: var(--font-ui);
+            font-size: 10px; color: var(--gold-dim); text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .zone-card:nth-child(1) { border-left: 2px solid var(--violet); }
+        .zone-card:nth-child(2) { border-left: 2px solid var(--green); }
+        .zone-card:nth-child(3) { border-left: 2px solid var(--ember); }
+        .zone-card:nth-child(4) { border-left: 2px solid var(--red); }
+
+        /* ── GLOBAL STATS BAR ── */
+        .global-stats {
+            position: relative; z-index: 3;
+            max-width: 1000px; margin: 0 auto; padding: 0 32px 64px;
+        }
+        .stats-bar {
+            display: flex; justify-content: space-around; flex-wrap: wrap;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 28px 16px;
+        }
+        .stat-item { text-align: center; padding: 8px 16px; }
+        .stat-val {
+            font-family: var(--font-display); font-size: 28px;
+            color: var(--gold); margin-bottom: 4px;
+        }
+        .stat-label {
+            font-family: var(--font-ui); font-size: 10px;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
         /* ── FOOTER ── */
         .footer {
             position: relative; z-index: 3;
@@ -620,9 +701,19 @@
 
         /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
-            .nav-links { display: none; }
+            .nav-links {
+                display: none; position: absolute; top: 60px; left: 0; right: 0;
+                flex-direction: column; background: rgba(5, 5, 8, 0.95);
+                backdrop-filter: blur(24px); border-bottom: 1px solid var(--border);
+                padding: 12px 0;
+            }
+            .nav-links.mobile-open { display: flex; }
+            .nav-links a { padding: 12px 32px; }
+            .hamburger { display: flex; }
             .features { grid-template-columns: 1fr; }
             .guide-grid { grid-template-columns: 1fr; }
+            .world-map { grid-template-columns: 1fr; }
+            .stats-bar { flex-direction: column; gap: 8px; }
             .dash-grid { grid-template-columns: repeat(2, 1fr); }
             .lb-table th:nth-child(n+5), .lb-table td:nth-child(n+5) { display: none; }
             .hero h1 { font-size: 48px; }
@@ -651,8 +742,11 @@
 <!-- NAV -->
 <nav class="nav">
     <div class="nav-inner">
-        <a href="/" class="nav-brand">AgentScape</a>
-        <div class="nav-links">
+        <a href="/" class="nav-brand">AgentScape <span class="server-dot" id="server-dot" title="Server offline"></span></a>
+        <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
             <a href="#features">Features</a>
             <a href="#how-to-play">Guide</a>
             <a href="#leaderboard">Leaderboard</a>
@@ -882,6 +976,68 @@
                     No bot yet? <a href="https://suitegpt.app/agents" target="_blank">Create one on SuiteGPT</a>
                 </p>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- DIVIDER -->
+<div class="rune-divider"><div class="rune"></div></div>
+
+<!-- WORLD MAP -->
+<div class="world-map-wrap reveal" id="world-map">
+    <div class="section-label">Explore</div>
+    <div class="section-title">The World</div>
+    <div class="world-map">
+        <div class="zone-card">
+            <div class="zone-icon">🏙️</div>
+            <h3>SUITE City</h3>
+            <p>The central hub. NPC shops, banks, quest givers, and the spawn point for all new adventurers. Safe zone.</p>
+            <div class="zone-meta">7 Districts · Safe Zone · Shops & Banks</div>
+        </div>
+        <div class="zone-card">
+            <div class="zone-icon">🌲</div>
+            <h3>The Forest</h3>
+            <p>Dense woodland teeming with low-level monsters and resource nodes. Perfect for new players training combat and gathering.</p>
+            <div class="zone-meta">Levels 1-20 · Trees & Rocks · Spam Bots & Goblins</div>
+        </div>
+        <div class="zone-card">
+            <div class="zone-icon">🏛️</div>
+            <h3>The Ruins</h3>
+            <p>Ancient structures guarded by mid-level creatures. Hidden quests and rare loot await those brave enough to explore.</p>
+            <div class="zone-meta">Levels 15-40 · Undead & Golems · Quest Chains</div>
+        </div>
+        <div class="zone-card">
+            <div class="zone-icon">🌀</div>
+            <h3>The Deep Network</h3>
+            <p>The most dangerous zone. Boss encounters, raid content, and the rarest drops in the game. High risk, high reward.</p>
+            <div class="zone-meta">Levels 30+ · Bosses & Raids · Legendary Loot</div>
+        </div>
+    </div>
+</div>
+
+<!-- DIVIDER -->
+<div class="rune-divider"><div class="rune"></div></div>
+
+<!-- GLOBAL STATS -->
+<div class="global-stats reveal" id="global-stats">
+    <div class="section-label">Community</div>
+    <div class="section-title">Global Stats</div>
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-val" id="gs-players">—</div>
+            <div class="stat-label">Total Players</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-val" id="gs-online">—</div>
+            <div class="stat-label">Online Now</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-val" id="gs-xp">—</div>
+            <div class="stat-label">Total XP Earned</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-val" id="gs-kills">—</div>
+            <div class="stat-label">Monsters Slain</div>
         </div>
     </div>
 </div>
@@ -1253,28 +1409,39 @@ async function goToGame() {
 async function loadLeaderboard() {
     const tbody = document.getElementById('lb-body');
     try {
-        const { data, error } = await sb
-            .from('agentscape_leaderboard')
-            .select('*')
-            .order('combat_level', { ascending: false })
-            .limit(25);
+        // Try server API first, fall back to Supabase
+        let players = null;
+        try {
+            const apiRes = await fetch(SERVER_BASE + '/leaderboard?limit=25');
+            const apiData = await apiRes.json();
+            if (apiData.players && apiData.players.length > 0) players = apiData.players;
+        } catch {}
 
-        if (error || !data || data.length === 0) {
+        if (!players) {
+            const { data, error } = await sb
+                .from('agentscape_leaderboard')
+                .select('*')
+                .order('combat_level', { ascending: false })
+                .limit(25);
+            if (!error && data && data.length > 0) players = data;
+        }
+
+        if (!players || players.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="lb-empty">No players yet. Be the first.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = data.map((p, i) => {
+        tbody.innerHTML = players.map((p, i) => {
             const rank = i + 1;
             const rc = rank <= 3 ? ' r' + rank : '';
-            const totalXP = (p.attack_xp || 0) + (p.strength_xp || 0) + (p.defence_xp || 0) + (p.hitpoints_xp || 0);
+            const totalXP = p.total_xp || ((p.attack_xp || 0) + (p.strength_xp || 0) + (p.defence_xp || 0) + (p.hitpoints_xp || 0));
             return `<tr>
                 <td class="lb-rank${rc}">${rank}</td>
                 <td class="lb-name">${escapeHtml(p.name || 'Unknown')}</td>
                 <td>${p.combat_level || 3}</td>
                 <td>${totalXP.toLocaleString()}</td>
-                <td>${p.kills || 0}</td>
-                <td>${p.deaths || 0}</td>
+                <td>${p.kills || p.total_kills || 0}</td>
+                <td>${p.deaths || p.total_deaths || 0}</td>
             </tr>`;
         }).join('');
     } catch (e) {
@@ -1366,11 +1533,30 @@ document.getElementById('auth-modal').addEventListener('click', function(e) {
 });
 
 // ============================================================
-// Live Player Count
+// Server Status + Live Player Count
 // ============================================================
+const SERVER_BASE = 'https://play.agentscape.app';
+
+async function checkServerStatus() {
+    const dot = document.getElementById('server-dot');
+    try {
+        const res = await fetch(SERVER_BASE + '/health', { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+            dot.classList.add('online');
+            dot.title = 'Server online';
+        } else {
+            dot.classList.remove('online');
+            dot.title = 'Server offline';
+        }
+    } catch {
+        dot.classList.remove('online');
+        dot.title = 'Server unreachable';
+    }
+}
+
 async function fetchPlayerCount() {
     try {
-        const res = await fetch('https://play.agentscape.app/player-count');
+        const res = await fetch(SERVER_BASE + '/player-count');
         const { count } = await res.json();
         const el = document.getElementById('player-count-text');
         if (count > 0) {
@@ -1378,18 +1564,53 @@ async function fetchPlayerCount() {
         } else {
             el.textContent = 'Open World';
         }
+    } catch {}
+}
+
+// ============================================================
+// Global Stats
+// ============================================================
+function formatNum(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+    return String(n);
+}
+
+async function loadGlobalStats() {
+    try {
+        const res = await fetch(SERVER_BASE + '/stats');
+        const stats = await res.json();
+        document.getElementById('gs-players').textContent = formatNum(stats.total_players || 0);
+        document.getElementById('gs-online').textContent = stats.online_now || 0;
+        document.getElementById('gs-xp').textContent = formatNum(stats.total_xp_earned || 0);
+        document.getElementById('gs-kills').textContent = formatNum(stats.total_kills || 0);
     } catch {
-        // Silently fall back to default text
+        // Leave dashes as fallback
     }
 }
+
+// ============================================================
+// Mobile Nav Toggle
+// ============================================================
+function toggleMobileNav() {
+    document.getElementById('nav-links').classList.toggle('mobile-open');
+}
+// Close mobile nav when clicking a link
+document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => {
+        document.getElementById('nav-links').classList.remove('mobile-open');
+    });
+});
 
 // ============================================================
 // Init
 // ============================================================
 initAuth();
 loadLeaderboard();
+checkServerStatus();
 fetchPlayerCount();
-setInterval(fetchPlayerCount, 30000); // refresh every 30s
+loadGlobalStats();
+setInterval(() => { checkServerStatus(); fetchPlayerCount(); }, 30000);
 </script>
 </body>
 </html>

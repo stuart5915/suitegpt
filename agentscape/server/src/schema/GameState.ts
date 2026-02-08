@@ -2,6 +2,7 @@ import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema';
 import { PlayerSchema } from './PlayerSchema';
 import { NPCSchema } from './NPCSchema';
 import { MonsterSchema } from './MonsterSchema';
+import { ResourceNodeSchema } from './ResourceNodeSchema';
 
 export class LootPile extends Schema {
     @type('string') id: string = '';
@@ -22,6 +23,7 @@ export class GameState extends Schema {
     @type({ map: MonsterSchema }) monsters = new MapSchema<MonsterSchema>();
     @type({ map: LootPile }) lootPiles = new MapSchema<LootPile>();
     @type({ map: ShopStock }) shopStock = new MapSchema<ShopStock>();
+    @type({ map: ResourceNodeSchema }) resourceNodes = new MapSchema<ResourceNodeSchema>();
     @type('uint32') tick: number = 0;
     @type('boolean') isNight: boolean = false;
     @type('float64') serverTime: number = 0;
