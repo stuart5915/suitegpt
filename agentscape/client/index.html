@@ -93,6 +93,21 @@
         .skill-detail-row { font-size: 10px; color: #9ca3af; padding: 1px 0; }
         .skill-detail-row b { color: #fff; }
 
+        /* Skill hover tooltip */
+        .skill-tooltip { position: fixed; background: #1a1a1f; border: 1px solid #3a3a40; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 3px; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+        /* Skill guide panel */
+        .skill-guide { padding: 8px; background: #1a1a1f; border-top: 1px solid #3a3a40; max-height: 200px; overflow-y: auto; }
+        .skill-guide-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #2a2a2e; }
+        .skill-guide-title { font-size: 13px; color: #fff; font-weight: bold; }
+        .skill-guide-back { font-size: 10px; color: #6366f1; cursor: pointer; margin-left: auto; }
+        .skill-guide-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; font-size: 10px; border-radius: 3px; }
+        .skill-guide-row.unlocked { color: #fff; }
+        .skill-guide-row.locked { color: #6b7280; }
+        .skill-guide-row.current { background: #6366f122; color: #a5b4fc; }
+        .skill-guide-lvl { width: 24px; font-weight: bold; text-align: right; flex-shrink: 0; }
+        .skill-guide-name { flex: 1; }
+        .skill-guide-icon { width: 16px; text-align: center; }
+
         /* Equipment Panel */
         #equip-panel { padding: 8px; display: flex; flex-direction: column; align-items: center; }
         .equip-title { font-size: 12px; color: #eab308; font-weight: bold; text-align: center; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
@@ -1844,7 +1859,41 @@
                 '</div>';
         }
 
+        // Skill guide milestones — what unlocks at each level
+        const SKILL_GUIDE={
+            attack:[{lvl:1,name:'Bronze weapons',icon:'\u{1F5E1}\uFE0F'},{lvl:5,name:'Iron weapons',icon:'\u2694\uFE0F'},{lvl:10,name:'Steel weapons',icon:'\u2694\uFE0F'},{lvl:20,name:'Mithril weapons',icon:'\u{1F5E1}\uFE0F'},{lvl:30,name:'Adamant weapons',icon:'\u2694\uFE0F'},{lvl:40,name:'Rune weapons',icon:'\u2694\uFE0F'},{lvl:60,name:'Dragon weapons',icon:'\u2694\uFE0F'}],
+            strength:[{lvl:1,name:'Basic damage bonus',icon:'\u{1F4AA}'},{lvl:10,name:'Improved max hit',icon:'\u{1F4AA}'},{lvl:20,name:'Strong blows',icon:'\u{1F4A5}'},{lvl:40,name:'Powerful strikes',icon:'\u{1F4A5}'},{lvl:60,name:'Devastating hits',icon:'\u{1F525}'},{lvl:99,name:'Max strength',icon:'\u{1F31F}'}],
+            defence:[{lvl:1,name:'Bronze armour',icon:'\u{1F6E1}\uFE0F'},{lvl:5,name:'Iron armour',icon:'\u{1F6E1}\uFE0F'},{lvl:10,name:'Steel armour',icon:'\u26D1\uFE0F'},{lvl:20,name:'Mithril armour',icon:'\u{1FA96}'},{lvl:30,name:'Adamant armour',icon:'\u{1F6E1}\uFE0F'},{lvl:40,name:'Rune armour',icon:'\u26D1\uFE0F'},{lvl:60,name:'Dragon armour',icon:'\u26D1\uFE0F'}],
+            hitpoints:[{lvl:10,name:'Start with 100 HP',icon:'\u2764\uFE0F'},{lvl:20,name:'200 HP',icon:'\u2764\uFE0F'},{lvl:40,name:'400 HP',icon:'\u2764\uFE0F'},{lvl:60,name:'600 HP',icon:'\u2764\uFE0F'},{lvl:80,name:'800 HP',icon:'\u2764\uFE0F'},{lvl:99,name:'Max HP',icon:'\u{1F31F}'}],
+            prayer:[{lvl:1,name:'Bury bones (+4 XP)',icon:'\u{1F9B4}'},{lvl:10,name:'Improved prayers',icon:'\u2728'},{lvl:30,name:'Protection prayers',icon:'\u{1F6E1}\uFE0F'},{lvl:45,name:'Combat prayers',icon:'\u2694\uFE0F'},{lvl:70,name:'Piety',icon:'\u{1F31F}'},{lvl:99,name:'Max prayer',icon:'\u{1F31F}'}],
+            thieving:[{lvl:1,name:'Pickpocket men & women',icon:'\u{1F90F}'},{lvl:10,name:'Improved success rate',icon:'\u{1F44D}'},{lvl:20,name:'Pickpocket warriors',icon:'\u{1F90F}'},{lvl:40,name:'Pickpocket guards',icon:'\u{1F90F}'},{lvl:50,name:'Steal from stalls',icon:'\u{1F6D2}'},{lvl:70,name:'Pickpocket heroes',icon:'\u{1F90F}'},{lvl:99,name:'Master thief',icon:'\u{1F31F}'}],
+            woodcutting:[{lvl:1,name:'Cut normal trees',icon:'\u{1FA93}'},{lvl:15,name:'Cut oak trees',icon:'\u{1F333}'},{lvl:30,name:'Cut willow trees',icon:'\u{1F333}'},{lvl:45,name:'Cut maple trees',icon:'\u{1F341}'},{lvl:60,name:'Cut yew trees',icon:'\u{1F332}'},{lvl:75,name:'Cut magic trees',icon:'\u{1F31F}'}],
+            mining:[{lvl:1,name:'Mine copper & tin',icon:'\u26CF\uFE0F'},{lvl:15,name:'Mine iron',icon:'\u26CF\uFE0F'},{lvl:30,name:'Mine coal',icon:'\u26CF\uFE0F'},{lvl:40,name:'Mine gold',icon:'\u{1FA99}'},{lvl:55,name:'Mine mithril',icon:'\u26CF\uFE0F'},{lvl:70,name:'Mine adamantite',icon:'\u26CF\uFE0F'},{lvl:85,name:'Mine runite',icon:'\u{1F31F}'}],
+            fishing:[{lvl:1,name:'Catch shrimp',icon:'\u{1F990}'},{lvl:15,name:'Catch trout',icon:'\u{1F41F}'},{lvl:30,name:'Catch lobster',icon:'\u{1F99E}'},{lvl:40,name:'Catch swordfish',icon:'\u{1F41F}'},{lvl:62,name:'Catch monkfish',icon:'\u{1F420}'},{lvl:76,name:'Catch shark',icon:'\u{1F988}'},{lvl:81,name:'Catch manta ray',icon:'\u{1F420}'}],
+            cooking:[{lvl:1,name:'Cook shrimp',icon:'\u{1F373}'},{lvl:15,name:'Cook trout',icon:'\u{1F373}'},{lvl:30,name:'Cook lobster',icon:'\u{1F373}'},{lvl:45,name:'Cook swordfish',icon:'\u{1F373}'},{lvl:62,name:'Cook monkfish',icon:'\u{1F373}'},{lvl:80,name:'Cook shark',icon:'\u{1F373}'}],
+            smithing:[{lvl:1,name:'Smelt bronze',icon:'\u{1F528}'},{lvl:15,name:'Smelt iron',icon:'\u{1F528}'},{lvl:30,name:'Smelt steel',icon:'\u{1F528}'},{lvl:50,name:'Smelt mithril',icon:'\u{1F528}'},{lvl:70,name:'Smelt adamant',icon:'\u{1F528}'},{lvl:85,name:'Smelt rune',icon:'\u{1F31F}'}],
+            crafting:[{lvl:1,name:'Leather goods',icon:'\u2702\uFE0F'},{lvl:20,name:'Gold jewellery',icon:'\u{1F48D}'},{lvl:40,name:'Silver items',icon:'\u2702\uFE0F'},{lvl:55,name:'Dragonhide bodies',icon:'\u2702\uFE0F'},{lvl:99,name:'Master crafter',icon:'\u{1F31F}'}],
+            agility:[{lvl:1,name:'Run energy regen',icon:'\u{1F3C3}'},{lvl:10,name:'Gnome course',icon:'\u{1F3C3}'},{lvl:20,name:'Barbarian course',icon:'\u{1F3C3}'},{lvl:40,name:'Canifis course',icon:'\u{1F3C3}'},{lvl:60,name:'Seers course',icon:'\u{1F3C3}'},{lvl:80,name:'Rellekka course',icon:'\u{1F3C3}'}],
+            firemaking:[{lvl:1,name:'Burn normal logs',icon:'\u{1F525}'},{lvl:15,name:'Burn oak logs',icon:'\u{1F525}'},{lvl:30,name:'Burn willow logs',icon:'\u{1F525}'},{lvl:45,name:'Burn maple logs',icon:'\u{1F525}'},{lvl:60,name:'Burn yew logs',icon:'\u{1F525}'},{lvl:75,name:'Burn magic logs',icon:'\u{1F525}'}],
+            fletching:[{lvl:1,name:'Arrow shafts',icon:'\u{1FAB6}'},{lvl:10,name:'Oak bows',icon:'\u{1F3F9}'},{lvl:25,name:'Willow bows',icon:'\u{1F3F9}'},{lvl:40,name:'Maple bows',icon:'\u{1F3F9}'},{lvl:55,name:'Yew bows',icon:'\u{1F3F9}'},{lvl:70,name:'Magic bows',icon:'\u{1F3F9}'}],
+            herblore:[{lvl:3,name:'Attack potion',icon:'\u{1F9EA}'},{lvl:12,name:'Strength potion',icon:'\u{1F9EA}'},{lvl:22,name:'Energy potion',icon:'\u{1F9EA}'},{lvl:38,name:'Prayer potion',icon:'\u{1F9EA}'},{lvl:55,name:'Super attack',icon:'\u{1F9EA}'},{lvl:72,name:'Ranging potion',icon:'\u{1F9EA}'}],
+            ranged:[{lvl:1,name:'Bronze arrows',icon:'\u{1F3F9}'},{lvl:10,name:'Iron arrows',icon:'\u{1F3F9}'},{lvl:20,name:'Steel arrows',icon:'\u{1F3F9}'},{lvl:40,name:'Rune arrows',icon:'\u{1F3F9}'},{lvl:61,name:'Dragon arrows',icon:'\u{1F3F9}'}],
+            magic:[{lvl:1,name:'Wind Strike',icon:'\u{1F52E}'},{lvl:9,name:'Earth Strike',icon:'\u{1F52E}'},{lvl:17,name:'Fire Strike',icon:'\u{1F525}'},{lvl:35,name:'Fire Bolt',icon:'\u{1F525}'},{lvl:59,name:'Fire Blast',icon:'\u{1F525}'},{lvl:75,name:'Fire Wave',icon:'\u{1F525}'}],
+            slayer:[{lvl:1,name:'Basic assignments',icon:'\u{1F480}'},{lvl:15,name:'Banshees',icon:'\u{1F480}'},{lvl:45,name:'Gargoyles',icon:'\u{1F480}'},{lvl:65,name:'Dust devils',icon:'\u{1F480}'},{lvl:85,name:'Abyssal demons',icon:'\u{1F480}'}],
+            farming:[{lvl:1,name:'Plant potatoes',icon:'\u{1F331}'},{lvl:14,name:'Plant tomatoes',icon:'\u{1F345}'},{lvl:31,name:'Plant strawberries',icon:'\u{1F353}'},{lvl:47,name:'Plant watermelons',icon:'\u{1F349}'},{lvl:62,name:'Plant herbs',icon:'\u{1F33F}'}],
+            hunter:[{lvl:1,name:'Set traps',icon:'\u{1FAA4}'},{lvl:15,name:'Deadfall traps',icon:'\u{1FAA4}'},{lvl:29,name:'Swamp lizards',icon:'\u{1F98E}'},{lvl:53,name:'Chinchompas',icon:'\u{1F439}'},{lvl:73,name:'Black chins',icon:'\u{1F439}'}],
+            construction:[{lvl:1,name:'Crude chair',icon:'\u{1FA91}'},{lvl:20,name:'Oak furniture',icon:'\u{1F6CB}\uFE0F'},{lvl:40,name:'Teak furniture',icon:'\u{1F6CB}\uFE0F'},{lvl:60,name:'Mahogany furniture',icon:'\u{1F6CB}\uFE0F'},{lvl:80,name:'Gilded items',icon:'\u{1F31F}'}],
+            runecraft:[{lvl:1,name:'Air runes',icon:'\u{1F537}'},{lvl:14,name:'Fire runes',icon:'\u{1F525}'},{lvl:27,name:'Cosmic runes',icon:'\u2728'},{lvl:44,name:'Nature runes',icon:'\u{1F33F}'},{lvl:65,name:'Death runes',icon:'\u{1F480}'},{lvl:77,name:'Blood runes',icon:'\u{1FA78}'}],
+            archaeology:[{lvl:1,name:'Basic excavation',icon:'\u{1F3FA}'},{lvl:20,name:'Ancient relics',icon:'\u{1F3FA}'},{lvl:40,name:'Artefact restoration',icon:'\u{1F3FA}'},{lvl:60,name:'Rare finds',icon:'\u{1F3FA}'},{lvl:80,name:'Master archaeologist',icon:'\u{1F31F}'}],
+            dungeoneering:[{lvl:1,name:'Floor 1-10',icon:'\u{1F6AA}'},{lvl:20,name:'Floor 11-20',icon:'\u{1F6AA}'},{lvl:40,name:'Floor 21-30',icon:'\u{1F6AA}'},{lvl:60,name:'Floor 31-40',icon:'\u{1F6AA}'},{lvl:80,name:'Floor 41-50',icon:'\u{1F6AA}'}],
+            coding:[{lvl:1,name:'Hello World',icon:'\u{1F4BB}'},{lvl:10,name:'Variables & loops',icon:'\u{1F4BB}'},{lvl:25,name:'Functions',icon:'\u{1F4BB}'},{lvl:40,name:'APIs',icon:'\u{1F310}'},{lvl:60,name:'Full-stack apps',icon:'\u{1F4BB}'},{lvl:80,name:'System architecture',icon:'\u{1F3D7}\uFE0F'}],
+            hacking:[{lvl:1,name:'Port scanning',icon:'\u{1F513}'},{lvl:15,name:'SQL injection',icon:'\u{1F513}'},{lvl:30,name:'XSS attacks',icon:'\u{1F513}'},{lvl:50,name:'Buffer overflow',icon:'\u{1F513}'},{lvl:70,name:'Zero-day exploits',icon:'\u{1F513}'}],
+            networking:[{lvl:1,name:'Ping & traceroute',icon:'\u{1F310}'},{lvl:15,name:'DNS setup',icon:'\u{1F310}'},{lvl:30,name:'Firewall config',icon:'\u{1F6E1}\uFE0F'},{lvl:50,name:'Load balancing',icon:'\u{1F310}'},{lvl:70,name:'CDN architecture',icon:'\u{1F310}'}],
+        };
+
         let selectedSkill=null;
+        // Skill hover tooltip
+        const skillTooltip=document.createElement('div');skillTooltip.className='skill-tooltip';skillTooltip.style.display='none';document.body.appendChild(skillTooltip);
         function renderStatsFromState(p){
             if(!p)return;
             const serverSkills=['attack','strength','defence','hitpoints','prayer','thieving'];
@@ -1857,7 +1906,7 @@
                 const curXp=xpForLevel(lvl);const nextXp=xpForLevel(lvl+1);
                 const pct=nextXp>curXp?Math.min(100,((xp-curXp)/(nextXp-curXp))*100):0;
                 const isSel=selectedSkill===s.id;
-                html+='<div class="skill-cell'+(isSel?' skill-selected':'')+'" id="skill-'+s.id+'" onclick="selectSkill(\''+s.id+'\')">';
+                html+='<div class="skill-cell'+(isSel?' skill-selected':'')+'" id="skill-'+s.id+'" onclick="selectSkill(\''+s.id+'\')" onmouseenter="showSkillTip(event,\''+s.name+'\','+lvl+')" onmouseleave="hideSkillTip()">';
                 html+='<span class="skill-icon">'+s.icon+'</span>';
                 html+='<span class="skill-lvl">'+lvl+'</span>';
                 html+='<div class="skill-xp-bar"><div class="skill-xp-fill" style="width:'+pct+'%"></div></div>';
@@ -1872,17 +1921,29 @@
                     const isServer=serverSkills.includes(s.id);
                     const lvl=isServer?p[s.id]:1;const xp=isServer?(p[s.id+'XP']||0):0;
                     const nextXp=xpForLevel(lvl+1);
-                    html+='<div class="skill-detail"><div class="skill-detail-name">'+s.icon+' '+s.name+'</div>';
-                    html+='<div class="skill-detail-row">Level: <b>'+lvl+'</b></div>';
-                    html+='<div class="skill-detail-row">XP: <b>'+xp.toLocaleString()+'</b></div>';
-                    html+='<div class="skill-detail-row">Next level: <b>'+nextXp.toLocaleString()+'</b></div>';
-                    html+='<div class="skill-detail-row">Remaining: <b>'+Math.max(0,nextXp-xp).toLocaleString()+'</b></div></div>';
+                    const guide=SKILL_GUIDE[s.id]||[];
+                    html+='<div class="skill-guide">';
+                    html+='<div class="skill-guide-header"><span class="skill-guide-title">'+s.icon+' '+s.name+'</span><span class="skill-guide-back" onclick="selectSkill(null)">Close</span></div>';
+                    html+='<div class="skill-detail-row">Level: <b>'+lvl+'</b> &nbsp; XP: <b>'+xp.toLocaleString()+'</b> &nbsp; Next: <b>'+Math.max(0,nextXp-xp).toLocaleString()+'</b></div>';
+                    guide.forEach(g=>{
+                        const unlocked=lvl>=g.lvl;
+                        const isCur=lvl>=g.lvl&&(guide.indexOf(g)===guide.length-1||lvl<guide[guide.indexOf(g)+1].lvl);
+                        html+='<div class="skill-guide-row '+(isCur?'current':unlocked?'unlocked':'locked')+'">';
+                        html+='<span class="skill-guide-lvl">'+g.lvl+'</span>';
+                        html+='<span class="skill-guide-icon">'+g.icon+'</span>';
+                        html+='<span class="skill-guide-name">'+g.name+'</span>';
+                        if(unlocked)html+='<span style="color:#22c55e;font-size:9px;">\u2713</span>';
+                        html+='</div>';
+                    });
+                    html+='</div>';
                 }
             }
             el.innerHTML=html;
             document.getElementById('statCombatLvl').textContent=p.combatLevel;
         }
-        window.selectSkill=function(id){selectedSkill=selectedSkill===id?null:id;const p=getMyPlayer();if(p)renderStatsFromState(p);};
+        window.showSkillTip=function(e,name,lvl){skillTooltip.textContent=name+' (Level '+lvl+')';skillTooltip.style.display='block';skillTooltip.style.left=(e.clientX+10)+'px';skillTooltip.style.top=(e.clientY-24)+'px';};
+        window.hideSkillTip=function(){skillTooltip.style.display='none';};
+        window.selectSkill=function(id){selectedSkill=(selectedSkill===id||id===null)?null:id;const p=getMyPlayer();if(p)renderStatsFromState(p);};
 
         // Shop
         function getMyPlayer(){return room?.state?.players?.get(mySessionId);}
