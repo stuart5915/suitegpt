@@ -931,6 +931,13 @@ export class AgentScapeRoom extends Room<GameState> {
                 break;
             }
 
+            case 'bank_stock_all': {
+                const result = this.bankSystem.stockAll(player);
+                client.send('system_message', { message: result.message });
+                if (result.success) client.send('bank_update', this.bankSystem.getContents(player));
+                break;
+            }
+
             // ============================================================
             // RESOURCE SHOP — buy/sell gathered materials
             // ============================================================

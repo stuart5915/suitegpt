@@ -1685,6 +1685,12 @@
             }
         }
 
+        // Optimistic unequip — remove 3D model immediately on click, don't wait for server roundtrip
+        function handleUnequip(slotType) {
+            sendAction('unequip_item', {slot: slotType});
+            if (myChar) removeEquipModel(myChar, slotType);
+        }
+
         function removeEquipModel(charMesh, slot) {
             if (charMesh.equipMeshes && charMesh.equipMeshes[slot]) {
                 const old = charMesh.equipMeshes[slot];
@@ -1925,6 +1931,7 @@
             // Deposit buttons
             html += '<div class="bank-actions">';
             html += '<button class="bank-btn" onclick="sendAction(\'bank_deposit_all\')">Deposit All</button>';
+            html += '<button class="bank-btn" onclick="sendAction(\'bank_stock_all\')" style="background:#6366f1;">Stock All Items</button>';
             html += '</div>';
             // Inventory strip for depositing
             if (p) {
@@ -2226,7 +2233,7 @@
                     : (hasItem?(item.icon||'?'):'');
                 const name=hasItem?item.name:'Empty';
                 const cls='equip-slot'+(hasItem?' has-item':'');
-                const click=hasItem?'onclick="sendAction(\'unequip_item\',{slot:\''+slotType+'\'})"':'';
+                const click=hasItem?'onclick="handleUnequip(\''+slotType+'\')"':'';
                 return '<div style="position:absolute;top:'+top+'px;left:'+left+'px;text-align:center;">'+
                     '<div class="equip-slot-label" style="top:-12px;left:0;width:42px;text-align:center;">'+label+'</div>'+
                     '<div class="'+cls+'" '+click+'>'+iconContent+'</div>'+
@@ -2631,6 +2638,7 @@
         window.examineNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;const cs=NPC_COMBAT_STATS[npc.state.role]||{attack:3,strength:3,defence:3};addChat('system',npc.state.name+' \u2014 '+npc.state.role+' (HP: '+npc.state.hp+'/'+npc.state.maxHp+', Atk: '+cs.attack+', Str: '+cs.strength+', Def: '+cs.defence+')');};
         window.enterBuilding=function(bid){hideCtxMenu();const door=buildingDoors[bid];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});};
         window.sendAction=sendAction;
+        window.handleUnequip=handleUnequip;
         window.sendSpec=function(){sendAction('use_special_attack');};
         window.toggleAttackMode=function(){attackMode=!attackMode;document.getElementById('btnAttackMode').classList.toggle('active',attackMode);};
 

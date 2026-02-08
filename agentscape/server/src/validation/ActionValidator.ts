@@ -36,6 +36,7 @@ export type ActionType =
     | 'bank_deposit'
     | 'bank_deposit_all'
     | 'bank_withdraw'
+    | 'bank_stock_all'
     | 'buy_resource'
     | 'sell_resource'
     | 'get_sell_price';
@@ -221,6 +222,7 @@ export class ActionValidator {
 
             case 'bank_open':
             case 'bank_deposit_all':
+            case 'bank_stock_all':
                 return { valid: true };
 
             case 'bank_deposit': {

@@ -49,7 +49,7 @@
 // ============================================================
 
 import { PlayerSchema } from '../schema/PlayerSchema';
-import { BUILDINGS, MAX_INVENTORY_SLOTS } from '../config';
+import { BUILDINGS, MAX_INVENTORY_SLOTS, ITEMS } from '../config';
 import { InventorySystem } from './InventorySystem';
 
 export const MAX_BANK_SLOTS = 100;
@@ -253,6 +253,34 @@ export class BankSystem {
 
     getMaxSlots(): number {
         return MAX_BANK_SLOTS;
+    }
+
+    // ============================================================
+    // Admin — stock bank with all items (for testing)
+    // ============================================================
+
+    stockAll(player: PlayerSchema): { success: boolean; message: string } {
+        const bank = this.getBank(player);
+        bank.length = 0; // clear existing
+
+        for (const item of Object.values(ITEMS)) {
+            const qty = item.stackable ? 100 : 5;
+            bank.push({
+                id: item.id,
+                name: item.name,
+                icon: item.icon,
+                quantity: qty,
+                type: item.type,
+                stackable: item.stackable,
+                attackStat: item.stats?.attack || 0,
+                strengthStat: item.stats?.strength || 0,
+                defenceStat: item.stats?.defence || 0,
+                healAmount: item.healAmount || 0,
+            });
+        }
+
+        player.dirty = true;
+        return { success: true, message: `Bank stocked with ${bank.length} item types!` };
     }
 
     // ============================================================
