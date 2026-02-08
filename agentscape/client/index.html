@@ -419,6 +419,7 @@
     </div>
     <div id="context-menu"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script>
     // Node.js polyfills required by Colyseus.js browser bundle
     if(typeof global==='undefined')window.global=window;
@@ -1543,8 +1544,134 @@
             const raPivot=new THREE.Group();raPivot.position.set(0.22,0.72,0);
             const raMesh=new THREE.Mesh(aGeo,aMat);raMesh.position.set(0,-0.175,0);raMesh.castShadow=true;raPivot.add(raMesh);g.add(raPivot);
             const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
-            return{group:g,body,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,walkPhase:0,walkBlend:0};
+            return{group:g,body,head,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,walkPhase:0,walkBlend:0,equipMeshes:{}};
         }
+
+        // ============================================================
+        // EQUIPMENT 3D MODEL SYSTEM
+        // ============================================================
+        const gltfLoader = new THREE.GLTFLoader();
+        const modelCache = {}; // itemId -> THREE.Group (cloneable)
+        let forgeDB = null;
+
+        // Open the forge's IndexedDB to read model URLs
+        function openForgeDB() {
+            return new Promise((resolve) => {
+                try {
+                    const req = indexedDB.open('agentscape-forge', 2);
+                    req.onsuccess = (e) => { forgeDB = e.target.result; resolve(true); };
+                    req.onerror = () => resolve(false);
+                    req.onupgradeneeded = (e) => {
+                        // Don't create stores — just reading. Close and skip.
+                        e.target.transaction.abort();
+                        resolve(false);
+                    };
+                } catch(e) { resolve(false); }
+            });
+        }
+
+        function getForgeAsset(itemId) {
+            if (!forgeDB) return Promise.resolve(null);
+            return new Promise((resolve) => {
+                try {
+                    const tx = forgeDB.transaction('assets', 'readonly');
+                    const req = tx.objectStore('assets').get(itemId);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                } catch(e) { resolve(null); }
+            });
+        }
+
+        function loadEquipModel(url) {
+            return new Promise((resolve, reject) => {
+                const proxyUrl = '/api/proxy-model?url=' + encodeURIComponent(url);
+                gltfLoader.load(proxyUrl, (gltf) => {
+                    const model = gltf.scene;
+                    model.traverse((child) => {
+                        if (child.isMesh) { child.castShadow = true; child.receiveShadow = false; }
+                    });
+                    resolve(model);
+                }, undefined, reject);
+            });
+        }
+
+        // Slot configs: where to attach, how to scale/position
+        const EQUIP_SLOTS = {
+            weapon: { pivot: 'rightArm', offsetY: -0.3, offsetX: 0.05, offsetZ: 0.08, scale: 0.15, rotZ: -0.3 },
+            helm:   { pivot: 'head', offsetY: 0.15, offsetX: 0, offsetZ: 0, scale: 0.13, rotZ: 0 },
+            shield: { pivot: 'leftArm', offsetY: -0.2, offsetX: -0.05, offsetZ: 0.08, scale: 0.13, rotZ: 0.3 }
+        };
+
+        async function attachEquipModel(charMesh, slot, itemId) {
+            // Remove existing model for this slot
+            if (charMesh.equipMeshes[slot]) {
+                const old = charMesh.equipMeshes[slot];
+                old.parent.remove(old);
+                delete charMesh.equipMeshes[slot];
+            }
+            if (!itemId) return;
+
+            // Check cache first
+            if (!modelCache[itemId]) {
+                const asset = await getForgeAsset(itemId);
+                if (!asset || !asset.modelUrl) return;
+                try {
+                    modelCache[itemId] = await loadEquipModel(asset.modelUrl);
+                } catch(e) { console.warn('Failed to load model for', itemId, e); return; }
+            }
+
+            const cfg = EQUIP_SLOTS[slot];
+            if (!cfg) return;
+
+            const model = modelCache[itemId].clone();
+            // Normalize: compute bounding box, center and scale
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const s = cfg.scale / (maxDim || 1);
+            model.scale.set(s, s, s);
+            const center = box.getCenter(new THREE.Vector3());
+            model.position.set(-center.x * s + cfg.offsetX, -center.y * s + cfg.offsetY, -center.z * s + cfg.offsetZ);
+            model.rotation.z = cfg.rotZ || 0;
+
+            // Attach to the pivot
+            const pivotRef = charMesh[cfg.pivot];
+            if (cfg.pivot === 'head') {
+                // Head is direct child of group, attach above it
+                const wrapper = new THREE.Group();
+                wrapper.position.set(0, 0.9 + (cfg.offsetY || 0), 0);
+                wrapper.add(model);
+                model.position.y = 0;
+                charMesh.group.add(wrapper);
+                charMesh.equipMeshes[slot] = wrapper;
+            } else if (pivotRef) {
+                pivotRef.add(model);
+                charMesh.equipMeshes[slot] = model;
+            }
+        }
+
+        function removeEquipModel(charMesh, slot) {
+            if (charMesh.equipMeshes && charMesh.equipMeshes[slot]) {
+                const old = charMesh.equipMeshes[slot];
+                old.parent.remove(old);
+                delete charMesh.equipMeshes[slot];
+            }
+        }
+
+        async function updateAllEquipment(charMesh, player) {
+            if (!forgeDB) return;
+            const weapon = player.equippedWeapon && player.equippedWeapon.id ? player.equippedWeapon.id : null;
+            const helm = player.equippedHelm && player.equippedHelm.id ? player.equippedHelm.id : null;
+            const shield = player.equippedShield && player.equippedShield.id ? player.equippedShield.id : null;
+            await Promise.all([
+                attachEquipModel(charMesh, 'weapon', weapon),
+                attachEquipModel(charMesh, 'helm', helm),
+                attachEquipModel(charMesh, 'shield', shield)
+            ]);
+        }
+
+        // Init forge DB connection
+        openForgeDB().then(ok => { if(ok) console.log('[Forge] Connected to asset database'); });
 
         const myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
@@ -1700,19 +1827,23 @@
                     });
                     player.inventory.onAdd(()=>{renderInventoryFromState(player);});
                     player.inventory.onChange(()=>{renderInventoryFromState(player);});
-                    if(player.equippedWeapon)player.equippedWeapon.onChange(()=>{renderInventoryFromState(player);});
-                    if(player.equippedHelm)player.equippedHelm.onChange(()=>{renderInventoryFromState(player);});
-                    if(player.equippedShield)player.equippedShield.onChange(()=>{renderInventoryFromState(player);});
+                    if(player.equippedWeapon)player.equippedWeapon.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
+                    if(player.equippedHelm)player.equippedHelm.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
+                    if(player.equippedShield)player.equippedShield.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
+                    // Load initial equipment models
+                    updateAllEquipment(myChar, player);
                 }else{
                     const mesh=createCharacterMesh(parseInt(player.color.replace('#',''),16)||0x3355aa);
                     mesh.group.position.set(player.x,0,player.z);scene.add(mesh.group);
                     const label=document.createElement('div');label.className='npc-label';label.textContent=player.name;label.style.borderBottom='2px solid '+player.color;document.getElementById('npc-labels').appendChild(label);
                     otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false,isResting:false});
+                    updateAllEquipment(mesh, player);
                     player.onChange(()=>{
                         const m=otherPlayerMeshes.get(sessionId);if(!m)return;
                         const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
                         m.isMoving=(player.state==='walking');
                         m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;m.isResting=player.isResting;
+                        updateAllEquipment(m, player);
                     });
                 }
             });
