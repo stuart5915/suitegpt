@@ -251,6 +251,53 @@
         .cc-start-btn:hover { background: #5558e6; }
         .cc-start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
         .cc-preview { width: 180px; height: 240px; border: 2px solid #3a3a40; border-radius: 4px; background: #111118; flex-shrink: 0; }
+
+        /* Welcome Tutorial Overlay */
+        #tutorial-overlay {
+            position: absolute; inset: 0; z-index: 45;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: auto;
+        }
+        .tutorial-panel {
+            background: #2c2214; border: 3px solid #8B6914;
+            border-radius: 8px; padding: 28px 36px; text-align: center;
+            max-width: 340px; width: 90%;
+            box-shadow: inset 0 0 20px rgba(139,105,20,0.15), 0 8px 32px rgba(0,0,0,0.6);
+            font-family: 'Courier New', monospace;
+        }
+        .tutorial-panel h2 { color: #eab308; font-size: 18px; margin-bottom: 6px; text-shadow: 0 0 8px rgba(234,179,8,0.3); }
+        .tutorial-icon { font-size: 36px; margin: 12px 0; }
+        .tutorial-text { color: #d4c9a8; font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+        .tutorial-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+        .tutorial-dot { width: 10px; height: 10px; border-radius: 50%; background: #4a3a20; border: 1px solid #6b5a30; transition: background 0.3s; }
+        .tutorial-dot.active { background: #eab308; border-color: #eab308; box-shadow: 0 0 6px rgba(234,179,8,0.4); }
+        .tutorial-btn {
+            padding: 10px 28px; font-size: 13px; font-weight: bold;
+            background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff;
+            border: none; border-radius: 4px; cursor: pointer;
+            font-family: inherit; text-transform: uppercase; letter-spacing: 1px;
+            transition: background 0.2s;
+        }
+        .tutorial-btn:hover { background: linear-gradient(135deg, #818cf8, #6366f1); }
+
+        /* Zone Name Banner */
+        #zone-banner {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            z-index: 10; pointer-events: none; opacity: 0;
+            font-family: 'Courier New', monospace; font-size: 22px; font-weight: bold;
+            color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.6);
+            padding: 10px 32px; border-radius: 6px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 100%);
+            white-space: nowrap;
+        }
+        #zone-banner.show { animation: zoneBannerAnim 3s ease forwards; }
+        @keyframes zoneBannerAnim {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+            16% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            83% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+        }
     </style>
 </head>
 <body>
@@ -287,6 +334,16 @@
     <script>if(localStorage.getItem('agentscape_character'))document.getElementById('game-frame').style.display='';</script>
         <div id="game-viewport">
             <div id="zone-indicator">SUITE City</div>
+            <div id="zone-banner"></div>
+            <div id="tutorial-overlay" style="display:none;">
+                <div class="tutorial-panel">
+                    <h2>Welcome to AgentScape</h2>
+                    <div class="tutorial-icon" id="tutorial-icon"></div>
+                    <div class="tutorial-text" id="tutorial-text"></div>
+                    <div class="tutorial-dots"><div class="tutorial-dot" id="tdot0"></div><div class="tutorial-dot" id="tdot1"></div><div class="tutorial-dot" id="tdot2"></div></div>
+                    <button class="tutorial-btn" id="tutorial-btn"></button>
+                </div>
+            </div>
             <div id="npc-labels"></div>
             <div id="chat-bubbles"></div>
             <div id="conn-status" class="connecting">Connecting...</div>
@@ -715,7 +772,7 @@
         const hemiLight=new THREE.HemisphereLight(0x88aacc,0x445522,0.3);scene.add(hemiLight);
 
         let isNight=false;
-        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);scene.fog.density=0.01;ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);scene.fog.density=0.006;ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}};
+        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);scene.fog.density=0.01;ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);scene.fog.density=0.006;ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}if(typeof lampposts!=='undefined')lampposts.forEach(lp=>{lp.light.visible=isNight;lp.glow.material.opacity=isNight?0.9:0.3;});};
 
         // ============================================================
         // TERRAIN (deterministic, same as server seed=42)
@@ -767,6 +824,9 @@
         const terrainColors=[];
         const colorRng=seededRandom(42);// separate RNG for colors so chunk load order doesn't matter
         for(let x=0;x<MAP_SIZE;x++){terrainColors[x]=[];for(let z=0;z<MAP_SIZE;z++){let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const roadZ=95+Math.sin(x*0.05)*3.5;const roadX=100+Math.sin(z*0.05)*3.5;if((Math.abs(z-roadZ)<0.8&&x>55&&x<145)||(Math.abs(x-roadX)<0.8&&z>55&&z<132)){color=dirtColors[Math.floor(colorRng()*dirtColors.length)];grid[x][z]=2;}else color=getTerrainColor(x,z);}}terrainColors[x][z]=color;}}
+        // Cobblestone paving for town square
+        const stoneColors=[0x8a8a8a,0x7a7a7a,0x6e6e6e,0x929292,0x848484,0x767676];
+        for(let x=87;x<=120;x++)for(let z=82;z<=110;z++){if(grid[x][z]>0&&!isWater(x,z)){terrainColors[x][z]=stoneColors[(x*7+z*13)%6];}}
 
         // Pre-compute decoration positions per chunk
         const decorationsByChunk={};
@@ -841,6 +901,102 @@
         function createNamedBuilding(bData){const group=new THREE.Group();const baseH=heightMap[Math.min(Math.floor(bData.x),MAP_SIZE-1)][Math.min(Math.floor(bData.z),MAP_SIZE-1)]||0;if(bData.type==='pedestal'){const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.6,6),new THREE.MeshLambertMaterial({color:bData.wallColor}));base.position.y=0.3;base.castShadow=true;group.add(base);const board=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));board.position.y=0.85;board.castShadow=true;group.add(board);[0xff4444,0x44ff44,0x4444ff,0xffff44].forEach((c,i)=>{const p=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:c}));p.position.set(-0.2+(i%2)*0.4,0.75+Math.floor(i/2)*0.2,0.05);group.add(p);});const cx=Math.floor(bData.x),cz=Math.floor(bData.z);if(cx>=0&&cx<MAP_SIZE&&cz>=0&&cz<MAP_SIZE)grid[cx][cz]=0;buildingDoors[bData.id]={x:cx,z:cz+1};}else{const walls=new THREE.Mesh(new THREE.BoxGeometry(bData.w,bData.h,bData.d),new THREE.MeshLambertMaterial({color:bData.wallColor}));walls.position.y=bData.h/2;walls.castShadow=true;walls.receiveShadow=true;group.add(walls);const roof=new THREE.Mesh(new THREE.ConeGeometry(Math.max(bData.w,bData.d)*0.75,bData.h*0.5,4),new THREE.MeshLambertMaterial({color:bData.roofColor}));roof.position.y=bData.h+bData.h*0.2;roof.rotation.y=Math.PI/4;roof.castShadow=true;group.add(roof);const door=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.05),new THREE.MeshLambertMaterial({color:0x5a3a1a}));switch(bData.doorSide){case'south':door.position.set(0,0.25,bData.d/2+0.02);break;case'north':door.position.set(0,0.25,-bData.d/2-0.02);break;case'west':door.position.set(-bData.w/2-0.02,0.25,0);door.rotation.y=Math.PI/2;break;case'east':door.position.set(bData.w/2+0.02,0.25,0);door.rotation.y=Math.PI/2;break;}group.add(door);const hw=Math.ceil(bData.w/2),hd=Math.ceil(bData.d/2);for(let bx=Math.floor(bData.x)-hw;bx<=Math.floor(bData.x)+hw;bx++)for(let bz=Math.floor(bData.z)-hd;bz<=Math.floor(bData.z)+hd;bz++)if(bx>=0&&bx<MAP_SIZE&&bz>=0&&bz<MAP_SIZE)grid[bx][bz]=0;let dt;switch(bData.doorSide){case'south':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)+hd+1};break;case'north':dt={x:Math.floor(bData.x),z:Math.floor(bData.z)-hd-1};break;case'west':dt={x:Math.floor(bData.x)-hw-1,z:Math.floor(bData.z)};break;case'east':dt={x:Math.floor(bData.x)+hw+1,z:Math.floor(bData.z)};break;}if(dt&&dt.x>=0&&dt.x<MAP_SIZE&&dt.z>=0&&dt.z<MAP_SIZE){grid[dt.x][dt.z]=1;buildingDoors[bData.id]=dt;}}group.position.set(bData.x,baseH,bData.z);group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;c.userData.type='building';}});scene.add(group);}
         BUILDINGS.forEach(b=>createNamedBuilding(b));
 
+        // ============================================================
+        // TOWN SQUARE PROPS
+        // ============================================================
+        // Central Fountain at (103, 100)
+        const fountainGroup=new THREE.Group();
+        const fountainBase=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.4,0.4,16),new THREE.MeshLambertMaterial({color:0x888888}));
+        fountainBase.position.y=0.2;fountainBase.castShadow=true;fountainGroup.add(fountainBase);
+        const fountainRim=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.12,8,16),new THREE.MeshLambertMaterial({color:0x777777}));
+        fountainRim.rotation.x=-Math.PI/2;fountainRim.position.y=0.4;fountainGroup.add(fountainRim);
+        const fountainWater=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,0.08,16),new THREE.MeshLambertMaterial({color:0x4488cc,transparent:true,opacity:0.6}));
+        fountainWater.position.y=0.3;fountainGroup.add(fountainWater);
+        const fountainPillar=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,1.4,8),new THREE.MeshLambertMaterial({color:0x999999}));
+        fountainPillar.position.y=0.9;fountainPillar.castShadow=true;fountainGroup.add(fountainPillar);
+        const fountainSpray=[];
+        for(let i=0;i<12;i++){
+            const drop=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:0.7}));
+            drop.position.y=1.6;fountainGroup.add(drop);fountainSpray.push({mesh:drop,angle:i*(Math.PI*2/12),speed:0.8+Math.random()*0.4});
+        }
+        fountainGroup.position.set(103,heightMap[103]?heightMap[103][100]||0:0,100);scene.add(fountainGroup);
+        // Block 3x3 around fountain
+        for(let fx=102;fx<=104;fx++)for(let fz=99;fz<=101;fz++)if(fx>=0&&fx<MAP_SIZE&&fz>=0&&fz<MAP_SIZE)grid[fx][fz]=0;
+
+        // Lampposts (12 total)
+        const lampposts=[];
+        const lampPositions=[
+            // 6 along x=100 (N-S road)
+            {x:100,z:84},{x:100,z:88},{x:100,z:92},{x:100,z:98},{x:100,z:104},{x:100,z:108},
+            // 6 along z=95 (E-W road)
+            {x:89,z:95},{x:93,z:95},{x:97,z:95},{x:107,z:95},{x:113,z:95},{x:118,z:95}
+        ];
+        lampPositions.forEach(lp=>{
+            const g=new THREE.Group();
+            const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,1.6,6),new THREE.MeshLambertMaterial({color:0x444444}));
+            pole.position.y=0.8;pole.castShadow=true;g.add(pole);
+            const glow=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),new THREE.MeshBasicMaterial({color:0xffdd88,transparent:true,opacity:0.3}));
+            glow.position.y=1.65;g.add(glow);
+            const light=new THREE.PointLight(0xffdd88,0.8,6);
+            light.position.y=1.65;light.visible=false;g.add(light);
+            const h=heightMap[Math.min(lp.x,MAP_SIZE-1)]?heightMap[Math.min(lp.x,MAP_SIZE-1)][Math.min(lp.z,MAP_SIZE-1)]||0:0;
+            g.position.set(lp.x,h,lp.z);scene.add(g);
+            lampposts.push({group:g,glow:glow,light:light});
+        });
+
+        // Market Stalls (4 near marketplace 137-142, 66-72)
+        const stallColors=[0xcc3333,0x3366cc,0xccaa33,0x33aa55];
+        [{x:138,z:67},{x:141,z:67},{x:138,z:71},{x:141,z:71}].forEach((sp,i)=>{
+            const g=new THREE.Group();
+            const counter=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6),new THREE.MeshLambertMaterial({color:0x8B6914}));
+            counter.position.y=0.3;counter.castShadow=true;g.add(counter);
+            const canopy=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.8),new THREE.MeshLambertMaterial({color:stallColors[i]}));
+            canopy.position.set(0,1.3,0);canopy.rotation.x=-0.15;canopy.castShadow=true;g.add(canopy);
+            const poleGeo=new THREE.CylinderGeometry(0.03,0.03,1.3,4);const poleMat=new THREE.MeshLambertMaterial({color:0x5a3a1a});
+            [{x:-0.55,z:-0.3},{x:0.55,z:-0.3},{x:-0.55,z:0.3},{x:0.55,z:0.3}].forEach(pp=>{
+                const p=new THREE.Mesh(poleGeo,poleMat);p.position.set(pp.x,0.65,pp.z);g.add(p);
+            });
+            const h=heightMap[Math.min(sp.x,MAP_SIZE-1)]?heightMap[Math.min(sp.x,MAP_SIZE-1)][Math.min(sp.z,MAP_SIZE-1)]||0:0;
+            g.position.set(sp.x,h,sp.z);scene.add(g);
+            if(sp.x>=0&&sp.x<MAP_SIZE&&sp.z>=0&&sp.z<MAP_SIZE)grid[sp.x][sp.z]=0;
+        });
+
+        // Crates & Barrels (15, decorative only)
+        const crateBarrelPositions=[
+            {x:111,z:99,type:'crate'},{x:112,z:101,type:'barrel'},{x:109,z:102,type:'crate'},
+            {x:101,z:94,type:'barrel'},{x:99,z:96,type:'crate'},{x:102,z:97,type:'barrel'},
+            {x:93,z:104,type:'crate'},{x:91,z:106,type:'barrel'},
+            {x:106,z:89,type:'crate'},{x:104,z:91,type:'barrel'},
+            {x:66,z:91,type:'crate'},{x:67,z:89,type:'barrel'},
+            {x:139,z:69,type:'crate'},{x:140,z:72,type:'barrel'},{x:136,z:68,type:'crate'}
+        ];
+        crateBarrelPositions.forEach(cb=>{
+            const h=heightMap[Math.min(cb.x,MAP_SIZE-1)]?heightMap[Math.min(cb.x,MAP_SIZE-1)][Math.min(cb.z,MAP_SIZE-1)]||0:0;
+            if(cb.type==='crate'){
+                const m=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.28,0.28),new THREE.MeshLambertMaterial({color:0x8B6914}));
+                m.position.set(cb.x,h+0.14,cb.z);m.rotation.y=cb.x*1.3;m.castShadow=true;scene.add(m);
+            }else{
+                const m=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.3,8),new THREE.MeshLambertMaterial({color:0x6B4226}));
+                m.position.set(cb.x,h+0.15,cb.z);m.castShadow=true;scene.add(m);
+            }
+        });
+
+        // Signposts (3 at road intersections)
+        [{x:100,z:82,boards:[{color:0x22c55e,ry:0},{color:0x3b82f6,ry:Math.PI/3},{color:0xeab308,ry:-Math.PI/4}]},
+         {x:87,z:95,boards:[{color:0x8b5cf6,ry:Math.PI/6},{color:0xec4899,ry:-Math.PI/3}]},
+         {x:120,z:95,boards:[{color:0xf97316,ry:-Math.PI/6},{color:0x14b8a6,ry:Math.PI/4},{color:0xef4444,ry:Math.PI/2}]}
+        ].forEach(sp=>{
+            const g=new THREE.Group();
+            const post=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,1.5,6),new THREE.MeshLambertMaterial({color:0x5a3a1a}));
+            post.position.y=0.75;post.castShadow=true;g.add(post);
+            sp.boards.forEach((b,i)=>{
+                const board=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.12,0.04),new THREE.MeshLambertMaterial({color:b.color}));
+                board.position.set(0.15,1.2-i*0.18,0);board.rotation.y=b.ry;board.castShadow=true;g.add(board);
+            });
+            const h=heightMap[Math.min(sp.x,MAP_SIZE-1)]?heightMap[Math.min(sp.x,MAP_SIZE-1)][Math.min(sp.z,MAP_SIZE-1)]||0:0;
+            g.position.set(sp.x,h,sp.z);scene.add(g);
+        });
+
         // Fireflies
         const particles=[];
         for(let i=0;i<250;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
@@ -870,6 +1026,18 @@
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
         scene.add(myChar.group);
         let myWorldX=100,myWorldZ=95;
+        let lastZoneId='suite_city';
+        function showZoneBanner(zone){
+            const banner=document.getElementById('zone-banner');
+            const name=zone?zone.name:'The Wilderness';
+            const color=zone?zone.color:'#9ca3af';
+            banner.textContent='Entering: '+name;
+            banner.style.borderBottom='2px solid '+color;
+            banner.classList.remove('show');
+            void banner.offsetWidth;
+            banner.classList.add('show');
+            setTimeout(()=>banner.classList.remove('show'),3100);
+        }
 
         // Entity tracking
         const otherPlayerMeshes=new Map();
@@ -969,6 +1137,9 @@
                         const zone=getZoneAt(player.tileX,player.tileZ);
                         const zi=document.getElementById('zone-indicator');
                         if(zone){zi.textContent=zone.name;zi.style.borderBottom='2px solid '+zone.color;}
+                        else{zi.textContent='The Wilderness';zi.style.borderBottom='2px solid #9ca3af';}
+                        const curZoneId=zone?zone.id:'wilderness';
+                        if(curZoneId!==lastZoneId){lastZoneId=curZoneId;showZoneBanner(zone);}
                     });
                     player.inventory.onAdd(()=>{renderInventoryFromState(player);});
                     player.inventory.onChange(()=>{renderInventoryFromState(player);});
@@ -1318,7 +1489,7 @@
         // Pre-render minimap terrain to offscreen canvas (1px per tile)
         const minimapBG=document.createElement('canvas');minimapBG.width=MAP_SIZE;minimapBG.height=MAP_SIZE;
         const bgctx=minimapBG.getContext('2d');
-        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(x>=87&&x<=120&&z>=82&&z<=110&&grid[x][z]>0&&!isWater(x,z))bgctx.fillStyle='#808080';else if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
         function drawMinimap(){
             const s=200/MAP_SIZE;mctx.clearRect(0,0,200,200);
             mctx.drawImage(minimapBG,0,0,200,200);
@@ -1364,6 +1535,8 @@
             const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;
             // Fireflies
             particles.forEach(p=>{p.visible=isNight;if(isNight){p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;p.material.opacity=0.5+Math.sin(time*2+p.userData.offset)*0.5;}});
+            // Fountain spray animation
+            fountainSpray.forEach(s=>{s.angle+=s.speed*dt;const r=0.35;s.mesh.position.x=Math.cos(s.angle)*r;s.mesh.position.z=Math.sin(s.angle)*r;s.mesh.position.y=1.6+Math.sin(time*3+s.angle)*0.15;});
             // Smooth interpolation
             const lerpAmt=1-Math.exp(-LERP_SPEED*dt);
             // My character
@@ -1394,6 +1567,33 @@
         document.querySelector('.stat-player-name').textContent=playerName;
         addChat('system','Welcome to AgentScape! Connecting...');
         connect();
+
+        // Welcome Tutorial
+        (function(){
+            if(localStorage.getItem('agentscape_tutorial_done'))return;
+            const overlay=document.getElementById('tutorial-overlay');
+            const iconEl=document.getElementById('tutorial-icon');
+            const textEl=document.getElementById('tutorial-text');
+            const btnEl=document.getElementById('tutorial-btn');
+            const steps=[
+                {icon:'\u{1F5B1}\uFE0F',text:'Click anywhere on the ground to move your character around the world.',btn:'Next'},
+                {icon:'\u{1F4CB}',text:'Visit the Quest Board in the town square to start your adventure and earn rewards!',btn:'Next'},
+                {icon:'\u{1F30D}',text:'Explore the districts of SUITE City and venture into the wilderness beyond!',btn:"Let's Go!"}
+            ];
+            let step=0;
+            function showStep(){
+                const s=steps[step];
+                iconEl.textContent=s.icon;textEl.textContent=s.text;btnEl.textContent=s.btn;
+                for(let i=0;i<3;i++)document.getElementById('tdot'+i).classList.toggle('active',i===step);
+            }
+            btnEl.onclick=function(){
+                step++;
+                if(step>=steps.length){localStorage.setItem('agentscape_tutorial_done','1');overlay.style.display='none';return;}
+                showStep();
+            };
+            showStep();overlay.style.display='';
+        })();
+
         animate();
         window.addEventListener('resize',()=>{camera.aspect=viewport.clientWidth/viewport.clientHeight;camera.updateProjectionMatrix();renderer.setSize(viewport.clientWidth,viewport.clientHeight);});
 
