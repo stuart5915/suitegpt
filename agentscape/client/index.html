@@ -2043,8 +2043,24 @@
                     '<div class="equip-stat-row"><span>Strength bonus</span><b class="'+(strBonus>0?'positive':'')+'">+'+(strBonus)+'</b></div>'+
                     '<div class="equip-stat-row"><span>Defence bonus</span><b class="'+(defBonus>0?'positive':'')+'">+'+(defBonus)+'</b></div>'+
                 '</div>';
-            // Sync 3D equipment models with current equip state
-            updateAllEquipment(myChar, p);
+            // Sync 3D equipment models — direct synchronous removal for unequipped slots
+            const equipState = {
+                weapon: weapon ? weapon.id : null,
+                helm: helm ? helm.id : null,
+                shield: shield ? shield.id : null
+            };
+            ['weapon', 'helm', 'shield'].forEach(slot => {
+                if (!equipState[slot] && myChar.equipMeshes[slot]) {
+                    // UNEQUIPPED: immediately remove 3D model from scene
+                    const old = myChar.equipMeshes[slot];
+                    if (old.parent) old.parent.remove(old);
+                    else myChar.group.remove(old); // fallback
+                    delete myChar.equipMeshes[slot];
+                } else if (equipState[slot] && !myChar.equipMeshes[slot]) {
+                    // EQUIPPED: load 3D model (async is fine for adding)
+                    attachEquipModel(myChar, slot, equipState[slot]);
+                }
+            });
         }
 
         // Skill guide milestones — what unlocks at each level
