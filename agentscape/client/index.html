@@ -1597,9 +1597,9 @@
 
         // Slot configs: where to attach, how to scale/position
         const EQUIP_SLOTS = {
-            weapon: { pivot: 'rightArm', offsetY: -0.3, offsetX: 0.05, offsetZ: 0.08, scale: 0.15, rotZ: -0.3 },
-            helm:   { pivot: 'head', offsetY: 0.15, offsetX: 0, offsetZ: 0, scale: 0.13, rotZ: 0 },
-            shield: { pivot: 'leftArm', offsetY: -0.2, offsetX: -0.05, offsetZ: 0.08, scale: 0.13, rotZ: 0.3 }
+            weapon: { pivot: 'rightArm', offsetY: -0.28, offsetX: 0, offsetZ: 0.1, scale: 0.5, rotX: 0, rotY: Math.PI, rotZ: -0.3 },
+            helm:   { pivot: 'head', offsetY: 0.15, offsetX: 0, offsetZ: 0, scale: 0.22, rotX: 0, rotY: 0, rotZ: 0 },
+            shield: { pivot: 'leftArm', offsetY: -0.18, offsetX: 0, offsetZ: 0.1, scale: 0.25, rotX: 0, rotY: 0, rotZ: 0.3 }
         };
 
         async function attachEquipModel(charMesh, slot, itemId) {
@@ -1629,24 +1629,30 @@
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             const s = cfg.scale / (maxDim || 1);
+
+            // Wrap in a container for clean positioning
+            const container = new THREE.Group();
             model.scale.set(s, s, s);
+            // Center the model at origin
             const center = box.getCenter(new THREE.Vector3());
-            model.position.set(-center.x * s + cfg.offsetX, -center.y * s + cfg.offsetY, -center.z * s + cfg.offsetZ);
-            model.rotation.z = cfg.rotZ || 0;
+            model.position.set(-center.x * s, -center.y * s, -center.z * s);
+            container.add(model);
+            // Apply rotations (order: X, Y, Z)
+            container.rotation.set(cfg.rotX || 0, cfg.rotY || 0, cfg.rotZ || 0);
+            // Apply offset position
+            container.position.set(cfg.offsetX || 0, cfg.offsetY || 0, cfg.offsetZ || 0);
 
             // Attach to the pivot
             const pivotRef = charMesh[cfg.pivot];
             if (cfg.pivot === 'head') {
-                // Head is direct child of group, attach above it
                 const wrapper = new THREE.Group();
-                wrapper.position.set(0, 0.9 + (cfg.offsetY || 0), 0);
-                wrapper.add(model);
-                model.position.y = 0;
+                wrapper.position.set(0, 0.9, 0);
+                wrapper.add(container);
                 charMesh.group.add(wrapper);
                 charMesh.equipMeshes[slot] = wrapper;
             } else if (pivotRef) {
-                pivotRef.add(model);
-                charMesh.equipMeshes[slot] = model;
+                pivotRef.add(container);
+                charMesh.equipMeshes[slot] = container;
             }
         }
 
@@ -1670,8 +1676,22 @@
             ]);
         }
 
-        // Init forge DB connection
-        openForgeDB().then(ok => { if(ok) console.log('[Forge] Connected to asset database'); });
+        // Init forge DB connection + preload 2D image cache
+        const forgeImageCache = {}; // itemId -> base64 data URL
+        openForgeDB().then(async (ok) => {
+            if (!ok) return;
+            console.log('[Forge] Connected to asset database');
+            // Preload all forge images for inventory/equip UI
+            try {
+                const tx = forgeDB.transaction('assets', 'readonly');
+                const req = tx.objectStore('assets').getAll();
+                req.onsuccess = () => {
+                    const all = req.result || [];
+                    all.forEach(a => { if (a.imageData) forgeImageCache[a.id] = a.imageData; });
+                    console.log('[Forge] Loaded', Object.keys(forgeImageCache).length, '2D images');
+                };
+            } catch(e) {}
+        });
 
         const myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
@@ -1806,8 +1826,20 @@
                     updateOrbs(player);
                     renderInventoryFromState(player);
                     renderStatsFromState(player);
+                    let lastWeaponId = player.equippedWeapon?.id || null;
+                    let lastHelmId = player.equippedHelm?.id || null;
+                    let lastShieldId = player.equippedShield?.id || null;
                     player.onChange(()=>{
                         updateOrbs(player);renderStatsFromState(player);
+                        // Detect equipment changes (including unequip)
+                        const curW = player.equippedWeapon?.id || null;
+                        const curH = player.equippedHelm?.id || null;
+                        const curS = player.equippedShield?.id || null;
+                        if (curW !== lastWeaponId || curH !== lastHelmId || curS !== lastShieldId) {
+                            lastWeaponId = curW; lastHelmId = curH; lastShieldId = curS;
+                            renderInventoryFromState(player);
+                            updateAllEquipment(myChar, player);
+                        }
                         myWorldX=player.x;myWorldZ=player.z;
                         const tx=player.tileX,tz=player.tileZ;
                         const h=heightMap[tx]?heightMap[tx][tz]||0:0;
@@ -1948,7 +1980,15 @@
                 slot.dataset.slot=i;
                 const item=p.inventory[i];
                 if(item&&item.id){
-                    slot.textContent=item.icon||'?';
+                    const forgeImg = forgeImageCache[item.id];
+                    if (forgeImg) {
+                        const img = document.createElement('img');
+                        img.src = forgeImg;
+                        img.style.cssText = 'width:100%;height:100%;object-fit:contain;image-rendering:pixelated;';
+                        slot.appendChild(img);
+                    } else {
+                        slot.textContent=item.icon||'?';
+                    }
                     if(item.quantity>1){const qty=document.createElement('span');qty.className='inv-slot-qty';qty.textContent=item.quantity;slot.appendChild(qty);}
                 }
                 slot.addEventListener('contextmenu',(e)=>{e.preventDefault();e.stopPropagation();showInventoryMenu(e,i,p);});
@@ -1968,13 +2008,16 @@
             [weapon,helm,shield].forEach(item=>{if(item&&item.id){atkBonus+=item.attackStat||0;strBonus+=item.strengthStat||0;defBonus+=item.defenceStat||0;}});
             function slotHTML(label,item,slotType,top,left){
                 const hasItem=item&&item.id;
-                const icon=hasItem?(item.icon||'?'):'';
+                const forgeImg = hasItem ? forgeImageCache[item.id] : null;
+                const iconContent = forgeImg
+                    ? '<img src="'+forgeImg+'" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated;">'
+                    : (hasItem?(item.icon||'?'):'');
                 const name=hasItem?item.name:'Empty';
                 const cls='equip-slot'+(hasItem?' has-item':'');
                 const click=hasItem?'onclick="sendAction(\'unequip_item\',{slot:\''+slotType+'\'})"':'';
                 return '<div style="position:absolute;top:'+top+'px;left:'+left+'px;text-align:center;">'+
                     '<div class="equip-slot-label" style="top:-12px;left:0;width:42px;text-align:center;">'+label+'</div>'+
-                    '<div class="'+cls+'" '+click+'>'+icon+'</div>'+
+                    '<div class="'+cls+'" '+click+'>'+iconContent+'</div>'+
                     '<div class="equip-slot-name">'+name+'</div></div>';
             }
             panel.innerHTML=
