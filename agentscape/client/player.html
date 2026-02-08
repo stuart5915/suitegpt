@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Profile | AgentScape</title>
+    <meta name="description" content="View player stats, skills, and equipment in AgentScape - an open-world multiplayer RPG.">
+    <meta property="og:title" content="Player Profile | AgentScape">
+    <meta property="og:description" content="View player stats and skills in AgentScape.">
+    <meta property="og:url" content="https://agentscape.app/player">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: #0e0e16;
+            --bg-card-hover: #12121c;
+            --border: rgba(180, 160, 120, 0.12);
+            --border-bright: rgba(220, 190, 100, 0.3);
+            --gold: #d4a843;
+            --gold-bright: #e8c55a;
+            --gold-dim: #7a6a3a;
+            --ember: #e8a849;
+            --ember-glow: rgba(232, 168, 73, 0.15);
+            --teal: #4ad8c1;
+            --violet: #8b6ce0;
+            --text: #b8b0a0;
+            --text-bright: #e8e0d0;
+            --text-dim: #5a5548;
+            --green: #4ade80;
+            --red: #f87171;
+            --yellow: #fbbf24;
+            --font-display: 'Uncial Antiqua', cursive;
+            --font-body: 'Cormorant Garamond', serif;
+            --font-ui: 'Rajdhani', sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 16px;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        a { color: var(--gold); text-decoration: none; transition: color 0.3s; }
+        a:hover { color: var(--gold-bright); }
+        ::selection { background: rgba(212, 168, 67, 0.35); color: #fff; }
+
+        /* Noise texture */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px;
+        }
+
+        /* Atmospheric glow */
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 80vw; height: 40vh;
+            background: radial-gradient(ellipse at center top, rgba(212, 168, 67, 0.04) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(10, 10, 15, 0.75);
+            backdrop-filter: blur(24px) saturate(1.2);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: 1000px; margin: 0 auto; padding: 0 24px;
+            height: 56px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 17px; color: var(--gold);
+            letter-spacing: 3px;
+        }
+        .nav-links { display: flex; gap: 4px; align-items: center; }
+        .nav-links a {
+            padding: 6px 14px; border-radius: 4px;
+            font-family: var(--font-ui); font-size: 13px;
+            font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--text-dim); transition: all 0.3s;
+        }
+        .nav-links a:hover { color: var(--text-bright); background: rgba(212, 168, 67, 0.06); }
+        .nav-back {
+            display: flex; align-items: center; gap: 6px;
+            font-family: var(--font-ui); font-size: 13px;
+            font-weight: 600; letter-spacing: 1px;
+            color: var(--text-dim); transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--gold); }
+        .nav-back svg { width: 16px; height: 16px; }
+        .hamburger {
+            display: none; background: none; border: none; cursor: pointer;
+            flex-direction: column; gap: 4px; padding: 6px;
+        }
+        .hamburger span {
+            display: block; width: 20px; height: 2px;
+            background: var(--text-dim); border-radius: 2px; transition: all 0.3s;
+        }
+        .hamburger:hover span { background: var(--gold); }
+
+        /* ── MAIN CONTENT ── */
+        .page-content {
+            position: relative; z-index: 1;
+            max-width: 900px; margin: 0 auto;
+            padding: 80px 24px 64px;
+        }
+
+        /* ── LOADING SKELETON ── */
+        .skeleton { display: block; }
+        .skeleton.hidden { display: none; }
+        .profile-loaded { display: none; }
+        .profile-loaded.visible { display: block; }
+
+        .skel-pulse {
+            background: linear-gradient(90deg, var(--bg-card) 25%, #16162a 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: skelPulse 1.5s ease-in-out infinite;
+            border-radius: 4px;
+        }
+        @keyframes skelPulse {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skel-header {
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            padding: 48px 0 32px;
+        }
+        .skel-name { width: 240px; height: 40px; }
+        .skel-badge { width: 120px; height: 24px; }
+        .skel-time { width: 160px; height: 16px; }
+        .skel-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            margin-top: 24px;
+        }
+        .skel-card { height: 80px; }
+
+        /* ── PLAYER NOT FOUND ── */
+        .not-found {
+            display: none; text-align: center; padding: 120px 24px;
+        }
+        .not-found.visible { display: block; }
+        .not-found h2 {
+            font-family: var(--font-display);
+            font-size: 32px; color: var(--text-bright);
+            margin-bottom: 12px;
+        }
+        .not-found p {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--text-dim);
+            font-style: italic; margin-bottom: 32px;
+        }
+        .not-found .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px; border-radius: 4px;
+            font-family: var(--font-ui); font-size: 13px;
+            font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            background: var(--gold); color: #0a0a0f; border: none; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .not-found .btn:hover {
+            background: var(--gold-bright);
+            box-shadow: 0 0 30px rgba(212, 168, 67, 0.2);
+        }
+
+        /* ── PLAYER HEADER ── */
+        .player-header {
+            text-align: center; padding: 40px 0 32px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+        .player-name {
+            font-family: var(--font-display);
+            font-size: clamp(36px, 6vw, 56px);
+            color: var(--text-bright);
+            line-height: 1.1;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--gold) 0%, #f0d878 40%, var(--ember) 80%, var(--gold) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-size: 300% auto;
+            animation: shimmer 6s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(212, 168, 67, 0.1));
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+
+        .combat-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 20px; border-radius: 24px;
+            background: rgba(212, 168, 67, 0.08);
+            border: 1px solid rgba(212, 168, 67, 0.2);
+            font-family: var(--font-ui); font-size: 14px;
+            font-weight: 700; color: var(--gold);
+            letter-spacing: 1px; text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .combat-badge .cb-icon {
+            font-size: 16px;
+        }
+        .combat-badge .cb-level {
+            font-family: var(--font-display);
+            font-size: 20px; color: var(--gold-bright);
+        }
+
+        .last-seen {
+            font-family: var(--font-body);
+            font-size: 15px; color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* ── SECTION TITLES ── */
+        .section-label {
+            font-family: var(--font-ui);
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 4px; text-transform: uppercase;
+            color: var(--gold-dim);
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 22px; color: var(--text-bright);
+            margin-bottom: 20px;
+        }
+
+        /* ── COMBAT STATS PANEL ── */
+        .combat-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 28px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .combat-panel::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+        }
+
+        .combat-stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        }
+
+        .combat-stat {
+            text-align: center;
+        }
+        .combat-stat-icon {
+            font-size: 28px; margin-bottom: 6px;
+        }
+        .combat-stat-name {
+            font-family: var(--font-ui);
+            font-size: 10px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 4px;
+        }
+        .combat-stat-level {
+            font-family: var(--font-display);
+            font-size: 36px; color: var(--text-bright);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .combat-stat-xp {
+            font-family: var(--font-ui);
+            font-size: 11px; color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        /* XP progress bar */
+        .xp-bar-wrap {
+            width: 100%; height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px; overflow: hidden;
+            position: relative;
+        }
+        .xp-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+            transition: width 1s ease;
+            position: relative;
+        }
+        .xp-bar-fill::after {
+            content: '';
+            position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+            background: var(--gold-bright);
+            border-radius: 0 3px 3px 0;
+            box-shadow: 0 0 8px rgba(212, 168, 67, 0.4);
+        }
+        .xp-bar-fill.atk { background: linear-gradient(90deg, #8b3a3a, #c94444); }
+        .xp-bar-fill.atk::after { background: #e85555; box-shadow: 0 0 8px rgba(200, 68, 68, 0.4); }
+        .xp-bar-fill.str { background: linear-gradient(90deg, #1a6e1a, #2ea82e); }
+        .xp-bar-fill.str::after { background: #45d045; box-shadow: 0 0 8px rgba(46, 168, 46, 0.4); }
+        .xp-bar-fill.def { background: linear-gradient(90deg, #2a4a8b, #4478cc); }
+        .xp-bar-fill.def::after { background: #5599ee; box-shadow: 0 0 8px rgba(68, 120, 204, 0.4); }
+        .xp-bar-fill.hp { background: linear-gradient(90deg, #8b6a2a, #c9a84c); }
+        .xp-bar-fill.hp::after { background: #e8c55a; box-shadow: 0 0 8px rgba(201, 168, 76, 0.4); }
+
+        /* ── COMBAT RADAR CHART ── */
+        .radar-wrap {
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 24px;
+        }
+        .radar-canvas {
+            width: 220px; height: 220px;
+        }
+
+        /* ── SKILLS GRID ── */
+        .skills-section { margin-bottom: 32px; }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .skill-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px 10px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .skill-card:hover {
+            border-color: var(--border-bright);
+            background: var(--bg-card-hover);
+            transform: translateY(-1px);
+        }
+        .skill-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .skill-card:hover::before { opacity: 1; }
+
+        .skill-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .skill-name {
+            font-family: var(--font-ui);
+            font-size: 10px; font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+        .skill-level {
+            font-family: var(--font-display);
+            font-size: 28px; color: var(--text-bright);
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+        .skill-xp {
+            font-family: var(--font-ui);
+            font-size: 10px; color: var(--text-dim);
+        }
+
+        /* ── STATS SUMMARY ── */
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+        .stat-cell {
+            background: var(--bg-card);
+            padding: 24px 16px;
+            text-align: center;
+        }
+        .stat-cell-label {
+            font-family: var(--font-ui);
+            font-size: 10px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 6px;
+        }
+        .stat-cell-value {
+            font-family: var(--font-display);
+            font-size: 28px; color: var(--text-bright);
+        }
+        .stat-cell-value.gold { color: var(--gold); }
+        .stat-cell-value.green { color: var(--green); }
+        .stat-cell-value.red { color: var(--red); }
+
+        /* ── EQUIPMENT ── */
+        .equipment-section { margin-bottom: 32px; }
+
+        .equipment-grid {
+            display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+        }
+        .equip-slot {
+            width: 120px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px 12px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .equip-slot:hover {
+            border-color: var(--border-bright);
+            background: var(--bg-card-hover);
+        }
+        .equip-slot-icon {
+            font-size: 32px; margin-bottom: 8px; display: block;
+        }
+        .equip-slot-label {
+            font-family: var(--font-ui);
+            font-size: 9px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 4px;
+        }
+        .equip-slot-name {
+            font-family: var(--font-body);
+            font-size: 14px; color: var(--text-bright);
+            font-weight: 600;
+        }
+        .equip-slot-empty {
+            font-family: var(--font-ui);
+            font-size: 12px; color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* ── RUNE DIVIDER ── */
+        .rune-divider {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; padding: 24px 0;
+        }
+        .rune-divider::before, .rune-divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+        }
+        .rune-divider .rune {
+            width: 6px; height: 6px;
+            border: 1px solid var(--gold-dim);
+            transform: rotate(45deg);
+            opacity: 0.4;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: relative; z-index: 1;
+            text-align: center; padding: 32px 24px;
+            border-top: 1px solid var(--border);
+        }
+        .footer-links {
+            display: flex; gap: 24px; justify-content: center; margin-bottom: 12px;
+        }
+        .footer a {
+            font-family: var(--font-ui);
+            font-size: 12px; font-weight: 500;
+            color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;
+            transition: color 0.3s;
+        }
+        .footer a:hover { color: var(--gold-dim); }
+        .footer p {
+            font-family: var(--font-ui);
+            font-size: 11px; color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease both;
+        }
+        .fade-in-d1 { animation-delay: 0.1s; }
+        .fade-in-d2 { animation-delay: 0.2s; }
+        .fade-in-d3 { animation-delay: 0.3s; }
+        .fade-in-d4 { animation-delay: 0.4s; }
+        .fade-in-d5 { animation-delay: 0.5s; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none; position: absolute; top: 56px; left: 0; right: 0;
+                flex-direction: column;
+                background: rgba(10, 10, 15, 0.95);
+                backdrop-filter: blur(24px);
+                border-bottom: 1px solid var(--border);
+                padding: 12px 0;
+            }
+            .nav-links.mobile-open { display: flex; }
+            .nav-links a { padding: 12px 24px; }
+            .hamburger { display: flex; }
+
+            .combat-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stats-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .radar-canvas {
+                width: 180px; height: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-content { padding: 72px 16px 48px; }
+            .player-name { font-size: 32px; }
+            .combat-stat-level { font-size: 28px; }
+            .skill-level { font-size: 24px; }
+            .stat-cell-value { font-size: 22px; }
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .equipment-grid { gap: 10px; }
+            .equip-slot { width: 100px; padding: 14px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="/home" class="nav-brand">AgentScape</a>
+        <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
+            <a href="/home" class="nav-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Home
+            </a>
+            <a href="/play">Play</a>
+            <a href="/hiscores">Hiscores</a>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="page-content">
+
+    <!-- LOADING SKELETON -->
+    <div class="skeleton" id="skeleton">
+        <div class="skel-header">
+            <div class="skel-pulse skel-name"></div>
+            <div class="skel-pulse skel-badge"></div>
+            <div class="skel-pulse skel-time"></div>
+        </div>
+        <div class="skel-grid">
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+        </div>
+        <div class="skel-grid" style="margin-top:16px;">
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+            <div class="skel-pulse skel-card"></div>
+        </div>
+    </div>
+
+    <!-- PLAYER NOT FOUND -->
+    <div class="not-found" id="not-found">
+        <h2>Player Not Found</h2>
+        <p>No adventurer by that name exists in the realm.</p>
+        <a href="/home" class="btn">Return to Home</a>
+    </div>
+
+    <!-- PLAYER PROFILE (hidden until loaded) -->
+    <div class="profile-loaded" id="profile">
+
+        <!-- PLAYER HEADER -->
+        <div class="player-header fade-in">
+            <h1 class="player-name" id="p-name">---</h1>
+            <div class="combat-badge">
+                <span class="cb-icon">&#9876;</span>
+                <span>Combat Level</span>
+                <span class="cb-level" id="p-combat">3</span>
+            </div>
+            <div class="last-seen" id="p-lastseen">Last seen: unknown</div>
+        </div>
+
+        <!-- COMBAT RADAR CHART -->
+        <div class="radar-wrap fade-in fade-in-d1">
+            <canvas class="radar-canvas" id="radar-canvas" width="440" height="440"></canvas>
+        </div>
+
+        <!-- COMBAT STATS -->
+        <div class="combat-panel fade-in fade-in-d2">
+            <div class="section-label">Combat</div>
+            <div class="combat-stats-grid" id="combat-stats">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="rune-divider fade-in fade-in-d3"><div class="rune"></div></div>
+
+        <!-- SKILLS GRID -->
+        <div class="skills-section fade-in fade-in-d3">
+            <div class="section-label">Skills</div>
+            <div class="section-title">All Skills</div>
+            <div class="skills-grid" id="skills-grid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="rune-divider fade-in fade-in-d4"><div class="rune"></div></div>
+
+        <!-- STATS SUMMARY -->
+        <div class="fade-in fade-in-d4">
+            <div class="section-label">Overview</div>
+            <div class="section-title">Stats Summary</div>
+            <div class="stats-summary" id="stats-summary">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- EQUIPMENT -->
+        <div class="equipment-section fade-in fade-in-d5">
+            <div class="section-label">Gear</div>
+            <div class="section-title">Equipment</div>
+            <div class="equipment-grid" id="equipment-grid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="footer-links">
+        <a href="/home">Home</a>
+        <a href="/play">Play</a>
+        <a href="/hiscores">Hiscores</a>
+        <a href="https://suitegpt.app">SuiteGPT</a>
+    </div>
+    <p>&copy; 2026 AgentScape &mdash; Built by <a href="https://suitegpt.app" style="color:var(--gold-dim);">SUITE</a></p>
+</footer>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SERVER_BASE = 'https://play.agentscape.app';
+
+// ============================================================
+// OSRS XP TABLE
+// Precomputed XP thresholds for levels 1-99 using OSRS formula
+// ============================================================
+const XP_TABLE = [0];
+(function buildXpTable() {
+    let total = 0;
+    for (let i = 1; i < 99; i++) {
+        total += Math.floor(i + 300 * Math.pow(2, i / 7.0));
+        XP_TABLE.push(Math.floor(total / 4));
+    }
+})();
+
+function xpForLevel(level) {
+    if (level <= 1) return 0;
+    if (level > 99) return XP_TABLE[98] || 13034431;
+    return XP_TABLE[level - 1] || 0;
+}
+
+function levelFromXp(xp) {
+    for (let i = XP_TABLE.length - 1; i >= 0; i--) {
+        if (xp >= XP_TABLE[i]) return i + 1;
+    }
+    return 1;
+}
+
+function xpProgress(level, xp) {
+    if (level >= 99) return 100;
+    const currentLevelXp = xpForLevel(level);
+    const nextLevelXp = xpForLevel(level + 1);
+    const range = nextLevelXp - currentLevelXp;
+    if (range <= 0) return 100;
+    const progress = ((xp - currentLevelXp) / range) * 100;
+    return Math.max(0, Math.min(100, progress));
+}
+
+// ============================================================
+// SKILLS DATA
+// ============================================================
+const SKILLS = [
+    { key: 'attack',        name: 'Attack',        icon: '\u2694\uFE0F',  combat: true,  barClass: 'atk' },
+    { key: 'strength',      name: 'Strength',      icon: '\uD83D\uDCAA',  combat: true,  barClass: 'str' },
+    { key: 'defence',       name: 'Defence',       icon: '\uD83D\uDEE1\uFE0F',  combat: true,  barClass: 'def' },
+    { key: 'hitpoints',     name: 'Hitpoints',     icon: '\u2764\uFE0F',  combat: true,  barClass: 'hp'  },
+    { key: 'prayer',        name: 'Prayer',        icon: '\u2728',         combat: false },
+    { key: 'woodcutting',   name: 'Woodcutting',   icon: '\uD83E\uDE93',  combat: false },
+    { key: 'mining',        name: 'Mining',        icon: '\u26CF\uFE0F',  combat: false },
+    { key: 'fishing',       name: 'Fishing',       icon: '\uD83C\uDFA3',  combat: false },
+    { key: 'cooking',       name: 'Cooking',       icon: '\uD83C\uDF73',  combat: false },
+    { key: 'smithing',      name: 'Smithing',      icon: '\uD83D\uDD28',  combat: false },
+    { key: 'crafting',      name: 'Crafting',      icon: '\uD83E\uDDF5',  combat: false },
+    { key: 'fletching',     name: 'Fletching',     icon: '\uD83C\uDFF9',  combat: false },
+    { key: 'runecrafting',  name: 'Runecrafting',  icon: '\uD83D\uDD2E',  combat: false },
+    { key: 'thieving',      name: 'Thieving',      icon: '\uD83E\uDD78',  combat: false },
+];
+
+const COMBAT_SKILLS = SKILLS.filter(s => s.combat);
+
+// ============================================================
+// EXTRACT PLAYER NAME FROM URL
+// ============================================================
+function getPlayerName() {
+    const path = window.location.pathname;
+    const segments = path.split('/').filter(Boolean);
+    // Expect /player/PlayerName
+    if (segments.length >= 2 && segments[0] === 'player') {
+        return decodeURIComponent(segments[1]);
+    }
+    // Fallback: last segment
+    if (segments.length > 0) {
+        return decodeURIComponent(segments[segments.length - 1]);
+    }
+    return null;
+}
+
+// ============================================================
+// TIME AGO
+// ============================================================
+function timeAgo(dateStr) {
+    if (!dateStr) return 'unknown';
+    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (seconds < 0) return 'just now';
+    if (seconds < 60) return 'just now';
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return mins + ' min' + (mins !== 1 ? 's' : '') + ' ago';
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + ' hour' + (hours !== 1 ? 's' : '') + ' ago';
+    const days = Math.floor(hours / 24);
+    if (days < 30) return days + ' day' + (days !== 1 ? 's' : '') + ' ago';
+    const months = Math.floor(days / 30);
+    return months + ' month' + (months !== 1 ? 's' : '') + ' ago';
+}
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+// ============================================================
+// FORMAT NUMBERS
+// ============================================================
+function formatXp(n) {
+    if (n == null) return '0';
+    return Number(n).toLocaleString();
+}
+
+// ============================================================
+// DRAW RADAR CHART
+// ============================================================
+function drawRadar(player) {
+    const canvas = document.getElementById('radar-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
+    const maxR = Math.min(W, H) * 0.38;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const labels = COMBAT_SKILLS.map(s => s.name);
+    const values = COMBAT_SKILLS.map(s => Math.min(player[s.key] || 1, 99));
+    const maxVal = 99;
+    const n = labels.length;
+    const angleStep = (2 * Math.PI) / n;
+    const startAngle = -Math.PI / 2; // Start from top
+
+    // Draw concentric rings
+    for (let ring = 1; ring <= 4; ring++) {
+        const r = (maxR / 4) * ring;
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+            const angle = startAngle + i * angleStep;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(180, 160, 120, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    // Draw axis lines
+    for (let i = 0; i < n; i++) {
+        const angle = startAngle + i * angleStep;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + maxR * Math.cos(angle), cy + maxR * Math.sin(angle));
+        ctx.strokeStyle = 'rgba(180, 160, 120, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    // Draw filled data polygon
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+        const angle = startAngle + i * angleStep;
+        const val = values[i] / maxVal;
+        const r = val * maxR;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+    gradient.addColorStop(0, 'rgba(212, 168, 67, 0.25)');
+    gradient.addColorStop(1, 'rgba(232, 168, 73, 0.08)');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(212, 168, 67, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw data points
+    for (let i = 0; i < n; i++) {
+        const angle = startAngle + i * angleStep;
+        const val = values[i] / maxVal;
+        const r = val * maxR;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#d4a843';
+        ctx.fill();
+        ctx.strokeStyle = '#0a0a0f';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // Draw labels
+    const dpr = window.devicePixelRatio || 1;
+    const fontSize = 12 * (dpr > 1 ? 1 : 1);
+    ctx.font = '700 ' + fontSize + 'px Rajdhani, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < n; i++) {
+        const angle = startAngle + i * angleStep;
+        const labelR = maxR + 28;
+        const x = cx + labelR * Math.cos(angle);
+        const y = cy + labelR * Math.sin(angle);
+
+        ctx.fillStyle = '#7a6a3a';
+        ctx.fillText(labels[i].toUpperCase(), x, y - 8);
+
+        ctx.font = 'normal 18px "Uncial Antiqua", cursive';
+        ctx.fillStyle = '#e8e0d0';
+        ctx.fillText(String(values[i]), x, y + 12);
+
+        ctx.font = '700 ' + fontSize + 'px Rajdhani, sans-serif';
+    }
+}
+
+// ============================================================
+// RENDER COMBAT STATS
+// ============================================================
+function renderCombatStats(player) {
+    const container = document.getElementById('combat-stats');
+    container.innerHTML = COMBAT_SKILLS.map(skill => {
+        const level = player[skill.key] || 1;
+        const xp = player[skill.key + '_xp'] || 0;
+        const progress = xpProgress(level, xp);
+        const nextXp = xpForLevel(level + 1);
+        const remaining = Math.max(0, nextXp - xp);
+
+        return `
+            <div class="combat-stat">
+                <div class="combat-stat-icon">${skill.icon}</div>
+                <div class="combat-stat-name">${skill.name}</div>
+                <div class="combat-stat-level">${level}</div>
+                <div class="combat-stat-xp">${formatXp(xp)} XP</div>
+                <div class="xp-bar-wrap" title="${formatXp(remaining)} XP to level ${level + 1}">
+                    <div class="xp-bar-fill ${skill.barClass}" style="width: ${progress}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// RENDER SKILLS GRID
+// ============================================================
+function renderSkills(player) {
+    const container = document.getElementById('skills-grid');
+    container.innerHTML = SKILLS.map(skill => {
+        const level = player[skill.key] || 1;
+        const xp = player[skill.key + '_xp'] || 0;
+
+        return `
+            <div class="skill-card">
+                <span class="skill-icon">${skill.icon}</span>
+                <div class="skill-name">${skill.name}</div>
+                <div class="skill-level">${level}</div>
+                <div class="skill-xp">${formatXp(xp)} XP</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// RENDER STATS SUMMARY
+// ============================================================
+function renderStatsSummary(player) {
+    const totalLevel = player.total_level || SKILLS.reduce((sum, s) => sum + (player[s.key] || 1), 0);
+    const totalXp = player.total_xp || SKILLS.reduce((sum, s) => sum + (player[s.key + '_xp'] || 0), 0);
+    const kills = player.kills || 0;
+    const deaths = player.deaths || 0;
+    const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(0) : '0.00';
+    const combatLevel = player.combat_level || 3;
+
+    const cells = [
+        { label: 'Total Level',  value: totalLevel,           cls: 'gold' },
+        { label: 'Total XP',     value: formatXp(totalXp),    cls: '' },
+        { label: 'Combat Level', value: combatLevel,           cls: 'gold' },
+        { label: 'Kills',        value: kills,                 cls: 'green' },
+        { label: 'Deaths',       value: deaths,                cls: 'red' },
+        { label: 'K/D Ratio',    value: kd,                    cls: '' },
+    ];
+
+    const container = document.getElementById('stats-summary');
+    container.innerHTML = cells.map(c => `
+        <div class="stat-cell">
+            <div class="stat-cell-label">${c.label}</div>
+            <div class="stat-cell-value ${c.cls}">${c.value}</div>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// RENDER EQUIPMENT
+// ============================================================
+function renderEquipment(player) {
+    const slots = [
+        { key: 'equipped_helm',   label: 'Helm',   icon: '\uD83E\uDE96', emptyIcon: '\uD83D\uDC64' },
+        { key: 'equipped_weapon', label: 'Weapon', icon: '\u2694\uFE0F', emptyIcon: '\u2754' },
+        { key: 'equipped_shield', label: 'Shield', icon: '\uD83D\uDEE1\uFE0F', emptyIcon: '\u2754' },
+    ];
+
+    const container = document.getElementById('equipment-grid');
+    container.innerHTML = slots.map(slot => {
+        const item = player[slot.key];
+        if (item) {
+            return `
+                <div class="equip-slot">
+                    <span class="equip-slot-icon">${slot.icon}</span>
+                    <div class="equip-slot-label">${slot.label}</div>
+                    <div class="equip-slot-name">${escapeHtml(item)}</div>
+                </div>
+            `;
+        }
+        return `
+            <div class="equip-slot">
+                <span class="equip-slot-icon" style="opacity:0.3;">${slot.emptyIcon}</span>
+                <div class="equip-slot-label">${slot.label}</div>
+                <div class="equip-slot-empty">None</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// RENDER FULL PROFILE
+// ============================================================
+function renderProfile(player) {
+    // Update page title
+    document.title = player.name + ' | AgentScape';
+
+    // Update OG tags
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = player.name + ' | AgentScape';
+
+    // Header
+    document.getElementById('p-name').textContent = player.name;
+    document.getElementById('p-combat').textContent = player.combat_level || 3;
+    document.getElementById('p-lastseen').textContent = 'Last seen: ' + timeAgo(player.updated_at);
+
+    // Render sections
+    drawRadar(player);
+    renderCombatStats(player);
+    renderSkills(player);
+    renderStatsSummary(player);
+    renderEquipment(player);
+
+    // Show profile, hide skeleton
+    document.getElementById('skeleton').classList.add('hidden');
+    document.getElementById('profile').classList.add('visible');
+}
+
+// ============================================================
+// SHOW NOT FOUND
+// ============================================================
+function showNotFound() {
+    document.getElementById('skeleton').classList.add('hidden');
+    document.getElementById('not-found').classList.add('visible');
+}
+
+// ============================================================
+// FETCH PLAYER DATA
+// ============================================================
+async function fetchPlayer(name) {
+    try {
+        const res = await fetch(SERVER_BASE + '/player/' + encodeURIComponent(name), {
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!res.ok) {
+            showNotFound();
+            return;
+        }
+
+        const data = await res.json();
+        if (!data || !data.name) {
+            showNotFound();
+            return;
+        }
+
+        renderProfile(data);
+    } catch (err) {
+        console.error('Failed to fetch player:', err);
+        showNotFound();
+    }
+}
+
+// ============================================================
+// MOBILE NAV
+// ============================================================
+function toggleMobileNav() {
+    document.getElementById('nav-links').classList.toggle('mobile-open');
+}
+document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => {
+        document.getElementById('nav-links').classList.remove('mobile-open');
+    });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+const playerName = getPlayerName();
+if (playerName) {
+    fetchPlayer(playerName);
+} else {
+    showNotFound();
+}
+</script>
+</body>
+</html>

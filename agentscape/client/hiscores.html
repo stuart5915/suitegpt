@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HiScores | AgentScape</title>
+    <meta name="description" content="AgentScape HiScores — View the top players ranked by skill across the realm. Search players, compare stats, and climb the leaderboard.">
+    <meta property="og:title" content="HiScores | AgentScape">
+    <meta property="og:description" content="View the top players ranked by skill across the realm.">
+    <meta property="og:url" content="https://agentscape.app/hiscores">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #050508;
+            --bg-card: #0a0a10;
+            --bg-card-hover: #0e0e16;
+            --border: rgba(180, 160, 120, 0.12);
+            --border-bright: rgba(220, 190, 100, 0.3);
+            --gold: #c9a84c;
+            --gold-bright: #e8c55a;
+            --gold-dim: #7a6a3a;
+            --ember: #e8a849;
+            --ember-glow: rgba(232, 168, 73, 0.15);
+            --teal: #4ad8c1;
+            --violet: #8b6ce0;
+            --text: #b8b0a0;
+            --text-bright: #e8e0d0;
+            --text-dim: #5a5548;
+            --green: #4ade80;
+            --red: #f87171;
+            --yellow: #fbbf24;
+            --font-display: 'Uncial Antiqua', cursive;
+            --font-body: 'Cormorant Garamond', serif;
+            --font-ui: 'Rajdhani', sans-serif;
+
+            --row-odd: rgba(10, 10, 16, 0.6);
+            --row-even: rgba(15, 15, 24, 0.6);
+            --row-hover: rgba(201, 168, 76, 0.06);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 18px;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        a { color: var(--gold); text-decoration: none; transition: color 0.3s; }
+        a:hover { color: var(--gold-bright); }
+        ::selection { background: rgba(201, 168, 76, 0.35); color: #fff; }
+
+        /* Noise texture */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px;
+        }
+
+        /* Atmospheric overlays */
+        .atmo-top {
+            position: fixed; top: 0; left: 0; right: 0; height: 50vh;
+            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201, 168, 76, 0.04) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── NAV ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5, 5, 8, 0.75);
+            backdrop-filter: blur(24px) saturate(1.2);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            height: 56px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-left {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .nav-back {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 4px;
+            color: var(--text-dim); transition: all 0.3s;
+            font-size: 18px;
+        }
+        .nav-back:hover { color: var(--gold); background: rgba(201, 168, 76, 0.06); }
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 18px; color: var(--gold);
+            letter-spacing: 3px;
+        }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-links a {
+            padding: 6px 14px; border-radius: 4px;
+            font-family: var(--font-ui); font-size: 13px;
+            font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--text-dim); transition: all 0.3s;
+        }
+        .nav-links a:hover { color: var(--text-bright); background: rgba(201, 168, 76, 0.06); }
+        .nav-links a.active { color: var(--gold); background: rgba(201, 168, 76, 0.08); }
+        .nav-right {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .player-count-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 16px;
+            background: rgba(74, 222, 128, 0.06);
+            border: 1px solid rgba(74, 222, 128, 0.15);
+            font-family: var(--font-ui); font-size: 12px;
+            font-weight: 600; color: var(--green);
+            letter-spacing: 0.5px;
+        }
+        .player-count-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        .hamburger {
+            display: none; background: none; border: none; cursor: pointer;
+            flex-direction: column; gap: 4px; padding: 6px;
+        }
+        .hamburger span {
+            display: block; width: 20px; height: 2px;
+            background: var(--text-dim); border-radius: 2px; transition: all 0.3s;
+        }
+        .hamburger:hover span { background: var(--gold); }
+
+        /* ── PAGE HEADER ── */
+        .page-header {
+            position: relative; z-index: 1;
+            text-align: center;
+            padding: 100px 24px 32px;
+        }
+        .page-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(32px, 6vw, 52px);
+            line-height: 1.1;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--gold) 0%, #f0d878 40%, var(--ember) 80%, var(--gold) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-size: 300% auto;
+            animation: shimmer 6s ease-in-out infinite;
+            filter: drop-shadow(0 0 40px rgba(201, 168, 76, 0.15));
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+        .page-header .subtitle {
+            font-family: var(--font-body);
+            font-size: 18px; color: var(--text-dim);
+            font-style: italic;
+        }
+
+        /* ── SEARCH BAR ── */
+        .search-wrap {
+            position: relative; z-index: 10;
+            max-width: 480px; margin: 24px auto 0;
+        }
+        .search-input {
+            width: 100%; padding: 12px 18px 12px 42px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-bright);
+            font-family: var(--font-ui); font-size: 15px;
+            font-weight: 500;
+            outline: none; transition: all 0.3s;
+        }
+        .search-input:focus {
+            border-color: var(--gold-dim);
+            box-shadow: 0 0 24px rgba(201, 168, 76, 0.06);
+        }
+        .search-input::placeholder {
+            color: var(--text-dim); font-weight: 400;
+        }
+        .search-icon {
+            position: absolute; left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim); font-size: 16px;
+            pointer-events: none;
+        }
+        .search-results {
+            position: absolute; top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #0c0c14;
+            border: 1px solid var(--border-bright);
+            border-radius: 6px;
+            max-height: 260px; overflow-y: auto;
+            display: none;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+        .search-results.open { display: block; }
+        .search-result-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(180, 160, 120, 0.06);
+            cursor: pointer; transition: background 0.2s;
+            font-family: var(--font-ui); font-size: 14px;
+        }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:hover { background: rgba(201, 168, 76, 0.06); }
+        .search-result-item .name { color: var(--text-bright); font-weight: 600; }
+        .search-result-item .meta { color: var(--text-dim); font-size: 12px; }
+        .search-no-results {
+            padding: 16px; text-align: center;
+            color: var(--text-dim); font-family: var(--font-ui);
+            font-size: 13px; font-style: italic;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .hiscores-layout {
+            position: relative; z-index: 1;
+            max-width: 1200px; margin: 0 auto;
+            padding: 32px 24px 64px;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 24px;
+        }
+
+        /* ── SKILL TABS (sidebar) ── */
+        .skill-sidebar {
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .skill-sidebar-label {
+            font-family: var(--font-ui);
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: var(--text-dim);
+            padding: 8px 12px 6px;
+        }
+        .skill-tab {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 6px;
+            cursor: pointer; transition: all 0.25s;
+            border: 1px solid transparent;
+            font-family: var(--font-ui); font-size: 14px;
+            font-weight: 500; color: var(--text-dim);
+            background: transparent;
+            user-select: none;
+        }
+        .skill-tab:hover {
+            color: var(--text);
+            background: rgba(201, 168, 76, 0.04);
+            border-color: var(--border);
+        }
+        .skill-tab.active {
+            color: var(--gold);
+            background: rgba(201, 168, 76, 0.08);
+            border-color: var(--border-bright);
+        }
+        .skill-tab .icon {
+            width: 24px; text-align: center;
+            font-size: 16px; flex-shrink: 0;
+        }
+        .skill-tab .label { flex: 1; }
+
+        /* ── MOBILE SKILL TABS (horizontal scroll) ── */
+        .skill-tabs-mobile {
+            display: none;
+            position: relative; z-index: 1;
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 24px 16px;
+        }
+        .skill-tabs-scroll {
+            display: flex; gap: 6px;
+            overflow-x: auto; padding-bottom: 8px;
+            scrollbar-width: none;
+        }
+        .skill-tabs-scroll::-webkit-scrollbar { display: none; }
+        .skill-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 20px;
+            white-space: nowrap; cursor: pointer;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            font-family: var(--font-ui); font-size: 13px;
+            font-weight: 500; color: var(--text-dim);
+            transition: all 0.25s; flex-shrink: 0;
+        }
+        .skill-chip:hover {
+            color: var(--text); border-color: var(--border-bright);
+        }
+        .skill-chip.active {
+            color: var(--gold); background: rgba(201, 168, 76, 0.1);
+            border-color: var(--border-bright);
+        }
+        .skill-chip .icon { font-size: 14px; }
+
+        /* ── TABLE PANEL ── */
+        .table-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: 400px;
+        }
+        .table-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(201, 168, 76, 0.03), transparent);
+        }
+        .table-title {
+            font-family: var(--font-display);
+            font-size: 18px; color: var(--gold);
+        }
+        .table-subtitle {
+            font-family: var(--font-ui);
+            font-size: 11px; color: var(--text-dim);
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        /* ── HISCORES TABLE ── */
+        .hs-table {
+            width: 100%; border-collapse: collapse;
+        }
+        .hs-table thead {
+            position: sticky; top: 0; z-index: 2;
+        }
+        .hs-table th {
+            text-align: left; padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+            color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px;
+        }
+        .hs-table th:first-child { width: 60px; text-align: center; }
+        .hs-table td {
+            padding: 12px 20px;
+            font-family: var(--font-ui); font-size: 14px; font-weight: 500;
+            color: var(--text);
+            border-bottom: 1px solid rgba(180, 160, 120, 0.04);
+            transition: background 0.15s;
+        }
+        .hs-table td:first-child { text-align: center; }
+        .hs-table tbody tr:nth-child(odd) td { background: var(--row-odd); }
+        .hs-table tbody tr:nth-child(even) td { background: var(--row-even); }
+        .hs-table tbody tr:hover td { background: var(--row-hover); }
+        .hs-table tbody tr { cursor: pointer; transition: all 0.15s; }
+        .hs-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Rank styling */
+        .rank-cell {
+            font-family: var(--font-display); font-size: 15px;
+            font-weight: 400;
+        }
+        .rank-1 { color: #ffd700; text-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+        .rank-2 { color: #c0c0c0; text-shadow: 0 0 8px rgba(192, 192, 192, 0.25); }
+        .rank-3 { color: #cd7f32; text-shadow: 0 0 8px rgba(205, 127, 50, 0.25); }
+        .rank-medal { font-size: 18px; }
+
+        /* Name column */
+        .player-name {
+            color: var(--text-bright); font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .player-name:hover { color: var(--gold); }
+
+        /* Level column */
+        .level-cell {
+            color: var(--gold); font-weight: 700;
+            font-size: 15px;
+        }
+
+        /* XP column */
+        .xp-cell {
+            color: var(--text); font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Loading & Empty states */
+        .table-loading, .table-empty {
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 12px;
+            padding: 80px 24px;
+            text-align: center;
+        }
+        .table-loading .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .table-loading p {
+            font-family: var(--font-ui); font-size: 13px;
+            color: var(--text-dim); letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .table-empty p {
+            font-family: var(--font-body); font-size: 16px;
+            color: var(--text-dim); font-style: italic;
+        }
+
+        /* ── RUNE DIVIDER ── */
+        .rune-divider {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; padding: 12px 0 0;
+            position: relative; z-index: 1;
+        }
+        .rune-divider::before, .rune-divider::after {
+            content: ''; flex: 0 0 80px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+        }
+        .rune-divider .rune {
+            width: 8px; height: 8px;
+            border: 1px solid var(--gold-dim);
+            transform: rotate(45deg);
+            opacity: 0.4;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: relative; z-index: 1;
+            text-align: center; padding: 32px 24px 48px;
+            border-top: 1px solid var(--border);
+        }
+        .footer-links {
+            display: flex; gap: 24px; justify-content: center; margin-bottom: 12px;
+        }
+        .footer a {
+            font-family: var(--font-ui);
+            font-size: 12px; font-weight: 500;
+            color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;
+            transition: color 0.3s;
+        }
+        .footer a:hover { color: var(--gold-dim); }
+        .footer p {
+            font-family: var(--font-ui);
+            font-size: 11px; color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 860px) {
+            .hiscores-layout {
+                grid-template-columns: 1fr;
+            }
+            .skill-sidebar { display: none; }
+            .skill-tabs-mobile { display: block; }
+            .nav-links {
+                display: none; position: absolute; top: 56px; left: 0; right: 0;
+                flex-direction: column;
+                background: rgba(5, 5, 8, 0.95);
+                backdrop-filter: blur(24px);
+                border-bottom: 1px solid var(--border);
+                padding: 12px 0;
+            }
+            .nav-links.mobile-open { display: flex; }
+            .nav-links a { padding: 12px 24px; }
+            .hamburger { display: flex; }
+            .hs-table th, .hs-table td {
+                padding: 10px 12px; font-size: 13px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .page-header { padding: 88px 16px 24px; }
+            .page-header h1 { font-size: 28px; }
+            .hiscores-layout { padding: 16px 12px 48px; }
+            .table-header { padding: 12px 16px; }
+            .hs-table th, .hs-table td { padding: 8px 10px; }
+            .hs-table .col-xp { display: none; }
+            .search-wrap { margin: 16px 12px 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="atmo-top"></div>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <div class="nav-left">
+            <a href="/home" class="nav-back" title="Back to Home">&larr;</a>
+            <a href="/home" class="nav-brand">AgentScape</a>
+            <button class="hamburger" id="hamburger" onclick="toggleMobileNav()">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="/home">Home</a>
+            <a href="/play">Play</a>
+            <a href="/hiscores" class="active">HiScores</a>
+        </div>
+        <div class="nav-right">
+            <div class="player-count-badge" id="player-count-badge" style="display:none;">
+                <span class="dot"></span>
+                <span id="player-count-text">0 Online</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<header class="page-header">
+    <h1>HiScores</h1>
+    <p class="subtitle">The champions of the realm, ranked by skill and glory.</p>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" class="search-input" id="search-input" placeholder="Search player name..." autocomplete="off" spellcheck="false">
+        <div class="search-results" id="search-results"></div>
+    </div>
+</header>
+
+<div class="rune-divider"><div class="rune"></div></div>
+
+<!-- MOBILE SKILL CHIPS -->
+<div class="skill-tabs-mobile">
+    <div class="skill-tabs-scroll" id="skill-chips"></div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="hiscores-layout">
+
+    <!-- SIDEBAR SKILL TABS -->
+    <aside class="skill-sidebar" id="skill-sidebar">
+        <div class="skill-sidebar-label">Skills</div>
+    </aside>
+
+    <!-- TABLE PANEL -->
+    <div class="table-panel">
+        <div class="table-header">
+            <span class="table-title" id="table-title">Overall</span>
+            <span class="table-subtitle" id="table-subtitle">Top 50 Players</span>
+        </div>
+        <div id="table-content">
+            <div class="table-loading" id="table-loading">
+                <div class="spinner"></div>
+                <p>Loading hiscores...</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="footer-links">
+        <a href="/home">Home</a>
+        <a href="/play">Play</a>
+        <a href="https://suitegpt.app">SuiteGPT</a>
+        <a href="https://getsuite.app">SUITE</a>
+    </div>
+    <p>&copy; 2026 AgentScape &mdash; Built by <a href="https://suitegpt.app" style="color:var(--gold-dim);">SUITE</a></p>
+</footer>
+
+<script>
+// ============================================================
+// Configuration
+// ============================================================
+const SERVER = 'https://play.agentscape.app';
+
+const SKILLS = [
+    { key: 'overall',       label: 'Overall',       icon: '\u{1F3C6}' }, // trophy
+    { key: 'attack',        label: 'Attack',        icon: '\u{2694}\uFE0F' }, // swords
+    { key: 'strength',      label: 'Strength',      icon: '\u{1F4AA}' }, // flexed bicep
+    { key: 'defence',       label: 'Defence',        icon: '\u{1F6E1}\uFE0F' }, // shield
+    { key: 'hitpoints',     label: 'Hitpoints',     icon: '\u{2764}\uFE0F' }, // heart
+    { key: 'prayer',        label: 'Prayer',        icon: '\u{1F54A}\uFE0F' }, // dove
+    { key: 'woodcutting',   label: 'Woodcutting',   icon: '\u{1FA93}' }, // axe
+    { key: 'mining',        label: 'Mining',        icon: '\u{26CF}\uFE0F' }, // pick
+    { key: 'fishing',       label: 'Fishing',       icon: '\u{1F3A3}' }, // fishing pole
+    { key: 'cooking',       label: 'Cooking',       icon: '\u{1F373}' }, // cooking
+    { key: 'smithing',      label: 'Smithing',      icon: '\u{1F525}' }, // fire
+    { key: 'crafting',      label: 'Crafting',      icon: '\u{1F9F5}' }, // thread
+    { key: 'fletching',     label: 'Fletching',     icon: '\u{1F3F9}' }, // bow and arrow
+    { key: 'runecrafting',  label: 'Runecrafting',  icon: '\u{1F52E}' }, // crystal ball
+    { key: 'thieving',      label: 'Thieving',      icon: '\u{1F977}' }, // ninja
+];
+
+let activeSkill = 'overall';
+let searchTimeout = null;
+
+// ============================================================
+// Build Skill Tabs
+// ============================================================
+function buildSkillTabs() {
+    const sidebar = document.getElementById('skill-sidebar');
+    const chips = document.getElementById('skill-chips');
+
+    SKILLS.forEach(skill => {
+        // Sidebar tab
+        const tab = document.createElement('div');
+        tab.className = 'skill-tab' + (skill.key === activeSkill ? ' active' : '');
+        tab.dataset.skill = skill.key;
+        tab.innerHTML = `<span class="icon">${skill.icon}</span><span class="label">${skill.label}</span>`;
+        tab.addEventListener('click', () => selectSkill(skill.key));
+        sidebar.appendChild(tab);
+
+        // Mobile chip
+        const chip = document.createElement('div');
+        chip.className = 'skill-chip' + (skill.key === activeSkill ? ' active' : '');
+        chip.dataset.skill = skill.key;
+        chip.innerHTML = `<span class="icon">${skill.icon}</span>${skill.label}`;
+        chip.addEventListener('click', () => selectSkill(skill.key));
+        chips.appendChild(chip);
+    });
+}
+
+function selectSkill(skillKey) {
+    activeSkill = skillKey;
+
+    // Update sidebar tabs
+    document.querySelectorAll('.skill-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.skill === skillKey);
+    });
+
+    // Update mobile chips
+    document.querySelectorAll('.skill-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.skill === skillKey);
+    });
+
+    // Scroll active chip into view on mobile
+    const activeChip = document.querySelector('.skill-chip.active');
+    if (activeChip) {
+        activeChip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    // Update title
+    const skill = SKILLS.find(s => s.key === skillKey);
+    document.getElementById('table-title').textContent = skill ? skill.icon + ' ' + skill.label : 'Overall';
+
+    // Update URL hash
+    history.replaceState(null, '', '#' + skillKey);
+
+    loadHiscores(skillKey);
+}
+
+// ============================================================
+// Load Hiscores
+// ============================================================
+async function loadHiscores(skillKey) {
+    const content = document.getElementById('table-content');
+    content.innerHTML = '<div class="table-loading"><div class="spinner"></div><p>Loading hiscores...</p></div>';
+
+    try {
+        let players = [];
+
+        if (skillKey === 'overall') {
+            // Use the /leaderboard endpoint for overall
+            const res = await fetch(SERVER + '/leaderboard?limit=50');
+            const data = await res.json();
+            players = data.players || data || [];
+        } else {
+            // Use /hiscores/:skill for individual skills
+            try {
+                const res = await fetch(SERVER + '/hiscores/' + skillKey + '?limit=50');
+                const data = await res.json();
+                players = Array.isArray(data) ? data : (data.players || []);
+            } catch {
+                // Fallback: use /leaderboard and sort by that skill
+                const res = await fetch(SERVER + '/leaderboard?limit=50');
+                const data = await res.json();
+                const raw = data.players || data || [];
+                players = raw
+                    .filter(p => p[skillKey] !== undefined)
+                    .sort((a, b) => {
+                        const xpA = (a[skillKey + '_xp'] || 0);
+                        const xpB = (b[skillKey + '_xp'] || 0);
+                        if (xpA !== xpB) return xpB - xpA;
+                        return (b[skillKey] || 0) - (a[skillKey] || 0);
+                    });
+            }
+        }
+
+        // Deduplicate by name
+        const seen = new Set();
+        players = players.filter(p => {
+            const key = (p.name || '').toLowerCase();
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        if (players.length === 0) {
+            content.innerHTML = '<div class="table-empty"><p>No players found for this skill yet. Be the first to train it.</p></div>';
+            document.getElementById('table-subtitle').textContent = 'No entries';
+            return;
+        }
+
+        document.getElementById('table-subtitle').textContent = 'Top ' + players.length + ' Players';
+
+        if (skillKey === 'overall') {
+            renderOverallTable(players);
+        } else {
+            renderSkillTable(players, skillKey);
+        }
+
+    } catch (err) {
+        console.error('Failed to load hiscores:', err);
+        content.innerHTML = '<div class="table-empty"><p>Could not load hiscores. Please try again later.</p></div>';
+    }
+}
+
+// ============================================================
+// Render Overall Table
+// ============================================================
+function renderOverallTable(players) {
+    const content = document.getElementById('table-content');
+
+    let html = `<table class="hs-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Combat</th>
+                <th>Total Level</th>
+                <th class="col-xp">Total XP</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    players.forEach((p, i) => {
+        const rank = p.rank || (i + 1);
+        const combatLevel = p.combat_level || 3;
+        const totalLevel = p.total_level || computeTotalLevel(p);
+        const totalXP = p.total_xp || computeTotalXP(p);
+
+        html += `<tr onclick="goToPlayer('${escapeAttr(p.name)}')">
+            <td>${renderRank(rank)}</td>
+            <td class="player-name">${escapeHtml(p.name || 'Unknown')}</td>
+            <td class="level-cell">${combatLevel}</td>
+            <td class="level-cell">${totalLevel}</td>
+            <td class="xp-cell col-xp">${totalXP.toLocaleString()}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    content.innerHTML = html;
+}
+
+// ============================================================
+// Render Skill Table
+// ============================================================
+function renderSkillTable(players, skillKey) {
+    const content = document.getElementById('table-content');
+    const skill = SKILLS.find(s => s.key === skillKey);
+    const skillLabel = skill ? skill.label : skillKey;
+
+    let html = `<table class="hs-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>${escapeHtml(skillLabel)} Level</th>
+                <th class="col-xp">${escapeHtml(skillLabel)} XP</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    players.forEach((p, i) => {
+        const rank = p.rank || (i + 1);
+        const level = p.level || p[skillKey] || 1;
+        const xp = p.xp || p[skillKey + '_xp'] || 0;
+
+        html += `<tr onclick="goToPlayer('${escapeAttr(p.name)}')">
+            <td>${renderRank(rank)}</td>
+            <td class="player-name">${escapeHtml(p.name || 'Unknown')}</td>
+            <td class="level-cell">${level}</td>
+            <td class="xp-cell col-xp">${xp.toLocaleString()}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    content.innerHTML = html;
+}
+
+// ============================================================
+// Rank Rendering
+// ============================================================
+function renderRank(rank) {
+    if (rank === 1) return '<span class="rank-cell rank-1"><span class="rank-medal">\u{1F947}</span></span>';
+    if (rank === 2) return '<span class="rank-cell rank-2"><span class="rank-medal">\u{1F948}</span></span>';
+    if (rank === 3) return '<span class="rank-cell rank-3"><span class="rank-medal">\u{1F949}</span></span>';
+    return '<span class="rank-cell">' + rank + '</span>';
+}
+
+// ============================================================
+// Compute helpers (for /leaderboard data that may not have totals)
+// ============================================================
+function computeTotalLevel(p) {
+    let total = 0;
+    const skills = ['attack', 'strength', 'defence', 'hitpoints', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking', 'smithing', 'crafting', 'fletching', 'runecrafting', 'thieving'];
+    skills.forEach(s => { total += (p[s] || 0); });
+    return total || 0;
+}
+
+function computeTotalXP(p) {
+    let total = 0;
+    const skills = ['attack', 'strength', 'defence', 'hitpoints', 'prayer', 'woodcutting', 'mining', 'fishing', 'cooking', 'smithing', 'crafting', 'fletching', 'runecrafting', 'thieving'];
+    skills.forEach(s => { total += (p[s + '_xp'] || 0); });
+    return total || p.total_xp || 0;
+}
+
+// ============================================================
+// Player Search
+// ============================================================
+function initSearch() {
+    const input = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim();
+        if (query.length < 2) {
+            results.classList.remove('open');
+            return;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchPlayers(query), 300);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            results.classList.remove('open');
+            input.blur();
+        }
+        if (e.key === 'Enter') {
+            const query = input.value.trim();
+            if (query) goToPlayer(query);
+        }
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrap')) {
+            results.classList.remove('open');
+        }
+    });
+}
+
+async function searchPlayers(query) {
+    const results = document.getElementById('search-results');
+
+    try {
+        const res = await fetch(SERVER + '/search?q=' + encodeURIComponent(query));
+        const data = await res.json();
+        const players = Array.isArray(data) ? data : (data.players || []);
+
+        if (players.length === 0) {
+            results.innerHTML = '<div class="search-no-results">No players found matching "' + escapeHtml(query) + '"</div>';
+            results.classList.add('open');
+            return;
+        }
+
+        results.innerHTML = players.slice(0, 10).map(p => {
+            const name = p.name || p.username || 'Unknown';
+            const level = p.combat_level || p.total_level || '';
+            return `<div class="search-result-item" onclick="goToPlayer('${escapeAttr(name)}')">
+                <span class="name">${escapeHtml(name)}</span>
+                <span class="meta">${level ? 'Lvl ' + level : ''}</span>
+            </div>`;
+        }).join('');
+
+        results.classList.add('open');
+    } catch {
+        results.innerHTML = '<div class="search-no-results">Search unavailable. Try again later.</div>';
+        results.classList.add('open');
+    }
+}
+
+// ============================================================
+// Navigation
+// ============================================================
+function goToPlayer(name) {
+    if (name) {
+        window.location.href = '/player/' + encodeURIComponent(name);
+    }
+}
+
+// ============================================================
+// Player Count
+// ============================================================
+async function fetchPlayerCount() {
+    try {
+        const res = await fetch(SERVER + '/player-count');
+        const data = await res.json();
+        const count = data.count || 0;
+        const badge = document.getElementById('player-count-badge');
+        const text = document.getElementById('player-count-text');
+
+        if (count > 0) {
+            text.textContent = count + ' Online';
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch {
+        // Silently fail
+    }
+}
+
+// ============================================================
+// Mobile Nav
+// ============================================================
+function toggleMobileNav() {
+    document.getElementById('nav-links').classList.toggle('mobile-open');
+}
+document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => {
+        document.getElementById('nav-links').classList.remove('mobile-open');
+    });
+});
+
+// ============================================================
+// Utilities
+// ============================================================
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function escapeAttr(str) {
+    return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// Init
+// ============================================================
+(function init() {
+    buildSkillTabs();
+    initSearch();
+    fetchPlayerCount();
+    setInterval(fetchPlayerCount, 30000);
+
+    // Check URL hash for skill
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    const validSkill = SKILLS.find(s => s.key === hash);
+    if (validSkill) {
+        selectSkill(validSkill.key);
+    } else {
+        loadHiscores('overall');
+    }
+})();
+</script>
+</body>
+</html>
