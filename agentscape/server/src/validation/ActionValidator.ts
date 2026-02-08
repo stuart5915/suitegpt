@@ -27,6 +27,7 @@ export type ActionType =
     | 'toggle_rest'
     | 'bury_bones'
     | 'pickpocket'
+    | 'emote'
     | 'chat';
 
 export interface GameAction {
@@ -176,6 +177,14 @@ export class ActionValidator {
                 } else {
                     return { valid: false, reason: 'No target specified' };
                 }
+                return { valid: true };
+            }
+
+            case 'emote': {
+                const { animId } = action.payload;
+                if (typeof animId !== 'string') return { valid: false, reason: 'Invalid emote' };
+                const VALID_EMOTES = ['wave','dance','bow','clap','think','laugh','angry','point','cry','cheer','shrug','headbang'];
+                if (!VALID_EMOTES.includes(animId)) return { valid: false, reason: 'Unknown emote' };
                 return { valid: true };
             }
 

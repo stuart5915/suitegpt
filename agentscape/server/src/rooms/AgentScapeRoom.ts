@@ -46,6 +46,10 @@ const DEMO_AGENTS = [
 export class AgentScapeRoom extends Room<GameState> {
     private map!: GameMap;
     private movementSystem!: MovementSystem;
+
+    broadcastAnim(entityType: string, entityId: string, animId: string) {
+        this.broadcast('play_anim', { entityType, entityId, animId });
+    }
     private combatSystem!: CombatSystem;
     private inventorySystem!: InventorySystem;
     private npcBehaviorSystem!: NPCBehaviorSystem;
@@ -364,8 +368,18 @@ export class AgentScapeRoom extends Room<GameState> {
 
                 const result = this.combatSystem.processCombatTick(player, npc, dtSec * COMBAT_TICK_INTERVAL, this.state);
 
-                // Broadcast hitsplats
-                result.hitsplats.forEach(h => this.broadcast('hitsplat', h));
+                // Broadcast hitsplats + combat animations
+                result.hitsplats.forEach(h => {
+                    this.broadcast('hitsplat', h);
+                    if (h.targetType === 'npc') {
+                        // Player attacked NPC — play attack on player, flinch on NPC
+                        this.broadcastAnim('player', player.sessionId, h.isSpec ? 'special_attack' : 'attack_slash');
+                        if (!h.isMiss && !npc.isDead) this.broadcastAnim('npc', h.targetId, 'flinch');
+                    } else if (h.targetType === 'player' && !h.isMiss) {
+                        // NPC attacked player — play flinch on player
+                        if (!player.isDead) this.broadcastAnim('player', h.targetId, 'flinch');
+                    }
+                });
 
                 // Process XP gains
                 result.xpGains.forEach(g => {
@@ -377,7 +391,11 @@ export class AgentScapeRoom extends Room<GameState> {
                 });
 
                 // Handle deaths
-                result.deaths.forEach(d => this.broadcast('death', d));
+                result.deaths.forEach(d => {
+                    this.broadcast('death', d);
+                    if (d.entityType === 'player') this.broadcastAnim('player', d.entityId, 'death');
+                    if (d.entityType === 'npc') this.broadcastAnim('npc', d.entityId, 'death');
+                });
             });
         }
 
@@ -389,7 +407,15 @@ export class AgentScapeRoom extends Room<GameState> {
                 if (!monster || monster.isDead) { player.combatTargetMonsterId = null; return; }
 
                 const result = this.processMonsterCombatTick(player, monster, dtSec * COMBAT_TICK_INTERVAL);
-                result.hitsplats.forEach(h => this.broadcast('hitsplat', h));
+                result.hitsplats.forEach(h => {
+                    this.broadcast('hitsplat', h);
+                    if (h.targetType === 'monster') {
+                        this.broadcastAnim('player', player.sessionId, h.isSpec ? 'special_attack' : 'attack_slash');
+                        if (!h.isMiss && !monster.isDead) this.broadcastAnim('monster', h.targetId, 'flinch');
+                    } else if (h.targetType === 'player' && !h.isMiss) {
+                        if (!player.isDead) this.broadcastAnim('player', h.targetId, 'flinch');
+                    }
+                });
                 result.xpGains.forEach(g => {
                     const levelResult = this.inventorySystem.gainXP(player, g.skill, g.amount);
                     if (levelResult.leveledUp) {
@@ -397,7 +423,11 @@ export class AgentScapeRoom extends Room<GameState> {
                         if (client) client.send('level_up', { skill: g.skill, level: levelResult.newLevel });
                     }
                 });
-                result.deaths.forEach(d => this.broadcast('death', d));
+                result.deaths.forEach(d => {
+                    this.broadcast('death', d);
+                    if (d.type === 'monster_death') this.broadcastAnim('monster', d.monsterId, 'death');
+                    if (d.type === 'player_death') this.broadcastAnim('player', d.playerId, 'death');
+                });
             });
         }
 
@@ -569,6 +599,7 @@ export class AgentScapeRoom extends Room<GameState> {
                 const result = this.inventorySystem.eatFood(player, action.payload.inventorySlot);
                 if (result) {
                     client.send('system_message', { message: `You eat food. Heals ${result.healed} HP.` });
+                    this.broadcastAnim('player', client.sessionId, 'eat');
                 }
                 break;
             }
@@ -661,6 +692,7 @@ export class AgentScapeRoom extends Room<GameState> {
                     this.questSystem.checkCollect(player, li.id);
                 });
                 this.state.lootPiles.delete(action.payload.lootId);
+                this.broadcastAnim('player', client.sessionId, 'pickup_loot');
                 break;
             }
 
@@ -683,6 +715,7 @@ export class AgentScapeRoom extends Room<GameState> {
                         client.send('system_message', { message: `Prayer level up! You are now level ${newLevel}.` });
                     }
                     client.send('system_message', { message: 'You bury the bones. +4 Prayer XP.' });
+                    this.broadcastAnim('player', client.sessionId, 'bury_bones');
                     player.dirty = true;
                 } else {
                     client.send('system_message', { message: 'You need bones to bury.' });
@@ -793,6 +826,11 @@ export class AgentScapeRoom extends Room<GameState> {
                     }
                     player.state = 'resting';
                 }
+                break;
+            }
+
+            case 'emote': {
+                this.broadcastAnim('player', client.sessionId, action.payload.animId);
                 break;
             }
 
