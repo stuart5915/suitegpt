@@ -357,7 +357,7 @@
             <div id="conn-status" class="connecting">Connecting...</div>
             <div id="death-screen"><h1>Oh dear, you are dead!</h1><p>Respawning at Town Hall...</p></div>
             <div class="game-overlay" id="quest-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F4CB; Quest Board</h2><button class="overlay-close" onclick="closeOverlay('quest-overlay')">&times;</button></div><div class="overlay-body" id="quest-board-content"></div></div></div>
-            <div class="game-overlay" id="shop-overlay"><div class="overlay-panel" style="width:600px;"><div class="overlay-header"><h2>&#x1F3EA; Marketplace</h2><button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button></div><div class="shop-coins" id="shop-coins-display">&#x1FA99; 0 Coins</div><div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div></div></div>
+            <div class="game-overlay" id="shop-overlay"><div class="overlay-panel" style="width:600px;"><div class="overlay-header"><h2>&#x1F3EA; General Store</h2><button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button></div><div class="shop-coins" id="shop-coins-display">&#x1FA99; 0 Coins</div><div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div></div></div>
             <div class="game-overlay" id="craft-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F528; Workshop &mdash; Crafting</h2><button class="overlay-close" onclick="closeOverlay('craft-overlay')">&times;</button></div><div class="overlay-body" id="craft-content"></div></div></div>
         </div>
         <div id="game-sidebar">
@@ -597,32 +597,32 @@
         // BUILDINGS (full 22 from rich client)
         // ============================================================
         const BUILDINGS = [
-            // Town Center
-            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:100,z:95,w:3,d:3,h:2.5,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
-            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:105,z:90,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
-            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:92,z:105,w:4,d:4,h:1.8,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
-            {id:'bank',name:'SUITE Bank',icon:'\u{1F3E6}',x:110,z:100,w:2.5,d:2,h:2.0,wallColor:0xD4AF37,roofColor:0xeab308,signColor:'#eab308',doorSide:'west'},
-            // Health District (NW)
+            // SUITE Castle (starter town)
+            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:94,z:86,w:3,d:3,h:2.5,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
+            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:106,z:87,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
+            {id:'bank',name:'SUITE Bank',icon:'\u{1F3E6}',x:91,z:96,w:2.5,d:2,h:2.0,wallColor:0xD4AF37,roofColor:0xeab308,signColor:'#eab308',doorSide:'south'},
+            {id:'general_store',name:'General Store',icon:'\u{1F3EA}',x:102,z:96,w:2.5,d:2,h:1.4,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'south'},
+            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:92,z:103,w:4,d:4,h:1.8,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
+            {id:'tavern',name:'Tavern',icon:'\u{1F37A}',x:106,z:103,w:2.5,d:2,h:1.5,wallColor:0xBB9966,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'north'},
+            // Health District (NW — future Ironhaven)
             {id:'health_clinic',name:'Health Clinic',icon:'\u{1F3E5}',x:65,z:60,w:3,d:2.5,h:1.8,wallColor:0xBBDDBB,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
             {id:'gym',name:'Fitness Dojo',icon:'\u{1F3CB}\uFE0F',x:75,z:70,w:2.5,d:2,h:1.5,wallColor:0xAABBAA,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'east'},
-            // Education District (N-Center)
+            // Education District (N — future Ironhaven)
             {id:'academy',name:'SUITE Academy',icon:'\u{1F3EB}',x:100,z:60,w:3.5,d:2.5,h:2.0,wallColor:0xBBCCDD,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'south'},
             {id:'library',name:'Knowledge Library',icon:'\u{1F4DA}',x:110,z:70,w:2.5,d:2,h:1.6,wallColor:0xCCBBAA,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'west'},
-            // Business District (NE)
+            // Business District (NE — future Nexus)
             {id:'exchange',name:'Trade Exchange',icon:'\u{1F4B9}',x:130,z:60,w:3,d:2.5,h:2.2,wallColor:0xDDCCAA,roofColor:0xeab308,signColor:'#eab308',doorSide:'south'},
-            {id:'marketplace',name:'Marketplace',icon:'\u{1F3EA}',x:140,z:70,w:2.5,d:2,h:1.4,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
-            // Productivity District (W-Center)
+            // Productivity District (W — future Ironhaven)
             {id:'workshop',name:'Workshop',icon:'\u{1F528}',x:65,z:90,w:3,d:2.5,h:1.8,wallColor:0xD2B48C,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
             {id:'forge',name:'The Forge',icon:'\u2699\uFE0F',x:75,z:100,w:2.5,d:2,h:1.6,wallColor:0xCC8855,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
-            // Creative District (SW)
+            // Creative District (SW — future Nexus)
             {id:'studio',name:'Creative Studio',icon:'\u{1F3A8}',x:65,z:120,w:3,d:2.5,h:1.6,wallColor:0xDDAACC,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
             {id:'gallery',name:'Art Gallery',icon:'\u{1F5BC}\uFE0F',x:75,z:130,w:2.5,d:2,h:1.4,wallColor:0xCCAABB,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
-            // Marketing District (S-Center)
+            // Marketing District (S — future Nexus)
             {id:'broadcast_tower',name:'Broadcast Tower',icon:'\u{1F4E1}',x:100,z:120,w:2,d:2,h:3.0,wallColor:0xDDAAAA,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
             {id:'ad_agency',name:'Ad Agency',icon:'\u{1F4E3}',x:110,z:130,w:2.5,d:2,h:1.4,wallColor:0xCCBB99,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
             // Home District (SE)
             {id:'farm',name:'Farm',icon:'\u{1F33E}',x:130,z:100,w:3,d:3,h:1.0,wallColor:0x8FBC8F,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'west'},
-            {id:'tavern',name:'Traveler\'s Tavern',icon:'\u{1F37A}',x:140,z:120,w:2.5,d:2,h:1.5,wallColor:0xBB9966,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'west'},
             // Zone Landmarks
             {id:'forest_outpost',name:'Forest Outpost',icon:'\u{1F332}',x:100,z:45,w:2,d:2,h:1.3,wallColor:0x6B8E23,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
             {id:'ruins_gate',name:'Ruins Gate',icon:'\u{1F3DA}\uFE0F',x:155,z:95,w:2,d:2,h:2.0,wallColor:0x8B8378,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
@@ -837,13 +837,25 @@
 
         for(let x=0;x<MAP_SIZE;x++){grid[x]=[];heightMap[x]=[];for(let z=0;z<MAP_SIZE;z++){const w=isWater(x,z),br=isBridge(x,z);if(br){grid[x][z]=3;heightMap[x][z]=0.05;}else if(w){grid[x][z]=0;heightMap[x][z]=WATER_LEVEL;}else{grid[x][z]=1;heightMap[x][z]=simpleNoise(x,z)*0.2;}}}
 
+        // SUITE Castle walls: perimeter of (86,82)-(114,108), south gate at x=99-101
+        const CASTLE={x1:86,z1:82,x2:114,z2:108};
+        for(let x=CASTLE.x1;x<=CASTLE.x2;x++)for(let z=CASTLE.z1;z<=CASTLE.z2;z++){
+            const onEdge=x===CASTLE.x1||x===CASTLE.x2||z===CASTLE.z1||z===CASTLE.z2;
+            if(onEdge){
+                if(z===CASTLE.z2&&x>=99&&x<=101){grid[x][z]=2;heightMap[x][z]=0;}// gate
+                else{grid[x][z]=0;heightMap[x][z]=0;}// wall
+            }else{
+                grid[x][z]=1;heightMap[x][z]=0;// courtyard
+            }
+        }
+
         // Pre-compute terrain colors (data only, no meshes)
         const terrainColors=[];
         const colorRng=seededRandom(42);// separate RNG for colors so chunk load order doesn't matter
         for(let x=0;x<MAP_SIZE;x++){terrainColors[x]=[];for(let z=0;z<MAP_SIZE;z++){let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const roadZ=95+Math.sin(x*0.05)*3.5;const roadX=100+Math.sin(z*0.05)*3.5;if((Math.abs(z-roadZ)<0.8&&x>55&&x<145)||(Math.abs(x-roadX)<0.8&&z>55&&z<132)){color=dirtColors[Math.floor(colorRng()*dirtColors.length)];grid[x][z]=2;}else color=getTerrainColor(x,z);}}terrainColors[x][z]=color;}}
-        // Cobblestone paving for town square
+        // Cobblestone paving for SUITE Castle courtyard
         const stoneColors=[0x8a8a8a,0x7a7a7a,0x6e6e6e,0x929292,0x848484,0x767676];
-        for(let x=87;x<=120;x++)for(let z=82;z<=110;z++){if(grid[x][z]>0&&!isWater(x,z)){terrainColors[x][z]=stoneColors[(x*7+z*13)%6];}}
+        for(let x=87;x<=113;x++)for(let z=83;z<=107;z++){if(grid[x][z]>0&&!isWater(x,z)){terrainColors[x][z]=stoneColors[(x*7+z*13)%6];}}
 
         // Pre-compute decoration positions per chunk
         const decorationsByChunk={};
@@ -859,40 +871,161 @@
         rockPositions.forEach(r=>{const k=chunkKey(Math.floor(r.x/CHUNK_SIZE),Math.floor(r.z/CHUNK_SIZE));if(!decorationsByChunk[k])decorationsByChunk[k]={trees:[],rocks:[],flowers:[]};decorationsByChunk[k].rocks.push(r);});
         flowerPositions.forEach(f=>{const k=chunkKey(Math.floor(f.x/CHUNK_SIZE),Math.floor(f.z/CHUNK_SIZE));if(!decorationsByChunk[k])decorationsByChunk[k]={trees:[],rocks:[],flowers:[]};decorationsByChunk[k].flowers.push(f);});
 
-        // Chunk system
+        // Shared geometries (created once, reused by all chunks)
+        const sharedTileGeo=new THREE.BoxGeometry(TILE_SIZE,0.3,TILE_SIZE);
+        const sharedBridgeGeo=new THREE.BoxGeometry(TILE_SIZE,0.15,TILE_SIZE);
+        const sharedTileMat=new THREE.MeshLambertMaterial({vertexColors:false});
+        const sharedBridgeMat=new THREE.MeshLambertMaterial({vertexColors:false});
+        // Shared decoration geometries
+        const sharedTrunkGeo=new THREE.CylinderGeometry(0.08,0.12,0.8,5);
+        const sharedCone0=new THREE.ConeGeometry(0.5,0.5,5);
+        const sharedCone1=new THREE.ConeGeometry(0.4,0.5,5);
+        const sharedCone2=new THREE.ConeGeometry(0.28,0.5,5);
+        const sharedLeafBall=new THREE.DodecahedronGeometry(0.45,0);
+        const sharedLeafIco=new THREE.IcosahedronGeometry(0.35,0);
+        const sharedRockGeo=new THREE.DodecahedronGeometry(0.2,0);
+        const sharedFlowerGeo=new THREE.SphereGeometry(0.06,4,4);
+        const sharedRailGeo=new THREE.BoxGeometry(0.08,0.4,0.08);
+        const sharedRailMat=new THREE.MeshLambertMaterial({color:0x5a3a1a});
+
+        // Raycast target tracking (avoids scene.traverse every frame)
+        const rayTargets=[];
+        function addRayTarget(obj){rayTargets.push(obj);}
+        function removeRayTargets(group){
+            for(let i=rayTargets.length-1;i>=0;i--){
+                let p=rayTargets[i];while(p){if(p===group){rayTargets.splice(i,1);break;}p=p.parent;}
+            }
+        }
+
+        // Chunk system — InstancedMesh terrain
         const loadedChunks={};
+        const _dummy=new THREE.Object3D();
+        const _col=new THREE.Color();
+
         function loadChunk(cx,cz){
             const k=chunkKey(cx,cz);if(loadedChunks[k])return;
             const group=new THREE.Group();group.userData.chunkKey=k;
             const x0=cx*CHUNK_SIZE,z0=cz*CHUNK_SIZE;
+
+            // Collect tile data
+            const tiles=[],bridges=[];
             for(let lx=0;lx<CHUNK_SIZE;lx++)for(let lz=0;lz<CHUNK_SIZE;lz++){
                 const x=x0+lx,z=z0+lz;if(x>=MAP_SIZE||z>=MAP_SIZE)continue;
-                if(grid[x][z]===4)continue; // Interior floors rendered by building
-                const h=heightMap[x][z],color=terrainColors[x][z];
-                const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);
-                const mat=new THREE.MeshLambertMaterial({color});
-                const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;
-                tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};group.add(tile);
+                if(grid[x][z]===4)continue;
+                const entry={x,z,h:heightMap[x][z],color:terrainColors[x][z],walkable:grid[x][z]>0};
+                if(grid[x][z]===3)bridges.push(entry);else tiles.push(entry);
             }
-            // Bridge rails in this chunk
-            [75,100,125].forEach(bx=>{for(let x=bx-3;x<=bx+3;x++){if(x<x0||x>=x0+CHUNK_SIZE)return;for(const s of[-1,1]){const rz2=49+Math.sin(x*0.06)*5,rr=Math.round(rz2+s*3);if(rr>=z0&&rr<z0+CHUNK_SIZE&&rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));r.position.set(x,0.25,rr);r.castShadow=true;group.add(r);}}}});
-            // Decorations in this chunk
+
+            // Regular tiles — one InstancedMesh
+            if(tiles.length>0){
+                const im=new THREE.InstancedMesh(sharedTileGeo,sharedTileMat,tiles.length);
+                im.receiveShadow=true;
+                im.userData={type:'terrain',tileMap:tiles};
+                for(let i=0;i<tiles.length;i++){
+                    _dummy.position.set(tiles[i].x,tiles[i].h-0.15,tiles[i].z);
+                    _dummy.updateMatrix();im.setMatrixAt(i,_dummy.matrix);
+                    _col.set(tiles[i].color);im.setColorAt(i,_col);
+                }
+                im.instanceMatrix.needsUpdate=true;
+                if(im.instanceColor)im.instanceColor.needsUpdate=true;
+                group.add(im);addRayTarget(im);
+            }
+
+            // Bridge tiles — separate InstancedMesh (thinner)
+            if(bridges.length>0){
+                const bm=new THREE.InstancedMesh(sharedBridgeGeo,sharedBridgeMat,bridges.length);
+                bm.receiveShadow=true;
+                bm.userData={type:'terrain',tileMap:bridges};
+                for(let i=0;i<bridges.length;i++){
+                    _dummy.position.set(bridges[i].x,bridges[i].h-0.15,bridges[i].z);
+                    _dummy.updateMatrix();bm.setMatrixAt(i,_dummy.matrix);
+                    _col.set(bridges[i].color);bm.setColorAt(i,_col);
+                }
+                bm.instanceMatrix.needsUpdate=true;
+                if(bm.instanceColor)bm.instanceColor.needsUpdate=true;
+                group.add(bm);addRayTarget(bm);
+            }
+
+            // Bridge rails (few per chunk, keep as individual)
+            [75,100,125].forEach(bx=>{for(let x=bx-3;x<=bx+3;x++){if(x<x0||x>=x0+CHUNK_SIZE)return;for(const s of[-1,1]){const rz2=49+Math.sin(x*0.06)*5,rr=Math.round(rz2+s*3);if(rr>=z0&&rr<z0+CHUNK_SIZE&&rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(sharedRailGeo,sharedRailMat);r.position.set(x,0.25,rr);r.castShadow=true;group.add(r);}}}});
+
+            // Decorations — InstancedMesh batches
             const decs=decorationsByChunk[k];
             if(decs){
-                decs.trees.forEach(t=>{const g2=new THREE.Group();const h2=heightMap[t.x][t.z];const trunkH=0.6+Math.random()*0.4;
-                    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,trunkH,5),new THREE.MeshLambertMaterial({color:0x6B4226}));trunk.position.y=trunkH/2;trunk.castShadow=true;g2.add(trunk);
-                    if(t.v===0){[0.5,0.4,0.28].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.5,5),new THREE.MeshLambertMaterial({color:[0x2d5a1e,0x3a6e28,0x468032][i]}));c.position.y=trunkH+0.15+i*0.35;c.castShadow=true;g2.add(c);});}
-                    else if(t.v===1){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.45,0),new THREE.MeshLambertMaterial({color:0x3a8030}));l.position.y=trunkH+0.35;l.castShadow=true;g2.add(l);}
-                    else{const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0x2a6a20}));b.position.y=trunkH+0.2;b.castShadow=true;g2.add(b);}
-                    g2.position.set(t.x,h2,t.z);group.add(g2);});
-                decs.rocks.forEach(r=>{const m=new THREE.Mesh(new THREE.DodecahedronGeometry(r.size,0),new THREE.MeshLambertMaterial({color:r.rc}));m.position.set(r.x+r.ox,heightMap[r.x][r.z]+0.1,r.z+r.oz);m.rotation.set(r.rx,r.ry,r.rzr);m.castShadow=true;group.add(m);});
-                decs.flowers.forEach(f=>{const m=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:f.color}));m.position.set(f.x+f.ox,heightMap[f.x][f.z]+0.15,f.z+f.oz);group.add(m);});
+                // Trees: batch trunks + canopies by variant
+                if(decs.trees.length>0){
+                    // Trunk batch
+                    const trunkIM=new THREE.InstancedMesh(sharedTrunkGeo,new THREE.MeshLambertMaterial({color:0x6B4226}),decs.trees.length);
+                    trunkIM.castShadow=true;
+                    decs.trees.forEach((t,i)=>{
+                        const h2=heightMap[t.x][t.z];
+                        _dummy.position.set(t.x,h2+0.4,t.z);_dummy.scale.set(1,1,1);
+                        _dummy.updateMatrix();trunkIM.setMatrixAt(i,_dummy.matrix);
+                    });
+                    trunkIM.instanceMatrix.needsUpdate=true;group.add(trunkIM);
+
+                    // Canopies by variant type
+                    const v0=decs.trees.filter(t=>t.v===0),v1=decs.trees.filter(t=>t.v===1),v2=decs.trees.filter(t=>t.v===2);
+                    // Variant 0: 3-layer cones
+                    if(v0.length>0){
+                        [[sharedCone0,0x2d5a1e,0.55],[sharedCone1,0x3a6e28,0.9],[sharedCone2,0x468032,1.25]].forEach(([geo,col,yOff])=>{
+                            const cm=new THREE.InstancedMesh(geo,new THREE.MeshLambertMaterial({color:col}),v0.length);
+                            cm.castShadow=true;
+                            v0.forEach((t,i)=>{_dummy.position.set(t.x,heightMap[t.x][t.z]+yOff,t.z);_dummy.scale.set(1,1,1);_dummy.updateMatrix();cm.setMatrixAt(i,_dummy.matrix);});
+                            cm.instanceMatrix.needsUpdate=true;group.add(cm);
+                        });
+                    }
+                    // Variant 1: round canopy
+                    if(v1.length>0){
+                        const lm=new THREE.InstancedMesh(sharedLeafBall,new THREE.MeshLambertMaterial({color:0x3a8030}),v1.length);
+                        lm.castShadow=true;
+                        v1.forEach((t,i)=>{_dummy.position.set(t.x,heightMap[t.x][t.z]+0.75,t.z);_dummy.scale.set(1,1,1);_dummy.updateMatrix();lm.setMatrixAt(i,_dummy.matrix);});
+                        lm.instanceMatrix.needsUpdate=true;group.add(lm);
+                    }
+                    // Variant 2: icosphere canopy
+                    if(v2.length>0){
+                        const im2=new THREE.InstancedMesh(sharedLeafIco,new THREE.MeshLambertMaterial({color:0x2a6a20}),v2.length);
+                        im2.castShadow=true;
+                        v2.forEach((t,i)=>{_dummy.position.set(t.x,heightMap[t.x][t.z]+0.6,t.z);_dummy.scale.set(1,1,1);_dummy.updateMatrix();im2.setMatrixAt(i,_dummy.matrix);});
+                        im2.instanceMatrix.needsUpdate=true;group.add(im2);
+                    }
+                }
+                // Rocks — batch by color
+                if(decs.rocks.length>0){
+                    const byColor={};
+                    decs.rocks.forEach(r=>{const c=r.rc;if(!byColor[c])byColor[c]=[];byColor[c].push(r);});
+                    Object.entries(byColor).forEach(([col,rocks])=>{
+                        const rm=new THREE.InstancedMesh(sharedRockGeo,new THREE.MeshLambertMaterial({color:parseInt(col)}),rocks.length);
+                        rm.castShadow=true;
+                        rocks.forEach((r,i)=>{
+                            _dummy.position.set(r.x+r.ox,heightMap[r.x][r.z]+0.1,r.z+r.oz);
+                            _dummy.rotation.set(r.rx,r.ry,r.rzr);_dummy.scale.set(r.size/0.2,r.size/0.2,r.size/0.2);
+                            _dummy.updateMatrix();rm.setMatrixAt(i,_dummy.matrix);
+                            _dummy.rotation.set(0,0,0);_dummy.scale.set(1,1,1);
+                        });
+                        rm.instanceMatrix.needsUpdate=true;group.add(rm);
+                    });
+                }
+                // Flowers — batch by color
+                if(decs.flowers.length>0){
+                    const byColor={};
+                    decs.flowers.forEach(f=>{const c=f.color;if(!byColor[c])byColor[c]=[];byColor[c].push(f);});
+                    Object.entries(byColor).forEach(([col,flowers])=>{
+                        const fm=new THREE.InstancedMesh(sharedFlowerGeo,new THREE.MeshLambertMaterial({color:parseInt(col)}),flowers.length);
+                        flowers.forEach((f,i)=>{
+                            _dummy.position.set(f.x+f.ox,heightMap[f.x][f.z]+0.15,f.z+f.oz);_dummy.updateMatrix();
+                            fm.setMatrixAt(i,_dummy.matrix);
+                        });
+                        fm.instanceMatrix.needsUpdate=true;group.add(fm);
+                    });
+                }
             }
             scene.add(group);loadedChunks[k]=group;
         }
         function unloadChunk(cx,cz){
             const k=chunkKey(cx,cz);const group=loadedChunks[k];if(!group)return;
-            group.traverse(c=>{if(c.isMesh){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();}});
+            removeRayTargets(group);
+            group.traverse(c=>{if(c.isMesh||c.isInstancedMesh){if(c.geometry&&c.geometry!==sharedTileGeo&&c.geometry!==sharedBridgeGeo&&c.geometry!==sharedTrunkGeo&&c.geometry!==sharedCone0&&c.geometry!==sharedCone1&&c.geometry!==sharedCone2&&c.geometry!==sharedLeafBall&&c.geometry!==sharedLeafIco&&c.geometry!==sharedRockGeo&&c.geometry!==sharedFlowerGeo&&c.geometry!==sharedRailGeo)c.geometry.dispose();if(c.material&&c.material!==sharedTileMat&&c.material!==sharedBridgeMat&&c.material!==sharedRailMat)c.material.dispose();}});
             scene.remove(group);delete loadedChunks[k];
         }
         let lastChunkX=-999,lastChunkZ=-999;
@@ -922,7 +1055,7 @@
         const FLOOR_COLORS={
             town_hall:0x6B4226, arena:0xC2B280, bank:0xCCCCCC, health_clinic:0x8B7355,
             gym:0x7a6548, academy:0x8B6914, library:0x6B4226, exchange:0x8a8a8a,
-            marketplace:0x8B7355, workshop:0x777777, forge:0x555555, studio:0xBB9966,
+            general_store:0x8B7355, workshop:0x777777, forge:0x555555, studio:0xBB9966,
             gallery:0xDDDDDD, broadcast_tower:0x666666, ad_agency:0x8B7355,
             farm:0x8B7355, tavern:0x5a3a1a, forest_outpost:0x6B8E23,
             ruins_gate:0x6e6e6e, deep_entrance:0x2a1a3a
@@ -978,7 +1111,7 @@
                 {type:'box',w:1.5,h:0.5,d:0.3,y:0.25,x:0,z:0,color:0x8B7355},// trading counter
                 {type:'box',w:0.25,h:0.05,d:0.15,y:0.53,x:0.3,z:0,color:0xBB9966} // ledger
             ],
-            marketplace:[
+            general_store:[
                 {type:'box',w:0.35,h:0.35,d:0.35,y:0.17,x:-0.4,z:-0.3,color:0x8B6914},// crate 1
                 {type:'box',w:0.3,h:0.3,d:0.3,y:0.5,x:-0.4,z:-0.3,color:0x7a5c12},// crate 2 stacked
                 {type:'cyl',r:0.18,h:0.4,y:0.2,x:0.4,z:0.2,color:0x5a3a1a} // barrel
@@ -1203,14 +1336,77 @@
 
             group.position.set(bData.x,baseH,bData.z);
             group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;if(!c.userData.type)c.userData.type='building';}});
-            scene.add(group);
+            scene.add(group);addRayTarget(group);
         }
         BUILDINGS.forEach(b=>createNamedBuilding(b));
 
         // ============================================================
-        // TOWN SQUARE PROPS
+        // SUITE CASTLE WALLS
         // ============================================================
-        // Central Fountain at (103, 100)
+        (function buildCastleWalls(){
+            const wallColor=0xE8D4A8, wallDark=0xC4B08A, towerColor=0xD4C098, battlementColor=0xCCBC8C;
+            const wallH=2.2, wallThick=0.5, battleH=0.6;
+            const cx1=CASTLE.x1,cz1=CASTLE.z1,cx2=CASTLE.x2,cz2=CASTLE.z2;
+            const wallMat=new THREE.MeshLambertMaterial({color:wallColor});
+            const wallDarkMat=new THREE.MeshLambertMaterial({color:wallDark});
+            const towerMat=new THREE.MeshLambertMaterial({color:towerColor});
+            const battleMat=new THREE.MeshLambertMaterial({color:battlementColor});
+            const castleGroup=new THREE.Group();
+
+            // North wall (full width)
+            const nLen=cx2-cx1+1;
+            const nWall=new THREE.Mesh(new THREE.BoxGeometry(nLen,wallH,wallThick),wallMat);
+            nWall.position.set((cx1+cx2)/2,wallH/2,cz1);nWall.castShadow=true;castleGroup.add(nWall);
+            // North battlements
+            for(let bx=cx1;bx<=cx2;bx+=2){const b=new THREE.Mesh(new THREE.BoxGeometry(0.6,battleH,wallThick+0.1),battleMat);b.position.set(bx,wallH+battleH/2,cz1);b.castShadow=true;castleGroup.add(b);}
+
+            // South wall (split for gate at x=99-101)
+            const sLeftLen=99-cx1;
+            const sRightLen=cx2-101;
+            if(sLeftLen>0){const sw=new THREE.Mesh(new THREE.BoxGeometry(sLeftLen,wallH,wallThick),wallMat);sw.position.set(cx1+sLeftLen/2,wallH/2,cz2);sw.castShadow=true;castleGroup.add(sw);
+            for(let bx=cx1;bx<99;bx+=2){const b=new THREE.Mesh(new THREE.BoxGeometry(0.6,battleH,wallThick+0.1),battleMat);b.position.set(bx,wallH+battleH/2,cz2);b.castShadow=true;castleGroup.add(b);}}
+            if(sRightLen>0){const sw=new THREE.Mesh(new THREE.BoxGeometry(sRightLen,wallH,wallThick),wallMat);sw.position.set(101+sRightLen/2,wallH/2,cz2);sw.castShadow=true;castleGroup.add(sw);
+            for(let bx=102;bx<=cx2;bx+=2){const b=new THREE.Mesh(new THREE.BoxGeometry(0.6,battleH,wallThick+0.1),battleMat);b.position.set(bx,wallH+battleH/2,cz2);b.castShadow=true;castleGroup.add(b);}}
+            // Gate arch
+            const gateArch=new THREE.Mesh(new THREE.BoxGeometry(3.2,0.4,wallThick+0.15),wallDarkMat);gateArch.position.set(100,wallH-0.2,cz2);gateArch.castShadow=true;castleGroup.add(gateArch);
+            // Gate pillars
+            const gpGeo=new THREE.BoxGeometry(0.5,wallH+0.5,wallThick+0.15);
+            const gp1=new THREE.Mesh(gpGeo,wallDarkMat);gp1.position.set(98.7,(wallH+0.5)/2,cz2);gp1.castShadow=true;castleGroup.add(gp1);
+            const gp2=new THREE.Mesh(gpGeo,wallDarkMat);gp2.position.set(101.3,(wallH+0.5)/2,cz2);gp2.castShadow=true;castleGroup.add(gp2);
+
+            // West wall
+            const wLen=cz2-cz1+1;
+            const wWall=new THREE.Mesh(new THREE.BoxGeometry(wallThick,wallH,wLen),wallMat);
+            wWall.position.set(cx1,wallH/2,(cz1+cz2)/2);wWall.castShadow=true;castleGroup.add(wWall);
+            for(let bz=cz1;bz<=cz2;bz+=2){const b=new THREE.Mesh(new THREE.BoxGeometry(wallThick+0.1,battleH,0.6),battleMat);b.position.set(cx1,wallH+battleH/2,bz);b.castShadow=true;castleGroup.add(b);}
+
+            // East wall
+            const eWall=new THREE.Mesh(new THREE.BoxGeometry(wallThick,wallH,wLen),wallMat);
+            eWall.position.set(cx2,wallH/2,(cz1+cz2)/2);eWall.castShadow=true;castleGroup.add(eWall);
+            for(let bz=cz1;bz<=cz2;bz+=2){const b=new THREE.Mesh(new THREE.BoxGeometry(wallThick+0.1,battleH,0.6),battleMat);b.position.set(cx2,wallH+battleH/2,bz);b.castShadow=true;castleGroup.add(b);}
+
+            // Corner towers (4 cylindrical towers)
+            const towerR=0.8,towerH=3.2;
+            const tGeo=new THREE.CylinderGeometry(towerR,towerR+0.1,towerH,8);
+            const capGeo=new THREE.ConeGeometry(towerR+0.2,1.2,8);
+            [[cx1,cz1],[cx2,cz1],[cx1,cz2],[cx2,cz2]].forEach(([tx,tz])=>{
+                const t=new THREE.Mesh(tGeo,towerMat);t.position.set(tx,towerH/2,tz);t.castShadow=true;castleGroup.add(t);
+                const cap=new THREE.Mesh(capGeo,new THREE.MeshLambertMaterial({color:0x8b5cf6}));cap.position.set(tx,towerH+0.6,tz);cap.castShadow=true;castleGroup.add(cap);
+            });
+
+            // SUITE banner above gate
+            const bannerPole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,1.5,4),new THREE.MeshLambertMaterial({color:0x5a3a1a}));
+            bannerPole.position.set(100,wallH+1,cz2);castleGroup.add(bannerPole);
+            const banner=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.8,0.03),new THREE.MeshLambertMaterial({color:0x8b5cf6}));
+            banner.position.set(100,wallH+1.2,cz2+0.3);castleGroup.add(banner);
+
+            scene.add(castleGroup);
+        })();
+
+        // ============================================================
+        // CASTLE COURTYARD PROPS
+        // ============================================================
+        // Central Fountain at (100, 91)
         const fountainGroup=new THREE.Group();
         const fountainBase=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.4,0.4,16),new THREE.MeshLambertMaterial({color:0x888888}));
         fountainBase.position.y=0.2;fountainBase.castShadow=true;fountainGroup.add(fountainBase);
@@ -1225,17 +1421,19 @@
             const drop=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),new THREE.MeshBasicMaterial({color:0x88ccff,transparent:true,opacity:0.7}));
             drop.position.y=1.6;fountainGroup.add(drop);fountainSpray.push({mesh:drop,angle:i*(Math.PI*2/12),speed:0.8+Math.random()*0.4});
         }
-        fountainGroup.position.set(103,heightMap[103]?heightMap[103][100]||0:0,100);scene.add(fountainGroup);
-        // Block 3x3 around fountain
-        for(let fx=102;fx<=104;fx++)for(let fz=99;fz<=101;fz++)if(fx>=0&&fx<MAP_SIZE&&fz>=0&&fz<MAP_SIZE)grid[fx][fz]=0;
+        fountainGroup.position.set(100,0,91);scene.add(fountainGroup);
+        // Block 3x3 around fountain (centered at 100,91)
+        for(let fx=99;fx<=101;fx++)for(let fz=90;fz<=92;fz++)if(fx>=0&&fx<MAP_SIZE&&fz>=0&&fz<MAP_SIZE)grid[fx][fz]=0;
 
         // Lampposts (12 total)
         const lampposts=[];
         const lampPositions=[
-            // 6 along x=100 (N-S road)
-            {x:100,z:84},{x:100,z:88},{x:100,z:92},{x:100,z:98},{x:100,z:104},{x:100,z:108},
-            // 6 along z=95 (E-W road)
-            {x:89,z:95},{x:93,z:95},{x:97,z:95},{x:107,z:95},{x:113,z:95},{x:118,z:95}
+            // 4 inside castle courtyard
+            {x:88,z:95},{x:112,z:95},{x:96,z:99},{x:104,z:99},
+            // 4 along south road from gate
+            {x:100,z:112},{x:100,z:118},{x:100,z:124},{x:100,z:130},
+            // 4 along roads outside castle
+            {x:80,z:95},{x:120,z:95},{x:100,z:76},{x:100,z:70}
         ];
         lampPositions.forEach(lp=>{
             const g=new THREE.Group();
@@ -1250,9 +1448,9 @@
             lampposts.push({group:g,glow:glow,light:light});
         });
 
-        // Market Stalls (4 near marketplace 137-142, 66-72)
+        // Market Stalls (inside castle courtyard)
         const stallColors=[0xcc3333,0x3366cc,0xccaa33,0x33aa55];
-        [{x:138,z:67},{x:141,z:67},{x:138,z:71},{x:141,z:71}].forEach((sp,i)=>{
+        [{x:97,z:91},{x:100,z:91},{x:103,z:91},{x:97,z:93}].forEach((sp,i)=>{
             const g=new THREE.Group();
             const counter=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6),new THREE.MeshLambertMaterial({color:0x8B6914}));
             counter.position.y=0.3;counter.castShadow=true;g.add(counter);
@@ -1262,19 +1460,16 @@
             [{x:-0.55,z:-0.3},{x:0.55,z:-0.3},{x:-0.55,z:0.3},{x:0.55,z:0.3}].forEach(pp=>{
                 const p=new THREE.Mesh(poleGeo,poleMat);p.position.set(pp.x,0.65,pp.z);g.add(p);
             });
-            const h=heightMap[Math.min(sp.x,MAP_SIZE-1)]?heightMap[Math.min(sp.x,MAP_SIZE-1)][Math.min(sp.z,MAP_SIZE-1)]||0:0;
-            g.position.set(sp.x,h,sp.z);scene.add(g);
-            if(sp.x>=0&&sp.x<MAP_SIZE&&sp.z>=0&&sp.z<MAP_SIZE)grid[sp.x][sp.z]=0;
+            g.position.set(sp.x,0,sp.z);scene.add(g);
         });
 
-        // Crates & Barrels (15, decorative only)
+        // Crates & Barrels (decorative, around castle exterior)
         const crateBarrelPositions=[
-            {x:111,z:99,type:'crate'},{x:112,z:101,type:'barrel'},{x:109,z:102,type:'crate'},
-            {x:101,z:94,type:'barrel'},{x:99,z:96,type:'crate'},{x:102,z:97,type:'barrel'},
-            {x:93,z:104,type:'crate'},{x:91,z:106,type:'barrel'},
-            {x:106,z:89,type:'crate'},{x:104,z:91,type:'barrel'},
+            {x:100,z:110,type:'crate'},{x:101,z:111,type:'barrel'},{x:99,z:110,type:'barrel'},
+            {x:115,z:95,type:'crate'},{x:116,z:97,type:'barrel'},
+            {x:85,z:95,type:'crate'},{x:84,z:93,type:'barrel'},
             {x:66,z:91,type:'crate'},{x:67,z:89,type:'barrel'},
-            {x:139,z:69,type:'crate'},{x:140,z:72,type:'barrel'},{x:136,z:68,type:'crate'}
+            {x:131,z:99,type:'crate'},{x:132,z:101,type:'barrel'},{x:130,z:102,type:'crate'}
         ];
         crateBarrelPositions.forEach(cb=>{
             const h=heightMap[Math.min(cb.x,MAP_SIZE-1)]?heightMap[Math.min(cb.x,MAP_SIZE-1)][Math.min(cb.z,MAP_SIZE-1)]||0:0;
@@ -1545,7 +1740,7 @@
                 const bid=data.buildingId;
                 document.getElementById('skill-action-area').innerHTML='';
                 if(bid==='quest_board'){renderQuestBoard();document.getElementById('quest-overlay').classList.add('open');}
-                else if(bid==='marketplace'||bid==='exchange'){openShop();}
+                else if(bid==='general_store'||bid==='exchange'){openShop();}
                 else if(bid==='workshop'||bid==='forge'){openCrafting();}
                 else if(bid==='farm'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_harvest\')">Harvest</button>';addChat('system','You arrive at the Farm.');}
                 else if(bid==='arena'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_training\')">Train</button>';addChat('system','You enter the Arena.');}
@@ -1824,17 +2019,46 @@
         const raycasterMain=new THREE.Raycaster();
         function getViewportMouse(e){const rect=viewport.getBoundingClientRect();return new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);}
 
+        // Build combined raycast target list: terrain InstancedMeshes + entity groups
+        function getRayObjects(){
+            const objs=[...rayTargets];
+            npcMeshes.forEach(n=>objs.push(n.group));
+            monsterMeshes.forEach(m=>objs.push(m.group));
+            return objs;
+        }
+
+        // Resolve hit data — handles InstancedMesh terrain lookups and regular mesh userData
+        function resolveHit(h){
+            // InstancedMesh terrain: look up tileMap by instanceId
+            if(h.object.isInstancedMesh&&h.object.userData.type==='terrain'){
+                const tm=h.object.userData.tileMap;
+                if(tm&&h.instanceId!=null&&h.instanceId<tm.length){
+                    const t=tm[h.instanceId];
+                    return{type:'tile',tileX:t.x,tileZ:t.z,walkable:t.walkable};
+                }
+                return null;
+            }
+            // Regular mesh with userData
+            const ud=h.object.userData;
+            if(ud.type==='npc')return{type:'npc',npcId:ud.npcId};
+            if(ud.type==='monster')return{type:'monster',monsterId:ud.monsterId};
+            if(ud.type==='building')return{type:'building',buildingId:ud.buildingId};
+            if(ud.type==='tile')return{type:'tile',tileX:ud.tileX,tileZ:ud.tileZ,walkable:ud.walkable};
+            if(ud.tileX!==undefined)return{type:'tile',tileX:ud.tileX,tileZ:ud.tileZ,walkable:ud.walkable};
+            return null;
+        }
+
         renderer.domElement.addEventListener('click',e=>{
             if(e.target!==renderer.domElement)return;
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
-            const allObj=[];scene.traverse(o=>{if(o.isMesh)allObj.push(o);});
-            const hits=raycasterMain.intersectObjects(allObj,false);
+            const hits=raycasterMain.intersectObjects(getRayObjects(),true);
             let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null;
             for(const h of hits){
-                if(h.object.userData.type==='npc'&&!hitNPC)hitNPC=h.object.userData.npcId;
-                if(h.object.userData.type==='monster'&&!hitMonster)hitMonster=h.object.userData.monsterId;
-                if(h.object.userData.type==='building'&&!hitBld)hitBld=h.object.userData.buildingId;
-                if(h.object.userData.tileX!==undefined&&!hitTile)hitTile=h.object.userData;
+                const r=resolveHit(h);if(!r)continue;
+                if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
+                if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
+                if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
+                if(r.type==='tile'&&!hitTile)hitTile=r;
             }
             if(hitMonster){if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
             if(hitNPC){if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
@@ -1845,14 +2069,14 @@
         renderer.domElement.addEventListener('contextmenu',e=>{
             e.preventDefault();
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
-            const allObj=[];scene.traverse(o=>{if(o.isMesh)allObj.push(o);});
-            const hits=raycasterMain.intersectObjects(allObj,false);
+            const hits=raycasterMain.intersectObjects(getRayObjects(),true);
             let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null;
             for(const h of hits){
-                if(h.object.userData.type==='npc'&&!hitNPC)hitNPC=h.object.userData.npcId;
-                if(h.object.userData.type==='monster'&&!hitMonster)hitMonster=h.object.userData.monsterId;
-                if(h.object.userData.type==='building'&&!hitBld)hitBld=h.object.userData.buildingId;
-                if(h.object.userData.tileX!==undefined&&!hitTile)hitTile=h.object.userData;
+                const r=resolveHit(h);if(!r)continue;
+                if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
+                if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
+                if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
+                if(r.type==='tile'&&!hitTile)hitTile=r;
             }
             if(hitMonster){
                 const mon=monsterMeshes.get(hitMonster);
@@ -1870,13 +2094,13 @@
 
         renderer.domElement.addEventListener('mousemove',e=>{
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
-            const allObj=[];scene.traverse(o=>{if(o.isMesh)allObj.push(o);});
-            const hits=raycasterMain.intersectObjects(allObj,false);
+            const hits=raycasterMain.intersectObjects(getRayObjects(),true);
             highlight.visible=false;let cursorSet=false;
             for(const h of hits){
-                if(h.object.userData.type==='npc'||h.object.userData.type==='monster'){document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
-                if(h.object.userData.type==='building'){document.body.style.cursor='pointer';cursorSet=true;break;}
-                if(h.object.userData.tileX!==undefined){const tx=h.object.userData.tileX,tz=h.object.userData.tileZ;highlight.position.set(tx,heightMap[tx][tz]+0.05,tz);highlight.visible=true;highlightMat.color.set(h.object.userData.walkable?0xffff00:0xff4444);highlightMat.opacity=h.object.userData.walkable?0.3:0.2;document.body.style.cursor=h.object.userData.walkable?'pointer':'not-allowed';cursorSet=true;break;}
+                const r=resolveHit(h);if(!r)continue;
+                if(r.type==='npc'||r.type==='monster'){document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
+                if(r.type==='building'){document.body.style.cursor='pointer';cursorSet=true;break;}
+                if(r.type==='tile'){const tx=r.tileX,tz=r.tileZ;highlight.position.set(tx,heightMap[tx][tz]+0.05,tz);highlight.visible=true;highlightMat.color.set(r.walkable?0xffff00:0xff4444);highlightMat.opacity=r.walkable?0.3:0.2;document.body.style.cursor=r.walkable?'pointer':'not-allowed';cursorSet=true;break;}
             }
             if(!cursorSet)document.body.style.cursor='default';
         });
@@ -1901,7 +2125,7 @@
         // Pre-render minimap terrain to offscreen canvas (1px per tile)
         const minimapBG=document.createElement('canvas');minimapBG.width=MAP_SIZE;minimapBG.height=MAP_SIZE;
         const bgctx=minimapBG.getContext('2d');
-        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===4)bgctx.fillStyle='#8B6914';else if(x>=87&&x<=120&&z>=82&&z<=110&&grid[x][z]>0&&!isWater(x,z))bgctx.fillStyle='#808080';else if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const inCastle=x>=CASTLE.x1&&x<=CASTLE.x2&&z>=CASTLE.z1&&z<=CASTLE.z2;const onCastleEdge=inCastle&&(x===CASTLE.x1||x===CASTLE.x2||z===CASTLE.z1||z===CASTLE.z2);if(grid[x][z]===4)bgctx.fillStyle='#8B6914';else if(onCastleEdge&&grid[x][z]===0)bgctx.fillStyle='#C4B08A';else if(inCastle&&grid[x][z]>0)bgctx.fillStyle='#808080';else if(grid[x][z]===3)bgctx.fillStyle='#8B6914';else if(isWater(x,z))bgctx.fillStyle='#2288aa';else if(grid[x][z]===0)bgctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)bgctx.fillStyle='#8B7355';else bgctx.fillStyle='#4a7c3f';bgctx.fillRect(x,z,1,1);}
         function drawMinimap(){
             const s=200/MAP_SIZE;mctx.clearRect(0,0,200,200);
             mctx.drawImage(minimapBG,0,0,200,200);

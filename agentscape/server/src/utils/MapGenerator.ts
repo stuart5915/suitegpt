@@ -356,7 +356,36 @@ export function generateMap(): GameMap {
         }
     }
 
-    // Pass 5: Ensure boss spawn areas are walkable
+    // Pass 5: SUITE Castle walls — perimeter of (86,82)-(114,108), gate at south (x=99-101,z=108)
+    const CASTLE = { x1: 86, z1: 82, x2: 114, z2: 108 };
+    for (let x = CASTLE.x1; x <= CASTLE.x2; x++) {
+        for (let z = CASTLE.z1; z <= CASTLE.z2; z++) {
+            const onEdge = x === CASTLE.x1 || x === CASTLE.x2 || z === CASTLE.z1 || z === CASTLE.z2;
+            if (onEdge) {
+                // South gate gap: x=99-101 on z=108
+                if (z === CASTLE.z2 && x >= 99 && x <= 101) {
+                    grid[x][z] = 2; // path through gate
+                    heightMap[x][z] = 0;
+                } else {
+                    grid[x][z] = 0; // wall = unwalkable
+                    heightMap[x][z] = 0;
+                }
+            } else {
+                // Interior courtyard — make walkable if not already a building
+                if (grid[x][z] === 0 && !BUILDINGS.some(b => {
+                    if (b.type === 'pedestal') return false;
+                    const cx2 = Math.floor(b.x), cz2 = Math.floor(b.z);
+                    const hw2 = Math.ceil(b.w / 2), hd2 = Math.ceil(b.d / 2);
+                    return x >= cx2 - hw2 && x <= cx2 + hw2 && z >= cz2 - hd2 && z <= cz2 + hd2;
+                })) {
+                    grid[x][z] = 1; // courtyard grass/cobblestone
+                    heightMap[x][z] = 0;
+                }
+            }
+        }
+    }
+
+    // Pass 6: Ensure boss spawn areas are walkable
     for (const boss of Object.values(BOSSES)) {
         const bx = Math.floor(boss.spawnPos.x);
         const bz = Math.floor(boss.spawnPos.z);

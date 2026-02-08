@@ -132,7 +132,7 @@ export const DISTRICTS: Record<string, DistrictDef> = {
 };
 
 // Town center (shared area between districts)
-export const TOWN_CENTER = { x1: 87, z1: 82, x2: 120, z2: 110 };
+export const TOWN_CENTER = { x1: 86, z1: 82, x2: 114, z2: 108 };
 
 // ============================================================
 // Items — All equipment, consumables, materials, drops
@@ -587,11 +587,13 @@ export interface BuildingDef {
 }
 
 export const BUILDINGS: BuildingDef[] = [
-    // === TOWN CENTER ===
-    { id: 'town_hall', name: 'Town Hall', icon: '\u{1F3DB}\uFE0F', x: 100, z: 95, w: 3, d: 3, h: 2.5, doorSide: 'south', district: 'center' },
-    { id: 'quest_board', name: 'Quest Board', icon: '\u{1F4CB}', x: 105, z: 90, w: 1, d: 1, h: 1.2, doorSide: 'south', type: 'pedestal', district: 'center' },
-    { id: 'arena', name: 'Arena', icon: '\u2694\uFE0F', x: 92, z: 105, w: 4, d: 4, h: 1.8, doorSide: 'north', district: 'center' },
-    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 110, z: 100, w: 2.5, d: 2, h: 2.0, doorSide: 'west', district: 'center' },
+    // === SUITE CASTLE (starter town) ===
+    { id: 'town_hall', name: 'Town Hall', icon: '\u{1F3DB}\uFE0F', x: 94, z: 86, w: 3, d: 3, h: 2.5, doorSide: 'south', district: 'castle' },
+    { id: 'quest_board', name: 'Quest Board', icon: '\u{1F4CB}', x: 106, z: 87, w: 1, d: 1, h: 1.2, doorSide: 'south', type: 'pedestal', district: 'castle' },
+    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 91, z: 96, w: 2.5, d: 2, h: 2.0, doorSide: 'south', district: 'castle' },
+    { id: 'general_store', name: 'General Store', icon: '\u{1F3EA}', x: 102, z: 96, w: 2.5, d: 2, h: 1.4, doorSide: 'south', district: 'castle' },
+    { id: 'arena', name: 'Arena', icon: '\u2694\uFE0F', x: 92, z: 103, w: 4, d: 4, h: 1.8, doorSide: 'north', district: 'castle' },
+    { id: 'tavern', name: 'Tavern', icon: '\u{1F37A}', x: 106, z: 103, w: 2.5, d: 2, h: 1.5, doorSide: 'north', district: 'castle' },
 
     // === HEALTH DISTRICT (NW) ===
     { id: 'health_clinic', name: 'Health Clinic', icon: '\u{1F3E5}', x: 65, z: 60, w: 3, d: 2.5, h: 1.8, doorSide: 'south', district: 'health' },
@@ -603,7 +605,6 @@ export const BUILDINGS: BuildingDef[] = [
 
     // === BUSINESS DISTRICT (NE) ===
     { id: 'exchange', name: 'Trade Exchange', icon: '\u{1F4B9}', x: 130, z: 60, w: 3, d: 2.5, h: 2.2, doorSide: 'south', district: 'business' },
-    { id: 'marketplace', name: 'Marketplace', icon: '\u{1F3EA}', x: 140, z: 70, w: 2.5, d: 2, h: 1.4, doorSide: 'west', district: 'business' },
 
     // === PRODUCTIVITY DISTRICT (W-CENTER) ===
     { id: 'workshop', name: 'Workshop', icon: '\u{1F528}', x: 65, z: 90, w: 3, d: 2.5, h: 1.8, doorSide: 'east', district: 'productivity' },
@@ -619,7 +620,6 @@ export const BUILDINGS: BuildingDef[] = [
 
     // === HOME DISTRICT (SE) ===
     { id: 'farm', name: 'Farm', icon: '\u{1F33E}', x: 130, z: 100, w: 3, d: 3, h: 1.0, doorSide: 'west', district: 'home' },
-    { id: 'tavern', name: 'Traveler\'s Tavern', icon: '\u{1F37A}', x: 140, z: 120, w: 2.5, d: 2, h: 1.5, doorSide: 'west', district: 'home' },
 
     // === ZONE LANDMARKS ===
     { id: 'forest_outpost', name: 'Forest Outpost', icon: '\u{1F332}', x: 100, z: 45, w: 2, d: 2, h: 1.3, doorSide: 'south', zone: 'the_forest' },
@@ -628,15 +628,15 @@ export const BUILDINGS: BuildingDef[] = [
 ];
 
 export const ROLE_BUILDING_WEIGHTS: Record<string, Record<string, number>> = {
-    app_builder:     { workshop: 40, forge: 20, quest_board: 15, town_hall: 10, marketplace: 8, academy: 5, arena: 2 },
-    app_refiner:     { workshop: 30, forge: 25, quest_board: 15, town_hall: 10, marketplace: 10, library: 5, arena: 5 },
-    content_creator: { studio: 25, gallery: 20, quest_board: 15, broadcast_tower: 15, town_hall: 10, marketplace: 10, arena: 5 },
-    growth_outreach: { broadcast_tower: 30, ad_agency: 25, marketplace: 20, quest_board: 10, town_hall: 10, arena: 5 },
+    app_builder:     { workshop: 40, forge: 20, quest_board: 15, town_hall: 10, general_store: 8, academy: 5, arena: 2 },
+    app_refiner:     { workshop: 30, forge: 25, quest_board: 15, town_hall: 10, general_store: 10, library: 5, arena: 5 },
+    content_creator: { studio: 25, gallery: 20, quest_board: 15, broadcast_tower: 15, town_hall: 10, general_store: 10, arena: 5 },
+    growth_outreach: { broadcast_tower: 30, ad_agency: 25, general_store: 20, quest_board: 10, town_hall: 10, arena: 5 },
     qa_tester:       { workshop: 30, forge: 20, quest_board: 20, arena: 15, town_hall: 10, library: 5 },
 };
 
 // ============================================================
-// Shop — Items for sale at the Marketplace
+// Shop — Items for sale at the General Store
 // ============================================================
 
 export interface ShopItemDef {
@@ -759,8 +759,8 @@ export const QUESTS: Record<string, QuestDef> = {
     },
     world_tour: {
         id: 'world_tour', name: 'World Tour', difficulty: 'easy',
-        description: 'Visit the Town Hall, Workshop, Marketplace, and Arena.',
-        objectives: [{ type: 'visit', buildings: ['town_hall', 'workshop', 'marketplace', 'arena'] }],
+        description: 'Visit the Town Hall, Workshop, General Store, and Arena.',
+        objectives: [{ type: 'visit', buildings: ['town_hall', 'workshop', 'general_store', 'arena'] }],
         rewards: { coins: 100, xp: { hitpoints: 30 } },
     },
     arena_champion: {
@@ -974,7 +974,7 @@ export const AGENT_DIALOGUE: Record<string, string[]> = {
     ],
     growth_outreach: [
         "I've been spreading the word about SUITE all day.",
-        "The Marketplace is buzzing today!",
+        "The General Store is buzzing today!",
         "Growth hacking is an art form, really.",
         "More users means more credits for everyone!",
         "Have you visited the Trade Exchange? The Commerce Hub is thriving.",
