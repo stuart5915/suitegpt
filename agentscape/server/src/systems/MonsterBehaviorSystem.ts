@@ -7,7 +7,7 @@ import { MonsterSchema } from '../schema/MonsterSchema';
 import { PlayerSchema } from '../schema/PlayerSchema';
 import { GameMap } from '../utils/MapGenerator';
 import {
-    ZONES, MONSTERS, BOSSES,
+    ZONES, MONSTERS, BOSSES, BossPhase,
     MONSTER_MOVE_SPEED, MONSTER_AGGRO_RANGE, MONSTER_LEASH_RANGE, BOSS_AGGRO_RANGE,
     isInSafeZone,
 } from '../config';
@@ -31,12 +31,95 @@ export interface MonsterAbilityEvent {
     z: number;
 }
 
+export interface BossPhaseChangeEvent {
+    monsterId: string;
+    monsterName: string;
+    phaseName: string;
+    message: string;
+    attackMultiplier: number;
+    defenceMultiplier: number;
+}
+
+// Threat table for multi-player boss combat
+// Maps monster ID → { playerId → threat value }
+export type ThreatTable = Map<string, Map<string, number>>;
+
 export class MonsterBehaviorSystem {
     private map: GameMap;
     private pathfindQueue: MonsterPathfindRequest[] = [];
 
+    // Threat tables: bosses track who's dealing damage to decide targets
+    private threatTables: ThreatTable = new Map();
+
+    // Boss phase tracking: monsterId → current phase index
+    private bossPhases: Map<string, number> = new Map();
+
     constructor(map: GameMap) {
         this.map = map;
+    }
+
+    // --- Threat management ---
+
+    /** Add threat for a player hitting a boss. Called by CombatSystem on damage. */
+    addThreat(monsterId: string, playerId: string, amount: number): void {
+        if (!this.threatTables.has(monsterId)) {
+            this.threatTables.set(monsterId, new Map());
+        }
+        const table = this.threatTables.get(monsterId)!;
+        table.set(playerId, (table.get(playerId) || 0) + amount);
+    }
+
+    /** Get the player with highest threat for this monster. */
+    getTopThreatPlayer(monsterId: string, players: MapSchema<PlayerSchema>): PlayerSchema | null {
+        const table = this.threatTables.get(monsterId);
+        if (!table || table.size === 0) return null;
+
+        let topId: string | null = null;
+        let topThreat = -1;
+        table.forEach((threat, playerId) => {
+            const player = players.get(playerId);
+            if (player && !player.isDead && threat > topThreat) {
+                topThreat = threat;
+                topId = playerId;
+            }
+        });
+
+        return topId ? players.get(topId) || null : null;
+    }
+
+    /** Get all players engaged with this monster (have threat). */
+    getEngagedPlayers(monsterId: string, players: MapSchema<PlayerSchema>): PlayerSchema[] {
+        const table = this.threatTables.get(monsterId);
+        if (!table) return [];
+
+        const engaged: PlayerSchema[] = [];
+        table.forEach((_, playerId) => {
+            const player = players.get(playerId);
+            if (player && !player.isDead) engaged.push(player);
+        });
+        return engaged;
+    }
+
+    /** Remove a player from a monster's threat table (on death, disconnect, flee). */
+    removeThreat(monsterId: string, playerId: string): void {
+        const table = this.threatTables.get(monsterId);
+        if (table) {
+            table.delete(playerId);
+            if (table.size === 0) this.threatTables.delete(monsterId);
+        }
+    }
+
+    /** Clear all threat for a monster (on death, leash, respawn). */
+    clearThreat(monsterId: string): void {
+        this.threatTables.delete(monsterId);
+    }
+
+    /** Remove a player from ALL threat tables (on disconnect). */
+    removePlayerFromAllThreats(playerId: string): void {
+        this.threatTables.forEach((table, monsterId) => {
+            table.delete(playerId);
+            if (table.size === 0) this.threatTables.delete(monsterId);
+        });
     }
 
     getPathfindQueue(): MonsterPathfindRequest[] {
@@ -68,8 +151,10 @@ export class MonsterBehaviorSystem {
         }
 
         if (monster.inCombat) {
-            // Check boss abilities during combat
             if (monster.isBoss) {
+                // Check phase transitions
+                this.checkBossPhase(monster);
+                // Check boss abilities during combat
                 const abilityEvents = this.checkBossAbilities(monster, players);
                 events.push(...abilityEvents);
             }
@@ -193,6 +278,7 @@ export class MonsterBehaviorSystem {
                     monster.enrageMultiplier = 1;
                     monster.state = 'IDLE';
                     monster.stateTimer = 2 + Math.random() * 3;
+                    this.clearThreat(monster.id); // reset threat on leash
                 }
                 break;
         }
@@ -316,7 +402,9 @@ export class MonsterBehaviorSystem {
                 case 'enrage': {
                     if (!monster.enraged) {
                         monster.enraged = true;
-                        monster.enrageMultiplier = 1.5;
+                        // Stack enrage (1.5x) on top of current phase multiplier
+                        const currentPhaseMulti = this.getBossPhaseMultipliers(monster).attack;
+                        monster.enrageMultiplier = currentPhaseMulti * 1.5;
                         events.push({
                             monsterId: monster.id,
                             monsterName: monster.name,
@@ -330,9 +418,12 @@ export class MonsterBehaviorSystem {
                 }
 
                 case 'stun': {
-                    // Stun a random player in combat
-                    const target = players.get(monster.combatPlayerId || '');
-                    if (target && !target.isDead) {
+                    // Stun the highest-threat player (or random engaged player for bosses)
+                    const engaged = this.getEngagedPlayers(monster.id, players);
+                    const stunTarget = engaged.length > 0
+                        ? engaged[Math.floor(Math.random() * engaged.length)]
+                        : players.get(monster.combatPlayerId || '');
+                    if (stunTarget && !stunTarget.isDead) {
                         events.push({
                             monsterId: monster.id,
                             monsterName: monster.name,
@@ -359,6 +450,37 @@ export class MonsterBehaviorSystem {
                     // Actual spawning handled by the room after receiving event
                     break;
                 }
+
+                case 'drain': {
+                    // Drain energy from nearby players — prevents spec attacks
+                    const drainRadius = ability.radius || 4;
+                    players.forEach((player) => {
+                        if (player.isDead) return;
+                        const dist = Math.sqrt(
+                            (player.x - monster.x) ** 2 + (player.z - monster.z) ** 2
+                        );
+                        if (dist <= drainRadius) {
+                            const drainAmount = ability.damage || 20;
+                            player.energy = Math.max(0, player.energy - drainAmount);
+                            // Boss heals a fraction of drained energy
+                            if (ability.heal) {
+                                monster.hp = Math.min(monster.maxHp, monster.hp + ability.heal);
+                            }
+                        }
+                    });
+                    events.push({
+                        monsterId: monster.id,
+                        monsterName: monster.name,
+                        abilityName: ability.name,
+                        abilityType: 'drain',
+                        damage: ability.damage,
+                        heal: ability.heal,
+                        radius: ability.radius,
+                        x: monster.x,
+                        z: monster.z,
+                    });
+                    break;
+                }
             }
 
             // Only use one ability per tick
@@ -383,5 +505,100 @@ export class MonsterBehaviorSystem {
         monster.enrageMultiplier = 1;
         monster.state = 'IDLE';
         monster.stateTimer = 2 + Math.random() * 3;
+        this.clearThreat(monster.id);
+        this.resetBossPhase(monster.id);
+    }
+
+    // --- Boss phase system ---
+
+    /**
+     * Check if a boss should transition to a new phase based on HP%.
+     * Returns a phase change event if a transition occurred, null otherwise.
+     * The caller (room) should broadcast the message and apply stat multipliers.
+     */
+    checkBossPhase(monster: MonsterSchema): BossPhaseChangeEvent | null {
+        if (!monster.isBoss) return null;
+
+        const bossDef = BOSSES[monster.monsterId];
+        if (!bossDef || !bossDef.phases || bossDef.phases.length === 0) return null;
+
+        const hpPercent = (monster.hp / monster.maxHp) * 100;
+        const currentPhaseIdx = this.bossPhases.get(monster.id) || 0;
+
+        // Find the highest phase index whose threshold is >= current HP%
+        // Phases are ordered high→low threshold, so we find the last one that activates
+        let newPhaseIdx = 0;
+        for (let i = bossDef.phases.length - 1; i >= 0; i--) {
+            if (hpPercent <= bossDef.phases[i].hpThreshold) {
+                newPhaseIdx = i;
+                break;
+            }
+        }
+
+        if (newPhaseIdx > currentPhaseIdx) {
+            this.bossPhases.set(monster.id, newPhaseIdx);
+            const phase = bossDef.phases[newPhaseIdx];
+
+            // Apply phase multiplier — stacks WITH enrage
+            // enrageMultiplier = phaseAttack * (enraged ? 1.5 : 1.0)
+            const enrageBonus = monster.enraged ? 1.5 : 1.0;
+            monster.enrageMultiplier = phase.attackMultiplier * enrageBonus;
+
+            return {
+                monsterId: monster.id,
+                monsterName: monster.name,
+                phaseName: phase.name,
+                message: phase.message,
+                attackMultiplier: phase.attackMultiplier,
+                defenceMultiplier: phase.defenceMultiplier,
+            };
+        }
+
+        return null;
+    }
+
+    /** Get current phase stat multipliers for a boss. */
+    getBossPhaseMultipliers(monster: MonsterSchema): { attack: number; defence: number; speed: number } {
+        if (!monster.isBoss) return { attack: 1, defence: 1, speed: 1 };
+
+        const bossDef = BOSSES[monster.monsterId];
+        if (!bossDef || !bossDef.phases) return { attack: 1, defence: 1, speed: 1 };
+
+        const phaseIdx = this.bossPhases.get(monster.id) || 0;
+        const phase = bossDef.phases[phaseIdx];
+        if (!phase) return { attack: 1, defence: 1, speed: 1 };
+
+        return {
+            attack: phase.attackMultiplier,
+            defence: phase.defenceMultiplier,
+            speed: phase.speedMultiplier,
+        };
+    }
+
+    /** Reset boss phase tracking (on death/respawn). */
+    resetBossPhase(monsterId: string): void {
+        this.bossPhases.delete(monsterId);
+    }
+
+    // --- Pack aggro ---
+    // Find nearby same-type monsters that should join the fight
+    findPackMembers(
+        attackedMonster: MonsterSchema,
+        allMonsters: MapSchema<MonsterSchema>,
+        packRadius: number = 6,
+    ): MonsterSchema[] {
+        const pack: MonsterSchema[] = [];
+        allMonsters.forEach((other) => {
+            if (other.id === attackedMonster.id) return;
+            if (other.isDead || other.inCombat) return;
+            if (other.monsterId !== attackedMonster.monsterId) return; // same type only
+            const dist = Math.sqrt(
+                (other.x - attackedMonster.x) ** 2 + (other.z - attackedMonster.z) ** 2
+            );
+            if (dist <= packRadius) {
+                pack.push(other);
+            }
+        });
+        return pack;
     }
 }

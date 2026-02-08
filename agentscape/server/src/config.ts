@@ -217,6 +217,17 @@ export const ITEMS: Record<string, ItemDef> = {
     golem_heart:         { id: 'golem_heart', name: '404 Golem Heart', icon: '\u{1F5A4}', stackable: false, type: 'misc' },
     hallucinator_eye:    { id: 'hallucinator_eye', name: 'Hallucinator Eye', icon: '\u{1F441}\uFE0F', stackable: false, type: 'misc' },
     dragon_heart:        { id: 'dragon_heart', name: 'Dragon Heart', icon: '\u2764\uFE0F\u200D\u{1F525}', stackable: false, type: 'misc' },
+
+    // --- Craftable unique items ---
+    // NOTE for Terminal 6 (schemas): These accessories need an equipment slot system.
+    // Suggested: add 'amulet', 'ring', 'cape' to ItemDef.type and PlayerSchema equipment slots.
+    // Until then, stats are defined here ready for integration.
+    antivirus_amulet:    { id: 'antivirus_amulet', name: 'Antivirus Amulet', icon: '\u{1F48E}', stackable: false, type: 'misc', stats: { attack: 6, strength: 4, defence: 8 } },
+    firewall_ring:       { id: 'firewall_ring', name: 'Firewall Ring', icon: '\u{1F48D}', stackable: false, type: 'misc', stats: { attack: 3, defence: 15 } },
+    rootkit_cloak:       { id: 'rootkit_cloak', name: 'Rootkit Cloak', icon: '\u{1F9E5}', stackable: false, type: 'misc', stats: { attack: 10, strength: 8, defence: 5 } },
+    super_attack_potion: { id: 'super_attack_potion', name: 'Super Attack Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
+    super_strength_potion:{ id: 'super_strength_potion', name: 'Super Strength Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
+    super_defence_potion:{ id: 'super_defence_potion', name: 'Super Defence Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
 };
 
 // ============================================================
@@ -397,8 +408,8 @@ export const MONSTERS: Record<string, MonsterDef> = {
     dark_crawler: {
         id: 'dark_crawler', name: 'Dark Crawler', icon: '\u{1F577}\uFE0F',
         zone: 'the_deep_network', level: 32,
-        hp: 280, attack: 28, strength: 24, defence: 22,
-        xpReward: { attack: 90, strength: 80, hitpoints: 60 },
+        hp: 320, attack: 28, strength: 24, defence: 22,
+        xpReward: { attack: 92, strength: 82, hitpoints: 62 },
         drops: [
             { id: 'dark_packet', weight: 45, minQty: 1, maxQty: 4 },
             { id: 'shark', weight: 8, minQty: 1, maxQty: 1 },
@@ -438,6 +449,70 @@ export const MONSTERS: Record<string, MonsterDef> = {
         color: '#f97316', description: 'An ancient security protocol. Still guarding long-dead servers.',
     },
 
+    // === TRANSITION: RUINS → DEEP NETWORK (Level 29-32) ===
+    buffer_zombie: {
+        id: 'buffer_zombie', name: 'Buffer Zombie', icon: '\u{1F9DF}',
+        zone: 'the_ruins', level: 29,
+        hp: 250, attack: 25, strength: 22, defence: 20,
+        xpReward: { attack: 82, strength: 72, hitpoints: 54 },
+        drops: [
+            { id: 'null_fragment', weight: 35, minQty: 2, maxQty: 4 },
+            { id: 'overflow_essence', weight: 25, minQty: 2, maxQty: 3 },
+            { id: 'rune_helm', weight: 2, minQty: 1, maxQty: 1 },
+            { id: 'shark', weight: 6, minQty: 1, maxQty: 1 },
+        ],
+        coinDrop: { min: 90, max: 220 },
+        aggressive: true, respawnTime: 30, spawnCount: 10,
+        color: '#4ade80', description: 'A process that died but kept running. Still consumes everything it touches.',
+    },
+    logic_bomb: {
+        id: 'logic_bomb', name: 'Logic Bomb', icon: '\u{1F4A3}',
+        zone: 'the_deep_network', level: 30,
+        hp: 300, attack: 26, strength: 23, defence: 20,
+        xpReward: { attack: 86, strength: 76, hitpoints: 58 },
+        drops: [
+            { id: 'dark_packet', weight: 40, minQty: 1, maxQty: 3 },
+            { id: 'null_fragment', weight: 20, minQty: 1, maxQty: 2 },
+            { id: 'rune_shield', weight: 1, minQty: 1, maxQty: 1 },
+        ],
+        coinDrop: { min: 100, max: 260 },
+        aggressive: true, respawnTime: 25, spawnCount: 16,
+        color: '#facc15', description: 'Dormant code waiting to detonate. Ticks down the moment you get close.',
+    },
+
+    // === DEEP NETWORK: HIGH TIER (Level 46-49) ===
+    rootkit_shade: {
+        id: 'rootkit_shade', name: 'Rootkit Shade', icon: '\u{1F47A}',
+        zone: 'the_deep_network', level: 46,
+        hp: 480, attack: 42, strength: 38, defence: 40,
+        xpReward: { attack: 150, strength: 135, hitpoints: 100 },
+        drops: [
+            { id: 'firewall_core', weight: 35, minQty: 1, maxQty: 3 },
+            { id: 'dark_packet', weight: 25, minQty: 2, maxQty: 5 },
+            { id: 'dragon_sword', weight: 1, minQty: 1, maxQty: 1 },
+            { id: 'manta_ray', weight: 8, minQty: 1, maxQty: 2 },
+        ],
+        coinDrop: { min: 220, max: 550 },
+        aggressive: true, respawnTime: 40, spawnCount: 10,
+        color: '#581c87', description: 'An invisible process with kernel-level access. Hides in plain sight.',
+    },
+    zero_day: {
+        id: 'zero_day', name: 'Zero Day', icon: '\u{1F480}',
+        zone: 'the_deep_network', level: 49,
+        hp: 550, attack: 48, strength: 42, defence: 44,
+        xpReward: { attack: 170, strength: 155, hitpoints: 115 },
+        drops: [
+            { id: 'dragon_scale', weight: 30, minQty: 1, maxQty: 3 },
+            { id: 'firewall_core', weight: 25, minQty: 2, maxQty: 4 },
+            { id: 'dragon_helm', weight: 1, minQty: 1, maxQty: 1 },
+            { id: 'dragon_shield', weight: 1, minQty: 1, maxQty: 1 },
+            { id: 'network_key', weight: 3, minQty: 1, maxQty: 1 },
+        ],
+        coinDrop: { min: 300, max: 700 },
+        aggressive: true, respawnTime: 45, spawnCount: 6,
+        color: '#991b1b', description: 'An unknown exploit with no patch. The most dangerous non-boss entity in the network.',
+    },
+
     // === SUITE CASTLE TOWNFOLK ===
     man: {
         id: 'man', name: 'Man', icon: '\u{1F9D1}',
@@ -475,13 +550,22 @@ export const MONSTERS: Record<string, MonsterDef> = {
 
 export interface BossAbility {
     name: string;
-    type: 'aoe' | 'heal' | 'enrage' | 'summon' | 'stun';
+    type: 'aoe' | 'heal' | 'enrage' | 'summon' | 'stun' | 'drain';
     damage?: number;
     heal?: number;
     radius?: number;
     cooldown: number; // ticks
     trigger?: number; // HP percentage threshold
     description: string;
+}
+
+export interface BossPhase {
+    name: string;
+    hpThreshold: number; // activate when HP drops below this % (100 = start of fight)
+    attackMultiplier: number; // multiply base attack
+    defenceMultiplier: number; // multiply base defence
+    speedMultiplier: number; // multiply attack speed (lower = faster)
+    message: string; // broadcast to players when phase starts
 }
 
 export interface BossDef {
@@ -498,6 +582,7 @@ export interface BossDef {
     drops: { id: string; weight: number; minQty: number; maxQty: number }[];
     coinDrop: { min: number; max: number };
     abilities: BossAbility[];
+    phases?: BossPhase[];
     respawnTime: number;
     spawnPos: { x: number; z: number };
     isRaidBoss: boolean;
@@ -524,6 +609,12 @@ export const BOSSES: Record<string, BossDef> = {
         abilities: [
             { name: 'Fork Bomb', type: 'aoe', damage: 15, radius: 3, cooldown: 8, description: 'Spawns chaotic processes damaging all nearby.' },
             { name: 'Self-Replicate', type: 'heal', heal: 50, cooldown: 12, trigger: 40, description: 'Heals by copying its own code when low HP.' },
+            { name: 'Spawn Forks', type: 'summon', cooldown: 20, trigger: 60, description: 'Forks 2 child processes — weaker Virus Walker clones that fight for it.' },
+        ],
+        phases: [
+            { name: 'Normal', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' },
+            { name: 'Replicating', hpThreshold: 50, attackMultiplier: 1.2, defenceMultiplier: 0.9, speedMultiplier: 0.85, message: 'The Rogue Script begins replicating faster!' },
+            { name: 'Critical Mass', hpThreshold: 20, attackMultiplier: 1.5, defenceMultiplier: 0.7, speedMultiplier: 0.7, message: 'The Rogue Script reaches critical mass! It attacks wildly!' },
         ],
         respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 100, z: 20 },
         isRaidBoss: false, minPlayers: 1,
@@ -547,6 +638,12 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Page Not Found', type: 'stun', cooldown: 10, description: 'Sends targets to a 404 page, stunning them for 2 ticks.' },
             { name: 'Stone Skin', type: 'enrage', cooldown: 15, trigger: 50, description: 'Hardens defence by 50% when below half HP.' },
             { name: 'Rubble Slam', type: 'aoe', damage: 30, radius: 4, cooldown: 12, description: 'Smashes the ground, damaging all nearby players.' },
+            { name: 'Redirect Loop', type: 'heal', heal: 80, cooldown: 18, trigger: 30, description: 'Enters an infinite redirect loop, regenerating HP from cached responses.' },
+        ],
+        phases: [
+            { name: 'Standing', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' },
+            { name: 'Crumbling', hpThreshold: 60, attackMultiplier: 1.15, defenceMultiplier: 1.3, speedMultiplier: 1, message: 'The 404 Golem hardens its stone shell!' },
+            { name: 'Stone Fury', hpThreshold: 30, attackMultiplier: 1.4, defenceMultiplier: 1.5, speedMultiplier: 0.8, message: 'The 404 Golem enters a stone fury! Defence skyrockets!' },
         ],
         respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 175, z: 95 },
         isRaidBoss: false, minPlayers: 2,
@@ -571,6 +668,13 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Hallucinate', type: 'summon', cooldown: 15, trigger: 60, description: 'Summons 2 phantom copies that attack but take double damage.' },
             { name: 'Confident Nonsense', type: 'aoe', damage: 45, radius: 5, cooldown: 10, description: 'Broadcasts an authoritative but devastating energy blast.' },
             { name: 'Regenerate Context', type: 'heal', heal: 150, cooldown: 20, trigger: 30, description: 'Reloads from a cached state, healing significantly.' },
+            { name: 'Token Drain', type: 'drain', damage: 30, heal: 40, radius: 5, cooldown: 12, description: 'Siphons energy from nearby players, converting it to HP.' },
+        ],
+        phases: [
+            { name: 'Lucid', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' },
+            { name: 'Distorting', hpThreshold: 65, attackMultiplier: 1.2, defenceMultiplier: 1.1, speedMultiplier: 0.9, message: 'The Hallucinator\'s reality begins to distort!' },
+            { name: 'Full Hallucination', hpThreshold: 35, attackMultiplier: 1.4, defenceMultiplier: 1.2, speedMultiplier: 0.75, message: 'Reality shatters! The Hallucinator unleashes its full power!' },
+            { name: 'Desperate', hpThreshold: 15, attackMultiplier: 1.8, defenceMultiplier: 0.6, speedMultiplier: 0.6, message: 'The Hallucinator is desperate! It drops its guard but attacks ferociously!' },
         ],
         respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 100, z: 170 },
         isRaidBoss: false, minPlayers: 3,
@@ -597,6 +701,14 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Firewall Break', type: 'enrage', cooldown: 20, trigger: 40, description: 'Shatters all defences. Attack increases 75% below 40% HP.' },
             { name: 'Consume Packet', type: 'heal', heal: 300, cooldown: 25, trigger: 25, description: 'Devours network traffic to heal massively.' },
             { name: 'Spawn Crawlers', type: 'summon', cooldown: 18, trigger: 60, description: 'Summons 3 Dark Crawlers to defend it.' },
+            { name: 'Siphon Bandwidth', type: 'drain', damage: 40, heal: 60, radius: 6, cooldown: 14, description: 'Drains energy from all nearby players, healing itself from the stolen bandwidth.' },
+        ],
+        phases: [
+            { name: 'Dormant', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' },
+            { name: 'Awakened', hpThreshold: 75, attackMultiplier: 1.15, defenceMultiplier: 1.1, speedMultiplier: 0.95, message: 'The Data Breach Dragon awakens! Its eyes glow with stolen data!' },
+            { name: 'Breach Mode', hpThreshold: 50, attackMultiplier: 1.3, defenceMultiplier: 1.2, speedMultiplier: 0.85, message: 'BREACH MODE ACTIVATED! The Dragon tears through firewalls!' },
+            { name: 'Meltdown', hpThreshold: 25, attackMultiplier: 1.6, defenceMultiplier: 0.8, speedMultiplier: 0.7, message: 'SYSTEM MELTDOWN! The Dragon sacrifices defence for devastating attacks!' },
+            { name: 'Last Stand', hpThreshold: 10, attackMultiplier: 2.0, defenceMultiplier: 0.5, speedMultiplier: 0.6, message: 'CRITICAL: The Data Breach Dragon enters its final form!' },
         ],
         respawnTime: RAID_BOSS_RESPAWN_TIME, spawnPos: { x: 137, z: 180 },
         isRaidBoss: true, minPlayers: 5,
@@ -745,6 +857,17 @@ export const RECIPES: RecipeDef[] = [
     { result: 'attack_potion', resultQty: 2, ingredients: [{ id: 'corrupted_byte', qty: 3 }, { id: 'rogue_script', qty: 1 }], coinCost: 15 },
     { result: 'strength_potion', resultQty: 2, ingredients: [{ id: 'memory_shard', qty: 3 }, { id: 'overflow_essence', qty: 1 }], coinCost: 30 },
     { result: 'defence_potion', resultQty: 2, ingredients: [{ id: 'dark_packet', qty: 3 }, { id: 'firewall_core', qty: 1 }], coinCost: 50 },
+    // Super potions (using boss trophies)
+    { result: 'super_attack_potion', resultQty: 2, ingredients: [{ id: 'attack_potion', qty: 2 }, { id: 'rogue_script_trophy', qty: 1 }], coinCost: 200 },
+    { result: 'super_strength_potion', resultQty: 2, ingredients: [{ id: 'strength_potion', qty: 2 }, { id: 'golem_heart', qty: 1 }], coinCost: 500 },
+    { result: 'super_defence_potion', resultQty: 2, ingredients: [{ id: 'defence_potion', qty: 2 }, { id: 'hallucinator_eye', qty: 1 }], coinCost: 800 },
+    // Unique accessories (crafted from endgame materials)
+    { result: 'antivirus_amulet', resultQty: 1, ingredients: [{ id: 'corrupted_byte', qty: 20 }, { id: 'rogue_script', qty: 10 }, { id: 'agent_core', qty: 3 }], coinCost: 500 },
+    { result: 'firewall_ring', resultQty: 1, ingredients: [{ id: 'firewall_core', qty: 8 }, { id: 'dark_packet', qty: 15 }, { id: 'memory_shard', qty: 10 }], coinCost: 2000 },
+    { result: 'rootkit_cloak', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 5 }, { id: 'firewall_core', qty: 10 }, { id: 'network_key', qty: 1 }], coinCost: 5000 },
+    // Cooked food from raw materials (for skilling system — Terminal 2)
+    { result: 'cooked_fish', resultQty: 1, ingredients: [{ id: 'raw_fish', qty: 1 }], coinCost: 0 },
+    { result: 'cooked_meat', resultQty: 1, ingredients: [{ id: 'logs', qty: 1 }, { id: 'raw_fish', qty: 2 }], coinCost: 0 },
 ];
 
 // ============================================================
@@ -923,6 +1046,24 @@ export const QUESTS: Record<string, QuestDef> = {
         zone: 'the_ruins',
     },
 
+    // === TRANSITION QUESTS ===
+    buffer_purge: {
+        id: 'buffer_purge', name: 'Buffer Purge', difficulty: 'hard',
+        description: 'Destroy 5 Buffer Zombies — dead processes that refuse to stop.',
+        objectives: [{ type: 'kill_monster', monsterId: 'buffer_zombie', count: 5 }],
+        rewards: { coins: 800, xp: { attack: 180, strength: 160, defence: 100 } },
+        prereqs: ['null_hunt'],
+        zone: 'the_ruins',
+    },
+    defuse_the_bombs: {
+        id: 'defuse_the_bombs', name: 'Defuse the Bombs', difficulty: 'hard',
+        description: 'Neutralize 10 Logic Bombs before they trigger.',
+        objectives: [{ type: 'kill_monster', monsterId: 'logic_bomb', count: 10 }],
+        rewards: { coins: 1200, xp: { attack: 220, strength: 200, defence: 140 }, items: [{ id: 'rune_sword', qty: 1 }] },
+        prereqs: ['deep_descent'],
+        zone: 'the_deep_network',
+    },
+
     // === THE DEEP NETWORK QUESTS ===
     deep_descent: {
         id: 'deep_descent', name: 'Deep Descent', difficulty: 'hard',
@@ -962,6 +1103,22 @@ export const QUESTS: Record<string, QuestDef> = {
         prereqs: ['storm_chaser'],
         zone: 'the_deep_network',
     },
+    rootkit_hunt: {
+        id: 'rootkit_hunt', name: 'Rootkit Hunt', difficulty: 'legendary',
+        description: 'Track down and destroy 8 Rootkit Shades hiding in the deep network.',
+        objectives: [{ type: 'kill_monster', monsterId: 'rootkit_shade', count: 8 }],
+        rewards: { coins: 3500, xp: { attack: 450, strength: 400, defence: 300, hitpoints: 250 }, items: [{ id: 'dragon_sword', qty: 1 }] },
+        prereqs: ['firewall_breach'],
+        zone: 'the_deep_network',
+    },
+    zero_day_response: {
+        id: 'zero_day_response', name: 'Zero Day Response', difficulty: 'legendary',
+        description: 'Eliminate 3 Zero Day exploits before they spread. The hardest non-boss challenge.',
+        objectives: [{ type: 'kill_monster', monsterId: 'zero_day', count: 3 }],
+        rewards: { coins: 5000, xp: { attack: 550, strength: 500, defence: 400, hitpoints: 350 } },
+        prereqs: ['rootkit_hunt'],
+        zone: 'the_deep_network',
+    },
     slay_the_hallucinator: {
         id: 'slay_the_hallucinator', name: 'Slay the Hallucinator', difficulty: 'legendary',
         description: 'Defeat The Hallucinator — the rogue AI that bends reality.',
@@ -979,6 +1136,59 @@ export const QUESTS: Record<string, QuestDef> = {
         zone: 'the_deep_network',
     },
 };
+
+// ============================================================
+// Slayer Tasks — Kill assignments for bonus XP
+// ============================================================
+
+export interface SlayerTaskDef {
+    id: string;
+    name: string;
+    monsterId: string;
+    count: number;
+    zone: string;
+    minCombatLevel: number; // player must be this combat level to receive
+    xpReward: { slayer: number; combat: number }; // slayer XP + bonus combat XP
+    coinReward: number;
+    weight: number; // assignment probability weight (higher = more common)
+}
+
+export const SLAYER_TASKS: SlayerTaskDef[] = [
+    // Forest tier (combat level 1-15)
+    { id: 'slay_spam_bots', name: 'Spam Bot Cleanup', monsterId: 'spam_bot', count: 15, zone: 'the_forest', minCombatLevel: 1, xpReward: { slayer: 30, combat: 20 }, coinReward: 50, weight: 30 },
+    { id: 'slay_broken_links', name: 'Link Severance', monsterId: 'broken_link_mob', count: 12, zone: 'the_forest', minCombatLevel: 5, xpReward: { slayer: 50, combat: 35 }, coinReward: 100, weight: 25 },
+    { id: 'slay_corrupt_data', name: 'Data Corruption Purge', monsterId: 'corrupt_data', count: 10, zone: 'the_forest', minCombatLevel: 8, xpReward: { slayer: 80, combat: 55 }, coinReward: 200, weight: 20 },
+    { id: 'slay_virus_walkers', name: 'Virus Containment', monsterId: 'virus_walker', count: 8, zone: 'the_forest', minCombatLevel: 12, xpReward: { slayer: 120, combat: 80 }, coinReward: 350, weight: 15 },
+
+    // Ruins tier (combat level 15-30)
+    { id: 'slay_memory_leaks', name: 'Memory Cleanup', monsterId: 'memory_leak', count: 12, zone: 'the_ruins', minCombatLevel: 15, xpReward: { slayer: 150, combat: 100 }, coinReward: 400, weight: 25 },
+    { id: 'slay_stack_overflows', name: 'Stack Unwind', monsterId: 'stack_overflow', count: 10, zone: 'the_ruins', minCombatLevel: 18, xpReward: { slayer: 200, combat: 140 }, coinReward: 600, weight: 20 },
+    { id: 'slay_null_pointers', name: 'Null Dereferencing', monsterId: 'null_pointer', count: 8, zone: 'the_ruins', minCombatLevel: 22, xpReward: { slayer: 280, combat: 200 }, coinReward: 900, weight: 15 },
+    { id: 'slay_segfault_wraiths', name: 'Segfault Exorcism', monsterId: 'segfault_wraith', count: 6, zone: 'the_ruins', minCombatLevel: 26, xpReward: { slayer: 350, combat: 250 }, coinReward: 1200, weight: 12 },
+    { id: 'slay_buffer_zombies', name: 'Zombie Process Kill', monsterId: 'buffer_zombie', count: 8, zone: 'the_ruins', minCombatLevel: 28, xpReward: { slayer: 380, combat: 270 }, coinReward: 1400, weight: 10 },
+
+    // Deep Network tier (combat level 30-50)
+    { id: 'slay_logic_bombs', name: 'Bomb Disposal', monsterId: 'logic_bomb', count: 10, zone: 'the_deep_network', minCombatLevel: 30, xpReward: { slayer: 400, combat: 300 }, coinReward: 1500, weight: 20 },
+    { id: 'slay_dark_crawlers', name: 'Web Crawler Purge', monsterId: 'dark_crawler', count: 10, zone: 'the_deep_network', minCombatLevel: 32, xpReward: { slayer: 450, combat: 330 }, coinReward: 1800, weight: 18 },
+    { id: 'slay_packet_storms', name: 'Storm Suppression', monsterId: 'packet_storm', count: 8, zone: 'the_deep_network', minCombatLevel: 36, xpReward: { slayer: 550, combat: 400 }, coinReward: 2500, weight: 14 },
+    { id: 'slay_firewall_guardians', name: 'Security Override', monsterId: 'firewall_guardian', count: 5, zone: 'the_deep_network', minCombatLevel: 42, xpReward: { slayer: 700, combat: 500 }, coinReward: 3500, weight: 10 },
+    { id: 'slay_rootkit_shades', name: 'Rootkit Removal', monsterId: 'rootkit_shade', count: 5, zone: 'the_deep_network', minCombatLevel: 45, xpReward: { slayer: 800, combat: 600 }, coinReward: 4000, weight: 8 },
+    { id: 'slay_zero_days', name: 'Zero Day Patch', monsterId: 'zero_day', count: 3, zone: 'the_deep_network', minCombatLevel: 48, xpReward: { slayer: 1000, combat: 750 }, coinReward: 5000, weight: 5 },
+];
+
+/** Pick a random slayer task appropriate for the player's combat level. */
+export function getRandomSlayerTask(combatLevel: number): SlayerTaskDef | null {
+    const eligible = SLAYER_TASKS.filter(t => combatLevel >= t.minCombatLevel);
+    if (eligible.length === 0) return null;
+
+    const totalWeight = eligible.reduce((sum, t) => sum + t.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const task of eligible) {
+        roll -= task.weight;
+        if (roll <= 0) return task;
+    }
+    return eligible[eligible.length - 1];
+}
 
 // ============================================================
 // Agent Dialogue
