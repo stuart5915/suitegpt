@@ -1780,6 +1780,7 @@
                 else if(bid==='arena'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_training\')">Train</button>';addChat('system','You enter the Arena.');}
                 else{const bd=BUILDINGS.find(b=>b.id===bid);addChat('system','You arrive at the '+(bd?bd.name:'building')+'.');}
             });
+            room.onMessage('pickpocket_result',(data)=>{playPickpocketAnim(data.success);});
             room.onMessage('skilling_event',(data)=>{addChat('system',data.message);});
             room.onMessage('monster_ability',(data)=>{addChat('combat',data.monsterName+' uses '+data.abilityName+'!');});
             room.onMessage('player_respawn',(data)=>{if(data.playerId===mySessionId)addChat('system','You have respawned.');});
@@ -2013,7 +2014,7 @@
         document.addEventListener('click',e=>{if(!ctxMenu.contains(e.target))hideCtxMenu();});
         function showContextMenu(e,options,header){
             hideCtxMenu();
-            ctxMenu.innerHTML=(header?'<div class="ctx-header">'+header+'</div>':'')+options.map(o=>'<div class="ctx-option" onclick="'+o.action+'">'+o.label+'</div>').join('');
+            ctxMenu.innerHTML=(header?'<div class="ctx-header">'+header+'</div>':'')+options.map(o=>'<div class="ctx-option" onclick="hideCtxMenu();'+o.action+'">'+o.label+'</div>').join('');
             ctxMenu.style.display='block';
             ctxMenu.style.left=Math.min(e.clientX,window.innerWidth-160)+'px';
             ctxMenu.style.top=Math.min(e.clientY,window.innerHeight-(options.length*30+30))+'px';
@@ -2232,6 +2233,25 @@
         // ============================================================
         // GAME LOOP (rendering only — logic on server)
         // ============================================================
+        // Pickpocket animation — quick arm reach forward then back
+        let ppAnimTimer=0, ppAnimSuccess=false;
+        function playPickpocketAnim(success){ppAnimTimer=0.6;ppAnimSuccess=success;}
+        function updatePickpocketAnim(c,dt){
+            if(ppAnimTimer<=0)return;
+            ppAnimTimer-=dt;
+            const t=Math.max(0,ppAnimTimer);
+            const phase=(0.6-t)/0.6; // 0→1
+            // Quick reach forward with right arm (0-0.3), pull back (0.3-0.6)
+            const reach=phase<0.5?phase*2:(1-phase)*2; // 0→1→0
+            c.rightArm.rotation.x=-reach*1.4; // reach forward
+            c.rightArm.rotation.z=-reach*0.3; // slight outward
+            // Lean body slightly forward
+            c.body.rotation.x=reach*0.15;
+            if(ppAnimTimer<=0){
+                c.rightArm.rotation.x=0;c.rightArm.rotation.z=0;c.body.rotation.x=0;
+            }
+        }
+
         // Blended walk/sit animation helper
         function animateWalk(c,moving,dt,resting){
             if(resting){
@@ -2295,6 +2315,7 @@
             myChar.group.position.z+=(myTargetZ-myChar.group.position.z)*lerpAmt;
             myChar.group.rotation.y+=(myTargetRot-myChar.group.rotation.y)*lerpAmt;
             animateWalk(myChar,myIsMoving,dt,myIsResting);
+            updatePickpocketAnim(myChar,dt);
             // Other players
             otherPlayerMeshes.forEach(m=>{
                 m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;

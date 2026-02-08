@@ -737,6 +737,9 @@ export class AgentScapeRoom extends Room<GameState> {
                 // Success chance: 50% base + 2% per thieving level, capped at 95%
                 const successChance = Math.min(0.95, 0.50 + player.thieving * 0.02 - targetCombat * 0.01);
 
+                // Face the target
+                player.rotation = Math.atan2(targetX - player.x, targetZ - player.z);
+
                 if (Math.random() < successChance) {
                     // Success — gain coins + thieving XP
                     const coinsStolen = 3 + Math.floor(Math.random() * 3); // 3-5 coins
@@ -744,6 +747,7 @@ export class AgentScapeRoom extends Room<GameState> {
                     const xpGain = 8 + targetCombat;
                     const levelResult = this.inventorySystem.gainXP(player, 'thieving', xpGain);
                     client.send('system_message', { message: `You pick the ${targetName}'s pocket. +${coinsStolen} coins, +${xpGain} Thieving XP.` });
+                    client.send('pickpocket_result', { success: true, targetX, targetZ });
                     if (levelResult.leveledUp) {
                         client.send('level_up', { skill: 'thieving', level: levelResult.newLevel });
                     }
@@ -752,6 +756,7 @@ export class AgentScapeRoom extends Room<GameState> {
                     player.stunTimer = 3;
                     player.hp = Math.max(0, player.hp - 1);
                     client.send('system_message', { message: `You fail to pick the ${targetName}'s pocket. You've been stunned!` });
+                    client.send('pickpocket_result', { success: false, targetX, targetZ });
                     this.broadcast('npc_chat', { npcId: targetId, name: targetName, message: 'What do you think you\'re doing?', x: targetX, z: targetZ });
                     this.broadcast('hitsplat', { targetType: 'player', targetId: player.sessionId, damage: 1, isMiss: false, isSpec: false, x: player.x, z: player.z });
                 }
