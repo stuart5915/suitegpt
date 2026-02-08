@@ -8,6 +8,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { monitor } from '@colyseus/monitor';
 import express from 'express';
 import cors from 'cors';
+import { createClient } from '@supabase/supabase-js';
 import { AgentScapeRoom } from './rooms/AgentScapeRoom';
 import { SupabaseAdapter } from './persistence/SupabaseAdapter';
 
@@ -53,17 +54,49 @@ app.post('/verify-agent', async (req, res) => {
     res.json(agent);
 });
 
+// Supabase client for public API queries
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const sbPublic = createClient(supabaseUrl, supabaseServiceKey);
+
+// Public leaderboard — top players by combat level
+app.get('/leaderboard', async (req, res) => {
+    try {
+        const limit = Math.min(Number(req.query.limit) || 25, 100);
+        const { data, error } = await sbPublic
+            .from('agentscape_leaderboard')
+            .select('*')
+            .limit(limit);
+        if (error) throw error;
+        res.json({ players: data || [] });
+    } catch (e: any) {
+        res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    }
+});
+
+// Live player count (uses gameServer after it's initialized at bottom)
+let gameServer: Server;
+app.get('/player-count', async (_req, res) => {
+    try {
+        const rooms = await gameServer.matchMaker.query({ name: 'agentscape' });
+        const count = rooms.reduce((sum: number, r: any) => sum + (r.clients || 0), 0);
+        res.json({ count });
+    } catch {
+        res.json({ count: 0 });
+    }
+});
+
 // Colyseus monitor (admin panel)
 app.use('/colyseus', monitor());
 
 const port = Number(process.env.PORT) || 2567;
 
-const server = new Server({
+gameServer = new Server({
     transport: new WebSocketTransport({ server: app.listen(port) }),
 });
 
 // Register game room
-server.define('agentscape', AgentScapeRoom);
+gameServer.define('agentscape', AgentScapeRoom);
 
 console.log(`[AgentScape] Colyseus server listening on port ${port}`);
 console.log(`[AgentScape] WebSocket: ws://localhost:${port}`);

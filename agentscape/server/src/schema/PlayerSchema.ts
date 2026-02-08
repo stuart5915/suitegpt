@@ -1,5 +1,6 @@
 import { Schema, type, ArraySchema, MapSchema, filter } from '@colyseus/schema';
 import type { Client } from 'colyseus';
+import { BankSchema } from './BankSchema';
 
 export class InventoryItem extends Schema {
     @type('string') id: string = '';
@@ -114,6 +115,100 @@ export class PlayerSchema extends Schema {
         return client.sessionId === this.sessionId;
     })
     @type('uint32') thievingXP: number = 0;
+
+    // ── Gathering Skills ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') woodcutting: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') woodcuttingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') mining: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') miningXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') fishing: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') fishingXP: number = 0;
+
+    // ── Production Skills ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') cooking: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') cookingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') smithing: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') smithingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') crafting: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') craftingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') fletching: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') fletchingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint8') runecrafting: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') runecraftingXP: number = 0;
+
+    // ── Bank ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(BankSchema) bank: BankSchema = new BankSchema();
+
+    // ── Total Level (sum of all skill levels) ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint16') totalLevel: number = 10;
 
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
