@@ -434,10 +434,11 @@ export class CombatSystem {
 
         if (player.isDead || monster.isDead) return { hitsplats, deaths, xpGains };
 
-        // === Player attacks monster (with potion buffs) ===
+        // === Player attacks monster (with potion buffs + combat style) ===
         const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
-        const pAtk = player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack');
-        const pStr = player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength');
+        const style = this.getPlayerStyle(player.sessionId);
+        const pAtk = player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack') + style.attackBonus;
+        const pStr = player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength') + style.strengthBonus;
         const monDef = monster.combatStats.defence;
 
         const isSpec = player.specActive;
@@ -474,12 +475,12 @@ export class CombatSystem {
             return { hitsplats, deaths, xpGains };
         }
 
-        // === Monster attacks player (apply enrage multiplier, potion buffs) ===
+        // === Monster attacks player (apply enrage multiplier, potion buffs, style) ===
         const monAtk = monster.combatStats.attack * monster.enrageMultiplier;
         const monStr = monster.combatStats.strength * monster.enrageMultiplier;
         const helm = player.equippedHelm.id ? player.equippedHelm : null;
         const shield = player.equippedShield.id ? player.equippedShield : null;
-        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence');
+        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus;
 
         if (Math.random() * (monAtk + 5) > Math.random() * (pDef + 5)) {
             const maxHit = Math.floor(monStr * 0.8 + 2);
@@ -524,15 +525,11 @@ export class CombatSystem {
             this.monsterBehavior.clearThreat(monster.id);
         }
 
-        // XP reward (only on kill, not per tick)
+        // XP reward (only on kill) — distributed by combat style
         const xp = monster.combatStats.xpReward;
-        xpGains.push({ skill: 'attack', amount: xp.attack });
-        xpGains.push({ skill: 'strength', amount: xp.strength });
-        xpGains.push({ skill: 'hitpoints', amount: xp.hitpoints });
-        // Defence XP if player has a shield equipped
-        if (player.equippedShield.id) {
-            xpGains.push({ skill: 'defence', amount: Math.ceil(xp.attack * 0.5) });
-        }
+        const totalBaseXP = xp.attack + xp.strength + xp.hitpoints;
+        const styledXP = this.applyStyleXP(player.sessionId, totalBaseXP);
+        xpGains.push(...styledXP);
 
         // Create weighted loot pile
         this.createMonsterLoot(monster, state);
