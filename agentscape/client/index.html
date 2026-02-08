@@ -786,7 +786,7 @@
         viewport.insertBefore(renderer.domElement, viewport.firstChild);
 
         const mapCenter=Math.floor(MAP_SIZE/2);
-        let camTargetX=mapCenter,camTargetZ=mapCenter,camAngle=Math.PI/4,camDist=22,camHeight=17;
+        let camTargetX=mapCenter,camTargetZ=mapCenter,camAngle=Math.PI/4,camDist=22,camPitch=0.65;
         let camSmoothX=mapCenter,camSmoothZ=mapCenter;
         let camDt=0.016; // updated each frame from animate()
         function updateCamera(){
@@ -794,7 +794,9 @@
             const camLerp=1-Math.exp(-5*camDt);
             camSmoothX+=(camTargetX-camSmoothX)*camLerp;
             camSmoothZ+=(camTargetZ-camSmoothZ)*camLerp;
-            camera.position.set(camSmoothX+Math.sin(camAngle)*camDist,camHeight,camSmoothZ+Math.cos(camAngle)*camDist);
+            const camHeight=camDist*camPitch;
+            const camHoriz=camDist*Math.cos(Math.asin(Math.min(1,camPitch)));
+            camera.position.set(camSmoothX+Math.sin(camAngle)*camHoriz,camHeight,camSmoothZ+Math.cos(camAngle)*camHoriz);
             camera.lookAt(camSmoothX,0,camSmoothZ);
         }
         updateCamera();
@@ -2193,7 +2195,7 @@
         const keys={};
         window.addEventListener('keydown',e=>{if(!chatInputFocused){keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='f')sendAction('use_special_attack');}});
         window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-        renderer.domElement.addEventListener('wheel',e=>{camDist+=e.deltaY*0.01;camDist=Math.max(6,Math.min(30,camDist));camHeight=camDist*0.78;});
+        renderer.domElement.addEventListener('wheel',e=>{camDist+=e.deltaY*0.01;camDist=Math.max(6,Math.min(30,camDist));});
 
         // ============================================================
         // MINIMAP
@@ -2266,8 +2268,8 @@
             if(!chatInputFocused){
                 if(keys['a'])camAngle-=1.5*dt;
                 if(keys['d'])camAngle+=1.5*dt;
-                if(keys['w']){camDist-=12*dt;camDist=Math.max(6,camDist);camHeight=camDist*0.78;}
-                if(keys['s']){camDist+=12*dt;camDist=Math.min(30,camDist);camHeight=camDist*0.78;}
+                if(keys['w']){camPitch=Math.min(1.2,camPitch+1.0*dt);}
+                if(keys['s']){camPitch=Math.max(0.15,camPitch-1.0*dt);}
             }
             updateCamera();
             // Roof hiding — hide roof when player is inside building
