@@ -765,7 +765,10 @@
         chatInput.addEventListener('blur',()=>{chatInputFocused=false;});
         chatInput.addEventListener('keydown',(e)=>{
             if(e.key==='Enter'&&chatInput.value.trim()){
-                sendAction('chat',{message:chatInput.value.trim()});
+                const msg=chatInput.value.trim();
+                const emoteMatch=msg.match(/^\/(wave|dance|bow|clap|think|laugh|angry|point|cry|cheer|shrug|headbang)$/i);
+                if(emoteMatch){sendAction('emote',{animId:emoteMatch[1].toLowerCase()});playCharAnim(myChar,emoteMatch[1].toLowerCase());}
+                else{sendAction('chat',{message:msg});}
                 chatInput.value=''; chatInput.blur();
             }
             if(e.key==='Escape') chatInput.blur();
@@ -1665,7 +1668,6 @@
         }
 
         async function updateAllEquipment(charMesh, player) {
-            if (!forgeDB) return;
             const weapon = player.equippedWeapon && player.equippedWeapon.id ? player.equippedWeapon.id : null;
             const helm = player.equippedHelm && player.equippedHelm.id ? player.equippedHelm.id : null;
             const shield = player.equippedShield && player.equippedShield.id ? player.equippedShield.id : null;
@@ -1847,7 +1849,7 @@
                         myTargetX=player.x;myTargetZ=player.z;myTargetH=h;myTargetRot=player.rotation;
                         myIsMoving=(player.state==='walking');
                         myIsResting=player.isResting;
-                        if(player.isDead){document.getElementById('death-screen').style.display='flex';}
+                        if(player.isDead){playCharAnim(myChar,'death');document.getElementById('death-screen').style.display='flex';}
                         else{document.getElementById('death-screen').style.display='none';}
                         // Update zone indicator
                         const zone=getZoneAt(player.tileX,player.tileZ);
@@ -1917,7 +1919,7 @@
             if(room.state.lootPiles){
             room.state.lootPiles.onAdd((loot,id)=>{
                 const dot=document.createElement('div');dot.className='loot-pile-dot';dot.dataset.worldX=loot.x;dot.dataset.worldZ=loot.z;
-                dot.onclick=()=>sendAction('pickup_loot',{lootId:id});
+                dot.onclick=()=>{sendAction('pickup_loot',{lootId:id});playCharAnim(myChar,'pickup_loot');};
                 document.getElementById('npc-labels').appendChild(dot);
                 lootPileMeshes.set(id,{dot,state:loot});
             });
@@ -1931,7 +1933,7 @@
             room.onMessage('system_message',(data)=>{addChat('system',data.message);});
             room.onMessage('error',(data)=>{addChat('system',data.message);});
             room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='monster')addChat('combat',data.monsterName+' has been slain!');if(data.entityType==='player'&&data.entityId===mySessionId)addChat('combat','Oh dear, you are dead!');});
-            room.onMessage('level_up',(data)=>{addChat('system','Level up! '+data.skill+' is now level '+data.level+'!');const el=document.getElementById('skill-'+data.skill);if(el){el.classList.add('skill-levelup');setTimeout(()=>el.classList.remove('skill-levelup'),1500);}});
+            room.onMessage('level_up',(data)=>{addChat('system','Level up! '+data.skill+' is now level '+data.level+'!');playCharAnim(myChar,'level_up');const el=document.getElementById('skill-'+data.skill);if(el){el.classList.add('skill-levelup');setTimeout(()=>el.classList.remove('skill-levelup'),1500);}});
             room.onMessage('quest_event',(data)=>{if(data.type==='completed')addChat('system','Quest complete: '+data.questName+'!');if(data.type==='accepted')addChat('system','Quest accepted: '+data.questName);});
             room.onMessage('building_arrived',(data)=>{
                 const bid=data.buildingId;
@@ -1943,7 +1945,14 @@
                 else if(bid==='arena'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_training\')">Train</button>';addChat('system','You enter the Arena.');}
                 else{const bd=BUILDINGS.find(b=>b.id===bid);addChat('system','You arrive at the '+(bd?bd.name:'building')+'.');}
             });
-            room.onMessage('pickpocket_result',(data)=>{playPickpocketAnim(data.success);});
+            room.onMessage('pickpocket_result',(data)=>{playCharAnim(myChar,'pickpocket');});
+            room.onMessage('play_anim',(data)=>{
+                let mesh=null;
+                if(data.entityType==='player'){if(data.entityId===mySessionId)mesh=myChar;else mesh=otherPlayerMeshes.get(data.entityId);}
+                else if(data.entityType==='npc')mesh=npcMeshes.get(data.entityId);
+                else if(data.entityType==='monster')mesh=monsterMeshes.get(data.entityId);
+                if(mesh)playCharAnim(mesh,data.animId);
+            });
             room.onMessage('skilling_event',(data)=>{addChat('system',data.message);});
             room.onMessage('monster_ability',(data)=>{addChat('combat',data.monsterName+' uses '+data.abilityName+'!');});
             room.onMessage('player_respawn',(data)=>{if(data.playerId===mySessionId)addChat('system','You have respawned.');});
@@ -1992,7 +2001,7 @@
                     if(item.quantity>1){const qty=document.createElement('span');qty.className='inv-slot-qty';qty.textContent=item.quantity;slot.appendChild(qty);}
                 }
                 slot.addEventListener('contextmenu',(e)=>{e.preventDefault();e.stopPropagation();showInventoryMenu(e,i,p);});
-                slot.addEventListener('click',()=>{if(!item||!item.id)return;if(item.type==='food')sendAction('eat_food',{inventorySlot:i});else if(item.type==='weapon'||item.type==='helm'||item.type==='shield'||item.type==='axe')sendAction('equip_item',{inventorySlot:i});});
+                slot.addEventListener('click',()=>{if(!item||!item.id)return;if(item.type==='food'){sendAction('eat_food',{inventorySlot:i});playCharAnim(myChar,'eat');}else if(item.type==='weapon'||item.type==='helm'||item.type==='shield'||item.type==='axe')sendAction('equip_item',{inventorySlot:i});});
                 grid2.appendChild(slot);
             }
             renderEquipFromState(p);
@@ -2169,8 +2178,8 @@
         function showInventoryMenu(e,slot,p){
             const item=p.inventory[slot];if(!item||!item.id)return;
             const opts=[];
-            if(item.type==='food')opts.push({label:'Eat',action:"sendAction('eat_food',{inventorySlot:"+slot+"})"});
-            if(item.type==='bones')opts.push({label:'Bury',action:"sendAction('bury_bones',{inventorySlot:"+slot+"})"});
+            if(item.type==='food')opts.push({label:'Eat',action:"sendAction('eat_food',{inventorySlot:"+slot+"});playCharAnim(myChar,'eat')"});
+            if(item.type==='bones')opts.push({label:'Bury',action:"sendAction('bury_bones',{inventorySlot:"+slot+"});playCharAnim(myChar,'bury_bones')"});
             if(item.type==='weapon'||item.type==='axe')opts.push({label:'Wield',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
             if(item.type==='helm')opts.push({label:'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
             if(item.type==='shield')opts.push({label:'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
@@ -2405,26 +2414,77 @@
         }
 
         // ============================================================
+        // KEYFRAME ANIMATION ENGINE
+        // ============================================================
+        const GAME_ANIMS = {
+            attack_slash:{duration:0.6,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.3,la_rx:0.3,la_rz:0,ra_rx:-1.8,ra_rz:-0.5,ll_rx:0.2,rl_rx:-0.2,body_rx:0.2,body_y:0.5},{t:0.5,la_rx:0.1,la_rz:0,ra_rx:0.8,ra_rz:0.3,ll_rx:-0.1,rl_rx:0.1,body_rx:-0.1,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            attack_stab:{duration:0.5,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.4,la_rx:0,la_rz:0,ra_rx:-1.5,ra_rz:0,ll_rx:-0.3,rl_rx:0.3,body_rx:0.25,body_y:0.48},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            block:{duration:0.4,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.3,la_rx:-1.2,la_rz:0.4,ra_rx:-0.8,ra_rz:-0.3,ll_rx:0.1,rl_rx:-0.1,body_rx:-0.1,body_y:0.48},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            death:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.3,la_rx:0.5,la_rz:0.3,ra_rx:0.5,ra_rz:-0.3,ll_rx:-0.2,rl_rx:-0.2,body_rx:-0.3,body_y:0.45},{t:0.7,la_rx:1.2,la_rz:0.5,ra_rx:1.2,ra_rz:-0.5,ll_rx:-0.8,rl_rx:-0.8,body_rx:-1.2,body_y:0.25},{t:1,la_rx:1.4,la_rz:0.6,ra_rx:1.4,ra_rz:-0.6,ll_rx:-1.0,rl_rx:-1.0,body_rx:-1.5,body_y:0.15}]},
+            flinch:{duration:0.35,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.3,la_rx:0.4,la_rz:0.2,ra_rx:0.4,ra_rz:-0.2,ll_rx:0.15,rl_rx:0.15,body_rx:-0.3,body_y:0.47},{t:0.6,la_rx:0.2,la_rz:0.1,ra_rx:0.2,ra_rz:-0.1,ll_rx:0.05,rl_rx:0.05,body_rx:-0.15,body_y:0.48},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            special_attack:{duration:0.8,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:-0.5,la_rz:0.2,ra_rx:-2.2,ra_rz:-0.3,ll_rx:0.1,rl_rx:-0.1,body_rx:-0.2,body_y:0.52},{t:0.35,la_rx:-0.6,la_rz:0.3,ra_rx:-2.8,ra_rz:-0.4,ll_rx:0.15,rl_rx:-0.15,body_rx:-0.25,body_y:0.54},{t:0.5,la_rx:0.4,la_rz:0,ra_rx:1.0,ra_rz:0.3,ll_rx:-0.3,rl_rx:0.3,body_rx:0.35,body_y:0.44},{t:0.65,la_rx:0.2,la_rz:0,ra_rx:0.4,ra_rz:0.1,ll_rx:-0.1,rl_rx:0.1,body_rx:0.15,body_y:0.48},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            eat:{duration:0.7,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.2,la_rx:0,la_rz:0,ra_rx:-1.8,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.5,la_rx:0,la_rz:0,ra_rx:-2.2,ra_rz:0.1,ll_rx:0,rl_rx:0,body_rx:-0.05,body_y:0.51},{t:0.7,la_rx:0,la_rz:0,ra_rx:-1.8,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            pickup_loot:{duration:0.6,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.35,la_rx:0.6,la_rz:0,ra_rx:0.8,ra_rz:0,ll_rx:-0.4,rl_rx:-0.2,body_rx:0.7,body_y:0.35},{t:0.55,la_rx:0.3,la_rz:0,ra_rx:0.5,ra_rz:0,ll_rx:-0.2,rl_rx:-0.1,body_rx:0.4,body_y:0.42},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            level_up:{duration:1.2,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:0.1,la_rz:0,ra_rx:0.1,ra_rz:0,ll_rx:-0.2,rl_rx:-0.2,body_rx:0,body_y:0.45},{t:0.35,la_rx:-2.8,la_rz:-0.4,ra_rx:-2.8,ra_rz:0.4,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.56},{t:0.55,la_rx:-2.6,la_rz:-0.5,ra_rx:-2.6,ra_rz:0.5,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.54},{t:0.75,la_rx:-2.8,la_rz:-0.4,ra_rx:-2.8,ra_rz:0.4,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.56},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            bury_bones:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.3,la_rx:-0.6,la_rz:0,ra_rx:-0.6,ra_rz:0,ll_rx:-0.8,rl_rx:-0.8,body_rx:0.2,body_y:0.32},{t:0.5,la_rx:-0.8,la_rz:0,ra_rx:-0.8,ra_rz:0,ll_rx:-1.0,rl_rx:-1.0,body_rx:0.3,body_y:0.28},{t:0.7,la_rx:-0.6,la_rz:0,ra_rx:-0.6,ra_rz:0,ll_rx:-0.8,rl_rx:-0.8,body_rx:0.2,body_y:0.32},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            pickpocket:{duration:0.6,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.5,la_rx:0,la_rz:0,ra_rx:-1.4,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.15,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            wave:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:0,la_rz:0,ra_rx:-2.5,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.35,la_rx:0,la_rz:0,ra_rx:-2.2,ra_rz:-0.5,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.55,la_rx:0,la_rz:0,ra_rx:-2.5,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.75,la_rx:0,la_rz:0,ra_rx:-2.2,ra_rz:-0.5,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            dance:{duration:1.5,loop:true,keyframes:[{t:0,la_rx:-0.5,la_rz:-0.5,ra_rx:-0.5,ra_rz:0.5,ll_rx:0.3,rl_rx:-0.3,body_rx:0,body_y:0.5},{t:0.25,la_rx:-1.5,la_rz:-0.3,ra_rx:-1.5,ra_rz:0.3,ll_rx:-0.3,rl_rx:0.3,body_rx:0,body_y:0.54},{t:0.5,la_rx:-0.5,la_rz:0.5,ra_rx:-0.5,ra_rz:-0.5,ll_rx:0.3,rl_rx:-0.3,body_rx:0,body_y:0.5},{t:0.75,la_rx:-1.5,la_rz:0.3,ra_rx:-1.5,ra_rz:-0.3,ll_rx:-0.3,rl_rx:0.3,body_rx:0,body_y:0.54},{t:1,la_rx:-0.5,la_rz:-0.5,ra_rx:-0.5,ra_rz:0.5,ll_rx:0.3,rl_rx:-0.3,body_rx:0,body_y:0.5}]},
+            bow:{duration:0.8,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.4,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0.6,body_y:0.45},{t:0.6,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0.6,body_y:0.45},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            clap:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.1,la_rx:-1.2,la_rz:0.5,ra_rx:-1.2,ra_rz:-0.5,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.2,la_rx:-1.2,la_rz:0.1,ra_rx:-1.2,ra_rz:-0.1,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.35,la_rx:-1.2,la_rz:0.5,ra_rx:-1.2,ra_rz:-0.5,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.45,la_rx:-1.2,la_rz:0.1,ra_rx:-1.2,ra_rz:-0.1,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.6,la_rx:-1.2,la_rz:0.5,ra_rx:-1.2,ra_rz:-0.5,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.7,la_rx:-1.2,la_rz:0.1,ra_rx:-1.2,ra_rz:-0.1,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            think:{duration:2.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.2,la_rx:0.2,la_rz:0,ra_rx:-1.8,ra_rz:0.2,ll_rx:0,rl_rx:0,body_rx:-0.05,body_y:0.5},{t:0.4,la_rx:0.2,la_rz:0,ra_rx:-1.8,ra_rz:0.15,ll_rx:0,rl_rx:0,body_rx:-0.05,body_y:0.5},{t:0.6,la_rx:0.2,la_rz:0,ra_rx:-1.8,ra_rz:0.25,ll_rx:0,rl_rx:0,body_rx:-0.05,body_y:0.5},{t:0.8,la_rx:0.2,la_rz:0,ra_rx:-1.8,ra_rz:0.15,ll_rx:0,rl_rx:0,body_rx:-0.05,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            laugh:{duration:1.2,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.1,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.15,body_y:0.48},{t:0.2,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.25,body_y:0.46},{t:0.3,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.15,body_y:0.48},{t:0.4,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.25,body_y:0.46},{t:0.55,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.15,body_y:0.48},{t:0.7,la_rx:-0.6,la_rz:0.3,ra_rx:-0.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.2,body_y:0.47},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            angry:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:-1.0,la_rz:-0.3,ra_rx:-1.0,ra_rz:0.3,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:0.3,la_rx:-1.0,la_rz:-0.3,ra_rx:-1.0,ra_rz:0.3,ll_rx:0,rl_rx:0.5,body_rx:0.05,body_y:0.48},{t:0.45,la_rx:-1.0,la_rz:-0.3,ra_rx:-1.0,ra_rz:0.3,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:0.6,la_rx:-1.0,la_rz:-0.3,ra_rx:-1.0,ra_rz:0.3,ll_rx:0.5,rl_rx:0,body_rx:0.05,body_y:0.48},{t:0.75,la_rx:-1.0,la_rz:-0.3,ra_rx:-1.0,ra_rz:0.3,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            point:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.25,la_rx:0.1,la_rz:0,ra_rx:-1.5,ra_rz:-0.1,ll_rx:0,rl_rx:0,body_rx:0.05,body_y:0.5},{t:0.7,la_rx:0.1,la_rz:0,ra_rx:-1.5,ra_rz:-0.1,ll_rx:0,rl_rx:0,body_rx:0.05,body_y:0.5},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            cry:{duration:2.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:-1.6,la_rz:0.3,ra_rx:-1.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.1,body_y:0.48},{t:0.3,la_rx:-1.6,la_rz:0.3,ra_rx:-1.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.2,body_y:0.46},{t:0.45,la_rx:-1.6,la_rz:0.3,ra_rx:-1.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.1,body_y:0.48},{t:0.6,la_rx:-1.6,la_rz:0.3,ra_rx:-1.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.2,body_y:0.46},{t:0.75,la_rx:-1.6,la_rz:0.3,ra_rx:-1.6,ra_rz:-0.3,ll_rx:0,rl_rx:0,body_rx:0.1,body_y:0.48},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            cheer:{duration:1.0,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.15,la_rx:0.2,la_rz:0,ra_rx:0.2,ra_rz:0,ll_rx:-0.3,rl_rx:-0.3,body_rx:0,body_y:0.44},{t:0.3,la_rx:-2.6,la_rz:-0.5,ra_rx:-2.6,ra_rz:0.5,ll_rx:0.2,rl_rx:0.2,body_rx:0,body_y:0.58},{t:0.5,la_rx:-2.4,la_rz:-0.4,ra_rx:-2.4,ra_rz:0.4,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:0.65,la_rx:-2.6,la_rz:-0.5,ra_rx:-2.6,ra_rz:0.5,ll_rx:0.2,rl_rx:0.2,body_rx:0,body_y:0.58},{t:0.8,la_rx:-2.4,la_rz:-0.4,ra_rx:-2.4,ra_rz:0.4,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            shrug:{duration:1.2,loop:false,keyframes:[{t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},{t:0.25,la_rx:-0.8,la_rz:-0.8,ra_rx:-0.8,ra_rz:0.8,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:0.65,la_rx:-0.8,la_rz:-0.8,ra_rx:-0.8,ra_rz:0.8,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.52},{t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}]},
+            headbang:{duration:1.0,loop:true,keyframes:[{t:0,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.5},{t:0.2,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0.35,body_y:0.47},{t:0.4,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.5},{t:0.6,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0.35,body_y:0.47},{t:0.8,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.5},{t:1,la_rx:0.3,la_rz:0,ra_rx:0.3,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:-0.1,body_y:0.5}]},
+        };
+
+        function playCharAnim(c, animId) {
+            const a = GAME_ANIMS[animId]; if (!a) return;
+            c.charAnim = { id: animId, timer: a.duration, duration: a.duration, loop: a.loop, keyframes: a.keyframes };
+        }
+        function stopCharAnim(c) {
+            c.charAnim = null;
+            if (c.leftArm) { c.leftArm.rotation.x = 0; c.leftArm.rotation.z = 0; }
+            if (c.rightArm) { c.rightArm.rotation.x = 0; c.rightArm.rotation.z = 0; }
+            if (c.leftLeg) c.leftLeg.rotation.x = 0;
+            if (c.rightLeg) c.rightLeg.rotation.x = 0;
+            if (c.body) { c.body.rotation.x = 0; c.body.position.y = 0.5; }
+        }
+        function updateCharAnim(c, dt) {
+            if (!c.charAnim) return false;
+            const a = c.charAnim;
+            a.timer -= dt;
+            const progress = 1 - Math.max(0, a.timer) / a.duration;
+            const kfs = a.keyframes;
+            let prev = kfs[0], next = kfs[kfs.length - 1];
+            for (let i = 0; i < kfs.length - 1; i++) {
+                if (progress >= kfs[i].t && progress <= kfs[i + 1].t) { prev = kfs[i]; next = kfs[i + 1]; break; }
+            }
+            const range = next.t - prev.t;
+            const t = range > 0 ? (progress - prev.t) / range : 0;
+            const lerp = (a, b) => a + (b - a) * t;
+            c.leftArm.rotation.x = lerp(prev.la_rx, next.la_rx);
+            c.leftArm.rotation.z = lerp(prev.la_rz, next.la_rz);
+            c.rightArm.rotation.x = lerp(prev.ra_rx, next.ra_rx);
+            c.rightArm.rotation.z = lerp(prev.ra_rz, next.ra_rz);
+            c.leftLeg.rotation.x = lerp(prev.ll_rx, next.ll_rx);
+            c.rightLeg.rotation.x = lerp(prev.rl_rx, next.rl_rx);
+            c.body.rotation.x = lerp(prev.body_rx, next.body_rx);
+            c.body.position.y = lerp(prev.body_y, next.body_y);
+            if (a.timer <= 0) {
+                if (a.loop) { a.timer = a.duration; }
+                else { stopCharAnim(c); }
+            }
+            return true;
+        }
+
+        // ============================================================
         // GAME LOOP (rendering only — logic on server)
         // ============================================================
-        // Pickpocket animation — quick arm reach forward then back
-        let ppAnimTimer=0, ppAnimSuccess=false;
-        function playPickpocketAnim(success){ppAnimTimer=0.6;ppAnimSuccess=success;}
-        function updatePickpocketAnim(c,dt){
-            if(ppAnimTimer<=0)return;
-            ppAnimTimer-=dt;
-            const t=Math.max(0,ppAnimTimer);
-            const phase=(0.6-t)/0.6; // 0→1
-            // Quick reach forward with right arm (0-0.3), pull back (0.3-0.6)
-            const reach=phase<0.5?phase*2:(1-phase)*2; // 0→1→0
-            c.rightArm.rotation.x=-reach*1.4; // reach forward
-            c.rightArm.rotation.z=-reach*0.3; // slight outward
-            // Lean body slightly forward
-            c.body.rotation.x=reach*0.15;
-            if(ppAnimTimer<=0){
-                c.rightArm.rotation.x=0;c.rightArm.rotation.z=0;c.body.rotation.x=0;
-            }
-        }
 
         // Blended walk/sit animation helper
         function animateWalk(c,moving,dt,resting){
@@ -2488,20 +2548,19 @@
             myChar.group.position.y+=(myTargetH-myChar.group.position.y)*lerpAmt;
             myChar.group.position.z+=(myTargetZ-myChar.group.position.z)*lerpAmt;
             myChar.group.rotation.y+=(myTargetRot-myChar.group.rotation.y)*lerpAmt;
-            animateWalk(myChar,myIsMoving,dt,myIsResting);
-            updatePickpocketAnim(myChar,dt);
+            if(!updateCharAnim(myChar,dt)){animateWalk(myChar,myIsMoving,dt,myIsResting);}
             // Other players
             otherPlayerMeshes.forEach(m=>{
                 m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
-                if(m.leftLeg)animateWalk(m,m.isMoving,dt,m.isResting||false);
+                if(m.leftLeg){if(!updateCharAnim(m,dt))animateWalk(m,m.isMoving,dt,m.isResting||false);}
             });
             // NPCs
             npcMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
-                if(m.leftLeg)animateWalk(m,m.isMoving,dt,false);
+                if(m.leftLeg){if(!updateCharAnim(m,dt))animateWalk(m,m.isMoving,dt,false);}
             });
             // Monsters
             monsterMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
-                if(m.isHumanoid&&m.leftLeg)animateWalk(m,m.isMoving,dt,false);
+                if(m.isHumanoid&&m.leftLeg){if(!updateCharAnim(m,dt))animateWalk(m,m.isMoving,dt,false);}
                 if(m.state.isDead)m.group.visible=false; else m.group.visible=true;
             });
             // Path visualization cleanup + destination pulse
