@@ -1760,69 +1760,71 @@
             const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,0.07,SEG),skinMat.clone());
             neck.position.set(0,0.76,0);g.add(neck);
 
-            // === HEAD (low-poly sphere) ===
-            const head=new THREE.Mesh(new THREE.SphereGeometry(0.16,6,5),skinMat.clone());
-            head.position.y=0.96;head.castShadow=true;g.add(head);
-            // Face — eyes
+            // === HEAD (low-poly sphere, slightly squished tall) ===
+            const headR=0.14;
+            const head=new THREE.Mesh(new THREE.SphereGeometry(headR,6,5),skinMat.clone());
+            head.scale.set(1,1.05,0.95); // slightly tall, slightly flat front-to-back
+            head.position.y=0.94;head.castShadow=true;g.add(head);
+            // Face — eyes (pushed well forward so they're visible)
             const eyeWhiteMat=new THREE.MeshBasicMaterial({color:0xffffff});
             const pupilMat=new THREE.MeshBasicMaterial({color:0x1a1a1a});
-            const eyeGeo=new THREE.SphereGeometry(0.025,4,3);
-            const pupilGeo=new THREE.SphereGeometry(0.015,4,3);
-            const leye=new THREE.Mesh(eyeGeo,eyeWhiteMat);leye.position.set(-0.055,0.98,0.13);g.add(leye);
-            const reye=new THREE.Mesh(eyeGeo,eyeWhiteMat);reye.position.set(0.055,0.98,0.13);g.add(reye);
-            const lpupil=new THREE.Mesh(pupilGeo,pupilMat);lpupil.position.set(-0.053,0.98,0.145);g.add(lpupil);
-            const rpupil=new THREE.Mesh(pupilGeo,pupilMat);rpupil.position.set(0.057,0.98,0.145);g.add(rpupil);
+            const eyeGeo=new THREE.SphereGeometry(0.022,4,3);
+            const pupilGeo=new THREE.SphereGeometry(0.013,4,3);
+            const leye=new THREE.Mesh(eyeGeo,eyeWhiteMat);leye.position.set(-0.05,0.96,0.12);g.add(leye);
+            const reye=new THREE.Mesh(eyeGeo,eyeWhiteMat);reye.position.set(0.05,0.96,0.12);g.add(reye);
+            const lpupil=new THREE.Mesh(pupilGeo,pupilMat);lpupil.position.set(-0.048,0.96,0.135);g.add(lpupil);
+            const rpupil=new THREE.Mesh(pupilGeo,pupilMat);rpupil.position.set(0.052,0.96,0.135);g.add(rpupil);
             // Nose
-            const nose=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.02,0.04,4),skinMat.clone());
-            nose.rotation.x=Math.PI/2;nose.position.set(0,0.94,0.16);g.add(nose);
+            const nose=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.016,0.03,4),skinMat.clone());
+            nose.rotation.x=Math.PI/2;nose.position.set(0,0.93,0.14);g.add(nose);
 
-            // === HAIR ===
+            // === HAIR (sits on TOP of head, never covers face) ===
+            // Hair is positioned above head center and shifted back so forehead is clear
             if(hairCol){
                 const hMat=new THREE.MeshLambertMaterial({color:hairCol});
-                const headR=0.16; // head radius
+                const hTop=0.94+headR*0.7; // top of visible forehead
                 if(hairStyle==='Bald'){
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.01,6,3,0,Math.PI*2,0,Math.PI*0.45),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
+                    // Just a thin skullcap on very top
+                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.005,6,2,0,Math.PI*2,0,Math.PI*0.3),hMat);
+                    cap.position.set(0,0.94,-0.01);g.add(cap);
                 }else if(hairStyle==='Spiky'){
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.02,6,3,0,Math.PI*2,0,Math.PI*0.5),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
-                    const spikeGeo=new THREE.ConeGeometry(0.03,0.12,4);
-                    [[-0.07,1.14,-0.02],[0,1.17,0],[0.07,1.14,0.02],[-0.04,1.15,0.04],[0.04,1.15,-0.03]].forEach(p=>{
+                    // Flat top piece + cone spikes pointing up
+                    const base=new THREE.Mesh(new THREE.SphereGeometry(headR+0.015,6,2,0,Math.PI*2,0,Math.PI*0.35),hMat);
+                    base.position.set(0,0.94,-0.01);g.add(base);
+                    const spikeGeo=new THREE.ConeGeometry(0.025,0.10,4);
+                    [[-0.06,hTop+0.06,-0.02],[0,hTop+0.09,0],[0.06,hTop+0.06,0.01],[-0.03,hTop+0.07,0.03],[0.03,hTop+0.07,-0.03]].forEach(p=>{
                         const spike=new THREE.Mesh(spikeGeo,hMat);
                         spike.position.set(p[0],p[1],p[2]);
-                        spike.rotation.z=(Math.random()-0.5)*0.5;
-                        spike.rotation.x=(Math.random()-0.5)*0.3;
+                        spike.rotation.z=(p[0])*2; // lean outward
                         g.add(spike);
                     });
                 }else if(hairStyle==='Long'){
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.02,6,4,0,Math.PI*2,0,Math.PI*0.55),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
-                    // Side drapes
-                    const dGeo=new THREE.CylinderGeometry(0.04,0.03,0.28,SEG);
-                    const sideL=new THREE.Mesh(dGeo,hMat);sideL.position.set(-0.14,0.88,-0.03);g.add(sideL);
-                    const sideR=new THREE.Mesh(dGeo,hMat);sideR.position.set(0.14,0.88,-0.03);g.add(sideR);
-                    // Back curtain
-                    const back=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.08,0.30,SEG),hMat);
-                    back.position.set(0,0.88,-0.10);g.add(back);
+                    // Cap on top + drapes hanging down the BACK and sides (not front)
+                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.015,6,2,0,Math.PI*2,0,Math.PI*0.38),hMat);
+                    cap.position.set(0,0.94,-0.01);g.add(cap);
+                    const dGeo=new THREE.CylinderGeometry(0.035,0.025,0.26,SEG);
+                    const sideL=new THREE.Mesh(dGeo,hMat);sideL.position.set(-0.12,0.84,-0.04);g.add(sideL);
+                    const sideR=new THREE.Mesh(dGeo,hMat);sideR.position.set(0.12,0.84,-0.04);g.add(sideR);
+                    const back=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.06,0.28,SEG),hMat);
+                    back.position.set(0,0.84,-0.10);g.add(back);
                 }else if(hairStyle==='Ponytail'){
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.02,6,3,0,Math.PI*2,0,Math.PI*0.5),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
-                    const tail=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.02,0.24,SEG),hMat);
-                    tail.position.set(0,0.86,-0.13);tail.rotation.x=0.2;g.add(tail);
+                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.015,6,2,0,Math.PI*2,0,Math.PI*0.35),hMat);
+                    cap.position.set(0,0.94,-0.01);g.add(cap);
+                    const tail=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.016,0.22,SEG),hMat);
+                    tail.position.set(0,0.82,-0.12);tail.rotation.x=0.25;g.add(tail);
                 }else if(hairStyle==='Pigtails'){
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.02,6,3,0,Math.PI*2,0,Math.PI*0.5),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
-                    const tGeo=new THREE.CylinderGeometry(0.025,0.02,0.20,SEG);
-                    const tailL=new THREE.Mesh(tGeo,hMat);tailL.position.set(-0.14,0.88,-0.06);tailL.rotation.z=0.15;g.add(tailL);
-                    const tailR=new THREE.Mesh(tGeo,hMat);tailR.position.set(0.14,0.88,-0.06);tailR.rotation.z=-0.15;g.add(tailR);
+                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.015,6,2,0,Math.PI*2,0,Math.PI*0.35),hMat);
+                    cap.position.set(0,0.94,-0.01);g.add(cap);
+                    const tGeo=new THREE.CylinderGeometry(0.022,0.016,0.18,SEG);
+                    const tailL=new THREE.Mesh(tGeo,hMat);tailL.position.set(-0.12,0.84,-0.06);tailL.rotation.z=0.15;g.add(tailL);
+                    const tailR=new THREE.Mesh(tGeo,hMat);tailR.position.set(0.12,0.84,-0.06);tailR.rotation.z=-0.15;g.add(tailR);
                 }else{
-                    // Short (default)
-                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.02,6,4,0,Math.PI*2,0,Math.PI*0.55),hMat);
-                    cap.position.set(0,0.96,0);g.add(cap);
-                    // Slight side volume
-                    const sGeo=new THREE.SphereGeometry(0.05,4,3);
-                    const sL=new THREE.Mesh(sGeo,hMat);sL.position.set(-0.13,0.97,-0.02);g.add(sL);
-                    const sR=new THREE.Mesh(sGeo,hMat);sR.position.set(0.13,0.97,-0.02);g.add(sR);
+                    // Short (default) — cap on top + small side tufts behind ears
+                    const cap=new THREE.Mesh(new THREE.SphereGeometry(headR+0.015,6,2,0,Math.PI*2,0,Math.PI*0.38),hMat);
+                    cap.position.set(0,0.94,-0.01);g.add(cap);
+                    const sGeo=new THREE.SphereGeometry(0.04,4,3);
+                    const sL=new THREE.Mesh(sGeo,hMat);sL.position.set(-0.11,0.95,-0.04);g.add(sL);
+                    const sR=new THREE.Mesh(sGeo,hMat);sR.position.set(0.11,0.95,-0.04);g.add(sR);
                 }
             }
 
@@ -2009,7 +2011,7 @@
             const pivotRef = charMesh[cfg.pivot];
             if (cfg.pivot === 'head' && !charMesh.isCustomModel) {
                 const wrapper = new THREE.Group();
-                wrapper.position.set(0, 0.96, 0);
+                wrapper.position.set(0, 0.94, 0);
                 wrapper.add(container);
                 charMesh.group.add(wrapper);
                 charMesh.equipMeshes[slot] = wrapper;
