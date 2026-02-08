@@ -670,6 +670,43 @@
             letter-spacing: 2px;
         }
 
+        /* ── ACTIVITY FEED ── */
+        .feed-list {
+            max-height: 320px; overflow-y: auto;
+        }
+        .feed-list::-webkit-scrollbar { width: 4px; }
+        .feed-list::-webkit-scrollbar-track { background: transparent; }
+        .feed-list::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+        .feed-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(180, 160, 120, 0.06);
+            transition: background 0.2s;
+            animation: feedSlideIn 0.4s ease both;
+        }
+        .feed-item:hover { background: rgba(201, 168, 76, 0.03); }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-icon { font-size: 20px; flex-shrink: 0; width: 32px; text-align: center; }
+        .feed-text {
+            flex: 1; font-family: var(--font-ui); font-size: 13px;
+            color: var(--text); line-height: 1.4;
+        }
+        .feed-text strong { color: var(--text-bright); font-weight: 600; }
+        .feed-text .highlight { color: var(--gold); }
+        .feed-time {
+            font-family: var(--font-ui); font-size: 10px;
+            color: var(--text-dim); white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+        .feed-empty {
+            text-align: center; padding: 40px;
+            color: var(--text-dim); font-style: italic; font-size: 14px;
+        }
+        @keyframes feedSlideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
         /* ── FOOTER ── */
         .footer {
             position: relative; z-index: 3;
@@ -1038,6 +1075,23 @@
         <div class="stat-item">
             <div class="stat-val" id="gs-kills">—</div>
             <div class="stat-label">Monsters Slain</div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTIVITY FEED -->
+<div class="panel-section reveal" id="activity-feed">
+    <div class="section-label">Live</div>
+    <div class="section-title">Activity Feed</div>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Recent Events</span>
+            <span class="panel-subtitle" id="feed-status">Loading...</span>
+        </div>
+        <div class="panel-body" style="padding:0;">
+            <div class="feed-list" id="feed-list">
+                <div class="feed-empty">Waiting for events...</div>
+            </div>
         </div>
     </div>
 </div>
@@ -1590,6 +1644,46 @@ async function loadGlobalStats() {
 }
 
 // ============================================================
+// Activity Feed
+// ============================================================
+function timeAgo(date) {
+    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return 'just now';
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return mins + 'm ago';
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + 'h ago';
+    return Math.floor(hours / 24) + 'd ago';
+}
+
+async function loadActivityFeed() {
+    const list = document.getElementById('feed-list');
+    const status = document.getElementById('feed-status');
+    try {
+        const res = await fetch(SERVER_BASE + '/activity');
+        const { events } = await res.json();
+
+        if (!events || events.length === 0) {
+            list.innerHTML = '<div class="feed-empty">No events yet. Start playing to see activity here!</div>';
+            status.textContent = 'No events';
+            return;
+        }
+
+        status.textContent = events.length + ' recent events';
+        list.innerHTML = events.map(e => `
+            <div class="feed-item">
+                <div class="feed-icon">${escapeHtml(e.icon || '📢')}</div>
+                <div class="feed-text">${escapeHtml(e.message)}</div>
+                <div class="feed-time">${timeAgo(e.created_at)}</div>
+            </div>
+        `).join('');
+    } catch {
+        list.innerHTML = '<div class="feed-empty">Activity feed coming soon.</div>';
+        status.textContent = 'Offline';
+    }
+}
+
+// ============================================================
 // Mobile Nav Toggle
 // ============================================================
 function toggleMobileNav() {
@@ -1610,7 +1704,9 @@ loadLeaderboard();
 checkServerStatus();
 fetchPlayerCount();
 loadGlobalStats();
+loadActivityFeed();
 setInterval(() => { checkServerStatus(); fetchPlayerCount(); }, 30000);
+setInterval(loadActivityFeed, 60000); // refresh feed every 60s
 </script>
 </body>
 </html>

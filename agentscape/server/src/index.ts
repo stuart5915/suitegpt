@@ -177,6 +177,81 @@ app.get('/world', async (_req, res) => {
     }
 });
 
+// Valid skill columns in agentscape_players
+const VALID_SKILLS = [
+    'attack', 'strength', 'defence', 'hitpoints', 'prayer', 'thieving',
+    'woodcutting', 'mining', 'fishing', 'cooking', 'smithing', 'crafting',
+    'fletching', 'runecrafting',
+];
+
+// Per-skill hiscores
+app.get('/hiscores/:skill', async (req, res) => {
+    try {
+        const skill = req.params.skill.toLowerCase();
+        if (!VALID_SKILLS.includes(skill)) {
+            return res.status(400).json({ error: 'Invalid skill. Valid: ' + VALID_SKILLS.join(', ') });
+        }
+        const limit = Math.min(Number(req.query.limit) || 25, 100);
+        const xpCol = skill + '_xp';
+        const { data, error } = await sbPublic
+            .from('agentscape_players')
+            .select(`name, ${skill}, ${xpCol}, combat_level, total_level`)
+            .order(xpCol, { ascending: false })
+            .limit(limit);
+        if (error) throw error;
+        res.json({
+            skill,
+            players: (data || []).map((p: any, i: number) => ({
+                rank: i + 1,
+                name: p.name,
+                level: p[skill],
+                xp: p[xpCol],
+                combat_level: p.combat_level,
+                total_level: p.total_level,
+            })),
+        });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch hiscores' });
+    }
+});
+
+// Player search
+app.get('/search', async (req, res) => {
+    try {
+        const q = String(req.query.q || '').trim();
+        if (!q || q.length < 2) {
+            return res.status(400).json({ error: 'Query must be at least 2 characters' });
+        }
+        const limit = Math.min(Number(req.query.limit) || 10, 25);
+        const { data, error } = await sbPublic
+            .from('agentscape_players')
+            .select('name, combat_level, total_level, total_kills')
+            .ilike('name', `%${q}%`)
+            .order('combat_level', { ascending: false })
+            .limit(limit);
+        if (error) throw error;
+        res.json({ results: data || [] });
+    } catch {
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Recent activity feed (recent achievements, level ups, rare drops)
+app.get('/activity', async (_req, res) => {
+    try {
+        const { data, error } = await sbPublic
+            .from('agentscape_activity')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+        if (error) throw error;
+        res.json({ events: data || [] });
+    } catch {
+        // Table may not exist yet, return empty
+        res.json({ events: [] });
+    }
+});
+
 // Colyseus monitor (admin panel)
 app.use('/colyseus', monitor());
 

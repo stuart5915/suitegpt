@@ -3,6 +3,7 @@ import { PlayerSchema } from './PlayerSchema';
 import { NPCSchema } from './NPCSchema';
 import { MonsterSchema } from './MonsterSchema';
 import { ResourceNodeSchema } from './ResourceNodeSchema';
+import { ChatMessage } from './ChatMessageSchema';
 
 export class LootPile extends Schema {
     @type('string') id: string = '';
@@ -24,6 +25,7 @@ export class GameState extends Schema {
     @type({ map: LootPile }) lootPiles = new MapSchema<LootPile>();
     @type({ map: ShopStock }) shopStock = new MapSchema<ShopStock>();
     @type({ map: ResourceNodeSchema }) resourceNodes = new MapSchema<ResourceNodeSchema>();
+    @type([ChatMessage]) chatMessages = new ArraySchema<ChatMessage>();
     @type('uint32') tick: number = 0;
     @type('boolean') isNight: boolean = false;
     @type('float64') serverTime: number = 0;

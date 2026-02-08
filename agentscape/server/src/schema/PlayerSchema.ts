@@ -1,6 +1,7 @@
 import { Schema, type, ArraySchema, MapSchema, filter } from '@colyseus/schema';
 import type { Client } from 'colyseus';
 import { BankSchema } from './BankSchema';
+import { PlayerAchievements } from './AchievementSchema';
 
 export class InventoryItem extends Schema {
     @type('string') id: string = '';
@@ -229,6 +230,48 @@ export class PlayerSchema extends Schema {
         return client.sessionId === this.sessionId;
     })
     @type(InventoryItem) equippedShield: InventoryItem = new InventoryItem();
+
+    // ── Additional Equipment Slots ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedBody: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedLegs: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedBoots: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedGloves: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedCape: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedRing: InventoryItem = new InventoryItem();
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(InventoryItem) equippedAmulet: InventoryItem = new InventoryItem();
+
+    // ── Achievements ──
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type(PlayerAchievements) achievements: PlayerAchievements = new PlayerAchievements();
 
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
