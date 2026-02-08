@@ -6,6 +6,8 @@
     <title>AgentScape Forge | Asset Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -111,9 +113,9 @@
         .preview-3d { margin-top: 12px; width: 180px; display: none; }
         .preview-3d.visible { display: block; }
         .preview-3d-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 6px; text-align: center; }
-        .preview-3d-img { width: 180px; height: 140px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; background: var(--bg-elevated); cursor: pointer; transition: border-color 0.15s; }
-        .preview-3d-img:hover { border-color: var(--accent); }
-        .preview-3d-img img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-3d-viewer { width: 180px; height: 180px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; background: var(--bg-elevated); }
+        .preview-3d-viewer model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+        .preview-3d-hint { font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 4px; }
         .modal-stats { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
         .stat-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--border); }
         .modal-controls { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -148,6 +150,38 @@
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
         .empty-state-text { font-size: 14px; }
+
+        /* ============ ANIMATION EDITOR ============ */
+        .anim-editor { display: none; flex-direction: column; padding: 0 !important; overflow: hidden; }
+        .anim-toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-surface); flex-wrap: wrap; flex-shrink: 0; }
+        .anim-selector { display: flex; gap: 8px; align-items: center; }
+        .anim-selector select { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 180px; }
+        .anim-playback { display: flex; align-items: center; gap: 8px; }
+        .anim-loop-label { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+        .anim-speed { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+        .anim-speed input[type=range] { width: 80px; accent-color: var(--accent); }
+        .anim-actions { margin-left: auto; display: flex; gap: 8px; }
+        .anim-workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+        .anim-preview-panel { width: 380px; min-width: 300px; background: var(--bg-base); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: relative; }
+        .anim-preview-panel canvas { width: 100% !important; height: 100% !important; flex: 1; display: block; cursor: grab; }
+        .anim-preview-panel canvas:active { cursor: grabbing; }
+        .anim-preview-info { position: absolute; bottom: 8px; left: 8px; font-size: 11px; color: var(--text-muted); background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
+        .anim-preview-hint { position: absolute; top: 8px; right: 8px; font-size: 10px; color: var(--text-muted); background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 3px; pointer-events: none; }
+        .anim-controls-panel { flex: 1; overflow-y: auto; padding: 16px; }
+        .anim-controls-scroll { display: flex; flex-direction: column; gap: 12px; }
+        .joint-group { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .joint-group-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px; }
+        .joint-slider { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .joint-slider:last-child { margin-bottom: 0; }
+        .joint-slider label { font-size: 12px; color: var(--text-secondary); width: 90px; flex-shrink: 0; }
+        .joint-slider input[type=range] { flex: 1; accent-color: var(--accent); }
+        .joint-slider .slider-val { font-size: 11px; color: var(--text-muted); width: 50px; text-align: right; font-family: 'Courier New', monospace; }
+        .anim-timeline-panel { border-top: 1px solid var(--border); background: var(--bg-surface); flex-shrink: 0; }
+        .anim-timeline-header { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+        .anim-duration-label { font-size: 12px; color: var(--text-secondary); }
+        .anim-duration-input { width: 60px !important; padding: 4px 8px !important; font-size: 12px !important; min-height: auto !important; }
+        .anim-timeline-track { height: 80px; position: relative; cursor: crosshair; }
+        .anim-timeline-track canvas { width: 100%; height: 100%; display: block; }
     </style>
 </head>
 <body>
@@ -181,6 +215,55 @@
 
     <!-- MAIN GRID -->
     <div class="main" id="main"></div>
+
+    <!-- ANIMATION EDITOR -->
+    <div class="main anim-editor" id="anim-editor">
+        <div class="anim-toolbar">
+            <div class="anim-selector">
+                <select id="anim-select" onchange="selectAnimation(this.value)"></select>
+                <button class="btn" onclick="createNewAnimation()">+ New</button>
+            </div>
+            <div class="anim-playback">
+                <button class="btn" id="anim-play-btn" onclick="animTogglePlay()">&#9654; Play</button>
+                <button class="btn" onclick="animStop()">&#9632; Stop</button>
+                <label class="anim-loop-label"><input type="checkbox" id="anim-loop" onchange="animLoopChanged(this.checked)"> Loop</label>
+                <div class="anim-speed">
+                    <span>Speed:</span>
+                    <input type="range" min="0.1" max="3" step="0.1" value="1" id="anim-speed-slider" oninput="animSpeedChanged(this.value)">
+                    <span id="anim-speed-val">1.0x</span>
+                </div>
+            </div>
+            <div class="anim-actions">
+                <button class="btn" onclick="animExportCode()">Export Code</button>
+                <button class="btn btn-primary" onclick="animSave()">Save</button>
+            </div>
+        </div>
+        <div class="anim-workspace">
+            <div class="anim-preview-panel" id="anim-preview-panel">
+                <canvas id="anim-canvas"></canvas>
+                <div class="anim-preview-info"><span id="anim-time-display">0.00s / 0.60s</span></div>
+                <div class="anim-preview-hint">Drag to orbit &middot; Scroll to zoom</div>
+            </div>
+            <div class="anim-controls-panel">
+                <div class="anim-controls-scroll" id="anim-controls-scroll"></div>
+            </div>
+        </div>
+        <div class="anim-timeline-panel">
+            <div class="anim-timeline-header">
+                <button class="btn" onclick="addKeyframe()">+ Keyframe</button>
+                <button class="btn" onclick="deleteKeyframe()">&#8722; Delete</button>
+                <button class="btn" onclick="copyKeyframe()">Copy</button>
+                <button class="btn" onclick="pasteKeyframe()">Paste</button>
+                <div style="flex:1"></div>
+                <span class="anim-duration-label">Duration:</span>
+                <input type="number" class="control-input anim-duration-input" id="anim-duration" value="0.6" min="0.1" max="10" step="0.1" onchange="animDurationChanged(this.value)">
+                <span class="anim-duration-label">s</span>
+            </div>
+            <div class="anim-timeline-track" id="anim-timeline-track">
+                <canvas id="timeline-canvas"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ITEM MODAL -->
@@ -380,6 +463,119 @@ const ITEMS = [
 ];
 
 // ============================================================
+// ANIMATION CATEGORIES & PRESETS
+// ============================================================
+const ANIM_CATEGORIES = [
+    { id:'anim_combat', name:'Combat', icon:'\u2694\uFE0F' },
+    { id:'anim_movement', name:'Movement', icon:'\uD83C\uDFC3' },
+    { id:'anim_skilling', name:'Skilling', icon:'\u26CF\uFE0F' },
+    { id:'anim_social', name:'Social', icon:'\uD83D\uDC4B' },
+];
+
+const ANIMATION_PRESETS = [
+    // Combat
+    { id:'attack_slash', name:'Slash Attack', category:'anim_combat', duration:0.6, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.3, la_rx:0.3, la_rz:0, ra_rx:-1.8, ra_rz:-0.5, ll_rx:0.2, rl_rx:-0.2, body_rx:0.2, body_y:0.5 },
+        { t:0.5, la_rx:0.1, la_rz:0, ra_rx:0.8, ra_rz:0.3, ll_rx:-0.1, rl_rx:0.1, body_rx:-0.1, body_y:0.5 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'attack_stab', name:'Stab Attack', category:'anim_combat', duration:0.5, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.4, la_rx:0, la_rz:0, ra_rx:-1.5, ra_rz:0, ll_rx:-0.3, rl_rx:0.3, body_rx:0.25, body_y:0.48 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'block', name:'Block', category:'anim_combat', duration:0.4, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.3, la_rx:-1.2, la_rz:0.4, ra_rx:-0.8, ra_rz:-0.3, ll_rx:0.1, rl_rx:-0.1, body_rx:-0.1, body_y:0.48 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'death', name:'Death', category:'anim_combat', duration:1.0, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.3, la_rx:0.5, la_rz:0.3, ra_rx:0.5, ra_rz:-0.3, ll_rx:-0.2, rl_rx:-0.2, body_rx:-0.3, body_y:0.45 },
+        { t:0.7, la_rx:1.2, la_rz:0.5, ra_rx:1.2, ra_rz:-0.5, ll_rx:-0.8, rl_rx:-0.8, body_rx:-1.2, body_y:0.25 },
+        { t:1, la_rx:1.4, la_rz:0.6, ra_rx:1.4, ra_rz:-0.6, ll_rx:-1.0, rl_rx:-1.0, body_rx:-1.5, body_y:0.15 },
+    ]},
+    // Movement
+    { id:'walk_cycle', name:'Walk Cycle', category:'anim_movement', duration:0.6, loop:true, keyframes:[
+        { t:0, la_rx:0.5, la_rz:0, ra_rx:-0.5, ra_rz:0, ll_rx:-0.6, rl_rx:0.6, body_rx:0, body_y:0.52 },
+        { t:0.25, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.54 },
+        { t:0.5, la_rx:-0.5, la_rz:0, ra_rx:0.5, ra_rz:0, ll_rx:0.6, rl_rx:-0.6, body_rx:0, body_y:0.52 },
+        { t:0.75, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.54 },
+        { t:1, la_rx:0.5, la_rz:0, ra_rx:-0.5, ra_rz:0, ll_rx:-0.6, rl_rx:0.6, body_rx:0, body_y:0.52 },
+    ]},
+    { id:'idle', name:'Idle Breathe', category:'anim_movement', duration:2.0, loop:true, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.5, la_rx:-0.05, la_rz:0, ra_rx:-0.05, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.51 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'run_cycle', name:'Run Cycle', category:'anim_movement', duration:0.4, loop:true, keyframes:[
+        { t:0, la_rx:0.8, la_rz:0, ra_rx:-0.8, ra_rz:0, ll_rx:-0.9, rl_rx:0.9, body_rx:0.15, body_y:0.54 },
+        { t:0.25, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.56 },
+        { t:0.5, la_rx:-0.8, la_rz:0, ra_rx:0.8, ra_rz:0, ll_rx:0.9, rl_rx:-0.9, body_rx:0.15, body_y:0.54 },
+        { t:0.75, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.56 },
+        { t:1, la_rx:0.8, la_rz:0, ra_rx:-0.8, ra_rz:0, ll_rx:-0.9, rl_rx:0.9, body_rx:0.15, body_y:0.54 },
+    ]},
+    { id:'sit_down', name:'Sit Down', category:'anim_movement', duration:0.5, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:1, la_rx:-0.4, la_rz:0, ra_rx:-0.4, ra_rz:0, ll_rx:-1.2, rl_rx:-1.2, body_rx:0, body_y:0.32 },
+    ]},
+    // Skilling
+    { id:'mining', name:'Mining Swing', category:'anim_skilling', duration:0.8, loop:true, keyframes:[
+        { t:0, la_rx:-0.3, la_rz:0, ra_rx:-1.0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:0.5, la_rx:0.2, la_rz:0, ra_rx:0.8, ra_rz:-0.2, ll_rx:-0.15, rl_rx:0.15, body_rx:0.25, body_y:0.48 },
+        { t:0.7, la_rx:-0.1, la_rz:0, ra_rx:-0.5, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:1, la_rx:-0.3, la_rz:0, ra_rx:-1.0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+    ]},
+    { id:'woodcutting', name:'Woodcutting', category:'anim_skilling', duration:0.7, loop:true, keyframes:[
+        { t:0, la_rx:-0.8, la_rz:0.2, ra_rx:-0.8, ra_rz:-0.2, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.5 },
+        { t:0.4, la_rx:0.5, la_rz:0.1, ra_rx:0.5, ra_rz:-0.1, ll_rx:-0.1, rl_rx:0.1, body_rx:0.3, body_y:0.47 },
+        { t:0.6, la_rx:-0.3, la_rz:0.2, ra_rx:-0.3, ra_rz:-0.2, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.5 },
+        { t:1, la_rx:-0.8, la_rz:0.2, ra_rx:-0.8, ra_rz:-0.2, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.5 },
+    ]},
+    { id:'fishing', name:'Fishing Cast', category:'anim_skilling', duration:1.0, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.2, la_rx:0.3, la_rz:0, ra_rx:-1.8, ra_rz:-0.2, ll_rx:0.1, rl_rx:-0.1, body_rx:-0.1, body_y:0.5 },
+        { t:0.4, la_rx:0, la_rz:0, ra_rx:-0.3, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.05, body_y:0.5 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:-0.3, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.05, body_y:0.5 },
+    ]},
+    { id:'cooking', name:'Cooking Stir', category:'anim_skilling', duration:1.2, loop:true, keyframes:[
+        { t:0, la_rx:-0.4, la_rz:0, ra_rx:-0.6, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:0.25, la_rx:-0.4, la_rz:0, ra_rx:-0.6, ra_rz:0.3, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:0.5, la_rx:-0.4, la_rz:0, ra_rx:-0.6, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:0.75, la_rx:-0.4, la_rz:0, ra_rx:-0.6, ra_rz:-0.3, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+        { t:1, la_rx:-0.4, la_rz:0, ra_rx:-0.6, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.1, body_y:0.5 },
+    ]},
+    // Social
+    { id:'pickpocket', name:'Pickpocket', category:'anim_social', duration:0.6, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.5, la_rx:0, la_rz:0, ra_rx:-1.4, ra_rz:-0.3, ll_rx:0, rl_rx:0, body_rx:0.15, body_y:0.5 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'wave', name:'Wave', category:'anim_social', duration:1.0, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.15, la_rx:0, la_rz:0, ra_rx:-2.5, ra_rz:-0.3, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.35, la_rx:0, la_rz:0, ra_rx:-2.2, ra_rz:-0.5, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.55, la_rx:0, la_rz:0, ra_rx:-2.5, ra_rz:-0.3, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.75, la_rx:0, la_rz:0, ra_rx:-2.2, ra_rz:-0.5, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'dance', name:'Dance', category:'anim_social', duration:1.5, loop:true, keyframes:[
+        { t:0, la_rx:-0.5, la_rz:-0.5, ra_rx:-0.5, ra_rz:0.5, ll_rx:0.3, rl_rx:-0.3, body_rx:0, body_y:0.5 },
+        { t:0.25, la_rx:-1.5, la_rz:-0.3, ra_rx:-1.5, ra_rz:0.3, ll_rx:-0.3, rl_rx:0.3, body_rx:0, body_y:0.54 },
+        { t:0.5, la_rx:-0.5, la_rz:0.5, ra_rx:-0.5, ra_rz:-0.5, ll_rx:0.3, rl_rx:-0.3, body_rx:0, body_y:0.5 },
+        { t:0.75, la_rx:-1.5, la_rz:0.3, ra_rx:-1.5, ra_rz:-0.3, ll_rx:-0.3, rl_rx:0.3, body_rx:0, body_y:0.54 },
+        { t:1, la_rx:-0.5, la_rz:-0.5, ra_rx:-0.5, ra_rz:0.5, ll_rx:0.3, rl_rx:-0.3, body_rx:0, body_y:0.5 },
+    ]},
+    { id:'bow', name:'Bow', category:'anim_social', duration:0.8, loop:false, keyframes:[
+        { t:0, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+        { t:0.4, la_rx:0.3, la_rz:0, ra_rx:0.3, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.6, body_y:0.45 },
+        { t:0.6, la_rx:0.3, la_rz:0, ra_rx:0.3, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0.6, body_y:0.45 },
+        { t:1, la_rx:0, la_rz:0, ra_rx:0, ra_rz:0, ll_rx:0, rl_rx:0, body_rx:0, body_y:0.5 },
+    ]},
+];
+
+// ============================================================
 // ASSET STORE (IndexedDB)
 // ============================================================
 class AssetStore {
@@ -387,10 +583,11 @@ class AssetStore {
 
     init() {
         return new Promise((resolve, reject) => {
-            const req = indexedDB.open('agentscape-forge', 1);
+            const req = indexedDB.open('agentscape-forge', 2);
             req.onupgradeneeded = (e) => {
                 const db = e.target.result;
                 if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('animations')) db.createObjectStore('animations', { keyPath: 'id' });
             };
             req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
             req.onerror = (e) => reject(e);
@@ -430,6 +627,24 @@ class AssetStore {
             tx.objectStore('assets').delete(id);
             tx.oncomplete = () => resolve();
             tx.onerror = (e) => reject(e);
+        });
+    }
+
+    saveAnim(id, data) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('animations', 'readwrite');
+            tx.objectStore('animations').put({ id, ...data });
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e);
+        });
+    }
+
+    getAllAnims() {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('animations', 'readonly');
+            const req = tx.objectStore('animations').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = (e) => reject(e);
         });
     }
 }
@@ -496,10 +711,21 @@ function renderSidebar() {
         const done = items.filter(i => assets[i.id]).length;
         const total = items.length;
         const isComplete = done === total && total > 0;
-        html += `<div class="sidebar-item ${cat.id === selectedCategory ? 'active' : ''}" onclick="selectCategory('${cat.id}')">
+        html += `<div class="sidebar-item ${!animMode && cat.id === selectedCategory ? 'active' : ''}" onclick="selectCategory('${cat.id}')">
             <span class="sidebar-item-icon">${cat.icon}</span>
             <span class="sidebar-item-name">${cat.name}</span>
             <span class="sidebar-item-count ${isComplete ? 'complete' : ''}">${done}/${total}</span>
+        </div>`;
+    }
+
+    // Animation categories
+    html += `<div class="sidebar-group"><div class="sidebar-group-label">Animations</div></div>`;
+    for (const cat of ANIM_CATEGORIES) {
+        const anims = ANIMATION_PRESETS.filter(a => a.category === cat.id);
+        html += `<div class="sidebar-item ${animMode && cat.id === selectedAnimCategory ? 'active' : ''}" onclick="selectAnimCategory('${cat.id}')">
+            <span class="sidebar-item-icon">${cat.icon}</span>
+            <span class="sidebar-item-name">${cat.name}</span>
+            <span class="sidebar-item-count">${anims.length}</span>
         </div>`;
     }
 
@@ -999,9 +1225,25 @@ function cancelBatch() {
 // CATEGORY SELECTION
 // ============================================================
 function selectCategory(catId) {
+    animMode = false;
     selectedCategory = catId;
+    document.getElementById('main').style.display = 'block';
+    document.getElementById('anim-editor').style.display = 'none';
     renderSidebar();
     renderGrid();
+}
+
+function selectAnimCategory(catId) {
+    animMode = true;
+    selectedAnimCategory = catId;
+    document.getElementById('main').style.display = 'none';
+    document.getElementById('anim-editor').style.display = 'flex';
+    initAnimEditor();
+    // Filter to first animation in this category
+    const catAnims = ANIMATION_PRESETS.filter(a => a.category === catId);
+    populateAnimSelect();
+    if (catAnims.length > 0) selectAnimation(catAnims[0].id);
+    renderSidebar();
 }
 
 // ============================================================
@@ -1017,12 +1259,520 @@ function showToast(msg, type) {
 }
 
 // ============================================================
+// ANIMATION EDITOR ENGINE
+// ============================================================
+let animMode = false;
+let selectedAnimCategory = 'anim_combat';
+let currentAnimation = null;
+let selectedKeyframeIdx = 0;
+let animPlaying = false;
+let animPlayTime = 0;
+let animSpeed = 1.0;
+let copiedKeyframe = null;
+let animScene, animCamera, animRenderer, animClock;
+let animChar = null;
+let animEditorInitialized = false;
+let animLoopRunning = false;
+let savedAnimations = {};
+
+const JOINTS = [
+    { id:'la', label:'Left Arm', props:[
+        { key:'la_rx', label:'Swing (F/B)', min:-3.14, max:3.14 },
+        { key:'la_rz', label:'Spread', min:-1.57, max:1.57 },
+    ]},
+    { id:'ra', label:'Right Arm', props:[
+        { key:'ra_rx', label:'Swing (F/B)', min:-3.14, max:3.14 },
+        { key:'ra_rz', label:'Spread', min:-1.57, max:1.57 },
+    ]},
+    { id:'ll', label:'Left Leg', props:[
+        { key:'ll_rx', label:'Swing (F/B)', min:-2.5, max:2.5 },
+    ]},
+    { id:'rl', label:'Right Leg', props:[
+        { key:'rl_rx', label:'Swing (F/B)', min:-2.5, max:2.5 },
+    ]},
+    { id:'body', label:'Body / Torso', props:[
+        { key:'body_rx', label:'Lean (F/B)', min:-1.57, max:1.57 },
+        { key:'body_y', label:'Height', min:0.1, max:0.7 },
+    ]},
+];
+
+function initAnimEditor() {
+    if (animEditorInitialized) return;
+    const canvas = document.getElementById('anim-canvas');
+    const panel = document.getElementById('anim-preview-panel');
+
+    animScene = new THREE.Scene();
+    animScene.background = new THREE.Color(0x0a0a14);
+
+    animCamera = new THREE.PerspectiveCamera(45, 380 / 500, 0.1, 50);
+    animCamera.position.set(1.5, 1.2, 2.5);
+    animCamera.lookAt(0, 0.5, 0);
+
+    animRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    animRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    animRenderer.shadowMap.enabled = true;
+
+    function resizeAnimCanvas() {
+        const w = panel.clientWidth;
+        const h = panel.clientHeight - 30;
+        if (w > 0 && h > 0) {
+            animRenderer.setSize(w, h);
+            animCamera.aspect = w / h;
+            animCamera.updateProjectionMatrix();
+        }
+    }
+    resizeAnimCanvas();
+    window.addEventListener('resize', () => { if (animMode) resizeAnimCanvas(); });
+
+    animScene.add(new THREE.AmbientLight(0x404060, 0.6));
+    const dir = new THREE.DirectionalLight(0xffeedd, 0.8);
+    dir.position.set(3, 5, 3); dir.castShadow = true;
+    animScene.add(dir);
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(4,4), new THREE.MeshLambertMaterial({color:0x1a1a2e}));
+    ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; animScene.add(ground);
+    const grid = new THREE.GridHelper(4, 8, 0x333355, 0x222244);
+    grid.position.y = 0.01; animScene.add(grid);
+
+    animChar = createEditorChar(0x3355aa, 0x553311);
+    animScene.add(animChar.group);
+    animClock = new THREE.Clock();
+    animEditorInitialized = true;
+
+    // Orbit controls
+    let orbitTheta = 0.55, orbitPhi = 0.35, orbitDist = 3.0;
+    let mouseDown = false, lastMouse = {x:0, y:0};
+    function updateOrbitCam() {
+        animCamera.position.set(
+            orbitDist * Math.sin(orbitTheta) * Math.cos(orbitPhi),
+            0.5 + orbitDist * Math.sin(orbitPhi),
+            orbitDist * Math.cos(orbitTheta) * Math.cos(orbitPhi)
+        );
+        animCamera.lookAt(0, 0.5, 0);
+    }
+    updateOrbitCam();
+    canvas.addEventListener('mousedown', (e) => { mouseDown=true; lastMouse={x:e.clientX,y:e.clientY}; });
+    document.addEventListener('mouseup', () => { mouseDown=false; });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!mouseDown) return;
+        orbitTheta -= (e.clientX-lastMouse.x)*0.01;
+        orbitPhi = Math.max(0.05, Math.min(1.4, orbitPhi+(e.clientY-lastMouse.y)*0.01));
+        lastMouse = {x:e.clientX, y:e.clientY};
+        updateOrbitCam();
+    });
+    canvas.addEventListener('wheel', (e) => {
+        orbitDist = Math.max(1.5, Math.min(8, orbitDist+e.deltaY*0.005));
+        updateOrbitCam(); e.preventDefault();
+    }, {passive:false});
+
+    buildJointControls();
+    populateAnimSelect();
+    setupTimeline();
+    startAnimLoop();
+}
+
+function createEditorChar(bodyCol, hairCol) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2), new THREE.MeshLambertMaterial({color:bodyCol}));
+    body.position.y=0.5; body.castShadow=true; g.add(body);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25), new THREE.MeshLambertMaterial({color:0xffcc99}));
+    head.position.y=0.9; head.castShadow=true; g.add(head);
+    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27), new THREE.MeshLambertMaterial({color:hairCol}));
+    hair.position.y=1.04; g.add(hair);
+    const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15), lMat=new THREE.MeshLambertMaterial({color:0x554433});
+    const llP=new THREE.Group(); llP.position.set(-0.08,0.30,0);
+    const llM=new THREE.Mesh(lGeo,lMat); llM.position.set(0,-0.15,0); llM.castShadow=true; llP.add(llM); g.add(llP);
+    const rlP=new THREE.Group(); rlP.position.set(0.08,0.30,0);
+    const rlM=new THREE.Mesh(lGeo,lMat); rlM.position.set(0,-0.15,0); rlM.castShadow=true; rlP.add(rlM); g.add(rlP);
+    const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1), aMat=new THREE.MeshLambertMaterial({color:bodyCol});
+    const laP=new THREE.Group(); laP.position.set(-0.22,0.72,0);
+    const laM=new THREE.Mesh(aGeo,aMat); laM.position.set(0,-0.175,0); laM.castShadow=true; laP.add(laM); g.add(laP);
+    const raP=new THREE.Group(); raP.position.set(0.22,0.72,0);
+    const raM=new THREE.Mesh(aGeo,aMat); raM.position.set(0,-0.175,0); raM.castShadow=true; raP.add(raM); g.add(raP);
+    const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8), new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));
+    sh.rotation.x=-Math.PI/2; sh.position.y=0.02; g.add(sh);
+    return {group:g, body, head, leftLeg:llP, rightLeg:rlP, leftArm:laP, rightArm:raP};
+}
+
+function startAnimLoop() {
+    if (animLoopRunning) return;
+    animLoopRunning = true;
+    animRenderLoop();
+}
+
+function animRenderLoop() {
+    if (!animMode) { animLoopRunning = false; return; }
+    requestAnimationFrame(animRenderLoop);
+    const dt = Math.min(animClock.getDelta(), 0.1);
+    if (animPlaying && currentAnimation) {
+        animPlayTime += (dt / currentAnimation.duration) * animSpeed;
+        if (animPlayTime >= 1) {
+            if (currentAnimation.loop) { animPlayTime -= Math.floor(animPlayTime); }
+            else { animPlayTime = 1; animPlaying = false; updatePlayBtn(); }
+        }
+        applyPose(animPlayTime);
+        updateSliders();
+        renderTimeline();
+    }
+    if (currentAnimation) {
+        const t = animPlayTime * currentAnimation.duration;
+        document.getElementById('anim-time-display').textContent = `${t.toFixed(2)}s / ${currentAnimation.duration.toFixed(2)}s`;
+    }
+    animRenderer.render(animScene, animCamera);
+}
+
+// Pose system
+function getDefaultKF() { return {t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5}; }
+
+function lerpKF(a, b, t) {
+    const r = {};
+    for (const k of Object.keys(a)) { if (k==='t') continue; r[k]=a[k]+(b[k]-a[k])*t; }
+    return r;
+}
+
+function getInterpolatedPose(nt) {
+    if (!currentAnimation || !currentAnimation.keyframes.length) return getDefaultKF();
+    const kfs = currentAnimation.keyframes;
+    if (kfs.length === 1) return {...kfs[0]};
+    let prev=kfs[0], next=kfs[kfs.length-1];
+    for (let i=0; i<kfs.length-1; i++) {
+        if (nt>=kfs[i].t && nt<=kfs[i+1].t) { prev=kfs[i]; next=kfs[i+1]; break; }
+    }
+    const range = next.t - prev.t;
+    return range > 0 ? lerpKF(prev, next, (nt-prev.t)/range) : {...prev};
+}
+
+function applyPose(nt) {
+    if (!animChar) return;
+    const p = getInterpolatedPose(nt);
+    animChar.leftArm.rotation.x = p.la_rx||0;  animChar.leftArm.rotation.z = p.la_rz||0;
+    animChar.rightArm.rotation.x = p.ra_rx||0; animChar.rightArm.rotation.z = p.ra_rz||0;
+    animChar.leftLeg.rotation.x = p.ll_rx||0;  animChar.rightLeg.rotation.x = p.rl_rx||0;
+    animChar.body.rotation.x = p.body_rx||0;   animChar.body.position.y = p.body_y??0.5;
+}
+
+function applyKFPose(kf) {
+    if (!animChar) return;
+    animChar.leftArm.rotation.x = kf.la_rx||0;  animChar.leftArm.rotation.z = kf.la_rz||0;
+    animChar.rightArm.rotation.x = kf.ra_rx||0; animChar.rightArm.rotation.z = kf.ra_rz||0;
+    animChar.leftLeg.rotation.x = kf.ll_rx||0;  animChar.rightLeg.rotation.x = kf.rl_rx||0;
+    animChar.body.rotation.x = kf.body_rx||0;   animChar.body.position.y = kf.body_y??0.5;
+}
+
+// Joint controls
+function buildJointControls() {
+    const c = document.getElementById('anim-controls-scroll');
+    let html = '';
+    for (const j of JOINTS) {
+        html += `<div class="joint-group"><div class="joint-group-header">${j.label}</div>`;
+        for (const p of j.props) {
+            html += `<div class="joint-slider">
+                <label>${p.label}</label>
+                <input type="range" min="${p.min}" max="${p.max}" step="0.01" value="0"
+                    id="slider-${p.key}" oninput="onJointSlider('${p.key}',this.value)">
+                <span class="slider-val" id="val-${p.key}">0.00</span>
+            </div>`;
+        }
+        html += '</div>';
+    }
+    c.innerHTML = html;
+}
+
+function onJointSlider(key, value) {
+    const v = parseFloat(value);
+    document.getElementById(`val-${key}`).textContent = v.toFixed(2);
+    if (currentAnimation && currentAnimation.keyframes[selectedKeyframeIdx]) {
+        currentAnimation.keyframes[selectedKeyframeIdx][key] = v;
+    }
+    if (!animPlaying && currentAnimation) applyKFPose(currentAnimation.keyframes[selectedKeyframeIdx]);
+}
+
+function updateSliders() {
+    if (!currentAnimation) return;
+    const pose = animPlaying ? getInterpolatedPose(animPlayTime) :
+        (currentAnimation.keyframes[selectedKeyframeIdx] || getDefaultKF());
+    for (const j of JOINTS) {
+        for (const p of j.props) {
+            const sl = document.getElementById(`slider-${p.key}`);
+            const vl = document.getElementById(`val-${p.key}`);
+            if (sl && vl) { const v=pose[p.key]??0; sl.value=v; vl.textContent=v.toFixed(2); }
+        }
+    }
+}
+
+// Animation selector
+function populateAnimSelect() {
+    const select = document.getElementById('anim-select');
+    let html = '';
+    for (const cat of ANIM_CATEGORIES) {
+        const anims = ANIMATION_PRESETS.filter(a => a.category === cat.id);
+        if (!anims.length) continue;
+        html += `<optgroup label="${cat.icon} ${cat.name}">`;
+        for (const a of anims) html += `<option value="${a.id}">${a.name}</option>`;
+        html += '</optgroup>';
+    }
+    select.innerHTML = html;
+}
+
+function selectAnimation(animId) {
+    const preset = ANIMATION_PRESETS.find(a => a.id === animId);
+    if (!preset) return;
+    const saved = savedAnimations[animId];
+    const source = saved || preset;
+    currentAnimation = {
+        id:source.id, name:source.name, category:source.category,
+        duration:source.duration, loop:source.loop,
+        keyframes: source.keyframes.map(kf => ({...kf})),
+    };
+    selectedKeyframeIdx = 0; animPlayTime = 0; animPlaying = false;
+    document.getElementById('anim-duration').value = currentAnimation.duration;
+    document.getElementById('anim-loop').checked = currentAnimation.loop;
+    updateSliders();
+    applyKFPose(currentAnimation.keyframes[0]);
+    renderTimeline();
+    updatePlayBtn();
+    document.getElementById('anim-select').value = animId;
+}
+
+// Playback
+function animTogglePlay() {
+    if (animPlaying) { animPlaying = false; }
+    else {
+        if (animPlayTime >= 1) animPlayTime = 0;
+        animPlaying = true;
+        animClock.getDelta();
+        if (!animLoopRunning) startAnimLoop();
+    }
+    updatePlayBtn();
+}
+
+function animStop() {
+    animPlaying = false; animPlayTime = 0;
+    updatePlayBtn();
+    if (currentAnimation) {
+        selectedKeyframeIdx = 0;
+        applyKFPose(currentAnimation.keyframes[0] || getDefaultKF());
+        updateSliders();
+    }
+    renderTimeline();
+}
+
+function updatePlayBtn() {
+    document.getElementById('anim-play-btn').innerHTML = animPlaying ? '&#9646;&#9646; Pause' : '&#9654; Play';
+}
+
+function animSpeedChanged(val) {
+    animSpeed = parseFloat(val);
+    document.getElementById('anim-speed-val').textContent = animSpeed.toFixed(1)+'x';
+}
+
+function animDurationChanged(val) { if (currentAnimation) currentAnimation.duration = parseFloat(val)||0.6; }
+function animLoopChanged(checked) { if (currentAnimation) currentAnimation.loop = checked; }
+
+// Keyframes
+function addKeyframe() {
+    if (!currentAnimation) return;
+    const kfs = currentAnimation.keyframes;
+    let t;
+    if (animPlaying) { t = animPlayTime; }
+    else if (selectedKeyframeIdx < kfs.length-1) { t = (kfs[selectedKeyframeIdx].t + kfs[selectedKeyframeIdx+1].t)/2; }
+    else { t = Math.min(1, kfs[kfs.length-1].t + 0.1); }
+    const pose = getInterpolatedPose(t);
+    const newKF = {t, ...pose};
+    kfs.push(newKF); kfs.sort((a,b) => a.t-b.t);
+    selectedKeyframeIdx = kfs.indexOf(newKF);
+    updateSliders(); renderTimeline();
+    showToast('Keyframe added', 'success');
+}
+
+function deleteKeyframe() {
+    if (!currentAnimation || currentAnimation.keyframes.length <= 2) { showToast('Need at least 2 keyframes','error'); return; }
+    currentAnimation.keyframes.splice(selectedKeyframeIdx, 1);
+    if (selectedKeyframeIdx >= currentAnimation.keyframes.length) selectedKeyframeIdx = currentAnimation.keyframes.length-1;
+    updateSliders(); applyKFPose(currentAnimation.keyframes[selectedKeyframeIdx]);
+    renderTimeline(); showToast('Keyframe deleted', 'success');
+}
+
+function copyKeyframe() {
+    if (!currentAnimation || !currentAnimation.keyframes[selectedKeyframeIdx]) return;
+    copiedKeyframe = {...currentAnimation.keyframes[selectedKeyframeIdx]};
+    showToast('Keyframe copied', 'success');
+}
+
+function pasteKeyframe() {
+    if (!copiedKeyframe || !currentAnimation) return;
+    const kf = currentAnimation.keyframes[selectedKeyframeIdx];
+    if (!kf) return;
+    const t = kf.t;
+    Object.assign(kf, copiedKeyframe, {t});
+    updateSliders(); applyKFPose(kf); renderTimeline();
+    showToast('Keyframe pasted', 'success');
+}
+
+// Timeline
+function setupTimeline() {
+    const canvas = document.getElementById('timeline-canvas');
+    let dragging = false;
+    canvas.addEventListener('mousedown', (e) => { dragging=true; handleTimelineClick(e); });
+    document.addEventListener('mouseup', () => { dragging=false; });
+    canvas.addEventListener('mousemove', (e) => {
+        if (!dragging || !currentAnimation) return;
+        const rect=canvas.getBoundingClientRect(), padding=30, trackW=rect.width-padding*2;
+        animPlayTime = Math.max(0, Math.min(1, (e.clientX-rect.left-padding)/trackW));
+        if (!animPlaying) { applyPose(animPlayTime); updateSliders(); }
+        renderTimeline();
+    });
+    setTimeout(renderTimeline, 100);
+}
+
+function handleTimelineClick(e) {
+    if (!currentAnimation) return;
+    const canvas=document.getElementById('timeline-canvas');
+    const rect=canvas.getBoundingClientRect(), padding=30, trackW=rect.width-padding*2;
+    const nt = (e.clientX-rect.left-padding)/trackW;
+    let closestIdx=0, closestDist=Infinity;
+    currentAnimation.keyframes.forEach((kf,i) => {
+        const d=Math.abs(kf.t-nt); if (d<closestDist) { closestDist=d; closestIdx=i; }
+    });
+    if (closestDist < 0.04) {
+        selectedKeyframeIdx = closestIdx;
+        animPlayTime = currentAnimation.keyframes[closestIdx].t;
+        if (!animPlaying) applyKFPose(currentAnimation.keyframes[closestIdx]);
+    } else {
+        animPlayTime = Math.max(0, Math.min(1, nt));
+        if (!animPlaying) applyPose(animPlayTime);
+    }
+    updateSliders(); renderTimeline();
+}
+
+function renderTimeline() {
+    const canvas = document.getElementById('timeline-canvas');
+    if (!canvas || !canvas.parentElement) return;
+    const rect=canvas.parentElement.getBoundingClientRect(), dpr=window.devicePixelRatio;
+    canvas.width=rect.width*dpr; canvas.height=80*dpr;
+    canvas.style.width=rect.width+'px'; canvas.style.height='80px';
+    const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    const w=rect.width, h=80, padding=30, trackW=w-padding*2, trackY=h/2;
+    ctx.fillStyle='#0f0f17'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#2a2a3d'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(padding,trackY); ctx.lineTo(padding+trackW,trackY); ctx.stroke();
+    if (!currentAnimation) return;
+    const dur=currentAnimation.duration, divs=Math.max(1,Math.ceil(dur/0.1));
+    ctx.font='10px Inter'; ctx.textAlign='center';
+    for (let i=0; i<=divs; i++) {
+        const t=i/divs, x=padding+t*trackW;
+        ctx.fillStyle='#333355'; ctx.fillRect(x-0.5,trackY-4,1,8);
+        if (i%5===0 || divs<=10) { ctx.fillStyle='#64748b'; ctx.fillText((t*dur).toFixed(1)+'s',x,trackY+20); }
+    }
+    currentAnimation.keyframes.forEach((kf,i) => {
+        const x=padding+kf.t*trackW, sel=i===selectedKeyframeIdx;
+        ctx.beginPath(); ctx.arc(x,trackY,sel?8:6,0,Math.PI*2);
+        ctx.fillStyle=sel?'#6366f1':'#4f46e5'; ctx.fill();
+        ctx.strokeStyle=sel?'#818cf8':'#6366f1'; ctx.lineWidth=sel?2:1; ctx.stroke();
+        ctx.fillStyle='#e2e8f0'; ctx.font=sel?'bold 10px Inter':'10px Inter';
+        ctx.fillText(`KF${i+1}`,x,trackY-14);
+    });
+    const px=padding+animPlayTime*trackW;
+    ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(px,5); ctx.lineTo(px,h-5); ctx.stroke();
+    ctx.fillStyle='#ef4444'; ctx.beginPath();
+    ctx.moveTo(px-5,5); ctx.lineTo(px+5,5); ctx.lineTo(px,12); ctx.closePath(); ctx.fill();
+}
+
+// Save / Load
+async function animSave() {
+    if (!currentAnimation) return;
+    savedAnimations[currentAnimation.id] = {
+        ...currentAnimation,
+        keyframes: currentAnimation.keyframes.map(kf => ({...kf})),
+    };
+    await store.saveAnim(currentAnimation.id, savedAnimations[currentAnimation.id]);
+    showToast(`Saved "${currentAnimation.name}"`, 'success');
+}
+
+// Export Code
+function animExportCode() {
+    if (!currentAnimation) return;
+    const a = currentAnimation;
+    const upper = a.id.toUpperCase();
+    const camel = a.id.replace(/(^|_)(\w)/g, (_,__,c) => c.toUpperCase());
+
+    let code = `// Animation: ${a.name} (${a.duration}s, loop: ${a.loop})\n`;
+    code += `// Generated by AgentScape Forge Animation Editor\n\n`;
+    code += `const ANIM_${upper} = {\n    duration: ${a.duration},\n    loop: ${a.loop},\n    keyframes: [\n`;
+    for (const kf of a.keyframes) {
+        const vals = Object.entries(kf).filter(([k])=>k!=='t')
+            .map(([k,v])=>`${k}:${typeof v==='number'?v.toFixed(3):v}`).join(', ');
+        code += `        { t:${kf.t.toFixed(3)}, ${vals} },\n`;
+    }
+    code += `    ]\n};\n\n`;
+    code += `let ${a.id}Timer = 0;\n`;
+    code += `function play${camel}() { ${a.id}Timer = ANIM_${upper}.duration; }\n\n`;
+    code += `function update${camel}Anim(c, dt) {\n`;
+    code += `    if (${a.id}Timer <= 0) return;\n`;
+    code += `    ${a.id}Timer -= dt;\n`;
+    code += `    const progress = 1 - Math.max(0, ${a.id}Timer) / ANIM_${upper}.duration;\n`;
+    code += `    const kfs = ANIM_${upper}.keyframes;\n`;
+    code += `    let prev = kfs[0], next = kfs[kfs.length - 1];\n`;
+    code += `    for (let i = 0; i < kfs.length - 1; i++) {\n`;
+    code += `        if (progress >= kfs[i].t && progress <= kfs[i+1].t) { prev = kfs[i]; next = kfs[i+1]; break; }\n`;
+    code += `    }\n`;
+    code += `    const range = next.t - prev.t;\n`;
+    code += `    const t = range > 0 ? (progress - prev.t) / range : 0;\n`;
+    code += `    const lerp = (a, b) => a + (b - a) * t;\n`;
+    code += `    c.leftArm.rotation.x = lerp(prev.la_rx, next.la_rx);\n`;
+    code += `    c.leftArm.rotation.z = lerp(prev.la_rz, next.la_rz);\n`;
+    code += `    c.rightArm.rotation.x = lerp(prev.ra_rx, next.ra_rx);\n`;
+    code += `    c.rightArm.rotation.z = lerp(prev.ra_rz, next.ra_rz);\n`;
+    code += `    c.leftLeg.rotation.x = lerp(prev.ll_rx, next.ll_rx);\n`;
+    code += `    c.rightLeg.rotation.x = lerp(prev.rl_rx, next.rl_rx);\n`;
+    code += `    c.body.rotation.x = lerp(prev.body_rx, next.body_rx);\n`;
+    code += `    c.body.position.y = lerp(prev.body_y, next.body_y);\n`;
+    code += `    if (${a.id}Timer <= 0) {\n`;
+    code += `        c.leftArm.rotation.x=0; c.leftArm.rotation.z=0;\n`;
+    code += `        c.rightArm.rotation.x=0; c.rightArm.rotation.z=0;\n`;
+    code += `        c.leftLeg.rotation.x=0; c.rightLeg.rotation.x=0;\n`;
+    code += `        c.body.rotation.x=0; c.body.position.y=0.5;\n`;
+    code += `    }\n}\n`;
+
+    navigator.clipboard.writeText(code).then(() => {
+        showToast('Animation code copied to clipboard!', 'success');
+    }).catch(() => {
+        const w = window.open('','_blank','width=700,height=500');
+        w.document.write('<pre style="font-family:monospace;font-size:12px;padding:20px;">'+code.replace(/</g,'&lt;')+'</pre>');
+    });
+}
+
+// Create new animation
+function createNewAnimation() {
+    const name = prompt('Animation name:');
+    if (!name) return;
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    if (ANIMATION_PRESETS.find(a => a.id === id)) { showToast('Name already exists','error'); return; }
+    ANIMATION_PRESETS.push({
+        id, name, category: selectedAnimCategory, duration: 1.0, loop: false,
+        keyframes: [
+            {t:0,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},
+            {t:1,la_rx:0,la_rz:0,ra_rx:0,ra_rz:0,ll_rx:0,rl_rx:0,body_rx:0,body_y:0.5},
+        ],
+    });
+    populateAnimSelect();
+    selectAnimation(id);
+    renderSidebar();
+    showToast(`Created "${name}"`, 'success');
+}
+
+// ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (document.getElementById('settings-modal').classList.contains('open')) closeSettings();
         else if (document.getElementById('item-modal').classList.contains('open')) closeItemModal();
+    }
+    // Animation editor shortcuts
+    if (animMode && !e.target.matches('input,textarea,select')) {
+        if (e.key === ' ') { e.preventDefault(); animTogglePlay(); }
     }
     if (document.getElementById('item-modal').classList.contains('open')) {
         if (e.key === 'ArrowLeft') navItem(-1);
@@ -1045,6 +1795,11 @@ async function init() {
     await store.init();
     const allAssets = await store.getAll();
     for (const a of allAssets) { assets[a.id] = a; }
+    // Load saved animations
+    try {
+        const allAnims = await store.getAllAnims();
+        for (const a of allAnims) { savedAnimations[a.id] = a; }
+    } catch(e) { /* first run, no animations store yet */ }
     renderSidebar();
     renderGrid();
     updateProgress();
