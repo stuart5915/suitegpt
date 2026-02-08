@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentScape Forge | Game Data Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-base: #08080d;
+            --bg-surface: #0f0f17;
+            --bg-elevated: #16161f;
+            --bg-hover: #1e1e2e;
+            --bg-active: #252538;
+            --border: #2a2a3d;
+            --border-light: #3a3a52;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* HEADER */
+        .header { height: 52px; background: var(--bg-surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
+        .header-logo { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .header-logo span { color: var(--accent); }
+        .header-subtitle { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+        .header-search { flex: 1; max-width: 400px; margin-left: 24px; position: relative; }
+        .header-search input { width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px 7px 36px; color: var(--text-primary); font-size: 13px; font-family: inherit; }
+        .header-search input:focus { outline: none; border-color: var(--accent); }
+        .header-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-muted); pointer-events: none; }
+        .header-actions { display: flex; gap: 8px; margin-left: auto; }
+        .btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-primary); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit; text-decoration: none; }
+        .btn:hover { background: var(--bg-hover); border-color: var(--border-light); }
+        .btn-primary { background: var(--accent); border-color: var(--accent); }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-success { background: var(--success); border-color: var(--success); color: #000; }
+
+        /* LAYOUT */
+        .layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 232px; background: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+        .sidebar-item { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; transition: all 0.1s; gap: 10px; border-left: 3px solid transparent; }
+        .sidebar-item:hover { background: var(--bg-hover); }
+        .sidebar-item.active { background: var(--bg-elevated); border-left-color: var(--accent); }
+        .sidebar-item-icon { font-size: 18px; width: 24px; text-align: center; }
+        .sidebar-item-name { font-size: 13px; font-weight: 600; flex: 1; }
+        .sidebar-item-count { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+        /* MAIN CONTENT */
+        .main { flex: 1; overflow-y: auto; padding: 24px; }
+        .main-header { margin-bottom: 20px; }
+        .main-title { font-size: 24px; font-weight: 700; }
+        .main-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* MONSTER GRID */
+        .monster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .monster-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.15s; }
+        .monster-card:hover { background: var(--bg-hover); border-color: var(--border-light); transform: translateY(-2px); }
+        .monster-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .monster-card-icon { font-size: 28px; }
+        .monster-card-info { flex: 1; min-width: 0; }
+        .monster-card-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .monster-card-level { font-size: 11px; color: var(--text-muted); }
+        .monster-card-hp { width: 100%; height: 8px; background: var(--bg-active); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+        .monster-card-hp-fill { height: 100%; background: linear-gradient(90deg, var(--danger), var(--warning)); border-radius: 4px; }
+        .monster-card-zone { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--bg-active); display: inline-block; }
+
+        /* BOSS PANEL */
+        .boss-panel { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+        .boss-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .boss-icon { font-size: 36px; }
+        .boss-info { flex: 1; }
+        .boss-name { font-size: 18px; font-weight: 700; }
+        .boss-level-zone { display: flex; gap: 8px; margin-top: 4px; }
+        .boss-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+        .boss-raid { background: var(--danger); color: #fff; }
+        .boss-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .boss-stat { background: var(--bg-surface); padding: 10px; border-radius: 8px; }
+        .boss-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .boss-stat-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+        .boss-section { margin-bottom: 16px; }
+        .boss-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; }
+        .boss-abilities { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+        .boss-ability { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+        .boss-ability-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .boss-ability-name { font-size: 13px; font-weight: 700; }
+        .boss-ability-type { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; text-transform: uppercase; }
+        .type-aoe { background: var(--danger); color: #fff; }
+        .type-heal { background: var(--success); color: #000; }
+        .type-enrage { background: var(--warning); color: #000; }
+        .type-summon { background: #a855f7; color: #fff; }
+        .type-stun { background: #3b82f6; color: #fff; }
+        .type-drain { background: #eab308; color: #000; }
+        .boss-ability-desc { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .boss-phases { display: flex; gap: 8px; overflow-x: auto; }
+        .boss-phase { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; flex: 0 0 180px; }
+        .boss-phase-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+        .boss-phase-threshold { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; }
+        .boss-phase-mult { font-size: 10px; }
+
+        /* COMBAT STYLES */
+        .combat-styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .combat-style { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+        .combat-style-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .combat-style-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+        .combat-style-bonuses { font-size: 11px; margin-bottom: 10px; }
+        .combat-style-xp { height: 24px; background: var(--bg-surface); border-radius: 6px; overflow: hidden; display: flex; }
+        .xp-segment { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; }
+        .xp-attack { background: #ef4444; }
+        .xp-strength { background: #22c55e; }
+        .xp-defence { background: #3b82f6; }
+        .xp-hitpoints { background: #ec4899; }
+
+        /* SLAYER TABLE */
+        .slayer-group { margin-bottom: 24px; }
+        .slayer-group-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; padding-left: 8px; border-left: 3px solid var(--accent); }
+        .slayer-table { width: 100%; border-collapse: collapse; }
+        .slayer-table th { background: var(--bg-surface); padding: 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        .slayer-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .slayer-table tr { background: var(--bg-elevated); }
+        .slayer-table tr:hover { background: var(--bg-hover); }
+        .task-weight-bar { height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+        .task-weight-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+        .zone-forest { border-left: 3px solid #22c55e; }
+        .zone-ruins { border-left: 3px solid #f97316; }
+        .zone-deep { border-left: 3px solid #ef4444; }
+
+        /* ITEMS */
+        .items-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+        .items-tab { padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+        .items-tab:hover { color: var(--accent); }
+        .items-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .items-filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-elevated); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .filter-btn:hover { background: var(--bg-hover); }
+        .filter-btn.active { background: var(--accent); border-color: var(--accent); }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .item-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; align-items: center; }
+        .item-card-icon { font-size: 32px; margin-bottom: 8px; }
+        .item-card-name { font-size: 12px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+        .item-card-type { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; }
+        .item-card-stats { font-size: 10px; text-align: center; }
+        .item-card-tier { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; margin-top: 4px; }
+        .tier-1 { background: #CD7F32; color: #000; }
+        .tier-2 { background: #71797E; color: #fff; }
+        .tier-3 { background: #C0C0C0; color: #000; }
+        .tier-4 { background: #7B68EE; color: #fff; }
+        .tier-5 { background: #00CED1; color: #000; }
+        .tier-6 { background: #DC143C; color: #fff; }
+
+        /* RECIPES */
+        .recipes-list { display: flex; flex-direction: column; gap: 12px; }
+        .recipe-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+        .recipe-result { display: flex; align-items: center; gap: 8px; flex: 0 0 180px; }
+        .recipe-icon { font-size: 28px; }
+        .recipe-name { font-size: 13px; font-weight: 700; }
+        .recipe-arrow { font-size: 20px; color: var(--text-muted); }
+        .recipe-ingredients { display: flex; gap: 12px; flex: 1; flex-wrap: wrap; }
+        .recipe-ingredient { display: flex; align-items: center; gap: 6px; background: var(--bg-surface); padding: 8px 12px; border-radius: 8px; }
+        .recipe-ingredient-icon { font-size: 18px; }
+        .recipe-ingredient-text { font-size: 11px; font-weight: 600; }
+        .recipe-cost { font-size: 12px; font-weight: 600; color: var(--warning); flex: 0 0 100px; text-align: right; }
+
+        /* MONSTER SPECIALS */
+        .specials-table { width: 100%; border-collapse: collapse; }
+        .specials-table th { background: var(--bg-surface); padding: 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        .specials-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .specials-table tr { background: var(--bg-elevated); }
+        .specials-table tr:hover { background: var(--bg-hover); }
+        .special-type { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; display: inline-block; }
+        .type-double_hit { background: var(--danger); color: #fff; }
+        .type-poison { background: var(--success); color: #000; }
+        .type-stun { background: #3b82f6; color: #fff; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; width: 700px; max-width: 95vw; max-height: 90vh; overflow-y: auto; padding: 24px; }
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+        .modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; }
+        .modal-close:hover { color: var(--text-primary); }
+
+        /* EXPORT DROPDOWN */
+        .dropdown { position: relative; }
+        .dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; min-width: 160px; display: none; z-index: 10; }
+        .dropdown.open .dropdown-menu { display: block; }
+        .dropdown-item { padding: 10px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .dropdown-item:hover { background: var(--bg-hover); }
+        .dropdown-item:first-child { border-radius: 8px 8px 0 0; }
+        .dropdown-item:last-child { border-radius: 0 0 8px 8px; }
+
+        /* DETAIL PANEL */
+        .detail-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 12px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
+        .detail-field { display: flex; flex-direction: column; gap: 4px; }
+        .detail-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+        .detail-input { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text-primary); font-size: 12px; font-family: inherit; }
+        .detail-input:focus { outline: none; border-color: var(--accent); }
+        .detail-textarea { min-height: 80px; resize: vertical; }
+        .drop-table { margin-bottom: 14px; }
+        .drop-item { display: flex; align-items: center; gap: 12px; background: var(--bg-elevated); padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+        .drop-item-name { flex: 1; font-size: 12px; font-weight: 600; }
+        .drop-item-weight { flex: 0 0 120px; }
+        .drop-weight-bar { width: 100%; height: 6px; background: var(--bg-active); border-radius: 3px; overflow: hidden; margin-top: 2px; }
+        .drop-weight-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+        .drop-item-qty { font-size: 11px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-logo">
+            <span>⚔️</span> AgentScape Forge
+        </div>
+        <div class="header-subtitle">Game Data</div>
+        <div class="header-search">
+            <span class="header-search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search across all data...">
+        </div>
+        <div class="header-actions">
+            <a href="/forge" class="btn">← Asset Forge</a>
+            <div class="dropdown" id="exportDropdown">
+                <button class="btn btn-success" onclick="toggleExport()">
+                    📥 Export Config
+                </button>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="exportConfig('json')">Export as JSON</div>
+                    <div class="dropdown-item" onclick="exportConfig('typescript')">Export as TypeScript</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-item active" data-section="monsters">
+                <span class="sidebar-item-icon">⚔️</span>
+                <span class="sidebar-item-name">Monsters</span>
+                <span class="sidebar-item-count">16</span>
+            </div>
+            <div class="sidebar-item" data-section="bosses">
+                <span class="sidebar-item-icon">👑</span>
+                <span class="sidebar-item-name">Bosses</span>
+                <span class="sidebar-item-count">4</span>
+            </div>
+            <div class="sidebar-item" data-section="combat-styles">
+                <span class="sidebar-item-icon">🗡️</span>
+                <span class="sidebar-item-name">Combat Styles</span>
+                <span class="sidebar-item-count">4</span>
+            </div>
+            <div class="sidebar-item" data-section="slayer">
+                <span class="sidebar-item-icon">📋</span>
+                <span class="sidebar-item-name">Slayer Tasks</span>
+                <span class="sidebar-item-count">16</span>
+            </div>
+            <div class="sidebar-item" data-section="items">
+                <span class="sidebar-item-icon">🎒</span>
+                <span class="sidebar-item-name">Items & Recipes</span>
+                <span class="sidebar-item-count">66</span>
+            </div>
+            <div class="sidebar-item" data-section="specials">
+                <span class="sidebar-item-icon">💀</span>
+                <span class="sidebar-item-name">Monster Specials</span>
+                <span class="sidebar-item-count">8</span>
+            </div>
+        </div>
+
+        <div class="main" id="mainContent"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // GAME DATA - Complete config from server
+        // ============================================================
+
+        const MONSTERS = {
+            spam_bot: { id: 'spam_bot', name: 'Spam Bot', icon: '🤖', zone: 'the_forest', level: 3, hp: 25, attack: 3, strength: 2, defence: 1, xpReward: { attack: 8, strength: 6, hitpoints: 4 }, drops: [{ id: 'corrupted_byte', weight: 40, minQty: 1, maxQty: 2 }, { id: 'bread', weight: 20, minQty: 1, maxQty: 1 }], coinDrop: { min: 5, max: 15 }, aggressive: false, respawnTime: 15, spawnCount: 36, color: '#94a3b8', description: 'A mindless bot spewing junk data. Easy prey for beginners.' },
+            broken_link_mob: { id: 'broken_link_mob', name: 'Broken Link', icon: '🔗', zone: 'the_forest', level: 6, hp: 40, attack: 5, strength: 4, defence: 3, xpReward: { attack: 14, strength: 12, hitpoints: 8 }, drops: [{ id: 'broken_link', weight: 45, minQty: 1, maxQty: 3 }, { id: 'corrupted_byte', weight: 25, minQty: 1, maxQty: 2 }, { id: 'iron_helm', weight: 3, minQty: 1, maxQty: 1 }], coinDrop: { min: 10, max: 30 }, aggressive: false, respawnTime: 20, spawnCount: 30, color: '#64748b', description: 'A severed hyperlink writhing with residual data.' },
+            corrupt_data: { id: 'corrupt_data', name: 'Corrupt Data', icon: '👾', zone: 'the_forest', level: 10, hp: 65, attack: 8, strength: 7, defence: 5, xpReward: { attack: 22, strength: 18, hitpoints: 14 }, drops: [{ id: 'corrupted_byte', weight: 50, minQty: 2, maxQty: 4 }, { id: 'code_fragment', weight: 15, minQty: 1, maxQty: 2 }, { id: 'steel_sword', weight: 2, minQty: 1, maxQty: 1 }], coinDrop: { min: 20, max: 50 }, aggressive: true, respawnTime: 25, spawnCount: 24, color: '#7c3aed', description: 'A glitching mass of corrupted files. Attacks on sight.' },
+            virus_walker: { id: 'virus_walker', name: 'Virus Walker', icon: '🦠', zone: 'the_forest', level: 13, hp: 85, attack: 10, strength: 9, defence: 7, xpReward: { attack: 30, strength: 26, hitpoints: 18 }, drops: [{ id: 'rogue_script', weight: 35, minQty: 1, maxQty: 2 }, { id: 'corrupted_byte', weight: 30, minQty: 2, maxQty: 5 }, { id: 'attack_potion', weight: 5, minQty: 1, maxQty: 1 }], coinDrop: { min: 30, max: 75 }, aggressive: true, respawnTime: 30, spawnCount: 18, color: '#dc2626', description: 'A malicious program stalking the forest paths.' },
+            memory_leak: { id: 'memory_leak', name: 'Memory Leak', icon: '💧', zone: 'the_ruins', level: 16, hp: 100, attack: 12, strength: 10, defence: 8, xpReward: { attack: 36, strength: 30, hitpoints: 22 }, drops: [{ id: 'memory_shard', weight: 45, minQty: 1, maxQty: 3 }, { id: 'cooked_meat', weight: 15, minQty: 1, maxQty: 2 }, { id: 'mithril_helm', weight: 2, minQty: 1, maxQty: 1 }], coinDrop: { min: 40, max: 100 }, aggressive: false, respawnTime: 20, spawnCount: 30, color: '#06b6d4', description: 'A leaking process slowly consuming all resources around it.' },
+            stack_overflow: { id: 'stack_overflow', name: 'Stack Overflow', icon: '📚', zone: 'the_ruins', level: 20, hp: 140, attack: 16, strength: 14, defence: 12, xpReward: { attack: 48, strength: 42, hitpoints: 30 }, drops: [{ id: 'overflow_essence', weight: 40, minQty: 1, maxQty: 3 }, { id: 'memory_shard', weight: 25, minQty: 1, maxQty: 2 }, { id: 'mithril_sword', weight: 2, minQty: 1, maxQty: 1 }], coinDrop: { min: 60, max: 150 }, aggressive: true, respawnTime: 25, spawnCount: 24, color: '#f59e0b', description: 'An unstable tower of recursive calls, ready to collapse on you.' },
+            null_pointer: { id: 'null_pointer', name: 'Null Pointer', icon: '🕳️', zone: 'the_ruins', level: 25, hp: 190, attack: 20, strength: 18, defence: 16, xpReward: { attack: 64, strength: 56, hitpoints: 40 }, drops: [{ id: 'null_fragment', weight: 45, minQty: 1, maxQty: 4 }, { id: 'overflow_essence', weight: 20, minQty: 1, maxQty: 2 }, { id: 'rune_helm', weight: 1, minQty: 1, maxQty: 1 }, { id: 'lobster', weight: 10, minQty: 1, maxQty: 2 }], coinDrop: { min: 80, max: 200 }, aggressive: true, respawnTime: 30, spawnCount: 18, color: '#000000', description: 'A void in the code. It references nothing and destroys everything.' },
+            segfault_wraith: { id: 'segfault_wraith', name: 'Segfault Wraith', icon: '👻', zone: 'the_ruins', level: 28, hp: 230, attack: 24, strength: 20, defence: 18, xpReward: { attack: 78, strength: 68, hitpoints: 50 }, drops: [{ id: 'null_fragment', weight: 40, minQty: 2, maxQty: 5 }, { id: 'memory_shard', weight: 25, minQty: 2, maxQty: 4 }, { id: 'rune_sword', weight: 1, minQty: 1, maxQty: 1 }, { id: 'strength_potion', weight: 5, minQty: 1, maxQty: 1 }], coinDrop: { min: 100, max: 250 }, aggressive: true, respawnTime: 35, spawnCount: 12, color: '#a78bfa', description: 'A ghostly process that crashes through memory boundaries.' },
+            dark_crawler: { id: 'dark_crawler', name: 'Dark Crawler', icon: '🕷️', zone: 'the_deep_network', level: 32, hp: 320, attack: 28, strength: 24, defence: 22, xpReward: { attack: 92, strength: 82, hitpoints: 62 }, drops: [{ id: 'dark_packet', weight: 45, minQty: 1, maxQty: 4 }, { id: 'shark', weight: 8, minQty: 1, maxQty: 1 }, { id: 'rune_shield', weight: 1, minQty: 1, maxQty: 1 }], coinDrop: { min: 120, max: 300 }, aggressive: true, respawnTime: 25, spawnCount: 24, color: '#1e1b4b', description: 'A spider-like scraper lurking in the deep web.' },
+            packet_storm: { id: 'packet_storm', name: 'Packet Storm', icon: '🌩️', zone: 'the_deep_network', level: 38, hp: 360, attack: 34, strength: 30, defence: 28, xpReward: { attack: 110, strength: 100, hitpoints: 75 }, drops: [{ id: 'dark_packet', weight: 40, minQty: 2, maxQty: 5 }, { id: 'firewall_core', weight: 15, minQty: 1, maxQty: 2 }, { id: 'defence_potion', weight: 5, minQty: 1, maxQty: 1 }], coinDrop: { min: 150, max: 400 }, aggressive: true, respawnTime: 30, spawnCount: 18, color: '#312e81', description: 'A raging vortex of network traffic. Devastating DDoS incarnate.' },
+            firewall_guardian: { id: 'firewall_guardian', name: 'Firewall Guardian', icon: '🛡️', zone: 'the_deep_network', level: 44, hp: 450, attack: 40, strength: 36, defence: 38, xpReward: { attack: 140, strength: 125, hitpoints: 95 }, drops: [{ id: 'firewall_core', weight: 40, minQty: 1, maxQty: 3 }, { id: 'dark_packet', weight: 20, minQty: 2, maxQty: 4 }, { id: 'dragon_helm', weight: 1, minQty: 1, maxQty: 1 }, { id: 'manta_ray', weight: 5, minQty: 1, maxQty: 2 }], coinDrop: { min: 200, max: 500 }, aggressive: true, respawnTime: 40, spawnCount: 12, color: '#f97316', description: 'An ancient security protocol. Still guarding long-dead servers.' },
+            buffer_zombie: { id: 'buffer_zombie', name: 'Buffer Zombie', icon: '🧟', zone: 'the_ruins', level: 29, hp: 250, attack: 25, strength: 22, defence: 20, xpReward: { attack: 82, strength: 72, hitpoints: 54 }, drops: [{ id: 'null_fragment', weight: 35, minQty: 2, maxQty: 4 }, { id: 'overflow_essence', weight: 25, minQty: 2, maxQty: 3 }, { id: 'rune_helm', weight: 2, minQty: 1, maxQty: 1 }, { id: 'shark', weight: 6, minQty: 1, maxQty: 1 }], coinDrop: { min: 90, max: 220 }, aggressive: true, respawnTime: 30, spawnCount: 10, color: '#4ade80', description: 'A process that died but kept running. Still consumes everything it touches.' },
+            logic_bomb: { id: 'logic_bomb', name: 'Logic Bomb', icon: '💣', zone: 'the_deep_network', level: 30, hp: 300, attack: 26, strength: 23, defence: 20, xpReward: { attack: 86, strength: 76, hitpoints: 58 }, drops: [{ id: 'dark_packet', weight: 40, minQty: 1, maxQty: 3 }, { id: 'null_fragment', weight: 20, minQty: 1, maxQty: 2 }, { id: 'rune_shield', weight: 1, minQty: 1, maxQty: 1 }], coinDrop: { min: 100, max: 260 }, aggressive: true, respawnTime: 25, spawnCount: 16, color: '#facc15', description: 'Dormant code waiting to detonate. Ticks down the moment you get close.' },
+            rootkit_shade: { id: 'rootkit_shade', name: 'Rootkit Shade', icon: '👺', zone: 'the_deep_network', level: 46, hp: 480, attack: 42, strength: 38, defence: 40, xpReward: { attack: 150, strength: 135, hitpoints: 100 }, drops: [{ id: 'firewall_core', weight: 35, minQty: 1, maxQty: 3 }, { id: 'dark_packet', weight: 25, minQty: 2, maxQty: 5 }, { id: 'dragon_sword', weight: 1, minQty: 1, maxQty: 1 }, { id: 'manta_ray', weight: 8, minQty: 1, maxQty: 2 }], coinDrop: { min: 220, max: 550 }, aggressive: true, respawnTime: 40, spawnCount: 10, color: '#581c87', description: 'An invisible process with kernel-level access. Hides in plain sight.' },
+            zero_day: { id: 'zero_day', name: 'Zero Day', icon: '💀', zone: 'the_deep_network', level: 49, hp: 550, attack: 48, strength: 42, defence: 44, xpReward: { attack: 170, strength: 155, hitpoints: 115 }, drops: [{ id: 'dragon_scale', weight: 30, minQty: 1, maxQty: 3 }, { id: 'firewall_core', weight: 25, minQty: 2, maxQty: 4 }, { id: 'dragon_helm', weight: 1, minQty: 1, maxQty: 1 }, { id: 'dragon_shield', weight: 1, minQty: 1, maxQty: 1 }, { id: 'network_key', weight: 3, minQty: 1, maxQty: 1 }], coinDrop: { min: 300, max: 700 }, aggressive: true, respawnTime: 45, spawnCount: 6, color: '#991b1b', description: 'An unknown exploit with no patch. The most dangerous non-boss entity in the network.' },
+            man: { id: 'man', name: 'Man', icon: '🧑', zone: 'suite_city', level: 2, hp: 10, attack: 1, strength: 1, defence: 1, xpReward: { attack: 4, strength: 3, hitpoints: 2 }, drops: [{ id: 'bones', weight: 100, minQty: 1, maxQty: 1 }], coinDrop: { min: 1, max: 5 }, aggressive: false, respawnTime: 10, spawnCount: 5, color: '#d4a574', description: 'Just a regular person going about their day.', isHumanoid: true, skinColor: '#d4a574', hairColor: '#4a3728' },
+            woman: { id: 'woman', name: 'Woman', icon: '👩', zone: 'suite_city', level: 2, hp: 10, attack: 1, strength: 1, defence: 1, xpReward: { attack: 4, strength: 3, hitpoints: 2 }, drops: [{ id: 'bones', weight: 100, minQty: 1, maxQty: 1 }], coinDrop: { min: 1, max: 5 }, aggressive: false, respawnTime: 10, spawnCount: 5, color: '#c89b7b', description: 'A townsfolk minding her own business.', isHumanoid: true, skinColor: '#c89b7b', hairColor: '#8b4513' }
+        };
+
+        const BOSSES = {
+            rogue_script_boss: { id: 'rogue_script_boss', name: 'The Rogue Script', icon: '📜', zone: 'the_forest', level: 15, hp: 300, attack: 14, strength: 12, defence: 10, xpReward: { attack: 120, strength: 100, hitpoints: 80, defence: 60 }, drops: [{ id: 'rogue_script_trophy', weight: 100, minQty: 1, maxQty: 1 }, { id: 'mithril_sword', weight: 15, minQty: 1, maxQty: 1 }, { id: 'mithril_helm', weight: 10, minQty: 1, maxQty: 1 }, { id: 'mithril_shield', weight: 10, minQty: 1, maxQty: 1 }, { id: 'rogue_script', weight: 60, minQty: 5, maxQty: 10 }, { id: 'attack_potion', weight: 20, minQty: 2, maxQty: 3 }], coinDrop: { min: 200, max: 500 }, abilities: [{ name: 'Fork Bomb', type: 'aoe', damage: 15, radius: 3, cooldown: 8, description: 'Spawns chaotic processes damaging all nearby.' }, { name: 'Self-Replicate', type: 'heal', heal: 50, cooldown: 12, trigger: 40, description: 'Heals by copying its own code when low HP.' }, { name: 'Spawn Forks', type: 'summon', cooldown: 20, trigger: 60, description: 'Forks 2 child processes — weaker Virus Walker clones that fight for it.' }], phases: [{ name: 'Normal', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' }, { name: 'Replicating', hpThreshold: 50, attackMultiplier: 1.2, defenceMultiplier: 0.9, speedMultiplier: 0.85, message: 'The Rogue Script begins replicating faster!' }, { name: 'Critical Mass', hpThreshold: 20, attackMultiplier: 1.5, defenceMultiplier: 0.7, speedMultiplier: 0.7, message: 'The Rogue Script reaches critical mass! It attacks wildly!' }], respawnTime: 300, spawnPos: { x: 100, z: 20 }, isRaidBoss: false, minPlayers: 1, color: '#dc2626', description: 'A self-replicating script that has grown beyond control. Forest guardian.' },
+            the_404_golem: { id: 'the_404_golem', name: 'The 404 Golem', icon: '🧌', zone: 'the_ruins', level: 30, hp: 700, attack: 28, strength: 25, defence: 30, xpReward: { attack: 250, strength: 220, hitpoints: 180, defence: 150 }, drops: [{ id: 'golem_heart', weight: 100, minQty: 1, maxQty: 1 }, { id: 'rune_sword', weight: 12, minQty: 1, maxQty: 1 }, { id: 'rune_helm', weight: 8, minQty: 1, maxQty: 1 }, { id: 'rune_shield', weight: 8, minQty: 1, maxQty: 1 }, { id: 'null_fragment', weight: 50, minQty: 5, maxQty: 15 }, { id: 'strength_potion', weight: 20, minQty: 2, maxQty: 4 }], coinDrop: { min: 500, max: 1200 }, abilities: [{ name: 'Page Not Found', type: 'stun', cooldown: 10, description: 'Sends targets to a 404 page, stunning them for 2 ticks.' }, { name: 'Stone Skin', type: 'enrage', cooldown: 15, trigger: 50, description: 'Hardens defence by 50% when below half HP.' }, { name: 'Rubble Slam', type: 'aoe', damage: 30, radius: 4, cooldown: 12, description: 'Smashes the ground, damaging all nearby players.' }, { name: 'Redirect Loop', type: 'heal', heal: 80, cooldown: 18, trigger: 30, description: 'Enters an infinite redirect loop, regenerating HP from cached responses.' }], phases: [{ name: 'Standing', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' }, { name: 'Crumbling', hpThreshold: 60, attackMultiplier: 1.15, defenceMultiplier: 1.3, speedMultiplier: 1, message: 'The 404 Golem hardens its stone shell!' }, { name: 'Stone Fury', hpThreshold: 30, attackMultiplier: 1.4, defenceMultiplier: 1.5, speedMultiplier: 0.8, message: 'The 404 Golem enters a stone fury! Defence skyrockets!' }], respawnTime: 300, spawnPos: { x: 175, z: 95 }, isRaidBoss: false, minPlayers: 2, color: '#78716c', description: 'A massive construct of dead pages and broken endpoints. Ruins guardian.' },
+            the_hallucinator: { id: 'the_hallucinator', name: 'The Hallucinator', icon: '👁️', zone: 'the_deep_network', level: 45, hp: 1200, attack: 38, strength: 35, defence: 32, xpReward: { attack: 400, strength: 380, hitpoints: 300, defence: 250 }, drops: [{ id: 'hallucinator_eye', weight: 100, minQty: 1, maxQty: 1 }, { id: 'dragon_sword', weight: 5, minQty: 1, maxQty: 1 }, { id: 'dragon_helm', weight: 3, minQty: 1, maxQty: 1 }, { id: 'firewall_core', weight: 40, minQty: 5, maxQty: 12 }, { id: 'dark_packet', weight: 50, minQty: 8, maxQty: 20 }, { id: 'manta_ray', weight: 15, minQty: 3, maxQty: 5 }], coinDrop: { min: 1000, max: 3000 }, abilities: [{ name: 'Confuse', type: 'stun', cooldown: 8, description: 'Generates false outputs, stunning a random player for 3 ticks.' }, { name: 'Hallucinate', type: 'summon', cooldown: 15, trigger: 60, description: 'Summons 2 phantom copies that attack but take double damage.' }, { name: 'Confident Nonsense', type: 'aoe', damage: 45, radius: 5, cooldown: 10, description: 'Broadcasts an authoritative but devastating energy blast.' }, { name: 'Regenerate Context', type: 'heal', heal: 150, cooldown: 20, trigger: 30, description: 'Reloads from a cached state, healing significantly.' }, { name: 'Token Drain', type: 'drain', damage: 30, heal: 40, radius: 5, cooldown: 12, description: 'Siphons energy from nearby players, converting it to HP.' }], phases: [{ name: 'Lucid', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' }, { name: 'Distorting', hpThreshold: 65, attackMultiplier: 1.2, defenceMultiplier: 1.1, speedMultiplier: 0.9, message: "The Hallucinator's reality begins to distort!" }, { name: 'Full Hallucination', hpThreshold: 35, attackMultiplier: 1.4, defenceMultiplier: 1.2, speedMultiplier: 0.75, message: 'Reality shatters! The Hallucinator unleashes its full power!' }, { name: 'Desperate', hpThreshold: 15, attackMultiplier: 1.8, defenceMultiplier: 0.6, speedMultiplier: 0.6, message: 'The Hallucinator is desperate! It drops its guard but attacks ferociously!' }], respawnTime: 300, spawnPos: { x: 100, z: 170 }, isRaidBoss: false, minPlayers: 3, color: '#a855f7', description: 'A rogue AI that generates convincing but false realities. Speaks with authority about things that do not exist.' },
+            data_breach_dragon: { id: 'data_breach_dragon', name: 'Data Breach Dragon', icon: '🐲', zone: 'the_deep_network', level: 50, hp: 2500, attack: 50, strength: 45, defence: 42, xpReward: { attack: 800, strength: 750, hitpoints: 600, defence: 500 }, drops: [{ id: 'dragon_heart', weight: 100, minQty: 1, maxQty: 1 }, { id: 'dragon_sword', weight: 10, minQty: 1, maxQty: 1 }, { id: 'dragon_helm', weight: 8, minQty: 1, maxQty: 1 }, { id: 'dragon_shield', weight: 8, minQty: 1, maxQty: 1 }, { id: 'dragon_scale', weight: 60, minQty: 5, maxQty: 15 }, { id: 'network_key', weight: 15, minQty: 1, maxQty: 1 }, { id: 'manta_ray', weight: 20, minQty: 3, maxQty: 6 }], coinDrop: { min: 3000, max: 8000 }, abilities: [{ name: 'Data Breach', type: 'aoe', damage: 60, radius: 6, cooldown: 12, description: 'Exposes all data in range — massive area damage.' }, { name: 'Encrypt', type: 'stun', cooldown: 8, description: 'Encrypts a player, locking them out for 4 ticks.' }, { name: 'Firewall Break', type: 'enrage', cooldown: 20, trigger: 40, description: 'Shatters all defences. Attack increases 75% below 40% HP.' }, { name: 'Consume Packet', type: 'heal', heal: 300, cooldown: 25, trigger: 25, description: 'Devours network traffic to heal massively.' }, { name: 'Spawn Crawlers', type: 'summon', cooldown: 18, trigger: 60, description: 'Summons 3 Dark Crawlers to defend it.' }, { name: 'Siphon Bandwidth', type: 'drain', damage: 40, heal: 60, radius: 6, cooldown: 14, description: 'Drains energy from all nearby players, healing itself from the stolen bandwidth.' }], phases: [{ name: 'Dormant', hpThreshold: 100, attackMultiplier: 1, defenceMultiplier: 1, speedMultiplier: 1, message: '' }, { name: 'Awakened', hpThreshold: 75, attackMultiplier: 1.15, defenceMultiplier: 1.1, speedMultiplier: 0.95, message: 'The Data Breach Dragon awakens! Its eyes glow with stolen data!' }, { name: 'Breach Mode', hpThreshold: 50, attackMultiplier: 1.3, defenceMultiplier: 1.2, speedMultiplier: 0.85, message: 'BREACH MODE ACTIVATED! The Dragon tears through firewalls!' }, { name: 'Meltdown', hpThreshold: 25, attackMultiplier: 1.6, defenceMultiplier: 0.8, speedMultiplier: 0.7, message: 'SYSTEM MELTDOWN! The Dragon sacrifices defence for devastating attacks!' }, { name: 'Last Stand', hpThreshold: 10, attackMultiplier: 2.0, defenceMultiplier: 0.5, speedMultiplier: 0.6, message: 'CRITICAL: The Data Breach Dragon enters its final form!' }], respawnTime: 900, spawnPos: { x: 137, z: 180 }, isRaidBoss: true, minPlayers: 5, color: '#b91c1c', description: 'The ultimate threat. A dragon-class entity that devours entire databases. The final raid boss of the Deep Network.' }
+        };
+
+        const COMBAT_STYLES = {
+            accurate: { id: 'accurate', name: 'Accurate', description: 'Precise strikes. Bonus to accuracy, trains Attack.', attackBonus: 3, strengthBonus: 0, defenceBonus: 0, xpDistribution: { attack: 1.5, strength: 0.5, defence: 0.3, hitpoints: 0.7 } },
+            aggressive: { id: 'aggressive', name: 'Aggressive', description: 'Powerful swings. Bonus to damage, trains Strength.', attackBonus: 0, strengthBonus: 3, defenceBonus: 0, xpDistribution: { attack: 0.5, strength: 1.5, defence: 0.3, hitpoints: 0.7 } },
+            defensive: { id: 'defensive', name: 'Defensive', description: 'Careful blocks. Bonus to defence, trains Defence.', attackBonus: 0, strengthBonus: 0, defenceBonus: 3, xpDistribution: { attack: 0.3, strength: 0.3, defence: 1.5, hitpoints: 0.9 } },
+            controlled: { id: 'controlled', name: 'Controlled', description: 'Balanced combat. Even XP across all skills.', attackBonus: 1, strengthBonus: 1, defenceBonus: 1, xpDistribution: { attack: 0.8, strength: 0.8, defence: 0.8, hitpoints: 0.6 } }
+        };
+
+        const MONSTER_SPECIALS = {
+            null_pointer: { monsterId: 'null_pointer', name: 'Null Strike', type: 'double_hit', chance: 15, description: 'Strikes twice in rapid succession.' },
+            segfault_wraith: { monsterId: 'segfault_wraith', name: 'Segfault Crash', type: 'stun', chance: 10, duration: 1, description: 'Crashes into you, stunning briefly.' },
+            buffer_zombie: { monsterId: 'buffer_zombie', name: 'Buffer Overflow', type: 'poison', chance: 20, damage: 3, duration: 5, description: 'Overflows corrupt data, poisoning over time.' },
+            dark_crawler: { monsterId: 'dark_crawler', name: 'Web Snare', type: 'stun', chance: 12, duration: 1, description: 'Entangles you in web threads.' },
+            packet_storm: { monsterId: 'packet_storm', name: 'DDoS Burst', type: 'double_hit', chance: 18, description: 'Hits with a burst of packets — double damage.' },
+            firewall_guardian: { monsterId: 'firewall_guardian', name: 'Firewall Reflect', type: 'double_hit', chance: 15, description: 'Reflects your attack back at you while hitting.' },
+            rootkit_shade: { monsterId: 'rootkit_shade', name: 'Kernel Panic', type: 'stun', chance: 20, duration: 2, description: 'Causes a kernel panic — longer stun.' },
+            zero_day: { monsterId: 'zero_day', name: 'Exploit Chain', type: 'poison', chance: 25, damage: 5, duration: 6, description: 'Chains multiple exploits, dealing sustained damage.' }
+        };
+
+        const SLAYER_TASKS = [
+            { id: 'slay_spam_bots', name: 'Spam Bot Cleanup', monsterId: 'spam_bot', count: 15, zone: 'the_forest', minCombatLevel: 1, xpReward: { slayer: 30, combat: 20 }, coinReward: 50, weight: 30 },
+            { id: 'slay_broken_links', name: 'Link Severance', monsterId: 'broken_link_mob', count: 12, zone: 'the_forest', minCombatLevel: 5, xpReward: { slayer: 50, combat: 35 }, coinReward: 100, weight: 25 },
+            { id: 'slay_corrupt_data', name: 'Data Corruption Purge', monsterId: 'corrupt_data', count: 10, zone: 'the_forest', minCombatLevel: 8, xpReward: { slayer: 80, combat: 55 }, coinReward: 200, weight: 20 },
+            { id: 'slay_virus_walkers', name: 'Virus Containment', monsterId: 'virus_walker', count: 8, zone: 'the_forest', minCombatLevel: 12, xpReward: { slayer: 120, combat: 80 }, coinReward: 350, weight: 15 },
+            { id: 'slay_memory_leaks', name: 'Memory Cleanup', monsterId: 'memory_leak', count: 12, zone: 'the_ruins', minCombatLevel: 15, xpReward: { slayer: 150, combat: 100 }, coinReward: 400, weight: 25 },
+            { id: 'slay_stack_overflows', name: 'Stack Unwind', monsterId: 'stack_overflow', count: 10, zone: 'the_ruins', minCombatLevel: 18, xpReward: { slayer: 200, combat: 140 }, coinReward: 600, weight: 20 },
+            { id: 'slay_null_pointers', name: 'Null Dereferencing', monsterId: 'null_pointer', count: 8, zone: 'the_ruins', minCombatLevel: 22, xpReward: { slayer: 280, combat: 200 }, coinReward: 900, weight: 15 },
+            { id: 'slay_segfault_wraiths', name: 'Segfault Exorcism', monsterId: 'segfault_wraith', count: 6, zone: 'the_ruins', minCombatLevel: 26, xpReward: { slayer: 350, combat: 250 }, coinReward: 1200, weight: 12 },
+            { id: 'slay_buffer_zombies', name: 'Zombie Process Kill', monsterId: 'buffer_zombie', count: 8, zone: 'the_ruins', minCombatLevel: 28, xpReward: { slayer: 380, combat: 270 }, coinReward: 1400, weight: 10 },
+            { id: 'slay_logic_bombs', name: 'Bomb Disposal', monsterId: 'logic_bomb', count: 10, zone: 'the_deep_network', minCombatLevel: 30, xpReward: { slayer: 400, combat: 300 }, coinReward: 1500, weight: 20 },
+            { id: 'slay_dark_crawlers', name: 'Web Crawler Purge', monsterId: 'dark_crawler', count: 10, zone: 'the_deep_network', minCombatLevel: 32, xpReward: { slayer: 450, combat: 330 }, coinReward: 1800, weight: 18 },
+            { id: 'slay_packet_storms', name: 'Storm Suppression', monsterId: 'packet_storm', count: 8, zone: 'the_deep_network', minCombatLevel: 36, xpReward: { slayer: 550, combat: 400 }, coinReward: 2500, weight: 14 },
+            { id: 'slay_firewall_guardians', name: 'Security Override', monsterId: 'firewall_guardian', count: 5, zone: 'the_deep_network', minCombatLevel: 42, xpReward: { slayer: 700, combat: 500 }, coinReward: 3500, weight: 10 },
+            { id: 'slay_rootkit_shades', name: 'Rootkit Removal', monsterId: 'rootkit_shade', count: 5, zone: 'the_deep_network', minCombatLevel: 45, xpReward: { slayer: 800, combat: 600 }, coinReward: 4000, weight: 8 },
+            { id: 'slay_zero_days', name: 'Zero Day Patch', monsterId: 'zero_day', count: 3, zone: 'the_deep_network', minCombatLevel: 48, xpReward: { slayer: 1000, combat: 750 }, coinReward: 5000, weight: 5 }
+        ];
+
+        const ITEMS = {
+            coins: { id: 'coins', name: 'Coins', icon: '🪙', stackable: true, type: 'coin' },
+            bronze_sword: { id: 'bronze_sword', name: 'Bronze Sword', icon: '🗡️', stackable: false, type: 'weapon', stats: { attack: 4, strength: 3 }, tier: 1 },
+            iron_sword: { id: 'iron_sword', name: 'Iron Sword', icon: '⚔️', stackable: false, type: 'weapon', stats: { attack: 8, strength: 6 }, tier: 2 },
+            steel_sword: { id: 'steel_sword', name: 'Steel Sword', icon: '⚔️', stackable: false, type: 'weapon', stats: { attack: 12, strength: 10 }, tier: 3 },
+            mithril_sword: { id: 'mithril_sword', name: 'Mithril Sword', icon: '🗡️', stackable: false, type: 'weapon', stats: { attack: 18, strength: 15 }, tier: 4 },
+            rune_sword: { id: 'rune_sword', name: 'Rune Sword', icon: '⚔️', stackable: false, type: 'weapon', stats: { attack: 26, strength: 22 }, tier: 5 },
+            dragon_sword: { id: 'dragon_sword', name: 'Dragon Sword', icon: '⚔️', stackable: false, type: 'weapon', stats: { attack: 36, strength: 30 }, tier: 6 },
+            bronze_helm: { id: 'bronze_helm', name: 'Bronze Helm', icon: '🪖', stackable: false, type: 'helm', stats: { defence: 3 }, tier: 1 },
+            iron_helm: { id: 'iron_helm', name: 'Iron Helm', icon: '🪖', stackable: false, type: 'helm', stats: { defence: 6 }, tier: 2 },
+            steel_helm: { id: 'steel_helm', name: 'Steel Helm', icon: '⛑️', stackable: false, type: 'helm', stats: { defence: 10 }, tier: 3 },
+            mithril_helm: { id: 'mithril_helm', name: 'Mithril Helm', icon: '🪖', stackable: false, type: 'helm', stats: { defence: 15 }, tier: 4 },
+            rune_helm: { id: 'rune_helm', name: 'Rune Helm', icon: '⛑️', stackable: false, type: 'helm', stats: { defence: 22 }, tier: 5 },
+            dragon_helm: { id: 'dragon_helm', name: 'Dragon Helm', icon: '⛑️', stackable: false, type: 'helm', stats: { defence: 30 }, tier: 6 },
+            bronze_shield: { id: 'bronze_shield', name: 'Bronze Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 4 }, tier: 1 },
+            iron_shield: { id: 'iron_shield', name: 'Iron Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 8 }, tier: 2 },
+            steel_shield: { id: 'steel_shield', name: 'Steel Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 12 }, tier: 3 },
+            mithril_shield: { id: 'mithril_shield', name: 'Mithril Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 18 }, tier: 4 },
+            rune_shield: { id: 'rune_shield', name: 'Rune Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 25 }, tier: 5 },
+            dragon_shield: { id: 'dragon_shield', name: 'Dragon Shield', icon: '🛡️', stackable: false, type: 'shield', stats: { defence: 34 }, tier: 6 },
+            bread: { id: 'bread', name: 'Bread', icon: '🍞', stackable: false, type: 'food', healAmount: 10 },
+            cooked_meat: { id: 'cooked_meat', name: 'Cooked Meat', icon: '🍖', stackable: false, type: 'food', healAmount: 20 },
+            cooked_fish: { id: 'cooked_fish', name: 'Cooked Fish', icon: '🐠', stackable: false, type: 'food', healAmount: 15 },
+            lobster: { id: 'lobster', name: 'Lobster', icon: '🦞', stackable: false, type: 'food', healAmount: 30 },
+            shark: { id: 'shark', name: 'Shark', icon: '🦈', stackable: false, type: 'food', healAmount: 40 },
+            manta_ray: { id: 'manta_ray', name: 'Manta Ray', icon: '🐠', stackable: false, type: 'food', healAmount: 50 },
+            bones: { id: 'bones', name: 'Bones', icon: '🦴', stackable: false, type: 'bones' },
+            attack_potion: { id: 'attack_potion', name: 'Attack Potion', icon: '⚗️', stackable: false, type: 'potion' },
+            strength_potion: { id: 'strength_potion', name: 'Strength Potion', icon: '⚗️', stackable: false, type: 'potion' },
+            defence_potion: { id: 'defence_potion', name: 'Defence Potion', icon: '⚗️', stackable: false, type: 'potion' },
+            raw_fish: { id: 'raw_fish', name: 'Raw Fish', icon: '🐟', stackable: true, type: 'material' },
+            logs: { id: 'logs', name: 'Logs', icon: '🪵', stackable: true, type: 'material' },
+            code_fragment: { id: 'code_fragment', name: 'Code Fragment', icon: '💎', stackable: true, type: 'material' },
+            agent_core: { id: 'agent_core', name: 'Agent Core', icon: '🔮', stackable: true, type: 'misc' },
+            corrupted_byte: { id: 'corrupted_byte', name: 'Corrupted Byte', icon: '🧠', stackable: true, type: 'material', zoneReq: 'the_forest' },
+            broken_link: { id: 'broken_link', name: 'Broken Link', icon: '🔗', stackable: true, type: 'material', zoneReq: 'the_forest' },
+            rogue_script: { id: 'rogue_script', name: 'Rogue Script', icon: '📜', stackable: true, type: 'material', zoneReq: 'the_forest' },
+            memory_shard: { id: 'memory_shard', name: 'Memory Shard', icon: '💠', stackable: true, type: 'material', zoneReq: 'the_ruins' },
+            null_fragment: { id: 'null_fragment', name: 'Null Fragment', icon: '⚠️', stackable: true, type: 'material', zoneReq: 'the_ruins' },
+            overflow_essence: { id: 'overflow_essence', name: 'Overflow Essence', icon: '🌀', stackable: true, type: 'material', zoneReq: 'the_ruins' },
+            dark_packet: { id: 'dark_packet', name: 'Dark Packet', icon: '🌑', stackable: true, type: 'material', zoneReq: 'the_deep_network' },
+            firewall_core: { id: 'firewall_core', name: 'Firewall Core', icon: '🔥', stackable: true, type: 'material', zoneReq: 'the_deep_network' },
+            dragon_scale: { id: 'dragon_scale', name: 'Dragon Scale', icon: '🐉', stackable: true, type: 'material', zoneReq: 'the_deep_network' },
+            network_key: { id: 'network_key', name: 'Network Key', icon: '🔑', stackable: false, type: 'misc', zoneReq: 'the_deep_network' },
+            rogue_script_trophy: { id: 'rogue_script_trophy', name: 'Rogue Script Trophy', icon: '🏆', stackable: false, type: 'misc' },
+            golem_heart: { id: 'golem_heart', name: '404 Golem Heart', icon: '🖤', stackable: false, type: 'misc' },
+            hallucinator_eye: { id: 'hallucinator_eye', name: 'Hallucinator Eye', icon: '👁️', stackable: false, type: 'misc' },
+            dragon_heart: { id: 'dragon_heart', name: 'Dragon Heart', icon: '❤️‍🔥', stackable: false, type: 'misc' },
+            antivirus_amulet: { id: 'antivirus_amulet', name: 'Antivirus Amulet', icon: '💎', stackable: false, type: 'misc', stats: { attack: 6, strength: 4, defence: 8 } },
+            firewall_ring: { id: 'firewall_ring', name: 'Firewall Ring', icon: '💍', stackable: false, type: 'misc', stats: { attack: 3, defence: 15 } },
+            rootkit_cloak: { id: 'rootkit_cloak', name: 'Rootkit Cloak', icon: '🧥', stackable: false, type: 'misc', stats: { attack: 10, strength: 8, defence: 5 } },
+            super_attack_potion: { id: 'super_attack_potion', name: 'Super Attack Potion', icon: '⚗️', stackable: false, type: 'potion' },
+            super_strength_potion: { id: 'super_strength_potion', name: 'Super Strength Potion', icon: '⚗️', stackable: false, type: 'potion' },
+            super_defence_potion: { id: 'super_defence_potion', name: 'Super Defence Potion', icon: '⚗️', stackable: false, type: 'potion' }
+        };
+
+        const RECIPES = [
+            { result: 'bronze_shield', resultQty: 1, ingredients: [{ id: 'logs', qty: 3 }], coinCost: 5 },
+            { result: 'iron_sword', resultQty: 1, ingredients: [{ id: 'code_fragment', qty: 5 }], coinCost: 10 },
+            { result: 'steel_sword', resultQty: 1, ingredients: [{ id: 'agent_core', qty: 2 }], coinCost: 20 },
+            { result: 'steel_shield', resultQty: 1, ingredients: [{ id: 'corrupted_byte', qty: 8 }, { id: 'logs', qty: 5 }], coinCost: 50 },
+            { result: 'mithril_sword', resultQty: 1, ingredients: [{ id: 'rogue_script', qty: 5 }, { id: 'code_fragment', qty: 10 }], coinCost: 100 },
+            { result: 'mithril_helm', resultQty: 1, ingredients: [{ id: 'corrupted_byte', qty: 15 }, { id: 'broken_link', qty: 8 }], coinCost: 80 },
+            { result: 'mithril_shield', resultQty: 1, ingredients: [{ id: 'rogue_script', qty: 3 }, { id: 'broken_link', qty: 10 }], coinCost: 90 },
+            { result: 'rune_sword', resultQty: 1, ingredients: [{ id: 'null_fragment', qty: 8 }, { id: 'overflow_essence', qty: 5 }], coinCost: 300 },
+            { result: 'rune_helm', resultQty: 1, ingredients: [{ id: 'memory_shard', qty: 12 }, { id: 'null_fragment', qty: 5 }], coinCost: 250 },
+            { result: 'rune_shield', resultQty: 1, ingredients: [{ id: 'overflow_essence', qty: 10 }, { id: 'memory_shard', qty: 8 }], coinCost: 280 },
+            { result: 'dragon_sword', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 10 }, { id: 'firewall_core', qty: 5 }, { id: 'dark_packet', qty: 8 }], coinCost: 1000 },
+            { result: 'dragon_helm', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 8 }, { id: 'firewall_core', qty: 3 }, { id: 'dark_packet', qty: 5 }], coinCost: 800 },
+            { result: 'dragon_shield', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 12 }, { id: 'firewall_core', qty: 6 }, { id: 'network_key', qty: 1 }], coinCost: 1200 },
+            { result: 'attack_potion', resultQty: 2, ingredients: [{ id: 'corrupted_byte', qty: 3 }, { id: 'rogue_script', qty: 1 }], coinCost: 15 },
+            { result: 'strength_potion', resultQty: 2, ingredients: [{ id: 'memory_shard', qty: 3 }, { id: 'overflow_essence', qty: 1 }], coinCost: 30 },
+            { result: 'defence_potion', resultQty: 2, ingredients: [{ id: 'dark_packet', qty: 3 }, { id: 'firewall_core', qty: 1 }], coinCost: 50 },
+            { result: 'super_attack_potion', resultQty: 2, ingredients: [{ id: 'attack_potion', qty: 2 }, { id: 'rogue_script_trophy', qty: 1 }], coinCost: 200 },
+            { result: 'super_strength_potion', resultQty: 2, ingredients: [{ id: 'strength_potion', qty: 2 }, { id: 'golem_heart', qty: 1 }], coinCost: 500 },
+            { result: 'super_defence_potion', resultQty: 2, ingredients: [{ id: 'defence_potion', qty: 2 }, { id: 'hallucinator_eye', qty: 1 }], coinCost: 800 },
+            { result: 'antivirus_amulet', resultQty: 1, ingredients: [{ id: 'corrupted_byte', qty: 20 }, { id: 'rogue_script', qty: 10 }, { id: 'agent_core', qty: 3 }], coinCost: 500 },
+            { result: 'firewall_ring', resultQty: 1, ingredients: [{ id: 'firewall_core', qty: 8 }, { id: 'dark_packet', qty: 15 }, { id: 'memory_shard', qty: 10 }], coinCost: 2000 },
+            { result: 'rootkit_cloak', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 5 }, { id: 'firewall_core', qty: 10 }, { id: 'network_key', qty: 1 }], coinCost: 5000 }
+        ];
+
+        // ============================================================
+        // STATE & NAVIGATION
+        // ============================================================
+
+        let currentSection = 'monsters';
+        let selectedMonster = null;
+        let currentItemsTab = 'items';
+        let currentItemFilter = 'all';
+
+        function switchSection(section) {
+            currentSection = section;
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.section === section);
+            });
+            selectedMonster = null;
+            render();
+        }
+
+        function render() {
+            const main = document.getElementById('mainContent');
+            main.innerHTML = '';
+
+            if (currentSection === 'monsters') renderMonsters(main);
+            else if (currentSection === 'bosses') renderBosses(main);
+            else if (currentSection === 'combat-styles') renderCombatStyles(main);
+            else if (currentSection === 'slayer') renderSlayerTasks(main);
+            else if (currentSection === 'items') renderItems(main);
+            else if (currentSection === 'specials') renderSpecials(main);
+        }
+
+        // ============================================================
+        // MONSTERS SECTION
+        // ============================================================
+
+        function renderMonsters(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Monsters</div>
+                    <div class="main-subtitle">All ${Object.keys(MONSTERS).length} monsters across the world</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            const monstersArray = Object.values(MONSTERS).sort((a, b) => a.level - b.level);
+            const maxHP = Math.max(...monstersArray.map(m => m.hp));
+
+            const grid = document.createElement('div');
+            grid.className = 'monster-grid';
+
+            monstersArray.forEach(monster => {
+                const card = document.createElement('div');
+                card.className = 'monster-card';
+                card.onclick = () => toggleMonsterDetail(monster);
+
+                card.innerHTML = `
+                    <div class="monster-card-header">
+                        <div class="monster-card-icon">${monster.icon}</div>
+                        <div class="monster-card-info">
+                            <div class="monster-card-name">${monster.name}</div>
+                            <div class="monster-card-level">Level ${monster.level}</div>
+                        </div>
+                    </div>
+                    <div class="monster-card-hp">
+                        <div class="monster-card-hp-fill" style="width: ${(monster.hp / maxHP) * 100}%"></div>
+                    </div>
+                    <div class="monster-card-zone">${zoneDisplayName(monster.zone)}</div>
+                `;
+
+                grid.appendChild(card);
+
+                if (selectedMonster?.id === monster.id) {
+                    const detail = renderMonsterDetail(monster);
+                    grid.appendChild(detail);
+                }
+            });
+
+            main.appendChild(grid);
+        }
+
+        function toggleMonsterDetail(monster) {
+            selectedMonster = selectedMonster?.id === monster.id ? null : monster;
+            render();
+        }
+
+        function renderMonsterDetail(monster) {
+            const panel = document.createElement('div');
+            panel.className = 'detail-panel';
+            panel.style.gridColumn = '1 / -1';
+
+            const totalDropWeight = monster.drops.reduce((sum, d) => sum + d.weight, 0);
+
+            panel.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-field">
+                        <div class="detail-label">Name</div>
+                        <input class="detail-input" value="${monster.name}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Level</div>
+                        <input class="detail-input" type="number" value="${monster.level}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">HP</div>
+                        <input class="detail-input" type="number" value="${monster.hp}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Attack</div>
+                        <input class="detail-input" type="number" value="${monster.attack}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Strength</div>
+                        <input class="detail-input" type="number" value="${monster.strength}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Defence</div>
+                        <input class="detail-input" type="number" value="${monster.defence}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Attack XP</div>
+                        <input class="detail-input" type="number" value="${monster.xpReward.attack}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Strength XP</div>
+                        <input class="detail-input" type="number" value="${monster.xpReward.strength}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Hitpoints XP</div>
+                        <input class="detail-input" type="number" value="${monster.xpReward.hitpoints}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Aggressive</div>
+                        <select class="detail-input">
+                            <option ${monster.aggressive ? 'selected' : ''}>true</option>
+                            <option ${!monster.aggressive ? 'selected' : ''}>false</option>
+                        </select>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Respawn Time (s)</div>
+                        <input class="detail-input" type="number" value="${monster.respawnTime}">
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">Spawn Count</div>
+                        <input class="detail-input" type="number" value="${monster.spawnCount}">
+                    </div>
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">Description</div>
+                    <textarea class="detail-input detail-textarea">${monster.description}</textarea>
+                </div>
+                <div class="drop-table">
+                    <div class="detail-label" style="margin-bottom: 8px;">Drop Table (${monster.drops.length} items)</div>
+                    ${monster.drops.map(drop => `
+                        <div class="drop-item">
+                            <div class="drop-item-name">${ITEMS[drop.id]?.name || drop.id}</div>
+                            <div class="drop-item-weight">
+                                <div style="font-size: 10px; color: var(--text-muted);">${((drop.weight / totalDropWeight) * 100).toFixed(1)}% (weight: ${drop.weight})</div>
+                                <div class="drop-weight-bar">
+                                    <div class="drop-weight-fill" style="width: ${(drop.weight / totalDropWeight) * 100}%"></div>
+                                </div>
+                            </div>
+                            <div class="drop-item-qty">${drop.minQty}-${drop.maxQty}×</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="detail-field">
+                    <div class="detail-label">Coin Drop</div>
+                    <div style="font-size: 13px;">${monster.coinDrop.min}-${monster.coinDrop.max} coins</div>
+                </div>
+            `;
+
+            return panel;
+        }
+
+        // ============================================================
+        // BOSSES SECTION
+        // ============================================================
+
+        function renderBosses(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Bosses</div>
+                    <div class="main-subtitle">All ${Object.keys(BOSSES).length} boss encounters</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            Object.values(BOSSES).forEach(boss => {
+                const panel = document.createElement('div');
+                panel.className = 'boss-panel';
+
+                const totalDropWeight = boss.drops.reduce((sum, d) => sum + d.weight, 0);
+
+                panel.innerHTML = `
+                    <div class="boss-header">
+                        <div class="boss-icon">${boss.icon}</div>
+                        <div class="boss-info">
+                            <div class="boss-name">${boss.name}</div>
+                            <div class="boss-level-zone">
+                                <span class="boss-badge" style="background: var(--bg-active);">Level ${boss.level}</span>
+                                <span class="boss-badge" style="background: var(--bg-active);">${zoneDisplayName(boss.zone)}</span>
+                                ${boss.isRaidBoss ? '<span class="boss-badge boss-raid">RAID BOSS</span>' : ''}
+                                <span class="boss-badge" style="background: var(--bg-active);">Min ${boss.minPlayers} players</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="boss-stats-grid">
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">HP</div>
+                            <div class="boss-stat-value">${boss.hp}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Attack</div>
+                            <div class="boss-stat-value">${boss.attack}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Strength</div>
+                            <div class="boss-stat-value">${boss.strength}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Defence</div>
+                            <div class="boss-stat-value">${boss.defence}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Attack XP</div>
+                            <div class="boss-stat-value">${boss.xpReward.attack}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Strength XP</div>
+                            <div class="boss-stat-value">${boss.xpReward.strength}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Hitpoints XP</div>
+                            <div class="boss-stat-value">${boss.xpReward.hitpoints}</div>
+                        </div>
+                        <div class="boss-stat">
+                            <div class="boss-stat-label">Defence XP</div>
+                            <div class="boss-stat-value">${boss.xpReward.defence}</div>
+                        </div>
+                    </div>
+
+                    <div class="boss-section">
+                        <div class="boss-section-title">Abilities (${boss.abilities.length})</div>
+                        <div class="boss-abilities">
+                            ${boss.abilities.map(ab => `
+                                <div class="boss-ability">
+                                    <div class="boss-ability-header">
+                                        <div class="boss-ability-name">${ab.name}</div>
+                                        <div class="boss-ability-type type-${ab.type}">${ab.type.toUpperCase()}</div>
+                                    </div>
+                                    <div class="boss-ability-desc">${ab.description}</div>
+                                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                                        Cooldown: ${ab.cooldown} ticks
+                                        ${ab.damage ? ` • Damage: ${ab.damage}` : ''}
+                                        ${ab.heal ? ` • Heal: ${ab.heal}` : ''}
+                                        ${ab.radius ? ` • Radius: ${ab.radius}` : ''}
+                                        ${ab.trigger ? ` • Trigger: <${ab.trigger}% HP` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    ${boss.phases ? `
+                        <div class="boss-section">
+                            <div class="boss-section-title">Combat Phases (${boss.phases.length})</div>
+                            <div class="boss-phases">
+                                ${boss.phases.map(phase => `
+                                    <div class="boss-phase">
+                                        <div class="boss-phase-name">${phase.name}</div>
+                                        <div class="boss-phase-threshold">&lt;${phase.hpThreshold}% HP</div>
+                                        <div class="boss-phase-mult">Atk: ${phase.attackMultiplier}× | Def: ${phase.defenceMultiplier}× | Spd: ${phase.speedMultiplier}×</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="boss-section">
+                        <div class="boss-section-title">Drop Table (${boss.drops.length} items)</div>
+                        <div class="drop-table">
+                            ${boss.drops.map(drop => `
+                                <div class="drop-item">
+                                    <div class="drop-item-name">${ITEMS[drop.id]?.icon || ''} ${ITEMS[drop.id]?.name || drop.id}</div>
+                                    <div class="drop-item-weight">
+                                        <div style="font-size: 10px; color: var(--text-muted);">${((drop.weight / totalDropWeight) * 100).toFixed(1)}% (weight: ${drop.weight})</div>
+                                        <div class="drop-weight-bar">
+                                            <div class="drop-weight-fill" style="width: ${(drop.weight / totalDropWeight) * 100}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="drop-item-qty">${drop.minQty}-${drop.maxQty}×</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;">
+                        ${boss.description}
+                    </div>
+                `;
+
+                main.appendChild(panel);
+            });
+        }
+
+        // ============================================================
+        // COMBAT STYLES SECTION
+        // ============================================================
+
+        function renderCombatStyles(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Combat Styles</div>
+                    <div class="main-subtitle">4 fighting styles with different bonuses and XP distribution</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            const grid = document.createElement('div');
+            grid.className = 'combat-styles';
+
+            Object.values(COMBAT_STYLES).forEach(style => {
+                const xpTotal = style.xpDistribution.attack + style.xpDistribution.strength + style.xpDistribution.defence + style.xpDistribution.hitpoints;
+
+                const card = document.createElement('div');
+                card.className = 'combat-style';
+                card.innerHTML = `
+                    <div class="combat-style-name">${style.name}</div>
+                    <div class="combat-style-desc">${style.description}</div>
+                    <div class="combat-style-bonuses">
+                        ${style.attackBonus > 0 ? `+${style.attackBonus} Attack ` : ''}
+                        ${style.strengthBonus > 0 ? `+${style.strengthBonus} Strength ` : ''}
+                        ${style.defenceBonus > 0 ? `+${style.defenceBonus} Defence` : ''}
+                    </div>
+                    <div class="combat-style-xp">
+                        <div class="xp-segment xp-attack" style="flex: ${style.xpDistribution.attack}">Atk</div>
+                        <div class="xp-segment xp-strength" style="flex: ${style.xpDistribution.strength}">Str</div>
+                        <div class="xp-segment xp-defence" style="flex: ${style.xpDistribution.defence}">Def</div>
+                        <div class="xp-segment xp-hitpoints" style="flex: ${style.xpDistribution.hitpoints}">HP</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            main.appendChild(grid);
+        }
+
+        // ============================================================
+        // SLAYER TASKS SECTION
+        // ============================================================
+
+        function renderSlayerTasks(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Slayer Tasks</div>
+                    <div class="main-subtitle">${SLAYER_TASKS.length} tasks across 3 zones</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            const byZone = {
+                the_forest: SLAYER_TASKS.filter(t => t.zone === 'the_forest'),
+                the_ruins: SLAYER_TASKS.filter(t => t.zone === 'the_ruins'),
+                the_deep_network: SLAYER_TASKS.filter(t => t.zone === 'the_deep_network')
+            };
+
+            const maxWeight = Math.max(...SLAYER_TASKS.map(t => t.weight));
+
+            Object.entries(byZone).forEach(([zone, tasks]) => {
+                const group = document.createElement('div');
+                group.className = 'slayer-group';
+                group.innerHTML = `
+                    <div class="slayer-group-title">${zoneDisplayName(zone)} (${tasks.length} tasks)</div>
+                    <table class="slayer-table">
+                        <thead>
+                            <tr>
+                                <th>Task Name</th>
+                                <th>Monster</th>
+                                <th>Count</th>
+                                <th>Min Lvl</th>
+                                <th>Slayer XP</th>
+                                <th>Combat XP</th>
+                                <th>Coins</th>
+                                <th style="width: 120px;">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tasks.map(task => {
+                                const monster = MONSTERS[task.monsterId];
+                                return `
+                                    <tr class="zone-${zone === 'the_forest' ? 'forest' : zone === 'the_ruins' ? 'ruins' : 'deep'}">
+                                        <td style="font-weight: 600;">${task.name}</td>
+                                        <td>${monster?.icon || ''} ${monster?.name || task.monsterId}</td>
+                                        <td>${task.count}</td>
+                                        <td>${task.minCombatLevel}</td>
+                                        <td>${task.xpReward.slayer}</td>
+                                        <td>${task.xpReward.combat}</td>
+                                        <td>${task.coinReward}</td>
+                                        <td>
+                                            <div style="font-size: 11px; margin-bottom: 2px;">${task.weight}</div>
+                                            <div class="task-weight-bar">
+                                                <div class="task-weight-fill" style="width: ${(task.weight / maxWeight) * 100}%"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                main.appendChild(group);
+            });
+        }
+
+        // ============================================================
+        // ITEMS & RECIPES SECTION
+        // ============================================================
+
+        function renderItems(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Items & Recipes</div>
+                    <div class="main-subtitle">${Object.keys(ITEMS).length} items, ${RECIPES.length} recipes</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            const tabs = document.createElement('div');
+            tabs.className = 'items-tabs';
+            tabs.innerHTML = `
+                <div class="items-tab ${currentItemsTab === 'items' ? 'active' : ''}" onclick="switchItemsTab('items')">Items</div>
+                <div class="items-tab ${currentItemsTab === 'recipes' ? 'active' : ''}" onclick="switchItemsTab('recipes')">Recipes</div>
+            `;
+            main.appendChild(tabs);
+
+            if (currentItemsTab === 'items') {
+                const filters = document.createElement('div');
+                filters.className = 'items-filters';
+                const types = ['all', 'weapon', 'helm', 'shield', 'food', 'potion', 'material', 'misc'];
+                types.forEach(type => {
+                    const btn = document.createElement('button');
+                    btn.className = `filter-btn ${currentItemFilter === type ? 'active' : ''}`;
+                    btn.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                    btn.onclick = () => {
+                        currentItemFilter = type;
+                        render();
+                    };
+                    filters.appendChild(btn);
+                });
+                main.appendChild(filters);
+
+                const grid = document.createElement('div');
+                grid.className = 'items-grid';
+
+                Object.values(ITEMS).filter(item => {
+                    if (currentItemFilter === 'all') return true;
+                    return item.type === currentItemFilter;
+                }).forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'item-card';
+                    card.innerHTML = `
+                        <div class="item-card-icon">${item.icon}</div>
+                        <div class="item-card-name">${item.name}</div>
+                        <div class="item-card-type">${item.type}</div>
+                        ${item.stats ? `<div class="item-card-stats">${Object.entries(item.stats).map(([k, v]) => `${k}: +${v}`).join(' ')}</div>` : ''}
+                        ${item.healAmount ? `<div class="item-card-stats">Heals: ${item.healAmount} HP</div>` : ''}
+                        ${item.tier ? `<div class="item-card-tier tier-${item.tier}">Tier ${item.tier}</div>` : ''}
+                    `;
+                    grid.appendChild(card);
+                });
+
+                main.appendChild(grid);
+            } else {
+                const list = document.createElement('div');
+                list.className = 'recipes-list';
+
+                RECIPES.forEach(recipe => {
+                    const resultItem = ITEMS[recipe.result];
+                    const card = document.createElement('div');
+                    card.className = 'recipe-card';
+                    card.innerHTML = `
+                        <div class="recipe-result">
+                            <div class="recipe-icon">${resultItem?.icon || ''}</div>
+                            <div>
+                                <div class="recipe-name">${resultItem?.name || recipe.result}</div>
+                                <div style="font-size: 10px; color: var(--text-muted);">×${recipe.resultQty}</div>
+                            </div>
+                        </div>
+                        <div class="recipe-arrow">→</div>
+                        <div class="recipe-ingredients">
+                            ${recipe.ingredients.map(ing => {
+                                const item = ITEMS[ing.id];
+                                return `
+                                    <div class="recipe-ingredient">
+                                        <div class="recipe-ingredient-icon">${item?.icon || ''}</div>
+                                        <div class="recipe-ingredient-text">${item?.name || ing.id} ×${ing.qty}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="recipe-cost">${recipe.coinCost > 0 ? `${recipe.coinCost} 🪙` : 'Free'}</div>
+                    `;
+                    list.appendChild(card);
+                });
+
+                main.appendChild(list);
+            }
+        }
+
+        window.switchItemsTab = function(tab) {
+            currentItemsTab = tab;
+            render();
+        };
+
+        // ============================================================
+        // MONSTER SPECIALS SECTION
+        // ============================================================
+
+        function renderSpecials(main) {
+            const header = document.createElement('div');
+            header.className = 'main-header';
+            header.innerHTML = `
+                <div>
+                    <div class="main-title">Monster Special Attacks</div>
+                    <div class="main-subtitle">${Object.keys(MONSTER_SPECIALS).length} monsters with special abilities</div>
+                </div>
+            `;
+            main.appendChild(header);
+
+            const table = document.createElement('table');
+            table.className = 'specials-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Monster</th>
+                        <th>Special Name</th>
+                        <th>Type</th>
+                        <th>Chance</th>
+                        <th>Damage</th>
+                        <th>Duration</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.values(MONSTER_SPECIALS).map(spec => {
+                        const monster = MONSTERS[spec.monsterId];
+                        return `
+                            <tr>
+                                <td>${monster?.icon || ''} ${monster?.name || spec.monsterId}</td>
+                                <td style="font-weight: 600;">${spec.name}</td>
+                                <td><span class="special-type type-${spec.type}">${spec.type.replace('_', ' ')}</span></td>
+                                <td>${spec.chance}%</td>
+                                <td>${spec.damage || '—'}</td>
+                                <td>${spec.duration ? spec.duration + ' ticks' : '—'}</td>
+                                <td style="color: var(--text-secondary);">${spec.description}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+            main.appendChild(table);
+        }
+
+        // ============================================================
+        // EXPORT FUNCTIONALITY
+        // ============================================================
+
+        window.toggleExport = function() {
+            document.getElementById('exportDropdown').classList.toggle('open');
+        };
+
+        window.exportConfig = function(format) {
+            let content, filename, mimeType;
+
+            if (format === 'json') {
+                const data = {
+                    MONSTERS,
+                    BOSSES,
+                    COMBAT_STYLES,
+                    MONSTER_SPECIALS,
+                    SLAYER_TASKS,
+                    ITEMS,
+                    RECIPES
+                };
+                content = JSON.stringify(data, null, 2);
+                filename = 'agentscape-config.json';
+                mimeType = 'application/json';
+            } else {
+                // TypeScript format
+                content = `// AgentScape Game Configuration
+// Generated: ${new Date().toISOString()}
+
+export const MONSTERS = ${JSON.stringify(MONSTERS, null, 2)};
+
+export const BOSSES = ${JSON.stringify(BOSSES, null, 2)};
+
+export const COMBAT_STYLES = ${JSON.stringify(COMBAT_STYLES, null, 2)};
+
+export const MONSTER_SPECIALS = ${JSON.stringify(MONSTER_SPECIALS, null, 2)};
+
+export const SLAYER_TASKS = ${JSON.stringify(SLAYER_TASKS, null, 2)};
+
+export const ITEMS = ${JSON.stringify(ITEMS, null, 2)};
+
+export const RECIPES = ${JSON.stringify(RECIPES, null, 2)};
+`;
+                filename = 'agentscape-config.ts';
+                mimeType = 'text/typescript';
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            document.getElementById('exportDropdown').classList.remove('open');
+        };
+
+        // ============================================================
+        // SEARCH FUNCTIONALITY
+        // ============================================================
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            if (!query) return;
+
+            // Search across all data
+            const results = [];
+
+            Object.values(MONSTERS).forEach(m => {
+                if (m.name.toLowerCase().includes(query) || m.description.toLowerCase().includes(query)) {
+                    results.push({ type: 'monster', data: m });
+                }
+            });
+
+            Object.values(BOSSES).forEach(b => {
+                if (b.name.toLowerCase().includes(query) || b.description.toLowerCase().includes(query)) {
+                    results.push({ type: 'boss', data: b });
+                }
+            });
+
+            Object.values(ITEMS).forEach(i => {
+                if (i.name.toLowerCase().includes(query)) {
+                    results.push({ type: 'item', data: i });
+                }
+            });
+
+            // Could display results in a dropdown, for now just log
+            console.log('Search results:', results);
+        });
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
+
+        function zoneDisplayName(zoneId) {
+            const names = {
+                'the_forest': 'The Forest',
+                'the_ruins': 'The Ruins',
+                'the_deep_network': 'The Deep Network',
+                'suite_city': 'SUITE City'
+            };
+            return names[zoneId] || zoneId;
+        }
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', () => {
+                switchSection(item.dataset.section);
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#exportDropdown')) {
+                document.getElementById('exportDropdown').classList.remove('open');
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
