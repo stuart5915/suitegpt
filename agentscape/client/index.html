@@ -3,48 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgentScape | Multiplayer</title>
+    <title>AgentScape | SUITE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
-        #game-frame { display: grid; grid-template-columns: 1fr 220px; grid-template-rows: 1fr 160px; width: 100vw; height: 100vh; }
-        #game-viewport { position: relative; overflow: hidden; background: #000; grid-row: 1; grid-column: 1; }
+
+        /* === RS-STYLE GAME FRAME === */
+        #game-frame {
+            display: grid;
+            grid-template-columns: 1fr 220px;
+            grid-template-rows: 1fr 160px;
+            width: 100vw; height: 100vh;
+        }
+        #game-viewport {
+            position: relative; overflow: hidden; background: #000;
+            grid-row: 1; grid-column: 1;
+        }
         #game-viewport canvas { display: block; width: 100%; height: 100%; }
         #npc-labels, #chat-bubbles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        #game-sidebar { grid-row: 1 / 3; grid-column: 2; background: linear-gradient(180deg, #2a2a2e 0%, #1a1a1f 100%); border-left: 2px solid #4a4a50; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Right Sidebar */
+        #game-sidebar {
+            grid-row: 1 / 3; grid-column: 2;
+            background: linear-gradient(180deg, #2a2a2e 0%, #1a1a1f 100%);
+            border-left: 2px solid #4a4a50;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* Minimap in sidebar */
         #minimap-wrap { padding: 8px; text-align: center; border-bottom: 2px solid #4a4a50; background: #1a1a1f; }
         #minimap { border: 2px solid #5a5a60; border-radius: 2px; display: block; margin: 0 auto; }
+
+        /* HP / Energy Orbs */
         #orbs-row { display: flex; justify-content: center; gap: 16px; padding: 8px 0; border-bottom: 2px solid #4a4a50; background: #222226; }
         .orb { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #5a5a60; position: relative; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000; }
         .orb-hp { background: conic-gradient(#22c55e var(--hp-pct, 100%), #333 0); }
         .orb-energy { background: conic-gradient(#eab308 var(--energy-pct, 100%), #333 0); }
         .orb-combat { background: conic-gradient(#6366f1 100%, #333 0); }
         .orb-inner { width: 28px; height: 28px; border-radius: 50%; background: #1a1a1f; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+        /* Sidebar Tabs */
         #sidebar-tabs { display: flex; border-bottom: 2px solid #4a4a50; }
         .sidebar-tab { flex: 1; padding: 6px 2px; text-align: center; font-size: 10px; font-weight: bold; color: #9ca3af; background: #2a2a2e; border: none; cursor: pointer; border-right: 1px solid #4a4a50; border-top: 2px solid transparent; text-transform: uppercase; letter-spacing: 0.5px; }
         .sidebar-tab:last-child { border-right: none; }
         .sidebar-tab.active { background: #1a1a1f; color: #fff; border-top-color: #6366f1; }
         .sidebar-tab:hover { color: #fff; }
+
+        /* Sidebar Content */
         .sidebar-content { flex: 1; overflow-y: auto; display: none; }
         .sidebar-content.active { display: block; }
         .sidebar-content::-webkit-scrollbar { width: 4px; }
         .sidebar-content::-webkit-scrollbar-thumb { background: #4a4a50; }
+
+        /* Inventory Grid */
         #inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 4px; }
         .inv-slot { aspect-ratio: 1; background: #1a1a1f; border: 1px solid #3a3a40; display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative; cursor: pointer; border-radius: 2px; }
         .inv-slot:hover { border-color: #6366f1; background: #222230; }
         .inv-slot.equipped { border-color: #22c55e; box-shadow: inset 0 0 6px rgba(34,197,94,0.3); }
         .inv-slot-qty { position: absolute; bottom: 1px; right: 3px; font-size: 9px; color: #eab308; font-weight: bold; text-shadow: 0 0 2px #000; }
-        #stats-content { padding: 8px; }
-        .stat-skill { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-bottom: 1px solid #2a2a2e; }
-        .stat-skill-icon { font-size: 16px; width: 22px; text-align: center; }
-        .stat-skill-name { font-size: 11px; color: #9ca3af; flex: 1; }
-        .stat-skill-lvl { font-size: 13px; color: #fff; font-weight: bold; width: 26px; text-align: center; }
-        .stat-xp-bar { width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; margin-top: 2px; }
-        .stat-xp-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.3s; }
+
+        /* Stats Panel */
+        #stats-content { padding: 4px; }
         .stat-player-info { padding: 8px; text-align: center; border-bottom: 2px solid #4a4a50; }
         .stat-player-name { font-size: 13px; color: #fff; font-weight: bold; }
         .stat-combat-lvl { font-size: 11px; color: #eab308; }
+
+        /* OSRS-style Skill Grid */
+        .skill-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #2a2a2e; border: 1px solid #2a2a2e; }
+        .skill-cell { background: #1a1a1f; padding: 3px 4px; display: flex; align-items: center; gap: 3px; cursor: pointer; position: relative; overflow: hidden; transition: background 0.15s; }
+        .skill-cell:hover { background: #252530; }
+        .skill-cell.skill-selected { background: #2a2a3a; box-shadow: inset 0 0 0 1px #6366f1; }
+        .skill-cell.skill-levelup { animation: skillFlash 1.5s ease-out; }
+        @keyframes skillFlash { 0%, 20% { background: #6366f144; } 100% { background: #1a1a1f; } }
+        .skill-icon { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; }
+        .skill-lvl { font-size: 11px; color: #fff; font-weight: bold; margin-left: auto; }
+        .skill-xp-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #2a2a2e; }
+        .skill-xp-fill { height: 100%; background: #6366f1; transition: width 0.3s; }
+        .skill-total { text-align: center; padding: 6px; font-size: 11px; color: #eab308; font-weight: bold; border-top: 1px solid #3a3a40; background: #1a1a1f; }
+        .skill-detail { padding: 8px; background: #1a1a1f; border-top: 1px solid #3a3a40; }
+        .skill-detail-name { font-size: 12px; color: #fff; font-weight: bold; margin-bottom: 4px; }
+        .skill-detail-row { font-size: 10px; color: #9ca3af; padding: 1px 0; }
+        .skill-detail-row b { color: #fff; }
+
+        /* Bottom Panel */
         #game-bottom { grid-row: 2; grid-column: 1; background: linear-gradient(0deg, #1a1a1f, #222226); border-top: 2px solid #4a4a50; display: flex; }
+
+        /* Chat Area */
         #chat-area { flex: 1; display: flex; flex-direction: column; border-right: 2px solid #4a4a50; }
         #chat-tabs { display: flex; border-bottom: 1px solid #3a3a40; flex-shrink: 0; }
         .chat-tab { padding: 4px 10px; font-size: 10px; font-weight: bold; color: #6b7280; background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
@@ -60,30 +104,52 @@
         #chat-input-area { display: flex; padding: 4px; gap: 4px; flex-shrink: 0; }
         #chat-input { flex: 1; background: #1a1a1f; border: 1px solid #3a3a40; color: #fff; padding: 4px 8px; font-size: 11px; font-family: inherit; border-radius: 2px; outline: none; }
         #chat-input:focus { border-color: #6366f1; }
+
+        /* Action Buttons */
         #action-area { width: 180px; padding: 8px; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
         .action-btn { padding: 6px; font-size: 10px; font-weight: bold; background: #2a2a2e; color: #ccc; border: 1px solid #4a4a50; cursor: pointer; text-align: center; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
         .action-btn:hover { background: #3a3a3e; color: #fff; border-color: #6366f1; }
         .action-btn.active { background: #6366f122; color: #6366f1; border-color: #6366f1; }
+
+        /* NPC Labels */
         .npc-label { position: absolute; z-index: 15; pointer-events: none; font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8); white-space: nowrap; transform: translate(-50%, -100%); padding: 1px 6px; border-radius: 3px; background: rgba(0,0,0,0.5); }
+
+        /* Monster Labels */
+        .monster-label { position: absolute; z-index: 15; pointer-events: none; font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8); white-space: nowrap; transform: translate(-50%, -100%); padding: 1px 6px; border-radius: 3px; background: rgba(139,0,0,0.6); border-bottom: 2px solid #ef4444; }
+
+        /* Chat Bubbles */
         .chat-bubble { position: absolute; z-index: 16; pointer-events: none; font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold; color: #ffff00; text-shadow: 0 0 4px rgba(0,0,0,0.9); white-space: nowrap; transform: translate(-50%, -100%); padding: 2px 8px; border-radius: 4px; background: rgba(0,0,0,0.6); animation: bubbleFade 5s forwards; }
         @keyframes bubbleFade { 0%, 70% { opacity: 1; transform: translate(-50%, -100%); } 100% { opacity: 0; transform: translate(-50%, -120%); } }
+
+        /* Context Menu */
         #context-menu { position: fixed; z-index: 100; display: none; background: #1a1a1f; border: 1px solid #4a4a50; min-width: 140px; font-size: 12px; box-shadow: 2px 2px 8px rgba(0,0,0,0.5); }
         .ctx-option { padding: 5px 12px; color: #ccc; cursor: pointer; border-bottom: 1px solid #2a2a2e; }
         .ctx-option:hover { background: #2a2a3e; color: #fff; }
         .ctx-option:last-child { border-bottom: none; }
         .ctx-header { padding: 4px 12px; color: #6366f1; font-weight: bold; font-size: 11px; border-bottom: 1px solid #4a4a50; }
+
+        /* Health Bars */
         .health-bar-wrap { position: absolute; z-index: 14; pointer-events: none; transform: translate(-50%, 0); width: 40px; }
         .health-bar { width: 100%; height: 5px; background: #333; border: 1px solid #000; }
         .health-bar-fill { height: 100%; background: #22c55e; transition: width 0.2s; }
+
+        /* Hitsplats */
         .hitsplat { position: absolute; z-index: 17; pointer-events: none; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: #cc0000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 0 0 2px #000; animation: hitsplatAnim 1s forwards; }
         .hitsplat.miss { background: #4444ff; }
         .hitsplat.spec { background: #eab308; width: 30px; height: 30px; font-size: 13px; }
         @keyframes hitsplatAnim { 0% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -100%); } }
+
+        /* Death Screen */
         #death-screen { position: absolute; inset: 0; z-index: 50; background: rgba(139,0,0,0.7); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
         #death-screen h1 { color: #fff; font-size: 24px; }
         #death-screen p { color: #ccc; font-size: 14px; }
+
+        /* Loot */
         .loot-label { position: absolute; z-index: 14; pointer-events: none; font-size: 10px; color: #eab308; font-weight: bold; text-shadow: 0 0 3px #000; transform: translate(-50%, 0); animation: lootPulse 1s infinite; }
         @keyframes lootPulse { 50% { transform: translate(-50%, -3px); } }
+        .loot-pile-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #eab308; z-index: 13; cursor: pointer; pointer-events: auto; box-shadow: 0 0 6px #eab308; animation: lootPulse 1s infinite; }
+
+        /* Overlay Panels */
         .game-overlay { position: absolute; inset: 0; z-index: 40; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; }
         .game-overlay.open { display: flex; }
         .overlay-panel { background: linear-gradient(180deg, #2a2a2e, #1a1a1f); border: 2px solid #4a4a50; border-radius: 4px; width: 520px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
@@ -92,6 +158,8 @@
         .overlay-close { background: none; border: none; color: #9ca3af; font-size: 18px; cursor: pointer; padding: 0 4px; }
         .overlay-close:hover { color: #fff; }
         .overlay-body { padding: 10px; }
+
+        /* Quest List */
         .quest-item { padding: 8px 10px; border-bottom: 1px solid #2a2a2e; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .quest-item:hover { background: #2a2a3e; }
         .quest-item.completed { opacity: 0.5; }
@@ -99,6 +167,7 @@
         .quest-difficulty.easy { background: #22c55e33; color: #22c55e; }
         .quest-difficulty.medium { background: #eab30833; color: #eab308; }
         .quest-difficulty.hard { background: #ef444433; color: #ef4444; }
+        .quest-difficulty.legendary { background: #a855f733; color: #a855f7; }
         .quest-name { flex: 1; font-size: 12px; color: #ccc; }
         .quest-status-icon { font-size: 14px; }
         .quest-detail { padding: 10px; }
@@ -113,6 +182,8 @@
         .sidebar-quest-name { font-size: 11px; color: #ccc; font-weight: bold; }
         .sidebar-quest-progress { font-size: 9px; color: #9ca3af; }
         .sidebar-quest.done .sidebar-quest-name { color: #6b7280; text-decoration: line-through; }
+
+        /* Shop */
         .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; }
         .shop-panel { flex: 1; min-width: 0; }
         .shop-panel h3 { font-size: 11px; color: #9ca3af; padding: 6px 8px; margin: 0; border-bottom: 1px solid #2a2a2e; text-transform: uppercase; }
@@ -125,25 +196,87 @@
         .shop-coins { padding: 8px; text-align: center; font-size: 12px; color: #eab308; font-weight: bold; border-bottom: 1px solid #4a4a50; }
         .shop-buy-btn { padding: 3px 8px; font-size: 9px; font-weight: bold; background: #2a2a2e; color: #ccc; border: 1px solid #4a4a50; cursor: pointer; border-radius: 2px; font-family: inherit; }
         .shop-buy-btn:hover { background: #3a3a3e; border-color: #6366f1; color: #fff; }
+
+        /* Skilling */
         .skill-timer { width: 100%; height: 6px; background: #2a2a2e; border-radius: 3px; margin-top: 4px; }
         .skill-timer-fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.1s linear; }
-        .loot-pile-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #eab308; z-index: 13; cursor: pointer; pointer-events: auto; box-shadow: 0 0 6px #eab308; animation: lootPulse 1s infinite; }
+
+        /* Zone Indicator */
+        #zone-indicator { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 12px; font-weight: bold; color: #fff; text-shadow: 0 0 6px rgba(0,0,0,0.9); padding: 4px 14px; background: rgba(0,0,0,0.5); border-radius: 4px; font-family: 'Courier New', monospace; pointer-events: none; transition: opacity 0.3s; }
+
+        /* Connection Status */
         #conn-status { position: absolute; bottom: 4px; left: 4px; z-index: 20; font-size: 10px; padding: 2px 8px; border-radius: 3px; background: rgba(0,0,0,0.6); }
         #conn-status.connected { color: #22c55e; }
         #conn-status.connecting { color: #eab308; }
         #conn-status.disconnected { color: #ef4444; }
+
+        /* Character Creation */
+        #char-create-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 70%); z-index: 1000; display: flex; align-items: center; justify-content: center; font-family: 'Courier New', monospace; }
+        #char-create-screen.hidden { display: none; }
+        .cc-container { display: flex; gap: 32px; align-items: flex-start; background: rgba(20,20,30,0.9); border: 2px solid #4a4a50; border-radius: 8px; padding: 32px; max-width: 700px; width: 90%; }
+        .cc-form { flex: 1; }
+        .cc-form h1 { color: #fff; font-size: 22px; margin-bottom: 4px; }
+        .cc-form p.cc-sub { color: #6b7280; font-size: 11px; margin-bottom: 20px; }
+        .cc-field { margin-bottom: 16px; }
+        .cc-field label { display: block; color: #9ca3af; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cc-field input[type="text"] { width: 100%; background: #1a1a1f; border: 1px solid #3a3a40; color: #fff; padding: 8px 12px; font-size: 14px; font-family: inherit; border-radius: 4px; outline: none; }
+        .cc-field input[type="text"]:focus { border-color: #6366f1; }
+        .cc-colors { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cc-color-btn { width: 28px; height: 28px; border-radius: 4px; border: 2px solid #3a3a40; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+        .cc-color-btn:hover { transform: scale(1.15); }
+        .cc-color-btn.selected { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+        .cc-classes { display: flex; gap: 8px; }
+        .cc-class-btn { flex: 1; padding: 10px 6px; background: #1a1a1f; border: 1px solid #3a3a40; border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .cc-class-btn:hover { border-color: #6366f1; background: #222230; }
+        .cc-class-btn.selected { border-color: #6366f1; background: #6366f122; }
+        .cc-class-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+        .cc-class-name { color: #fff; font-size: 11px; font-weight: bold; display: block; }
+        .cc-class-desc { color: #6b7280; font-size: 9px; display: block; margin-top: 2px; }
+        .cc-start-btn { width: 100%; padding: 12px; background: #6366f1; color: #fff; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; font-family: inherit; cursor: pointer; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .cc-start-btn:hover { background: #5558e6; }
+        .cc-start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .cc-preview { width: 180px; height: 240px; border: 2px solid #3a3a40; border-radius: 4px; background: #111118; flex-shrink: 0; }
     </style>
 </head>
 <body>
-    <div id="game-frame">
+    <!-- Character Creation Screen -->
+    <div id="char-create-screen">
+        <div class="cc-container">
+            <div class="cc-form">
+                <h1>Create Your Character</h1>
+                <p class="cc-sub">Enter the world of AgentScape</p>
+                <div class="cc-field">
+                    <label>Character Name</label>
+                    <input type="text" id="cc-name" maxlength="16" placeholder="Enter a name..." autocomplete="off">
+                </div>
+                <div class="cc-field">
+                    <label>Body Color</label>
+                    <div class="cc-colors" id="cc-body-colors"></div>
+                </div>
+                <div class="cc-field">
+                    <label>Hair Color</label>
+                    <div class="cc-colors" id="cc-hair-colors"></div>
+                </div>
+                <div class="cc-field">
+                    <label>Class</label>
+                    <div class="cc-classes" id="cc-classes"></div>
+                </div>
+                <button class="cc-start-btn" id="cc-start" disabled>Enter AgentScape</button>
+            </div>
+            <canvas class="cc-preview" id="cc-preview" width="180" height="240"></canvas>
+        </div>
+    </div>
+
+    <div id="game-frame" style="display:none;">
         <div id="game-viewport">
+            <div id="zone-indicator">SUITE City</div>
             <div id="npc-labels"></div>
             <div id="chat-bubbles"></div>
             <div id="conn-status" class="connecting">Connecting...</div>
             <div id="death-screen"><h1>Oh dear, you are dead!</h1><p>Respawning at Town Hall...</p></div>
-            <div class="game-overlay" id="quest-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>📋 Quest Board</h2><button class="overlay-close" onclick="closeOverlay('quest-overlay')">&times;</button></div><div class="overlay-body" id="quest-board-content"></div></div></div>
-            <div class="game-overlay" id="shop-overlay"><div class="overlay-panel" style="width:600px;"><div class="overlay-header"><h2>🏪 Marketplace</h2><button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button></div><div class="shop-coins" id="shop-coins-display">🪙 0 Coins</div><div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div></div></div>
-            <div class="game-overlay" id="craft-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>🔨 Workshop — Crafting</h2><button class="overlay-close" onclick="closeOverlay('craft-overlay')">&times;</button></div><div class="overlay-body" id="craft-content"></div></div></div>
+            <div class="game-overlay" id="quest-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F4CB; Quest Board</h2><button class="overlay-close" onclick="closeOverlay('quest-overlay')">&times;</button></div><div class="overlay-body" id="quest-board-content"></div></div></div>
+            <div class="game-overlay" id="shop-overlay"><div class="overlay-panel" style="width:600px;"><div class="overlay-header"><h2>&#x1F3EA; Marketplace</h2><button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button></div><div class="shop-coins" id="shop-coins-display">&#x1FA99; 0 Coins</div><div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div></div></div>
+            <div class="game-overlay" id="craft-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F528; Workshop &mdash; Crafting</h2><button class="overlay-close" onclick="closeOverlay('craft-overlay')">&times;</button></div><div class="overlay-body" id="craft-content"></div></div></div>
         </div>
         <div id="game-sidebar">
             <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas></div>
@@ -162,7 +295,7 @@
                 <div class="stat-player-info"><div class="stat-player-name">Player</div><div class="stat-combat-lvl">Combat Level: <span id="statCombatLvl">3</span></div></div>
                 <div id="stats-content"></div>
             </div>
-            <div class="sidebar-content" id="tab-quests"><div style="padding:8px;color:#9ca3af;font-size:11px;text-align:center;"><p style="font-size:14px;margin-bottom:8px;">📋 Quests</p><p>Visit the Quest Board in town to see available bounties.</p></div></div>
+            <div class="sidebar-content" id="tab-quests"><div style="padding:8px;color:#9ca3af;font-size:11px;text-align:center;"><p style="font-size:14px;margin-bottom:8px;">&#x1F4CB; Quests</p><p>Visit the Quest Board in town to see available bounties.</p></div></div>
         </div>
         <div id="game-bottom">
             <div id="chat-area">
@@ -179,13 +312,13 @@
                 <button class="action-btn" id="btnAttackMode" onclick="toggleAttackMode()">Attack Mode</button>
                 <button class="action-btn" id="btnSpec" onclick="sendSpec()">Spec (F)</button>
                 <button class="action-btn" onclick="toggleDayNight()">Day/Night</button>
+                <button class="action-btn" onclick="deleteCharacter()" style="color:#ef4444;border-color:#ef444466;">Delete Char</button>
                 <div id="skill-action-area"></div>
-                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">WASD Move | Q/E Rotate<br>Scroll Zoom | F Spec</div>
+                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">WASD Walk | Q/E Rotate<br>Scroll Zoom | Click Move | F Spec</div>
             </div>
         </div>
     </div>
     <div id="context-menu"></div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
     // Node.js polyfills required by Colyseus.js browser bundle
@@ -202,12 +335,20 @@
     <script>
     (function() {
         // ============================================================
-        // CONFIG
+        // CHARACTER CREATION
         // ============================================================
-        const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:2567' : 'wss://play.agentscape.app';
-        const MAP_SIZE = 30, TILE_SIZE = 1, WATER_LEVEL = -0.15, MOVE_SPEED = 4, NPC_MOVE_SPEED = 2.5;
+        const BODY_COLORS = ['#3355aa','#aa3333','#33aa55','#aa8833','#8833aa','#33aaaa','#aa5533','#5533aa','#336699','#993366'];
+        const HAIR_COLORS = ['#4a3728','#1a1a1a','#c4a35a','#8c4a2f','#d4d4d4','#aa2222','#2244aa','#6633aa','#22aa44','#ff8844'];
+        const CLASSES = [
+            { id:'warrior', icon:'\u2694\uFE0F', name:'Warrior', desc:'+2 Attack, +1 Strength', bonuses:{attack:2,strength:1} },
+            { id:'sentinel', icon:'\u{1F6E1}\uFE0F', name:'Sentinel', desc:'+2 Defence, +1 HP', bonuses:{defence:2,hitpoints:1} },
+            { id:'explorer', icon:'\u{1F9ED}', name:'Explorer', desc:'+1 All combat stats', bonuses:{attack:1,strength:1,defence:1} }
+        ];
 
-        // Read auth params from URL
+        const savedChar = localStorage.getItem('agentscape_character');
+        let charData = savedChar ? JSON.parse(savedChar) : null;
+
+        // URL auth params
         const urlParams = new URLSearchParams(window.location.search);
         const authToken = urlParams.get('token');
         const authName = urlParams.get('name');
@@ -215,8 +356,101 @@
         const authApiKey = urlParams.get('apiKey');
         const authTgId = urlParams.get('tgId');
 
-        const playerName = authName || 'Player' + Math.floor(Math.random() * 9999);
-        const playerColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');
+        window.deleteCharacter = function() {
+            if (confirm('Delete your character? This cannot be undone.')) {
+                localStorage.removeItem('agentscape_character');
+                window.location.reload();
+            }
+        };
+
+        function runCharacterCreation() {
+            return new Promise((resolve) => {
+                // If we have URL auth name, skip creation
+                if (authName) {
+                    const data = charData || { name: authName, bodyColor: '#3355aa', hairColor: '#4a3728', classId: 'explorer' };
+                    document.getElementById('char-create-screen').classList.add('hidden');
+                    document.getElementById('game-frame').style.display = '';
+                    return resolve(data);
+                }
+                if (charData) {
+                    document.getElementById('char-create-screen').classList.add('hidden');
+                    document.getElementById('game-frame').style.display = '';
+                    return resolve(charData);
+                }
+
+                let selBody = BODY_COLORS[0], selHair = HAIR_COLORS[0], selClass = 'explorer';
+                const nameInput = document.getElementById('cc-name');
+                const startBtn = document.getElementById('cc-start');
+
+                const bodyDiv = document.getElementById('cc-body-colors');
+                BODY_COLORS.forEach((c, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
+                    btn.style.background = c;
+                    btn.onclick = () => { selBody = c; bodyDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); drawPreview(); };
+                    bodyDiv.appendChild(btn);
+                });
+
+                const hairDiv = document.getElementById('cc-hair-colors');
+                HAIR_COLORS.forEach((c, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
+                    btn.style.background = c;
+                    btn.onclick = () => { selHair = c; hairDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); drawPreview(); };
+                    hairDiv.appendChild(btn);
+                });
+
+                const classDiv = document.getElementById('cc-classes');
+                CLASSES.forEach(cls => {
+                    const btn = document.createElement('div');
+                    btn.className = 'cc-class-btn' + (cls.id === 'explorer' ? ' selected' : '');
+                    btn.innerHTML = '<span class="cc-class-icon">' + cls.icon + '</span><span class="cc-class-name">' + cls.name + '</span><span class="cc-class-desc">' + cls.desc + '</span>';
+                    btn.onclick = () => { selClass = cls.id; classDiv.querySelectorAll('.cc-class-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); };
+                    classDiv.appendChild(btn);
+                });
+
+                nameInput.addEventListener('input', () => { startBtn.disabled = nameInput.value.trim().length < 1 || nameInput.value.trim().length > 16; });
+
+                const pvCanvas = document.getElementById('cc-preview');
+                const pvCtx = pvCanvas.getContext('2d');
+                function drawPreview() {
+                    pvCtx.clearRect(0, 0, 180, 240);
+                    const grad = pvCtx.createLinearGradient(0, 0, 0, 240); grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#111118');
+                    pvCtx.fillStyle = grad; pvCtx.fillRect(0, 0, 180, 240);
+                    pvCtx.fillStyle = 'rgba(0,0,0,0.3)'; pvCtx.beginPath(); pvCtx.ellipse(90, 200, 25, 8, 0, 0, Math.PI * 2); pvCtx.fill();
+                    pvCtx.fillStyle = '#554433'; pvCtx.fillRect(75, 165, 12, 30); pvCtx.fillRect(93, 165, 12, 30);
+                    pvCtx.fillStyle = selBody; pvCtx.fillRect(70, 115, 40, 55); pvCtx.fillRect(55, 118, 15, 45); pvCtx.fillRect(110, 118, 15, 45);
+                    pvCtx.fillStyle = '#ffcc99'; pvCtx.fillRect(72, 75, 36, 38);
+                    pvCtx.fillStyle = selHair; pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(70, 70, 8, 30); pvCtx.fillRect(102, 70, 8, 30);
+                    pvCtx.fillStyle = '#fff'; pvCtx.fillRect(80, 86, 6, 5); pvCtx.fillRect(94, 86, 6, 5);
+                    pvCtx.fillStyle = '#222'; pvCtx.fillRect(82, 87, 3, 3); pvCtx.fillRect(96, 87, 3, 3);
+                }
+                drawPreview();
+
+                startBtn.onclick = () => {
+                    const name = nameInput.value.trim(); if (!name) return;
+                    const data = { name, bodyColor: selBody, hairColor: selHair, classId: selClass };
+                    localStorage.setItem('agentscape_character', JSON.stringify(data));
+                    charData = data;
+                    document.getElementById('char-create-screen').classList.add('hidden');
+                    document.getElementById('game-frame').style.display = '';
+                    resolve(data);
+                };
+                nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !startBtn.disabled) startBtn.click(); });
+            });
+        }
+
+        runCharacterCreation().then(startGame);
+
+        function startGame(charInfo) {
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:2567' : 'wss://play.agentscape.app';
+        const MAP_SIZE = 80, TILE_SIZE = 1, WATER_LEVEL = -0.15;
+        const playerName = charInfo.name || authName || 'Player' + Math.floor(Math.random() * 9999);
+        const playerColor = charInfo.bodyColor || '#3355aa';
+        const playerHairColor = charInfo.hairColor || '#4a3728';
         let room = null, mySessionId = null, attackMode = false;
 
         const ROLE_COLORS = {
@@ -226,53 +460,164 @@
             growth_outreach: { hex: '#ec4899', int: 0xec4899, name: 'Growth' },
             qa_tester: { hex: '#eab308', int: 0xeab308, name: 'Tester' },
         };
+
+        // ============================================================
+        // ITEMS (full set from rich client)
+        // ============================================================
         const ITEMS = {
             coins:{id:'coins',name:'Coins',icon:'\u{1FA99}',stackable:true,type:'coin'},
             bronze_sword:{id:'bronze_sword',name:'Bronze Sword',icon:'\u{1F5E1}\uFE0F',stackable:false,type:'weapon',stats:{attack:4,strength:3}},
             iron_sword:{id:'iron_sword',name:'Iron Sword',icon:'\u2694\uFE0F',stackable:false,type:'weapon',stats:{attack:8,strength:6}},
             steel_sword:{id:'steel_sword',name:'Steel Sword',icon:'\u2694\uFE0F',stackable:false,type:'weapon',stats:{attack:12,strength:10}},
-            bread:{id:'bread',name:'Bread',icon:'\u{1F35E}',stackable:false,type:'food',healAmount:10},
-            cooked_meat:{id:'cooked_meat',name:'Cooked Meat',icon:'\u{1F356}',stackable:false,type:'food',healAmount:20},
-            cooked_fish:{id:'cooked_fish',name:'Cooked Fish',icon:'\u{1F420}',stackable:false,type:'food',healAmount:15},
-            raw_fish:{id:'raw_fish',name:'Raw Fish',icon:'\u{1F41F}',stackable:true,type:'material'},
-            logs:{id:'logs',name:'Logs',icon:'\u{1FAB5}',stackable:true,type:'material'},
-            code_fragment:{id:'code_fragment',name:'Code Fragment',icon:'\u{1F48E}',stackable:true,type:'material'},
-            agent_core:{id:'agent_core',name:'Agent Core',icon:'\u{1F52E}',stackable:false,type:'misc'},
+            mithril_sword:{id:'mithril_sword',name:'Mithril Sword',icon:'\u{1F5E1}\uFE0F',stackable:false,type:'weapon',stats:{attack:18,strength:15}},
+            rune_sword:{id:'rune_sword',name:'Rune Sword',icon:'\u2694\uFE0F',stackable:false,type:'weapon',stats:{attack:26,strength:22}},
+            dragon_sword:{id:'dragon_sword',name:'Dragon Sword',icon:'\u2694\uFE0F',stackable:false,type:'weapon',stats:{attack:36,strength:30}},
             bronze_helm:{id:'bronze_helm',name:'Bronze Helm',icon:'\u{1FA96}',stackable:false,type:'helm',stats:{defence:3}},
             iron_helm:{id:'iron_helm',name:'Iron Helm',icon:'\u{1FA96}',stackable:false,type:'helm',stats:{defence:6}},
             steel_helm:{id:'steel_helm',name:'Steel Helm',icon:'\u26D1\uFE0F',stackable:false,type:'helm',stats:{defence:10}},
+            mithril_helm:{id:'mithril_helm',name:'Mithril Helm',icon:'\u{1FA96}',stackable:false,type:'helm',stats:{defence:15}},
+            rune_helm:{id:'rune_helm',name:'Rune Helm',icon:'\u26D1\uFE0F',stackable:false,type:'helm',stats:{defence:22}},
+            dragon_helm:{id:'dragon_helm',name:'Dragon Helm',icon:'\u26D1\uFE0F',stackable:false,type:'helm',stats:{defence:30}},
             bronze_shield:{id:'bronze_shield',name:'Bronze Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:4}},
             iron_shield:{id:'iron_shield',name:'Iron Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:8}},
+            steel_shield:{id:'steel_shield',name:'Steel Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:12}},
+            mithril_shield:{id:'mithril_shield',name:'Mithril Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:18}},
+            rune_shield:{id:'rune_shield',name:'Rune Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:25}},
+            dragon_shield:{id:'dragon_shield',name:'Dragon Shield',icon:'\u{1F6E1}\uFE0F',stackable:false,type:'shield',stats:{defence:34}},
+            bread:{id:'bread',name:'Bread',icon:'\u{1F35E}',stackable:false,type:'food',healAmount:10},
+            cooked_meat:{id:'cooked_meat',name:'Cooked Meat',icon:'\u{1F356}',stackable:false,type:'food',healAmount:20},
+            cooked_fish:{id:'cooked_fish',name:'Cooked Fish',icon:'\u{1F420}',stackable:false,type:'food',healAmount:15},
+            lobster:{id:'lobster',name:'Lobster',icon:'\u{1F99E}',stackable:false,type:'food',healAmount:30},
+            shark:{id:'shark',name:'Shark',icon:'\u{1F988}',stackable:false,type:'food',healAmount:40},
+            manta_ray:{id:'manta_ray',name:'Manta Ray',icon:'\u{1F420}',stackable:false,type:'food',healAmount:50},
+            attack_potion:{id:'attack_potion',name:'Attack Potion',icon:'\u2697\uFE0F',stackable:false,type:'potion'},
+            strength_potion:{id:'strength_potion',name:'Strength Potion',icon:'\u2697\uFE0F',stackable:false,type:'potion'},
+            defence_potion:{id:'defence_potion',name:'Defence Potion',icon:'\u2697\uFE0F',stackable:false,type:'potion'},
+            raw_fish:{id:'raw_fish',name:'Raw Fish',icon:'\u{1F41F}',stackable:true,type:'material'},
+            logs:{id:'logs',name:'Logs',icon:'\u{1FAB5}',stackable:true,type:'material'},
+            code_fragment:{id:'code_fragment',name:'Code Fragment',icon:'\u{1F48E}',stackable:true,type:'material'},
+            agent_core:{id:'agent_core',name:'Agent Core',icon:'\u{1F52E}',stackable:true,type:'misc'},
+            corrupted_byte:{id:'corrupted_byte',name:'Corrupted Byte',icon:'\u{1F9E0}',stackable:true,type:'material'},
+            broken_link:{id:'broken_link',name:'Broken Link',icon:'\u{1F517}',stackable:true,type:'material'},
+            rogue_script:{id:'rogue_script',name:'Rogue Script',icon:'\u{1F4DC}',stackable:true,type:'material'},
+            memory_shard:{id:'memory_shard',name:'Memory Shard',icon:'\u{1F4A0}',stackable:true,type:'material'},
+            null_fragment:{id:'null_fragment',name:'Null Fragment',icon:'\u26A0\uFE0F',stackable:true,type:'material'},
+            overflow_essence:{id:'overflow_essence',name:'Overflow Essence',icon:'\u{1F300}',stackable:true,type:'material'},
+            dark_packet:{id:'dark_packet',name:'Dark Packet',icon:'\u{1F311}',stackable:true,type:'material'},
+            firewall_core:{id:'firewall_core',name:'Firewall Core',icon:'\u{1F525}',stackable:true,type:'material'},
+            dragon_scale:{id:'dragon_scale',name:'Dragon Scale',icon:'\u{1F409}',stackable:true,type:'material'},
+            network_key:{id:'network_key',name:'Network Key',icon:'\u{1F511}',stackable:false,type:'misc'},
+            normal_logs:{id:'normal_logs',name:'Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
+            oak_logs:{id:'oak_logs',name:'Oak Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
+            willow_logs:{id:'willow_logs',name:'Willow Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
+            bronze_axe:{id:'bronze_axe',name:'Bronze Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:3}},
         };
+
+        // ============================================================
+        // BUILDINGS (full 22 from rich client)
+        // ============================================================
         const BUILDINGS = [
-            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:15,z:13,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
-            {id:'workshop',name:'Workshop',icon:'\u{1F528}',x:20,z:10,w:3,d:2,h:1.5,wallColor:0xD2B48C,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south'},
-            {id:'marketplace',name:'Marketplace',icon:'\u{1F3EA}',x:10,z:12,w:2.5,d:2,h:1.3,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'south'},
-            {id:'farm',name:'Farm',icon:'\u{1F33E}',x:24,z:16,w:2,d:3,h:1.0,wallColor:0x8FBC8F,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'west'},
-            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:12,z:26,w:3,d:3,h:1.6,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
-            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:18,z:6,w:2.5,d:2,h:1.8,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
+            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:40,z:38,w:3,d:3,h:2.5,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
+            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:42,z:36,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
+            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:37,z:42,w:4,d:4,h:1.8,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
+            {id:'bank',name:'SUITE Bank',icon:'\u{1F3E6}',x:44,z:40,w:2.5,d:2,h:2.0,wallColor:0xBDB76B,roofColor:0xeab308,signColor:'#eab308',doorSide:'west'},
+            {id:'health_clinic',name:'Health Clinic',icon:'\u{1F3E5}',x:26,z:24,w:3,d:2.5,h:1.8,wallColor:0x8FBC8F,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
+            {id:'gym',name:'Fitness Dojo',icon:'\u{1F3CB}\uFE0F',x:30,z:28,w:2.5,d:2,h:1.5,wallColor:0xD2B48C,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'east'},
+            {id:'academy',name:'SUITE Academy',icon:'\u{1F3EB}',x:40,z:24,w:3.5,d:2.5,h:2.0,wallColor:0xE8DCC8,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'south'},
+            {id:'library',name:'Knowledge Library',icon:'\u{1F4DA}',x:44,z:28,w:2.5,d:2,h:1.6,wallColor:0xD2B48C,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'west'},
+            {id:'exchange',name:'Trade Exchange',icon:'\u{1F4B9}',x:52,z:24,w:3,d:2.5,h:2.2,wallColor:0xBDB76B,roofColor:0xeab308,signColor:'#eab308',doorSide:'south'},
+            {id:'marketplace',name:'Marketplace',icon:'\u{1F3EA}',x:56,z:28,w:2.5,d:2,h:1.4,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
+            {id:'workshop',name:'Workshop',icon:'\u{1F528}',x:26,z:36,w:3,d:2.5,h:1.8,wallColor:0xD2B48C,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
+            {id:'forge',name:'The Forge',icon:'\u2699\uFE0F',x:30,z:40,w:2.5,d:2,h:1.6,wallColor:0xCD853F,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
+            {id:'studio',name:'Creative Studio',icon:'\u{1F3A8}',x:26,z:48,w:3,d:2.5,h:1.6,wallColor:0xE8DCC8,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
+            {id:'gallery',name:'Art Gallery',icon:'\u{1F5BC}\uFE0F',x:30,z:52,w:2.5,d:2,h:1.4,wallColor:0xE8DCC8,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
+            {id:'broadcast_tower',name:'Broadcast Tower',icon:'\u{1F4E1}',x:40,z:48,w:2,d:2,h:3.0,wallColor:0xD2B48C,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
+            {id:'ad_agency',name:'Ad Agency',icon:'\u{1F4E3}',x:44,z:52,w:2.5,d:2,h:1.4,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
+            {id:'farm',name:'Farm',icon:'\u{1F33E}',x:52,z:40,w:3,d:3,h:1.0,wallColor:0x8FBC8F,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'west'},
+            {id:'tavern',name:"Traveler's Tavern",icon:'\u{1F37A}',x:56,z:48,w:2.5,d:2,h:1.5,wallColor:0xCD853F,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'west'},
+            {id:'forest_outpost',name:'Forest Outpost',icon:'\u{1F332}',x:40,z:18,w:2,d:2,h:1.3,wallColor:0x6B4226,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
+            {id:'ruins_gate',name:'Ruins Gate',icon:'\u{1F3DA}\uFE0F',x:62,z:38,w:2,d:2,h:2.0,wallColor:0x888888,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
+            {id:'deep_entrance',name:'Deep Network Portal',icon:'\u{1F30A}',x:40,z:57,w:2,d:2,h:2.5,wallColor:0x1e1b4b,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
         ];
+
         const SHOP_ITEMS = [
             {id:'bread',price:10,stock:99},{id:'cooked_meat',price:25,stock:50},{id:'cooked_fish',price:20,stock:50},
-            {id:'bronze_sword',price:50,stock:10},{id:'iron_sword',price:150,stock:5},{id:'steel_sword',price:400,stock:3},
-            {id:'bronze_helm',price:30,stock:10},{id:'iron_helm',price:100,stock:5},
-            {id:'bronze_shield',price:40,stock:10},{id:'iron_shield',price:120,stock:5},
+            {id:'lobster',price:80,stock:30},{id:'shark',price:200,stock:20},{id:'manta_ray',price:500,stock:10},
+            {id:'attack_potion',price:150,stock:20},{id:'strength_potion',price:150,stock:20},{id:'defence_potion',price:150,stock:20},
+            {id:'bronze_sword',price:50,stock:10},{id:'bronze_helm',price:30,stock:10},{id:'bronze_shield',price:40,stock:10},
+            {id:'iron_sword',price:150,stock:5},{id:'iron_helm',price:100,stock:5},{id:'iron_shield',price:120,stock:5},
+            {id:'steel_sword',price:400,stock:3},{id:'steel_helm',price:300,stock:3},{id:'steel_shield',price:350,stock:3},
+            {id:'mithril_sword',price:1200,stock:2},{id:'mithril_helm',price:900,stock:2},{id:'mithril_shield',price:1000,stock:2},
+            {id:'bronze_axe',price:25,stock:10},
         ];
+
         const RECIPES = [
             {result:'bronze_shield',resultQty:1,ingredients:[{id:'logs',qty:3}],coinCost:5},
             {result:'iron_sword',resultQty:1,ingredients:[{id:'code_fragment',qty:5}],coinCost:10},
             {result:'steel_sword',resultQty:1,ingredients:[{id:'agent_core',qty:2}],coinCost:20},
+            {result:'steel_shield',resultQty:1,ingredients:[{id:'corrupted_byte',qty:8},{id:'logs',qty:5}],coinCost:50},
+            {result:'mithril_sword',resultQty:1,ingredients:[{id:'rogue_script',qty:5},{id:'code_fragment',qty:10}],coinCost:100},
+            {result:'rune_sword',resultQty:1,ingredients:[{id:'null_fragment',qty:8},{id:'overflow_essence',qty:5}],coinCost:300},
+            {result:'dragon_sword',resultQty:1,ingredients:[{id:'dragon_scale',qty:10},{id:'firewall_core',qty:5},{id:'dark_packet',qty:8}],coinCost:1000},
         ];
+
         const QUESTS = {
             first_blood:{id:'first_blood',name:'First Blood',difficulty:'easy',description:'Defeat any agent in combat.',rewards:{coins:50,xp:{attack:20,strength:20}}},
             pest_control:{id:'pest_control',name:'Pest Control',difficulty:'medium',description:'Defeat 3 QA Testers.',rewards:{coins:150,xp:{attack:50,strength:50,defence:30},items:[{id:'iron_sword',qty:1}]},prereqs:['first_blood']},
             code_collector:{id:'code_collector',name:'Code Collector',difficulty:'medium',description:'Gather 5 Code Fragments.',rewards:{coins:200,xp:{hitpoints:40}}},
             world_tour:{id:'world_tour',name:'World Tour',difficulty:'easy',description:'Visit all 6 buildings.',rewards:{coins:100,xp:{hitpoints:30}}},
             arena_champion:{id:'arena_champion',name:'Arena Champion',difficulty:'hard',description:'Defeat 5 agents in the Arena.',rewards:{coins:300,xp:{attack:80,strength:80,defence:60},items:[{id:'steel_sword',qty:1}]},prereqs:['pest_control']},
-            bread_run:{id:'bread_run',name:'Bread Run',difficulty:'easy',description:'Deliver 3 Bread to the Farm.',rewards:{coins:75,xp:{hitpoints:20}}},
-            core_hunter:{id:'core_hunter',name:'Core Hunter',difficulty:'hard',description:'Collect 3 Agent Cores.',rewards:{coins:500,xp:{attack:100,strength:100},items:[{id:'steel_helm',qty:1}]},prereqs:['first_blood']},
-            full_clear:{id:'full_clear',name:'Full Clear',difficulty:'hard',description:'Defeat one agent of every role.',rewards:{coins:400,xp:{attack:60,strength:60,defence:60,hitpoints:60}},prereqs:['first_blood']},
+            forest_guardian:{id:'forest_guardian',name:'Forest Guardian',difficulty:'hard',description:'Defeat The Rogue Script, guardian of the forest.',rewards:{coins:800,xp:{attack:150,strength:150,defence:100,hitpoints:100},items:[{id:'mithril_sword',qty:1}]}},
+            golem_slayer:{id:'golem_slayer',name:'Golem Slayer',difficulty:'hard',description:'Defeat The 404 Golem.',rewards:{coins:2000,xp:{attack:300,strength:280,defence:200,hitpoints:200},items:[{id:'rune_sword',qty:1}]},prereqs:['forest_guardian']},
+            slay_the_hallucinator:{id:'slay_the_hallucinator',name:'Slay the Hallucinator',difficulty:'legendary',description:'Defeat The Hallucinator.',rewards:{coins:5000,xp:{attack:600,strength:550,defence:400,hitpoints:400},items:[{id:'dragon_sword',qty:1}]},prereqs:['golem_slayer']},
+            dragon_raid:{id:'dragon_raid',name:'The Data Breach',difficulty:'legendary',description:'Defeat the Data Breach Dragon.',rewards:{coins:10000,xp:{attack:1000,strength:1000,defence:800,hitpoints:800}},prereqs:['slay_the_hallucinator']},
         };
+
+        const ZONES = {
+            suite_city:{id:'suite_city',name:'SUITE City',bounds:{x1:20,z1:20,x2:60,z2:55},color:'#6366f1'},
+            the_forest:{id:'the_forest',name:'The Forest',bounds:{x1:5,z1:2,x2:75,z2:20},color:'#22c55e'},
+            the_ruins:{id:'the_ruins',name:'The Ruins',bounds:{x1:60,z1:20,x2:78,z2:55},color:'#f97316'},
+            the_deep_network:{id:'the_deep_network',name:'The Deep Network',bounds:{x1:10,z1:55,x2:70,z2:78},color:'#ef4444'},
+        };
+
+        // 28-skill grid definition
+        const SKILLS = [
+            {id:'attack',name:'Attack',icon:'\u2694\uFE0F',category:'combat'},
+            {id:'strength',name:'Strength',icon:'\u{1F4AA}',category:'combat'},
+            {id:'defence',name:'Defence',icon:'\u{1F6E1}\uFE0F',category:'combat'},
+            {id:'hitpoints',name:'Hitpoints',icon:'\u2764\uFE0F',category:'combat'},
+            {id:'ranged',name:'Ranged',icon:'\u{1F3F9}',category:'combat'},
+            {id:'prayer',name:'Prayer',icon:'\u2728',category:'combat'},
+            {id:'magic',name:'Magic',icon:'\u{1F52E}',category:'combat'},
+            {id:'woodcutting',name:'Woodcutting',icon:'\u{1FA93}',category:'gathering'},
+            {id:'mining',name:'Mining',icon:'\u26CF\uFE0F',category:'gathering'},
+            {id:'fishing',name:'Fishing',icon:'\u{1F3A3}',category:'gathering'},
+            {id:'farming',name:'Farming',icon:'\u{1F331}',category:'gathering'},
+            {id:'hunter',name:'Hunter',icon:'\u{1FAA4}',category:'gathering'},
+            {id:'archaeology',name:'Archaeology',icon:'\u{1F3FA}',category:'gathering'},
+            {id:'cooking',name:'Cooking',icon:'\u{1F373}',category:'artisan'},
+            {id:'smithing',name:'Smithing',icon:'\u{1F528}',category:'artisan'},
+            {id:'fletching',name:'Fletching',icon:'\u{1FAB6}',category:'artisan'},
+            {id:'firemaking',name:'Firemaking',icon:'\u{1F525}',category:'artisan'},
+            {id:'herblore',name:'Herblore',icon:'\u{1F9EA}',category:'artisan'},
+            {id:'crafting',name:'Crafting',icon:'\u2702\uFE0F',category:'artisan'},
+            {id:'runecraft',name:'Runecraft',icon:'\u{1F537}',category:'artisan'},
+            {id:'agility',name:'Agility',icon:'\u{1F3C3}',category:'support'},
+            {id:'thieving',name:'Thieving',icon:'\u{1F90F}',category:'support'},
+            {id:'slayer',name:'Slayer',icon:'\u{1F480}',category:'support'},
+            {id:'construction',name:'Construction',icon:'\u{1F3D7}\uFE0F',category:'support'},
+            {id:'dungeoneering',name:'Dungeoneering',icon:'\u{1F6AA}',category:'support'},
+            {id:'coding',name:'Coding',icon:'\u{1F4BB}',category:'digital'},
+            {id:'hacking',name:'Hacking',icon:'\u{1F513}',category:'digital'},
+            {id:'networking',name:'Networking',icon:'\u{1F310}',category:'digital'},
+        ];
+
+        // OSRS-style XP table
+        const XP_TABLE = [0];
+        (function(){let pts=0;for(let lvl=1;lvl<99;lvl++){pts+=Math.floor(lvl+300*Math.pow(2,lvl/7));XP_TABLE.push(Math.floor(pts/4));}})();
+        function xpForLevel(lvl){return XP_TABLE[Math.min(lvl-1,XP_TABLE.length-1)]||0;}
+        function levelFromXP(xp){for(let i=XP_TABLE.length-1;i>=0;i--){if(xp>=XP_TABLE[i])return i+1;}return 1;}
+
         const NPC_COMBAT_STATS = {
             app_builder:{hp:60,attack:5,strength:4,defence:3},
             app_refiner:{hp:50,attack:4,strength:3,defence:5},
@@ -281,10 +626,14 @@
             qa_tester:{hp:70,attack:6,strength:5,defence:4},
         };
 
-        function xpForLevel(l){return Math.floor(Math.pow(l,2.5));}
-
+        function getZoneAt(x, z) {
+            for (const zone of Object.values(ZONES)) {
+                if (x >= zone.bounds.x1 && x <= zone.bounds.x2 && z >= zone.bounds.z1 && z <= zone.bounds.z2) return zone;
+            }
+            return null;
+        }
         // ============================================================
-        // CHAT
+        // CHAT SYSTEM
         // ============================================================
         const chatHistory = [];
         let chatFilter = 'all', chatInputFocused = false;
@@ -298,8 +647,8 @@
             const filtered = chatFilter==='all' ? chatHistory : chatHistory.filter(m=>m.type===chatFilter);
             el.innerHTML = filtered.slice(-50).map(m => {
                 const cls='chat-msg-'+m.type;
-                const pfx = m.sender ? `<span style="color:${m.color||'#fff'};font-weight:bold">${m.sender}:</span> ` : '';
-                return `<div class="${cls}">${pfx}${m.text}</div>`;
+                const pfx = m.sender ? '<span style="color:'+(m.color||'#fff')+';font-weight:bold">'+m.sender+':</span> ' : '';
+                return '<div class="'+cls+'">'+pfx+m.text+'</div>';
             }).join('');
             el.scrollTop = el.scrollHeight;
         }
@@ -329,7 +678,7 @@
         const viewport = document.getElementById('game-viewport');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x87CEEB, 0.025);
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
         const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth/viewport.clientHeight, 0.1, 100);
         const renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.setSize(viewport.clientWidth, viewport.clientHeight);
@@ -337,16 +686,16 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         viewport.insertBefore(renderer.domElement, viewport.firstChild);
 
-        let camTargetX=15,camTargetZ=15,camAngle=Math.PI/4,camDist=18,camHeight=14;
+        let camTargetX=40,camTargetZ=38,camAngle=Math.PI/4,camDist=18,camHeight=14;
         function updateCamera(){camera.position.set(camTargetX+Math.sin(camAngle)*camDist,camHeight,camTargetZ+Math.cos(camAngle)*camDist);camera.lookAt(camTargetX,0,camTargetZ);}
         updateCamera();
 
         const ambientLight=new THREE.AmbientLight(0x6688aa,0.5);scene.add(ambientLight);
-        const sunLight=new THREE.DirectionalLight(0xffeedd,0.9);sunLight.position.set(10,20,10);sunLight.castShadow=true;sunLight.shadow.mapSize.set(2048,2048);sunLight.shadow.camera.near=0.5;sunLight.shadow.camera.far=60;sunLight.shadow.camera.left=-20;sunLight.shadow.camera.right=20;sunLight.shadow.camera.top=20;sunLight.shadow.camera.bottom=-20;scene.add(sunLight);
+        const sunLight=new THREE.DirectionalLight(0xffeedd,0.9);sunLight.position.set(40,30,30);sunLight.castShadow=true;sunLight.shadow.mapSize.set(2048,2048);sunLight.shadow.camera.near=0.5;sunLight.shadow.camera.far=100;sunLight.shadow.camera.left=-40;sunLight.shadow.camera.right=40;sunLight.shadow.camera.top=40;sunLight.shadow.camera.bottom=-40;scene.add(sunLight);
         const hemiLight=new THREE.HemisphereLight(0x88aacc,0x445522,0.3);scene.add(hemiLight);
 
         let isNight=false;
-        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}};
+        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);scene.fog.density=0.018;ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);scene.fog.density=0.012;ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}};
 
         // ============================================================
         // TERRAIN (deterministic, same as server seed=42)
@@ -355,31 +704,84 @@
         function seededRandom(seed){let s=seed;return function(){s=(s*16807+0)%2147483647;return(s-1)/2147483646;};}
         const rng=seededRandom(42);
         function simpleNoise(x,z){return Math.sin(x*0.3)*Math.cos(z*0.4)*0.3+Math.sin(x*0.7+1)*Math.cos(z*0.5+2)*0.15;}
-        function isWater(x,z){if(Math.sqrt((x-6)**2+(z-6)**2)<3.5)return true;const rz=20+Math.sin(x*0.4)*2;if(Math.abs(z-rz)<1.5&&x>5&&x<28)return true;return false;}
-        function isBridge(x,z){const rz=20+Math.sin(x*0.4)*2;return Math.abs(z-rz)<1.5&&x>=14&&x<=16;}
-        function isInBuildingZone(x,z){for(const b of BUILDINGS){const hw=b.w/2,hd=b.d/2;if(x>=b.x-hw-0.5&&x<=b.x+hw+0.5&&z>=b.z-hd-0.5&&z<=b.z+hd+0.5)return true;}return false;}
 
-        for(let x=0;x<MAP_SIZE;x++){grid[x]=[];heightMap[x]=[];for(let z=0;z<MAP_SIZE;z++){const w=isWater(x,z),br=isBridge(x,z);if(br){grid[x][z]=3;heightMap[x][z]=0.05;}else if(w){grid[x][z]=0;heightMap[x][z]=WATER_LEVEL;}else{grid[x][z]=1;heightMap[x][z]=simpleNoise(x,z)*0.2;}}}
+        function getTerrainZone(x,z){
+            if(x>=20&&x<=60&&z>=20&&z<=55)return'city';
+            if(z<=20)return'forest';
+            if(x>=60)return'ruins';
+            if(z>=55)return'deep';
+            return'city';
+        }
+
+        function isWater(x,z){
+            if(Math.sqrt((x-25)**2+(z-10)**2)<4)return true;
+            const rz=14+Math.sin(x*0.3)*2;
+            if(Math.abs(z-rz)<1.2&&x>8&&x<50)return true;
+            if(Math.sqrt((x-68)**2+(z-38)**2)>6&&Math.sqrt((x-68)**2+(z-38)**2)<8&&x>62&&x<76&&z>30&&z<46)return true;
+            if(Math.sqrt((x-30)**2+(z-66)**2)<3)return true;
+            if(Math.sqrt((x-55)**2+(z-70)**2)<2.5)return true;
+            return false;
+        }
+        function isBridge(x,z){
+            const rz=14+Math.sin(x*0.3)*2;
+            if(Math.abs(z-rz)<1.2&&((x>=28&&x<=30)||(x>=38&&x<=40)))return true;
+            return false;
+        }
+        function isRoad(x,z){
+            const tz=getTerrainZone(x,z);
+            if(tz==='city'){if(x>=20&&x<=60&&(x===35||x===48))return true;if(z>=20&&z<=55&&(z===33||z===44))return true;if(Math.abs(x-40)<1&&z>=18&&z<=57)return true;if(Math.abs(z-38)<1&&x>=18&&x<=62)return true;}
+            if(Math.abs(x-40)<1&&z>=2&&z<=20)return true;
+            if(Math.abs(z-38)<1&&x>=58&&x<=78)return true;
+            if(Math.abs(x-40)<1&&z>=53&&z<=78)return true;
+            return false;
+        }
+        function isInBuildingZone(x,z){for(const b of BUILDINGS){const hw=b.w/2+0.5,hd=b.d/2+0.5;if(x>=b.x-hw&&x<=b.x+hw&&z>=b.z-hd&&z<=b.z+hd)return true;}return false;}
+
+        const cityGrass=[0x4a7c3f,0x528745,0x5d9248],forestGrass=[0x2d5a1e,0x3a6e28,0x346424,0x2a5c1c];
+        const ruinsGround=[0x6b6b6b,0x7a7a7a,0x636363,0x585858],deepGround=[0x1a1030,0x221540,0x1e1238,0x2a1848];
+        const dirtColors=[0x8B7355,0x7a6548,0x6d5b40];
+
+        for(let x=0;x<MAP_SIZE;x++){grid[x]=[];heightMap[x]=[];for(let z=0;z<MAP_SIZE;z++){const w=isWater(x,z),br=isBridge(x,z);if(br){grid[x][z]=3;heightMap[x][z]=0.05;}else if(w){grid[x][z]=0;heightMap[x][z]=WATER_LEVEL;}else{grid[x][z]=1;heightMap[x][z]=simpleNoise(x,z)*0.15;}}}
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]>0&&isRoad(x,z)&&!isInBuildingZone(x,z))grid[x][z]=2;}
 
         // Terrain mesh
-        const grassColors=[0x4a7c3f,0x528745,0x5d9248,0x4b8040,0x3f7035],dirtColors=[0x8B7355,0x7a6548,0x6d5b40];
-        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const h=heightMap[x][z];let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const pz=15+Math.sin(x*0.3)*1.5;if(Math.abs(z-pz)<0.8&&x>3&&x<27){color=dirtColors[Math.floor(rng()*dirtColors.length)];grid[x][z]=2;}else color=grassColors[Math.floor(rng()*grassColors.length)];}}const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);const mat=new THREE.MeshLambertMaterial({color});const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};scene.add(tile);}
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const h=heightMap[x][z];let color;const tz=getTerrainZone(x,z);if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z)){color=tz==='deep'?0x2a1060:0x2288aa;}else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=tz==='deep'?0x3a2060:0xc2b280;else if(grid[x][z]===2)color=dirtColors[Math.floor(rng()*dirtColors.length)];else{if(tz==='forest')color=forestGrass[Math.floor(rng()*forestGrass.length)];else if(tz==='ruins')color=ruinsGround[Math.floor(rng()*ruinsGround.length)];else if(tz==='deep')color=deepGround[Math.floor(rng()*deepGround.length)];else color=cityGrass[Math.floor(rng()*cityGrass.length)];}}const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);const mat=new THREE.MeshLambertMaterial({color});const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};scene.add(tile);}
 
-        // Bridge railings
-        for(let x=14;x<=16;x++)for(const s of[-1,1]){const rz2=20+Math.sin(x*0.4)*2,rr=Math.round(rz2+s*1.3);if(rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));r.position.set(x,0.25,rr);r.castShadow=true;scene.add(r);}}
+        // Water planes
+        const waterGeo=new THREE.PlaneGeometry(80,80,40,40);const waterMat=new THREE.MeshLambertMaterial({color:0x2288aa,transparent:true,opacity:0.6});const waterMesh=new THREE.Mesh(waterGeo,waterMat);waterMesh.rotation.x=-Math.PI/2;waterMesh.position.set(40,WATER_LEVEL+0.05,40);scene.add(waterMesh);
+        const deepWaterGeo=new THREE.PlaneGeometry(60,25,20,10);const deepWaterMat=new THREE.MeshLambertMaterial({color:0x3a1080,transparent:true,opacity:0.4});const deepWaterMesh=new THREE.Mesh(deepWaterGeo,deepWaterMat);deepWaterMesh.rotation.x=-Math.PI/2;deepWaterMesh.position.set(40,WATER_LEVEL+0.06,66);scene.add(deepWaterMesh);
 
-        // Water
-        const waterGeo=new THREE.PlaneGeometry(30,30,30,30);const waterMat=new THREE.MeshLambertMaterial({color:0x2288aa,transparent:true,opacity:0.6});const waterMesh=new THREE.Mesh(waterGeo,waterMat);waterMesh.rotation.x=-Math.PI/2;waterMesh.position.set(14.5,WATER_LEVEL+0.05,14.5);scene.add(waterMesh);
-
-        // Trees
+        // Trees — 6 types with zone-specific distribution
         const treePositions=[];
-        for(let i=0;i<40;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2&&grid[x][z]!==3&&!(Math.abs(x-15)<3&&Math.abs(z-15)<3)){treePositions.push({x,z});grid[x][z]=0;}}
-        function createTree(x,z,v){const g=new THREE.Group();const h=heightMap[x][z];const th=0.6+rng()*0.4;const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,th,5),new THREE.MeshLambertMaterial({color:0x6B4226}));trunk.position.y=th/2;trunk.castShadow=true;g.add(trunk);if(v===0){[0.5,0.4,0.28].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.5,5),new THREE.MeshLambertMaterial({color:[0x2d5a1e,0x3a6e28,0x468032][i]}));c.position.y=th+0.15+i*0.35;c.castShadow=true;g.add(c);});}else if(v===1){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.45,0),new THREE.MeshLambertMaterial({color:0x3a8030}));l.position.y=th+0.35;l.castShadow=true;g.add(l);}else{const b2=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0x2a6a20}));b2.position.y=th+0.2;b2.castShadow=true;g.add(b2);}g.position.set(x,h,z);scene.add(g);}
-        treePositions.forEach(p=>createTree(p.x,p.z,Math.floor(rng()*3)));
+        function createTree(x,z,v,treeType){const g=new THREE.Group();const h=heightMap[x][z];let trunkH=0.6+rng()*0.4,trunkR=0.08,trunkC=0x6B4226;
+            if(treeType==='oak'){trunkH=0.8+rng()*0.3;trunkR=0.12;}else if(treeType==='willow'){trunkH=0.7+rng()*0.3;trunkC=0x5a3a1a;}else if(treeType==='yew'){trunkH=1.0+rng()*0.3;trunkR=0.1;trunkC=0x4a3020;}else if(treeType==='magic'){trunkH=1.1+rng()*0.3;trunkR=0.1;trunkC=0x3a2844;}else if(treeType==='maple'){trunkH=0.75+rng()*0.3;}
+            const trunk=new THREE.Mesh(new THREE.CylinderGeometry(trunkR,trunkR+0.04,trunkH,5),new THREE.MeshLambertMaterial({color:trunkC}));trunk.position.y=trunkH/2;trunk.castShadow=true;g.add(trunk);
+            if(treeType==='normal'||!treeType){if(v===0){[0.5,0.4,0.28].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.5,5),new THREE.MeshLambertMaterial({color:[0x2d5a1e,0x3a6e28,0x468032][i]}));c.position.y=trunkH+0.15+i*0.35;c.castShadow=true;g.add(c);});}else if(v===1){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.45,0),new THREE.MeshLambertMaterial({color:0x3a8030}));l.position.y=trunkH+0.35;l.castShadow=true;g.add(l);}else{const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0x2a6a20}));b.position.y=trunkH+0.2;b.castShadow=true;g.add(b);}}
+            else if(treeType==='oak'){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.6,0),new THREE.MeshLambertMaterial({color:0x1a4a10}));l.position.y=trunkH+0.4;l.castShadow=true;g.add(l);const l2=new THREE.Mesh(new THREE.DodecahedronGeometry(0.4,0),new THREE.MeshLambertMaterial({color:0x2d5a1e}));l2.position.y=trunkH+0.8;l2.castShadow=true;g.add(l2);}
+            else if(treeType==='willow'){[0.55,0.45,0.35].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.7,5),new THREE.MeshLambertMaterial({color:[0x6b8e23,0x7a9a2e,0x8aaa38][i]}));c.position.y=trunkH+0.1+i*0.3;c.castShadow=true;g.add(c);});}
+            else if(treeType==='maple'){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.5,0),new THREE.MeshLambertMaterial({color:0xcc6622}));l.position.y=trunkH+0.35;l.castShadow=true;g.add(l);const l2=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0xdd7733}));l2.position.y=trunkH+0.7;l2.castShadow=true;g.add(l2);}
+            else if(treeType==='yew'){const l=new THREE.Mesh(new THREE.ConeGeometry(0.4,1.0,6),new THREE.MeshLambertMaterial({color:0x1a3a1a}));l.position.y=trunkH+0.5;l.castShadow=true;g.add(l);const l2=new THREE.Mesh(new THREE.ConeGeometry(0.25,0.6,6),new THREE.MeshLambertMaterial({color:0x224422}));l2.position.y=trunkH+1.1;l2.castShadow=true;g.add(l2);}
+            else if(treeType==='magic'){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.5,1),new THREE.MeshLambertMaterial({color:0x8855cc}));l.position.y=trunkH+0.4;l.castShadow=true;g.add(l);const l2=new THREE.Mesh(new THREE.IcosahedronGeometry(0.3,0),new THREE.MeshLambertMaterial({color:0x9966dd}));l2.position.y=trunkH+0.85;l2.castShadow=true;g.add(l2);const glow=new THREE.Mesh(new THREE.SphereGeometry(0.6,8,8),new THREE.MeshBasicMaterial({color:0xa855f7,transparent:true,opacity:0.12}));glow.position.y=trunkH+0.5;g.add(glow);}
+            g.position.set(x,h,z);scene.add(g);}
 
-        // Rocks & Flowers
-        for(let i=0;i<15;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.15+rng()*0.15,0),new THREE.MeshLambertMaterial({color:0x888888}));r.position.set(x+rng()*0.3,heightMap[x][z]+0.1,z+rng()*0.3);r.rotation.set(rng(),rng(),rng());r.castShadow=true;scene.add(r);}}
-        for(let i=0;i<25;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const fc=[0xff6b9d,0xffd93d,0xff8a5c,0xc084fc,0xfb7185];const f=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:fc[Math.floor(rng()*fc.length)]}));f.position.set(x+rng()*0.6-0.3,heightMap[x][z]+0.15,z+rng()*0.6-0.3);scene.add(f);}}
+        function pickForestTreeType(){const r=rng();if(r<0.05)return'maple';if(r<0.15)return'willow';if(r<0.40)return'oak';return'normal';}
+        // Forest: 200 trees
+        for(let i=0;i<200;i++){const x=5+Math.floor(rng()*70),z=2+Math.floor(rng()*18);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2){treePositions.push({x,z,treeType:pickForestTreeType()});grid[x][z]=0;}}
+        // City: 30 trees
+        for(let i=0;i<30;i++){const x=22+Math.floor(rng()*36),z=22+Math.floor(rng()*31);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]===1&&!isWater(x,z)&&!isInBuildingZone(x,z)){treePositions.push({x,z,treeType:'normal'});grid[x][z]=0;}}
+        treePositions.forEach(p=>createTree(p.x,p.z,Math.floor(rng()*3),p.treeType||'normal'));
+        // Yew trees in ruins
+        for(let i=0;i<15;i++){const x=61+Math.floor(rng()*16),z=21+Math.floor(rng()*33);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2){createTree(x,z,0,'yew');grid[x][z]=0;}}
+        // Magic trees in deep
+        for(let i=0;i<10;i++){const x=12+Math.floor(rng()*56),z=57+Math.floor(rng()*20);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2){createTree(x,z,0,'magic');grid[x][z]=0;}}
+
+        // Rubble in ruins, void pillars in deep
+        for(let i=0;i<40;i++){const x=60+Math.floor(rng()*18),z=20+Math.floor(rng()*35);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.2+rng()*0.3,0),new THREE.MeshLambertMaterial({color:[0x888888,0x777777,0x666666][Math.floor(rng()*3)]}));r.position.set(x+rng()*0.3,heightMap[x][z]+0.15,z+rng()*0.3);r.rotation.set(rng(),rng(),rng());r.castShadow=true;scene.add(r);grid[x][z]=0;}}
+        for(let i=0;i<60;i++){const x=10+Math.floor(rng()*60),z=56+Math.floor(rng()*22);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2){const h2=0.3+rng()*0.8;const v=new THREE.Mesh(new THREE.CylinderGeometry(0.1+rng()*0.15,0.15+rng()*0.1,h2,5),new THREE.MeshLambertMaterial({color:[0x3a1868,0x2e1450,0x4a2080][Math.floor(rng()*3)]}));v.position.set(x,heightMap[x][z]+h2/2,z);v.castShadow=true;scene.add(v);if(rng()>0.6){const glow=new THREE.Mesh(new THREE.SphereGeometry(0.08,4,4),new THREE.MeshBasicMaterial({color:0xa855f7}));glow.position.set(x,heightMap[x][z]+h2+0.1,z);scene.add(glow);}grid[x][z]=0;}}
+
+        // Flowers and glowing patches
+        for(let i=0;i<60;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*55);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const fc=[0xff6b9d,0xffd93d,0xff8a5c,0xc084fc,0xfb7185];const f=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:fc[Math.floor(rng()*fc.length)]}));f.position.set(x+rng()*0.6-0.3,heightMap[x][z]+0.15,z+rng()*0.6-0.3);scene.add(f);}}
+        for(let i=0;i<30;i++){const x=12+Math.floor(rng()*56),z=57+Math.floor(rng()*20);if(x<MAP_SIZE&&z<MAP_SIZE&&grid[x][z]>0){const g2=new THREE.Mesh(new THREE.PlaneGeometry(0.8+rng()*0.5,0.8+rng()*0.5),new THREE.MeshBasicMaterial({color:[0x6366f1,0xa855f7,0xef4444][Math.floor(rng()*3)],transparent:true,opacity:0.15}));g2.rotation.x=-Math.PI/2;g2.position.set(x,heightMap[x][z]+0.01,z);scene.add(g2);}}
 
         // Buildings
         const buildingDoors={};
@@ -388,171 +790,214 @@
 
         // Fireflies
         const particles=[];
-        for(let i=0;i<30;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
+        for(let i=0;i<50;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
 
         // Tile highlight
         const highlightMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.3});
         const highlight=new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE,0.02,TILE_SIZE),highlightMat);highlight.visible=false;scene.add(highlight);
-
         // ============================================================
         // PLAYER CHARACTER (local visual)
         // ============================================================
-        function createCharacterMesh(color){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color}));body.position.y=0.5;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x554433});const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color});const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);return{group:g,body,leftLeg:ll,rightLeg:rl,leftArm:la,rightArm:ra};}
+        function createCharacterMesh(bodyCol, hairCol){
+            const g=new THREE.Group();
+            const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:bodyCol}));body.position.y=0.5;body.castShadow=true;g.add(body);
+            const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
+            if(hairCol){const hair=new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27),new THREE.MeshLambertMaterial({color:hairCol}));hair.position.y=1.04;g.add(hair);}
+            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x554433});
+            const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);
+            const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);
+            const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:bodyCol});
+            const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);
+            const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);
+            const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
+            return{group:g,body,leftLeg:ll,rightLeg:rl,leftArm:la,rightArm:ra};
+        }
 
-        const myChar = createCharacterMesh(0x3355aa);
-        myChar.group.position.set(15,heightMap[15][15],15);
+        const myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
+        myChar.group.position.set(40,heightMap[40][38],38);
         scene.add(myChar.group);
-        let myWorldX=15,myWorldZ=15;
+        let myWorldX=40,myWorldZ=38;
 
-        // Other player meshes
-        const otherPlayerMeshes = new Map(); // sessionId -> { mesh, label, targetX, targetZ, targetH, targetRot }
-        // NPC meshes
-        const npcMeshes = new Map(); // npcId -> { mesh, label, targetX, targetZ, targetH, targetRot }
-        // My character lerp targets
-        let myTargetX=15, myTargetZ=15, myTargetH=0, myTargetRot=0, myIsMoving=false;
-        const LERP_SPEED = 8; // higher = snappier
+        // Entity tracking
+        const otherPlayerMeshes=new Map();
+        const npcMeshes=new Map();
+        const monsterMeshes=new Map();
+        const lootPileMeshes=new Map();
+        let myTargetX=40,myTargetZ=38,myTargetH=0,myTargetRot=0,myIsMoving=false;
+        const LERP_SPEED=8;
 
         function createNPCMesh(npcState){
-            const role = npcState.role || 'app_builder';
-            const roleInfo = ROLE_COLORS[role] || ROLE_COLORS.app_builder;
-            const g = new THREE.Group();
-            g.scale.set(0.85,0.85,0.85);
+            const role=npcState.role||'app_builder';
+            const roleInfo=ROLE_COLORS[role]||ROLE_COLORS.app_builder;
+            const g=new THREE.Group();g.scale.set(0.85,0.85,0.85);
             const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:roleInfo.int}));body.position.y=0.5;body.castShadow=true;g.add(body);
             const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
             const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x444444});
-            const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);
-            const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);
+            const ll=new THREE.Mesh(lGeo,lMat);ll.position.set(-0.08,0.15,0);g.add(ll);const rl=new THREE.Mesh(lGeo,lMat);rl.position.set(0.08,0.15,0);g.add(rl);
             const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:roleInfo.int});
-            const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);
-            const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);
+            const la=new THREE.Mesh(aGeo,aMat);la.position.set(-0.22,0.5,0);g.add(la);const ra=new THREE.Mesh(aGeo,aMat);ra.position.set(0.22,0.5,0);g.add(ra);
             const sh=new THREE.Mesh(new THREE.CircleGeometry(0.18,8),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:0.15}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
             g.traverse(c=>{if(c.isMesh){c.userData.npcId=npcState.id;c.userData.type='npc';}});
-            const tx=npcState.tileX||0,tz=npcState.tileZ||0;
-            g.position.set(npcState.x,heightMap[tx]?heightMap[tx][tz]||0:0,npcState.z);
-            g.rotation.y=npcState.rotation||0;
-            scene.add(g);
-            const label=document.createElement('div');label.className='npc-label';label.textContent=npcState.name;label.style.borderBottom=`2px solid ${roleInfo.hex}`;document.getElementById('npc-labels').appendChild(label);
+            g.position.set(npcState.x,0,npcState.z);g.rotation.y=npcState.rotation||0;scene.add(g);
+            const label=document.createElement('div');label.className='npc-label';label.textContent=npcState.name;label.style.borderBottom='2px solid '+roleInfo.hex;document.getElementById('npc-labels').appendChild(label);
             return{group:g,body,leftLeg:ll,rightLeg:rl,leftArm:la,rightArm:ra,label};
+        }
+
+        function createMonsterMesh(monsterState){
+            const isBoss=monsterState.isBoss;
+            const scale=isBoss?1.3:0.9;
+            const g=new THREE.Group();g.scale.set(scale,scale,scale);
+            const bodyColor=parseInt((monsterState.color||'#666666').replace('#',''),16);
+            const zone=monsterState.zone||'';
+            const mBody=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.55,0.25),new THREE.MeshLambertMaterial({color:bodyColor}));mBody.position.y=0.5;mBody.castShadow=true;g.add(mBody);
+            let mHead;
+            if(zone.includes('forest')){mHead=new THREE.Mesh(new THREE.SphereGeometry(0.18,6,6),new THREE.MeshLambertMaterial({color:bodyColor}));}
+            else if(zone.includes('ruins')){mHead=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.22,0.22),new THREE.MeshLambertMaterial({color:bodyColor}));}
+            else{mHead=new THREE.Mesh(new THREE.OctahedronGeometry(0.18,0),new THREE.MeshLambertMaterial({color:bodyColor}));}
+            mHead.position.y=0.95;mHead.castShadow=true;g.add(mHead);
+            const eyeMat=new THREE.MeshBasicMaterial({color:monsterState.aggressive?0xff0000:0xffaa00});
+            const eye1=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),eyeMat);eye1.position.set(-0.06,0.95,0.15);g.add(eye1);
+            const eye2=new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4),eyeMat);eye2.position.set(0.06,0.95,0.15);g.add(eye2);
+            if(isBoss){const glow=new THREE.Mesh(new THREE.SphereGeometry(0.6,8,8),new THREE.MeshBasicMaterial({color:bodyColor,transparent:true,opacity:0.12}));glow.position.y=0.6;g.add(glow);}
+            const mShadow=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:0.15}));mShadow.rotation.x=-Math.PI/2;mShadow.position.y=0.02;g.add(mShadow);
+            g.traverse(c=>{if(c.isMesh){c.userData.monsterId=monsterState.id;c.userData.type='monster';}});
+            g.position.set(monsterState.x,0,monsterState.z);scene.add(g);
+            const label=document.createElement('div');label.className='monster-label';label.textContent=monsterState.name+' (Lv.'+monsterState.level+')';document.getElementById('npc-labels').appendChild(label);
+            return{group:g,body:mBody,label};
         }
 
         // ============================================================
         // COLYSEUS CONNECTION
         // ============================================================
-        const connStatus = document.getElementById('conn-status');
+        const connStatus=document.getElementById('conn-status');
         async function connect(){
             try{
                 connStatus.textContent='Connecting...';connStatus.className='connecting';
-                const client = new Colyseus.Client(WS_URL);
-                const joinOptions = {name:playerName, color:playerColor};
-                if (authToken) joinOptions.supabaseToken = authToken;
-                if (authTgId) joinOptions.tgId = authTgId;
-                if (authEntityType) joinOptions.entityType = authEntityType;
-                if (authApiKey) joinOptions.apiKey = authApiKey;
-                room = await client.joinOrCreate('agentscape', joinOptions);
-                mySessionId = room.sessionId;
+                const client=new Colyseus.Client(WS_URL);
+                const joinOptions={name:playerName,color:playerColor};
+                if(authToken)joinOptions.supabaseToken=authToken;
+                if(authTgId)joinOptions.tgId=authTgId;
+                if(authEntityType)joinOptions.entityType=authEntityType;
+                if(authApiKey)joinOptions.apiKey=authApiKey;
+                room=await client.joinOrCreate('agentscape',joinOptions);
+                mySessionId=room.sessionId;
                 connStatus.textContent='Connected';connStatus.className='connected';
                 addChat('system','Connected to AgentScape multiplayer!');
                 setupRoomListeners();
             }catch(e){
                 connStatus.textContent='Disconnected';connStatus.className='disconnected';
-                addChat('system','Could not connect to server. Playing offline.');
+                addChat('system','Could not connect to server. Retrying in 5s...');
                 console.error('Connection failed:',e);
+                setTimeout(connect,5000);
             }
         }
 
-        function sendAction(type, payload){
-            if(room) room.send('action',{type,payload:payload||{}});
-        }
+        function sendAction(type,payload){if(room)room.send('action',{type,payload:payload||{}});}
 
         function setupRoomListeners(){
-            // Players
-            room.state.players.onAdd((player, sessionId)=>{
+            // === PLAYERS ===
+            room.state.players.onAdd((player,sessionId)=>{
                 if(sessionId===mySessionId){
-                    // Own player — bind UI
                     document.querySelector('.stat-player-name').textContent=player.name;
                     updateOrbs(player);
                     renderInventoryFromState(player);
                     renderStatsFromState(player);
-                    // Listen for changes
                     player.onChange(()=>{
-                        updateOrbs(player);
-                        renderStatsFromState(player);
+                        updateOrbs(player);renderStatsFromState(player);
                         myWorldX=player.x;myWorldZ=player.z;
                         const tx=player.tileX,tz=player.tileZ;
                         const h=heightMap[tx]?heightMap[tx][tz]||0:0;
-                        const oldX=myTargetX, oldZ=myTargetZ;
+                        const oldX=myTargetX,oldZ=myTargetZ;
                         myTargetX=player.x;myTargetZ=player.z;myTargetH=h;myTargetRot=player.rotation;
                         myIsMoving=(Math.abs(player.x-oldX)>0.01||Math.abs(player.z-oldZ)>0.01);
                         if(player.isDead){document.getElementById('death-screen').style.display='flex';}
                         else{document.getElementById('death-screen').style.display='none';}
+                        // Update zone indicator
+                        const zone=getZoneAt(player.tileX,player.tileZ);
+                        const zi=document.getElementById('zone-indicator');
+                        if(zone){zi.textContent=zone.name;zi.style.borderBottom='2px solid '+zone.color;}
                     });
-                    player.inventory.onAdd((item,idx)=>{renderInventoryFromState(player);});
-                    player.inventory.onChange((item,idx)=>{renderInventoryFromState(player);});
+                    player.inventory.onAdd(()=>{renderInventoryFromState(player);});
+                    player.inventory.onChange(()=>{renderInventoryFromState(player);});
                 }else{
-                    // Other player
                     const mesh=createCharacterMesh(parseInt(player.color.replace('#',''),16)||0x3355aa);
-                    mesh.group.position.set(player.x,0,player.z);
-                    scene.add(mesh.group);
+                    mesh.group.position.set(player.x,0,player.z);scene.add(mesh.group);
                     const label=document.createElement('div');label.className='npc-label';label.textContent=player.name;label.style.borderBottom='2px solid '+player.color;document.getElementById('npc-labels').appendChild(label);
                     otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false});
                     player.onChange(()=>{
-                        const m=otherPlayerMeshes.get(sessionId);
-                        if(m){const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
+                        const m=otherPlayerMeshes.get(sessionId);if(!m)return;
+                        const tx=player.tileX,tz=player.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
                         m.isMoving=(Math.abs(player.x-m.targetX)>0.01||Math.abs(player.z-m.targetZ)>0.01);
-                        m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;}
+                        m.targetX=player.x;m.targetZ=player.z;m.targetH=h;m.targetRot=player.rotation;m.group.visible=!player.isDead;
                     });
                 }
             });
-            room.state.players.onRemove((player, sessionId)=>{
-                const m=otherPlayerMeshes.get(sessionId);
-                if(m){scene.remove(m.group);m.label.remove();otherPlayerMeshes.delete(sessionId);}
+            room.state.players.onRemove((player,sessionId)=>{
+                const m=otherPlayerMeshes.get(sessionId);if(m){scene.remove(m.group);m.label.remove();otherPlayerMeshes.delete(sessionId);}
             });
 
-            // NPCs
-            room.state.npcs.onAdd((npc, id)=>{
+            // === NPCs ===
+            room.state.npcs.onAdd((npc,id)=>{
                 const mesh=createNPCMesh(npc);
                 npcMeshes.set(id,{...mesh,state:npc,targetX:npc.x,targetZ:npc.z,targetH:0,targetRot:npc.rotation,isMoving:false});
                 npc.onChange(()=>{
-                    const m=npcMeshes.get(id);
-                    if(!m)return;
-                    const tx=npc.tileX,tz=npc.tileZ;
-                    const h=heightMap[tx]?heightMap[tx][tz]||0:0;
+                    const m=npcMeshes.get(id);if(!m)return;
+                    const tx=npc.tileX,tz=npc.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
                     m.isMoving=(Math.abs(npc.x-m.targetX)>0.01||Math.abs(npc.z-m.targetZ)>0.01);
                     m.targetX=npc.x;m.targetZ=npc.z;m.targetH=h;m.targetRot=npc.rotation;
-                    m.group.visible=!npc.isDead;
-                    m.label.style.display=npc.isDead?'none':'block';
+                    m.group.visible=!npc.isDead;m.label.style.display=npc.isDead?'none':'block';
                 });
             });
-            room.state.npcs.onRemove((npc, id)=>{
-                const m=npcMeshes.get(id);
-                if(m){scene.remove(m.group);m.label.remove();npcMeshes.delete(id);}
-            });
+            room.state.npcs.onRemove((npc,id)=>{const m=npcMeshes.get(id);if(m){scene.remove(m.group);m.label.remove();npcMeshes.delete(id);}});
 
-            // Server messages
+            // === MONSTERS ===
+            room.state.monsters.onAdd((monster,id)=>{
+                const mesh=createMonsterMesh(monster);
+                monsterMeshes.set(id,{...mesh,state:monster,targetX:monster.x,targetZ:monster.z,targetH:0,targetRot:monster.rotation,isMoving:false});
+                monster.onChange(()=>{
+                    const m=monsterMeshes.get(id);if(!m)return;
+                    const tx=monster.tileX,tz=monster.tileZ;const h=heightMap[tx]?heightMap[tx][tz]||0:0;
+                    m.isMoving=(Math.abs(monster.x-m.targetX)>0.01||Math.abs(monster.z-m.targetZ)>0.01);
+                    m.targetX=monster.x;m.targetZ=monster.z;m.targetH=h;m.targetRot=monster.rotation;
+                    m.group.visible=!monster.isDead;m.label.style.display=monster.isDead?'none':'block';
+                });
+            });
+            room.state.monsters.onRemove((monster,id)=>{const m=monsterMeshes.get(id);if(m){scene.remove(m.group);m.label.remove();monsterMeshes.delete(id);}});
+
+            // === LOOT PILES ===
+            room.state.lootPiles.onAdd((loot,id)=>{
+                const dot=document.createElement('div');dot.className='loot-pile-dot';dot.dataset.worldX=loot.x;dot.dataset.worldZ=loot.z;
+                dot.onclick=()=>sendAction('pickup_loot',{lootId:id});
+                document.getElementById('npc-labels').appendChild(dot);
+                lootPileMeshes.set(id,{dot,state:loot});
+            });
+            room.state.lootPiles.onRemove((loot,id)=>{const m=lootPileMeshes.get(id);if(m){m.dot.remove();lootPileMeshes.delete(id);}});
+
+            // === SERVER MESSAGES ===
             room.onMessage('hitsplat',(data)=>{showHitsplat(data.x,data.z,data.damage,data.isMiss,data.isSpec);});
             room.onMessage('player_chat',(data)=>{addChat('public',data.message,data.sender,data.color);showChatBubble(data.x,data.z,data.message,data.color);});
             room.onMessage('npc_chat',(data)=>{addChat('agent',data.message,data.npcName,data.roleColor);showChatBubble(data.x,data.z,data.message,'#22c55e');});
             room.onMessage('system_message',(data)=>{addChat('system',data.message);});
             room.onMessage('error',(data)=>{addChat('system',data.message);});
-            room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='player'&&data.entityId===mySessionId)addChat('combat','Oh dear, you are dead!');});
-            room.onMessage('level_up',(data)=>{addChat('system',`Level up! ${data.skill} is now level ${data.level}!`);});
-            room.onMessage('quest_event',(data)=>{if(data.type==='completed')addChat('system',`Quest complete: ${data.questName}!`);if(data.type==='accepted')addChat('system',`Quest accepted: ${data.questName}`);});
+            room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='monster')addChat('combat',data.monsterName+' has been slain!');if(data.entityType==='player'&&data.entityId===mySessionId)addChat('combat','Oh dear, you are dead!');});
+            room.onMessage('level_up',(data)=>{addChat('system','Level up! '+data.skill+' is now level '+data.level+'!');const el=document.getElementById('skill-'+data.skill);if(el){el.classList.add('skill-levelup');setTimeout(()=>el.classList.remove('skill-levelup'),1500);}});
+            room.onMessage('quest_event',(data)=>{if(data.type==='completed')addChat('system','Quest complete: '+data.questName+'!');if(data.type==='accepted')addChat('system','Quest accepted: '+data.questName);});
             room.onMessage('building_arrived',(data)=>{
                 const bid=data.buildingId;
                 document.getElementById('skill-action-area').innerHTML='';
                 if(bid==='quest_board'){renderQuestBoard();document.getElementById('quest-overlay').classList.add('open');}
-                else if(bid==='marketplace'){openShop();}
-                else if(bid==='workshop'){openCrafting();}
-                else if(bid==='farm'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_harvest\')">🌾 Harvest</button>';addChat('system','You arrive at the Farm.');}
-                else if(bid==='arena'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_training\')">🎯 Train</button>';addChat('system','You enter the Arena.');}
-                else{addChat('system','You arrive at the '+BUILDINGS.find(b=>b.id===bid)?.name+'.');}
+                else if(bid==='marketplace'||bid==='exchange'){openShop();}
+                else if(bid==='workshop'||bid==='forge'){openCrafting();}
+                else if(bid==='farm'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_harvest\')">Harvest</button>';addChat('system','You arrive at the Farm.');}
+                else if(bid==='arena'){document.getElementById('skill-action-area').innerHTML='<button class="action-btn" onclick="sendAction(\'start_training\')">Train</button>';addChat('system','You enter the Arena.');}
+                else{const bd=BUILDINGS.find(b=>b.id===bid);addChat('system','You arrive at the '+(bd?bd.name:'building')+'.');}
             });
             room.onMessage('skilling_event',(data)=>{addChat('system',data.message);});
+            room.onMessage('monster_ability',(data)=>{addChat('combat',data.monsterName+' uses '+data.abilityName+'!');});
+            room.onMessage('player_respawn',(data)=>{if(data.playerId===mySessionId)addChat('system','You have respawned.');});
             room.onMessage('welcome',(data)=>{addChat('system','Welcome to AgentScape! Right-click to interact.');});
-
             room.onLeave(()=>{connStatus.textContent='Disconnected';connStatus.className='disconnected';addChat('system','Disconnected from server.');});
         }
-
         // ============================================================
         // UI RENDERING (from Colyseus state)
         // ============================================================
@@ -565,6 +1010,7 @@
             document.getElementById('orbEnergy').style.setProperty('--energy-pct',p.energy+'%');
             document.getElementById('orbEnergyText').textContent=p.energy;
         }
+
         function renderInventoryFromState(p){
             if(!p)return;
             const grid2=document.getElementById('inv-grid');grid2.innerHTML='';
@@ -579,60 +1025,91 @@
                     if(item.quantity>1){const qty=document.createElement('span');qty.className='inv-slot-qty';qty.textContent=item.quantity;slot.appendChild(qty);}
                 }
                 slot.addEventListener('contextmenu',(e)=>{e.preventDefault();e.stopPropagation();showInventoryMenu(e,i,p);});
-                slot.addEventListener('click',()=>{if(!item||!item.id)return;if(item.type==='food')sendAction('eat_food',{inventorySlot:i});else if(item.type==='weapon'||item.type==='helm'||item.type==='shield')sendAction('equip_item',{inventorySlot:i});});
+                slot.addEventListener('click',()=>{if(!item||!item.id)return;if(item.type==='food')sendAction('eat_food',{inventorySlot:i});else if(item.type==='weapon'||item.type==='helm'||item.type==='shield'||item.type==='axe')sendAction('equip_item',{inventorySlot:i});});
                 grid2.appendChild(slot);
             }
         }
+
+        let selectedSkill=null;
         function renderStatsFromState(p){
             if(!p)return;
-            const skills=[{name:'Attack',key:'attack',xpKey:'attackXP',icon:'\u2694\uFE0F'},{name:'Strength',key:'strength',xpKey:'strengthXP',icon:'\u{1F4AA}'},{name:'Defence',key:'defence',xpKey:'defenceXP',icon:'\u{1F6E1}\uFE0F'},{name:'Hitpoints',key:'hitpoints',xpKey:'hitpointsXP',icon:'\u2764\uFE0F'}];
+            const serverSkills=['attack','strength','defence','hitpoints'];
             const el=document.getElementById('stats-content');
-            el.innerHTML=skills.map(s=>{const lvl=p[s.key];const xp=p[s.xpKey];const cur=xpForLevel(lvl);const next=xpForLevel(lvl+1);const pct=Math.min(100,((xp-cur)/(next-cur))*100);return`<div class="stat-skill"><span class="stat-skill-icon">${s.icon}</span><span class="stat-skill-name">${s.name}</span><span class="stat-skill-lvl">${lvl}</span></div><div style="padding:0 6px 6px;"><div class="stat-xp-bar"><div class="stat-xp-fill" style="width:${pct}%"></div></div><div style="font-size:8px;color:#6b7280;text-align:right">${xp} / ${next} XP</div></div>`;}).join('');
+            let html='<div class="skill-grid">';
+            SKILLS.forEach(s=>{
+                const isServer=serverSkills.includes(s.id);
+                const lvl=isServer?p[s.id]:1;
+                const xp=isServer?(p[s.id+'XP']||0):0;
+                const curXp=xpForLevel(lvl);const nextXp=xpForLevel(lvl+1);
+                const pct=nextXp>curXp?Math.min(100,((xp-curXp)/(nextXp-curXp))*100):0;
+                const isSel=selectedSkill===s.id;
+                html+='<div class="skill-cell'+(isSel?' skill-selected':'')+'" id="skill-'+s.id+'" onclick="selectSkill(\''+s.id+'\')">';
+                html+='<span class="skill-icon">'+s.icon+'</span>';
+                html+='<span class="skill-lvl">'+lvl+'</span>';
+                html+='<div class="skill-xp-bar"><div class="skill-xp-fill" style="width:'+pct+'%"></div></div>';
+                html+='</div>';
+            });
+            html+='</div>';
+            const totalLevel=serverSkills.reduce((sum,sk)=>sum+(p[sk]||1),0)+(SKILLS.length-serverSkills.length);
+            html+='<div class="skill-total">Total Level: '+totalLevel+'</div>';
+            if(selectedSkill){
+                const s=SKILLS.find(sk=>sk.id===selectedSkill);
+                if(s){
+                    const isServer=serverSkills.includes(s.id);
+                    const lvl=isServer?p[s.id]:1;const xp=isServer?(p[s.id+'XP']||0):0;
+                    const nextXp=xpForLevel(lvl+1);
+                    html+='<div class="skill-detail"><div class="skill-detail-name">'+s.icon+' '+s.name+'</div>';
+                    html+='<div class="skill-detail-row">Level: <b>'+lvl+'</b></div>';
+                    html+='<div class="skill-detail-row">XP: <b>'+xp.toLocaleString()+'</b></div>';
+                    html+='<div class="skill-detail-row">Next level: <b>'+nextXp.toLocaleString()+'</b></div>';
+                    html+='<div class="skill-detail-row">Remaining: <b>'+Math.max(0,nextXp-xp).toLocaleString()+'</b></div></div>';
+                }
+            }
+            el.innerHTML=html;
             document.getElementById('statCombatLvl').textContent=p.combatLevel;
         }
+        window.selectSkill=function(id){selectedSkill=selectedSkill===id?null:id;const p=getMyPlayer();if(p)renderStatsFromState(p);};
 
         // Shop
         function getMyPlayer(){return room?.state?.players?.get(mySessionId);}
+        function countCoins(p){let t=0;for(let i=0;i<28;i++){if(p.inventory[i]&&p.inventory[i].id==='coins')t+=p.inventory[i].quantity;}return t;}
         function openShop(){
             const p=getMyPlayer();const coins=p?countCoins(p):0;
-            document.getElementById('shop-coins-display').textContent=`🪙 ${coins} Coins`;
+            document.getElementById('shop-coins-display').textContent='\u{1FA99} '+coins+' Coins';
             const body=document.getElementById('shop-body-content');
-            body.innerHTML=`<div class="shop-panel"><h3>Shop</h3>${SHOP_ITEMS.map(si=>{const item=ITEMS[si.id];return`<div class="shop-item" onclick="sendAction('buy_item',{itemId:'${si.id}',quantity:1})"><span class="shop-item-icon">${item.icon}</span><span class="shop-item-name">${item.name}</span><span class="shop-item-price">🪙 ${si.price}</span></div>`;}).join('')}</div><div class="shop-panel"><h3>Your Items</h3>${p?getPlayerSellItems(p):'<div style="padding:8px;font-size:11px;color:#6b7280;">Nothing to sell.</div>'}</div>`;
+            body.innerHTML='<div class="shop-panel"><h3>Shop</h3>'+SHOP_ITEMS.map(si=>{const item=ITEMS[si.id];return'<div class="shop-item" onclick="sendAction(\'buy_item\',{itemId:\''+si.id+'\',quantity:1})"><span class="shop-item-icon">'+item.icon+'</span><span class="shop-item-name">'+item.name+'</span><span class="shop-item-price">\u{1FA99} '+si.price+'</span></div>';}).join('')+'</div><div class="shop-panel"><h3>Your Items</h3>'+(p?getPlayerSellItems(p):'<div style="padding:8px;font-size:11px;color:#6b7280;">Nothing to sell.</div>')+'</div>';
             document.getElementById('shop-overlay').classList.add('open');
         }
         function getPlayerSellItems(p){
             let html='';
-            for(let i=0;i<28;i++){const item=p.inventory[i];if(!item||!item.id||item.type==='coin')continue;const si=SHOP_ITEMS.find(s=>s.id===item.id);const sell=si?Math.floor(si.price/2):1;html+=`<div class="shop-item" onclick="sendAction('sell_item',{inventorySlot:${i}})"><span class="shop-item-icon">${item.icon}</span><span class="shop-item-name">${item.name}</span><span class="shop-item-price" style="color:#22c55e;">+🪙 ${sell}</span></div>`;}
+            for(let i=0;i<28;i++){const item=p.inventory[i];if(!item||!item.id||item.type==='coin')continue;const si=SHOP_ITEMS.find(s=>s.id===item.id);const sell=si?Math.floor(si.price/2):1;html+='<div class="shop-item" onclick="sendAction(\'sell_item\',{inventorySlot:'+i+'})"><span class="shop-item-icon">'+item.icon+'</span><span class="shop-item-name">'+item.name+'</span><span class="shop-item-price" style="color:#22c55e;">+\u{1FA99} '+sell+'</span></div>';}
             return html||'<div style="padding:8px;font-size:11px;color:#6b7280;">Nothing to sell.</div>';
         }
-        function countCoins(p){let t=0;for(let i=0;i<28;i++){if(p.inventory[i]&&p.inventory[i].id==='coins')t+=p.inventory[i].quantity;}return t;}
 
         // Crafting
         function openCrafting(){
-            const p=getMyPlayer();
             const el=document.getElementById('craft-content');
-            el.innerHTML=RECIPES.map((r,i)=>{const result=ITEMS[r.result];const ingText=r.ingredients.map(ing=>`${ITEMS[ing.id].icon} ${ing.qty}x ${ITEMS[ing.id].name}`).join(', ');return`<div class="shop-item" onclick="sendAction('craft_item',{recipeIndex:${i}})"><span class="shop-item-icon">${result.icon}</span><span class="shop-item-name">${result.name}</span><span style="font-size:9px;color:#9ca3af;">${ingText} + 🪙 ${r.coinCost}</span></div>`;}).join('');
+            el.innerHTML=RECIPES.map((r,i)=>{const result=ITEMS[r.result];const ingText=r.ingredients.map(ing=>ITEMS[ing.id].icon+' '+ing.qty+'x '+ITEMS[ing.id].name).join(', ');return'<div class="shop-item" onclick="sendAction(\'craft_item\',{recipeIndex:'+i+'})"><span class="shop-item-icon">'+result.icon+'</span><span class="shop-item-name">'+result.name+'</span><span style="font-size:9px;color:#9ca3af;">'+ingText+' + \u{1FA99} '+r.coinCost+'</span></div>';}).join('');
             document.getElementById('craft-overlay').classList.add('open');
         }
 
         // Quests
         function renderQuestBoard(){
             const el=document.getElementById('quest-board-content');
-            const available=Object.values(QUESTS).map(q=>q);
-            el.innerHTML='<div style="font-size:10px;color:#6b7280;padding:4px;text-transform:uppercase;letter-spacing:1px;">Available Quests</div>'+available.map(q=>`<div class="quest-item" onclick="showQuestDetail('${q.id}')"><span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span><span class="quest-name">${q.name}</span><span class="quest-status-icon">📜</span></div>`).join('');
+            el.innerHTML='<div style="font-size:10px;color:#6b7280;padding:4px;text-transform:uppercase;letter-spacing:1px;">Available Quests</div>'+Object.values(QUESTS).map(q=>'<div class="quest-item" onclick="showQuestDetail(\''+q.id+'\')"><span class="quest-difficulty '+q.difficulty+'">'+q.difficulty+'</span><span class="quest-name">'+q.name+'</span><span class="quest-status-icon">\u{1F4DC}</span></div>').join('');
         }
         window.showQuestDetail=function(qid){
             const q=QUESTS[qid];if(!q)return;
             const el=document.getElementById('quest-board-content');
             const rewardText=[];
-            if(q.rewards.coins)rewardText.push(`🪙 ${q.rewards.coins} coins`);
-            if(q.rewards.xp)Object.entries(q.rewards.xp).forEach(([s,a])=>rewardText.push(`${a} ${s} XP`));
-            if(q.rewards.items)q.rewards.items.forEach(i=>rewardText.push(`${ITEMS[i.id].icon} ${i.qty}x ${ITEMS[i.id].name}`));
-            el.innerHTML=`<div class="quest-detail"><div style="cursor:pointer;color:#6366f1;font-size:11px;margin-bottom:8px;" onclick="renderQuestBoard()">← Back</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="quest-difficulty ${q.difficulty}">${q.difficulty}</span><span style="font-size:14px;color:#fff;font-weight:bold;">${q.name}</span></div><div class="quest-detail-desc">${q.description}</div><div class="quest-detail-rewards">Rewards: ${rewardText.join(' · ')}</div><button class="quest-accept-btn" onclick="sendAction('accept_quest',{questId:'${qid}'})">Accept Quest</button></div>`;
+            if(q.rewards.coins)rewardText.push('\u{1FA99} '+q.rewards.coins+' coins');
+            if(q.rewards.xp)Object.entries(q.rewards.xp).forEach(([s,a])=>rewardText.push(a+' '+s+' XP'));
+            if(q.rewards.items)q.rewards.items.forEach(i=>rewardText.push(ITEMS[i.id].icon+' '+i.qty+'x '+ITEMS[i.id].name));
+            el.innerHTML='<div class="quest-detail"><div style="cursor:pointer;color:#6366f1;font-size:11px;margin-bottom:8px;" onclick="renderQuestBoard()">\u2190 Back</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="quest-difficulty '+q.difficulty+'">'+q.difficulty+'</span><span style="font-size:14px;color:#fff;font-weight:bold;">'+q.name+'</span></div><div class="quest-detail-desc">'+q.description+'</div><div class="quest-detail-rewards">Rewards: '+rewardText.join(' \u00B7 ')+'</div><button class="quest-accept-btn" onclick="sendAction(\'accept_quest\',{questId:\''+qid+'\'})">Accept Quest</button></div>';
         };
         window.renderQuestBoard=renderQuestBoard;
 
-        // Hitsplat + Chat bubble rendering
+        // Hitsplat + Chat bubble
         function showHitsplat(wx,wz,dmg,miss,isSpec){const el=document.createElement('div');el.className='hitsplat'+(miss?' miss':'')+(isSpec?' spec':'');el.textContent=miss?'0':dmg;el.dataset.worldX=wx;el.dataset.worldZ=wz;document.getElementById('chat-bubbles').appendChild(el);setTimeout(()=>el.remove(),1000);}
         function showChatBubble(wx,wz,text,color){const b=document.createElement('div');b.className='chat-bubble';b.textContent=text.substring(0,40);if(color)b.style.color=color;b.dataset.worldX=wx;b.dataset.worldZ=wz;document.getElementById('chat-bubbles').appendChild(b);setTimeout(()=>b.remove(),5000);}
 
@@ -640,11 +1117,11 @@
         function showInventoryMenu(e,slot,p){
             const item=p.inventory[slot];if(!item||!item.id)return;
             const opts=[];
-            if(item.type==='food')opts.push({label:'Eat',action:`sendAction('eat_food',{inventorySlot:${slot}})`});
-            if(item.type==='weapon')opts.push({label:p.equippedWeaponSlot===slot?'Unequip':'Wield',action:`sendAction('equip_item',{inventorySlot:${slot}})`});
-            if(item.type==='helm')opts.push({label:p.equippedHelmSlot===slot?'Remove':'Wear',action:`sendAction('equip_item',{inventorySlot:${slot}})`});
-            if(item.type==='shield')opts.push({label:p.equippedShieldSlot===slot?'Remove':'Wear',action:`sendAction('equip_item',{inventorySlot:${slot}})`});
-            opts.push({label:'Drop',action:`sendAction('drop_item',{inventorySlot:${slot}})`});
+            if(item.type==='food')opts.push({label:'Eat',action:"sendAction('eat_food',{inventorySlot:"+slot+"})"});
+            if(item.type==='weapon'||item.type==='axe')opts.push({label:p.equippedWeaponSlot===slot?'Unequip':'Wield',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            if(item.type==='helm')opts.push({label:p.equippedHelmSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            if(item.type==='shield')opts.push({label:p.equippedShieldSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            opts.push({label:'Drop',action:"sendAction('drop_item',{inventorySlot:"+slot+"})"});
             opts.push({label:'Cancel',action:'hideCtxMenu()'});
             showContextMenu(e,opts,item.icon+' '+item.name);
         }
@@ -653,19 +1130,20 @@
         // CONTEXT MENU
         // ============================================================
         const ctxMenu=document.getElementById('context-menu');
-        let ctxNPC=null,ctxBuilding=null;
         function hideCtxMenu(){ctxMenu.style.display='none';}
         window.hideCtxMenu=hideCtxMenu;
         document.addEventListener('click',e=>{if(!ctxMenu.contains(e.target))hideCtxMenu();});
         function showContextMenu(e,options,header){
             hideCtxMenu();
-            ctxMenu.innerHTML=(header?`<div class="ctx-header">${header}</div>`:'')+options.map(o=>`<div class="ctx-option" onclick="${o.action}">${o.label}</div>`).join('');
+            ctxMenu.innerHTML=(header?'<div class="ctx-header">'+header+'</div>':'')+options.map(o=>'<div class="ctx-option" onclick="'+o.action+'">'+o.label+'</div>').join('');
             ctxMenu.style.display='block';
             ctxMenu.style.left=Math.min(e.clientX,window.innerWidth-160)+'px';
             ctxMenu.style.top=Math.min(e.clientY,window.innerHeight-(options.length*30+30))+'px';
         }
 
-        // Raycasting
+        // ============================================================
+        // RAYCASTING & INPUT
+        // ============================================================
         const raycasterMain=new THREE.Raycaster();
         function getViewportMouse(e){const rect=viewport.getBoundingClientRect();return new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);}
 
@@ -674,22 +1152,16 @@
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
             const allObj=[];scene.traverse(o=>{if(o.isMesh)allObj.push(o);});
             const hits=raycasterMain.intersectObjects(allObj,false);
-            let hitNPC=null,hitBld=null,hitTile=null;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null;
             for(const h of hits){
                 if(h.object.userData.type==='npc'&&!hitNPC)hitNPC=h.object.userData.npcId;
+                if(h.object.userData.type==='monster'&&!hitMonster)hitMonster=h.object.userData.monsterId;
                 if(h.object.userData.type==='building'&&!hitBld)hitBld=h.object.userData.buildingId;
                 if(h.object.userData.tileX!==undefined&&!hitTile)hitTile=h.object.userData;
             }
-            if(hitNPC){
-                if(attackMode)sendAction('attack_npc',{npcId:hitNPC});
-                else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}
-                return;
-            }
-            if(hitBld){
-                const door=buildingDoors[hitBld];
-                if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});
-                return;
-            }
+            if(hitMonster){if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
+            if(hitNPC){if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
+            if(hitBld){const door=buildingDoors[hitBld];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});return;}
             if(hitTile&&hitTile.walkable){sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
@@ -698,31 +1170,25 @@
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
             const allObj=[];scene.traverse(o=>{if(o.isMesh)allObj.push(o);});
             const hits=raycasterMain.intersectObjects(allObj,false);
-            let hitNPC=null,hitBld=null,hitTile=null;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null;
             for(const h of hits){
                 if(h.object.userData.type==='npc'&&!hitNPC)hitNPC=h.object.userData.npcId;
+                if(h.object.userData.type==='monster'&&!hitMonster)hitMonster=h.object.userData.monsterId;
                 if(h.object.userData.type==='building'&&!hitBld)hitBld=h.object.userData.buildingId;
                 if(h.object.userData.tileX!==undefined&&!hitTile)hitTile=h.object.userData;
             }
+            if(hitMonster){
+                const mon=monsterMeshes.get(hitMonster);
+                if(mon&&!mon.state.isDead){showContextMenu(e,[{label:'Attack '+mon.state.name,action:"sendAction('attack_monster',{monsterId:'"+hitMonster+"'})"},{label:'Examine',action:"addChat('system','"+mon.state.name+" - Level "+mon.state.level+" (HP: "+mon.state.hp+"/"+mon.state.maxHp+")');"},{label:'Cancel',action:'hideCtxMenu()'}],mon.state.name);}
+                return;
+            }
             if(hitNPC){
                 const npc=npcMeshes.get(hitNPC);
-                if(npc&&!npc.state.isDead){
-                    ctxNPC=hitNPC;
-                    showContextMenu(e,[
-                        {label:'Talk to '+npc.state.name,action:`talkToNPC('${hitNPC}')`},
-                        {label:'Attack '+npc.state.name,action:`sendAction('attack_npc',{npcId:'${hitNPC}'})`},
-                        {label:'Examine',action:`examineNPC('${hitNPC}')`},
-                        {label:'Cancel',action:'hideCtxMenu()'},
-                    ],npc.state.name);
-                }
+                if(npc&&!npc.state.isDead){showContextMenu(e,[{label:'Talk to '+npc.state.name,action:"talkToNPC('"+hitNPC+"')"},{label:'Attack '+npc.state.name,action:"sendAction('attack_npc',{npcId:'"+hitNPC+"'})"},{label:'Examine',action:"examineNPC('"+hitNPC+"')"},{label:'Cancel',action:'hideCtxMenu()'}],npc.state.name);}
                 return;
             }
-            if(hitBld){
-                const bd=BUILDINGS.find(b=>b.id===hitBld);
-                if(bd){showContextMenu(e,[{label:'Enter '+bd.name,action:`enterBuilding('${hitBld}')`},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}
-                return;
-            }
-            if(hitTile){showContextMenu(e,[{label:'Walk here',action:`sendAction('move_to',{tileX:${hitTile.tileX},tileZ:${hitTile.tileZ}})`},{label:'Cancel',action:'hideCtxMenu()'}]);}
+            if(hitBld){const bd=BUILDINGS.find(b=>b.id===hitBld);if(bd){showContextMenu(e,[{label:'Enter '+bd.name,action:"enterBuilding('"+hitBld+"')"},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}return;}
+            if(hitTile){showContextMenu(e,[{label:'Walk here',action:"sendAction('move_to',{tileX:"+hitTile.tileX+",tileZ:"+hitTile.tileZ+"})"},{label:'Cancel',action:'hideCtxMenu()'}]);}
         });
 
         renderer.domElement.addEventListener('mousemove',e=>{
@@ -731,7 +1197,7 @@
             const hits=raycasterMain.intersectObjects(allObj,false);
             highlight.visible=false;let cursorSet=false;
             for(const h of hits){
-                if(h.object.userData.type==='npc'){document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
+                if(h.object.userData.type==='npc'||h.object.userData.type==='monster'){document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
                 if(h.object.userData.type==='building'){document.body.style.cursor='pointer';cursorSet=true;break;}
                 if(h.object.userData.tileX!==undefined){const tx=h.object.userData.tileX,tz=h.object.userData.tileZ;highlight.position.set(tx,heightMap[tx][tz]+0.05,tz);highlight.visible=true;highlightMat.color.set(h.object.userData.walkable?0xffff00:0xff4444);highlightMat.opacity=h.object.userData.walkable?0.3:0.2;document.body.style.cursor=h.object.userData.walkable?'pointer':'not-allowed';cursorSet=true;break;}
             }
@@ -739,7 +1205,7 @@
         });
 
         window.talkToNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);showChatBubble(npc.state.x,npc.state.z,'Hello there!','#22c55e');};
-        window.examineNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;const cs=NPC_COMBAT_STATS[npc.state.role]||{attack:3,strength:3,defence:3};addChat('system',`${npc.state.name} — ${npc.state.role} (HP: ${npc.state.hp}/${npc.state.maxHp}, Atk: ${cs.attack}, Str: ${cs.strength}, Def: ${cs.defence})`);};
+        window.examineNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;const cs=NPC_COMBAT_STATS[npc.state.role]||{attack:3,strength:3,defence:3};addChat('system',npc.state.name+' \u2014 '+npc.state.role+' (HP: '+npc.state.hp+'/'+npc.state.maxHp+', Atk: '+cs.attack+', Str: '+cs.strength+', Def: '+cs.defence+')');};
         window.enterBuilding=function(bid){hideCtxMenu();const door=buildingDoors[bid];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});};
         window.sendAction=sendAction;
         window.sendSpec=function(){sendAction('use_special_attack');};
@@ -757,9 +1223,12 @@
         const minimapCanvas=document.getElementById('minimap');const mctx=minimapCanvas.getContext('2d');
         function drawMinimap(){
             const s=200/MAP_SIZE;mctx.clearRect(0,0,200,200);
-            for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===3)mctx.fillStyle='#8B6914';else if(isWater(x,z))mctx.fillStyle='#2288aa';else if(grid[x][z]===0)mctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)mctx.fillStyle='#8B7355';else mctx.fillStyle='#4a7c3f';mctx.fillRect(x*s,z*s,s+0.5,s+0.5);}
+            for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const tz=getTerrainZone(x,z);if(grid[x][z]===3)mctx.fillStyle='#8B6914';else if(isWater(x,z))mctx.fillStyle=tz==='deep'?'#2a1060':'#2288aa';else if(grid[x][z]===0)mctx.fillStyle=tz==='deep'?'#1a1030':tz==='ruins'?'#4a4a4a':'#2d4a1e';else if(grid[x][z]===2)mctx.fillStyle='#8B7355';else{if(tz==='forest')mctx.fillStyle='#2d5a1e';else if(tz==='ruins')mctx.fillStyle='#6b6b6b';else if(tz==='deep')mctx.fillStyle='#1a1030';else mctx.fillStyle='#4a7c3f';}mctx.fillRect(x*s,z*s,s+0.5,s+0.5);}
+            // Zone borders on minimap
+            Object.values(ZONES).forEach(zone=>{mctx.strokeStyle=zone.color;mctx.lineWidth=1;mctx.globalAlpha=0.3;mctx.strokeRect(zone.bounds.x1*s,zone.bounds.z1*s,(zone.bounds.x2-zone.bounds.x1)*s,(zone.bounds.z2-zone.bounds.z1)*s);mctx.globalAlpha=1;});
             BUILDINGS.forEach(b=>{mctx.fillStyle=b.signColor;mctx.globalAlpha=0.6;mctx.fillRect((b.x-b.w/2)*s,(b.z-b.d/2)*s,b.w*s,b.d*s);mctx.globalAlpha=1;});
-            npcMeshes.forEach(n=>{if(!n.state.isDead){const rc=ROLE_COLORS[n.state.role];mctx.fillStyle=rc?rc.hex:'#fff';mctx.beginPath();mctx.arc(n.state.x*s,n.state.z*s,2,0,Math.PI*2);mctx.fill();}});
+            npcMeshes.forEach(n=>{if(!n.state.isDead){const rc=ROLE_COLORS[n.state.role];mctx.fillStyle=rc?rc.hex:'#fff';mctx.beginPath();mctx.arc(n.state.x*s,n.state.z*s,1.5,0,Math.PI*2);mctx.fill();}});
+            monsterMeshes.forEach(m=>{if(!m.state.isDead){mctx.fillStyle=m.state.isBoss?'#ff0000':'#cc4444';mctx.beginPath();mctx.arc(m.state.x*s,m.state.z*s,m.state.isBoss?3:1.5,0,Math.PI*2);mctx.fill();}});
             otherPlayerMeshes.forEach(p=>{mctx.fillStyle=p.state.color||'#fff';mctx.beginPath();mctx.arc(p.state.x*s,p.state.z*s,2.5,0,Math.PI*2);mctx.fill();});
             mctx.fillStyle='#ffff00';mctx.beginPath();mctx.arc(myWorldX*s,myWorldZ*s,3,0,Math.PI*2);mctx.fill();
         }
@@ -770,7 +1239,9 @@
         function projectToScreen(wx,wz,yOffset){const pos=new THREE.Vector3(wx,yOffset,wz);pos.project(camera);const rect=viewport.getBoundingClientRect();return{x:(pos.x*0.5+0.5)*rect.width,y:(-pos.y*0.5+0.5)*rect.height,visible:pos.z>-1&&pos.z<1};}
         function updateOverlays(){
             npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.3);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
+            monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.3);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.3);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
+            lootPileMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,0.3);if(p.visible){m.dot.style.display='block';m.dot.style.left=p.x+'px';m.dot.style.top=p.y+'px';}else{m.dot.style.display='none';}});
             document.querySelectorAll('.chat-bubble, .hitsplat').forEach(el=>{const wx=parseFloat(el.dataset.worldX),wz=parseFloat(el.dataset.worldZ);const p=projectToScreen(wx,wz,el.classList.contains('hitsplat')?1.5:1.6);if(p.visible){el.style.left=p.x+'px';el.style.top=p.y+'px';}else el.style.display='none';});
         }
 
@@ -798,31 +1269,25 @@
             const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;
             // Fireflies
             particles.forEach(p=>{p.visible=isNight;if(isNight){p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;p.material.opacity=0.5+Math.sin(time*2+p.userData.offset)*0.5;}});
-            // Smooth interpolation for all characters
-            const lerpAmt = 1 - Math.exp(-LERP_SPEED * dt);
+            // Smooth interpolation
+            const lerpAmt=1-Math.exp(-LERP_SPEED*dt);
             // My character
-            myChar.group.position.x += (myTargetX - myChar.group.position.x) * lerpAmt;
-            myChar.group.position.y += (myTargetH - myChar.group.position.y) * lerpAmt;
-            myChar.group.position.z += (myTargetZ - myChar.group.position.z) * lerpAmt;
-            myChar.group.rotation.y += (myTargetRot - myChar.group.rotation.y) * lerpAmt;
+            myChar.group.position.x+=(myTargetX-myChar.group.position.x)*lerpAmt;
+            myChar.group.position.y+=(myTargetH-myChar.group.position.y)*lerpAmt;
+            myChar.group.position.z+=(myTargetZ-myChar.group.position.z)*lerpAmt;
+            myChar.group.rotation.y+=(myTargetRot-myChar.group.rotation.y)*lerpAmt;
             if(myIsMoving){const wb=time*8;myChar.leftLeg.rotation.x=Math.sin(wb)*0.5;myChar.rightLeg.rotation.x=-Math.sin(wb)*0.5;myChar.leftArm.rotation.x=-Math.sin(wb)*0.4;myChar.rightArm.rotation.x=Math.sin(wb)*0.4;}
             else{myChar.leftLeg.rotation.x*=0.9;myChar.rightLeg.rotation.x*=0.9;myChar.leftArm.rotation.x*=0.9;myChar.rightArm.rotation.x*=0.9;}
             // Other players
             otherPlayerMeshes.forEach(m=>{
-                m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;
-                m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;
-                m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;
-                m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
+                m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
                 if(m.isMoving&&m.leftLeg){const wb=time*8;m.leftLeg.rotation.x=Math.sin(wb)*0.5;m.rightLeg.rotation.x=-Math.sin(wb)*0.5;m.leftArm.rotation.x=-Math.sin(wb)*0.4;m.rightArm.rotation.x=Math.sin(wb)*0.4;}
                 else if(m.leftLeg){m.leftLeg.rotation.x*=0.9;m.rightLeg.rotation.x*=0.9;m.leftArm.rotation.x*=0.9;m.rightArm.rotation.x*=0.9;}
             });
             // NPCs
-            npcMeshes.forEach(m=>{
-                m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;
-                m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;
-                m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;
-                m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
-            });
+            npcMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;});
+            // Monsters
+            monsterMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;});
             updateOverlays();
             drawMinimap();
             renderer.render(scene,camera);
@@ -836,6 +1301,8 @@
         connect();
         animate();
         window.addEventListener('resize',()=>{camera.aspect=viewport.clientWidth/viewport.clientHeight;camera.updateProjectionMatrix();renderer.setSize(viewport.clientWidth,viewport.clientHeight);});
+
+        } // end startGame
     })();
     </script>
 </body>
