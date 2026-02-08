@@ -8,7 +8,7 @@ import { NPCSchema } from '../schema/NPCSchema';
 import { GameState } from '../schema/GameState';
 import { PlayerSchema } from '../schema/PlayerSchema';
 import { GameMap } from '../utils/MapGenerator';
-import { BUILDINGS, ZONES, MONSTERS, getZoneAt } from '../config';
+import { BUILDINGS, ZONES, MONSTERS, QUESTS, getZoneAt } from '../config';
 import { AgentProfile } from './AgentProfiles';
 
 // ---- Zone helpers ----
@@ -48,16 +48,37 @@ export function randomWalkableNear(cx: number, cz: number, radius: number, map: 
 
 // ---- Monster targeting ----
 
-/** Pick a hunt target from the agent's huntTargets list and return a position near its spawn. */
+/** Pick a hunt target, optionally filtering by agent's effective level. */
 export function pickHuntTarget(
     profile: AgentProfile,
     map: GameMap,
+    effectiveLevel: number = 1,
 ): { monsterType: string; monsterName: string; x: number; z: number; zone: string } | null {
-    const targets = profile.huntTargets;
+    // Start with profile targets, but also unlock higher monsters by level
+    let targets = [...profile.huntTargets];
+
+    // Unlock additional monsters based on effective level
+    const allMonsters = Object.values(MONSTERS);
+    for (const m of allMonsters) {
+        if (m.level <= effectiveLevel + 2 && !targets.includes(m.id) && m.id !== 'man' && m.id !== 'woman') {
+            // Only add monsters from preferred zones or adjacent zones
+            const validZones = [...profile.preferredZones, 'the_forest'];
+            if (validZones.includes(m.zone)) {
+                targets.push(m.id);
+            }
+        }
+    }
+
     if (targets.length === 0) return null;
 
-    // Try each target (shuffled) until we find one with a reachable spawn
-    const shuffled = [...targets].sort(() => Math.random() - 0.5);
+    // Prefer monsters near the agent's level (within +-5)
+    const levelFiltered = targets.filter(id => {
+        const m = MONSTERS[id];
+        return m && m.level >= effectiveLevel - 5 && m.level <= effectiveLevel + 3;
+    });
+
+    const pool = levelFiltered.length > 0 ? levelFiltered : targets;
+    const shuffled = pool.sort(() => Math.random() - 0.5);
 
     for (const monsterId of shuffled) {
         const monsterDef = MONSTERS[monsterId];
@@ -104,6 +125,33 @@ export function estimateFightDamage(monsterType: string, npcCombatStats: { defen
     const rawDamage = Math.max(1, monster.strength - Math.floor(npcCombatStats.defence * 0.5));
     // Add variance: 60%-140% of base
     return Math.floor(rawDamage * (0.6 + Math.random() * 0.8));
+}
+
+// ---- Quest helpers ----
+
+/** Pick a kill quest appropriate for the agent's preferred zones. */
+export function pickQuest(preferredZones: string[]): { questId: string; questName: string; monsterType: string; killTarget: number } | null {
+    const candidates: { questId: string; questName: string; monsterType: string; killTarget: number }[] = [];
+
+    for (const [id, quest] of Object.entries(QUESTS)) {
+        // Only consider kill_monster quests
+        for (const obj of quest.objectives) {
+            if (obj.type === 'kill_monster') {
+                const monster = MONSTERS[obj.monsterId];
+                if (monster && (preferredZones.includes(monster.zone) || monster.zone === 'the_forest')) {
+                    candidates.push({
+                        questId: id,
+                        questName: quest.name,
+                        monsterType: obj.monsterId,
+                        killTarget: obj.count,
+                    });
+                }
+            }
+        }
+    }
+
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 // ---- Building helpers ----

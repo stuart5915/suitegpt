@@ -5,18 +5,31 @@
 // loot, eat food when low HP, return to town to shop/bank.
 // Each role has different behavior priorities.
 //
+// Features:
+//  - Behavior tree per role (cached)
+//  - Simulated combat with HP changes
+//  - Social interactions between nearby agents
+//  - Agent progression (XP, level ups, gear tiers)
+//  - Player combat reactions
+//  - Hunting party behavior
+//  - Quest narration
+//  - Death/respawn flavor messages
+//
 // States: IDLE → CHOOSING → WAITING_PATH → WALKING →
 //         WORKING | FIGHTING | RESTING | BANKING
 // ============================================================
 
 import { NPCSchema } from '../schema/NPCSchema';
 import { GameMap } from '../utils/MapGenerator';
-import { ROLE_BUILDING_WEIGHTS, RESPAWN_TIME, AGENT_DIALOGUE } from '../config';
+import { ROLE_BUILDING_WEIGHTS, RESPAWN_TIME, AGENT_DIALOGUE, MONSTERS } from '../config';
 
 // Behavior tree imports
 import { BTContext, BTNode, selector, sequence, weightedRandom, condition, action } from '../agents/BehaviorTree';
-import { AgentMemory, AgentMemoryManager } from '../agents/AgentMemory';
-import { AgentProfile, getProfile } from '../agents/AgentProfiles';
+import { AgentMemory, AgentMemoryManager, CachedNPC } from '../agents/AgentMemory';
+import { AgentProfile, getProfile,
+    SOCIAL_DIALOGUE, PROGRESSION_DIALOGUE, DEATH_DIALOGUE, RESPAWN_DIALOGUE,
+    PLAYER_COMBAT_DIALOGUE, QUEST_DIALOGUE, PARTY_DIALOGUE, GEAR_TIER_NAMES,
+} from '../agents/AgentProfiles';
 import {
     randomWalkableInZone,
     randomWalkableNear,
@@ -25,6 +38,7 @@ import {
     getBuildingDoor,
     getShopDoor,
     getTownDoor,
+    pickQuest,
 } from '../agents/AgentContext';
 
 export interface NPCChatEvent {
@@ -42,16 +56,27 @@ export interface PathfindRequest {
     targetZ: number;
 }
 
-// ---- Pick a random line from a dialogue array ----
+// ---- Helpers ----
 function pick(lines: string[]): string {
     return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function template(line: string, vars: Record<string, string | number>): string {
+    let result = line;
+    for (const [k, v] of Object.entries(vars)) {
+        result = result.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    return result;
 }
 
 export class NPCBehaviorSystem {
     private map: GameMap;
     private pathfindQueue: PathfindRequest[] = [];
     private memories: AgentMemoryManager = new AgentMemoryManager();
-    private behaviorTrees: Map<string, BTNode> = new Map(); // role → tree
+    private behaviorTrees: Map<string, BTNode> = new Map();
+
+    // NPC position cache for social interactions & party detection
+    private npcCache: Map<string, CachedNPC> = new Map();
 
     constructor(map: GameMap) {
         this.map = map;
@@ -65,9 +90,9 @@ export class NPCBehaviorSystem {
         this.pathfindQueue = [];
     }
 
-    // ---- Memory access (for cleanup) ----
     removeMemory(npcId: string): void {
         this.memories.remove(npcId);
+        this.npcCache.delete(npcId);
     }
 
     // ================================================================
@@ -91,32 +116,26 @@ export class NPCBehaviorSystem {
             sequence(
                 condition(ctx => (ctx.npc.hp / ctx.npc.maxHp) < profile.eatHpPercent / 100),
                 selector(
-                    // Eat food if available
                     sequence(
                         condition(ctx => ctx.memory.foodCount > 0),
                         action(ctx => { ctx.memory.currentGoal = { type: 'eat', targetX: ctx.npc.x, targetZ: ctx.npc.z }; }),
                     ),
-                    // Flee to town if no food
                     sequence(
                         condition(ctx => (ctx.npc.hp / ctx.npc.maxHp) < profile.fleeHpPercent / 100),
                         action(ctx => {
                             const door = getTownDoor(ctx.map);
-                            if (door) {
-                                ctx.memory.currentGoal = { type: 'flee', targetX: door.x, targetZ: door.z };
-                            }
+                            if (door) ctx.memory.currentGoal = { type: 'flee', targetX: door.x, targetZ: door.z };
                         }),
                     ),
                 ),
             ),
 
-            // Priority 2: Restock — go shop when out of food or after many trips
+            // Priority 2: Restock
             sequence(
                 condition(ctx => ctx.memory.foodCount <= profile.shopFoodThreshold || ctx.memory.tripsSinceShop >= 4),
                 action(ctx => {
                     const door = getShopDoor(ctx.map);
-                    if (door) {
-                        ctx.memory.currentGoal = { type: 'shop', targetX: door.x, targetZ: door.z, buildingId: 'general_store' };
-                    }
+                    if (door) ctx.memory.currentGoal = { type: 'shop', targetX: door.x, targetZ: door.z, buildingId: 'general_store' };
                 }),
             ),
 
@@ -128,16 +147,29 @@ export class NPCBehaviorSystem {
                         condition(ctx => (ctx.npc.hp / ctx.npc.maxHp) > 0.5),
                         condition(ctx => ctx.memory.foodCount > 0),
                         action(ctx => {
-                            const target = pickHuntTarget(profile, ctx.map);
+                            // Try to join a nearby hunting party first
+                            const party = this.findNearbyHunter(ctx.npc.id, ctx.npc.x, ctx.npc.z);
+                            if (party) {
+                                const pos = randomWalkableNear(party.x, party.z, 5, ctx.map);
+                                if (pos) {
+                                    ctx.memory.currentGoal = {
+                                        type: 'hunt', targetX: pos.x, targetZ: pos.z,
+                                        zone: party.goalZone || 'the_forest',
+                                        monsterType: party.goalMonsterType || undefined,
+                                        monsterName: party.goalMonsterType ? MONSTERS[party.goalMonsterType]?.name : undefined,
+                                    };
+                                    ctx.memory.partyWith = party.id;
+                                    return;
+                                }
+                            }
+                            // Solo hunt with level-aware targeting
+                            const target = pickHuntTarget(profile, ctx.map, ctx.memory.effectiveLevel);
                             if (target) {
                                 ctx.memory.currentGoal = {
-                                    type: 'hunt',
-                                    targetX: target.x,
-                                    targetZ: target.z,
-                                    zone: target.zone,
-                                    monsterType: target.monsterType,
-                                    monsterName: target.monsterName,
+                                    type: 'hunt', targetX: target.x, targetZ: target.z,
+                                    zone: target.zone, monsterType: target.monsterType, monsterName: target.monsterName,
                                 };
+                                ctx.memory.partyWith = null;
                             }
                         }),
                     ),
@@ -147,9 +179,7 @@ export class NPCBehaviorSystem {
                     node: action(ctx => {
                         const buildingId = this.chooseTargetBuilding(ctx.npc.role);
                         const door = getBuildingDoor(buildingId, ctx.map);
-                        if (door) {
-                            ctx.memory.currentGoal = { type: 'work', targetX: door.x, targetZ: door.z, buildingId };
-                        }
+                        if (door) ctx.memory.currentGoal = { type: 'work', targetX: door.x, targetZ: door.z, buildingId };
                     }),
                 },
                 {
@@ -157,19 +187,14 @@ export class NPCBehaviorSystem {
                     node: action(ctx => {
                         const zone = profile.preferredZones[Math.floor(Math.random() * profile.preferredZones.length)] || 'suite_city';
                         const pos = randomWalkableInZone(zone, ctx.map);
-                        if (pos) {
-                            ctx.memory.currentGoal = { type: 'patrol', targetX: pos.x, targetZ: pos.z, zone };
-                        }
+                        if (pos) ctx.memory.currentGoal = { type: 'patrol', targetX: pos.x, targetZ: pos.z, zone };
                     }),
                 },
                 {
                     weight: profile.exploreWeight,
                     node: action(ctx => {
-                        // Explore: wander near current position
                         const pos = randomWalkableNear(Math.round(ctx.npc.x), Math.round(ctx.npc.z), 15, ctx.map);
-                        if (pos) {
-                            ctx.memory.currentGoal = { type: 'explore', targetX: pos.x, targetZ: pos.z };
-                        }
+                        if (pos) ctx.memory.currentGoal = { type: 'explore', targetX: pos.x, targetZ: pos.z };
                     }),
                 },
             ]),
@@ -177,7 +202,7 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // Building selection (kept from original for WORK goals)
+    // Building selection
     // ================================================================
 
     private chooseTargetBuilding(role: string): string {
@@ -193,20 +218,170 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // Chat helper — respects cooldown
+    // Chat helpers
     // ================================================================
 
     private tryChat(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, lines: string[], events: NPCChatEvent[]): void {
         if (memory.chatCooldown > 0) return;
         events.push({
-            npcId: npc.id,
-            npcName: npc.name,
+            npcId: npc.id, npcName: npc.name,
             message: pick(lines),
-            roleColor: npc.roleColor,
-            x: npc.x,
-            z: npc.z,
+            roleColor: npc.roleColor, x: npc.x, z: npc.z,
         });
         memory.chatCooldown = profile.chatInterval + Math.random() * 5;
+    }
+
+    private emitChat(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, message: string, events: NPCChatEvent[]): void {
+        if (memory.chatCooldown > 0) return;
+        events.push({
+            npcId: npc.id, npcName: npc.name,
+            message, roleColor: npc.roleColor, x: npc.x, z: npc.z,
+        });
+        memory.chatCooldown = profile.chatInterval + Math.random() * 5;
+    }
+
+    // ================================================================
+    // NPC Cache — track positions for social/party systems
+    // ================================================================
+
+    private updateCache(npc: NPCSchema, memory: AgentMemory): void {
+        this.npcCache.set(npc.id, {
+            id: npc.id,
+            x: npc.x,
+            z: npc.z,
+            name: npc.name,
+            role: npc.role,
+            state: npc.state,
+            goalType: memory.currentGoal?.type || null,
+            goalZone: memory.currentGoal?.zone || null,
+            goalMonsterType: memory.currentGoal?.monsterType || null,
+            effectiveLevel: memory.effectiveLevel,
+        });
+    }
+
+    // ================================================================
+    // Social Interactions — agent-to-agent chat
+    // ================================================================
+
+    private trySocialInteraction(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, events: NPCChatEvent[]): void {
+        if (memory.socialCooldown > 0 || memory.chatCooldown > 0) return;
+
+        for (const [id, cached] of this.npcCache) {
+            if (id === npc.id) continue;
+            const dist = Math.abs(cached.x - npc.x) + Math.abs(cached.z - npc.z);
+            if (dist > 6) continue;
+
+            // Found a nearby agent — generate social dialogue
+            const key = `${npc.role}->${cached.role}`;
+            const lines = SOCIAL_DIALOGUE[key] || SOCIAL_DIALOGUE['generic'];
+            const line = template(pick(lines), { name: cached.name });
+
+            events.push({
+                npcId: npc.id, npcName: npc.name,
+                message: line,
+                roleColor: npc.roleColor, x: npc.x, z: npc.z,
+            });
+            memory.socialCooldown = 20 + Math.random() * 15;
+            memory.chatCooldown = profile.chatInterval + Math.random() * 5;
+            return;
+        }
+    }
+
+    // ================================================================
+    // Party Detection — find nearby hunting agents
+    // ================================================================
+
+    private findNearbyHunter(excludeId: string, x: number, z: number): CachedNPC | null {
+        for (const [id, cached] of this.npcCache) {
+            if (id === excludeId) continue;
+            if (cached.state !== 'FIGHTING' && cached.goalType !== 'hunt') continue;
+            const dist = Math.abs(cached.x - x) + Math.abs(cached.z - z);
+            if (dist < 30) return cached;
+        }
+        return null;
+    }
+
+    // ================================================================
+    // Progression — XP gain and level ups
+    // ================================================================
+
+    private awardXP(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, monsterType: string, events: NPCChatEvent[]): void {
+        const monster = MONSTERS[monsterType];
+        const xpGain = monster ? monster.level * 5 + Math.floor(Math.random() * monster.level * 2) : 10;
+        memory.xp += xpGain;
+
+        // Level formula: sqrt(xp / 15) + 1, capped at 50
+        const newLevel = Math.min(50, Math.floor(Math.sqrt(memory.xp / 15)) + 1);
+
+        if (newLevel > memory.effectiveLevel) {
+            memory.effectiveLevel = newLevel;
+            const msg = template(pick(PROGRESSION_DIALOGUE.levelUp), { level: newLevel });
+            this.emitChat(npc, memory, profile, msg, events);
+
+            // Gear tier upgrades at level thresholds
+            const oldTier = memory.gearTier;
+            if (newLevel >= 25 && memory.gearTier < 4) memory.gearTier = 4;
+            else if (newLevel >= 15 && memory.gearTier < 3) memory.gearTier = 3;
+            else if (newLevel >= 8 && memory.gearTier < 2) memory.gearTier = 2;
+
+            if (memory.gearTier > oldTier) {
+                const gearMsg = template(pick(PROGRESSION_DIALOGUE.gearUpgrade), { gear: GEAR_TIER_NAMES[memory.gearTier] || 'Unknown' });
+                // Queue gear message for next chat opportunity
+                memory.chatCooldown = 0;
+                this.emitChat(npc, memory, profile, gearMsg, events);
+            }
+        }
+    }
+
+    // ================================================================
+    // Quest System — accept, track, complete
+    // ================================================================
+
+    private maybeAcceptQuest(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, events: NPCChatEvent[]): void {
+        if (memory.currentQuestId) return; // Already on a quest
+        if (Math.random() > 0.15) return;  // 15% chance when idle
+
+        const quest = pickQuest(profile.preferredZones);
+        if (!quest) return;
+
+        memory.currentQuestId = quest.questId;
+        memory.currentQuestName = quest.questName;
+        memory.questMonsterType = quest.monsterType;
+        memory.questKillTarget = quest.killTarget;
+        memory.questKillCount = 0;
+
+        const msg = template(pick(QUEST_DIALOGUE.accept), { quest: quest.questName });
+        this.emitChat(npc, memory, profile, msg, events);
+    }
+
+    private trackQuestKill(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, monsterType: string, events: NPCChatEvent[]): void {
+        if (!memory.currentQuestId || memory.questMonsterType !== monsterType) return;
+
+        memory.questKillCount++;
+
+        // Progress update at ~33% and ~66%
+        const pct = memory.questKillCount / memory.questKillTarget;
+        if ((pct > 0.3 && pct < 0.4) || (pct > 0.6 && pct < 0.7)) {
+            const monsterName = MONSTERS[monsterType]?.name || monsterType;
+            const msg = template(pick(QUEST_DIALOGUE.progress), {
+                kills: memory.questKillCount, target: memory.questKillTarget, monster: monsterName,
+            });
+            this.emitChat(npc, memory, profile, msg, events);
+        }
+
+        // Quest complete
+        if (memory.questKillCount >= memory.questKillTarget) {
+            memory.questsCompleted++;
+            const msg = template(pick(QUEST_DIALOGUE.complete), {
+                quest: memory.currentQuestName, total: memory.questsCompleted,
+            });
+            this.emitChat(npc, memory, profile, msg, events);
+
+            // Bonus coins for quest completion
+            memory.coins += 20 + Math.floor(Math.random() * 30);
+            memory.currentQuestId = null;
+            memory.questMonsterType = null;
+        }
     }
 
     // ================================================================
@@ -220,21 +395,66 @@ export class NPCBehaviorSystem {
 
         // Tick cooldowns
         if (memory.chatCooldown > 0) memory.chatCooldown -= dt;
+        if (memory.socialCooldown > 0) memory.socialCooldown -= dt;
+
+        // Update NPC position cache for social/party systems
+        this.updateCache(npc, memory);
 
         // ---- Dead: wait for respawn ----
         if (npc.isDead) {
             npc.respawnTimer -= dt;
+            // Death announcement (once)
+            if (!memory.deathAnnounced) {
+                memory.deathAnnounced = true;
+                const msg = template(pick(DEATH_DIALOGUE), { monster: memory.lastDeathMonster || 'something' });
+                events.push({
+                    npcId: npc.id, npcName: npc.name,
+                    message: msg,
+                    roleColor: npc.roleColor, x: npc.x, z: npc.z,
+                });
+            }
             return events;
         }
 
-        // ---- In player combat: handled by CombatSystem ----
-        if (npc.inCombat) return events;
+        // ---- Respawn detection ----
+        if (memory.deathAnnounced) {
+            memory.deathAnnounced = false;
+            memory.foodCount = 3;
+            memory.coins = Math.max(memory.coins - 20, 10);
+            memory.currentGoal = null;
+            memory.partyWith = null;
+            const n = memory.totalDeaths;
+            const msg = template(pick(RESPAWN_DIALOGUE), { n, monster: memory.lastDeathMonster || 'something' });
+            memory.chatCooldown = 0;
+            events.push({
+                npcId: npc.id, npcName: npc.name,
+                message: msg,
+                roleColor: npc.roleColor, x: npc.x, z: npc.z,
+            });
+        }
+
+        // ---- Player combat reaction ----
+        if (npc.inCombat) {
+            if (!memory.wasInPlayerCombat) {
+                memory.wasInPlayerCombat = true;
+                const lines = PLAYER_COMBAT_DIALOGUE[npc.role] || PLAYER_COMBAT_DIALOGUE.app_builder;
+                memory.chatCooldown = 0;
+                this.tryChat(npc, memory, profile, lines, events);
+            }
+            return events;
+        }
+        if (memory.wasInPlayerCombat) {
+            memory.wasInPlayerCombat = false;
+        }
 
         // ---- State machine ----
         switch (npc.state) {
             case 'IDLE':
                 npc.stateTimer -= dt;
                 if (npc.stateTimer <= 0) {
+                    // Maybe accept a quest
+                    this.maybeAcceptQuest(npc, memory, profile, events);
+
                     // Evaluate behavior tree to pick next goal
                     memory.currentGoal = null;
                     const ctx: BTContext = { npc, memory, profile, map: this.map };
@@ -243,12 +463,16 @@ export class NPCBehaviorSystem {
                     if (memory.currentGoal) {
                         this.executeGoal(npc, memory, profile, events);
                     } else {
-                        // Fallback: short idle, try again
                         npc.stateTimer = 2 + Math.random() * 3;
                     }
                 }
 
-                // Rare ambient chat while idle
+                // Social interaction check while idle
+                if (Math.random() < 0.002) {
+                    this.trySocialInteraction(npc, memory, profile, events);
+                }
+
+                // Rare ambient chat
                 if (Math.random() < 0.0003) {
                     const lines = AGENT_DIALOGUE[npc.role] || AGENT_DIALOGUE.app_builder;
                     this.tryChat(npc, memory, profile, lines, events);
@@ -256,7 +480,6 @@ export class NPCBehaviorSystem {
                 break;
 
             case 'CHOOSING':
-                // Goal already set, initiate pathfind
                 if (memory.currentGoal) {
                     this.pathfindQueue.push({
                         npc,
@@ -282,27 +505,26 @@ export class NPCBehaviorSystem {
                     npc.moveToX = npc.path[1].x;
                     npc.moveToZ = npc.path[1].z;
                 } else if (npc.stateTimer <= 0) {
-                    // Pathfinding timed out, go back to idle
                     npc.state = 'IDLE';
                     npc.stateTimer = 2 + Math.random() * 4;
                 }
                 break;
 
             case 'WALKING':
-                // Movement handled by MovementSystem.
-                // When path completes, MovementSystem will set state
-                // based on the current goal type.
+                // Social interaction while walking past other agents
+                if (Math.random() < 0.001) {
+                    this.trySocialInteraction(npc, memory, profile, events);
+                }
                 break;
 
             case 'WORKING':
-                // Intercept: MovementSystem sets ALL NPCs to WORKING on path
-                // completion. If our goal isn't 'work', redirect to the right state.
+                // Intercept: MovementSystem sets ALL NPCs to WORKING on arrival.
+                // If our goal isn't 'work', redirect to the right state.
                 if (memory.currentGoal && memory.currentGoal.type !== 'work') {
                     this.onPathComplete(npc, events);
                     break;
                 }
                 npc.workTimer -= dt;
-                // Chat about work occasionally
                 if (npc.workTimer > 1 && Math.random() < 0.001) {
                     this.tryChat(npc, memory, profile, profile.dialogue.working, events);
                 }
@@ -326,7 +548,6 @@ export class NPCBehaviorSystem {
                 break;
 
             default:
-                // Unknown state, reset to IDLE
                 npc.state = 'IDLE';
                 npc.stateTimer = 2 + Math.random() * 3;
                 break;
@@ -336,7 +557,7 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // Goal execution — transitions from IDLE to the right state
+    // Goal execution
     // ================================================================
 
     private executeGoal(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, events: NPCChatEvent[]): void {
@@ -344,14 +565,12 @@ export class NPCBehaviorSystem {
 
         switch (goal.type) {
             case 'eat':
-                // Eat immediately (no movement needed)
                 npc.state = 'RESTING';
                 memory.restTimer = 1.0 + Math.random() * 0.5;
                 this.tryChat(npc, memory, profile, profile.dialogue.eating, events);
                 break;
 
             case 'flee':
-                // Chat about fleeing, then pathfind to town
                 this.tryChat(npc, memory, profile, profile.dialogue.fleeing, events);
                 npc.state = 'CHOOSING';
                 break;
@@ -362,7 +581,16 @@ export class NPCBehaviorSystem {
                 break;
 
             case 'hunt':
-                this.tryChat(npc, memory, profile, profile.dialogue.hunting, events);
+                // Party chat if joining someone
+                if (memory.partyWith) {
+                    const partner = this.npcCache.get(memory.partyWith);
+                    if (partner) {
+                        const msg = template(pick(PARTY_DIALOGUE.join), { name: partner.name });
+                        this.emitChat(npc, memory, profile, msg, events);
+                    }
+                } else {
+                    this.tryChat(npc, memory, profile, profile.dialogue.hunting, events);
+                }
                 memory.tripsSinceShop++;
                 memory.sessionsHunted++;
                 npc.state = 'CHOOSING';
@@ -397,13 +625,13 @@ export class NPCBehaviorSystem {
     private updateFighting(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, dt: number, events: NPCChatEvent[]): void {
         memory.fightTimer -= dt;
 
-        // Simulate taking periodic damage during the fight
+        // Simulate periodic damage
         if (Math.random() < dt * 0.3) {
             const dmg = Math.max(1, Math.floor(memory.fightDamage * (0.3 + Math.random() * 0.4)));
             npc.hp = Math.max(0, npc.hp - dmg);
         }
 
-        // Mid-fight survival check: eat food if low
+        // Mid-fight eat
         if (npc.hp > 0 && (npc.hp / npc.maxHp) < profile.eatHpPercent / 100 && memory.foodCount > 0) {
             memory.foodCount--;
             const healAmt = 10 + Math.floor(Math.random() * 5);
@@ -411,35 +639,41 @@ export class NPCBehaviorSystem {
             this.tryChat(npc, memory, profile, profile.dialogue.eating, events);
         }
 
-        // Check if NPC died during fight
+        // Death
         if (npc.hp <= 0) {
             npc.hp = 0;
             npc.isDead = true;
             npc.respawnTimer = RESPAWN_TIME;
             memory.totalDeaths++;
+            memory.lastDeathMonster = memory.fightMonsterName;
             memory.currentGoal = null;
             memory.fightTimer = 0;
             return;
         }
 
-        // Check if fight is over (timer expired = victory)
+        // Victory
         if (memory.fightTimer <= 0) {
-            // Victory!
             memory.killCount++;
             memory.totalKills++;
+
+            // Progression: award XP
+            const monsterType = memory.currentGoal?.monsterType || 'spam_bot';
+            this.awardXP(npc, memory, profile, monsterType, events);
+
+            // Quest tracking
+            this.trackQuestKill(npc, memory, profile, monsterType, events);
+
+            // Victory chat (if XP/quest didn't already chat)
             this.tryChat(npc, memory, profile, profile.dialogue.victory, events);
 
-            // Simulate loot: gain some coins
+            // Loot
             memory.coins += 5 + Math.floor(Math.random() * 20);
-
-            // Small chance of food drop
             if (Math.random() < 0.2) {
                 memory.foodCount = Math.min(memory.foodCount + 1, profile.maxFoodCarry);
             }
 
-            // After victory, stay in zone briefly or start new fight
+            // Continue hunting?
             if (memory.foodCount > 0 && (npc.hp / npc.maxHp) > 0.4 && Math.random() < 0.6) {
-                // Hunt another monster nearby — move to new position, onPathComplete will re-init fight
                 const pos = randomWalkableNear(Math.round(npc.x), Math.round(npc.z), 8, this.map);
                 if (pos && memory.currentGoal?.monsterType) {
                     this.pathfindQueue.push({ npc, targetX: pos.x, targetZ: pos.z });
@@ -449,7 +683,6 @@ export class NPCBehaviorSystem {
                 }
             }
 
-            // Done hunting, go back to idle
             npc.state = 'IDLE';
             npc.stateTimer = 2 + Math.random() * 4;
             memory.currentGoal = null;
@@ -457,21 +690,17 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // RESTING state — eating food, brief heal pause
+    // RESTING state
     // ================================================================
 
     private updateResting(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, dt: number, events: NPCChatEvent[]): void {
         memory.restTimer -= dt;
-
         if (memory.restTimer <= 0) {
-            // Heal from food
             if (memory.foodCount > 0) {
                 memory.foodCount--;
                 const healAmt = 10 + Math.floor(Math.random() * 8);
                 npc.hp = Math.min(npc.maxHp, npc.hp + healAmt);
             }
-
-            // Return to idle to re-evaluate
             npc.state = 'IDLE';
             npc.stateTimer = 1 + Math.random() * 2;
             memory.currentGoal = null;
@@ -479,23 +708,17 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // BANKING state — at shop, simulate buying supplies
+    // BANKING state
     // ================================================================
 
     private updateBanking(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, dt: number, events: NPCChatEvent[]): void {
         npc.workTimer -= dt;
-
         if (npc.workTimer <= 0) {
-            // Simulate buying food
             const bought = Math.min(profile.maxFoodCarry - memory.foodCount, 3 + Math.floor(Math.random() * 3));
             memory.foodCount += bought;
             memory.coins = Math.max(0, memory.coins - bought * 10);
             memory.tripsSinceShop = 0;
-
-            // Heal a bit while in town
             npc.hp = Math.min(npc.maxHp, npc.hp + Math.floor(npc.maxHp * 0.2));
-
-            // Done shopping
             npc.state = 'IDLE';
             npc.stateTimer = 2 + Math.random() * 3;
             memory.currentGoal = null;
@@ -503,8 +726,7 @@ export class NPCBehaviorSystem {
     }
 
     // ================================================================
-    // Called by MovementSystem when NPC path completes
-    // (NPCs arrive at their destination)
+    // Path completion handler
     // ================================================================
 
     onPathComplete(npc: NPCSchema, events: NPCChatEvent[] = []): void {
@@ -513,7 +735,6 @@ export class NPCBehaviorSystem {
         const goal = memory.currentGoal;
 
         if (!goal) {
-            // No goal, default to WORKING at building
             npc.state = 'WORKING';
             npc.workTimer = 5 + Math.random() * 10;
             return;
@@ -521,7 +742,6 @@ export class NPCBehaviorSystem {
 
         switch (goal.type) {
             case 'hunt': {
-                // Arrived at monster zone — start fighting!
                 npc.state = 'FIGHTING';
                 const monsterType = goal.monsterType || 'spam_bot';
                 memory.fightTimer = profile.fightDurationBase + (Math.random() * 2 - 1) * profile.fightDurationVar;
@@ -533,13 +753,11 @@ export class NPCBehaviorSystem {
 
             case 'shop':
             case 'flee':
-                // Arrived at shop or town — simulate shopping
                 npc.state = 'BANKING';
                 npc.workTimer = 3 + Math.random() * 4;
                 break;
 
             case 'work':
-                // Arrived at building — do work
                 npc.state = 'WORKING';
                 npc.targetBuilding = goal.buildingId || null;
                 npc.workTimer = 5 + Math.random() * 10;
@@ -547,7 +765,6 @@ export class NPCBehaviorSystem {
 
             case 'patrol':
             case 'explore':
-                // Arrived at patrol/explore point — brief pause then idle
                 npc.state = 'IDLE';
                 npc.stateTimer = 2 + Math.random() * 5;
                 memory.currentGoal = null;

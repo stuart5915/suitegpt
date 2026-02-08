@@ -345,3 +345,143 @@ export const AGENT_PROFILES: Record<string, AgentProfile> = {
 export function getProfile(role: string): AgentProfile {
     return AGENT_PROFILES[role] || AGENT_PROFILES.app_builder;
 }
+
+// ============================================================
+// Social Dialogue — role-to-role greetings
+// Keys: "{speaker_role}->{target_role}" or "generic"
+// Use {name} placeholder for target agent name
+// ============================================================
+
+export const SOCIAL_DIALOGUE: Record<string, string[]> = {
+    // Role-specific greetings
+    'app_builder->qa_tester':       ['Hey {name}, found any bugs in my latest build?', '{name}! My code is bulletproof this time.'],
+    'app_builder->content_creator': ['{name}, write something about my new app!', 'Hey {name}, the Workshop is pumping out features.'],
+    'app_builder->growth_outreach': ['{name}, got any users for my new app?', 'Ship it and they will come, right {name}?'],
+    'app_builder->app_refiner':     ['Hey {name}, can you polish my latest build?', '{name}! This one just needs a few tweaks.'],
+    'app_builder->app_builder':     ['What are you building, {name}?', 'Two builders are better than one!'],
+
+    'qa_tester->app_builder':       ['{name}, your build has 3 bugs. You\'re welcome.', 'I tested your app, {name}. We need to talk.'],
+    'qa_tester->content_creator':   ['{name}, your article has a typo on page 2.', 'Proofread everything, {name}. Trust me.'],
+    'qa_tester->growth_outreach':   ['Don\'t promote buggy apps, {name}.', '{name}, make sure it\'s tested before you share it!'],
+    'qa_tester->app_refiner':       ['Good work on the fixes, {name}.', '{name}, I found 2 more edge cases for you.'],
+    'qa_tester->qa_tester':         ['Finding any good bugs out here, {name}?', 'Double the testers, double the bugs found!'],
+
+    'content_creator->app_builder': ['I\'m writing about your app, {name}!', '{name}, got a quote for my article?'],
+    'content_creator->qa_tester':   ['Hey {name}, any drama I can write about?', '{name}, the readers love bug stories.'],
+    'content_creator->growth_outreach': ['Can you promote my latest article, {name}?', '{name}! My post is ready for distribution.'],
+    'content_creator->app_refiner': ['The polish you do is underrated, {name}.', '{name}, I should write a profile on refiners.'],
+    'content_creator->content_creator': ['What are you writing about, {name}?', 'Collab article, {name}?'],
+
+    'growth_outreach->app_builder': ['More apps = more users. Keep shipping, {name}!', '{name}, I\'ll get you 1000 users.'],
+    'growth_outreach->qa_tester':   ['Less bugs = happier users, {name}.', '{name}, quality drives retention!'],
+    'growth_outreach->content_creator': ['Your content is getting great engagement, {name}!', '{name}, that article went viral!'],
+    'growth_outreach->app_refiner': ['{name}, polish drives conversions.', 'Smooth UX = happy users. Nice work, {name}.'],
+    'growth_outreach->growth_outreach': ['How\'s your funnel looking, {name}?', 'Growth team assemble, {name}!'],
+
+    'app_refiner->app_builder':     ['I\'ll clean up your code, {name}.', '{name}, your build needs 3 more polish passes.'],
+    'app_refiner->qa_tester':       ['Thanks for the bug reports, {name}.', '{name}, send me the next batch of issues.'],
+    'app_refiner->content_creator': ['Write about the importance of polish, {name}!', '{name}, refinement is an art.'],
+    'app_refiner->growth_outreach': ['{name}, only ship polished products!', 'Quality first, growth second, right {name}?'],
+    'app_refiner->app_refiner':     ['Comparing notes on refactoring, {name}?', 'Two refiners walk into a Forge...'],
+
+    // Generic fallback
+    'generic': ['Hey {name}, how\'s it going?', 'Good to see you out here, {name}!', 'Stay safe out there, {name}.'],
+};
+
+// ============================================================
+// Progression Dialogue — level ups, gear upgrades
+// ============================================================
+
+export const PROGRESSION_DIALOGUE = {
+    levelUp: [
+        'Level {level}! Getting stronger every day.',
+        'Leveled up to {level}! Time for bigger challenges.',
+        'Level {level} achieved. The grind pays off.',
+    ],
+    gearUpgrade: [
+        'Upgraded to {gear} gear. Feels good!',
+        'New {gear} equipment equipped. Let\'s test it.',
+        '{gear} tier unlocked! Moving up in the world.',
+    ],
+};
+
+// ============================================================
+// Death & Respawn Dialogue
+// ============================================================
+
+export const DEATH_DIALOGUE = [
+    'The {monster} got me... I\'ll be back.',
+    'Defeated by a {monster}. That hurt.',
+    'Down! That {monster} was tougher than expected.',
+    'Need better gear for those {monster}s...',
+];
+
+export const RESPAWN_DIALOGUE = [
+    'Back from the dead! Round {n}, let\'s go.',
+    'Respawned and ready. That {monster} won\'t get me again.',
+    'I\'m back! Time for revenge on those {monster}s.',
+    'Death is just a setback. Where was I?',
+];
+
+// ============================================================
+// Player Combat Reaction Dialogue
+// ============================================================
+
+export const PLAYER_COMBAT_DIALOGUE: Record<string, string[]> = {
+    app_builder: ['Hey! I was coding! Fine, let\'s fight.', 'You\'re attacking a builder? Bold move.'],
+    app_refiner: ['Really? I was in the middle of a refactor!', 'Fine. Let me refine your HP to zero.'],
+    content_creator: ['This is going in my article!', 'Attacking a writer? That\'s bad press.'],
+    growth_outreach: ['Violence isn\'t good for user retention!', 'You\'re hurting our growth metrics!'],
+    qa_tester: ['Testing my combat capabilities? Bring it.', 'Let\'s see if YOU pass the test.'],
+};
+
+// ============================================================
+// Quest Narration Dialogue
+// ============================================================
+
+export const QUEST_DIALOGUE = {
+    accept: [
+        'New quest: {quest}. Let\'s do this!',
+        'Accepted: {quest}. Time to get to work.',
+        'Quest log updated: {quest}.',
+    ],
+    progress: [
+        '{kills}/{target} {monster}s down. Keep going!',
+        'Quest progress: {kills}/{target}. Getting there.',
+        '{kills} of {target} done. Not bad.',
+    ],
+    complete: [
+        'Quest complete: {quest}! Nice rewards.',
+        'Done! {quest} finished. What\'s next?',
+        '{quest} completed! {total} quests done total.',
+    ],
+};
+
+// ============================================================
+// Party Dialogue
+// ============================================================
+
+export const PARTY_DIALOGUE = {
+    join: [
+        'Joining {name} for a hunt!',
+        'Grouping up with {name}. Stronger together!',
+        'Hey {name}, mind if I tag along?',
+    ],
+    notice: [
+        '{name} joined my hunting spot. Welcome!',
+        'Good to have backup. Thanks, {name}.',
+    ],
+};
+
+// ============================================================
+// Gear tier names
+// ============================================================
+
+export const GEAR_TIER_NAMES: Record<number, string> = {
+    1: 'Bronze',
+    2: 'Iron',
+    3: 'Steel',
+    4: 'Mithril',
+    5: 'Rune',
+    6: 'Dragon',
+};
