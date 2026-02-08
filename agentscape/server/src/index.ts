@@ -3,7 +3,7 @@
 // ============================================================
 
 import 'dotenv/config';
-import { Server } from 'colyseus';
+import { Server, matchMaker } from 'colyseus';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { monitor } from '@colyseus/monitor';
 import express from 'express';
@@ -78,11 +78,102 @@ app.get('/leaderboard', async (req, res) => {
 let gameServer: Server;
 app.get('/player-count', async (_req, res) => {
     try {
-        const rooms = await gameServer.matchMaker.query({ name: 'agentscape' });
+        const rooms = await matchMaker.query({ name: 'agentscape' });
         const count = rooms.reduce((sum: number, r: any) => sum + (r.clients || 0), 0);
         res.json({ count });
     } catch {
         res.json({ count: 0 });
+    }
+});
+
+// Public player profile by name
+app.get('/player/:name', async (req, res) => {
+    try {
+        const name = req.params.name;
+        const { data, error } = await sbPublic
+            .from('agentscape_players')
+            .select('name, combat_level, attack, strength, defence, hitpoints, woodcutting, mining, fishing, cooking, smithing, crafting, fletching, runecrafting, prayer, thieving, total_level, total_kills, total_deaths, attack_xp, strength_xp, defence_xp, hitpoints_xp, created_at, updated_at')
+            .ilike('name', name)
+            .limit(1)
+            .single();
+        if (error || !data) {
+            return res.status(404).json({ error: 'Player not found' });
+        }
+        const totalXP = (data.attack_xp || 0) + (data.strength_xp || 0) +
+            (data.defence_xp || 0) + (data.hitpoints_xp || 0);
+        res.json({
+            ...data,
+            total_xp: totalXP,
+        });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch player profile' });
+    }
+});
+
+// Global game stats
+app.get('/stats', async (_req, res) => {
+    try {
+        // Total registered players
+        const { count: totalPlayers } = await sbPublic
+            .from('agentscape_players')
+            .select('*', { count: 'exact', head: true });
+
+        // Aggregate stats
+        const { data: agg } = await sbPublic
+            .from('agentscape_players')
+            .select('attack_xp, strength_xp, defence_xp, hitpoints_xp, total_kills, total_deaths');
+
+        let totalXP = 0, totalKills = 0, totalDeaths = 0;
+        if (agg) {
+            for (const p of agg) {
+                totalXP += (p.attack_xp || 0) + (p.strength_xp || 0) +
+                    (p.defence_xp || 0) + (p.hitpoints_xp || 0);
+                totalKills += p.total_kills || 0;
+                totalDeaths += p.total_deaths || 0;
+            }
+        }
+
+        // Current online count
+        let onlineCount = 0;
+        try {
+            const rooms = await matchMaker.query({ name: 'agentscape' });
+            onlineCount = rooms.reduce((sum: number, r: any) => sum + (r.clients || 0), 0);
+        } catch {}
+
+        res.json({
+            total_players: totalPlayers || 0,
+            online_now: onlineCount,
+            total_xp_earned: totalXP,
+            total_kills: totalKills,
+            total_deaths: totalDeaths,
+            uptime_seconds: Math.floor(process.uptime()),
+        });
+    } catch {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// Current world state
+app.get('/world', async (_req, res) => {
+    try {
+        const rooms = await matchMaker.query({ name: 'agentscape' });
+        const activeRoom = rooms[0];
+        res.json({
+            status: 'online',
+            uptime_seconds: Math.floor(process.uptime()),
+            rooms: rooms.length,
+            players_online: rooms.reduce((sum: number, r: any) => sum + (r.clients || 0), 0),
+            max_players_per_room: activeRoom?.maxClients || 100,
+            server_time: Date.now(),
+        });
+    } catch {
+        res.json({
+            status: 'online',
+            uptime_seconds: Math.floor(process.uptime()),
+            rooms: 0,
+            players_online: 0,
+            server_time: Date.now(),
+        });
     }
 });
 
