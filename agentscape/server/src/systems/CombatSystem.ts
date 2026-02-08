@@ -7,7 +7,7 @@ import { PlayerSchema, InventoryItem } from '../schema/PlayerSchema';
 import { NPCSchema } from '../schema/NPCSchema';
 import { MonsterSchema } from '../schema/MonsterSchema';
 import { GameState, LootPile } from '../schema/GameState';
-import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef } from '../config';
+import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef, PRAYERS, PrayerDef, getSetBonus } from '../config';
 import { InventorySystem } from './InventorySystem';
 import { QuestSystem } from './QuestSystem';
 import type { MonsterBehaviorSystem } from './MonsterBehaviorSystem';
@@ -213,6 +213,123 @@ export class CombatSystem {
         return extras;
     }
 
+    // --- Prayer system ---
+
+    // Active prayers per player: playerId → set of active prayer IDs
+    private activePrayers: Map<string, Set<string>> = new Map();
+    // Prayer points per player: playerId → current points
+    private prayerPoints: Map<string, number> = new Map();
+
+    /** Activate a prayer. Returns false if level too low or already active. */
+    activatePrayer(playerId: string, prayerId: string, prayerLevel: number): boolean {
+        const prayer = PRAYERS[prayerId];
+        if (!prayer) return false;
+        if (prayerLevel < prayer.levelReq) return false;
+
+        const points = this.prayerPoints.get(playerId) || 0;
+        if (points <= 0) return false;
+
+        if (!this.activePrayers.has(playerId)) {
+            this.activePrayers.set(playerId, new Set());
+        }
+        const active = this.activePrayers.get(playerId)!;
+
+        // Deactivate conflicting prayers of the same type
+        // (can't have two protection prayers, or two attack boosts)
+        if (prayer.type === 'protection') {
+            active.forEach(id => { if (PRAYERS[id]?.type === 'protection') active.delete(id); });
+        }
+
+        active.add(prayerId);
+        return true;
+    }
+
+    /** Deactivate a prayer. */
+    deactivatePrayer(playerId: string, prayerId: string): void {
+        this.activePrayers.get(playerId)?.delete(prayerId);
+    }
+
+    /** Deactivate all prayers for a player. */
+    deactivateAllPrayers(playerId: string): void {
+        this.activePrayers.delete(playerId);
+    }
+
+    /** Set prayer points (called on login/restore). */
+    setPrayerPoints(playerId: string, points: number): void {
+        this.prayerPoints.set(playerId, points);
+    }
+
+    /** Get current prayer points. */
+    getPrayerPoints(playerId: string): number {
+        return this.prayerPoints.get(playerId) || 0;
+    }
+
+    /** Drain prayer points for active prayers. Call once per combat tick. */
+    drainPrayer(playerId: string): void {
+        const active = this.activePrayers.get(playerId);
+        if (!active || active.size === 0) return;
+
+        let totalDrain = 0;
+        active.forEach(id => {
+            const prayer = PRAYERS[id];
+            if (prayer) totalDrain += prayer.drainRate;
+        });
+
+        const current = this.prayerPoints.get(playerId) || 0;
+        const newPoints = Math.max(0, current - totalDrain);
+        this.prayerPoints.set(playerId, newPoints);
+
+        // Deactivate all prayers when out of points
+        if (newPoints <= 0) {
+            this.deactivateAllPrayers(playerId);
+        }
+    }
+
+    /** Get combined prayer effects for a player. */
+    getPrayerEffects(playerId: string): {
+        damageReduction: number;
+        attackBoost: number;
+        strengthBoost: number;
+        defenceBoost: number;
+        attackMultiplier: number;
+        strengthMultiplier: number;
+    } {
+        const result = {
+            damageReduction: 0,
+            attackBoost: 0, strengthBoost: 0, defenceBoost: 0,
+            attackMultiplier: 1, strengthMultiplier: 1,
+        };
+
+        const active = this.activePrayers.get(playerId);
+        if (!active) return result;
+
+        active.forEach(id => {
+            const prayer = PRAYERS[id];
+            if (!prayer) return;
+            const e = prayer.effects;
+            if (e.damageReduction) result.damageReduction = Math.max(result.damageReduction, e.damageReduction);
+            if (e.attackBoost) result.attackBoost += e.attackBoost;
+            if (e.strengthBoost) result.strengthBoost += e.strengthBoost;
+            if (e.defenceBoost) result.defenceBoost += e.defenceBoost;
+            if (e.attackMultiplier) result.attackMultiplier = Math.max(result.attackMultiplier, e.attackMultiplier);
+            if (e.strengthMultiplier) result.strengthMultiplier = Math.max(result.strengthMultiplier, e.strengthMultiplier);
+        });
+
+        return result;
+    }
+
+    // --- Equipment set bonuses ---
+
+    /** Get set bonus for a player's current equipment. */
+    getPlayerSetBonus(player: PlayerSchema): { attack: number; strength: number; defence: number } {
+        const weaponTier = player.equippedWeapon.id ? (ITEMS[player.equippedWeapon.id]?.tier) : undefined;
+        const helmTier = player.equippedHelm.id ? (ITEMS[player.equippedHelm.id]?.tier) : undefined;
+        const shieldTier = player.equippedShield.id ? (ITEMS[player.equippedShield.id]?.tier) : undefined;
+        const bonus = getSetBonus(weaponTier, helmTier, shieldTier);
+        if (!bonus) return { attack: 0, strength: 0, defence: 0 };
+        return { attack: bonus.attackBonus, strength: bonus.strengthBonus, defence: bonus.defenceBonus };
+    }
+
     startCombat(player: PlayerSchema, npc: NPCSchema): boolean {
         if (npc.isDead || npc.inCombat || player.isDead) return false;
 
@@ -258,10 +375,19 @@ export class CombatSystem {
         if (player.combatTimer < COMBAT_TICK) return { hitsplats, deaths, xpGains };
         player.combatTimer -= COMBAT_TICK;
 
-        // === Player attacks NPC (with potion buffs) ===
+        // === Player attacks NPC (potions + style + prayer + set bonus) ===
         const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
-        const pAtk = player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack');
-        const pStr = player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength');
+        const style = this.getPlayerStyle(player.sessionId);
+        const prayer = this.getPrayerEffects(player.sessionId);
+        const setBonus = this.getPlayerSetBonus(player);
+        const pAtk = Math.floor(
+            (player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack') + style.attackBonus + prayer.attackBoost + setBonus.attack)
+            * prayer.attackMultiplier
+        );
+        const pStr = Math.floor(
+            (player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength') + style.strengthBonus + prayer.strengthBoost + setBonus.strength)
+            * prayer.strengthMultiplier
+        );
         const nDef = npc.combatStats.defence;
 
         const isSpec = player.specActive;
@@ -281,15 +407,19 @@ export class CombatSystem {
             hitsplats.push({ targetType: 'npc', targetId: npc.id, damage: 0, isMiss: true, isSpec: false, x: npc.x, z: npc.z });
         }
 
-        // === NPC attacks Player (with potion buffs) ===
+        // === NPC attacks Player (potions + style + prayer + set bonus) ===
         const nAtk = npc.combatStats.attack;
         const nStr = npc.combatStats.strength;
         const helm = player.equippedHelm.id ? player.equippedHelm : null;
         const shield = player.equippedShield.id ? player.equippedShield : null;
-        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence');
+        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
 
         if (Math.random() * (nAtk + 1) > Math.random() * (pDef + 1)) {
-            const dmg = Math.max(1, Math.floor(Math.random() * (nStr + 1)));
+            let dmg = Math.max(1, Math.floor(Math.random() * (nStr + 1)));
+            // Apply prayer damage reduction
+            if (prayer.damageReduction > 0) {
+                dmg = Math.max(1, Math.floor(dmg * (1 - prayer.damageReduction)));
+            }
             player.hp -= dmg;
             hitsplats.push({ targetType: 'player', targetId: player.sessionId, damage: dmg, isMiss: false, isSpec: false, x: player.x, z: player.z });
         } else {
@@ -307,6 +437,9 @@ export class CombatSystem {
             this.onPlayerDeath(player, npc);
         }
 
+        // Drain prayer points per combat tick
+        this.drainPrayer(player.sessionId);
+
         // XP is only awarded on kill (in onNPCDeath), not per tick
 
         return { hitsplats, deaths, xpGains };
@@ -320,13 +453,12 @@ export class CombatSystem {
         player.combatTargetNpcId = null;
         player.state = 'idle';
 
-        // XP reward
+        // XP reward — distributed by combat style
         const cs = npc.combatStats;
         const enemyLvl = Math.floor((cs.attack + cs.strength + cs.defence) / 3) + 1;
-        const xpReward = enemyLvl * 2;
-        xpGains.push({ skill: 'attack', amount: xpReward });
-        xpGains.push({ skill: 'strength', amount: xpReward });
-        xpGains.push({ skill: 'hitpoints', amount: Math.ceil(xpReward * 0.7) });
+        const baseXP = enemyLvl * 4; // total XP pool, distributed by style
+        const styledXP = this.applyStyleXP(player.sessionId, baseXP);
+        xpGains.push(...styledXP);
 
         // Create loot pile
         const drops = npc.combatStats.drops || [];
@@ -359,8 +491,9 @@ export class CombatSystem {
         npc.inCombat = false;
         npc.combatPlayerId = null;
 
-        // Clear potion buffs on death
+        // Clear potion buffs and prayers on death
         this.clearBuffs(player.sessionId);
+        this.deactivateAllPrayers(player.sessionId);
         // Clear all threat tables (player is dead)
         if (this.monsterBehavior) {
             this.monsterBehavior.removePlayerFromAllThreats(player.sessionId);
@@ -434,11 +567,19 @@ export class CombatSystem {
 
         if (player.isDead || monster.isDead) return { hitsplats, deaths, xpGains };
 
-        // === Player attacks monster (with potion buffs + combat style) ===
+        // === Player attacks monster (potions + style + prayer + set bonus) ===
         const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
         const style = this.getPlayerStyle(player.sessionId);
-        const pAtk = player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack') + style.attackBonus;
-        const pStr = player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength') + style.strengthBonus;
+        const prayer = this.getPrayerEffects(player.sessionId);
+        const setBonus = this.getPlayerSetBonus(player);
+        const pAtk = Math.floor(
+            (player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack') + style.attackBonus + prayer.attackBoost + setBonus.attack)
+            * prayer.attackMultiplier
+        );
+        const pStr = Math.floor(
+            (player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength') + style.strengthBonus + prayer.strengthBoost + setBonus.strength)
+            * prayer.strengthMultiplier
+        );
         const monDef = monster.combatStats.defence;
 
         const isSpec = player.specActive;
@@ -475,16 +616,20 @@ export class CombatSystem {
             return { hitsplats, deaths, xpGains };
         }
 
-        // === Monster attacks player (apply enrage multiplier, potion buffs, style) ===
+        // === Monster attacks player (enrage + potions + style + prayer + set bonus) ===
         const monAtk = monster.combatStats.attack * monster.enrageMultiplier;
         const monStr = monster.combatStats.strength * monster.enrageMultiplier;
         const helm = player.equippedHelm.id ? player.equippedHelm : null;
         const shield = player.equippedShield.id ? player.equippedShield : null;
-        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus;
+        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
 
         if (Math.random() * (monAtk + 5) > Math.random() * (pDef + 5)) {
             const maxHit = Math.floor(monStr * 0.8 + 2);
-            const dmg = Math.floor(Math.random() * maxHit) + 1;
+            let dmg = Math.floor(Math.random() * maxHit) + 1;
+            // Apply prayer damage reduction
+            if (prayer.damageReduction > 0) {
+                dmg = Math.max(1, Math.floor(dmg * (1 - prayer.damageReduction)));
+            }
             player.hp = Math.max(0, player.hp - dmg);
             hitsplats.push({ targetType: 'player', targetId: player.sessionId, damage: dmg, isMiss: false, isSpec: false, x: player.x, z: player.z });
 
@@ -502,6 +647,9 @@ export class CombatSystem {
             deaths.push({ entityType: 'player', entityId: player.sessionId, killerType: 'npc', killerId: monster.id });
             this.onPlayerDeathByMonster(player, monster);
         }
+
+        // Drain prayer points per combat tick
+        this.drainPrayer(player.sessionId);
 
         return { hitsplats, deaths, xpGains };
     }
@@ -544,8 +692,9 @@ export class CombatSystem {
         player.respawnTimer = 10;
         player.combatTargetMonsterId = null;
 
-        // Clear potion buffs on death
+        // Clear potion buffs and prayers on death
         this.clearBuffs(player.sessionId);
+        this.deactivateAllPrayers(player.sessionId);
 
         // Remove from threat table
         if (this.monsterBehavior) {
@@ -606,6 +755,69 @@ export class CombatSystem {
         state.lootPiles.set(lootId, pile);
     }
 
+    /**
+     * Boss raid loot: top damage dealer gets rare item drops,
+     * all engaged players get a split of coin drops and bones.
+     */
+    private createBossRaidLoot(
+        monster: MonsterSchema,
+        state: GameState,
+        engagedPlayers: PlayerSchema[],
+        damageDealt: Map<string, number>,
+    ): void {
+        // Find top damage dealer
+        let topDamageId: string | null = null;
+        let topDamage = 0;
+        damageDealt.forEach((dmg, playerId) => {
+            if (dmg > topDamage) {
+                topDamage = dmg;
+                topDamageId = playerId;
+            }
+        });
+
+        // Roll rare item drops — only top damage dealer gets these
+        const rareItems: { id: string; qty: number }[] = [];
+        for (const drop of monster.combatStats.drops) {
+            if (Math.random() * 100 < drop.weight) {
+                const qty = drop.minQty + Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1));
+                rareItems.push({ id: drop.id, qty });
+            }
+        }
+
+        // Coin drop split evenly among living players
+        const coinDrop = monster.combatStats.coinDrop;
+        const totalCoins = Math.floor(coinDrop.min + Math.random() * (coinDrop.max - coinDrop.min));
+        const alivePlayers = engagedPlayers.filter(p => !p.isDead);
+        const coinsPerPlayer = alivePlayers.length > 0 ? Math.floor(totalCoins / alivePlayers.length) : totalCoins;
+
+        // Create individual loot piles for each player
+        for (const player of alivePlayers) {
+            const items: { id: string; qty: number }[] = [];
+
+            // Everyone gets their share of coins
+            if (coinsPerPlayer > 0) items.push({ id: 'coins', qty: coinsPerPlayer });
+
+            // Everyone gets bones
+            items.push({ id: 'bones', qty: 1 });
+
+            // Top damage dealer gets the rare drops
+            if (player.sessionId === topDamageId && rareItems.length > 0) {
+                items.push(...rareItems);
+            }
+
+            if (items.length > 0) {
+                const lootId = `loot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                const pile = new LootPile();
+                pile.id = lootId;
+                pile.x = monster.x + (Math.random() - 0.5) * 2; // spread piles slightly
+                pile.z = monster.z + (Math.random() - 0.5) * 2;
+                pile.timer = LOOT_DECAY_TIME;
+                pile.itemsJson = JSON.stringify(items);
+                state.lootPiles.set(lootId, pile);
+            }
+        }
+    }
+
     // ============================================================
     // Boss Raid Combat — multiple players vs one boss
     // Processes ALL engaged players' attacks and boss retaliates
@@ -624,13 +836,25 @@ export class CombatSystem {
 
         if (monster.isDead) return { hitsplats, deaths, xpGains };
 
-        // === Each player attacks the boss ===
+        // Track damage per player for loot sharing
+        const damageDealt: Map<string, number> = new Map();
+
+        // === Each player attacks the boss (potions + style + prayer + set bonus) ===
         for (const player of engagedPlayers) {
             if (player.isDead) continue;
 
             const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
-            const pAtk = player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack');
-            const pStr = player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength');
+            const style = this.getPlayerStyle(player.sessionId);
+            const prayer = this.getPrayerEffects(player.sessionId);
+            const setBonus = this.getPlayerSetBonus(player);
+            const pAtk = Math.floor(
+                (player.attack + (weapon ? weapon.attackStat : 0) + this.getPotionBoost(player.sessionId, 'attack') + style.attackBonus + prayer.attackBoost + setBonus.attack)
+                * prayer.attackMultiplier
+            );
+            const pStr = Math.floor(
+                (player.strength + (weapon ? weapon.strengthStat : 0) + this.getPotionBoost(player.sessionId, 'strength') + style.strengthBonus + prayer.strengthBoost + setBonus.strength)
+                * prayer.strengthMultiplier
+            );
             const monDef = monster.combatStats.defence;
             // Apply phase defence multiplier
             const phaseDefMult = this.monsterBehavior?.getBossPhaseMultipliers(monster).defence ?? 1;
@@ -651,6 +875,7 @@ export class CombatSystem {
                 monster.hp = Math.max(0, monster.hp - dmg);
                 hitsplats.push({ targetType: 'monster', targetId: monster.id, damage: dmg, isMiss: false, isSpec, x: monster.x, z: monster.z });
 
+                damageDealt.set(player.sessionId, (damageDealt.get(player.sessionId) || 0) + dmg);
                 if (this.monsterBehavior) {
                     this.monsterBehavior.addThreat(monster.id, player.sessionId, dmg);
                 }
@@ -661,19 +886,19 @@ export class CombatSystem {
                 }
             }
 
+            // Drain prayer each combat tick
+            this.drainPrayer(player.sessionId);
+
             // Check boss death after each player's attack
             if (monster.hp <= 0) {
                 deaths.push({ entityType: 'npc', entityId: monster.id, killerType: 'player', killerId: player.sessionId });
-                // All engaged players get XP
+                // All engaged players get XP — distributed by combat style
+                const xp = monster.combatStats.xpReward;
+                const totalBaseXP = xp.attack + xp.strength + xp.hitpoints;
                 for (const p of engagedPlayers) {
                     if (!p.isDead) {
-                        const xp = monster.combatStats.xpReward;
-                        xpGains.push({ skill: 'attack', amount: xp.attack });
-                        xpGains.push({ skill: 'strength', amount: xp.strength });
-                        xpGains.push({ skill: 'hitpoints', amount: xp.hitpoints });
-                        if (p.equippedShield.id) {
-                            xpGains.push({ skill: 'defence', amount: Math.ceil(xp.attack * 0.5) });
-                        }
+                        const styledXP = this.applyStyleXP(p.sessionId, totalBaseXP);
+                        xpGains.push(...styledXP);
                         p.combatTargetMonsterId = null;
                         p.state = 'idle';
                     }
@@ -683,29 +908,44 @@ export class CombatSystem {
                 monster.combatPlayerId = null;
                 monster.respawnTimer = monster.respawnTime;
                 monster.state = 'DEAD';
-                this.createMonsterLoot(monster, state);
+
+                // Boss loot sharing: top damage dealer gets rare drops, all get coin split
+                this.createBossRaidLoot(monster, state, engagedPlayers, damageDealt);
+
                 if (this.monsterBehavior) {
                     this.monsterBehavior.clearThreat(monster.id);
                     this.monsterBehavior.resetBossPhase(monster.id);
                 }
-                // Quest credit to killer
-                this.questSystem.checkMonsterKill(player, monster.monsterId, monster.isBoss);
+                // Quest credit to all engaged players (boss kills are special)
+                for (const p of engagedPlayers) {
+                    if (!p.isDead) {
+                        this.questSystem.checkMonsterKill(p, monster.monsterId, monster.isBoss);
+                    }
+                }
                 return { hitsplats, deaths, xpGains };
             }
         }
 
-        // === Boss attacks highest-threat player ===
+        // === Boss attacks highest-threat player (prayer + style + set bonus applied) ===
         const target = this.monsterBehavior?.getTopThreatPlayer(monster.id, state.players as any) ?? engagedPlayers[0];
         if (target && !target.isDead) {
             const monAtk = monster.combatStats.attack * monster.enrageMultiplier;
             const monStr = monster.combatStats.strength * monster.enrageMultiplier;
+            const tPrayer = this.getPrayerEffects(target.sessionId);
+            const tStyle = this.getPlayerStyle(target.sessionId);
+            const tSetBonus = this.getPlayerSetBonus(target);
             const helm = target.equippedHelm.id ? target.equippedHelm : null;
             const shield = target.equippedShield.id ? target.equippedShield : null;
-            const pDef = target.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(target.sessionId, 'defence');
+            const pDef = target.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0)
+                + this.getPotionBoost(target.sessionId, 'defence') + tStyle.defenceBonus + tPrayer.defenceBoost + tSetBonus.defence;
 
             if (Math.random() * (monAtk + 5) > Math.random() * (pDef + 5)) {
                 const maxHit = Math.floor(monStr * 0.8 + 2);
-                const dmg = Math.floor(Math.random() * maxHit) + 1;
+                let dmg = Math.floor(Math.random() * maxHit) + 1;
+                // Apply prayer damage reduction
+                if (tPrayer.damageReduction > 0) {
+                    dmg = Math.max(1, Math.floor(dmg * (1 - tPrayer.damageReduction)));
+                }
                 target.hp = Math.max(0, target.hp - dmg);
                 hitsplats.push({ targetType: 'player', targetId: target.sessionId, damage: dmg, isMiss: false, isSpec: false, x: target.x, z: target.z });
             } else {
