@@ -555,11 +555,18 @@ export class AgentScapeRoom extends Room<GameState> {
 
             case 'equip_item': {
                 const { inventorySlot } = action.payload;
-                const item = player.inventory[inventorySlot];
-                if (!item) break;
-                if (item.type === 'weapon') this.inventorySystem.equipWeapon(player, inventorySlot);
-                else if (item.type === 'helm') this.inventorySystem.equipHelm(player, inventorySlot);
-                else if (item.type === 'shield') this.inventorySystem.equipShield(player, inventorySlot);
+                const result = this.inventorySystem.equipFromInventory(player, inventorySlot);
+                if (!result.success && result.message) {
+                    client.send('system_message', { message: result.message });
+                }
+                break;
+            }
+
+            case 'unequip_item': {
+                const unequipResult = this.inventorySystem.unequipSlot(player, action.payload.slot);
+                if (!unequipResult.success && unequipResult.message) {
+                    client.send('system_message', { message: unequipResult.message });
+                }
                 break;
             }
 

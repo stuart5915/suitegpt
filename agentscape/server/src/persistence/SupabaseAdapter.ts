@@ -4,7 +4,8 @@
 // ============================================================
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { PlayerSchema } from '../schema/PlayerSchema';
+import { PlayerSchema, InventoryItem } from '../schema/PlayerSchema';
+import { ITEMS } from '../config';
 
 export class SupabaseAdapter {
     private supabase: SupabaseClient;
@@ -74,9 +75,33 @@ export class SupabaseAdapter {
         player.hitpointsXP = saved.hitpoints_xp ?? player.hitpointsXP;
         player.combatLevel = saved.combat_level ?? player.combatLevel;
         player.coins = saved.coins ?? player.coins;
-        player.equippedWeaponSlot = saved.equipped_weapon_slot ?? player.equippedWeaponSlot;
-        player.equippedHelmSlot = saved.equipped_helm_slot ?? player.equippedHelmSlot;
-        player.equippedShieldSlot = saved.equipped_shield_slot ?? player.equippedShieldSlot;
+
+        // Restore equipment from item IDs (new format)
+        if (saved.equipped_weapon && typeof saved.equipped_weapon === 'string') {
+            this.restoreEquipItem(player.equippedWeapon, saved.equipped_weapon);
+        }
+        if (saved.equipped_helm && typeof saved.equipped_helm === 'string') {
+            this.restoreEquipItem(player.equippedHelm, saved.equipped_helm);
+        }
+        if (saved.equipped_shield && typeof saved.equipped_shield === 'string') {
+            this.restoreEquipItem(player.equippedShield, saved.equipped_shield);
+        }
+        // Gracefully ignore old integer format (equipped_weapon_slot etc.)
+    }
+
+    private restoreEquipItem(slot: InventoryItem, itemId: string): void {
+        const def = ITEMS[itemId];
+        if (!def) return;
+        slot.id = def.id;
+        slot.name = def.name;
+        slot.icon = def.icon;
+        slot.quantity = 1;
+        slot.type = def.type;
+        slot.stackable = def.stackable;
+        slot.attackStat = def.stats?.attack || 0;
+        slot.strengthStat = def.stats?.strength || 0;
+        slot.defenceStat = def.stats?.defence || 0;
+        slot.healAmount = def.healAmount || 0;
     }
 
     async savePlayer(player: PlayerSchema): Promise<boolean> {
@@ -121,9 +146,9 @@ export class SupabaseAdapter {
             defence_xp: player.defenceXP,
             hitpoints_xp: player.hitpointsXP,
             combat_level: player.combatLevel,
-            equipped_weapon_slot: player.equippedWeaponSlot,
-            equipped_helm_slot: player.equippedHelmSlot,
-            equipped_shield_slot: player.equippedShieldSlot,
+            equipped_weapon: player.equippedWeapon.id || null,
+            equipped_helm: player.equippedHelm.id || null,
+            equipped_shield: player.equippedShield.id || null,
             inventory: JSON.stringify(inventoryData),
             quests: JSON.stringify(questsData),
             updated_at: new Date().toISOString(),

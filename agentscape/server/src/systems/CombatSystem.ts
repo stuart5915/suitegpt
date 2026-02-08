@@ -82,9 +82,9 @@ export class CombatSystem {
         player.combatTimer -= COMBAT_TICK;
 
         // === Player attacks NPC ===
-        const weaponSlot = player.equippedWeaponSlot >= 0 ? player.inventory[player.equippedWeaponSlot] : null;
-        const pAtk = player.attack + (weaponSlot ? weaponSlot.attackStat : 0);
-        const pStr = player.strength + (weaponSlot ? weaponSlot.strengthStat : 0);
+        const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
+        const pAtk = player.attack + (weapon ? weapon.attackStat : 0);
+        const pStr = player.strength + (weapon ? weapon.strengthStat : 0);
         const nDef = npc.combatStats.defence;
 
         const isSpec = player.specActive;
@@ -107,9 +107,9 @@ export class CombatSystem {
         // === NPC attacks Player ===
         const nAtk = npc.combatStats.attack;
         const nStr = npc.combatStats.strength;
-        const helmSlot = player.equippedHelmSlot >= 0 ? player.inventory[player.equippedHelmSlot] : null;
-        const shieldSlot = player.equippedShieldSlot >= 0 ? player.inventory[player.equippedShieldSlot] : null;
-        const pDef = player.defence + (helmSlot ? helmSlot.defenceStat : 0) + (shieldSlot ? shieldSlot.defenceStat : 0);
+        const helm = player.equippedHelm.id ? player.equippedHelm : null;
+        const shield = player.equippedShield.id ? player.equippedShield : null;
+        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0);
 
         if (Math.random() * (nAtk + 1) > Math.random() * (pDef + 1)) {
             const dmg = Math.max(1, Math.floor(Math.random() * (nStr + 1)));

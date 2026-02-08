@@ -1683,6 +1683,9 @@
                     });
                     player.inventory.onAdd(()=>{renderInventoryFromState(player);});
                     player.inventory.onChange(()=>{renderInventoryFromState(player);});
+                    if(player.equippedWeapon)player.equippedWeapon.onChange(()=>{renderInventoryFromState(player);});
+                    if(player.equippedHelm)player.equippedHelm.onChange(()=>{renderInventoryFromState(player);});
+                    if(player.equippedShield)player.equippedShield.onChange(()=>{renderInventoryFromState(player);});
                 }else{
                     const mesh=createCharacterMesh(parseInt(player.color.replace('#',''),16)||0x3355aa);
                     mesh.group.position.set(player.x,0,player.z);scene.add(mesh.group);
@@ -1792,8 +1795,7 @@
             const grid2=document.getElementById('inv-grid');grid2.innerHTML='';
             for(let i=0;i<28;i++){
                 const slot=document.createElement('div');
-                const isEq=(p.equippedWeaponSlot===i||p.equippedHelmSlot===i||p.equippedShieldSlot===i);
-                slot.className='inv-slot'+(isEq?' equipped':'');
+                slot.className='inv-slot';
                 slot.dataset.slot=i;
                 const item=p.inventory[i];
                 if(item&&item.id){
@@ -1810,10 +1812,9 @@
         function renderEquipFromState(p){
             if(!p)return;
             const panel=document.getElementById('equip-panel');if(!panel)return;
-            const wSlot=p.equippedWeaponSlot,hSlot=p.equippedHelmSlot,sSlot=p.equippedShieldSlot;
-            const weapon=(wSlot>=0&&p.inventory[wSlot])?p.inventory[wSlot]:null;
-            const helm=(hSlot>=0&&p.inventory[hSlot])?p.inventory[hSlot]:null;
-            const shield=(sSlot>=0&&p.inventory[sSlot])?p.inventory[sSlot]:null;
+            const weapon=p.equippedWeapon&&p.equippedWeapon.id?p.equippedWeapon:null;
+            const helm=p.equippedHelm&&p.equippedHelm.id?p.equippedHelm:null;
+            const shield=p.equippedShield&&p.equippedShield.id?p.equippedShield:null;
             let atkBonus=0,strBonus=0,defBonus=0;
             [weapon,helm,shield].forEach(item=>{if(item&&item.id){atkBonus+=item.attackStat||0;strBonus+=item.strengthStat||0;defBonus+=item.defenceStat||0;}});
             function slotHTML(label,item,slotType,top,left){
@@ -1821,7 +1822,7 @@
                 const icon=hasItem?(item.icon||'?'):'';
                 const name=hasItem?item.name:'Empty';
                 const cls='equip-slot'+(hasItem?' has-item':'');
-                const click=hasItem?'onclick="sendAction(\'equip_item\',{inventorySlot:'+(slotType==='weapon'?wSlot:slotType==='helm'?hSlot:sSlot)+'})"':'';
+                const click=hasItem?'onclick="sendAction(\'unequip_item\',{slot:\''+slotType+'\'})"':'';
                 return '<div style="position:absolute;top:'+top+'px;left:'+left+'px;text-align:center;">'+
                     '<div class="equip-slot-label" style="top:-12px;left:0;width:42px;text-align:center;">'+label+'</div>'+
                     '<div class="'+cls+'" '+click+'>'+icon+'</div>'+
@@ -1932,9 +1933,9 @@
             const opts=[];
             if(item.type==='food')opts.push({label:'Eat',action:"sendAction('eat_food',{inventorySlot:"+slot+"})"});
             if(item.type==='bones')opts.push({label:'Bury',action:"sendAction('bury_bones',{inventorySlot:"+slot+"})"});
-            if(item.type==='weapon'||item.type==='axe')opts.push({label:p.equippedWeaponSlot===slot?'Unequip':'Wield',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
-            if(item.type==='helm')opts.push({label:p.equippedHelmSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
-            if(item.type==='shield')opts.push({label:p.equippedShieldSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            if(item.type==='weapon'||item.type==='axe')opts.push({label:'Wield',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            if(item.type==='helm')opts.push({label:'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
+            if(item.type==='shield')opts.push({label:'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
             opts.push({label:'Drop',action:"sendAction('drop_item',{inventorySlot:"+slot+"})"});
             opts.push({label:'Cancel',action:'hideCtxMenu()'});
             showContextMenu(e,opts,item.icon+' '+item.name);

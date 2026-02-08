@@ -14,12 +14,12 @@ export class InventorySystem {
             player.inventory.push(new InventoryItem());
         }
 
-        this.setSlot(player, 0, 'bronze_sword', 1);
+        this.setSlot(player, 0, 'bread', 1);
         this.setSlot(player, 1, 'bread', 1);
         this.setSlot(player, 2, 'bread', 1);
-        this.setSlot(player, 3, 'bread', 1);
-        this.setSlot(player, 4, 'coins', 25);
-        player.equippedWeaponSlot = 0;
+        this.setSlot(player, 3, 'coins', 25);
+        // Bronze sword goes directly to equipment slot
+        this.setItemFromDef(player.equippedWeapon, 'bronze_sword');
     }
 
     private setSlot(player: PlayerSchema, slot: number, itemId: string, qty: number): void {
@@ -40,6 +40,24 @@ export class InventorySystem {
 
     clearSlot(player: PlayerSchema, slot: number): void {
         const item = player.inventory[slot];
+        this.clearItem(item);
+    }
+
+    // --- Equipment helpers ---
+    private copyItem(from: InventoryItem, to: InventoryItem): void {
+        to.id = from.id;
+        to.name = from.name;
+        to.icon = from.icon;
+        to.quantity = from.quantity;
+        to.type = from.type;
+        to.stackable = from.stackable;
+        to.attackStat = from.attackStat;
+        to.strengthStat = from.strengthStat;
+        to.defenceStat = from.defenceStat;
+        to.healAmount = from.healAmount;
+    }
+
+    private clearItem(item: InventoryItem): void {
         item.id = '';
         item.name = '';
         item.icon = '';
@@ -50,11 +68,95 @@ export class InventorySystem {
         item.strengthStat = 0;
         item.defenceStat = 0;
         item.healAmount = 0;
+    }
 
-        // Unequip if needed
-        if (player.equippedWeaponSlot === slot) player.equippedWeaponSlot = -1;
-        if (player.equippedHelmSlot === slot) player.equippedHelmSlot = -1;
-        if (player.equippedShieldSlot === slot) player.equippedShieldSlot = -1;
+    private findFreeSlot(player: PlayerSchema): number {
+        for (let i = 0; i < MAX_INVENTORY_SLOTS; i++) {
+            if (!player.inventory[i].id) return i;
+        }
+        return -1;
+    }
+
+    private setItemFromDef(item: InventoryItem, itemId: string): void {
+        const def = ITEMS[itemId];
+        if (!def) return;
+        item.id = def.id;
+        item.name = def.name;
+        item.icon = def.icon;
+        item.quantity = 1;
+        item.type = def.type;
+        item.stackable = def.stackable;
+        item.attackStat = def.stats?.attack || 0;
+        item.strengthStat = def.stats?.strength || 0;
+        item.defenceStat = def.stats?.defence || 0;
+        item.healAmount = def.healAmount || 0;
+    }
+
+    private getEquipSlot(player: PlayerSchema, itemType: string): InventoryItem | null {
+        if (itemType === 'weapon' || itemType === 'axe') return player.equippedWeapon;
+        if (itemType === 'helm') return player.equippedHelm;
+        if (itemType === 'shield') return player.equippedShield;
+        return null;
+    }
+
+    equipFromInventory(player: PlayerSchema, inventorySlot: number): { success: boolean; message?: string } {
+        const invItem = player.inventory[inventorySlot];
+        if (!invItem || !invItem.id) return { success: false, message: 'No item in that slot.' };
+
+        const equipSlot = this.getEquipSlot(player, invItem.type);
+        if (!equipSlot) return { success: false, message: 'Cannot equip that item.' };
+
+        if (equipSlot.id) {
+            // Swap: old equipped → inv slot, new inv → equip slot
+            const tempId = equipSlot.id;
+            const tempName = equipSlot.name;
+            const tempIcon = equipSlot.icon;
+            const tempQty = equipSlot.quantity;
+            const tempType = equipSlot.type;
+            const tempStack = equipSlot.stackable;
+            const tempAtk = equipSlot.attackStat;
+            const tempStr = equipSlot.strengthStat;
+            const tempDef = equipSlot.defenceStat;
+            const tempHeal = equipSlot.healAmount;
+
+            // Move inv item → equip slot
+            this.copyItem(invItem, equipSlot);
+
+            // Put old equipped → inv slot
+            invItem.id = tempId;
+            invItem.name = tempName;
+            invItem.icon = tempIcon;
+            invItem.quantity = tempQty;
+            invItem.type = tempType;
+            invItem.stackable = tempStack;
+            invItem.attackStat = tempAtk;
+            invItem.strengthStat = tempStr;
+            invItem.defenceStat = tempDef;
+            invItem.healAmount = tempHeal;
+        } else {
+            // Empty equip slot: move inv → equip, clear inv
+            this.copyItem(invItem, equipSlot);
+            this.clearItem(invItem);
+        }
+
+        player.dirty = true;
+        return { success: true };
+    }
+
+    unequipSlot(player: PlayerSchema, slotName: 'weapon' | 'helm' | 'shield'): { success: boolean; message?: string } {
+        const equipSlot = slotName === 'weapon' ? player.equippedWeapon
+            : slotName === 'helm' ? player.equippedHelm
+            : player.equippedShield;
+
+        if (!equipSlot.id) return { success: false, message: 'Nothing equipped there.' };
+
+        const freeSlot = this.findFreeSlot(player);
+        if (freeSlot < 0) return { success: false, message: 'Inventory is full!' };
+
+        this.copyItem(equipSlot, player.inventory[freeSlot]);
+        this.clearItem(equipSlot);
+        player.dirty = true;
+        return { success: true };
     }
 
     addToInventory(player: PlayerSchema, itemId: string, qty: number): boolean {
@@ -139,42 +241,6 @@ export class InventorySystem {
         return { healed: heal };
     }
 
-    equipWeapon(player: PlayerSchema, slot: number): boolean {
-        const item = player.inventory[slot];
-        if (!item.id || item.type !== 'weapon') return false;
-
-        if (player.equippedWeaponSlot === slot) {
-            player.equippedWeaponSlot = -1;
-        } else {
-            player.equippedWeaponSlot = slot;
-        }
-        return true;
-    }
-
-    equipHelm(player: PlayerSchema, slot: number): boolean {
-        const item = player.inventory[slot];
-        if (!item.id || item.type !== 'helm') return false;
-
-        if (player.equippedHelmSlot === slot) {
-            player.equippedHelmSlot = -1;
-        } else {
-            player.equippedHelmSlot = slot;
-        }
-        return true;
-    }
-
-    equipShield(player: PlayerSchema, slot: number): boolean {
-        const item = player.inventory[slot];
-        if (!item.id || item.type !== 'shield') return false;
-
-        if (player.equippedShieldSlot === slot) {
-            player.equippedShieldSlot = -1;
-        } else {
-            player.equippedShieldSlot = slot;
-        }
-        return true;
-    }
-
     dropItem(player: PlayerSchema, slot: number): boolean {
         const item = player.inventory[slot];
         if (!item.id) return false;
@@ -201,18 +267,16 @@ export class InventorySystem {
 
     // --- Combat stat helpers ---
     getPlayerAttack(player: PlayerSchema): number {
-        const weaponSlot = player.equippedWeaponSlot >= 0 ? player.inventory[player.equippedWeaponSlot] : null;
-        return player.attack + (weaponSlot ? weaponSlot.attackStat : 0);
+        return player.attack + (player.equippedWeapon.id ? player.equippedWeapon.attackStat : 0);
     }
 
     getPlayerStrength(player: PlayerSchema): number {
-        const weaponSlot = player.equippedWeaponSlot >= 0 ? player.inventory[player.equippedWeaponSlot] : null;
-        return player.strength + (weaponSlot ? weaponSlot.strengthStat : 0);
+        return player.strength + (player.equippedWeapon.id ? player.equippedWeapon.strengthStat : 0);
     }
 
     getPlayerDefence(player: PlayerSchema): number {
-        const helmSlot = player.equippedHelmSlot >= 0 ? player.inventory[player.equippedHelmSlot] : null;
-        const shieldSlot = player.equippedShieldSlot >= 0 ? player.inventory[player.equippedShieldSlot] : null;
-        return player.defence + (helmSlot ? helmSlot.defenceStat : 0) + (shieldSlot ? shieldSlot.defenceStat : 0);
+        return player.defence
+            + (player.equippedHelm.id ? player.equippedHelm.defenceStat : 0)
+            + (player.equippedShield.id ? player.equippedShield.defenceStat : 0);
     }
 }

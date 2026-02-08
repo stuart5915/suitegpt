@@ -113,17 +113,17 @@ export class PlayerSchema extends Schema {
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
-    @type('int8') equippedWeaponSlot: number = -1;
+    @type(InventoryItem) equippedWeapon: InventoryItem = new InventoryItem();
 
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
-    @type('int8') equippedHelmSlot: number = -1;
+    @type(InventoryItem) equippedHelm: InventoryItem = new InventoryItem();
 
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
-    @type('int8') equippedShieldSlot: number = -1;
+    @type(InventoryItem) equippedShield: InventoryItem = new InventoryItem();
 
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;

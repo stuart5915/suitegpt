@@ -13,6 +13,7 @@ export type ActionType =
     | 'attack_monster'
     | 'eat_food'
     | 'equip_item'
+    | 'unequip_item'
     | 'buy_item'
     | 'sell_item'
     | 'craft_item'
@@ -77,6 +78,14 @@ export class ActionValidator {
                 const { inventorySlot } = action.payload;
                 if (typeof inventorySlot !== 'number' || inventorySlot < 0 || inventorySlot >= MAX_INVENTORY_SLOTS) {
                     return { valid: false, reason: 'Invalid slot' };
+                }
+                return { valid: true };
+            }
+
+            case 'unequip_item': {
+                const { slot } = action.payload;
+                if (typeof slot !== 'string' || !['weapon', 'helm', 'shield'].includes(slot)) {
+                    return { valid: false, reason: 'Invalid equipment slot' };
                 }
                 return { valid: true };
             }
