@@ -524,7 +524,7 @@ function renderGrid() {
         const tierClass = item.tier ? `tier-${item.tier}` : '';
         const tierLabel = item.tier ? TIER_NAMES[item.tier] : '';
 
-        const has3d = asset?.modelData ? true : false;
+        const has3d = asset?.modelUrl ? true : false;
         html += `<div class="item-card ${asset ? 'has-asset' : ''} ${has3d ? 'has-3d' : ''}" onclick="openItemModal('${item.id}')">
             <div class="item-card-preview">
                 ${asset ? `<img src="${asset.imageData}" alt="${item.name}">` : item.icon}
@@ -542,7 +542,7 @@ function renderGrid() {
 function updateProgress() {
     const total = ITEMS.length;
     const done2d = ITEMS.filter(i => assets[i.id]?.imageData).length;
-    const done3d = ITEMS.filter(i => assets[i.id]?.modelData).length;
+    const done3d = ITEMS.filter(i => assets[i.id]?.modelUrl).length;
     const pct = total > 0 ? Math.round((done2d / total) * 100) : 0;
     document.getElementById('progress-text').textContent = `${done2d}/${total} 2D` + (done3d > 0 ? ` \u00B7 ${done3d} 3D` : '');
     document.getElementById('progress-fill').style.width = pct + '%';
@@ -588,10 +588,10 @@ function openItemModal(itemId) {
     // Show 3D button only if 2D image exists
     document.getElementById('btn-3d-row').style.display = asset?.imageData ? 'flex' : 'none';
     // Show 3D download if model exists
-    document.getElementById('btn-dl-3d').style.display = asset?.modelData ? 'inline-flex' : 'none';
+    document.getElementById('btn-dl-3d').style.display = asset?.modelUrl ? 'inline-flex' : 'none';
     // Update 3D button text
     const btn3d = document.getElementById('btn-generate-3d');
-    if (asset?.modelData) {
+    if (asset?.modelUrl) {
         btn3d.textContent = 'Regenerate 3D Model';
     } else {
         btn3d.textContent = 'Generate 3D Model';
@@ -766,7 +766,6 @@ async function exportAll() {
 
     const zip = new JSZip();
     const itemsFolder = zip.folder('items');
-    const modelsFolder = zip.folder('models');
 
     // Manifest
     const manifest = {};
@@ -777,17 +776,13 @@ async function exportAll() {
         manifest[item.id] = {
             name: item.name,
             file: `items/${item.id}.png`,
-            model: asset.modelData ? `models/${item.id}.glb` : null,
+            modelUrl: asset.modelUrl || null,
+            meshyTaskId: asset.meshyTaskId || null,
             type: item.type,
             category: item.category,
             tier: item.tier || null,
             generatedAt: asset.generatedAt,
         };
-        // Include 3D model if exists
-        if (asset.modelData) {
-            const modelB64 = asset.modelData.split(',')[1];
-            modelsFolder.file(`${item.id}.glb`, modelB64, { base64: true });
-        }
     }
     zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
@@ -851,17 +846,12 @@ async function generate3D() {
         document.getElementById('meshy-status').textContent = `Task created: ${taskId.slice(0,8)}... Polling...`;
 
         // Poll for completion
-        const modelUrl = await pollMeshyTask(settings.meshyKey, taskId);
+        const result = await pollMeshyTask(settings.meshyKey, taskId);
 
-        // Download the GLB
-        document.getElementById('meshy-status').textContent = 'Downloading 3D model...';
-        document.getElementById('meshy-progress-fill').style.width = '95%';
-        const glbRes = await fetch(modelUrl);
-        const glbBlob = await glbRes.blob();
-        const glbDataUrl = await blobToDataURL(glbBlob);
-
-        // Save
-        asset.modelData = glbDataUrl;
+        // Save URL + metadata (can't fetch .glb cross-origin due to CORS)
+        asset.modelData = true;
+        asset.modelUrl = result.glbUrl;
+        asset.modelThumbnail = result.thumbnailUrl;
         asset.meshyTaskId = taskId;
         await store.save(item.id, asset);
 
@@ -896,7 +886,7 @@ async function pollMeshyTask(apiKey, taskId) {
         document.getElementById('meshy-status').textContent = `${task.status} — ${pct}%`;
 
         if (task.status === 'SUCCEEDED') {
-            if (task.model_urls?.glb) return task.model_urls.glb;
+            if (task.model_urls?.glb) return { glbUrl: task.model_urls.glb, thumbnailUrl: task.thumbnail_url || null };
             throw new Error('No GLB URL in response');
         }
         if (task.status === 'FAILED') {
@@ -908,11 +898,8 @@ async function pollMeshyTask(apiKey, taskId) {
 
 function download3D() {
     const item = ITEMS.find(i => i.id === selectedItemId);
-    if (!item || !assets[item.id]?.modelData) return;
-    const a = document.createElement('a');
-    a.href = assets[item.id].modelData;
-    a.download = `${item.id}.glb`;
-    a.click();
+    if (!item || !assets[item.id]?.modelUrl) return;
+    window.open(assets[item.id].modelUrl, '_blank');
 }
 
 // ============================================================
