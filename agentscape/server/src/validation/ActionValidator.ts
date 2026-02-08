@@ -39,7 +39,8 @@ export type ActionType =
     | 'bank_stock_all'
     | 'buy_resource'
     | 'sell_resource'
-    | 'get_sell_price';
+    | 'get_sell_price'
+    | 'interact_npc';
 
 export interface GameAction {
     type: ActionType;

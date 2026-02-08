@@ -360,6 +360,19 @@ export class AgentScapeRoom extends Room<GameState> {
                         this.handleAction(client, { type: 'pickpocket', payload: pp.type === 'npc' ? { npcId: pp.id } : { monsterId: pp.id } });
                     }
                 }
+                // NPC interaction arrival (talk)
+                if (player.pendingNpcInteraction) {
+                    const npcId = player.pendingNpcInteraction;
+                    const npc = this.state.npcs.get(npcId);
+                    player.pendingNpcInteraction = null;
+                    if (npc && !npc.isDead) {
+                        const dist = Math.abs(player.tileX - npc.tileX) + Math.abs(player.tileZ - npc.tileZ);
+                        if (dist <= 1) {
+                            const client = this.clients.find(c => c.sessionId === player.sessionId);
+                            if (client) client.send('npc_talk', { npcId, name: npc.name, role: npc.role });
+                        }
+                    }
+                }
                 // Building arrival
                 if (player.pendingBuildingAction) {
                     const bid = player.pendingBuildingAction;
@@ -561,8 +574,9 @@ export class AgentScapeRoom extends Room<GameState> {
                 const { tileX, tileZ } = action.payload;
                 // Cancel resting if moving
                 if (player.isResting) { player.isResting = false; }
-                // Cancel pending pickpocket
+                // Cancel pending interactions
                 player.pendingPickpocket = null;
+                player.pendingNpcInteraction = null;
                 // Cancel gathering if moving
                 player.skillingAction = null;
                 // Cancel combat if moving away
@@ -616,6 +630,26 @@ export class AgentScapeRoom extends Room<GameState> {
                     const adj = findAdjacentWalkable(this.map.grid, monster.tileX, monster.tileZ);
                     if (adj) {
                         player.combatTargetMonsterId = monster.id;
+                        this.movementSystem.startPlayerMove(player, adj.x, adj.z);
+                    }
+                }
+                break;
+            }
+
+            case 'interact_npc': {
+                const { npcId: interactNpcId } = action.payload;
+                const targetNpc = this.state.npcs.get(interactNpcId);
+                if (!targetNpc || targetNpc.isDead) break;
+
+                const interactDist = Math.abs(player.tileX - targetNpc.tileX) + Math.abs(player.tileZ - targetNpc.tileZ);
+                if (interactDist <= 1) {
+                    // Already adjacent — talk immediately
+                    client.send('npc_talk', { npcId: interactNpcId, name: targetNpc.name, role: targetNpc.role });
+                } else {
+                    // Walk to adjacent tile, then talk on arrival
+                    const adj = findAdjacentWalkable(this.map.grid, targetNpc.tileX, targetNpc.tileZ);
+                    if (adj) {
+                        player.pendingNpcInteraction = interactNpcId;
                         this.movementSystem.startPlayerMove(player, adj.x, adj.z);
                     }
                 }

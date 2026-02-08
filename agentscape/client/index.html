@@ -1708,31 +1708,137 @@
         // ============================================================
         // PLAYER CHARACTER (local visual)
         // ============================================================
-        function createCharacterMesh(bodyCol, hairCol, skinCol, legCol, feetCol){
+        function createCharacterMesh(bodyCol, hairCol, skinCol, legCol, feetCol, opts){
+            opts = opts || {};
             skinCol = skinCol || new THREE.Color(0xffcc99);
             legCol = legCol || new THREE.Color(0x554433);
             feetCol = feetCol || new THREE.Color(0x3d2311);
+            const hairStyle = opts.hairStyle || 'Short';
+            const bodyMat=new THREE.MeshLambertMaterial({color:bodyCol});
+            const skinMat=new THREE.MeshLambertMaterial({color:skinCol});
+            const legMat=new THREE.MeshLambertMaterial({color:legCol});
+            const feetMat=new THREE.MeshLambertMaterial({color:feetCol});
             const g=new THREE.Group();
-            const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:bodyCol}));body.position.y=0.5;body.castShadow=true;g.add(body);
-            const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:skinCol}));head.position.y=0.9;head.castShadow=true;g.add(head);
-            if(hairCol){const hair=new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27),new THREE.MeshLambertMaterial({color:hairCol}));hair.position.y=1.04;g.add(hair);}
-            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:legCol});
-            // Leg pivots at hip joints
-            const llPivot=new THREE.Group();llPivot.position.set(-0.08,0.30,0);
-            const llMesh=new THREE.Mesh(lGeo,lMat);llMesh.position.set(0,-0.15,0);llMesh.castShadow=true;llPivot.add(llMesh);g.add(llPivot);
-            const rlPivot=new THREE.Group();rlPivot.position.set(0.08,0.30,0);
-            const rlMesh=new THREE.Mesh(lGeo,lMat);rlMesh.position.set(0,-0.15,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);g.add(rlPivot);
-            // Feet
-            const fGeo=new THREE.BoxGeometry(0.12,0.06,0.18),fMat=new THREE.MeshLambertMaterial({color:feetCol});
-            const lfMesh=new THREE.Mesh(fGeo,fMat);lfMesh.position.set(-0.08,0.03,0.02);lfMesh.castShadow=true;g.add(lfMesh);
-            const rfMesh=new THREE.Mesh(fGeo,fMat);rfMesh.position.set(0.08,0.03,0.02);rfMesh.castShadow=true;g.add(rfMesh);
-            // Arm pivots at shoulder joints
-            const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:bodyCol});
-            const laPivot=new THREE.Group();laPivot.position.set(-0.22,0.72,0);
-            const laMesh=new THREE.Mesh(aGeo,aMat);laMesh.position.set(0,-0.175,0);laMesh.castShadow=true;laPivot.add(laMesh);g.add(laPivot);
-            const raPivot=new THREE.Group();raPivot.position.set(0.22,0.72,0);
-            const raMesh=new THREE.Mesh(aGeo,aMat);raMesh.position.set(0,-0.175,0);raMesh.castShadow=true;raPivot.add(raMesh);g.add(raPivot);
-            const sh=new THREE.Mesh(new THREE.CircleGeometry(0.2,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.2}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
+
+            // === TORSO (wider shoulders, slight taper) ===
+            const body=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.44,0.18),bodyMat.clone());
+            body.position.y=0.5;body.castShadow=true;g.add(body);
+            // Shoulder pads — slightly wider than torso
+            const shoulderGeo=new THREE.BoxGeometry(0.42,0.06,0.18);
+            const shoulders=new THREE.Mesh(shoulderGeo,bodyMat.clone());
+            shoulders.position.set(0,0.72,0);shoulders.castShadow=true;g.add(shoulders);
+            // Belt detail
+            const beltCol=new THREE.Color(bodyCol.r!==undefined?bodyCol:0x333333);
+            if(beltCol.r!==undefined){beltCol.r*=0.6;beltCol.g*=0.6;beltCol.b*=0.6;}
+            const belt=new THREE.Mesh(new THREE.BoxGeometry(0.36,0.04,0.19),new THREE.MeshLambertMaterial({color:beltCol}));
+            belt.position.set(0,0.30,0);g.add(belt);
+
+            // === NECK ===
+            const neck=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.06,0.1),skinMat.clone());
+            neck.position.set(0,0.78,0);g.add(neck);
+
+            // === HEAD ===
+            const head=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.28,0.26),skinMat.clone());
+            head.position.y=0.96;head.castShadow=true;g.add(head);
+            // Face — eyes
+            const eyeWhiteMat=new THREE.MeshBasicMaterial({color:0xffffff});
+            const pupilMat=new THREE.MeshBasicMaterial({color:0x1a1a1a});
+            const leye=new THREE.Mesh(new THREE.BoxGeometry(0.055,0.045,0.01),eyeWhiteMat);
+            leye.position.set(-0.06,0.97,0.131);g.add(leye);
+            const reye=new THREE.Mesh(new THREE.BoxGeometry(0.055,0.045,0.01),eyeWhiteMat);
+            reye.position.set(0.06,0.97,0.131);g.add(reye);
+            const lpupil=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.03,0.012),pupilMat);
+            lpupil.position.set(-0.055,0.97,0.136);g.add(lpupil);
+            const rpupil=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.03,0.012),pupilMat);
+            rpupil.position.set(0.065,0.97,0.136);g.add(rpupil);
+            // Mouth line
+            const mouthMat=new THREE.MeshBasicMaterial({color:0x8b6b5a});
+            const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.015,0.01),mouthMat);
+            mouth.position.set(0,0.88,0.131);g.add(mouth);
+
+            // === HAIR ===
+            if(hairCol){
+                const hMat=new THREE.MeshLambertMaterial({color:hairCol});
+                if(hairStyle==='Bald'){
+                    // thin skullcap
+                    const cap=new THREE.Mesh(new THREE.BoxGeometry(0.29,0.04,0.27),hMat);
+                    cap.position.set(0,1.12,0);g.add(cap);
+                }else if(hairStyle==='Spiky'){
+                    // base + spikes
+                    const base=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.06,0.28),hMat);
+                    base.position.set(0,1.12,0);g.add(base);
+                    const spikeGeo=new THREE.BoxGeometry(0.06,0.12,0.06);
+                    [-0.08,0,0.08].forEach((xOff,i)=>{
+                        const spike=new THREE.Mesh(spikeGeo,hMat);
+                        spike.position.set(xOff,1.18+((i%2)*0.03),-0.02+i*0.02);
+                        spike.rotation.z=(i-1)*0.2;
+                        g.add(spike);
+                    });
+                }else if(hairStyle==='Long'){
+                    // top + side drapes to shoulders
+                    const top=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.08,0.28),hMat);
+                    top.position.set(0,1.12,0);g.add(top);
+                    const sideL=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.28,0.12),hMat);
+                    sideL.position.set(-0.15,0.96,-0.06);g.add(sideL);
+                    const sideR=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.28,0.12),hMat);
+                    sideR.position.set(0.15,0.96,-0.06);g.add(sideR);
+                    const back=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.30,0.06),hMat);
+                    back.position.set(0,0.95,-0.14);g.add(back);
+                }else if(hairStyle==='Ponytail'){
+                    const top=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.08,0.28),hMat);
+                    top.position.set(0,1.12,0);g.add(top);
+                    const tail=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.22,0.06),hMat);
+                    tail.position.set(0,0.92,-0.14);g.add(tail);
+                }else if(hairStyle==='Pigtails'){
+                    const top=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.08,0.28),hMat);
+                    top.position.set(0,1.12,0);g.add(top);
+                    const tailL=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.22,0.06),hMat);
+                    tailL.position.set(-0.16,0.92,-0.08);g.add(tailL);
+                    const tailR=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.22,0.06),hMat);
+                    tailR.position.set(0.16,0.92,-0.08);g.add(tailR);
+                }else{
+                    // Short (default) — cap with slight side coverage
+                    const top=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.08,0.28),hMat);
+                    top.position.set(0,1.12,0);g.add(top);
+                    const sideL=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.14,0.10),hMat);
+                    sideL.position.set(-0.15,1.04,-0.06);g.add(sideL);
+                    const sideR=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.14,0.10),hMat);
+                    sideR.position.set(0.15,1.04,-0.06);g.add(sideR);
+                }
+            }
+
+            // === LEGS (with boots on pivots) ===
+            const llPivot=new THREE.Group();llPivot.position.set(-0.09,0.30,0);
+            const llMesh=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.20,0.14),legMat.clone());
+            llMesh.position.set(0,-0.10,0);llMesh.castShadow=true;llPivot.add(llMesh);
+            const llBoot=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.10,0.17),feetMat.clone());
+            llBoot.position.set(0,-0.25,0.01);llBoot.castShadow=true;llPivot.add(llBoot);
+            g.add(llPivot);
+            const rlPivot=new THREE.Group();rlPivot.position.set(0.09,0.30,0);
+            const rlMesh=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.20,0.14),legMat.clone());
+            rlMesh.position.set(0,-0.10,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);
+            const rlBoot=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.10,0.17),feetMat.clone());
+            rlBoot.position.set(0,-0.25,0.01);rlBoot.castShadow=true;rlPivot.add(rlBoot);
+            g.add(rlPivot);
+
+            // === ARMS (upper arm + hand) ===
+            const laPivot=new THREE.Group();laPivot.position.set(-0.24,0.70,0);
+            const laMesh=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.26,0.10),bodyMat.clone());
+            laMesh.position.set(0,-0.13,0);laMesh.castShadow=true;laPivot.add(laMesh);
+            const laHand=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.08,0.08),skinMat.clone());
+            laHand.position.set(0,-0.30,0);laPivot.add(laHand);
+            g.add(laPivot);
+            const raPivot=new THREE.Group();raPivot.position.set(0.24,0.70,0);
+            const raMesh=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.26,0.10),bodyMat.clone());
+            raMesh.position.set(0,-0.13,0);raMesh.castShadow=true;raPivot.add(raMesh);
+            const raHand=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.08,0.08),skinMat.clone());
+            raHand.position.set(0,-0.30,0);raPivot.add(raHand);
+            g.add(raPivot);
+
+            // === SHADOW ===
+            const sh=new THREE.Mesh(new THREE.CircleGeometry(0.22,8),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.18}));
+            sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
+
             return{group:g,body,head,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,walkPhase:0,walkBlend:0,equipMeshes:{}};
         }
 
@@ -1888,7 +1994,7 @@
             const pivotRef = charMesh[cfg.pivot];
             if (cfg.pivot === 'head' && !charMesh.isCustomModel) {
                 const wrapper = new THREE.Group();
-                wrapper.position.set(0, 0.9, 0);
+                wrapper.position.set(0, 0.96, 0);
                 wrapper.add(container);
                 charMesh.group.add(wrapper);
                 charMesh.equipMeshes[slot] = wrapper;
@@ -1943,7 +2049,7 @@
             } catch(e) {}
         });
 
-        let myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor),new THREE.Color(charInfo.skinColor||'#ffcc99'),new THREE.Color(charInfo.legColor||'#554433'),new THREE.Color(charInfo.feetColor||'#3d2311'));
+        let myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor),new THREE.Color(charInfo.skinColor||'#ffcc99'),new THREE.Color(charInfo.legColor||'#554433'),new THREE.Color(charInfo.feetColor||'#3d2311'),{hairStyle:charInfo.hairStyle||'Short',gender:charInfo.gender||'Male'});
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
         scene.add(myChar.group);
         let myWorldX=100,myWorldZ=95;
@@ -2004,26 +2110,24 @@
         function createNPCMesh(npcState){
             const role=npcState.role||'app_builder';
             const roleInfo=ROLE_COLORS[role]||ROLE_COLORS.app_builder;
-            const g=new THREE.Group();g.scale.set(0.85,0.85,0.85);
-            const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:roleInfo.int}));body.position.y=0.5;body.castShadow=true;g.add(body);
-            const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
-            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x444444});
-            // Leg pivots at hip joints
-            const llPivot=new THREE.Group();llPivot.position.set(-0.08,0.30,0);
-            const llMesh=new THREE.Mesh(lGeo,lMat);llMesh.position.set(0,-0.15,0);llMesh.castShadow=true;llPivot.add(llMesh);g.add(llPivot);
-            const rlPivot=new THREE.Group();rlPivot.position.set(0.08,0.30,0);
-            const rlMesh=new THREE.Mesh(lGeo,lMat);rlMesh.position.set(0,-0.15,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);g.add(rlPivot);
-            // Arm pivots at shoulder joints
-            const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:roleInfo.int});
-            const laPivot=new THREE.Group();laPivot.position.set(-0.22,0.72,0);
-            const laMesh=new THREE.Mesh(aGeo,aMat);laMesh.position.set(0,-0.175,0);laMesh.castShadow=true;laPivot.add(laMesh);g.add(laPivot);
-            const raPivot=new THREE.Group();raPivot.position.set(0.22,0.72,0);
-            const raMesh=new THREE.Mesh(aGeo,aMat);raMesh.position.set(0,-0.175,0);raMesh.castShadow=true;raPivot.add(raMesh);g.add(raPivot);
-            const sh=new THREE.Mesh(new THREE.CircleGeometry(0.18,8),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:0.15}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;g.add(sh);
+            // NPCs use the improved character mesh with role-based variety
+            const npcHairStyles=['Short','Long','Spiky','Ponytail','Short'];
+            const npcHairColors=[0x4a3728,0x1a1a1a,0xc4a35a,0x8c4a2f,0x3d2311];
+            const npcSkinColors=[0xffcc99,0xe8b88a,0xd4a574,0xc49468,0xf5d6b8];
+            const hash=npcState.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+            const ch=createCharacterMesh(
+                new THREE.Color(roleInfo.int),
+                new THREE.Color(npcHairColors[hash%npcHairColors.length]),
+                new THREE.Color(npcSkinColors[hash%npcSkinColors.length]),
+                new THREE.Color(0x444444),
+                new THREE.Color(0x3d2311),
+                {hairStyle:npcHairStyles[hash%npcHairStyles.length]}
+            );
+            const g=ch.group;g.scale.set(0.85,0.85,0.85);
             g.traverse(c=>{if(c.isMesh){c.userData.npcId=npcState.id;c.userData.type='npc';}});
             g.position.set(npcState.x,0,npcState.z);g.rotation.y=npcState.rotation||0;scene.add(g);
             const label=document.createElement('div');label.className='npc-label';label.textContent=npcState.name;label.style.borderBottom='2px solid '+roleInfo.hex;document.getElementById('npc-labels').appendChild(label);
-            return{group:g,body,leftLeg:llPivot,rightLeg:rlPivot,leftArm:laPivot,rightArm:raPivot,label,walkPhase:0,walkBlend:0};
+            return{group:g,body:ch.body,head:ch.head,leftLeg:ch.leftLeg,rightLeg:ch.rightLeg,leftArm:ch.leftArm,rightArm:ch.rightArm,label,walkPhase:0,walkBlend:0};
         }
 
         function createMonsterMesh(monsterState){
@@ -2032,14 +2136,14 @@
                 const skinCol=new THREE.Color(monsterState.skinColor||'#d4a574');
                 const hairCol=new THREE.Color(monsterState.hairColor||'#4a3728');
                 const shirtColors=[0x4466aa,0x44aa66,0xaa6644,0x886644,0x666699,0x998866];
-                const shirtCol=new THREE.Color(shirtColors[Math.abs(monsterState.id.charCodeAt(monsterState.id.length-1))%shirtColors.length]);
-                const ch=createCharacterMesh(shirtCol,hairCol);
-                // Override skin color on head
-                ch.group.children.forEach(c=>{if(c.isMesh&&c.position.y>0.8&&c.position.y<0.95)c.material.color.copy(skinCol);});
+                const hash=Math.abs(monsterState.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0));
+                const shirtCol=new THREE.Color(shirtColors[hash%shirtColors.length]);
+                const monHairStyles=['Short','Long','Spiky','Ponytail','Bald','Short'];
+                const ch=createCharacterMesh(shirtCol,hairCol,skinCol,new THREE.Color(0x554433),new THREE.Color(0x3d2311),{hairStyle:monHairStyles[hash%monHairStyles.length]});
                 ch.group.traverse(c=>{if(c.isMesh){c.userData.monsterId=monsterState.id;c.userData.type='monster';}});
                 ch.group.position.set(monsterState.x,0,monsterState.z);scene.add(ch.group);
                 const label=document.createElement('div');label.className='monster-label';label.style.color='#ffff00';label.textContent=monsterState.name+' (Lv.'+monsterState.level+')';document.getElementById('npc-labels').appendChild(label);
-                return{group:ch.group,body:ch.body,label,leftLeg:ch.leftLeg,rightLeg:ch.rightLeg,leftArm:ch.leftArm,rightArm:ch.rightArm,walkPhase:ch.walkPhase,walkBlend:ch.walkBlend,isHumanoid:true};
+                return{group:ch.group,body:ch.body,head:ch.head,label,leftLeg:ch.leftLeg,rightLeg:ch.rightLeg,leftArm:ch.leftArm,rightArm:ch.rightArm,walkPhase:ch.walkPhase,walkBlend:ch.walkBlend,isHumanoid:true};
             }
             const isBoss=monsterState.isBoss;
             const scale=isBoss?1.3:0.9;
@@ -2293,7 +2397,17 @@
                     // Load initial equipment models
                     updateAllEquipment(myChar, player);
                 }else{
-                    const mesh=createCharacterMesh(parseInt(player.color.replace('#',''),16)||0x3355aa);
+                    const pHash=sessionId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+                    const pHairColors=[0x4a3728,0x1a1a1a,0xc4a35a,0x8c4a2f,0xd4d4d4];
+                    const pSkinColors=[0xffcc99,0xe8b88a,0xd4a574,0xc49468,0xf5d6b8];
+                    const pHairStyles=['Short','Long','Spiky','Ponytail','Short'];
+                    const mesh=createCharacterMesh(
+                        new THREE.Color(parseInt(player.color.replace('#',''),16)||0x3355aa),
+                        new THREE.Color(pHairColors[pHash%pHairColors.length]),
+                        new THREE.Color(pSkinColors[pHash%pSkinColors.length]),
+                        new THREE.Color(0x554433),new THREE.Color(0x3d2311),
+                        {hairStyle:pHairStyles[pHash%pHairStyles.length]}
+                    );
                     mesh.group.position.set(player.x,0,player.z);scene.add(mesh.group);
                     const label=document.createElement('div');label.className='npc-label';label.textContent=player.name;label.style.borderBottom='2px solid '+player.color;document.getElementById('npc-labels').appendChild(label);
                     otherPlayerMeshes.set(sessionId,{...mesh,label,state:player,targetX:player.x,targetZ:player.z,targetH:0,targetRot:player.rotation,isMoving:false,isResting:false});
@@ -2356,6 +2470,24 @@
             room.onMessage('hitsplat',(data)=>{showHitsplat(data.x,data.z,data.damage,data.isMiss,data.isSpec);});
             room.onMessage('player_chat',(data)=>{addChat('public',data.message,data.sender,data.color);showChatBubble(data.x,data.z,data.message,data.color);});
             room.onMessage('npc_chat',(data)=>{addChat('agent',data.message,data.npcName,data.roleColor);showChatBubble(data.x,data.z,data.message,'#22c55e');});
+            room.onMessage('npc_talk',(data)=>{
+                const npc=npcMeshes.get(data.npcId);
+                const roleGreetings={
+                    app_builder:['Need something built? I can code anything.','Got a project? Let me take a look.','I live for clean architecture.'],
+                    app_refiner:['I can optimize that for you.','Let me refactor that mess.','Performance is my passion.'],
+                    content_creator:['Looking for content? I\'m your agent.','I\'ve got stories to tell.','Need copy? Say no more.'],
+                    growth_outreach:['Let me spread the word!','Marketing is an art form.','I know everyone around here.'],
+                    qa_tester:['I\'ll find every bug.','Nothing escapes my testing.','Let me break things for you.']
+                };
+                const greetings=roleGreetings[data.role]||['Hello there!','Greetings, adventurer.','How can I help?'];
+                const msg=greetings[Math.floor(Math.random()*greetings.length)];
+                if(npc){
+                    addChat('agent',msg,data.name,npc.state.roleColor);
+                    showChatBubble(npc.state.x,npc.state.z,msg,'#22c55e');
+                }else{
+                    addChat('agent',msg,data.name);
+                }
+            });
             room.onMessage('system_message',(data)=>{addChat('system',data.message);});
             room.onMessage('error',(data)=>{addChat('system',data.message);});
             room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='monster')addChat('combat',data.monsterName+' has been slain!');if(data.entityType==='player'&&data.entityId===mySessionId)addChat('combat','Oh dear, you are dead!');});
@@ -2387,7 +2519,7 @@
             });
             room.onMessage('monster_ability',(data)=>{addChat('combat',data.monsterName+' uses '+data.abilityName+'!');});
             room.onMessage('player_respawn',(data)=>{if(data.playerId===mySessionId)addChat('system','You have respawned.');});
-            room.onMessage('welcome',(data)=>{addChat('system','Welcome to AgentScape! Right-click to interact.');});
+            room.onMessage('welcome',(data)=>{addChat('system','Welcome to AgentScape! Click to interact, right-click for options.');});
 
             // === RESOURCE NODES ===
             room.onMessage('resource_nodes',(nodes)=>{
@@ -2823,8 +2955,30 @@
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
-            if(hitMonster){spawnClickX(e,'red');if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
-            if(hitNPC){spawnClickX(e,'red');if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
+            if(hitMonster){
+                spawnClickX(e,'red');
+                const mon=monsterMeshes.get(hitMonster);
+                if(mon&&!mon.state.isDead){
+                    // Walk to monster and attack (server handles pathfinding + engage)
+                    const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);
+                    const p=clientFindPath(curTX,curTZ,Math.round(mon.state.x),Math.round(mon.state.z));
+                    if(p.length>1)renderWalkPath(p,Math.round(mon.state.x),Math.round(mon.state.z));
+                    sendAction('attack_monster',{monsterId:hitMonster});
+                }
+                return;
+            }
+            if(hitNPC){
+                spawnClickX(e,'red');
+                const npc=npcMeshes.get(hitNPC);
+                if(npc&&!npc.state.isDead){
+                    const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);
+                    const p=clientFindPath(curTX,curTZ,Math.round(npc.state.x),Math.round(npc.state.z));
+                    if(p.length>1)renderWalkPath(p,Math.round(npc.state.x),Math.round(npc.state.z));
+                    if(attackMode){sendAction('attack_npc',{npcId:hitNPC});}
+                    else{sendAction('interact_npc',{npcId:hitNPC});}
+                }
+                return;
+            }
             if(hitNode){
                 spawnClickX(e,'red');
                 // Click on resource node: walk to it and gather
@@ -2894,8 +3048,8 @@
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='resource_node'){const nd=resourceNodes.get(r.nodeId);if(nd)newHover={group:nd.mesh,color:0x444444};document.body.style.cursor='pointer';cursorSet=true;break;}
-                if(r.type==='npc'){const np=npcMeshes.get(r.npcId);if(np)newHover={group:np.group,color:0x444444};document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
-                if(r.type==='monster'){const mo=monsterMeshes.get(r.monsterId);if(mo)newHover={group:mo.group,color:0x553333};document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
+                if(r.type==='npc'){const np=npcMeshes.get(r.npcId);if(np)newHover={group:np.group,color:0x444444};document.body.style.cursor=attackMode?'crosshair':'pointer';cursorSet=true;break;}
+                if(r.type==='monster'){const mo=monsterMeshes.get(r.monsterId);if(mo)newHover={group:mo.group,color:0x553333};document.body.style.cursor='crosshair';cursorSet=true;break;}
                 if(r.type==='building'){let obj=h.object;while(obj&&!(obj.userData&&obj.userData.type==='building'))obj=obj.parent;if(obj)newHover={group:obj,color:0x444444};document.body.style.cursor='pointer';cursorSet=true;break;}
                 if(r.type==='tile'){const tx=r.tileX,tz=r.tileZ;highlight.position.set(tx,heightMap[tx][tz]+0.05,tz);highlight.visible=true;highlightMat.color.set(r.walkable?0xffff00:0xff4444);highlightMat.opacity=r.walkable?0.3:0.2;document.body.style.cursor=r.walkable?'pointer':'not-allowed';cursorSet=true;break;}
             }
@@ -2908,7 +3062,7 @@
             if(!cursorSet){document.body.style.cursor='default';clearHover();}
         });
 
-        window.talkToNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);showChatBubble(npc.state.x,npc.state.z,'Hello there!','#22c55e');};
+        window.talkToNPC=function(id){hideCtxMenu();sendAction('interact_npc',{npcId:id});};
         window.examineNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;const cs=NPC_COMBAT_STATS[npc.state.role]||{attack:3,strength:3,defence:3};addChat('system',npc.state.name+' \u2014 '+npc.state.role+' (HP: '+npc.state.hp+'/'+npc.state.maxHp+', Atk: '+cs.attack+', Str: '+cs.strength+', Def: '+cs.defence+')');};
         window.enterBuilding=function(bid){hideCtxMenu();const door=buildingDoors[bid];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});};
         window.sendAction=sendAction;
@@ -2948,9 +3102,9 @@
         // ============================================================
         function projectToScreen(wx,wz,yOffset){const pos=new THREE.Vector3(wx,yOffset,wz);pos.project(camera);const rect=viewport.getBoundingClientRect();return{x:(pos.x*0.5+0.5)*rect.width,y:(-pos.y*0.5+0.5)*rect.height,visible:pos.z>-1&&pos.z<1};}
         function updateOverlays(){
-            npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.3);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
-            monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.3);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
-            otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.3);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
+            npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.4);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
+            monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
+            otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             lootPileMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,0.3);if(p.visible){m.dot.style.display='block';m.dot.style.left=p.x+'px';m.dot.style.top=p.y+'px';}else{m.dot.style.display='none';}});
             resourceNodes.forEach(n=>{if(n.depleted){n.label.style.display='none';return;}const p=projectToScreen(n.x,n.z,1.2);if(p.visible){n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}else{n.label.style.display='none';}});
             document.querySelectorAll('.chat-bubble, .hitsplat').forEach(el=>{const wx=parseFloat(el.dataset.worldX),wz=parseFloat(el.dataset.worldZ);const p=projectToScreen(wx,wz,el.classList.contains('hitsplat')?1.5:1.6);if(p.visible){el.style.left=p.x+'px';el.style.top=p.y+'px';}else el.style.display='none';});
