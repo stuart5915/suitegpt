@@ -1997,16 +1997,20 @@
                     let lastWeaponId = player.equippedWeapon?.id || null;
                     let lastHelmId = player.equippedHelm?.id || null;
                     let lastShieldId = player.equippedShield?.id || null;
+                    let lastCoins = player.coins || 0;
                     player.onChange(()=>{
                         updateOrbs(player);renderStatsFromState(player);
-                        // Detect equipment changes (including unequip)
+                        // Detect equipment or coin changes → re-render inventory
                         const curW = player.equippedWeapon?.id || null;
                         const curH = player.equippedHelm?.id || null;
                         const curS = player.equippedShield?.id || null;
-                        if (curW !== lastWeaponId || curH !== lastHelmId || curS !== lastShieldId) {
-                            lastWeaponId = curW; lastHelmId = curH; lastShieldId = curS;
+                        const curCoins = player.coins || 0;
+                        const equipChanged = curW !== lastWeaponId || curH !== lastHelmId || curS !== lastShieldId;
+                        const coinsChanged = curCoins !== lastCoins;
+                        if (equipChanged || coinsChanged) {
+                            lastWeaponId = curW; lastHelmId = curH; lastShieldId = curS; lastCoins = curCoins;
                             renderInventoryFromState(player);
-                            updateAllEquipment(myChar, player);
+                            if (equipChanged) updateAllEquipment(myChar, player);
                         }
                         myWorldX=player.x;myWorldZ=player.z;
                         const tx=player.tileX,tz=player.tileZ;

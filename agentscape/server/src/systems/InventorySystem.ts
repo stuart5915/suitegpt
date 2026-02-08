@@ -169,6 +169,7 @@ export class InventorySystem {
                 if (player.inventory[i].id === itemId) {
                     player.inventory[i].quantity += qty;
                     player.dirty = true;
+                    if (itemId === 'coins') player.coins = this.countItem(player, 'coins');
                     return true;
                 }
             }
@@ -180,17 +181,21 @@ export class InventorySystem {
             let found = false;
             for (let i = 0; i < MAX_INVENTORY_SLOTS; i++) {
                 if (!player.inventory[i].id) {
-                    this.setSlot(player, i, itemId, 1);
+                    this.setSlot(player, i, itemId, def.stackable ? qty : 1);
                     found = true;
-                    placed++;
+                    placed += def.stackable ? qty : 1;
                     break;
                 }
             }
             if (!found) break; // inventory full
+            if (def.stackable) break; // stackable items go in one slot
         }
 
-        if (placed > 0) player.dirty = true;
-        return placed === qty;
+        if (placed > 0) {
+            player.dirty = true;
+            if (itemId === 'coins') player.coins = this.countItem(player, 'coins');
+        }
+        return def.stackable ? placed >= qty : placed === qty;
     }
 
     removeFromInventory(player: PlayerSchema, slot: number, qty: number): boolean {
@@ -227,6 +232,7 @@ export class InventorySystem {
             }
         }
         player.dirty = true;
+        player.coins = this.countItem(player, 'coins');
         return true;
     }
 
