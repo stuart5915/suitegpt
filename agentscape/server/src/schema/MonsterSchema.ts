@@ -21,6 +21,9 @@ export class MonsterSchema extends Schema {
     @type('string') zone: string = '';
     @type('float32') rotation: number = 0;
     @type('string') color: string = '#94a3b8';
+    @type('boolean') isHumanoid: boolean = false;
+    @type('string') skinColor: string = '';
+    @type('string') hairColor: string = '';
 
     // --- Server-only state ---
     spawnX: number = 0;

@@ -143,7 +143,7 @@ export interface ItemDef {
     name: string;
     icon: string;
     stackable: boolean;
-    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'food' | 'material' | 'misc' | 'potion';
+    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'food' | 'material' | 'misc' | 'potion' | 'bones';
     stats?: { attack?: number; strength?: number; defence?: number };
     healAmount?: number;
     tier?: number; // 1=bronze, 2=iron, 3=steel, 4=mithril, 5=rune, 6=dragon
@@ -185,6 +185,9 @@ export const ITEMS: Record<string, ItemDef> = {
     lobster:        { id: 'lobster', name: 'Lobster', icon: '\u{1F99E}', stackable: false, type: 'food', healAmount: 30 },
     shark:          { id: 'shark', name: 'Shark', icon: '\u{1F988}', stackable: false, type: 'food', healAmount: 40 },
     manta_ray:      { id: 'manta_ray', name: 'Manta Ray', icon: '\u{1F420}', stackable: false, type: 'food', healAmount: 50 },
+
+    // --- Bones ---
+    bones:          { id: 'bones', name: 'Bones', icon: '\u{1F9B4}', stackable: false, type: 'bones' },
 
     // --- Potions ---
     attack_potion:  { id: 'attack_potion', name: 'Attack Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
@@ -266,6 +269,10 @@ export interface MonsterDef {
     spawnCount: number; // how many exist in the zone
     color: string; // for 3D rendering
     description: string;
+    isHumanoid?: boolean; // render as human character mesh
+    skinColor?: string; // humanoid skin color
+    hairColor?: string; // humanoid hair color
+    spawnBounds?: { x1: number; z1: number; x2: number; z2: number }; // override zone bounds for spawning
 }
 
 export const MONSTERS: Record<string, MonsterDef> = {
@@ -429,6 +436,36 @@ export const MONSTERS: Record<string, MonsterDef> = {
         coinDrop: { min: 200, max: 500 },
         aggressive: true, respawnTime: 40, spawnCount: 12,
         color: '#f97316', description: 'An ancient security protocol. Still guarding long-dead servers.',
+    },
+
+    // === SUITE CASTLE TOWNFOLK ===
+    man: {
+        id: 'man', name: 'Man', icon: '\u{1F9D1}',
+        zone: 'suite_city', level: 2,
+        hp: 10, attack: 1, strength: 1, defence: 1,
+        xpReward: { attack: 4, strength: 3, hitpoints: 2 },
+        drops: [
+            { id: 'bones', weight: 100, minQty: 1, maxQty: 1 },
+        ],
+        coinDrop: { min: 1, max: 5 },
+        aggressive: false, respawnTime: 10, spawnCount: 5,
+        color: '#d4a574', description: 'Just a regular person going about their day.',
+        isHumanoid: true, skinColor: '#d4a574', hairColor: '#4a3728',
+        spawnBounds: { x1: 88, z1: 84, x2: 112, z2: 106 },
+    },
+    woman: {
+        id: 'woman', name: 'Woman', icon: '\u{1F469}',
+        zone: 'suite_city', level: 2,
+        hp: 10, attack: 1, strength: 1, defence: 1,
+        xpReward: { attack: 4, strength: 3, hitpoints: 2 },
+        drops: [
+            { id: 'bones', weight: 100, minQty: 1, maxQty: 1 },
+        ],
+        coinDrop: { min: 1, max: 5 },
+        aggressive: false, respawnTime: 10, spawnCount: 5,
+        color: '#c89b7b', description: 'A townsfolk minding her own business.',
+        isHumanoid: true, skinColor: '#c89b7b', hairColor: '#8b4513',
+        spawnBounds: { x1: 88, z1: 84, x2: 112, z2: 106 },
     },
 };
 

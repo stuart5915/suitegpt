@@ -31,6 +31,7 @@ import {
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
     MAX_PLAYERS_PER_ROOM, MAP_SIZE, MONSTERS, BOSSES, ZONES,
     MONSTER_MOVE_SPEED, MONSTER_AGGRO_RANGE, BOSS_AGGRO_RANGE,
+    levelFromXP,
 } from '../config';
 
 // Demo agents for when API is unavailable
@@ -641,6 +642,27 @@ export class AgentScapeRoom extends Room<GameState> {
                 break;
             }
 
+            case 'bury_bones': {
+                const slot = action.payload.inventorySlot;
+                const item = player.inventory[slot];
+                if (item && item.id === 'bones') {
+                    // Remove bones from inventory
+                    player.inventory.splice(slot, 1);
+                    // Grant 4 prayer XP
+                    player.prayerXP += 4;
+                    const newLevel = levelFromXP(player.prayerXP);
+                    if (newLevel > player.prayer) {
+                        player.prayer = newLevel;
+                        client.send('system_message', { message: `Prayer level up! You are now level ${newLevel}.` });
+                    }
+                    client.send('system_message', { message: 'You bury the bones. +4 Prayer XP.' });
+                    player.dirty = true;
+                } else {
+                    client.send('system_message', { message: 'You need bones to bury.' });
+                }
+                break;
+            }
+
             case 'toggle_run': {
                 player.isRunning = !player.isRunning;
                 if (player.isRunning) player.isResting = false;
@@ -795,6 +817,7 @@ export class AgentScapeRoom extends Room<GameState> {
                 monster.aggressive = def.aggressive;
                 monster.zone = def.zone;
                 monster.color = def.color;
+                if (def.isHumanoid) { monster.isHumanoid = true; monster.skinColor = def.skinColor || ''; monster.hairColor = def.hairColor || ''; }
                 monster.spawnX = pos.x;
                 monster.spawnZ = pos.z;
                 monster.respawnTime = def.respawnTime;

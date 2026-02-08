@@ -24,6 +24,7 @@ export type ActionType =
     | 'drop_item'
     | 'toggle_run'
     | 'toggle_rest'
+    | 'bury_bones'
     | 'chat';
 
 export interface GameAction {
@@ -131,6 +132,14 @@ export class ActionValidator {
             case 'drop_item': {
                 const { inventorySlot } = action.payload;
                 if (typeof inventorySlot !== 'number' || inventorySlot < 0 || inventorySlot >= MAX_INVENTORY_SLOTS) {
+                    return { valid: false, reason: 'Invalid slot' };
+                }
+                return { valid: true };
+            }
+
+            case 'bury_bones': {
+                const { inventorySlot: slot } = action.payload;
+                if (typeof slot !== 'number' || slot < 0 || slot >= MAX_INVENTORY_SLOTS) {
                     return { valid: false, reason: 'Invalid slot' };
                 }
                 return { valid: true };

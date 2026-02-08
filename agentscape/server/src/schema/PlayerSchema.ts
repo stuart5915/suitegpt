@@ -98,6 +98,16 @@ export class PlayerSchema extends Schema {
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
+    @type('uint8') prayer: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') prayerXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
     @type([InventoryItem]) inventory = new ArraySchema<InventoryItem>();
 
     @filter(function (this: PlayerSchema, client: Client) {

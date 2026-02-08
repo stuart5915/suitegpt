@@ -1580,6 +1580,20 @@
         }
 
         function createMonsterMesh(monsterState){
+            // Humanoid monsters (Man, Woman) — render as character mesh
+            if(monsterState.isHumanoid){
+                const skinCol=new THREE.Color(monsterState.skinColor||'#d4a574');
+                const hairCol=new THREE.Color(monsterState.hairColor||'#4a3728');
+                const shirtColors=[0x4466aa,0x44aa66,0xaa6644,0x886644,0x666699,0x998866];
+                const shirtCol=new THREE.Color(shirtColors[Math.abs(monsterState.id.charCodeAt(monsterState.id.length-1))%shirtColors.length]);
+                const ch=createCharacterMesh(shirtCol,hairCol);
+                // Override skin color on head
+                ch.group.children.forEach(c=>{if(c.isMesh&&c.position.y>0.8&&c.position.y<0.95)c.material.color.copy(skinCol);});
+                ch.group.traverse(c=>{if(c.isMesh){c.userData.monsterId=monsterState.id;c.userData.type='monster';}});
+                ch.group.position.set(monsterState.x,0,monsterState.z);scene.add(ch.group);
+                const label=document.createElement('div');label.className='monster-label';label.style.color='#ffff00';label.textContent=monsterState.name+' (Lv.'+monsterState.level+')';document.getElementById('npc-labels').appendChild(label);
+                return{group:ch.group,body:ch.body,label,leftLeg:ch.leftLeg,rightLeg:ch.rightLeg,leftArm:ch.leftArm,rightArm:ch.rightArm,walkPhase:ch.walkPhase,walkBlend:ch.walkBlend,isHumanoid:true};
+            }
             const isBoss=monsterState.isBoss;
             const scale=isBoss?1.3:0.9;
             const g=new THREE.Group();g.scale.set(scale,scale,scale);
@@ -1832,7 +1846,7 @@
         let selectedSkill=null;
         function renderStatsFromState(p){
             if(!p)return;
-            const serverSkills=['attack','strength','defence','hitpoints'];
+            const serverSkills=['attack','strength','defence','hitpoints','prayer'];
             const el=document.getElementById('stats-content');
             let html='<div class="skill-grid">';
             SKILLS.forEach(s=>{
@@ -1917,6 +1931,7 @@
             const item=p.inventory[slot];if(!item||!item.id)return;
             const opts=[];
             if(item.type==='food')opts.push({label:'Eat',action:"sendAction('eat_food',{inventorySlot:"+slot+"})"});
+            if(item.type==='bones')opts.push({label:'Bury',action:"sendAction('bury_bones',{inventorySlot:"+slot+"})"});
             if(item.type==='weapon'||item.type==='axe')opts.push({label:p.equippedWeaponSlot===slot?'Unequip':'Wield',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
             if(item.type==='helm')opts.push({label:p.equippedHelmSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
             if(item.type==='shield')opts.push({label:p.equippedShieldSlot===slot?'Remove':'Wear',action:"sendAction('equip_item',{inventorySlot:"+slot+"})"});
@@ -2224,7 +2239,10 @@
                 if(m.leftLeg)animateWalk(m,m.isMoving,dt,false);
             });
             // Monsters
-            monsterMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;});
+            monsterMeshes.forEach(m=>{m.group.position.x+=(m.targetX-m.group.position.x)*lerpAmt;m.group.position.y+=(m.targetH-m.group.position.y)*lerpAmt;m.group.position.z+=(m.targetZ-m.group.position.z)*lerpAmt;m.group.rotation.y+=(m.targetRot-m.group.rotation.y)*lerpAmt;
+                if(m.isHumanoid&&m.leftLeg)animateWalk(m,m.isMoving,dt,false);
+                if(m.state.isDead)m.group.visible=false; else m.group.visible=true;
+            });
             // Path visualization cleanup + destination pulse
             if(pathGroup.children.length>0){
                 const px=myChar.group.position.x,pz=myChar.group.position.z;

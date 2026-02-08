@@ -158,7 +158,8 @@ function generateMonsterSpawns(rng: () => number): Record<string, { x: number; z
         if (!zone) continue;
 
         spawns[id] = [];
-        const { x1, z1, x2, z2 } = zone.bounds;
+        const bounds = monster.spawnBounds || zone.bounds;
+        const { x1, z1, x2, z2 } = bounds;
         const margin = 2;
 
         let placed = 0;
