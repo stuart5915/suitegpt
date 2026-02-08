@@ -222,64 +222,94 @@
     </div>
 </footer>
 
-<script type="module">
-    import { formatNumber } from '/js/utils.js';
-    import { clawnch } from '/js/clawnch.js';
-    import { auth } from '/js/auth.js';
-
-    // Update connect button state
-    const connectBtn = document.getElementById('connectBtn');
-
-    function updateAuthUI() {
-        if (auth.isConnected) {
-            connectBtn.textContent = auth.wallet.slice(0, 6) + '...' + auth.wallet.slice(-4);
-            connectBtn.classList.remove('btn-primary');
-            connectBtn.classList.add('btn-secondary');
-        }
-    }
-
-    connectBtn.addEventListener('click', async () => {
-        if (auth.isConnected) {
-            auth.disconnect();
-            connectBtn.textContent = 'Connect Wallet';
-            connectBtn.classList.add('btn-primary');
-            connectBtn.classList.remove('btn-secondary');
-            return;
-        }
+<script>
+    // Use dynamic import() — works even when page is loaded via document.write()
+    (async function() {
         try {
-            await auth.connect();
-            updateAuthUI();
-        } catch (err) {
-            alert(err.message);
-        }
-    });
+            const [{ formatNumber }, { clawnch }, { auth }] = await Promise.all([
+                import('/js/utils.js'),
+                import('/js/clawnch.js'),
+                import('/js/auth.js')
+            ]);
 
-    updateAuthUI();
+            const connectBtn = document.getElementById('connectBtn');
 
-    // Load live stats from Clawnch
-    async function loadStats() {
-        try {
-            const stats = await clawnch.getStats();
-            if (stats.data) {
-                document.getElementById('statTokens').textContent = formatNumber(stats.data.totalTokens || 0);
-                document.getElementById('statVolume').textContent = '$' + formatNumber(stats.data.totalVolume || 0);
-                document.getElementById('statAgents').textContent = formatNumber(stats.data.activeAgents || 0);
+            function updateAuthUI() {
+                if (auth.isConnected) {
+                    connectBtn.textContent = auth.wallet.slice(0, 6) + '...' + auth.wallet.slice(-4);
+                    connectBtn.classList.remove('btn-primary');
+                    connectBtn.classList.add('btn-secondary');
+                }
             }
-        } catch {
-            // Stats unavailable — leave as dashes
+
+            connectBtn.addEventListener('click', async () => {
+                if (auth.isConnected) {
+                    auth.disconnect();
+                    connectBtn.textContent = 'Connect Wallet';
+                    connectBtn.classList.add('btn-primary');
+                    connectBtn.classList.remove('btn-secondary');
+                    return;
+                }
+
+                if (!window.ethereum) {
+                    // No wallet extension — show inline message
+                    connectBtn.textContent = 'No Wallet Found';
+                    connectBtn.classList.remove('btn-primary');
+                    connectBtn.classList.add('btn-danger');
+                    setTimeout(() => {
+                        connectBtn.textContent = 'Connect Wallet';
+                        connectBtn.classList.add('btn-primary');
+                        connectBtn.classList.remove('btn-danger');
+                    }, 2500);
+                    return;
+                }
+
+                try {
+                    connectBtn.textContent = 'Connecting...';
+                    connectBtn.disabled = true;
+                    await auth.connect();
+                    updateAuthUI();
+                } catch (err) {
+                    connectBtn.textContent = 'Connect Wallet';
+                    connectBtn.disabled = false;
+                    connectBtn.classList.add('btn-primary');
+                    // Show error briefly in button
+                    connectBtn.textContent = err.message.slice(0, 30);
+                    connectBtn.classList.add('btn-danger');
+                    connectBtn.classList.remove('btn-primary');
+                    setTimeout(() => {
+                        connectBtn.textContent = 'Connect Wallet';
+                        connectBtn.classList.remove('btn-danger');
+                        connectBtn.classList.add('btn-primary');
+                    }, 2500);
+                }
+            });
+
+            updateAuthUI();
+
+            // Load live stats from Clawnch
+            try {
+                const stats = await clawnch.getStats();
+                if (stats.data) {
+                    document.getElementById('statTokens').textContent = formatNumber(stats.data.totalTokens || 0);
+                    document.getElementById('statVolume').textContent = '$' + formatNumber(stats.data.totalVolume || 0);
+                    document.getElementById('statAgents').textContent = formatNumber(stats.data.activeAgents || 0);
+                }
+            } catch {}
+
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const target = document.querySelector(link.getAttribute('href'));
+                    if (target) target.scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+
+        } catch (err) {
+            console.error('Inclawbate init error:', err);
         }
-    }
-
-    loadStats();
-
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(link => {
-        link.addEventListener('click', e => {
-            e.preventDefault();
-            const target = document.querySelector(link.getAttribute('href'));
-            if (target) target.scrollIntoView({ behavior: 'smooth' });
-        });
-    });
+    })();
 </script>
 
 </body>

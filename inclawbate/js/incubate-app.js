@@ -42,12 +42,24 @@ function updateAuthState() {
 }
 
 async function connectWallet() {
+    if (!window.ethereum) {
+        connectBtn.textContent = 'No Wallet Found';
+        connectBtn.classList.remove('btn-primary');
+        connectBtn.classList.add('btn-danger');
+        setTimeout(() => { connectBtn.textContent = 'Connect Wallet'; connectBtn.classList.add('btn-primary'); connectBtn.classList.remove('btn-danger'); }, 2500);
+        return;
+    }
     try {
+        connectBtn.textContent = 'Connecting...';
+        connectBtn.disabled = true;
         await auth.connect();
         claws.setToken(auth.token);
+        connectBtn.disabled = false;
         updateAuthState();
         checkProject();
     } catch (err) {
+        connectBtn.disabled = false;
+        connectBtn.textContent = 'Connect Wallet';
         showToast(err.message, 'error');
     }
 }

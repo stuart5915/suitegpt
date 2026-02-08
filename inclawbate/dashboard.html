@@ -148,9 +148,16 @@
             auth.disconnect();
             updateAuthUI();
             showView('notConnected');
-        } else {
-            doConnect();
+            return;
         }
+        if (!window.ethereum) {
+            connectBtn.textContent = 'No Wallet Found';
+            connectBtn.classList.remove('btn-secondary');
+            connectBtn.classList.add('btn-danger');
+            setTimeout(() => { connectBtn.textContent = 'Connect Wallet'; connectBtn.classList.add('btn-secondary'); connectBtn.classList.remove('btn-danger'); }, 2500);
+            return;
+        }
+        doConnect();
     });
 
     connectPrompt.addEventListener('click', doConnect);
