@@ -161,11 +161,21 @@ export class ActionValidator {
             }
 
             case 'pickpocket': {
-                const { npcId } = action.payload;
-                if (typeof npcId !== 'string') return { valid: false, reason: 'Invalid NPC ID' };
-                const npc = state.npcs.get(npcId);
-                if (!npc) return { valid: false, reason: 'NPC not found' };
-                if (npc.isDead) return { valid: false, reason: 'NPC is dead' };
+                const { npcId, monsterId } = action.payload;
+                if (npcId) {
+                    if (typeof npcId !== 'string') return { valid: false, reason: 'Invalid NPC ID' };
+                    const npc = state.npcs.get(npcId);
+                    if (!npc) return { valid: false, reason: 'NPC not found' };
+                    if (npc.isDead) return { valid: false, reason: 'NPC is dead' };
+                } else if (monsterId) {
+                    if (typeof monsterId !== 'string') return { valid: false, reason: 'Invalid monster ID' };
+                    const monster = state.monsters.get(monsterId);
+                    if (!monster) return { valid: false, reason: 'Monster not found' };
+                    if (monster.isDead) return { valid: false, reason: 'Target is dead' };
+                    if (!monster.isHumanoid) return { valid: false, reason: "You can't pickpocket that." };
+                } else {
+                    return { valid: false, reason: 'No target specified' };
+                }
                 return { valid: true };
             }
 

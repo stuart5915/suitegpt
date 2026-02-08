@@ -679,12 +679,34 @@ export class AgentScapeRoom extends Room<GameState> {
             }
 
             case 'pickpocket': {
-                const { npcId } = action.payload;
-                const targetNpc = this.state.npcs.get(npcId);
-                if (!targetNpc || targetNpc.isDead) break;
+                const { npcId, monsterId } = action.payload;
+
+                // Resolve target (NPC or humanoid monster)
+                let targetName = '';
+                let targetX = 0, targetZ = 0, targetTileX = 0, targetTileZ = 0;
+                let targetCombat = 1;
+                let targetId = '';
+
+                if (npcId) {
+                    const targetNpc = this.state.npcs.get(npcId);
+                    if (!targetNpc || targetNpc.isDead) break;
+                    targetName = targetNpc.name;
+                    targetX = targetNpc.x; targetZ = targetNpc.z;
+                    targetTileX = targetNpc.tileX; targetTileZ = targetNpc.tileZ;
+                    targetCombat = Math.floor(((targetNpc.combatStats as any).attack + (targetNpc.combatStats as any).strength + (targetNpc.combatStats as any).defence) / 3) + 1;
+                    targetId = npcId;
+                } else if (monsterId) {
+                    const targetMon = this.state.monsters.get(monsterId);
+                    if (!targetMon || targetMon.isDead || !targetMon.isHumanoid) break;
+                    targetName = targetMon.name;
+                    targetX = targetMon.x; targetZ = targetMon.z;
+                    targetTileX = targetMon.tileX; targetTileZ = targetMon.tileZ;
+                    targetCombat = targetMon.level;
+                    targetId = monsterId;
+                } else break;
 
                 // Must be adjacent
-                const ppDist = Math.abs(player.tileX - targetNpc.tileX) + Math.abs(player.tileZ - targetNpc.tileZ);
+                const ppDist = Math.abs(player.tileX - targetTileX) + Math.abs(player.tileZ - targetTileZ);
                 if (ppDist > 1) {
                     client.send('system_message', { message: 'You need to get closer.' });
                     break;
@@ -697,25 +719,24 @@ export class AgentScapeRoom extends Room<GameState> {
                 }
 
                 // Success chance: 50% base + 2% per thieving level, capped at 95%
-                const npcCombat = Math.floor(((targetNpc.combatStats as any).attack + (targetNpc.combatStats as any).strength + (targetNpc.combatStats as any).defence) / 3) + 1;
-                const successChance = Math.min(0.95, 0.50 + player.thieving * 0.02 - npcCombat * 0.01);
+                const successChance = Math.min(0.95, 0.50 + player.thieving * 0.02 - targetCombat * 0.01);
 
                 if (Math.random() < successChance) {
                     // Success — gain coins + thieving XP
                     const coinsStolen = 3 + Math.floor(Math.random() * 3); // 3-5 coins
                     this.inventorySystem.addToInventory(player, 'coins', coinsStolen);
-                    const xpGain = 8 + npcCombat;
+                    const xpGain = 8 + targetCombat;
                     const levelResult = this.inventorySystem.gainXP(player, 'thieving', xpGain);
-                    client.send('system_message', { message: `You pick the ${targetNpc.name}'s pocket. +${coinsStolen} coins, +${xpGain} Thieving XP.` });
+                    client.send('system_message', { message: `You pick the ${targetName}'s pocket. +${coinsStolen} coins, +${xpGain} Thieving XP.` });
                     if (levelResult.leveledUp) {
                         client.send('level_up', { skill: 'thieving', level: levelResult.newLevel });
                     }
                 } else {
-                    // Fail — stunned, take 1 damage, NPC shouts
+                    // Fail — stunned, take 1 damage, target shouts
                     player.stunTimer = 3;
                     player.hp = Math.max(0, player.hp - 1);
-                    client.send('system_message', { message: `You fail to pick the ${targetNpc.name}'s pocket. You've been stunned!` });
-                    this.broadcast('npc_chat', { npcId, name: targetNpc.name, message: 'What do you think you\'re doing?', x: targetNpc.x, z: targetNpc.z });
+                    client.send('system_message', { message: `You fail to pick the ${targetName}'s pocket. You've been stunned!` });
+                    this.broadcast('npc_chat', { npcId: targetId, name: targetName, message: 'What do you think you\'re doing?', x: targetX, z: targetZ });
                     this.broadcast('hitsplat', { targetType: 'player', targetId: player.sessionId, damage: 1, isMiss: false, isSpec: false, x: player.x, z: player.z });
                 }
                 player.dirty = true;
