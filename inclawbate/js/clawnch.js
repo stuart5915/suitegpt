@@ -1,49 +1,52 @@
 // Inclawbate — Clawnch API Client
-// Public endpoints called directly; authenticated calls proxied through our API
+// All calls proxied through /api/inclawbate/clawnch-proxy to avoid CORS
 
-const CLAWNCH_BASE = 'https://clawn.ch/api';
+const PROXY = '/api/inclawbate/clawnch-proxy';
+
+function proxyUrl(path, params = {}) {
+    const p = new URLSearchParams({ path, ...params });
+    return `${PROXY}?${p.toString()}`;
+}
 
 class ClawnchClient {
     async getTokens(params = {}) {
-        const qs = new URLSearchParams(params).toString();
-        const res = await fetch(`${CLAWNCH_BASE}/tokens${qs ? '?' + qs : ''}`);
+        const res = await fetch(proxyUrl('/tokens', params));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getLaunches(params = {}) {
-        const qs = new URLSearchParams(params).toString();
-        const res = await fetch(`${CLAWNCH_BASE}/launches${qs ? '?' + qs : ''}`);
+        const res = await fetch(proxyUrl('/launches', params));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getStats() {
-        const res = await fetch(`${CLAWNCH_BASE}/stats`);
+        const res = await fetch(proxyUrl('/stats'));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getTokenAnalytics(tokenAddress) {
-        const res = await fetch(`${CLAWNCH_BASE}/analytics/token?address=${tokenAddress}`);
+        const res = await fetch(proxyUrl('/analytics/token', { address: tokenAddress }));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getAgentAnalytics(wallet) {
-        const res = await fetch(`${CLAWNCH_BASE}/analytics/agent?wallet=${wallet}`);
+        const res = await fetch(proxyUrl('/analytics/agent', { wallet }));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getLeaderboard(sort = 'marketCap', limit = 50) {
-        const res = await fetch(`${CLAWNCH_BASE}/analytics/leaderboard?sort=${sort}&limit=${limit}`);
+        const res = await fetch(proxyUrl('/analytics/leaderboard', { sort, limit }));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
 
     async getClaimableFees(wallet) {
-        const res = await fetch(`${CLAWNCH_BASE}/fees/available?wallet=${wallet}`);
+        const res = await fetch(proxyUrl('/fees/available', { wallet }));
         if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
         return res.json();
     }
