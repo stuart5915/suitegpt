@@ -1,57 +1,25 @@
 // Inclawbate — Clawnch API Client
-// All calls proxied through /api/inclawbate/clawnch-proxy to avoid CORS
+// All calls go through /api/inclawbate/clawnch-proxy (our serverless proxy)
 
 const PROXY = '/api/inclawbate/clawnch-proxy';
 
-function proxyUrl(path, params = {}) {
-    const p = new URLSearchParams({ path, ...params });
-    return `${PROXY}?${p.toString()}`;
-}
-
 class ClawnchClient {
-    async getTokens(params = {}) {
-        const res = await fetch(proxyUrl('/tokens', params));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
-        return res.json();
-    }
-
-    async getLaunches(params = {}) {
-        const res = await fetch(proxyUrl('/launches', params));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
+    async getTokens({ offset = 0, limit = 48, search, sort } = {}) {
+        const params = new URLSearchParams({ offset, limit });
+        if (search) params.set('search', search);
+        if (sort) params.set('sort', sort);
+        const res = await fetch(`${PROXY}?${params}`);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
         return res.json();
     }
 
     async getStats() {
-        const res = await fetch(proxyUrl('/stats'));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
+        const res = await fetch(`${PROXY}?action=stats`);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
         return res.json();
     }
 
-    async getTokenAnalytics(tokenAddress) {
-        const res = await fetch(proxyUrl('/analytics/token', { address: tokenAddress }));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
-        return res.json();
-    }
-
-    async getAgentAnalytics(wallet) {
-        const res = await fetch(proxyUrl('/analytics/agent', { wallet }));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
-        return res.json();
-    }
-
-    async getLeaderboard(sort = 'marketCap', limit = 50) {
-        const res = await fetch(proxyUrl('/analytics/leaderboard', { sort, limit }));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
-        return res.json();
-    }
-
-    async getClaimableFees(wallet) {
-        const res = await fetch(proxyUrl('/fees/available', { wallet }));
-        if (!res.ok) throw new Error(`Clawnch API error: ${res.status}`);
-        return res.json();
-    }
-
-    // Get token data for public landing pages (through our proxy for CLAWS data)
+    // Get token data for public landing pages (through token-data proxy for CLAWS data)
     async getTokenPageData(ticker) {
         const res = await fetch(`/api/inclawbate/token-data?ticker=${ticker}`);
         if (!res.ok) throw new Error(`Token data error: ${res.status}`);
