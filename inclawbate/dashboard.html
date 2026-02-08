@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Inclawbate</title>
+    <meta name="description" content="Manage your token incubation projects on Inclawbate.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav style="position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); background: rgba(7,7,13,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-subtle); z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-xl);">
+    <a href="/" style="text-decoration: none;">
+        <span style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">inclawbate</span>
+    </a>
+    <div class="flex items-center gap-md">
+        <a href="/incubate" class="btn btn-primary btn-sm">New Project</a>
+        <button id="connectWallet" class="btn btn-secondary btn-sm">Connect Wallet</button>
+    </div>
+</nav>
+
+<!-- Header -->
+<div class="dash-header">
+    <div class="dash-header-inner">
+        <h1>Your Projects</h1>
+        <div class="dash-aggregate" id="dashStats">
+            <div class="stat">
+                <span class="stat-value" id="statTotal">0</span>
+                <span class="stat-label">Projects</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="statLaunched">0</span>
+                <span class="stat-label">Launched</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="statFees">--</span>
+                <span class="stat-label">Fees Earned</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="dash-filters">
+    <div class="tabs">
+        <button class="tab active" data-filter="all">All</button>
+        <button class="tab" data-filter="active">Active</button>
+        <button class="tab" data-filter="launched">Launched</button>
+        <button class="tab" data-filter="archived">Archived</button>
+    </div>
+</div>
+
+<!-- Body -->
+<div class="dash-body">
+    <!-- Loading -->
+    <div id="dashLoading" class="text-center" style="padding: var(--space-3xl) 0;">
+        <div class="spinner spinner-lg" style="margin: 0 auto var(--space-md);"></div>
+        <p style="color: var(--text-dim);">Loading projects...</p>
+    </div>
+
+    <!-- Not Connected -->
+    <div id="dashNotConnected" class="empty-state hidden">
+        <div class="empty-state-icon">&#128274;</div>
+        <p class="empty-state-title">Connect Your Wallet</p>
+        <p class="empty-state-desc">Connect your wallet to see your incubation projects.</p>
+        <button id="connectPrompt" class="btn btn-primary">Connect Wallet</button>
+    </div>
+
+    <!-- Empty -->
+    <div id="dashEmpty" class="empty-state hidden">
+        <div class="empty-state-icon">&#127793;</div>
+        <p class="empty-state-title">No projects yet</p>
+        <p class="empty-state-desc">Start your first token incubation or retrofit an existing token.</p>
+        <div class="flex justify-center gap-md">
+            <a href="/incubate" class="btn btn-primary">Start Incubating</a>
+            <a href="/retrofit" class="btn btn-secondary">Retrofit Token</a>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div id="projectsGrid" class="projects-grid hidden"></div>
+</div>
+
+<script type="module">
+    import { auth } from '/js/auth.js';
+    import { claws } from '/js/claws.js';
+    import { formatNumber, formatETH, timeAgo, truncate, shortenAddress } from '/js/utils.js';
+
+    const PHASE_LABELS = {
+        concept: 'Concept',
+        build: 'Build',
+        launch: 'Launch',
+        grow: 'Live'
+    };
+
+    const PHASE_BADGE_CLASS = {
+        concept: 'badge-primary',
+        build: 'badge-yellow',
+        launch: 'badge-yellow',
+        grow: 'badge-green'
+    };
+
+    let projects = [];
+    let currentFilter = 'all';
+
+    // DOM
+    const connectBtn = document.getElementById('connectWallet');
+    const connectPrompt = document.getElementById('connectPrompt');
+    const loadingEl = document.getElementById('dashLoading');
+    const notConnectedEl = document.getElementById('dashNotConnected');
+    const emptyEl = document.getElementById('dashEmpty');
+    const gridEl = document.getElementById('projectsGrid');
+
+    function showView(name) {
+        [loadingEl, notConnectedEl, emptyEl, gridEl].forEach(el => el.classList.add('hidden'));
+        const map = { loading: loadingEl, notConnected: notConnectedEl, empty: emptyEl, grid: gridEl };
+        if (map[name]) map[name].classList.remove('hidden');
+    }
+
+    function updateAuthUI() {
+        if (auth.isConnected) {
+            connectBtn.textContent = shortenAddress(auth.wallet);
+        } else {
+            connectBtn.textContent = 'Connect Wallet';
+        }
+    }
+
+    async function doConnect() {
+        try {
+            await auth.connect();
+            claws.setToken(auth.token);
+            updateAuthUI();
+            loadProjects();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    connectBtn.addEventListener('click', () => {
+        if (auth.isConnected) {
+            auth.disconnect();
+            updateAuthUI();
+            showView('notConnected');
+        } else {
+            doConnect();
+        }
+    });
+
+    connectPrompt.addEventListener('click', doConnect);
+
+    async function loadProjects() {
+        if (!auth.isConnected) {
+            showView('notConnected');
+            return;
+        }
+
+        showView('loading');
+
+        try {
+            // Fetch all projects for this wallet via the project-status endpoint
+            // For the dashboard we need a list endpoint — for now, use getByTag
+            const res = await fetch(`/api/inclawbate/project-status?projectId=all`, {
+                headers: auth.getHeaders()
+            });
+
+            // Since we don't have a "list all" endpoint yet, we'll show the empty state
+            // or load specific projects. For now, show appropriate state.
+            showView('empty');
+
+        } catch (err) {
+            console.error('Failed to load projects:', err);
+            showView('empty');
+        }
+    }
+
+    function renderProjectCard(proj) {
+        const card = document.createElement('div');
+        card.className = 'project-card';
+        card.onclick = () => { window.location.href = `/incubate?project=${proj.projectId}`; };
+
+        const brand = proj.selectedBrandData;
+
+        card.innerHTML = `
+            <div class="project-card-header">
+                <div class="flex items-center gap-sm">
+                    <div class="project-card-logo">${brand?.name?.[0] || '?'}</div>
+                    <div>
+                        <div class="project-card-name">${brand?.name || 'Unnamed'}</div>
+                        ${brand?.ticker ? `<div class="project-card-ticker">$${brand.ticker}</div>` : ''}
+                    </div>
+                </div>
+                <span class="badge ${PHASE_BADGE_CLASS[proj.currentPhase] || 'badge-neutral'}">${PHASE_LABELS[proj.currentPhase] || proj.currentPhase}</span>
+            </div>
+            <div class="project-card-concept">${truncate(proj.concept, 120)}</div>
+            <div class="project-card-footer">
+                <span class="project-card-time">${timeAgo(proj.updatedAt || proj.createdAt)}</span>
+            </div>
+        `;
+
+        return card;
+    }
+
+    function renderProjects() {
+        gridEl.innerHTML = '';
+
+        const filtered = projects.filter(p => {
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'active') return p.currentPhase !== 'grow';
+            if (currentFilter === 'launched') return p.currentPhase === 'grow';
+            return false;
+        });
+
+        if (filtered.length === 0) {
+            showView('empty');
+            return;
+        }
+
+        filtered.forEach(p => gridEl.appendChild(renderProjectCard(p)));
+        showView('grid');
+    }
+
+    // Filter tabs
+    document.querySelectorAll('.tab[data-filter]').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab[data-filter]').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.filter;
+            renderProjects();
+        });
+    });
+
+    // Init
+    updateAuthUI();
+    if (auth.isConnected) {
+        claws.setToken(auth.token);
+        loadProjects();
+    } else {
+        showView('notConnected');
+    }
+</script>
+
+</body>
+</html>

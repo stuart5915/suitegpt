@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retrofit — Inclawbate</title>
+    <meta name="description" content="Retroactively incubate an existing Clawnch token with full branding and growth support.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav style="position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); background: rgba(7,7,13,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-subtle); z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-xl);">
+    <a href="/" style="text-decoration: none;">
+        <span style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">inclawbate</span>
+    </a>
+    <div class="flex items-center gap-md">
+        <a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
+        <button id="connectWallet" class="btn btn-primary btn-sm">Connect Wallet</button>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 600px; padding-top: calc(var(--nav-height) + var(--space-3xl));">
+    <div class="text-center" style="margin-bottom: var(--space-2xl);">
+        <h1 style="font-size: 2rem; margin-bottom: var(--space-md);">Retrofit a Token</h1>
+        <p style="color: var(--text-secondary);">
+            Already launched on Clawnch without incubation? Enter your token's contract address and we'll set up branding, a landing page, and growth tools retroactively.
+        </p>
+    </div>
+
+    <form id="retrofitForm">
+        <!-- Token Address -->
+        <div class="input-group" style="margin-bottom: var(--space-md);">
+            <label class="input-label">Token Contract Address</label>
+            <input id="tokenAddress" type="text" class="input" placeholder="0x..." pattern="^0x[a-fA-F0-9]{40}$" required>
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Base network ERC-20 contract address</span>
+        </div>
+
+        <!-- Ticker -->
+        <div class="input-group" style="margin-bottom: var(--space-md);">
+            <label class="input-label">Ticker Symbol</label>
+            <input id="ticker" type="text" class="input" placeholder="PURR" pattern="^[A-Z0-9]{2,10}$" style="text-transform: uppercase;" required>
+        </div>
+
+        <!-- Optional: Existing Assets -->
+        <div style="margin-bottom: var(--space-lg);">
+            <h4 style="margin-bottom: var(--space-sm);">Existing Assets <span style="color: var(--text-dim); font-weight: 400; font-size: 0.85rem;">(optional)</span></h4>
+
+            <div class="input-group" style="margin-bottom: var(--space-sm);">
+                <label class="input-label">Logo URL</label>
+                <input id="logoUrl" type="url" class="input" placeholder="https://...">
+            </div>
+
+            <div class="input-group" style="margin-bottom: var(--space-sm);">
+                <label class="input-label">Website</label>
+                <input id="website" type="url" class="input" placeholder="https://...">
+            </div>
+
+            <div class="input-group" style="margin-bottom: var(--space-sm);">
+                <label class="input-label">Twitter / X</label>
+                <input id="twitter" type="text" class="input" placeholder="@handle">
+            </div>
+        </div>
+
+        <!-- Status message -->
+        <div id="statusMsg" class="hidden" style="padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-md); font-size: 0.9rem;"></div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-full">Create Retrofit Project</button>
+    </form>
+
+    <!-- Token lookup result -->
+    <div id="lookupResult" class="hidden" style="margin-top: var(--space-xl);">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title" id="lookupName">--</span>
+                <span class="badge badge-green">Found on Clawnch</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);" id="lookupDesc"></p>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { auth } from '/js/auth.js';
+    import { claws } from '/js/claws.js';
+    import { clawnch } from '/js/clawnch.js';
+    import { shortenAddress, showToast, isValidAddress } from '/js/utils.js';
+
+    const connectBtn = document.getElementById('connectWallet');
+    const form = document.getElementById('retrofitForm');
+    const addrInput = document.getElementById('tokenAddress');
+    const tickerInput = document.getElementById('ticker');
+    const statusMsg = document.getElementById('statusMsg');
+    const submitBtn = document.getElementById('submitBtn');
+    const lookupResult = document.getElementById('lookupResult');
+
+    function updateAuthUI() {
+        if (auth.isConnected) {
+            connectBtn.textContent = shortenAddress(auth.wallet);
+            claws.setToken(auth.token);
+        } else {
+            connectBtn.textContent = 'Connect Wallet';
+        }
+    }
+
+    connectBtn.addEventListener('click', async () => {
+        if (auth.isConnected) {
+            auth.disconnect();
+            updateAuthUI();
+        } else {
+            try {
+                await auth.connect();
+                updateAuthUI();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+    });
+
+    // Auto-lookup on address blur
+    addrInput.addEventListener('blur', async () => {
+        const addr = addrInput.value.trim();
+        if (!isValidAddress(addr)) return;
+
+        try {
+            const data = await clawnch.getLaunches({ address: addr });
+            if (data.data && data.data.length > 0) {
+                const launch = data.data[0];
+                document.getElementById('lookupName').textContent = `${launch.name} ($${launch.symbol})`;
+                document.getElementById('lookupDesc').textContent = launch.description || '';
+                if (launch.symbol) tickerInput.value = launch.symbol;
+                lookupResult.classList.remove('hidden');
+            } else {
+                lookupResult.classList.add('hidden');
+            }
+        } catch {
+            lookupResult.classList.add('hidden');
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!auth.isConnected) {
+            showToast('Connect your wallet first', 'error');
+            return;
+        }
+
+        const tokenAddress = addrInput.value.trim();
+        const ticker = tickerInput.value.trim().toUpperCase();
+
+        if (!isValidAddress(tokenAddress)) {
+            showToast('Invalid contract address', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+
+        try {
+            const data = await claws.createRetrofit(tokenAddress, ticker, {
+                logoUrl: document.getElementById('logoUrl').value.trim() || null,
+                website: document.getElementById('website').value.trim() || null,
+                twitter: document.getElementById('twitter').value.trim() || null
+            });
+
+            if (data.success) {
+                statusMsg.className = 'toast-success';
+                statusMsg.style.background = 'var(--green-dim)';
+                statusMsg.style.border = '1px solid var(--green)';
+                statusMsg.style.color = 'var(--green)';
+                statusMsg.textContent = 'Retrofit project created! Redirecting...';
+                statusMsg.classList.remove('hidden');
+
+                setTimeout(() => {
+                    window.location.href = `/incubate?project=${data.projectId}`;
+                }, 1500);
+            }
+        } catch (err) {
+            statusMsg.style.background = 'var(--red-dim)';
+            statusMsg.style.border = '1px solid var(--red)';
+            statusMsg.style.color = 'var(--red)';
+            statusMsg.textContent = err.message;
+            statusMsg.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Retrofit Project';
+        }
+    });
+
+    updateAuthUI();
+</script>
+
+</body>
+</html>
