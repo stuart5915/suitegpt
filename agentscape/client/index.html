@@ -881,9 +881,9 @@
                 if(authApiKey)joinOptions.apiKey=authApiKey;
                 room=await client.joinOrCreate('agentscape',joinOptions);
                 mySessionId=room.sessionId;
+                setupRoomListeners();
                 connStatus.textContent='Connected';connStatus.className='connected';
                 addChat('system','Connected to AgentScape multiplayer!');
-                setupRoomListeners();
             }catch(e){
                 connStatus.textContent='Disconnected';connStatus.className='disconnected';
                 addChat('system','Could not connect to server. Retrying in 5s...');
@@ -951,6 +951,7 @@
             room.state.npcs.onRemove((npc,id)=>{const m=npcMeshes.get(id);if(m){scene.remove(m.group);m.label.remove();npcMeshes.delete(id);}});
 
             // === MONSTERS ===
+            if(room.state.monsters){
             room.state.monsters.onAdd((monster,id)=>{
                 const mesh=createMonsterMesh(monster);
                 monsterMeshes.set(id,{...mesh,state:monster,targetX:monster.x,targetZ:monster.z,targetH:0,targetRot:monster.rotation,isMoving:false});
@@ -963,8 +964,10 @@
                 });
             });
             room.state.monsters.onRemove((monster,id)=>{const m=monsterMeshes.get(id);if(m){scene.remove(m.group);m.label.remove();monsterMeshes.delete(id);}});
+            }
 
             // === LOOT PILES ===
+            if(room.state.lootPiles){
             room.state.lootPiles.onAdd((loot,id)=>{
                 const dot=document.createElement('div');dot.className='loot-pile-dot';dot.dataset.worldX=loot.x;dot.dataset.worldZ=loot.z;
                 dot.onclick=()=>sendAction('pickup_loot',{lootId:id});
@@ -972,6 +975,7 @@
                 lootPileMeshes.set(id,{dot,state:loot});
             });
             room.state.lootPiles.onRemove((loot,id)=>{const m=lootPileMeshes.get(id);if(m){m.dot.remove();lootPileMeshes.delete(id);}});
+            }
 
             // === SERVER MESSAGES ===
             room.onMessage('hitsplat',(data)=>{showHitsplat(data.x,data.z,data.damage,data.isMiss,data.isSpec);});
