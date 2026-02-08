@@ -84,7 +84,7 @@ export class MonsterBehaviorSystem {
                     if (monster.aggressive) {
                         const target = this.findAggroTarget(monster, players);
                         if (target) {
-                            monster.aggroTargetId = target.id;
+                            monster.aggroTargetId = target.sessionId;
                             monster.state = 'AGGRO';
                             break;
                         }
@@ -100,7 +100,7 @@ export class MonsterBehaviorSystem {
                 if (monster.aggressive) {
                     const target = this.findAggroTarget(monster, players);
                     if (target) {
-                        monster.aggroTargetId = target.id;
+                        monster.aggroTargetId = target.sessionId;
                         monster.state = 'AGGRO';
                         monster.path = [];
                         break;

@@ -10,6 +10,7 @@ import { MAP_SIZE, MAX_INVENTORY_SLOTS, SHOP_ITEMS, RECIPES } from '../config';
 export type ActionType =
     | 'move_to'
     | 'attack_npc'
+    | 'attack_monster'
     | 'eat_food'
     | 'equip_item'
     | 'buy_item'
@@ -49,6 +50,15 @@ export class ActionValidator {
                 const npc = state.npcs.get(npcId);
                 if (!npc) return { valid: false, reason: 'NPC not found' };
                 if (npc.isDead) return { valid: false, reason: 'NPC is dead' };
+                return { valid: true };
+            }
+
+            case 'attack_monster': {
+                const { monsterId } = action.payload;
+                if (typeof monsterId !== 'string') return { valid: false, reason: 'Invalid monster ID' };
+                const monster = state.monsters.get(monsterId);
+                if (!monster) return { valid: false, reason: 'Monster not found' };
+                if (monster.isDead) return { valid: false, reason: 'Monster is dead' };
                 return { valid: true };
             }
 

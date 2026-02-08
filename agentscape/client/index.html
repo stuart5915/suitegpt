@@ -444,7 +444,7 @@
         // CONFIG
         // ============================================================
         const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:2567' : 'wss://play.agentscape.app';
-        const MAP_SIZE = 30, TILE_SIZE = 1, WATER_LEVEL = -0.15;
+        const MAP_SIZE = 80, TILE_SIZE = 1, WATER_LEVEL = -0.15;
         const playerName = charInfo.name || authName || 'Player' + Math.floor(Math.random() * 9999);
         const playerColor = charInfo.bodyColor || '#3355aa';
         const playerHairColor = charInfo.hairColor || '#4a3728';
@@ -514,12 +514,36 @@
         // BUILDINGS (full 22 from rich client)
         // ============================================================
         const BUILDINGS = [
-            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:15,z:13,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
-            {id:'workshop',name:'Workshop',icon:'\u{1F528}',x:20,z:10,w:3,d:2,h:1.5,wallColor:0xD2B48C,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south'},
-            {id:'marketplace',name:'Marketplace',icon:'\u{1F3EA}',x:10,z:12,w:2.5,d:2,h:1.3,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'south'},
-            {id:'farm',name:'Farm',icon:'\u{1F33E}',x:24,z:16,w:2,d:3,h:1.0,wallColor:0x8FBC8F,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'west'},
-            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:12,z:26,w:3,d:3,h:1.6,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
-            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:18,z:6,w:2.5,d:2,h:1.8,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
+            // Town Center
+            {id:'town_hall',name:'Town Hall',icon:'\u{1F3DB}\uFE0F',x:40,z:38,w:3,d:3,h:2.5,wallColor:0xE8DCC8,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'south'},
+            {id:'quest_board',name:'Quest Board',icon:'\u{1F4CB}',x:42,z:36,w:1,d:1,h:1.2,wallColor:0x8B7355,roofColor:0x6366f1,signColor:'#6366f1',doorSide:'south',type:'pedestal'},
+            {id:'arena',name:'Arena',icon:'\u2694\uFE0F',x:37,z:42,w:4,d:4,h:1.8,wallColor:0xCD853F,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
+            {id:'bank',name:'SUITE Bank',icon:'\u{1F3E6}',x:44,z:40,w:2.5,d:2,h:2.0,wallColor:0xD4AF37,roofColor:0xeab308,signColor:'#eab308',doorSide:'west'},
+            // Health District (NW)
+            {id:'health_clinic',name:'Health Clinic',icon:'\u{1F3E5}',x:26,z:24,w:3,d:2.5,h:1.8,wallColor:0xBBDDBB,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
+            {id:'gym',name:'Fitness Dojo',icon:'\u{1F3CB}\uFE0F',x:30,z:28,w:2.5,d:2,h:1.5,wallColor:0xAABBAA,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'east'},
+            // Education District (N-Center)
+            {id:'academy',name:'SUITE Academy',icon:'\u{1F3EB}',x:40,z:24,w:3.5,d:2.5,h:2.0,wallColor:0xBBCCDD,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'south'},
+            {id:'library',name:'Knowledge Library',icon:'\u{1F4DA}',x:44,z:28,w:2.5,d:2,h:1.6,wallColor:0xCCBBAA,roofColor:0x3b82f6,signColor:'#3b82f6',doorSide:'west'},
+            // Business District (NE)
+            {id:'exchange',name:'Trade Exchange',icon:'\u{1F4B9}',x:52,z:24,w:3,d:2.5,h:2.2,wallColor:0xDDCCAA,roofColor:0xeab308,signColor:'#eab308',doorSide:'south'},
+            {id:'marketplace',name:'Marketplace',icon:'\u{1F3EA}',x:56,z:28,w:2.5,d:2,h:1.4,wallColor:0xBDB76B,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
+            // Productivity District (W-Center)
+            {id:'workshop',name:'Workshop',icon:'\u{1F528}',x:26,z:36,w:3,d:2.5,h:1.8,wallColor:0xD2B48C,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
+            {id:'forge',name:'The Forge',icon:'\u2699\uFE0F',x:30,z:40,w:2.5,d:2,h:1.6,wallColor:0xCC8855,roofColor:0x8b5cf6,signColor:'#8b5cf6',doorSide:'east'},
+            // Creative District (SW)
+            {id:'studio',name:'Creative Studio',icon:'\u{1F3A8}',x:26,z:48,w:3,d:2.5,h:1.6,wallColor:0xDDAACC,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
+            {id:'gallery',name:'Art Gallery',icon:'\u{1F5BC}\uFE0F',x:30,z:52,w:2.5,d:2,h:1.4,wallColor:0xCCAABB,roofColor:0xec4899,signColor:'#ec4899',doorSide:'north'},
+            // Marketing District (S-Center)
+            {id:'broadcast_tower',name:'Broadcast Tower',icon:'\u{1F4E1}',x:40,z:48,w:2,d:2,h:3.0,wallColor:0xDDAAAA,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
+            {id:'ad_agency',name:'Ad Agency',icon:'\u{1F4E3}',x:44,z:52,w:2.5,d:2,h:1.4,wallColor:0xCCBB99,roofColor:0xf97316,signColor:'#f97316',doorSide:'north'},
+            // Home District (SE)
+            {id:'farm',name:'Farm',icon:'\u{1F33E}',x:52,z:40,w:3,d:3,h:1.0,wallColor:0x8FBC8F,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'west'},
+            {id:'tavern',name:'Traveler\'s Tavern',icon:'\u{1F37A}',x:56,z:48,w:2.5,d:2,h:1.5,wallColor:0xBB9966,roofColor:0x14b8a6,signColor:'#14b8a6',doorSide:'west'},
+            // Zone Landmarks
+            {id:'forest_outpost',name:'Forest Outpost',icon:'\u{1F332}',x:40,z:18,w:2,d:2,h:1.3,wallColor:0x6B8E23,roofColor:0x22c55e,signColor:'#22c55e',doorSide:'south'},
+            {id:'ruins_gate',name:'Ruins Gate',icon:'\u{1F3DA}\uFE0F',x:62,z:38,w:2,d:2,h:2.0,wallColor:0x8B8378,roofColor:0xf97316,signColor:'#f97316',doorSide:'west'},
+            {id:'deep_entrance',name:'Deep Network Portal',icon:'\u{1F30A}',x:40,z:57,w:2,d:2,h:2.5,wallColor:0x4B0082,roofColor:0xef4444,signColor:'#ef4444',doorSide:'north'},
         ];
 
         const SHOP_ITEMS = [
@@ -556,7 +580,10 @@
         };
 
         const ZONES = {
-            suite_city:{id:'suite_city',name:'SUITE City',bounds:{x1:0,z1:0,x2:29,z2:29},color:'#6366f1'},
+            suite_city:{id:'suite_city',name:'SUITE City',bounds:{x1:20,z1:20,x2:60,z2:55},color:'#6366f1'},
+            the_forest:{id:'the_forest',name:'The Forest',bounds:{x1:5,z1:2,x2:75,z2:20},color:'#22c55e'},
+            the_ruins:{id:'the_ruins',name:'The Ruins',bounds:{x1:60,z1:20,x2:78,z2:55},color:'#f97316'},
+            the_deep_network:{id:'the_deep_network',name:'The Deep Network',bounds:{x1:10,z1:55,x2:70,z2:78},color:'#ef4444'},
         };
 
         // 28-skill grid definition
@@ -605,7 +632,7 @@
             qa_tester:{hp:70,attack:6,strength:5,defence:4},
         };
 
-        function getZoneAt(x, z) { return ZONES.suite_city; }
+        function getZoneAt(x, z) { for(const z2 of Object.values(ZONES)){if(x>=z2.bounds.x1&&x<=z2.bounds.x2&&z>=z2.bounds.z1&&z<=z2.bounds.z2)return z2;} return null; }
         // ============================================================
         // CHAT SYSTEM
         // ============================================================
@@ -652,7 +679,7 @@
         const viewport = document.getElementById('game-viewport');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
         const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth/viewport.clientHeight, 0.1, 100);
         const renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.setSize(viewport.clientWidth, viewport.clientHeight);
@@ -661,16 +688,16 @@
         viewport.insertBefore(renderer.domElement, viewport.firstChild);
 
         const mapCenter=Math.floor(MAP_SIZE/2);
-        let camTargetX=mapCenter,camTargetZ=mapCenter,camAngle=Math.PI/4,camDist=18,camHeight=14;
+        let camTargetX=mapCenter,camTargetZ=mapCenter,camAngle=Math.PI/4,camDist=22,camHeight=17;
         function updateCamera(){camera.position.set(camTargetX+Math.sin(camAngle)*camDist,camHeight,camTargetZ+Math.cos(camAngle)*camDist);camera.lookAt(camTargetX,0,camTargetZ);}
         updateCamera();
 
         const ambientLight=new THREE.AmbientLight(0x6688aa,0.5);scene.add(ambientLight);
-        const sunLight=new THREE.DirectionalLight(0xffeedd,0.9);sunLight.position.set(mapCenter,30,mapCenter-10);sunLight.castShadow=true;sunLight.shadow.mapSize.set(2048,2048);sunLight.shadow.camera.near=0.5;sunLight.shadow.camera.far=100;sunLight.shadow.camera.left=-40;sunLight.shadow.camera.right=40;sunLight.shadow.camera.top=40;sunLight.shadow.camera.bottom=-40;scene.add(sunLight);
+        const sunLight=new THREE.DirectionalLight(0xffeedd,0.9);sunLight.position.set(mapCenter,30,mapCenter-10);sunLight.castShadow=true;sunLight.shadow.mapSize.set(2048,2048);sunLight.shadow.camera.near=0.5;sunLight.shadow.camera.far=100;sunLight.shadow.camera.left=-50;sunLight.shadow.camera.right=50;sunLight.shadow.camera.top=50;sunLight.shadow.camera.bottom=-50;scene.add(sunLight);
         const hemiLight=new THREE.HemisphereLight(0x88aacc,0x445522,0.3);scene.add(hemiLight);
 
         let isNight=false;
-        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);scene.fog.density=0.018;ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);scene.fog.density=0.012;ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}};
+        window.toggleDayNight=function(){isNight=!isNight;if(isNight){scene.background.set(0x0a0a1a);scene.fog.color.set(0x0a0a1a);scene.fog.density=0.012;ambientLight.intensity=0.15;sunLight.intensity=0.1;sunLight.color.set(0x4466aa);hemiLight.intensity=0.05;}else{scene.background.set(0x87CEEB);scene.fog.color.set(0x87CEEB);scene.fog.density=0.008;ambientLight.intensity=0.5;sunLight.intensity=0.9;sunLight.color.set(0xffeedd);hemiLight.intensity=0.3;}};
 
         // ============================================================
         // TERRAIN (deterministic, same as server seed=42)
@@ -680,22 +707,49 @@
         const rng=seededRandom(42);
         function simpleNoise(x,z){return Math.sin(x*0.3)*Math.cos(z*0.4)*0.3+Math.sin(x*0.7+1)*Math.cos(z*0.5+2)*0.15;}
 
-        function getZoneAt(x,z){return'city';}
+        function getZoneIdAt(x,z){const zone=getZoneAt(x,z);return zone?zone.id:'wilderness';}
 
-        function isWater(x,z){if(Math.sqrt((x-6)**2+(z-6)**2)<3.5)return true;const rz=20+Math.sin(x*0.4)*2;if(Math.abs(z-rz)<1.5&&x>5&&x<28)return true;return false;}
-        function isBridge(x,z){const rz=20+Math.sin(x*0.4)*2;return Math.abs(z-rz)<1.5&&x>=14&&x<=16;}
+        // Water: river between forest and city (~z=19-21), lake in deep network, pond in forest
+        function isWater(x,z){
+            // River separating forest from city (z ~19-21)
+            const rz=19.5+Math.sin(x*0.15)*2;
+            if(Math.abs(z-rz)<1.3&&x>4&&x<76)return true;
+            // Lake in deep network
+            if(Math.sqrt((x-35)**2+(z-66)**2)<4.5)return true;
+            // Pond in forest
+            if(Math.sqrt((x-20)**2+(z-10)**2)<3)return true;
+            // Marsh in ruins
+            if(Math.sqrt((x-68)**2+(z-45)**2)<3)return true;
+            return false;
+        }
+        function isBridge(x,z){
+            const rz=19.5+Math.sin(x*0.15)*2;
+            // Bridges at x=30,40,50 crossing the river
+            if(Math.abs(z-rz)<1.3&&(Math.abs(x-30)<2||Math.abs(x-40)<2||Math.abs(x-50)<2))return true;
+            return false;
+        }
         function isInBuildingZone(x,z){for(const b of BUILDINGS){const hw=b.w/2,hd=b.d/2;if(x>=b.x-hw-0.5&&x<=b.x+hw+0.5&&z>=b.z-hd-0.5&&z<=b.z+hd+0.5)return true;}return false;}
 
         const grassColors=[0x4a7c3f,0x528745,0x5d9248,0x3d6e35];
+        const forestColors=[0x2d5a1e,0x1e4a12,0x3a6028,0x254d18];
+        const ruinsColors=[0x8B7355,0x7a6548,0x6d5b40,0x9a8060];
+        const deepColors=[0x2a1a3a,0x1e1230,0x331a44,0x251535];
         const dirtColors=[0x8B7355,0x7a6548,0x6d5b40];
+        function getTerrainColor(x,z){
+            const zid=getZoneIdAt(x,z);
+            if(zid==='the_forest')return forestColors[Math.floor(rng()*forestColors.length)];
+            if(zid==='the_ruins')return ruinsColors[Math.floor(rng()*ruinsColors.length)];
+            if(zid==='the_deep_network')return deepColors[Math.floor(rng()*deepColors.length)];
+            return grassColors[Math.floor(rng()*grassColors.length)];
+        }
 
         for(let x=0;x<MAP_SIZE;x++){grid[x]=[];heightMap[x]=[];for(let z=0;z<MAP_SIZE;z++){const w=isWater(x,z),br=isBridge(x,z);if(br){grid[x][z]=3;heightMap[x][z]=0.05;}else if(w){grid[x][z]=0;heightMap[x][z]=WATER_LEVEL;}else{grid[x][z]=1;heightMap[x][z]=simpleNoise(x,z)*0.2;}}}
 
-        // Terrain mesh
-        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const h=heightMap[x][z];let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const pz=15+Math.sin(x*0.3)*1.5;if(Math.abs(z-pz)<0.8&&x>3&&x<27){color=dirtColors[Math.floor(rng()*dirtColors.length)];grid[x][z]=2;}else color=grassColors[Math.floor(rng()*grassColors.length)];}}const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);const mat=new THREE.MeshLambertMaterial({color});const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};scene.add(tile);}
+        // Terrain mesh (zone-colored)
+        for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const h=heightMap[x][z];let color;if(grid[x][z]===3)color=0x8B6914;else if(isWater(x,z))color=0x2288aa;else{let nw=false;for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const nx=x+dx,nz=z+dz;if(nx>=0&&nx<MAP_SIZE&&nz>=0&&nz<MAP_SIZE&&isWater(nx,nz)&&!isBridge(nx,nz))nw=true;}if(nw)color=0xc2b280;else{const roadZ=38+Math.sin(x*0.12)*1.5;const roadX=40+Math.sin(z*0.12)*1.5;if((Math.abs(z-roadZ)<0.8&&x>22&&x<58)||(Math.abs(x-roadX)<0.8&&z>22&&z<53)){color=dirtColors[Math.floor(rng()*dirtColors.length)];grid[x][z]=2;}else color=getTerrainColor(x,z);}}const geo=new THREE.BoxGeometry(TILE_SIZE,grid[x][z]===3?0.15:0.3,TILE_SIZE);const mat=new THREE.MeshLambertMaterial({color});const tile=new THREE.Mesh(geo,mat);tile.position.set(x,h-0.15,z);tile.receiveShadow=true;tile.userData={tileX:x,tileZ:z,walkable:grid[x][z]>0,type:'tile'};scene.add(tile);}
 
-        // Bridge rails
-        for(let x=14;x<=16;x++)for(const s of[-1,1]){const rz2=20+Math.sin(x*0.4)*2,rr=Math.round(rz2+s*1.3);if(rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));r.position.set(x,0.25,rr);r.castShadow=true;scene.add(r);}}
+        // Bridge rails at x=28-32, 38-42, 48-52
+        [30,40,50].forEach(bx=>{for(let x=bx-1;x<=bx+1;x++)for(const s of[-1,1]){const rz2=19.5+Math.sin(x*0.15)*2,rr=Math.round(rz2+s*1.3);if(rr>=0&&rr<MAP_SIZE){const r=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.08),new THREE.MeshLambertMaterial({color:0x5a3a1a}));r.position.set(x,0.25,rr);r.castShadow=true;scene.add(r);}}});
 
         // Water plane
         const waterGeo=new THREE.PlaneGeometry(MAP_SIZE,MAP_SIZE,20,20);const waterMat=new THREE.MeshLambertMaterial({color:0x2288aa,transparent:true,opacity:0.6});const waterMesh=new THREE.Mesh(waterGeo,waterMat);waterMesh.rotation.x=-Math.PI/2;waterMesh.position.set(mapCenter,WATER_LEVEL+0.05,mapCenter);scene.add(waterMesh);
@@ -706,13 +760,13 @@
             const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,trunkH,5),new THREE.MeshLambertMaterial({color:0x6B4226}));trunk.position.y=trunkH/2;trunk.castShadow=true;g.add(trunk);
             if(v===0){[0.5,0.4,0.28].forEach((s,i)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(s,0.5,5),new THREE.MeshLambertMaterial({color:[0x2d5a1e,0x3a6e28,0x468032][i]}));c.position.y=trunkH+0.15+i*0.35;c.castShadow=true;g.add(c);});}else if(v===1){const l=new THREE.Mesh(new THREE.DodecahedronGeometry(0.45,0),new THREE.MeshLambertMaterial({color:0x3a8030}));l.position.y=trunkH+0.35;l.castShadow=true;g.add(l);}else{const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,0),new THREE.MeshLambertMaterial({color:0x2a6a20}));b.position.y=trunkH+0.2;b.castShadow=true;g.add(b);}
             g.position.set(x,h,z);scene.add(g);}
-        for(let i=0;i<40;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2&&grid[x][z]!==3&&!(Math.abs(x-15)<3&&Math.abs(z-15)<3)){treePositions.push({x,z});grid[x][z]=0;}}
+        for(let i=0;i<150;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)&&grid[x][z]!==2&&grid[x][z]!==3&&!(Math.abs(x-40)<4&&Math.abs(z-38)<4)){treePositions.push({x,z});grid[x][z]=0;}}
         treePositions.forEach(p=>createTree(p.x,p.z,Math.floor(rng()*3)));
 
         // Rocks
-        for(let i=0;i<15;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.15+rng()*0.15,0),new THREE.MeshLambertMaterial({color:0x888888}));r.position.set(x+rng()*0.3,heightMap[x][z]+0.1,z+rng()*0.3);r.rotation.set(rng(),rng(),rng());r.castShadow=true;scene.add(r);}}
+        for(let i=0;i<50;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const rc=getZoneIdAt(x,z)==='the_ruins'?0x666666:0x888888;const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.15+rng()*0.15,0),new THREE.MeshLambertMaterial({color:rc}));r.position.set(x+rng()*0.3,heightMap[x][z]+0.1,z+rng()*0.3);r.rotation.set(rng(),rng(),rng());r.castShadow=true;scene.add(r);}}
         // Flowers
-        for(let i=0;i<25;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const fc=[0xff6b9d,0xffd93d,0xff8a5c,0xc084fc,0xfb7185];const f=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:fc[Math.floor(rng()*fc.length)]}));f.position.set(x+rng()*0.6-0.3,heightMap[x][z]+0.15,z+rng()*0.6-0.3);scene.add(f);}}
+        for(let i=0;i<80;i++){const x=Math.floor(rng()*MAP_SIZE),z=Math.floor(rng()*MAP_SIZE);if(grid[x][z]>0&&!isWater(x,z)&&!isInBuildingZone(x,z)){const fc=getZoneIdAt(x,z)==='the_deep_network'?[0x8844aa,0x6633cc,0x9955dd]:[0xff6b9d,0xffd93d,0xff8a5c,0xc084fc,0xfb7185];const f=new THREE.Mesh(new THREE.SphereGeometry(0.06,4,4),new THREE.MeshLambertMaterial({color:fc[Math.floor(rng()*fc.length)]}));f.position.set(x+rng()*0.6-0.3,heightMap[x][z]+0.15,z+rng()*0.6-0.3);scene.add(f);}}
 
         // Buildings
         const buildingDoors={};
@@ -721,7 +775,7 @@
 
         // Fireflies
         const particles=[];
-        for(let i=0;i<50;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
+        for(let i=0;i<120;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
 
         // Tile highlight
         const highlightMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.3});
