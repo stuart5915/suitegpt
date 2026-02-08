@@ -241,7 +241,7 @@
 <body>
     <!-- Character Creation Screen -->
     <div id="char-create-screen" style="display:none">
-    <script>if(!localStorage.getItem('agentscape_character')&&!new URLSearchParams(window.location.search).get('name'))document.getElementById('char-create-screen').style.display='';</script>
+    <script>if(!localStorage.getItem('agentscape_character'))document.getElementById('char-create-screen').style.display='';</script>
         <div class="cc-container">
             <div class="cc-form">
                 <h1>Create Your Character</h1>
@@ -269,7 +269,7 @@
     </div>
 
     <div id="game-frame" style="display:none;">
-    <script>if(localStorage.getItem('agentscape_character')||new URLSearchParams(window.location.search).get('name'))document.getElementById('game-frame').style.display='';</script>
+    <script>if(localStorage.getItem('agentscape_character'))document.getElementById('game-frame').style.display='';</script>
         <div id="game-viewport">
             <div id="zone-indicator">SUITE City</div>
             <div id="npc-labels"></div>
@@ -367,13 +367,7 @@
 
         function runCharacterCreation() {
             return new Promise((resolve) => {
-                // If we have URL auth name, skip creation
-                if (authName) {
-                    const data = charData || { name: authName, bodyColor: '#3355aa', hairColor: '#4a3728', classId: 'explorer' };
-                    document.getElementById('char-create-screen').classList.add('hidden');
-                    document.getElementById('game-frame').style.display = '';
-                    return resolve(data);
-                }
+                // If we have a saved character, skip creation
                 if (charData) {
                     document.getElementById('char-create-screen').classList.add('hidden');
                     document.getElementById('game-frame').style.display = '';
@@ -383,6 +377,7 @@
                 let selBody = BODY_COLORS[0], selHair = HAIR_COLORS[0], selClass = 'explorer';
                 const nameInput = document.getElementById('cc-name');
                 const startBtn = document.getElementById('cc-start');
+                if (authName) { nameInput.value = authName; startBtn.disabled = false; }
 
                 const bodyDiv = document.getElementById('cc-body-colors');
                 BODY_COLORS.forEach((c, i) => {
