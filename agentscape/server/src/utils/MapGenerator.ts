@@ -1,6 +1,6 @@
 // ============================================================
 // AgentScape — Deterministic Map Generator (seed=42)
-// 80x80 world with SUITE City, Forest, Ruins, Deep Network
+// 200x200 world with SUITE City, Forest, Ruins, Deep Network
 // ============================================================
 
 import {
@@ -42,27 +42,27 @@ function detailNoise(x: number, z: number): number {
 
 export function isWater(x: number, z: number): boolean {
     // Forest lake (north-center)
-    if (Math.sqrt((x - 25) ** 2 + (z - 10) ** 2) < 4.5) return true;
+    if (Math.sqrt((x - 62) ** 2 + (z - 25) ** 2) < 11) return true;
     // Forest pond (small, northwest)
-    if (Math.sqrt((x - 12) ** 2 + (z - 7) ** 2) < 2.5) return true;
+    if (Math.sqrt((x - 30) ** 2 + (z - 17) ** 2) < 6) return true;
     // Forest river (winding east-west through northern area)
-    const rz = 14 + Math.sin(x * 0.25) * 2.5;
-    if (Math.abs(z - rz) < 1.2 && x > 30 && x < 65) return true;
+    const rz = 35 + Math.sin(x * 0.1) * 6;
+    if (Math.abs(z - rz) < 3 && x > 75 && x < 162) return true;
     // Ruins moat (partial around ruins entrance)
-    if (Math.sqrt((x - 62) ** 2 + (z - 38) ** 2) > 6 && Math.sqrt((x - 62) ** 2 + (z - 38) ** 2) < 7.5
-        && x > 60 && z > 34 && z < 42) return true;
+    if (Math.sqrt((x - 155) ** 2 + (z - 95) ** 2) > 15 && Math.sqrt((x - 155) ** 2 + (z - 95) ** 2) < 19
+        && x > 150 && z > 85 && z < 105) return true;
     // Deep network void pools
-    if (Math.sqrt((x - 30) ** 2 + (z - 65) ** 2) < 3) return true;
-    if (Math.sqrt((x - 55) ** 2 + (z - 70) ** 2) < 2.5) return true;
+    if (Math.sqrt((x - 75) ** 2 + (z - 162) ** 2) < 7.5) return true;
+    if (Math.sqrt((x - 137) ** 2 + (z - 175) ** 2) < 6) return true;
     return false;
 }
 
 export function isBridge(x: number, z: number): boolean {
     // Forest river bridge (north road crossing)
-    const rz = 14 + Math.sin(x * 0.25) * 2.5;
-    if (Math.abs(z - rz) < 1.5 && x >= 39 && x <= 41) return true;
+    const rz = 35 + Math.sin(x * 0.1) * 6;
+    if (Math.abs(z - rz) < 3.5 && x >= 97 && x <= 103) return true;
     // Ruins moat bridge
-    if (x >= 61 && x <= 63 && z >= 37 && z <= 39) return true;
+    if (x >= 152 && x <= 158 && z >= 92 && z <= 98) return true;
     return false;
 }
 
@@ -87,25 +87,25 @@ function isOnRoad(x: number, z: number): boolean {
     // === SUITE City grid roads ===
     const city = ZONES.suite_city.bounds;
     if (x >= city.x1 && x <= city.x2 && z >= city.z1 && z <= city.z2) {
-        // Main north-south avenue (x=40)
-        if (Math.abs(x - 40) < 1) return true;
-        // Main east-west avenue (z=38)
-        if (Math.abs(z - 38) < 1) return true;
+        // Main north-south avenue (x=100)
+        if (Math.abs(x - 100) < 1) return true;
+        // Main east-west avenue (z=95)
+        if (Math.abs(z - 95) < 1) return true;
         // District border roads (horizontal)
-        if (Math.abs(z - 32) < 0.6 && x >= city.x1 && x <= city.x2) return true;
-        if (Math.abs(z - 45) < 0.6 && x >= city.x1 && x <= city.x2) return true;
+        if (Math.abs(z - 80) < 0.6 && x >= city.x1 && x <= city.x2) return true;
+        if (Math.abs(z - 112) < 0.6 && x >= city.x1 && x <= city.x2) return true;
         // District border roads (vertical)
-        if (Math.abs(x - 35) < 0.6 && z >= city.z1 && z <= city.z2) return true;
-        if (Math.abs(x - 48) < 0.6 && z >= city.z1 && z <= city.z2) return true;
+        if (Math.abs(x - 87) < 0.6 && z >= city.z1 && z <= city.z2) return true;
+        if (Math.abs(x - 120) < 0.6 && z >= city.z1 && z <= city.z2) return true;
     }
 
     // === Roads connecting city to zones ===
-    // North road: City → Forest (x=40, z: 20 down to 2)
-    if (Math.abs(x - 40) < 1 && z >= 2 && z < 20) return true;
-    // East road: City → Ruins (z=38, x: 60 to 78)
-    if (Math.abs(z - 38) < 1 && x > 60 && x < 78) return true;
-    // South road: City → Deep Network (x=40, z: 55 to 78)
-    if (Math.abs(x - 40) < 1 && z > 55 && z < 78) return true;
+    // North road: City → Forest (x=100, z: 50 down to 5)
+    if (Math.abs(x - 100) < 1 && z >= 5 && z < 50) return true;
+    // East road: City → Ruins (z=95, x: 150 to 195)
+    if (Math.abs(z - 95) < 1 && x > 150 && x < 195) return true;
+    // South road: City → Deep Network (x=100, z: 137 to 195)
+    if (Math.abs(x - 100) < 1 && z > 137 && z < 195) return true;
 
     return false;
 }
@@ -115,11 +115,11 @@ function isOnForestPath(x: number, z: number, rng: () => number): boolean {
     const forest = ZONES.the_forest.bounds;
     if (x >= forest.x1 && x <= forest.x2 && z >= forest.z1 && z <= forest.z2) {
         // Path from city entrance to boss area
-        const pathZ = 10 + Math.sin(x * 0.15) * 3;
-        if (Math.abs(z - pathZ) < 0.8 && x > 15 && x < 65) return true;
+        const pathZ = 25 + Math.sin(x * 0.06) * 7;
+        if (Math.abs(z - pathZ) < 0.8 && x > 37 && x < 162) return true;
         // Cross path
-        const pathX = 40 + Math.sin(z * 0.3) * 4;
-        if (Math.abs(x - pathX) < 0.8 && z >= 3 && z <= 18) return true;
+        const pathX = 100 + Math.sin(z * 0.12) * 10;
+        if (Math.abs(x - pathX) < 0.8 && z >= 7 && z <= 45) return true;
     }
     return false;
 }
@@ -128,10 +128,10 @@ function isOnRuinsPath(x: number, z: number): boolean {
     const ruins = ZONES.the_ruins.bounds;
     if (x >= ruins.x1 && x <= ruins.x2 && z >= ruins.z1 && z <= ruins.z2) {
         // Broken stone paths
-        const pathZ = 38 + Math.sin(x * 0.3) * 2;
-        if (Math.abs(z - pathZ) < 0.7 && x > 62 && x < 76) return true;
-        const pathX = 70 + Math.sin(z * 0.25) * 3;
-        if (Math.abs(x - pathX) < 0.7 && z > 22 && z < 52) return true;
+        const pathZ = 95 + Math.sin(x * 0.12) * 5;
+        if (Math.abs(z - pathZ) < 0.7 && x > 155 && x < 190) return true;
+        const pathX = 175 + Math.sin(z * 0.1) * 7;
+        if (Math.abs(x - pathX) < 0.7 && z > 55 && z < 130) return true;
     }
     return false;
 }
@@ -140,10 +140,10 @@ function isOnDeepPath(x: number, z: number): boolean {
     const deep = ZONES.the_deep_network.bounds;
     if (x >= deep.x1 && x <= deep.x2 && z >= deep.z1 && z <= deep.z2) {
         // Glowing network paths
-        const pathZ = 66 + Math.sin(x * 0.2) * 3;
-        if (Math.abs(z - pathZ) < 0.7 && x > 15 && x < 65) return true;
-        const pathX = 40 + Math.sin(z * 0.2) * 5;
-        if (Math.abs(x - pathX) < 0.7 && z > 57 && z < 76) return true;
+        const pathZ = 165 + Math.sin(x * 0.08) * 7;
+        if (Math.abs(z - pathZ) < 0.7 && x > 37 && x < 162) return true;
+        const pathX = 100 + Math.sin(z * 0.08) * 12;
+        if (Math.abs(x - pathX) < 0.7 && z > 142 && z < 190) return true;
     }
     return false;
 }
@@ -252,7 +252,7 @@ export function generateMap(): GameMap {
     // Pass 3: Trees and obstacles (zone-aware density)
     // Forest: dense trees
     const forestZone = ZONES.the_forest.bounds;
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < 750; i++) {
         const x = Math.floor(forestZone.x1 + rng() * (forestZone.x2 - forestZone.x1));
         const z = Math.floor(forestZone.z1 + rng() * (forestZone.z2 - forestZone.z1));
         if (x >= 0 && x < MAP_SIZE && z >= 0 && z < MAP_SIZE
@@ -263,7 +263,7 @@ export function generateMap(): GameMap {
 
     // SUITE City: sparse decorative trees
     const cityZone = ZONES.suite_city.bounds;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 90; i++) {
         const x = Math.floor(cityZone.x1 + rng() * (cityZone.x2 - cityZone.x1));
         const z = Math.floor(cityZone.z1 + rng() * (cityZone.z2 - cityZone.z1));
         if (x >= 0 && x < MAP_SIZE && z >= 0 && z < MAP_SIZE
@@ -274,7 +274,7 @@ export function generateMap(): GameMap {
 
     // Ruins: rubble/debris (unwalkable blocks)
     const ruinsZone = ZONES.the_ruins.bounds;
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < 240; i++) {
         const x = Math.floor(ruinsZone.x1 + rng() * (ruinsZone.x2 - ruinsZone.x1));
         const z = Math.floor(ruinsZone.z1 + rng() * (ruinsZone.z2 - ruinsZone.z1));
         if (x >= 0 && x < MAP_SIZE && z >= 0 && z < MAP_SIZE
@@ -285,7 +285,7 @@ export function generateMap(): GameMap {
 
     // Deep Network: void patches
     const deepZone = ZONES.the_deep_network.bounds;
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 300; i++) {
         const x = Math.floor(deepZone.x1 + rng() * (deepZone.x2 - deepZone.x1));
         const z = Math.floor(deepZone.z1 + rng() * (deepZone.z2 - deepZone.z1));
         if (x >= 0 && x < MAP_SIZE && z >= 0 && z < MAP_SIZE
@@ -295,7 +295,7 @@ export function generateMap(): GameMap {
     }
 
     // Wilderness areas (between zones): some trees
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 180; i++) {
         const x = Math.floor(rng() * MAP_SIZE);
         const z = Math.floor(rng() * MAP_SIZE);
         if (x >= 0 && x < MAP_SIZE && z >= 0 && z < MAP_SIZE
@@ -305,7 +305,7 @@ export function generateMap(): GameMap {
     }
 
     // Burn RNG calls to keep deterministic sequence for client sync
-    for (let i = 0; i < 80; i++) rng();
+    for (let i = 0; i < 200; i++) rng();
 
     // Pass 4: Building footprints and doors
     for (const b of BUILDINGS) {

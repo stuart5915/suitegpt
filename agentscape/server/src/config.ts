@@ -2,7 +2,7 @@
 // AgentScape — Shared Config (server + client reference)
 // ============================================================
 
-export const MAP_SIZE = 80;
+export const MAP_SIZE = 200;
 export const TILE_SIZE = 1;
 export const WATER_LEVEL = -0.15;
 export const MOVE_SPEED = 4;
@@ -14,7 +14,7 @@ export const COMBAT_TICK_INTERVAL = 4; // combat happens every 4th tick
 export const MAX_INVENTORY_SLOTS = 28;
 export const SAVE_INTERVAL = 30_000; // batch save every 30s
 export const MAX_PLAYERS_PER_ROOM = 200;
-export const PATHFINDING_BUDGET_PER_TICK = 8; // doubled for larger map
+export const PATHFINDING_BUDGET_PER_TICK = 16; // scaled for 200x200 map
 export const RESPAWN_TIME = 30; // seconds
 export const BOSS_RESPAWN_TIME = 300; // 5 minutes for bosses
 export const RAID_BOSS_RESPAWN_TIME = 900; // 15 minutes for raid bosses
@@ -23,7 +23,7 @@ export const ENERGY_REGEN_INTERVAL = 2.4; // seconds
 export const SPEC_ENERGY_COST = 25;
 export const SPEC_DAMAGE_MULT = 1.5;
 export const MONSTER_AGGRO_RANGE = 5; // tiles before monster attacks
-export const MONSTER_LEASH_RANGE = 15; // tiles before monster resets
+export const MONSTER_LEASH_RANGE = 30; // tiles before monster resets (scaled for 200x200)
 export const BOSS_AGGRO_RANGE = 8;
 
 // ============================================================
@@ -44,28 +44,28 @@ export interface ZoneDef {
 export const ZONES: Record<string, ZoneDef> = {
     suite_city: {
         id: 'suite_city', name: 'SUITE City', levelRange: [1, 99],
-        bounds: { x1: 20, z1: 20, x2: 60, z2: 55 },
+        bounds: { x1: 50, z1: 50, x2: 150, z2: 137 },
         type: 'city', pvpEnabled: false,
         description: 'The central hub. Seven districts powered by SUITE apps. Safe from monsters.',
         color: '#6366f1',
     },
     the_forest: {
         id: 'the_forest', name: 'The Forest', levelRange: [1, 15],
-        bounds: { x1: 5, z1: 2, x2: 75, z2: 20 },
+        bounds: { x1: 12, z1: 5, x2: 188, z2: 50 },
         type: 'pvm', pvpEnabled: false,
         description: 'Dense digital woodland north of the city. Home to low-level corrupted programs.',
         color: '#22c55e',
     },
     the_ruins: {
         id: 'the_ruins', name: 'The Ruins', levelRange: [15, 30],
-        bounds: { x1: 60, z1: 20, x2: 78, z2: 55 },
+        bounds: { x1: 150, z1: 50, x2: 195, z2: 137 },
         type: 'pvm', pvpEnabled: false,
         description: 'Crumbling server architecture east of the city. Mid-level threats lurk here.',
         color: '#f97316',
     },
     the_deep_network: {
         id: 'the_deep_network', name: 'The Deep Network', levelRange: [30, 50],
-        bounds: { x1: 10, z1: 55, x2: 70, z2: 78 },
+        bounds: { x1: 25, z1: 137, x2: 175, z2: 195 },
         type: 'pvm', pvpEnabled: true,
         description: 'The darkest layer of the network. Endgame monsters and raid bosses await.',
         color: '#ef4444',
@@ -89,50 +89,50 @@ export interface DistrictDef {
 export const DISTRICTS: Record<string, DistrictDef> = {
     health: {
         id: 'health', name: 'Health District', category: 'Health & Wellness',
-        bounds: { x1: 20, z1: 20, x2: 34, z2: 32 },
+        bounds: { x1: 50, z1: 50, x2: 85, z2: 80 },
         color: '#22c55e', icon: '\u{1F3E5}',
         apps: ['TrueForm', 'GymPlan', 'SleepCoach', 'NutriScan', 'MealPlanner', 'MealGenius', 'FormCheck', 'SkinCheck'],
     },
     education: {
         id: 'education', name: 'Academy Quarter', category: 'Education & Learning',
-        bounds: { x1: 35, z1: 20, x2: 48, z2: 32 },
+        bounds: { x1: 87, z1: 50, x2: 120, z2: 80 },
         color: '#3b82f6', icon: '\u{1F3EB}',
         apps: ['TutorBot', 'QuizMaker', 'LanguageBuddy', 'MathSolver', 'StudyCards', 'ScienceExplainer', 'HistoryChat', 'EssayCoach'],
     },
     business: {
         id: 'business', name: 'Commerce Hub', category: 'Business & Finance',
-        bounds: { x1: 48, z1: 20, x2: 60, z2: 35 },
+        bounds: { x1: 120, z1: 50, x2: 150, z2: 87 },
         color: '#eab308', icon: '\u{1F3E6}',
         apps: ['BizPlan', 'InvoiceAI', 'TaxPrep', 'CompetitorSpy', 'PriceOptimizer', 'PitchDeck', 'Cheshbon'],
     },
     productivity: {
         id: 'productivity', name: 'Forge Works', category: 'Productivity & Tools',
-        bounds: { x1: 20, z1: 32, x2: 35, z2: 45 },
+        bounds: { x1: 50, z1: 80, x2: 87, z2: 112 },
         color: '#8b5cf6', icon: '\u2699\uFE0F',
         apps: ['DocDigest', 'ContractReader', 'TranslateDoc', 'MeetingMind', 'SlideForge', 'ResumeForge', 'OptiCRep', 'RemCast'],
     },
     creative: {
         id: 'creative', name: 'Creative Quarter', category: 'Creative & Design',
-        bounds: { x1: 20, z1: 45, x2: 35, z2: 55 },
+        bounds: { x1: 50, z1: 112, x2: 87, z2: 137 },
         color: '#ec4899', icon: '\u{1F3A8}',
         apps: ['StoryForge', 'LogoForge', 'ThumbnailAI', 'MockupAI', 'MusicMood', 'PhotoRestore', 'PortfolioGPT', 'BrandKit'],
     },
     marketing: {
         id: 'marketing', name: 'Broadcast Row', category: 'Marketing & Content',
-        bounds: { x1: 35, z1: 45, x2: 48, z2: 55 },
+        bounds: { x1: 87, z1: 112, x2: 120, z2: 137 },
         color: '#f97316', icon: '\u{1F4E3}',
         apps: ['CopyWriter', 'AdCopy', 'SocialPost', 'Newsletter', 'EmailCraft', 'ProductDescriptor'],
     },
     home: {
         id: 'home', name: 'Homestead', category: 'Home & Lifestyle',
-        bounds: { x1: 48, z1: 35, x2: 60, z2: 55 },
+        bounds: { x1: 120, z1: 87, x2: 150, z2: 137 },
         color: '#14b8a6', icon: '\u{1F3E0}',
         apps: ['TravelPlanner', 'HomeRepair', 'PlantDoctor', 'PetHealth', 'ReviewResponder'],
     },
 };
 
 // Town center (shared area between districts)
-export const TOWN_CENTER = { x1: 35, z1: 33, x2: 48, z2: 44 };
+export const TOWN_CENTER = { x1: 87, z1: 82, x2: 120, z2: 110 };
 
 // ============================================================
 // Items — All equipment, consumables, materials, drops
@@ -280,7 +280,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'bread', weight: 20, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 5, max: 15 },
-        aggressive: false, respawnTime: 15, spawnCount: 12,
+        aggressive: false, respawnTime: 15, spawnCount: 36,
         color: '#94a3b8', description: 'A mindless bot spewing junk data. Easy prey for beginners.',
     },
     broken_link_mob: {
@@ -294,7 +294,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'iron_helm', weight: 3, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 10, max: 30 },
-        aggressive: false, respawnTime: 20, spawnCount: 10,
+        aggressive: false, respawnTime: 20, spawnCount: 30,
         color: '#64748b', description: 'A severed hyperlink writhing with residual data.',
     },
     corrupt_data: {
@@ -308,7 +308,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'steel_sword', weight: 2, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 20, max: 50 },
-        aggressive: true, respawnTime: 25, spawnCount: 8,
+        aggressive: true, respawnTime: 25, spawnCount: 24,
         color: '#7c3aed', description: 'A glitching mass of corrupted files. Attacks on sight.',
     },
     virus_walker: {
@@ -322,7 +322,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'attack_potion', weight: 5, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 30, max: 75 },
-        aggressive: true, respawnTime: 30, spawnCount: 6,
+        aggressive: true, respawnTime: 30, spawnCount: 18,
         color: '#dc2626', description: 'A malicious program stalking the forest paths.',
     },
 
@@ -338,7 +338,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'mithril_helm', weight: 2, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 40, max: 100 },
-        aggressive: false, respawnTime: 20, spawnCount: 10,
+        aggressive: false, respawnTime: 20, spawnCount: 30,
         color: '#06b6d4', description: 'A leaking process slowly consuming all resources around it.',
     },
     stack_overflow: {
@@ -352,7 +352,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'mithril_sword', weight: 2, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 60, max: 150 },
-        aggressive: true, respawnTime: 25, spawnCount: 8,
+        aggressive: true, respawnTime: 25, spawnCount: 24,
         color: '#f59e0b', description: 'An unstable tower of recursive calls, ready to collapse on you.',
     },
     null_pointer: {
@@ -367,7 +367,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'lobster', weight: 10, minQty: 1, maxQty: 2 },
         ],
         coinDrop: { min: 80, max: 200 },
-        aggressive: true, respawnTime: 30, spawnCount: 6,
+        aggressive: true, respawnTime: 30, spawnCount: 18,
         color: '#000000', description: 'A void in the code. It references nothing and destroys everything.',
     },
     segfault_wraith: {
@@ -382,7 +382,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'strength_potion', weight: 5, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 100, max: 250 },
-        aggressive: true, respawnTime: 35, spawnCount: 4,
+        aggressive: true, respawnTime: 35, spawnCount: 12,
         color: '#a78bfa', description: 'A ghostly process that crashes through memory boundaries.',
     },
 
@@ -398,7 +398,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'rune_shield', weight: 1, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 120, max: 300 },
-        aggressive: true, respawnTime: 25, spawnCount: 8,
+        aggressive: true, respawnTime: 25, spawnCount: 24,
         color: '#1e1b4b', description: 'A spider-like scraper lurking in the deep web.',
     },
     packet_storm: {
@@ -412,7 +412,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'defence_potion', weight: 5, minQty: 1, maxQty: 1 },
         ],
         coinDrop: { min: 150, max: 400 },
-        aggressive: true, respawnTime: 30, spawnCount: 6,
+        aggressive: true, respawnTime: 30, spawnCount: 18,
         color: '#312e81', description: 'A raging vortex of network traffic. Devastating DDoS incarnate.',
     },
     firewall_guardian: {
@@ -427,7 +427,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
             { id: 'manta_ray', weight: 5, minQty: 1, maxQty: 2 },
         ],
         coinDrop: { min: 200, max: 500 },
-        aggressive: true, respawnTime: 40, spawnCount: 4,
+        aggressive: true, respawnTime: 40, spawnCount: 12,
         color: '#f97316', description: 'An ancient security protocol. Still guarding long-dead servers.',
     },
 };
@@ -488,7 +488,7 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Fork Bomb', type: 'aoe', damage: 15, radius: 3, cooldown: 8, description: 'Spawns chaotic processes damaging all nearby.' },
             { name: 'Self-Replicate', type: 'heal', heal: 50, cooldown: 12, trigger: 40, description: 'Heals by copying its own code when low HP.' },
         ],
-        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 40, z: 8 },
+        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 100, z: 20 },
         isRaidBoss: false, minPlayers: 1,
         color: '#dc2626', description: 'A self-replicating script that has grown beyond control. Forest guardian.',
     },
@@ -511,7 +511,7 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Stone Skin', type: 'enrage', cooldown: 15, trigger: 50, description: 'Hardens defence by 50% when below half HP.' },
             { name: 'Rubble Slam', type: 'aoe', damage: 30, radius: 4, cooldown: 12, description: 'Smashes the ground, damaging all nearby players.' },
         ],
-        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 70, z: 38 },
+        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 175, z: 95 },
         isRaidBoss: false, minPlayers: 2,
         color: '#78716c', description: 'A massive construct of dead pages and broken endpoints. Ruins guardian.',
     },
@@ -535,7 +535,7 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Confident Nonsense', type: 'aoe', damage: 45, radius: 5, cooldown: 10, description: 'Broadcasts an authoritative but devastating energy blast.' },
             { name: 'Regenerate Context', type: 'heal', heal: 150, cooldown: 20, trigger: 30, description: 'Reloads from a cached state, healing significantly.' },
         ],
-        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 40, z: 68 },
+        respawnTime: BOSS_RESPAWN_TIME, spawnPos: { x: 100, z: 170 },
         isRaidBoss: false, minPlayers: 3,
         color: '#a855f7', description: 'A rogue AI that generates convincing but false realities. Speaks with authority about things that do not exist.',
     },
@@ -561,7 +561,7 @@ export const BOSSES: Record<string, BossDef> = {
             { name: 'Consume Packet', type: 'heal', heal: 300, cooldown: 25, trigger: 25, description: 'Devours network traffic to heal massively.' },
             { name: 'Spawn Crawlers', type: 'summon', cooldown: 18, trigger: 60, description: 'Summons 3 Dark Crawlers to defend it.' },
         ],
-        respawnTime: RAID_BOSS_RESPAWN_TIME, spawnPos: { x: 55, z: 72 },
+        respawnTime: RAID_BOSS_RESPAWN_TIME, spawnPos: { x: 137, z: 180 },
         isRaidBoss: true, minPlayers: 5,
         color: '#b91c1c', description: 'The ultimate threat. A dragon-class entity that devours entire databases. The final raid boss of the Deep Network.',
     },
@@ -588,43 +588,43 @@ export interface BuildingDef {
 
 export const BUILDINGS: BuildingDef[] = [
     // === TOWN CENTER ===
-    { id: 'town_hall', name: 'Town Hall', icon: '\u{1F3DB}\uFE0F', x: 40, z: 38, w: 3, d: 3, h: 2.5, doorSide: 'south', district: 'center' },
-    { id: 'quest_board', name: 'Quest Board', icon: '\u{1F4CB}', x: 42, z: 36, w: 1, d: 1, h: 1.2, doorSide: 'south', type: 'pedestal', district: 'center' },
-    { id: 'arena', name: 'Arena', icon: '\u2694\uFE0F', x: 37, z: 42, w: 4, d: 4, h: 1.8, doorSide: 'north', district: 'center' },
-    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 44, z: 40, w: 2.5, d: 2, h: 2.0, doorSide: 'west', district: 'center' },
+    { id: 'town_hall', name: 'Town Hall', icon: '\u{1F3DB}\uFE0F', x: 100, z: 95, w: 3, d: 3, h: 2.5, doorSide: 'south', district: 'center' },
+    { id: 'quest_board', name: 'Quest Board', icon: '\u{1F4CB}', x: 105, z: 90, w: 1, d: 1, h: 1.2, doorSide: 'south', type: 'pedestal', district: 'center' },
+    { id: 'arena', name: 'Arena', icon: '\u2694\uFE0F', x: 92, z: 105, w: 4, d: 4, h: 1.8, doorSide: 'north', district: 'center' },
+    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 110, z: 100, w: 2.5, d: 2, h: 2.0, doorSide: 'west', district: 'center' },
 
     // === HEALTH DISTRICT (NW) ===
-    { id: 'health_clinic', name: 'Health Clinic', icon: '\u{1F3E5}', x: 26, z: 24, w: 3, d: 2.5, h: 1.8, doorSide: 'south', district: 'health' },
-    { id: 'gym', name: 'Fitness Dojo', icon: '\u{1F3CB}\uFE0F', x: 30, z: 28, w: 2.5, d: 2, h: 1.5, doorSide: 'east', district: 'health' },
+    { id: 'health_clinic', name: 'Health Clinic', icon: '\u{1F3E5}', x: 65, z: 60, w: 3, d: 2.5, h: 1.8, doorSide: 'south', district: 'health' },
+    { id: 'gym', name: 'Fitness Dojo', icon: '\u{1F3CB}\uFE0F', x: 75, z: 70, w: 2.5, d: 2, h: 1.5, doorSide: 'east', district: 'health' },
 
     // === EDUCATION DISTRICT (N-CENTER) ===
-    { id: 'academy', name: 'SUITE Academy', icon: '\u{1F3EB}', x: 40, z: 24, w: 3.5, d: 2.5, h: 2.0, doorSide: 'south', district: 'education' },
-    { id: 'library', name: 'Knowledge Library', icon: '\u{1F4DA}', x: 44, z: 28, w: 2.5, d: 2, h: 1.6, doorSide: 'west', district: 'education' },
+    { id: 'academy', name: 'SUITE Academy', icon: '\u{1F3EB}', x: 100, z: 60, w: 3.5, d: 2.5, h: 2.0, doorSide: 'south', district: 'education' },
+    { id: 'library', name: 'Knowledge Library', icon: '\u{1F4DA}', x: 110, z: 70, w: 2.5, d: 2, h: 1.6, doorSide: 'west', district: 'education' },
 
     // === BUSINESS DISTRICT (NE) ===
-    { id: 'exchange', name: 'Trade Exchange', icon: '\u{1F4B9}', x: 52, z: 24, w: 3, d: 2.5, h: 2.2, doorSide: 'south', district: 'business' },
-    { id: 'marketplace', name: 'Marketplace', icon: '\u{1F3EA}', x: 56, z: 28, w: 2.5, d: 2, h: 1.4, doorSide: 'west', district: 'business' },
+    { id: 'exchange', name: 'Trade Exchange', icon: '\u{1F4B9}', x: 130, z: 60, w: 3, d: 2.5, h: 2.2, doorSide: 'south', district: 'business' },
+    { id: 'marketplace', name: 'Marketplace', icon: '\u{1F3EA}', x: 140, z: 70, w: 2.5, d: 2, h: 1.4, doorSide: 'west', district: 'business' },
 
     // === PRODUCTIVITY DISTRICT (W-CENTER) ===
-    { id: 'workshop', name: 'Workshop', icon: '\u{1F528}', x: 26, z: 36, w: 3, d: 2.5, h: 1.8, doorSide: 'east', district: 'productivity' },
-    { id: 'forge', name: 'The Forge', icon: '\u2699\uFE0F', x: 30, z: 40, w: 2.5, d: 2, h: 1.6, doorSide: 'east', district: 'productivity' },
+    { id: 'workshop', name: 'Workshop', icon: '\u{1F528}', x: 65, z: 90, w: 3, d: 2.5, h: 1.8, doorSide: 'east', district: 'productivity' },
+    { id: 'forge', name: 'The Forge', icon: '\u2699\uFE0F', x: 75, z: 100, w: 2.5, d: 2, h: 1.6, doorSide: 'east', district: 'productivity' },
 
     // === CREATIVE DISTRICT (SW) ===
-    { id: 'studio', name: 'Creative Studio', icon: '\u{1F3A8}', x: 26, z: 48, w: 3, d: 2.5, h: 1.6, doorSide: 'north', district: 'creative' },
-    { id: 'gallery', name: 'Art Gallery', icon: '\u{1F5BC}\uFE0F', x: 30, z: 52, w: 2.5, d: 2, h: 1.4, doorSide: 'north', district: 'creative' },
+    { id: 'studio', name: 'Creative Studio', icon: '\u{1F3A8}', x: 65, z: 120, w: 3, d: 2.5, h: 1.6, doorSide: 'north', district: 'creative' },
+    { id: 'gallery', name: 'Art Gallery', icon: '\u{1F5BC}\uFE0F', x: 75, z: 130, w: 2.5, d: 2, h: 1.4, doorSide: 'north', district: 'creative' },
 
     // === MARKETING DISTRICT (S-CENTER) ===
-    { id: 'broadcast_tower', name: 'Broadcast Tower', icon: '\u{1F4E1}', x: 40, z: 48, w: 2, d: 2, h: 3.0, doorSide: 'north', district: 'marketing' },
-    { id: 'ad_agency', name: 'Ad Agency', icon: '\u{1F4E3}', x: 44, z: 52, w: 2.5, d: 2, h: 1.4, doorSide: 'north', district: 'marketing' },
+    { id: 'broadcast_tower', name: 'Broadcast Tower', icon: '\u{1F4E1}', x: 100, z: 120, w: 2, d: 2, h: 3.0, doorSide: 'north', district: 'marketing' },
+    { id: 'ad_agency', name: 'Ad Agency', icon: '\u{1F4E3}', x: 110, z: 130, w: 2.5, d: 2, h: 1.4, doorSide: 'north', district: 'marketing' },
 
     // === HOME DISTRICT (SE) ===
-    { id: 'farm', name: 'Farm', icon: '\u{1F33E}', x: 52, z: 40, w: 3, d: 3, h: 1.0, doorSide: 'west', district: 'home' },
-    { id: 'tavern', name: 'Traveler\'s Tavern', icon: '\u{1F37A}', x: 56, z: 48, w: 2.5, d: 2, h: 1.5, doorSide: 'west', district: 'home' },
+    { id: 'farm', name: 'Farm', icon: '\u{1F33E}', x: 130, z: 100, w: 3, d: 3, h: 1.0, doorSide: 'west', district: 'home' },
+    { id: 'tavern', name: 'Traveler\'s Tavern', icon: '\u{1F37A}', x: 140, z: 120, w: 2.5, d: 2, h: 1.5, doorSide: 'west', district: 'home' },
 
     // === ZONE LANDMARKS ===
-    { id: 'forest_outpost', name: 'Forest Outpost', icon: '\u{1F332}', x: 40, z: 18, w: 2, d: 2, h: 1.3, doorSide: 'south', zone: 'the_forest' },
-    { id: 'ruins_gate', name: 'Ruins Gate', icon: '\u{1F3DA}\uFE0F', x: 62, z: 38, w: 2, d: 2, h: 2.0, doorSide: 'west', zone: 'the_ruins' },
-    { id: 'deep_entrance', name: 'Deep Network Portal', icon: '\u{1F30A}', x: 40, z: 57, w: 2, d: 2, h: 2.5, doorSide: 'north', zone: 'the_deep_network' },
+    { id: 'forest_outpost', name: 'Forest Outpost', icon: '\u{1F332}', x: 100, z: 45, w: 2, d: 2, h: 1.3, doorSide: 'south', zone: 'the_forest' },
+    { id: 'ruins_gate', name: 'Ruins Gate', icon: '\u{1F3DA}\uFE0F', x: 155, z: 95, w: 2, d: 2, h: 2.0, doorSide: 'west', zone: 'the_ruins' },
+    { id: 'deep_entrance', name: 'Deep Network Portal', icon: '\u{1F30A}', x: 100, z: 142, w: 2, d: 2, h: 2.5, doorSide: 'north', zone: 'the_deep_network' },
 ];
 
 export const ROLE_BUILDING_WEIGHTS: Record<string, Record<string, number>> = {

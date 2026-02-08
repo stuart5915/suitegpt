@@ -170,7 +170,7 @@ export class AgentScapeRoom extends Room<GameState> {
         }
 
         // Find walkable spawn in SUITE City center
-        let sx = 40, sz = 38;
+        let sx = 100, sz = 95;
         if (this.map.grid[sx][sz] === 0) {
             for (let r = 1; r < 5; r++) {
                 for (const [dx, dz] of [[0, r], [0, -r], [r, 0], [-r, 0]]) {
