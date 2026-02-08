@@ -17,6 +17,8 @@ import { QuestSystem } from '../systems/QuestSystem';
 import { ShopSystem } from '../systems/ShopSystem';
 import { CraftingSystem } from '../systems/CraftingSystem';
 import { SkillingSystem } from '../systems/SkillingSystem';
+import { BankSystem } from '../systems/BankSystem';
+import { SkillPersistence } from '../persistence/SkillPersistence';
 import { ActionValidator, GameAction } from '../validation/ActionValidator';
 import { RateLimiter } from '../validation/RateLimiter';
 import { generateMap, GameMap } from '../utils/MapGenerator';
@@ -58,6 +60,8 @@ export class AgentScapeRoom extends Room<GameState> {
     private shopSystem!: ShopSystem;
     private craftingSystem!: CraftingSystem;
     private skillingSystem!: SkillingSystem;
+    private bankSystem!: BankSystem;
+    private skillPersistence!: SkillPersistence;
     private actionValidator!: ActionValidator;
     private rateLimiter!: RateLimiter;
     private supabase!: SupabaseAdapter;
@@ -83,8 +87,10 @@ export class AgentScapeRoom extends Room<GameState> {
         this.npcBehaviorSystem = new NPCBehaviorSystem(this.map);
         this.monsterBehaviorSystem = new MonsterBehaviorSystem(this.map);
         this.shopSystem = new ShopSystem(this.inventorySystem);
-        this.craftingSystem = new CraftingSystem(this.inventorySystem);
         this.skillingSystem = new SkillingSystem(this.inventorySystem);
+        this.craftingSystem = new CraftingSystem(this.inventorySystem, this.skillingSystem);
+        this.bankSystem = new BankSystem(this.inventorySystem);
+        this.skillPersistence = new SkillPersistence(this.skillingSystem, this.craftingSystem, this.bankSystem);
         this.actionValidator = new ActionValidator();
         this.rateLimiter = new RateLimiter(10);
 
@@ -109,6 +115,9 @@ export class AgentScapeRoom extends Room<GameState> {
 
         // Start game loop
         this.setSimulationInterval((dt) => this.gameLoop(dt), TICK_RATE);
+
+        // Register extra data serializer for skill/bank persistence
+        this.saveManager.setExtraDataSerializer((player) => this.skillPersistence.serialize(player));
 
         // Start periodic saves
         this.saveManager.startPeriodicSave(this.state.players);
@@ -155,6 +164,7 @@ export class AgentScapeRoom extends Room<GameState> {
                     const saved = await this.supabase.loadPlayerByUserId(user.id);
                     if (saved) {
                         this.supabase.restorePlayer(player, saved);
+                        if (saved.extra_data) this.skillPersistence.restore(player, saved.extra_data);
                         console.log(`[AgentScapeRoom] Restored save for ${player.name} (${user.id})`);
                     }
                 }
@@ -170,6 +180,7 @@ export class AgentScapeRoom extends Room<GameState> {
             const saved = await this.supabase.loadPlayerByUserId(tgUserId);
             if (saved) {
                 this.supabase.restorePlayer(player, saved);
+                if (saved.extra_data) this.skillPersistence.restore(player, saved.extra_data);
                 console.log(`[AgentScapeRoom] Restored Telegram save for ${player.name} (${tgUserId})`);
             }
         }
@@ -205,6 +216,10 @@ export class AgentScapeRoom extends Room<GameState> {
             mapHeight: this.map.heightMap,
             buildingDoors: this.map.buildingDoors,
         });
+
+        // Send resource node data for skilling
+        client.send('resource_nodes', this.skillingSystem.getNodeStates());
+        client.send('resource_defs', this.skillingSystem.getResourceDefs());
     }
 
     async onLeave(client: Client) {
@@ -221,6 +236,9 @@ export class AgentScapeRoom extends Room<GameState> {
                 const npc = this.state.npcs.get(player.combatTargetNpcId);
                 if (npc) this.combatSystem.disengageCombat(player, npc);
             }
+
+            // Cleanup skilling state
+            this.skillingSystem.cleanupPlayer(player);
         }
 
         this.state.players.delete(client.sessionId);
@@ -451,16 +469,23 @@ export class AgentScapeRoom extends Room<GameState> {
             }
         });
 
-        // 7. Update skilling timers
+        // 7. Update skilling timers (called unconditionally for cooldown handling)
         this.state.players.forEach((player) => {
-            if (player.skillingAction) {
-                const event = this.skillingSystem.updateSkilling(player, dtSec);
-                if (event) {
-                    const client = this.clients.find(c => c.sessionId === player.sessionId);
-                    if (client) client.send('skilling_event', event);
-                }
+            const event = this.skillingSystem.updateSkilling(player, dtSec);
+            if (event) {
+                const client = this.clients.find(c => c.sessionId === player.sessionId);
+                if (client) client.send('skilling_event', event);
             }
         });
+
+        // 7b. Update resource node respawns & broadcast changes
+        const nodeEvents = this.skillingSystem.updateResourceNodes(dtSec);
+        if (nodeEvents.length > 0) {
+            nodeEvents.forEach(evt => this.broadcast('node_update', evt));
+        }
+
+        // 7c. Resource shop restocking
+        this.shopSystem.updateRestock(dtSec);
 
         // 8. Special attack energy regen
         this.state.players.forEach((player) => {
@@ -538,6 +563,8 @@ export class AgentScapeRoom extends Room<GameState> {
                 if (player.isResting) { player.isResting = false; }
                 // Cancel pending pickpocket
                 player.pendingPickpocket = null;
+                // Cancel gathering if moving
+                player.skillingAction = null;
                 // Cancel combat if moving away
                 if (player.combatTargetNpcId) {
                     const npc = this.state.npcs.get(player.combatTargetNpcId);
@@ -843,6 +870,85 @@ export class AgentScapeRoom extends Room<GameState> {
                     x: player.x,
                     z: player.z,
                 });
+                break;
+            }
+
+            // ============================================================
+            // GATHERING — resource node interaction
+            // ============================================================
+            case 'gather_resource': {
+                const event = this.skillingSystem.startGathering(player, action.payload.nodeId);
+                if (event) client.send('skilling_event', event);
+                break;
+            }
+
+            // ============================================================
+            // COOKING & PROCESSING — crafting expansion
+            // ============================================================
+            case 'cook_item': {
+                const result = this.craftingSystem.cookItem(player, action.payload.recipeId);
+                client.send('system_message', { message: result.message });
+                break;
+            }
+
+            case 'process_resource': {
+                const result = this.craftingSystem.processResource(player, action.payload.recipeId);
+                client.send('system_message', { message: result.message });
+                break;
+            }
+
+            // ============================================================
+            // BANK — deposit/withdraw at Bank building
+            // ============================================================
+            case 'bank_open': {
+                const result = this.bankSystem.open(player);
+                if (result.success) {
+                    client.send('bank_contents', this.bankSystem.getContents(player));
+                } else {
+                    client.send('system_message', { message: result.message });
+                }
+                break;
+            }
+
+            case 'bank_deposit': {
+                const result = this.bankSystem.deposit(player, action.payload.inventorySlot, action.payload.quantity);
+                client.send('system_message', { message: result.message });
+                if (result.success) client.send('bank_update', this.bankSystem.getContents(player));
+                break;
+            }
+
+            case 'bank_deposit_all': {
+                const result = this.bankSystem.depositAll(player);
+                client.send('system_message', { message: result.message });
+                if (result.success) client.send('bank_update', this.bankSystem.getContents(player));
+                break;
+            }
+
+            case 'bank_withdraw': {
+                const result = this.bankSystem.withdraw(player, action.payload.bankSlot, action.payload.quantity);
+                client.send('system_message', { message: result.message });
+                if (result.success) client.send('bank_update', this.bankSystem.getContents(player));
+                break;
+            }
+
+            // ============================================================
+            // RESOURCE SHOP — buy/sell gathered materials
+            // ============================================================
+            case 'buy_resource': {
+                const result = this.shopSystem.buyResource(player, action.payload.itemId, action.payload.quantity, this.state);
+                client.send('system_message', { message: result.message });
+                break;
+            }
+
+            case 'sell_resource': {
+                const result = this.shopSystem.sellResource(player, action.payload.inventorySlot);
+                client.send('system_message', { message: result.message });
+                break;
+            }
+
+            case 'get_sell_price': {
+                const price = this.shopSystem.getSellPrice(action.payload.itemId);
+                client.send('sell_price', { itemId: action.payload.itemId, price });
                 break;
             }
         }

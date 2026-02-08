@@ -10,9 +10,15 @@ import { SAVE_INTERVAL } from '../config';
 export class SaveManager {
     private supabase: SupabaseAdapter;
     private timer: NodeJS.Timer | null = null;
+    private extraDataSerializer: ((player: PlayerSchema) => string) | null = null;
 
     constructor(supabase: SupabaseAdapter) {
         this.supabase = supabase;
+    }
+
+    /** Register a callback that returns extra_data JSON for a player */
+    setExtraDataSerializer(fn: (player: PlayerSchema) => string): void {
+        this.extraDataSerializer = fn;
     }
 
     startPeriodicSave(players: MapSchema<PlayerSchema>): void {
@@ -35,7 +41,8 @@ export class SaveManager {
             if (player.dirty) {
                 player.dirty = false;
                 player.lastSaveTime = Date.now();
-                promises.push(this.supabase.savePlayer(player));
+                const extraData = this.extraDataSerializer ? this.extraDataSerializer(player) : undefined;
+                promises.push(this.supabase.savePlayer(player, extraData));
             }
         });
 
@@ -48,6 +55,7 @@ export class SaveManager {
 
     async savePlayer(player: PlayerSchema): Promise<void> {
         player.dirty = false;
-        await this.supabase.savePlayer(player);
+        const extraData = this.extraDataSerializer ? this.extraDataSerializer(player) : undefined;
+        await this.supabase.savePlayer(player, extraData);
     }
 }

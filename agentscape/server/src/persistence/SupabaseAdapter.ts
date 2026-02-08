@@ -108,7 +108,7 @@ export class SupabaseAdapter {
         slot.healAmount = def.healAmount || 0;
     }
 
-    async savePlayer(player: PlayerSchema): Promise<boolean> {
+    async savePlayer(player: PlayerSchema, extraData?: string): Promise<boolean> {
         // Skip saving guests (no supabaseUserId)
         if (!player.supabaseUserId) return true;
         const inventoryData = [];
@@ -159,6 +159,7 @@ export class SupabaseAdapter {
             equipped_shield: player.equippedShield.id || null,
             inventory: JSON.stringify(inventoryData),
             quests: JSON.stringify(questsData),
+            extra_data: extraData || null,
             updated_at: new Date().toISOString(),
         };
 

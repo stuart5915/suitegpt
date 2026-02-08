@@ -7,7 +7,7 @@ import { PlayerSchema, InventoryItem } from '../schema/PlayerSchema';
 import { NPCSchema } from '../schema/NPCSchema';
 import { MonsterSchema } from '../schema/MonsterSchema';
 import { GameState, LootPile } from '../schema/GameState';
-import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS } from '../config';
+import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef } from '../config';
 import { InventorySystem } from './InventorySystem';
 import { QuestSystem } from './QuestSystem';
 import type { MonsterBehaviorSystem } from './MonsterBehaviorSystem';
@@ -108,6 +108,109 @@ export class CombatSystem {
     /** Clear all buffs for a player (on death). */
     clearBuffs(playerId: string): void {
         this.potionBuffs.delete(playerId);
+        this.playerStyles.delete(playerId);
+        this.poisonTimers.delete(playerId);
+    }
+
+    // --- Combat styles ---
+
+    // Track player combat style: playerId → style ID
+    private playerStyles: Map<string, string> = new Map();
+    // Track poison: playerId → { damage per tick, ticks remaining }
+    private poisonTimers: Map<string, { damage: number; ticks: number }> = new Map();
+
+    /** Set a player's combat style. */
+    setCombatStyle(playerId: string, styleId: string): boolean {
+        if (!COMBAT_STYLES[styleId]) return false;
+        this.playerStyles.set(playerId, styleId);
+        return true;
+    }
+
+    /** Get a player's current combat style (default: controlled). */
+    getPlayerStyle(playerId: string): CombatStyleDef {
+        const styleId = this.playerStyles.get(playerId) || 'controlled';
+        return COMBAT_STYLES[styleId];
+    }
+
+    /** Apply combat style bonuses to XP gains. Replaces flat XP with style-distributed XP. */
+    private applyStyleXP(playerId: string, baseXP: number): { skill: string; amount: number }[] {
+        const style = this.getPlayerStyle(playerId);
+        const dist = style.xpDistribution;
+        return [
+            { skill: 'attack', amount: Math.ceil(baseXP * dist.attack) },
+            { skill: 'strength', amount: Math.ceil(baseXP * dist.strength) },
+            { skill: 'defence', amount: Math.ceil(baseXP * dist.defence) },
+            { skill: 'hitpoints', amount: Math.ceil(baseXP * dist.hitpoints) },
+        ];
+    }
+
+    // --- Poison system ---
+
+    /** Apply poison to a player (from monster special). */
+    applyPoison(playerId: string, damage: number, ticks: number): void {
+        this.poisonTimers.set(playerId, { damage, ticks });
+    }
+
+    /** Tick poison for all poisoned players. Call once per combat tick. Returns hitsplats. */
+    updatePoison(players: Map<string, PlayerSchema>): HitsplatEvent[] {
+        const hitsplats: HitsplatEvent[] = [];
+        this.poisonTimers.forEach((poison, playerId) => {
+            const player = players.get(playerId);
+            if (!player || player.isDead) {
+                this.poisonTimers.delete(playerId);
+                return;
+            }
+            player.hp = Math.max(0, player.hp - poison.damage);
+            hitsplats.push({
+                targetType: 'player', targetId: playerId,
+                damage: poison.damage, isMiss: false, isSpec: false,
+                x: player.x, z: player.z,
+            });
+            poison.ticks--;
+            if (poison.ticks <= 0) this.poisonTimers.delete(playerId);
+            if (player.hp <= 0) player.isDead = true;
+        });
+        return hitsplats;
+    }
+
+    // --- Monster special attacks ---
+
+    /** Roll a monster's special attack. Returns extra hitsplat(s) if triggered. */
+    rollMonsterSpecial(
+        monster: MonsterSchema,
+        player: PlayerSchema,
+        baseDamage: number,
+    ): HitsplatEvent[] {
+        const special = MONSTER_SPECIALS[monster.monsterId];
+        if (!special) return [];
+        if (Math.random() * 100 >= special.chance) return [];
+
+        const extras: HitsplatEvent[] = [];
+
+        switch (special.type) {
+            case 'double_hit': {
+                // Second hit at 60-100% of base damage
+                const bonusDmg = Math.max(1, Math.floor(baseDamage * (0.6 + Math.random() * 0.4)));
+                player.hp = Math.max(0, player.hp - bonusDmg);
+                extras.push({
+                    targetType: 'player', targetId: player.sessionId,
+                    damage: bonusDmg, isMiss: false, isSpec: true,
+                    x: player.x, z: player.z,
+                });
+                break;
+            }
+            case 'poison': {
+                this.applyPoison(player.sessionId, special.damage || 3, special.duration || 4);
+                break;
+            }
+            case 'stun': {
+                // Stun by adding to combat timer (skip next attack)
+                player.combatTimer = -(special.duration || 1) * COMBAT_TICK;
+                break;
+            }
+        }
+
+        return extras;
     }
 
     startCombat(player: PlayerSchema, npc: NPCSchema): boolean {
@@ -383,6 +486,12 @@ export class CombatSystem {
             const dmg = Math.floor(Math.random() * maxHit) + 1;
             player.hp = Math.max(0, player.hp - dmg);
             hitsplats.push({ targetType: 'player', targetId: player.sessionId, damage: dmg, isMiss: false, isSpec: false, x: player.x, z: player.z });
+
+            // Roll monster special attack (non-boss only, bosses use abilities)
+            if (!monster.isBoss) {
+                const specials = this.rollMonsterSpecial(monster, player, dmg);
+                hitsplats.push(...specials);
+            }
         } else {
             hitsplats.push({ targetType: 'player', targetId: player.sessionId, damage: 0, isMiss: true, isSpec: false, x: player.x, z: player.z });
         }

@@ -1138,6 +1138,92 @@ export const QUESTS: Record<string, QuestDef> = {
 };
 
 // ============================================================
+// Combat Styles — affect XP distribution and combat bonuses
+// ============================================================
+
+export interface CombatStyleDef {
+    id: string;
+    name: string;
+    description: string;
+    attackBonus: number;
+    strengthBonus: number;
+    defenceBonus: number;
+    xpDistribution: { attack: number; strength: number; defence: number; hitpoints: number };
+}
+
+export const COMBAT_STYLES: Record<string, CombatStyleDef> = {
+    accurate: {
+        id: 'accurate', name: 'Accurate', description: 'Precise strikes. Bonus to accuracy, trains Attack.',
+        attackBonus: 3, strengthBonus: 0, defenceBonus: 0,
+        xpDistribution: { attack: 1.5, strength: 0.5, defence: 0.3, hitpoints: 0.7 },
+    },
+    aggressive: {
+        id: 'aggressive', name: 'Aggressive', description: 'Powerful swings. Bonus to damage, trains Strength.',
+        attackBonus: 0, strengthBonus: 3, defenceBonus: 0,
+        xpDistribution: { attack: 0.5, strength: 1.5, defence: 0.3, hitpoints: 0.7 },
+    },
+    defensive: {
+        id: 'defensive', name: 'Defensive', description: 'Careful blocks. Bonus to defence, trains Defence.',
+        attackBonus: 0, strengthBonus: 0, defenceBonus: 3,
+        xpDistribution: { attack: 0.3, strength: 0.3, defence: 1.5, hitpoints: 0.9 },
+    },
+    controlled: {
+        id: 'controlled', name: 'Controlled', description: 'Balanced combat. Even XP across all skills.',
+        attackBonus: 1, strengthBonus: 1, defenceBonus: 1,
+        xpDistribution: { attack: 0.8, strength: 0.8, defence: 0.8, hitpoints: 0.6 },
+    },
+};
+
+// ============================================================
+// Monster Special Attacks — non-boss monsters with specials
+// ============================================================
+
+export interface MonsterSpecialDef {
+    monsterId: string;
+    name: string;
+    type: 'double_hit' | 'poison' | 'stun';
+    chance: number; // % chance per attack tick
+    damage?: number;
+    duration?: number; // ticks for poison/stun
+    description: string;
+}
+
+export const MONSTER_SPECIALS: Record<string, MonsterSpecialDef> = {
+    null_pointer: {
+        monsterId: 'null_pointer', name: 'Null Strike', type: 'double_hit',
+        chance: 15, description: 'Strikes twice in rapid succession.',
+    },
+    segfault_wraith: {
+        monsterId: 'segfault_wraith', name: 'Segfault Crash', type: 'stun',
+        chance: 10, duration: 1, description: 'Crashes into you, stunning briefly.',
+    },
+    buffer_zombie: {
+        monsterId: 'buffer_zombie', name: 'Buffer Overflow', type: 'poison',
+        chance: 20, damage: 3, duration: 5, description: 'Overflows corrupt data, poisoning over time.',
+    },
+    dark_crawler: {
+        monsterId: 'dark_crawler', name: 'Web Snare', type: 'stun',
+        chance: 12, duration: 1, description: 'Entangles you in web threads.',
+    },
+    packet_storm: {
+        monsterId: 'packet_storm', name: 'DDoS Burst', type: 'double_hit',
+        chance: 18, description: 'Hits with a burst of packets — double damage.',
+    },
+    firewall_guardian: {
+        monsterId: 'firewall_guardian', name: 'Firewall Reflect', type: 'double_hit',
+        chance: 15, description: 'Reflects your attack back at you while hitting.',
+    },
+    rootkit_shade: {
+        monsterId: 'rootkit_shade', name: 'Kernel Panic', type: 'stun',
+        chance: 20, duration: 2, description: 'Causes a kernel panic — longer stun.',
+    },
+    zero_day: {
+        monsterId: 'zero_day', name: 'Exploit Chain', type: 'poison',
+        chance: 25, damage: 5, duration: 6, description: 'Chains multiple exploits, dealing sustained damage.',
+    },
+};
+
+// ============================================================
 // Slayer Tasks — Kill assignments for bonus XP
 // ============================================================
 

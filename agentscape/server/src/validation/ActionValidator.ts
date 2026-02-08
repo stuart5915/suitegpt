@@ -28,7 +28,17 @@ export type ActionType =
     | 'bury_bones'
     | 'pickpocket'
     | 'emote'
-    | 'chat';
+    | 'chat'
+    | 'gather_resource'
+    | 'cook_item'
+    | 'process_resource'
+    | 'bank_open'
+    | 'bank_deposit'
+    | 'bank_deposit_all'
+    | 'bank_withdraw'
+    | 'buy_resource'
+    | 'sell_resource'
+    | 'get_sell_price';
 
 export interface GameAction {
     type: ActionType;
@@ -193,6 +203,66 @@ export class ActionValidator {
                 if (typeof message !== 'string' || message.length === 0 || message.length > 80) {
                     return { valid: false, reason: 'Invalid message' };
                 }
+                return { valid: true };
+            }
+
+            case 'gather_resource': {
+                const { nodeId } = action.payload;
+                if (typeof nodeId !== 'string') return { valid: false, reason: 'Invalid node ID' };
+                return { valid: true };
+            }
+
+            case 'cook_item':
+            case 'process_resource': {
+                const { recipeId } = action.payload;
+                if (typeof recipeId !== 'string') return { valid: false, reason: 'Invalid recipe ID' };
+                return { valid: true };
+            }
+
+            case 'bank_open':
+            case 'bank_deposit_all':
+                return { valid: true };
+
+            case 'bank_deposit': {
+                const { inventorySlot, quantity } = action.payload;
+                if (typeof inventorySlot !== 'number' || inventorySlot < 0 || inventorySlot >= MAX_INVENTORY_SLOTS) {
+                    return { valid: false, reason: 'Invalid slot' };
+                }
+                if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1)) {
+                    return { valid: false, reason: 'Invalid quantity' };
+                }
+                return { valid: true };
+            }
+
+            case 'bank_withdraw': {
+                const { bankSlot, quantity } = action.payload;
+                if (typeof bankSlot !== 'number' || bankSlot < 0) {
+                    return { valid: false, reason: 'Invalid bank slot' };
+                }
+                if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1)) {
+                    return { valid: false, reason: 'Invalid quantity' };
+                }
+                return { valid: true };
+            }
+
+            case 'buy_resource': {
+                const { itemId, quantity } = action.payload;
+                if (typeof itemId !== 'string') return { valid: false, reason: 'Invalid item' };
+                if (typeof quantity !== 'number' || quantity < 1 || quantity > 100) return { valid: false, reason: 'Invalid quantity' };
+                return { valid: true };
+            }
+
+            case 'sell_resource': {
+                const { inventorySlot } = action.payload;
+                if (typeof inventorySlot !== 'number' || inventorySlot < 0 || inventorySlot >= MAX_INVENTORY_SLOTS) {
+                    return { valid: false, reason: 'Invalid slot' };
+                }
+                return { valid: true };
+            }
+
+            case 'get_sell_price': {
+                const { itemId } = action.payload;
+                if (typeof itemId !== 'string') return { valid: false, reason: 'Invalid item' };
                 return { valid: true };
             }
 
