@@ -78,6 +78,11 @@
         .item-card:hover { background: var(--bg-hover); border-color: var(--border-light); transform: translateY(-2px); }
         .item-card.has-asset { border-color: var(--success); }
         .item-card.has-asset::after { content: ''; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: var(--success); border-radius: 50%; }
+        .item-card.has-3d::before { content: '3D'; position: absolute; top: 8px; left: 8px; font-size: 9px; font-weight: 800; background: var(--accent); color: #fff; padding: 1px 5px; border-radius: 4px; }
+        .badge-3d { display: inline-block; font-size: 9px; font-weight: 800; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+        .progress-bar-mini { width: 100%; height: 4px; background: var(--bg-active); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+        .progress-bar-mini-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+        .batch-status { font-size: 11px; color: var(--text-secondary); margin-top: 8px; min-height: 16px; }
         .item-card-preview { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 8px; border-radius: 6px; background: var(--bg-active); overflow: hidden; }
         .item-card-preview img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
         .item-card-name { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.3; }
@@ -150,7 +155,16 @@
     </div>
     <div class="header-actions">
         <button class="btn" onclick="openSettings()">Settings</button>
+        <button class="btn" id="btn-batch" onclick="batchGenerate()">Generate All</button>
         <button class="btn btn-primary" onclick="exportAll()">Export ZIP</button>
+    </div>
+    <div id="batch-bar" style="display:none;position:fixed;top:52px;left:0;right:0;background:var(--bg-surface);border-bottom:1px solid var(--border);padding:8px 20px;z-index:50;display:none;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="generating-spinner"></span>
+            <span id="batch-text" style="font-size:12px;">Generating...</span>
+            <div style="flex:1;max-width:400px;height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;"><div id="batch-fill" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:3px;transition:width 0.3s;width:0%"></div></div>
+            <button class="btn btn-danger" onclick="cancelBatch()" style="padding:4px 10px;font-size:11px;">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -191,12 +205,20 @@
                     <input class="control-input" id="modal-style" placeholder="Leave blank to use global style">
                 </div>
                 <div class="control-row">
-                    <button class="btn btn-primary" id="btn-generate" onclick="generateImage()">Generate</button>
+                    <button class="btn btn-primary" id="btn-generate" onclick="generateImage()">Generate 2D</button>
                     <button class="btn" onclick="uploadCustom()">Upload</button>
+                </div>
+                <div class="control-row" id="btn-3d-row" style="display:none">
+                    <button class="btn" id="btn-generate-3d" onclick="generate3D()" style="border-color:var(--accent);color:var(--accent);">Generate 3D Model</button>
+                </div>
+                <div id="meshy-progress" style="display:none">
+                    <div class="progress-bar-mini"><div class="progress-bar-mini-fill" id="meshy-progress-fill" style="width:0%"></div></div>
+                    <div class="batch-status" id="meshy-status">Waiting...</div>
                 </div>
                 <div class="control-row" id="asset-actions" style="display:none">
                     <button class="btn btn-danger" onclick="clearAsset()">Remove</button>
                     <button class="btn" onclick="downloadSingle()">Download PNG</button>
+                    <button class="btn" id="btn-dl-3d" onclick="download3D()" style="display:none">Download GLB</button>
                 </div>
                 <input type="file" id="file-upload" accept="image/*" style="display:none" onchange="handleUpload(event)">
             </div>
@@ -214,7 +236,12 @@
         <div class="settings-section">
             <h3>OpenAI API Key</h3>
             <input class="control-input" id="setting-apikey" type="password" placeholder="sk-..." style="width:100%">
-            <p class="settings-note">Used for DALL-E 3 image generation. Stored locally in your browser only.</p>
+            <p class="settings-note">Used for DALL-E 3 / GPT Image generation. Stored locally in your browser only.</p>
+        </div>
+        <div class="settings-section">
+            <h3>Meshy API Key</h3>
+            <input class="control-input" id="setting-meshykey" type="password" placeholder="msy_..." style="width:100%">
+            <p class="settings-note">Used for 2D → 3D model generation. Get your key at <a href="https://www.meshy.ai/api" target="_blank" style="color:var(--accent)">meshy.ai/api</a></p>
         </div>
         <div class="settings-section">
             <h3>Global Style Prefix</h3>
@@ -414,6 +441,7 @@ const DEFAULT_STYLE = 'Single game item icon, pixel art style, 32x32 resolution,
 function getSettings() {
     return {
         apiKey: localStorage.getItem('forge_apikey') || '',
+        meshyKey: localStorage.getItem('forge_meshykey') || '',
         style: localStorage.getItem('forge_style') || DEFAULT_STYLE,
         model: localStorage.getItem('forge_model') || 'dall-e-3',
     };
@@ -422,6 +450,7 @@ function getSettings() {
 function openSettings() {
     const s = getSettings();
     document.getElementById('setting-apikey').value = s.apiKey;
+    document.getElementById('setting-meshykey').value = s.meshyKey;
     document.getElementById('setting-style').value = s.style;
     document.getElementById('setting-model').value = s.model;
     document.getElementById('settings-modal').classList.add('open');
@@ -433,6 +462,7 @@ function closeSettings() {
 
 function saveSettings() {
     localStorage.setItem('forge_apikey', document.getElementById('setting-apikey').value.trim());
+    localStorage.setItem('forge_meshykey', document.getElementById('setting-meshykey').value.trim());
     localStorage.setItem('forge_style', document.getElementById('setting-style').value.trim());
     localStorage.setItem('forge_model', document.getElementById('setting-model').value);
     closeSettings();
@@ -494,7 +524,8 @@ function renderGrid() {
         const tierClass = item.tier ? `tier-${item.tier}` : '';
         const tierLabel = item.tier ? TIER_NAMES[item.tier] : '';
 
-        html += `<div class="item-card ${asset ? 'has-asset' : ''}" onclick="openItemModal('${item.id}')">
+        const has3d = asset?.modelData ? true : false;
+        html += `<div class="item-card ${asset ? 'has-asset' : ''} ${has3d ? 'has-3d' : ''}" onclick="openItemModal('${item.id}')">
             <div class="item-card-preview">
                 ${asset ? `<img src="${asset.imageData}" alt="${item.name}">` : item.icon}
             </div>
@@ -510,9 +541,10 @@ function renderGrid() {
 
 function updateProgress() {
     const total = ITEMS.length;
-    const done = ITEMS.filter(i => assets[i.id]).length;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    document.getElementById('progress-text').textContent = `${done} / ${total} assets`;
+    const done2d = ITEMS.filter(i => assets[i.id]?.imageData).length;
+    const done3d = ITEMS.filter(i => assets[i.id]?.modelData).length;
+    const pct = total > 0 ? Math.round((done2d / total) * 100) : 0;
+    document.getElementById('progress-text').textContent = `${done2d}/${total} 2D` + (done3d > 0 ? ` \u00B7 ${done3d} 3D` : '');
     document.getElementById('progress-fill').style.width = pct + '%';
 }
 
@@ -553,6 +585,19 @@ function openItemModal(itemId) {
 
     // Show/hide asset actions
     document.getElementById('asset-actions').style.display = asset ? 'flex' : 'none';
+    // Show 3D button only if 2D image exists
+    document.getElementById('btn-3d-row').style.display = asset?.imageData ? 'flex' : 'none';
+    // Show 3D download if model exists
+    document.getElementById('btn-dl-3d').style.display = asset?.modelData ? 'inline-flex' : 'none';
+    // Update 3D button text
+    const btn3d = document.getElementById('btn-generate-3d');
+    if (asset?.modelData) {
+        btn3d.textContent = 'Regenerate 3D Model';
+    } else {
+        btn3d.textContent = 'Generate 3D Model';
+    }
+    // Hide meshy progress
+    document.getElementById('meshy-progress').style.display = 'none';
 
     document.getElementById('item-modal').classList.add('open');
 }
@@ -735,6 +780,7 @@ async function exportAll() {
 
     const zip = new JSZip();
     const itemsFolder = zip.folder('items');
+    const modelsFolder = zip.folder('models');
 
     // Manifest
     const manifest = {};
@@ -745,11 +791,17 @@ async function exportAll() {
         manifest[item.id] = {
             name: item.name,
             file: `items/${item.id}.png`,
+            model: asset.modelData ? `models/${item.id}.glb` : null,
             type: item.type,
             category: item.category,
             tier: item.tier || null,
             generatedAt: asset.generatedAt,
         };
+        // Include 3D model if exists
+        if (asset.modelData) {
+            const modelB64 = asset.modelData.split(',')[1];
+            modelsFolder.file(`${item.id}.glb`, modelB64, { base64: true });
+        }
     }
     zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
@@ -760,6 +812,199 @@ async function exportAll() {
     a.click();
     URL.revokeObjectURL(a.href);
     showToast(`Exported ${assetEntries.length} assets`, 'success');
+}
+
+// ============================================================
+// MESHY 3D GENERATION
+// ============================================================
+let generating3D = false;
+
+async function generate3D() {
+    if (generating3D) return;
+    const settings = getSettings();
+    if (!settings.meshyKey) {
+        showToast('Set your Meshy API key in Settings first', 'error');
+        return;
+    }
+    const item = ITEMS.find(i => i.id === selectedItemId);
+    if (!item) return;
+    const asset = assets[item.id];
+    if (!asset?.imageData) {
+        showToast('Generate a 2D image first', 'error');
+        return;
+    }
+
+    generating3D = true;
+    const btn = document.getElementById('btn-generate-3d');
+    btn.innerHTML = '<span class="generating-spinner"></span> Creating...';
+    btn.disabled = true;
+    document.getElementById('meshy-progress').style.display = 'block';
+    document.getElementById('meshy-status').textContent = 'Submitting to Meshy...';
+    document.getElementById('meshy-progress-fill').style.width = '0%';
+
+    try {
+        // Create task
+        const createRes = await fetch('https://api.meshy.ai/openapi/v1/image-to-3d', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.meshyKey}` },
+            body: JSON.stringify({
+                image_url: asset.imageData,
+                ai_model: 'meshy-4',
+                topology: 'triangle',
+                target_polycount: 10000,
+                should_remesh: true,
+                should_texture: true,
+                enable_pbr: false,
+            })
+        });
+        if (!createRes.ok) {
+            const err = await createRes.json().catch(() => ({}));
+            throw new Error(err.message || `Meshy API error ${createRes.status}`);
+        }
+        const { result: taskId } = await createRes.json();
+        document.getElementById('meshy-status').textContent = `Task created: ${taskId.slice(0,8)}... Polling...`;
+
+        // Poll for completion
+        const modelUrl = await pollMeshyTask(settings.meshyKey, taskId);
+
+        // Download the GLB
+        document.getElementById('meshy-status').textContent = 'Downloading 3D model...';
+        document.getElementById('meshy-progress-fill').style.width = '95%';
+        const glbRes = await fetch(modelUrl);
+        const glbBlob = await glbRes.blob();
+        const glbDataUrl = await blobToDataURL(glbBlob);
+
+        // Save
+        asset.modelData = glbDataUrl;
+        asset.meshyTaskId = taskId;
+        await store.save(item.id, asset);
+
+        document.getElementById('meshy-progress-fill').style.width = '100%';
+        document.getElementById('meshy-status').textContent = '3D model ready!';
+        openItemModal(item.id);
+        renderGrid();
+        showToast(`3D model generated for ${item.name}`, 'success');
+    } catch (err) {
+        console.error(err);
+        document.getElementById('meshy-status').textContent = `Failed: ${err.message}`;
+        showToast(`3D generation failed: ${err.message}`, 'error');
+    } finally {
+        generating3D = false;
+        btn.innerHTML = 'Generate 3D Model';
+        btn.disabled = false;
+    }
+}
+
+async function pollMeshyTask(apiKey, taskId) {
+    const maxAttempts = 120; // 2 minutes max
+    for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const res = await fetch(`https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (!res.ok) continue;
+        const task = await res.json();
+
+        const pct = task.progress || 0;
+        document.getElementById('meshy-progress-fill').style.width = Math.min(pct, 90) + '%';
+        document.getElementById('meshy-status').textContent = `${task.status} — ${pct}%`;
+
+        if (task.status === 'SUCCEEDED') {
+            if (task.model_urls?.glb) return task.model_urls.glb;
+            throw new Error('No GLB URL in response');
+        }
+        if (task.status === 'FAILED') {
+            throw new Error(task.task_error?.message || 'Meshy task failed');
+        }
+    }
+    throw new Error('Timed out waiting for 3D model');
+}
+
+function download3D() {
+    const item = ITEMS.find(i => i.id === selectedItemId);
+    if (!item || !assets[item.id]?.modelData) return;
+    const a = document.createElement('a');
+    a.href = assets[item.id].modelData;
+    a.download = `${item.id}.glb`;
+    a.click();
+}
+
+// ============================================================
+// BATCH GENERATION
+// ============================================================
+let batchRunning = false;
+let batchCancelled = false;
+
+async function batchGenerate() {
+    const settings = getSettings();
+    if (!settings.apiKey) {
+        showToast('Set your OpenAI API key in Settings first', 'error');
+        return;
+    }
+    const remaining = ITEMS.filter(i => !assets[i.id]);
+    if (remaining.length === 0) {
+        showToast('All items already have assets!', 'success');
+        return;
+    }
+
+    batchRunning = true;
+    batchCancelled = false;
+    const bar = document.getElementById('batch-bar');
+    bar.style.display = 'block';
+    document.getElementById('btn-batch').disabled = true;
+
+    let done = 0;
+    const total = remaining.length;
+
+    for (const item of remaining) {
+        if (batchCancelled) break;
+
+        document.getElementById('batch-text').textContent = `Generating ${item.name} (${done+1}/${total})...`;
+        document.getElementById('batch-fill').style.width = Math.round((done/total)*100) + '%';
+
+        try {
+            const styleOverride = '';
+            const baseStyle = settings.style || DEFAULT_STYLE;
+            let fullPrompt = `${baseStyle}. ${item.prompt}.`;
+            if (item.tier && TIER_HINTS[item.tier]) {
+                fullPrompt += ` The item has ${TIER_HINTS[item.tier]}.`;
+            }
+
+            let imageData;
+            if (settings.model === 'gpt-image-1') {
+                imageData = await callGptImage(settings.apiKey, fullPrompt);
+            } else {
+                imageData = await callDalle3(settings.apiKey, fullPrompt);
+            }
+
+            assets[item.id] = { imageData, prompt: item.prompt, generatedAt: Date.now() };
+            await store.save(item.id, assets[item.id]);
+            done++;
+            renderGrid();
+            renderSidebar();
+            updateProgress();
+        } catch (err) {
+            console.error(`Failed ${item.id}:`, err);
+            showToast(`Failed ${item.name}: ${err.message}`, 'error');
+            // Wait a bit on error (rate limit)
+            await new Promise(r => setTimeout(r, 3000));
+        }
+
+        // Small delay between requests to avoid rate limits
+        if (!batchCancelled) await new Promise(r => setTimeout(r, 1000));
+    }
+
+    document.getElementById('batch-fill').style.width = '100%';
+    document.getElementById('batch-text').textContent = batchCancelled ? `Cancelled — ${done} generated` : `Done! ${done} assets generated`;
+    setTimeout(() => { bar.style.display = 'none'; }, 3000);
+    document.getElementById('btn-batch').disabled = false;
+    batchRunning = false;
+    if (!batchCancelled) showToast(`Batch complete: ${done} assets generated`, 'success');
+}
+
+function cancelBatch() {
+    batchCancelled = true;
+    showToast('Cancelling batch...', 'error');
 }
 
 // ============================================================
