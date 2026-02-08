@@ -1158,7 +1158,7 @@
         const minimapCanvas=document.getElementById('minimap');const mctx=minimapCanvas.getContext('2d');
         function drawMinimap(){
             const s=200/MAP_SIZE;mctx.clearRect(0,0,200,200);
-            for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){const tz=getTerrainZone(x,z);if(grid[x][z]===3)mctx.fillStyle='#8B6914';else if(isWater(x,z))mctx.fillStyle=tz==='deep'?'#2a1060':'#2288aa';else if(grid[x][z]===0)mctx.fillStyle=tz==='deep'?'#1a1030':tz==='ruins'?'#4a4a4a':'#2d4a1e';else if(grid[x][z]===2)mctx.fillStyle='#8B7355';else{if(tz==='forest')mctx.fillStyle='#2d5a1e';else if(tz==='ruins')mctx.fillStyle='#6b6b6b';else if(tz==='deep')mctx.fillStyle='#1a1030';else mctx.fillStyle='#4a7c3f';}mctx.fillRect(x*s,z*s,s+0.5,s+0.5);}
+            for(let x=0;x<MAP_SIZE;x++)for(let z=0;z<MAP_SIZE;z++){if(grid[x][z]===3)mctx.fillStyle='#8B6914';else if(isWater(x,z))mctx.fillStyle='#2288aa';else if(grid[x][z]===0)mctx.fillStyle='#2d4a1e';else if(grid[x][z]===2)mctx.fillStyle='#8B7355';else mctx.fillStyle='#4a7c3f';mctx.fillRect(x*s,z*s,s+0.5,s+0.5);}
             // Zone borders on minimap
             Object.values(ZONES).forEach(zone=>{mctx.strokeStyle=zone.color;mctx.lineWidth=1;mctx.globalAlpha=0.3;mctx.strokeRect(zone.bounds.x1*s,zone.bounds.z1*s,(zone.bounds.x2-zone.bounds.x1)*s,(zone.bounds.z2-zone.bounds.z1)*s);mctx.globalAlpha=1;});
             BUILDINGS.forEach(b=>{mctx.fillStyle=b.signColor;mctx.globalAlpha=0.6;mctx.fillRect((b.x-b.w/2)*s,(b.z-b.d/2)*s,b.w*s,b.d*s);mctx.globalAlpha=1;});
