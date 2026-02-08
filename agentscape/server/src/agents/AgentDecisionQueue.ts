@@ -2,6 +2,11 @@
 // AgentScape — Agent LLM Decision Queue
 // Batches LLM calls, rate limits to 10/sec
 // Routine decisions → Haiku, Complex → Sonnet
+//
+// NOTE: Primary agent behavior is now driven by the behavior
+// tree in NPCBehaviorSystem. This class remains as the future
+// LLM integration point. Chat generation has been moved to
+// the behavior system to avoid duplicates.
 // ============================================================
 
 import { NPCSchema } from '../schema/NPCSchema';
@@ -17,39 +22,23 @@ export interface AgentDecision {
 }
 
 export class AgentDecisionQueue {
-    private decisionIntervals = new Map<string, number>();
     private lastDecisionTime = new Map<string, number>();
 
     // For now, agent decisions are rule-based (same as current NPC AI).
     // LLM integration point: replace getDecision() with API calls to
     // Claude Haiku/Sonnet for intelligent decision-making.
+    //
+    // Primary behavior is now in NPCBehaviorSystem's behavior trees.
+    // This method returns null to avoid duplicate actions.
 
     getDecision(npc: NPCSchema, state: GameState): AgentDecision | null {
-        const now = Date.now();
-        const lastTime = this.lastDecisionTime.get(npc.id) || 0;
-        const interval = npc.inCombat ? 2000 : (npc.state === 'IDLE' ? 10000 : 5000);
-
-        if (now - lastTime < interval) return null;
-        this.lastDecisionTime.set(npc.id, now);
-
-        // Rule-based decisions (placeholder for LLM)
-        if (npc.isDead) return null;
-
-        // Random chat
-        if (Math.random() < 0.05) {
-            const lines = AGENT_DIALOGUE[npc.role] || AGENT_DIALOGUE.app_builder;
-            const line = lines[Math.floor(Math.random() * lines.length)];
-            return {
-                npcId: npc.id,
-                action: { type: 'chat', payload: { message: line } },
-            };
-        }
-
+        // Behavior tree in NPCBehaviorSystem handles all agent decisions.
+        // This method is kept for backwards compatibility with the room
+        // and as the future LLM decision entry point.
         return null;
     }
 
     cleanup(npcId: string): void {
-        this.decisionIntervals.delete(npcId);
         this.lastDecisionTime.delete(npcId);
     }
 }
