@@ -289,6 +289,13 @@
         .cc-class-icon { font-size: 20px; display: block; margin-bottom: 4px; }
         .cc-class-name { color: #fff; font-size: 11px; font-weight: bold; display: block; }
         .cc-class-desc { color: #6b7280; font-size: 9px; display: block; margin-top: 2px; }
+        .cc-models { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cc-model-btn { width: 72px; padding: 6px; background: #1a1a1f; border: 2px solid #3a3a40; border-radius: 6px; cursor: pointer; text-align: center; transition: all 0.15s; }
+        .cc-model-btn:hover { border-color: #6366f1; background: #222230; }
+        .cc-model-btn.selected { border-color: #6366f1; background: #6366f122; }
+        .cc-model-btn img { width: 56px; height: 56px; object-fit: contain; border-radius: 4px; background: #000; display: block; margin: 0 auto 4px; }
+        .cc-model-btn .cc-model-icon { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: #111; border-radius: 4px; margin: 0 auto 4px; }
+        .cc-model-btn .cc-model-name { font-size: 9px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cc-start-btn { width: 100%; padding: 12px; background: #6366f1; color: #fff; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; font-family: inherit; cursor: pointer; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; }
         .cc-start-btn:hover { background: #5558e6; }
         .cc-start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
@@ -365,6 +372,10 @@
                 <div class="cc-field">
                     <label>Class</label>
                     <div class="cc-classes" id="cc-classes"></div>
+                </div>
+                <div class="cc-field" id="cc-model-field" style="display:none">
+                    <label>Character Model <span style="font-size:11px;color:#888">(from Forge)</span></label>
+                    <div class="cc-models" id="cc-models"></div>
                 </div>
                 <button class="cc-start-btn" id="cc-start" disabled>Enter AgentScape</button>
             </div>
@@ -525,6 +536,45 @@
                     classDiv.appendChild(btn);
                 });
 
+                // Load character models from Forge IndexedDB
+                let selCharModel = null;
+                (async () => {
+                    try {
+                        const dbReq = indexedDB.open('agentscape-forge', 2);
+                        dbReq.onupgradeneeded = (e) => { e.target.transaction.abort(); };
+                        dbReq.onsuccess = (e) => {
+                            try {
+                                const db = e.target.result;
+                                const tx = db.transaction('assets', 'readonly');
+                                const req = tx.objectStore('assets').getAll();
+                                req.onsuccess = () => {
+                                    const chars = (req.result || []).filter(a => a.type === 'character' && a.modelUrl);
+                                    if (chars.length === 0) return;
+                                    const field = document.getElementById('cc-model-field');
+                                    field.style.display = '';
+                                    const modelsDiv = document.getElementById('cc-models');
+                                    // Default (blocks) option
+                                    const defBtn = document.createElement('div');
+                                    defBtn.className = 'cc-model-btn selected';
+                                    defBtn.innerHTML = '<div class="cc-model-icon">🧱</div><div class="cc-model-name">Default</div>';
+                                    defBtn.onclick = () => { selCharModel = null; modelsDiv.querySelectorAll('.cc-model-btn').forEach(b => b.classList.remove('selected')); defBtn.classList.add('selected'); };
+                                    modelsDiv.appendChild(defBtn);
+                                    chars.forEach(asset => {
+                                        const btn = document.createElement('div');
+                                        btn.className = 'cc-model-btn';
+                                        const preview = asset.imageData ? `<img src="${asset.imageData}" alt="${asset.id}">` : '<div class="cc-model-icon">🧑</div>';
+                                        const label = asset.id.replace('char_','').replace(/_/g,' ');
+                                        btn.innerHTML = preview + '<div class="cc-model-name">' + label + '</div>';
+                                        btn.onclick = () => { selCharModel = asset.id; modelsDiv.querySelectorAll('.cc-model-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); };
+                                        modelsDiv.appendChild(btn);
+                                    });
+                                };
+                            } catch(ex) {}
+                        };
+                        dbReq.onerror = () => {};
+                    } catch(ex) {}
+                })();
+
                 nameInput.addEventListener('input', () => { startBtn.disabled = nameInput.value.trim().length < 1 || nameInput.value.trim().length > 16; });
 
                 const pvCanvas = document.getElementById('cc-preview');
@@ -545,7 +595,7 @@
 
                 startBtn.onclick = () => {
                     const name = nameInput.value.trim(); if (!name) return;
-                    const data = { name, bodyColor: selBody, hairColor: selHair, classId: selClass };
+                    const data = { name, bodyColor: selBody, hairColor: selHair, classId: selClass, characterModelId: selCharModel || null };
                     localStorage.setItem('agentscape_character', JSON.stringify(data));
                     charData = data;
                     document.getElementById('char-create-screen').classList.add('hidden');
@@ -1577,6 +1627,51 @@
         }
 
         // ============================================================
+        // CUSTOM CHARACTER MODEL (from Forge)
+        // ============================================================
+        async function createCharacterFromModel(modelUrl) {
+            const proxyUrl = '/api/proxy-model?url=' + encodeURIComponent(modelUrl);
+            const gltf = await new Promise((resolve, reject) => {
+                new THREE.GLTFLoader().load(proxyUrl, resolve, undefined, reject);
+            });
+            const model = gltf.scene;
+            model.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = false; } });
+
+            // Normalize to character height (~1.1 units)
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            const maxH = size.y || 1;
+            const s = 1.1 / maxH;
+            model.scale.set(s, s, s);
+            model.position.set(-center.x * s, -box.min.y * s, -center.z * s);
+
+            const g = new THREE.Group();
+            g.add(model);
+
+            // Shadow disc
+            const sh = new THREE.Mesh(new THREE.CircleGeometry(0.25, 8), new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:0.2}));
+            sh.rotation.x = -Math.PI / 2; sh.position.y = 0.02; g.add(sh);
+
+            // Virtual pivot groups for equipment attachment (estimated from bounding box)
+            const charH = 1.1;
+            const headPivot = new THREE.Group(); headPivot.position.set(0, charH * 0.82, 0); g.add(headPivot);
+            const raPivot = new THREE.Group(); raPivot.position.set(size.x * s * 0.45, charH * 0.55, 0); g.add(raPivot);
+            const laPivot = new THREE.Group(); laPivot.position.set(-size.x * s * 0.45, charH * 0.55, 0); g.add(laPivot);
+
+            // Body reference for animation (the model root)
+            const bodyRef = model;
+
+            return {
+                group: g, body: bodyRef, head: headPivot,
+                leftLeg: laPivot, rightLeg: raPivot,  // reuse arm pivots as fallbacks
+                leftArm: laPivot, rightArm: raPivot,
+                walkPhase: 0, walkBlend: 0, equipMeshes: {},
+                isCustomModel: true, modelRoot: model
+            };
+        }
+
+        // ============================================================
         // EQUIPMENT 3D MODEL SYSTEM
         // ============================================================
         const gltfLoader = new THREE.GLTFLoader();
@@ -1673,7 +1768,7 @@
 
             // Attach to the pivot
             const pivotRef = charMesh[cfg.pivot];
-            if (cfg.pivot === 'head') {
+            if (cfg.pivot === 'head' && !charMesh.isCustomModel) {
                 const wrapper = new THREE.Group();
                 wrapper.position.set(0, 0.9, 0);
                 wrapper.add(container);
@@ -1727,10 +1822,43 @@
             } catch(e) {}
         });
 
-        const myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
+        let myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
         scene.add(myChar.group);
         let myWorldX=100,myWorldZ=95;
+
+        // Async-load custom character model from Forge if selected
+        if (charInfo.characterModelId) {
+            (async () => {
+                try {
+                    await openForgeDB();
+                    const asset = await getForgeAsset(charInfo.characterModelId);
+                    if (!asset || !asset.modelUrl) return;
+                    const customChar = await createCharacterFromModel(asset.modelUrl);
+                    // Preserve position from current character
+                    customChar.group.position.copy(myChar.group.position);
+                    customChar.group.rotation.copy(myChar.group.rotation);
+                    scene.remove(myChar.group);
+                    scene.add(customChar.group);
+                    // Transfer equipment meshes
+                    Object.keys(myChar.equipMeshes).forEach(slot => {
+                        const mesh = myChar.equipMeshes[slot];
+                        if (mesh && mesh.parent) mesh.parent.remove(mesh);
+                    });
+                    myChar = customChar;
+                    // Re-attach any equipped items
+                    if (room && mySessionId) {
+                        const p = room.state.players.get(mySessionId);
+                        if (p) {
+                            if (p.equippedWeapon) attachEquipModel(myChar, 'weapon', p.equippedWeapon);
+                            if (p.equippedHelm) attachEquipModel(myChar, 'helm', p.equippedHelm);
+                            if (p.equippedShield) attachEquipModel(myChar, 'shield', p.equippedShield);
+                        }
+                    }
+                    console.log('[CharModel] Custom character model loaded');
+                } catch(e) { console.warn('[CharModel] Failed to load custom model, keeping box mesh:', e); }
+            })();
+        }
         let lastZoneId='suite_city';
         function showZoneBanner(zone){
             const banner=document.getElementById('zone-banner');
@@ -2718,11 +2846,15 @@
         }
         function stopCharAnim(c) {
             c.charAnim = null;
-            if (c.leftArm) { c.leftArm.rotation.x = 0; c.leftArm.rotation.z = 0; }
-            if (c.rightArm) { c.rightArm.rotation.x = 0; c.rightArm.rotation.z = 0; }
-            if (c.leftLeg) c.leftLeg.rotation.x = 0;
-            if (c.rightLeg) c.rightLeg.rotation.x = 0;
-            if (c.body) { c.body.rotation.x = 0; c.body.position.y = 0.5; }
+            if (c.isCustomModel) {
+                if (c.modelRoot) { c.modelRoot.rotation.x = 0; c.modelRoot.rotation.z = 0; }
+            } else {
+                if (c.leftArm) { c.leftArm.rotation.x = 0; c.leftArm.rotation.z = 0; }
+                if (c.rightArm) { c.rightArm.rotation.x = 0; c.rightArm.rotation.z = 0; }
+                if (c.leftLeg) c.leftLeg.rotation.x = 0;
+                if (c.rightLeg) c.rightLeg.rotation.x = 0;
+                if (c.body) { c.body.rotation.x = 0; c.body.position.y = 0.5; }
+            }
         }
         function updateCharAnim(c, dt) {
             if (!c.charAnim) return false;
@@ -2737,14 +2869,20 @@
             const range = next.t - prev.t;
             const t = range > 0 ? (progress - prev.t) / range : 0;
             const lerp = (a, b) => a + (b - a) * t;
-            c.leftArm.rotation.x = lerp(prev.la_rx, next.la_rx);
-            c.leftArm.rotation.z = lerp(prev.la_rz, next.la_rz);
-            c.rightArm.rotation.x = lerp(prev.ra_rx, next.ra_rx);
-            c.rightArm.rotation.z = lerp(prev.ra_rz, next.ra_rz);
-            c.leftLeg.rotation.x = lerp(prev.ll_rx, next.ll_rx);
-            c.rightLeg.rotation.x = lerp(prev.rl_rx, next.rl_rx);
-            c.body.rotation.x = lerp(prev.body_rx, next.body_rx);
-            c.body.position.y = lerp(prev.body_y, next.body_y);
+            if (c.isCustomModel) {
+                // Whole-body keyframe: map arm/body rotations to model root
+                const avgRot = (lerp(prev.la_rx, next.la_rx) + lerp(prev.ra_rx, next.ra_rx)) * 0.3;
+                if (c.modelRoot) { c.modelRoot.rotation.x = avgRot; }
+            } else {
+                c.leftArm.rotation.x = lerp(prev.la_rx, next.la_rx);
+                c.leftArm.rotation.z = lerp(prev.la_rz, next.la_rz);
+                c.rightArm.rotation.x = lerp(prev.ra_rx, next.ra_rx);
+                c.rightArm.rotation.z = lerp(prev.ra_rz, next.ra_rz);
+                c.leftLeg.rotation.x = lerp(prev.ll_rx, next.ll_rx);
+                c.rightLeg.rotation.x = lerp(prev.rl_rx, next.rl_rx);
+                c.body.rotation.x = lerp(prev.body_rx, next.body_rx);
+                c.body.position.y = lerp(prev.body_y, next.body_y);
+            }
             if (a.timer <= 0) {
                 if (a.loop) { a.timer = a.duration; }
                 else { stopCharAnim(c); }
@@ -2758,6 +2896,22 @@
 
         // Blended walk/sit animation helper
         function animateWalk(c,moving,dt,resting){
+            if(c.isCustomModel){
+                // Custom model: whole-body bob/sway
+                c.walkBlend=Math.max(0,Math.min(1,c.walkBlend+(moving?6:-6)*dt));
+                if(moving)c.walkPhase+=dt*10;
+                const b=c.walkBlend,p=c.walkPhase;
+                if(c.modelRoot){
+                    c.modelRoot.position.y=Math.abs(Math.sin(p*2))*0.06*b; // vertical bob
+                    c.modelRoot.rotation.z=Math.sin(p)*0.08*b; // side sway
+                    c.modelRoot.rotation.x=moving?0.1*b:0; // forward lean
+                }
+                if(resting && c.modelRoot){
+                    c.modelRoot.position.y=-0.08; // crouch
+                    c.modelRoot.rotation.x=-0.15;
+                }
+                return;
+            }
             if(resting){
                 // Sitting pose: legs forward, body lowered, arms on knees
                 c.walkBlend=Math.max(0,c.walkBlend-4*dt);

@@ -376,6 +376,7 @@ const TIER_HINTS = {
 };
 
 const CATEGORIES = [
+    { id:'characters', name:'Characters', icon:'🧑', group:'Characters' },
     { id:'swords', name:'Swords', icon:'\u2694\uFE0F', group:'Equipment' },
     { id:'helms', name:'Helms', icon:'\uD83E\uDE96', group:'Equipment' },
     { id:'shields', name:'Shields', icon:'\uD83D\uDEE1\uFE0F', group:'Equipment' },
@@ -391,6 +392,14 @@ const CATEGORIES = [
 ];
 
 const ITEMS = [
+    // --- Characters ---
+    { id:'char_warrior', name:'Warrior', icon:'⚔️', category:'characters', type:'character', prompt:'A chibi fantasy warrior character in T-pose, front-facing, stocky build, plate armor, sword on back, pixel art style, full body visible head to toe, solid black background' },
+    { id:'char_mage', name:'Mage', icon:'🧙', category:'characters', type:'character', prompt:'A chibi fantasy mage character in T-pose, front-facing, flowing robes, pointed wizard hat, glowing staff, pixel art style, full body visible head to toe, solid black background' },
+    { id:'char_ranger', name:'Ranger', icon:'🏹', category:'characters', type:'character', prompt:'A chibi fantasy ranger character in T-pose, front-facing, leather armor, hooded cloak, bow on back, pixel art style, full body visible head to toe, solid black background' },
+    { id:'char_knight', name:'Knight', icon:'🛡️', category:'characters', type:'character', prompt:'A chibi fantasy knight character in T-pose, front-facing, full plate armor, great helm, shield, pixel art style, full body visible head to toe, solid black background' },
+    { id:'char_rogue', name:'Rogue', icon:'🗡️', category:'characters', type:'character', prompt:'A chibi fantasy rogue character in T-pose, front-facing, dark leather armor, hood and mask, twin daggers, pixel art style, full body visible head to toe, solid black background' },
+    { id:'char_custom', name:'Custom Character', icon:'✨', category:'characters', type:'character', prompt:'A chibi fantasy character in T-pose, front-facing, unique design, pixel art style, full body visible head to toe, solid black background' },
+
     // --- Swords ---
     { id:'bronze_sword', name:'Bronze Sword', icon:'\uD83D\uDDE1\uFE0F', category:'swords', type:'weapon', tier:1, stats:{attack:4,strength:3}, prompt:'A short crude bronze sword with copper-brown blade and wrapped leather handle' },
     { id:'iron_sword', name:'Iron Sword', icon:'\u2694\uFE0F', category:'swords', type:'weapon', tier:2, stats:{attack:8,strength:6}, prompt:'An iron longsword with dark gray blade and simple crossguard' },
@@ -1087,7 +1096,7 @@ async function generateImage() {
     try {
         const imageData = await callGemini(settings.apiKey, settings.model, fullPrompt);
 
-        assets[item.id] = { imageData, prompt: description, generatedAt: Date.now() };
+        assets[item.id] = { imageData, prompt: description, generatedAt: Date.now(), type: item.type };
         await store.save(item.id, assets[item.id]);
 
         openItemModal(item.id);
