@@ -166,6 +166,15 @@
         .ctx-option:last-child { border-bottom: none; }
         .ctx-header { padding: 4px 12px; color: #6366f1; font-weight: bold; font-size: 11px; border-bottom: 1px solid #4a4a50; }
 
+        /* Click X Markers */
+        .click-x { position:absolute; pointer-events:none; z-index:15; width:20px; height:20px; transform:translate(-50%,-50%); animation:clickXAnim 0.4s ease-out forwards; }
+        .click-x::before, .click-x::after { content:''; position:absolute; top:50%; left:50%; width:3px; height:20px; border-radius:1px; }
+        .click-x::before { transform:translate(-50%,-50%) rotate(45deg); }
+        .click-x::after { transform:translate(-50%,-50%) rotate(-45deg); }
+        .click-x.yellow::before, .click-x.yellow::after { background:#ffff00; }
+        .click-x.red::before, .click-x.red::after { background:#ff3333; }
+        @keyframes clickXAnim { 0%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.3);} }
+
         /* Health Bars */
         .health-bar-wrap { position: absolute; z-index: 14; pointer-events: none; transform: translate(-50%, 0); width: 40px; }
         .health-bar { width: 100%; height: 5px; background: #333; border: 1px solid #000; }
@@ -2757,6 +2766,24 @@
             return objs;
         }
 
+        // Hover highlight helpers
+        let hoveredGroup=null;
+        function setGroupEmissive(group,color,intensity){
+            group.traverse(c=>{if(c.isMesh&&c.material&&c.material.emissive){c.material.emissive.set(color);c.material.emissiveIntensity=intensity;}});
+        }
+        function clearHover(){if(hoveredGroup){setGroupEmissive(hoveredGroup,0x000000,0);hoveredGroup=null;}}
+
+        // Click X marker helper
+        function spawnClickX(e,color){
+            const rect=viewport.getBoundingClientRect();
+            const el=document.createElement('div');
+            el.className='click-x '+color;
+            el.style.left=(e.clientX-rect.left)+'px';
+            el.style.top=(e.clientY-rect.top)+'px';
+            viewport.appendChild(el);
+            el.addEventListener('animationend',()=>el.remove());
+        }
+
         // Resolve hit data — handles InstancedMesh terrain lookups and regular mesh userData
         function resolveHit(h){
             // InstancedMesh terrain: look up tileMap by instanceId
@@ -2796,9 +2823,10 @@
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
-            if(hitMonster){if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
-            if(hitNPC){if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
+            if(hitMonster){spawnClickX(e,'red');if(attackMode)sendAction('attack_monster',{monsterId:hitMonster});return;}
+            if(hitNPC){spawnClickX(e,'red');if(attackMode)sendAction('attack_npc',{npcId:hitNPC});else{const npc=npcMeshes.get(hitNPC);if(npc)addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);}return;}
             if(hitNode){
+                spawnClickX(e,'red');
                 // Click on resource node: walk to it and gather
                 const node=resourceNodes.get(hitNode);
                 if(node&&!node.depleted){
@@ -2811,12 +2839,13 @@
                 }
                 return;
             }
-            if(hitBld){const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);sendAction('move_to',{tileX:door.x,tileZ:door.z});}return;}
-            if(hitTile&&hitTile.walkable){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
+            if(hitBld){spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);sendAction('move_to',{tileX:door.x,tileZ:door.z});}return;}
+            if(hitTile&&hitTile.walkable){spawnClickX(e,'yellow');const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
         renderer.domElement.addEventListener('contextmenu',e=>{
             e.preventDefault();
+            spawnClickX(e,'yellow');
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
             let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null;
@@ -2861,15 +2890,22 @@
         renderer.domElement.addEventListener('mousemove',e=>{
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
-            highlight.visible=false;let cursorSet=false;
+            highlight.visible=false;let cursorSet=false;let newHover=null;
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
-                if(r.type==='resource_node'){document.body.style.cursor='pointer';cursorSet=true;break;}
-                if(r.type==='npc'||r.type==='monster'){document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
-                if(r.type==='building'){document.body.style.cursor='pointer';cursorSet=true;break;}
+                if(r.type==='resource_node'){const nd=resourceNodes.get(r.nodeId);if(nd)newHover={group:nd.mesh,color:0x444444};document.body.style.cursor='pointer';cursorSet=true;break;}
+                if(r.type==='npc'){const np=npcMeshes.get(r.npcId);if(np)newHover={group:np.group,color:0x444444};document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
+                if(r.type==='monster'){const mo=monsterMeshes.get(r.monsterId);if(mo)newHover={group:mo.group,color:0x553333};document.body.style.cursor=attackMode?'crosshair':'help';cursorSet=true;break;}
+                if(r.type==='building'){let obj=h.object;while(obj&&!(obj.userData&&obj.userData.type==='building'))obj=obj.parent;if(obj)newHover={group:obj,color:0x444444};document.body.style.cursor='pointer';cursorSet=true;break;}
                 if(r.type==='tile'){const tx=r.tileX,tz=r.tileZ;highlight.position.set(tx,heightMap[tx][tz]+0.05,tz);highlight.visible=true;highlightMat.color.set(r.walkable?0xffff00:0xff4444);highlightMat.opacity=r.walkable?0.3:0.2;document.body.style.cursor=r.walkable?'pointer':'not-allowed';cursorSet=true;break;}
             }
-            if(!cursorSet)document.body.style.cursor='default';
+            // Update hover glow
+            const newGroup=newHover?newHover.group:null;
+            if(newGroup!==hoveredGroup){
+                clearHover();
+                if(newHover){setGroupEmissive(newHover.group,newHover.color,0.3);hoveredGroup=newHover.group;}
+            }
+            if(!cursorSet){document.body.style.cursor='default';clearHover();}
         });
 
         window.talkToNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;addChat('agent','Hello there!',npc.state.name,npc.state.roleColor);showChatBubble(npc.state.x,npc.state.z,'Hello there!','#22c55e');};
