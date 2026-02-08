@@ -577,6 +577,7 @@ export class AgentScapeRoom extends Room<GameState> {
                 // Cancel pending interactions
                 player.pendingPickpocket = null;
                 player.pendingNpcInteraction = null;
+                player.pendingBuildingAction = null;
                 // Cancel gathering if moving
                 player.skillingAction = null;
                 // Cancel combat if moving away
@@ -652,6 +653,33 @@ export class AgentScapeRoom extends Room<GameState> {
                         player.pendingNpcInteraction = interactNpcId;
                         this.movementSystem.startPlayerMove(player, adj.x, adj.z);
                     }
+                }
+                break;
+            }
+
+            case 'enter_building': {
+                const { buildingId } = action.payload;
+                const building = BUILDINGS.find(b => b.id === buildingId);
+                if (!building) break;
+                // Compute door tile from building position + doorSide
+                const bx = Math.round(building.x), bz = Math.round(building.z);
+                const hw = Math.ceil(building.w / 2), hd = Math.ceil(building.d / 2);
+                let doorX = bx, doorZ = bz;
+                if (building.doorSide === 'south') doorZ = bz + hd + 1;
+                else if (building.doorSide === 'north') doorZ = bz - hd - 1;
+                else if (building.doorSide === 'east') doorX = bx + hw + 1;
+                else if (building.doorSide === 'west') doorX = bx - hw - 1;
+                const dist = Math.abs(player.tileX - doorX) + Math.abs(player.tileZ - doorZ);
+                if (dist <= 1) {
+                    // Already at the door
+                    player.pendingBuildingAction = null;
+                    const questEvents = this.questSystem.checkVisit(player, buildingId);
+                    const deliverEvents = this.questSystem.checkEnterBuilding(player, buildingId);
+                    [...questEvents, ...deliverEvents].forEach(evt => client.send('quest_event', evt));
+                    client.send('building_arrived', { buildingId });
+                } else {
+                    player.pendingBuildingAction = buildingId;
+                    this.movementSystem.startPlayerMove(player, doorX, doorZ);
                 }
                 break;
             }

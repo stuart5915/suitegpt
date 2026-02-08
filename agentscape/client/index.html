@@ -2122,7 +2122,7 @@
         const monsterMeshes=new Map();
         const lootPileMeshes=new Map();
         let myTargetX=100,myTargetZ=95,myTargetH=0,myTargetRot=0,myIsMoving=false,myIsResting=false;
-        const LERP_SPEED=5;
+        const LERP_SPEED=14;
 
         function createNPCMesh(npcState){
             const role=npcState.role||'app_builder';
@@ -3010,7 +3010,7 @@
                 }
                 return;
             }
-            if(hitBld){spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);sendAction('move_to',{tileX:door.x,tileZ:door.z});}return;}
+            if(hitBld){spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);}sendAction('enter_building',{buildingId:hitBld});return;}
             if(hitTile&&hitTile.walkable){spawnClickX(e,'yellow');const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
@@ -3081,7 +3081,7 @@
 
         window.talkToNPC=function(id){hideCtxMenu();sendAction('interact_npc',{npcId:id});};
         window.examineNPC=function(id){hideCtxMenu();const npc=npcMeshes.get(id);if(!npc)return;const cs=NPC_COMBAT_STATS[npc.state.role]||{attack:3,strength:3,defence:3};addChat('system',npc.state.name+' \u2014 '+npc.state.role+' (HP: '+npc.state.hp+'/'+npc.state.maxHp+', Atk: '+cs.attack+', Str: '+cs.strength+', Def: '+cs.defence+')');};
-        window.enterBuilding=function(bid){hideCtxMenu();const door=buildingDoors[bid];if(door)sendAction('move_to',{tileX:door.x,tileZ:door.z});};
+        window.enterBuilding=function(bid){hideCtxMenu();sendAction('enter_building',{buildingId:bid});};
         window.sendAction=sendAction;
         window.handleUnequip=handleUnequip;
         window.sendSpec=function(){sendAction('use_special_attack');};

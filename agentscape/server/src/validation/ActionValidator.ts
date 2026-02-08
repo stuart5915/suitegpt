@@ -40,7 +40,8 @@ export type ActionType =
     | 'buy_resource'
     | 'sell_resource'
     | 'get_sell_price'
-    | 'interact_npc';
+    | 'interact_npc'
+    | 'enter_building';
 
 export interface GameAction {
     type: ActionType;
