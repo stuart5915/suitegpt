@@ -26,6 +26,7 @@ export type ActionType =
     | 'toggle_run'
     | 'toggle_rest'
     | 'bury_bones'
+    | 'pickpocket'
     | 'chat';
 
 export interface GameAction {
@@ -38,6 +39,11 @@ export class ActionValidator {
         // Dead players can only wait
         if (player.isDead && action.type !== 'chat') {
             return { valid: false, reason: 'You are dead!' };
+        }
+
+        // Stunned players can only chat
+        if (player.stunTimer > 0 && action.type !== 'chat') {
+            return { valid: false, reason: "You're stunned!" };
         }
 
         switch (action.type) {
@@ -151,6 +157,15 @@ export class ActionValidator {
                 if (typeof slot !== 'number' || slot < 0 || slot >= MAX_INVENTORY_SLOTS) {
                     return { valid: false, reason: 'Invalid slot' };
                 }
+                return { valid: true };
+            }
+
+            case 'pickpocket': {
+                const { npcId } = action.payload;
+                if (typeof npcId !== 'string') return { valid: false, reason: 'Invalid NPC ID' };
+                const npc = state.npcs.get(npcId);
+                if (!npc) return { valid: false, reason: 'NPC not found' };
+                if (npc.isDead) return { valid: false, reason: 'NPC is dead' };
                 return { valid: true };
             }
 

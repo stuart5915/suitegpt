@@ -108,6 +108,16 @@ export class PlayerSchema extends Schema {
     @filter(function (this: PlayerSchema, client: Client) {
         return client.sessionId === this.sessionId;
     })
+    @type('uint8') thieving: number = 1;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
+    @type('uint32') thievingXP: number = 0;
+
+    @filter(function (this: PlayerSchema, client: Client) {
+        return client.sessionId === this.sessionId;
+    })
     @type([InventoryItem]) inventory = new ArraySchema<InventoryItem>();
 
     @filter(function (this: PlayerSchema, client: Client) {
@@ -154,6 +164,7 @@ export class PlayerSchema extends Schema {
     pendingBuildingAction: string | null = null;
     skillingAction: { type: string; timer: number; maxTime: number } | null = null;
     skillingCooldown: number = 0;
+    stunTimer: number = 0;
     dirty: boolean = false; // needs save
     lastSaveTime: number = 0;
     supabaseUserId: string | null = null;

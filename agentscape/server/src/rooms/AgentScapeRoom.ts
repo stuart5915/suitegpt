@@ -454,6 +454,14 @@ export class AgentScapeRoom extends Room<GameState> {
             }
         });
 
+        // 8c. Stun timer countdown
+        this.state.players.forEach((player) => {
+            if (player.stunTimer > 0) {
+                player.stunTimer -= dtSec;
+                if (player.stunTimer <= 0) player.stunTimer = 0;
+            }
+        });
+
         // 9. Loot pile decay
         const expiredLoot: string[] = [];
         this.state.lootPiles.forEach((pile, id) => {
@@ -667,6 +675,50 @@ export class AgentScapeRoom extends Room<GameState> {
                 } else {
                     client.send('system_message', { message: 'You need bones to bury.' });
                 }
+                break;
+            }
+
+            case 'pickpocket': {
+                const { npcId } = action.payload;
+                const targetNpc = this.state.npcs.get(npcId);
+                if (!targetNpc || targetNpc.isDead) break;
+
+                // Must be adjacent
+                const ppDist = Math.abs(player.tileX - targetNpc.tileX) + Math.abs(player.tileZ - targetNpc.tileZ);
+                if (ppDist > 1) {
+                    client.send('system_message', { message: 'You need to get closer.' });
+                    break;
+                }
+
+                // Check stun
+                if (player.stunTimer > 0) {
+                    client.send('system_message', { message: "You're stunned!" });
+                    break;
+                }
+
+                // Success chance: 50% base + 2% per thieving level, capped at 95%
+                const npcCombat = Math.floor(((targetNpc.combatStats as any).attack + (targetNpc.combatStats as any).strength + (targetNpc.combatStats as any).defence) / 3) + 1;
+                const successChance = Math.min(0.95, 0.50 + player.thieving * 0.02 - npcCombat * 0.01);
+
+                if (Math.random() < successChance) {
+                    // Success — gain coins + thieving XP
+                    const coinsStolen = 3 + Math.floor(Math.random() * 3); // 3-5 coins
+                    this.inventorySystem.addToInventory(player, 'coins', coinsStolen);
+                    const xpGain = 8 + npcCombat;
+                    const levelResult = this.inventorySystem.gainXP(player, 'thieving', xpGain);
+                    client.send('system_message', { message: `You pick the ${targetNpc.name}'s pocket. +${coinsStolen} coins, +${xpGain} Thieving XP.` });
+                    if (levelResult.leveledUp) {
+                        client.send('level_up', { skill: 'thieving', level: levelResult.newLevel });
+                    }
+                } else {
+                    // Fail — stunned, take 1 damage, NPC shouts
+                    player.stunTimer = 3;
+                    player.hp = Math.max(0, player.hp - 1);
+                    client.send('system_message', { message: `You fail to pick the ${targetNpc.name}'s pocket. You've been stunned!` });
+                    this.broadcast('npc_chat', { npcId, name: targetNpc.name, message: 'What do you think you\'re doing?', x: targetNpc.x, z: targetNpc.z });
+                    this.broadcast('hitsplat', { targetType: 'player', targetId: player.sessionId, damage: 1, isMiss: false, isSpec: false, x: player.x, z: player.z });
+                }
+                player.dirty = true;
                 break;
             }
 

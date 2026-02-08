@@ -75,6 +75,10 @@ export class SupabaseAdapter {
         player.hitpointsXP = saved.hitpoints_xp ?? player.hitpointsXP;
         player.combatLevel = saved.combat_level ?? player.combatLevel;
         player.coins = saved.coins ?? player.coins;
+        player.prayer = saved.prayer ?? player.prayer;
+        player.prayerXP = saved.prayer_xp ?? player.prayerXP;
+        player.thieving = saved.thieving ?? player.thieving;
+        player.thievingXP = saved.thieving_xp ?? player.thievingXP;
 
         // Restore equipment from item IDs (new format)
         if (saved.equipped_weapon && typeof saved.equipped_weapon === 'string') {
@@ -146,6 +150,10 @@ export class SupabaseAdapter {
             defence_xp: player.defenceXP,
             hitpoints_xp: player.hitpointsXP,
             combat_level: player.combatLevel,
+            prayer: player.prayer,
+            prayer_xp: player.prayerXP,
+            thieving: player.thieving,
+            thieving_xp: player.thievingXP,
             equipped_weapon: player.equippedWeapon.id || null,
             equipped_helm: player.equippedHelm.id || null,
             equipped_shield: player.equippedShield.id || null,
