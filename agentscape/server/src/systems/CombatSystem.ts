@@ -7,7 +7,7 @@ import { PlayerSchema, InventoryItem } from '../schema/PlayerSchema';
 import { NPCSchema } from '../schema/NPCSchema';
 import { MonsterSchema } from '../schema/MonsterSchema';
 import { GameState, LootPile } from '../schema/GameState';
-import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef, PRAYERS, PrayerDef, getSetBonus, BONES_XP, maxPrayerPoints, BOSSES } from '../config';
+import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef, PRAYERS, PrayerDef, getSetBonus, BONES_XP, maxPrayerPoints, BOSSES, getWeaponTierMult, calculateCombatLevel, getRandomSlayerTask, SlayerTaskDef } from '../config';
 import { InventorySystem } from './InventorySystem';
 import { QuestSystem } from './QuestSystem';
 import type { MonsterBehaviorSystem } from './MonsterBehaviorSystem';
@@ -18,6 +18,8 @@ const ANTIPOISON_IMMUNITY = 90; // 90 seconds immunity after drinking antipoison
 const FOOD_COOLDOWN = 3; // 3 combat ticks between eating
 const GRAVE_DURATION = 60; // seconds before grave becomes public
 const FLEE_DELAY = 3; // seconds of vulnerability while fleeing
+const HP_REGEN_INTERVAL = 5; // seconds between HP regen ticks
+const HP_REGEN_COMBAT_DELAY = 10; // seconds after combat ends before regen starts
 
 export interface PotionBuff {
     type: 'attack' | 'strength' | 'defence';
@@ -131,6 +133,10 @@ export class CombatSystem {
     private foodCooldowns: Map<string, number> = new Map();
     // Flee timers: playerId → { seconds remaining, monsterId or npcId }
     private fleeTimers: Map<string, { remaining: number; targetType: 'npc' | 'monster'; targetId: string }> = new Map();
+    // Slayer tasks: playerId → { task, killsRemaining }
+    private slayerTasks: Map<string, { task: SlayerTaskDef; killsRemaining: number }> = new Map();
+    // HP regen tracking: playerId → { lastCombatTime (epoch ms), regenTimer }
+    private hpRegenTimers: Map<string, { lastCombatTime: number; regenTimer: number }> = new Map();
 
     /** Set a player's combat style. */
     setCombatStyle(playerId: string, styleId: string): boolean {
@@ -409,8 +415,12 @@ export class CombatSystem {
         if (player.combatTimer < COMBAT_TICK) return { hitsplats, deaths, xpGains };
         player.combatTimer -= COMBAT_TICK;
 
-        // === Player attacks NPC (potions + style + prayer + set bonus) ===
+        // Mark player as in combat for HP regen tracking
+        this.markInCombat(player.sessionId);
+
+        // === Player attacks NPC (potions + style + prayer + set bonus + weapon tier) ===
         const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
+        const weaponMult = getWeaponTierMult(player.equippedWeapon.id || undefined);
         const style = this.getPlayerStyle(player.sessionId);
         const prayer = this.getPrayerEffects(player.sessionId);
         const setBonus = this.getPlayerSetBonus(player);
@@ -430,10 +440,10 @@ export class CombatSystem {
         if (isSpec || Math.random() * (pAtk + 1) > Math.random() * (nDef + 1)) {
             let dmg: number;
             if (isSpec) {
-                dmg = Math.max(1, Math.floor((pStr + 1) * SPEC_DAMAGE_MULT));
+                dmg = Math.max(1, Math.floor((pStr + 1) * weaponMult * SPEC_DAMAGE_MULT));
                 player.energy = Math.min(player.maxEnergy, player.energy + 5);
             } else {
-                dmg = Math.max(1, Math.floor(Math.random() * (pStr + 1)));
+                dmg = Math.max(1, Math.floor(Math.random() * (pStr + 1) * weaponMult));
             }
             npc.hp -= dmg;
             hitsplats.push({ targetType: 'npc', targetId: npc.id, damage: dmg, isMiss: false, isSpec, x: npc.x, z: npc.z });
@@ -606,8 +616,12 @@ export class CombatSystem {
 
         if (player.isDead || monster.isDead) return { hitsplats, deaths, xpGains };
 
-        // === Player attacks monster (potions + style + prayer + set bonus) ===
+        // Mark player as in combat for HP regen tracking
+        this.markInCombat(player.sessionId);
+
+        // === Player attacks monster (potions + style + prayer + set bonus + weapon tier) ===
         const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
+        const weaponMult = getWeaponTierMult(player.equippedWeapon.id || undefined);
         const style = this.getPlayerStyle(player.sessionId);
         const prayer = this.getPrayerEffects(player.sessionId);
         const setBonus = this.getPlayerSetBonus(player);
@@ -626,7 +640,7 @@ export class CombatSystem {
 
         if (isSpec || Math.random() * (pAtk + 5) > Math.random() * (monDef + 5)) {
             let dmg: number;
-            const maxHit = Math.floor(pStr * 0.8 + 2);
+            const maxHit = Math.floor((pStr * 0.8 + 2) * weaponMult);
             if (isSpec) {
                 dmg = Math.max(1, Math.floor(maxHit * SPEC_DAMAGE_MULT));
                 player.energy = Math.min(player.maxEnergy, player.energy + 5);
@@ -723,6 +737,17 @@ export class CombatSystem {
 
         // Quest progress
         this.questSystem.checkMonsterKill(player, monster.monsterId, monster.isBoss);
+
+        // Slayer task progress
+        const slayerReward = this.checkSlayerKill(player.sessionId, monster.monsterId);
+        if (slayerReward) {
+            xpGains.push({ skill: 'slayer', amount: slayerReward.slayerXP });
+            // Bonus combat XP distributed by style
+            const bonusXP = this.applyStyleXP(player.sessionId, slayerReward.combatXP);
+            xpGains.push(...bonusXP);
+            // Coin reward added directly to player
+            player.coins += slayerReward.coins;
+        }
     }
 
     private onPlayerDeathByMonster(player: PlayerSchema, monster: MonsterSchema, state?: GameState): void {
@@ -883,11 +908,13 @@ export class CombatSystem {
         // Track damage per player for loot sharing
         const damageDealt: Map<string, number> = new Map();
 
-        // === Each player attacks the boss (potions + style + prayer + set bonus) ===
+        // === Each player attacks the boss (potions + style + prayer + set bonus + weapon tier) ===
         for (const player of engagedPlayers) {
             if (player.isDead) continue;
 
+            this.markInCombat(player.sessionId);
             const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
+            const weaponMult = getWeaponTierMult(player.equippedWeapon.id || undefined);
             const style = this.getPlayerStyle(player.sessionId);
             const prayer = this.getPrayerEffects(player.sessionId);
             const setBonus = this.getPlayerSetBonus(player);
@@ -909,7 +936,7 @@ export class CombatSystem {
 
             if (isSpec || Math.random() * (pAtk + 5) > Math.random() * (effectiveMonDef + 5)) {
                 let dmg: number;
-                const maxHit = Math.floor(pStr * 0.8 + 2);
+                const maxHit = Math.floor((pStr * 0.8 + 2) * weaponMult);
                 if (isSpec) {
                     dmg = Math.max(1, Math.floor(maxHit * SPEC_DAMAGE_MULT));
                     player.energy = Math.min(player.maxEnergy, player.energy + 5);
@@ -1184,6 +1211,100 @@ export class CombatSystem {
         if (monster.monsterId === 'data_breach_dragon') return 'dragon_bones';
         if (monster.isBoss) return 'big_bones';
         return 'bones';
+    }
+
+    // ============================================================
+    // Slayer Task System
+    // ============================================================
+
+    /** Assign a random slayer task to a player. Returns the task or null if none eligible. */
+    assignSlayerTask(playerId: string, combatLevel: number): SlayerTaskDef | null {
+        if (this.slayerTasks.has(playerId)) return null; // already has a task
+        const task = getRandomSlayerTask(combatLevel);
+        if (!task) return null;
+        this.slayerTasks.set(playerId, { task, killsRemaining: task.count });
+        return task;
+    }
+
+    /** Get player's current slayer task. */
+    getSlayerTask(playerId: string): { task: SlayerTaskDef; killsRemaining: number } | null {
+        return this.slayerTasks.get(playerId) || null;
+    }
+
+    /** Cancel a slayer task. */
+    cancelSlayerTask(playerId: string): void {
+        this.slayerTasks.delete(playerId);
+    }
+
+    /** Check a monster kill against slayer task. Returns reward if completed, null otherwise. */
+    checkSlayerKill(playerId: string, monsterId: string): { slayerXP: number; combatXP: number; coins: number } | null {
+        const entry = this.slayerTasks.get(playerId);
+        if (!entry) return null;
+        if (entry.task.monsterId !== monsterId) return null;
+
+        entry.killsRemaining--;
+        if (entry.killsRemaining <= 0) {
+            // Task complete!
+            const reward = {
+                slayerXP: entry.task.xpReward.slayer,
+                combatXP: entry.task.xpReward.combat,
+                coins: entry.task.coinReward,
+            };
+            this.slayerTasks.delete(playerId);
+            return reward;
+        }
+        return null;
+    }
+
+    // ============================================================
+    // HP Regeneration — heal out of combat
+    // ============================================================
+
+    /** Mark a player as being in combat (resets regen timer). */
+    private markInCombat(playerId: string): void {
+        this.hpRegenTimers.set(playerId, { lastCombatTime: Date.now(), regenTimer: 0 });
+    }
+
+    /** Update HP regeneration for all players. Call once per second. */
+    updateHpRegen(players: Map<string, PlayerSchema>, dt: number): void {
+        const now = Date.now();
+        players.forEach((player, playerId) => {
+            if (player.isDead) return;
+            if (player.hp >= player.maxHp) return;
+            if (player.state === 'combat') return;
+
+            const regen = this.hpRegenTimers.get(playerId);
+            if (!regen) {
+                // No combat history — start regen immediately
+                this.hpRegenTimers.set(playerId, { lastCombatTime: 0, regenTimer: dt });
+                return;
+            }
+
+            // Must be out of combat for HP_REGEN_COMBAT_DELAY seconds
+            const timeSinceCombat = (now - regen.lastCombatTime) / 1000;
+            if (timeSinceCombat < HP_REGEN_COMBAT_DELAY) return;
+
+            regen.regenTimer += dt;
+            if (regen.regenTimer >= HP_REGEN_INTERVAL) {
+                regen.regenTimer -= HP_REGEN_INTERVAL;
+                player.hp = Math.min(player.maxHp, player.hp + 1);
+            }
+        });
+    }
+
+    // ============================================================
+    // Combat Level — OSRS-style formula
+    // ============================================================
+
+    /** Calculate a player's combat level. */
+    getCombatLevel(player: PlayerSchema): number {
+        return calculateCombatLevel({
+            attack: player.attack,
+            strength: player.strength,
+            defence: player.defence,
+            hitpoints: player.maxHp,
+            prayer: this.getPrayerPoints(player.sessionId),
+        });
     }
 
     updateEnergyRegen(player: PlayerSchema, dt: number): void {

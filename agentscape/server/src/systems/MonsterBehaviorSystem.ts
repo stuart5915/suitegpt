@@ -307,6 +307,62 @@ export class MonsterBehaviorSystem {
         return closest;
     }
 
+    /**
+     * Find all players in aggro range of an aggressive monster.
+     * Used for multi-target aggro: monster adds all nearby players to threat table.
+     */
+    findAllAggroTargets(monster: MonsterSchema, players: MapSchema<PlayerSchema>): PlayerSchema[] {
+        if (!monster.aggressive) return [];
+        const range = monster.isBoss ? BOSS_AGGRO_RANGE : MONSTER_AGGRO_RANGE;
+        const targets: PlayerSchema[] = [];
+
+        players.forEach((player) => {
+            if (player.isDead) return;
+            if (isInSafeZone(player.x, player.z)) return;
+
+            const dist = Math.sqrt(
+                (monster.x - player.x) ** 2 + (monster.z - player.z) ** 2
+            );
+            if (dist <= range) {
+                targets.push(player);
+            }
+        });
+
+        return targets;
+    }
+
+    /**
+     * For aggressive monsters in combat, scan for additional nearby players
+     * and add them to the threat table. This makes multiple players aggro at once.
+     * Returns newly aggro'd player IDs.
+     */
+    scanForAdditionalAggro(monster: MonsterSchema, players: MapSchema<PlayerSchema>): string[] {
+        if (!monster.aggressive || !monster.inCombat) return [];
+
+        const newAggros: string[] = [];
+        const range = monster.isBoss ? BOSS_AGGRO_RANGE : MONSTER_AGGRO_RANGE;
+        const currentThreat = this.threatTables.get(monster.id);
+
+        players.forEach((player) => {
+            if (player.isDead) return;
+            if (isInSafeZone(player.x, player.z)) return;
+            // Skip if already in threat table
+            if (currentThreat?.has(player.sessionId)) return;
+            // Skip if already fighting something else
+            if (player.combatTargetMonsterId && player.combatTargetMonsterId !== monster.id) return;
+
+            const dist = Math.sqrt(
+                (monster.x - player.x) ** 2 + (monster.z - player.z) ** 2
+            );
+            if (dist <= range) {
+                this.addThreat(monster.id, player.sessionId, 1);
+                newAggros.push(player.sessionId);
+            }
+        });
+
+        return newAggros;
+    }
+
     private choosePatrolTarget(monster: MonsterSchema): void {
         const zone = ZONES[monster.zone];
         if (!zone) {

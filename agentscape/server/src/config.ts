@@ -1412,6 +1412,39 @@ export function getSetBonus(weaponTier: number | undefined, helmTier: number | u
 }
 
 // ============================================================
+// Combat Level Formula
+// ============================================================
+
+export function calculateCombatLevel(stats: {
+    attack: number; strength: number; defence: number;
+    hitpoints: number; prayer: number;
+}): number {
+    const base = (stats.defence + stats.hitpoints + Math.floor(stats.prayer / 2)) / 4;
+    const melee = (stats.attack + stats.strength) * 0.325;
+    return Math.floor(base + melee);
+}
+
+// ============================================================
+// Weapon Tier Damage Multipliers
+// ============================================================
+
+export const WEAPON_TIER_MULT: Record<number, number> = {
+    1: 1.0,    // bronze
+    2: 1.1,    // iron
+    3: 1.2,    // steel
+    4: 1.35,   // mithril
+    5: 1.5,    // rune
+    6: 1.7,    // dragon
+};
+
+export function getWeaponTierMult(itemId: string | undefined): number {
+    if (!itemId) return 1.0;
+    const item = ITEMS[itemId];
+    if (!item || !item.tier) return 1.0;
+    return WEAPON_TIER_MULT[item.tier] || 1.0;
+}
+
+// ============================================================
 // Agent Dialogue
 // ============================================================
 
