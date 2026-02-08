@@ -7,13 +7,17 @@ import { PlayerSchema, InventoryItem } from '../schema/PlayerSchema';
 import { NPCSchema } from '../schema/NPCSchema';
 import { MonsterSchema } from '../schema/MonsterSchema';
 import { GameState, LootPile } from '../schema/GameState';
-import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef, PRAYERS, PrayerDef, getSetBonus } from '../config';
+import { COMBAT_TICK, SPEC_DAMAGE_MULT, SPEC_ENERGY_COST, RESPAWN_TIME, LOOT_DECAY_TIME, ITEMS, BUILDINGS, COMBAT_STYLES, CombatStyleDef, MONSTER_SPECIALS, MonsterSpecialDef, PRAYERS, PrayerDef, getSetBonus, BONES_XP, maxPrayerPoints, BOSSES } from '../config';
 import { InventorySystem } from './InventorySystem';
 import { QuestSystem } from './QuestSystem';
 import type { MonsterBehaviorSystem } from './MonsterBehaviorSystem';
 
 // Potion buff durations (in seconds)
 const POTION_DURATION = 120; // 2 minutes
+const ANTIPOISON_IMMUNITY = 90; // 90 seconds immunity after drinking antipoison
+const FOOD_COOLDOWN = 3; // 3 combat ticks between eating
+const GRAVE_DURATION = 60; // seconds before grave becomes public
+const FLEE_DELAY = 3; // seconds of vulnerability while fleeing
 
 export interface PotionBuff {
     type: 'attack' | 'strength' | 'defence';
@@ -110,6 +114,9 @@ export class CombatSystem {
         this.potionBuffs.delete(playerId);
         this.playerStyles.delete(playerId);
         this.poisonTimers.delete(playerId);
+        this.antipoisonImmunity.delete(playerId);
+        this.foodCooldowns.delete(playerId);
+        this.fleeTimers.delete(playerId);
     }
 
     // --- Combat styles ---
@@ -118,6 +125,12 @@ export class CombatSystem {
     private playerStyles: Map<string, string> = new Map();
     // Track poison: playerId → { damage per tick, ticks remaining }
     private poisonTimers: Map<string, { damage: number; ticks: number }> = new Map();
+    // Antipoison immunity: playerId → seconds remaining
+    private antipoisonImmunity: Map<string, number> = new Map();
+    // Food cooldown: playerId → seconds until can eat again
+    private foodCooldowns: Map<string, number> = new Map();
+    // Flee timers: playerId → { seconds remaining, monsterId or npcId }
+    private fleeTimers: Map<string, { remaining: number; targetType: 'npc' | 'monster'; targetId: string }> = new Map();
 
     /** Set a player's combat style. */
     setCombatStyle(playerId: string, styleId: string): boolean {
@@ -146,8 +159,10 @@ export class CombatSystem {
 
     // --- Poison system ---
 
-    /** Apply poison to a player (from monster special). */
+    /** Apply poison to a player (from monster special). Blocked by antipoison immunity. */
     applyPoison(playerId: string, damage: number, ticks: number): void {
+        // Antipoison immunity blocks new poison
+        if ((this.antipoisonImmunity.get(playerId) || 0) > 0) return;
         this.poisonTimers.set(playerId, { damage, ticks });
     }
 
@@ -160,10 +175,15 @@ export class CombatSystem {
                 this.poisonTimers.delete(playerId);
                 return;
             }
-            player.hp = Math.max(0, player.hp - poison.damage);
+            // Antivirus amulet halves poison damage
+            let dmg = poison.damage;
+            if (player.equippedHelm.id === 'antivirus_amulet' || player.equippedShield.id === 'antivirus_amulet') {
+                dmg = Math.max(1, Math.floor(dmg * 0.5));
+            }
+            player.hp = Math.max(0, player.hp - dmg);
             hitsplats.push({
                 targetType: 'player', targetId: playerId,
-                damage: poison.damage, isMiss: false, isSpec: false,
+                damage: dmg, isMiss: false, isSpec: false,
                 x: player.x, z: player.z,
             });
             poison.ticks--;
@@ -171,6 +191,20 @@ export class CombatSystem {
             if (player.hp <= 0) player.isDead = true;
         });
         return hitsplats;
+    }
+
+    /** Tick antipoison immunity timers and food cooldowns. Call once per second (same as updatePotionBuffs). */
+    updateTimers(dt: number): void {
+        this.antipoisonImmunity.forEach((remaining, playerId) => {
+            const newVal = remaining - dt;
+            if (newVal <= 0) this.antipoisonImmunity.delete(playerId);
+            else this.antipoisonImmunity.set(playerId, newVal);
+        });
+        this.foodCooldowns.forEach((remaining, playerId) => {
+            const newVal = remaining - dt;
+            if (newVal <= 0) this.foodCooldowns.delete(playerId);
+            else this.foodCooldowns.set(playerId, newVal);
+        });
     }
 
     // --- Monster special attacks ---
@@ -434,7 +468,7 @@ export class CombatSystem {
 
         if (player.hp <= 0) {
             deaths.push({ entityType: 'player', entityId: player.sessionId, killerType: 'npc', killerId: npc.id });
-            this.onPlayerDeath(player, npc);
+            this.onPlayerDeath(player, npc, state);
         }
 
         // Drain prayer points per combat tick
@@ -483,7 +517,7 @@ export class CombatSystem {
         this.questSystem.checkKill(player, npc.role, npc.x, npc.z);
     }
 
-    private onPlayerDeath(player: PlayerSchema, npc: NPCSchema): void {
+    private onPlayerDeath(player: PlayerSchema, npc: NPCSchema, state?: GameState): void {
         player.isDead = true;
         player.state = 'dead';
         player.respawnTimer = 3;
@@ -499,11 +533,16 @@ export class CombatSystem {
             this.monsterBehavior.removePlayerFromAllThreats(player.sessionId);
         }
 
-        // Lose food
-        for (let i = 0; i < player.inventory.length; i++) {
-            const item = player.inventory[i];
-            if (item && item.type === 'food') {
-                this.inventorySystem.clearSlot(player, i);
+        // Create grave with all inventory items
+        if (state) {
+            this.createGrave(player, state);
+        } else {
+            // Fallback: just lose food (if state not available)
+            for (let i = 0; i < player.inventory.length; i++) {
+                const item = player.inventory[i];
+                if (item && item.type === 'food') {
+                    this.inventorySystem.clearSlot(player, i);
+                }
             }
         }
     }
@@ -645,7 +684,7 @@ export class CombatSystem {
         // === Check player death ===
         if (player.hp <= 0) {
             deaths.push({ entityType: 'player', entityId: player.sessionId, killerType: 'npc', killerId: monster.id });
-            this.onPlayerDeathByMonster(player, monster);
+            this.onPlayerDeathByMonster(player, monster, state);
         }
 
         // Drain prayer points per combat tick
@@ -686,7 +725,7 @@ export class CombatSystem {
         this.questSystem.checkMonsterKill(player, monster.monsterId, monster.isBoss);
     }
 
-    private onPlayerDeathByMonster(player: PlayerSchema, monster: MonsterSchema): void {
+    private onPlayerDeathByMonster(player: PlayerSchema, monster: MonsterSchema, state?: GameState): void {
         player.isDead = true;
         player.state = 'dead';
         player.respawnTimer = 10;
@@ -715,11 +754,16 @@ export class CombatSystem {
             monster.state = 'LEASHING';
         }
 
-        // Lose food on death
-        for (let i = 0; i < player.inventory.length; i++) {
-            const item = player.inventory[i];
-            if (item && item.type === 'food') {
-                this.inventorySystem.clearSlot(player, i);
+        // Create grave with all inventory items
+        if (state) {
+            this.createGrave(player, state);
+        } else {
+            // Fallback: just lose food
+            for (let i = 0; i < player.inventory.length; i++) {
+                const item = player.inventory[i];
+                if (item && item.type === 'food') {
+                    this.inventorySystem.clearSlot(player, i);
+                }
             }
         }
     }
@@ -740,8 +784,8 @@ export class CombatSystem {
             }
         }
 
-        // Always drop bones
-        lootItems.push({ id: 'bones', qty: 1 });
+        // Always drop bones (type depends on monster)
+        lootItems.push({ id: this.getMonsterBoneType(monster), qty: 1 });
 
         if (lootItems.length === 0) return;
 
@@ -797,8 +841,8 @@ export class CombatSystem {
             // Everyone gets their share of coins
             if (coinsPerPlayer > 0) items.push({ id: 'coins', qty: coinsPerPlayer });
 
-            // Everyone gets bones
-            items.push({ id: 'bones', qty: 1 });
+            // Everyone gets bones (type depends on boss)
+            items.push({ id: this.getMonsterBoneType(monster), qty: 1 });
 
             // Top damage dealer gets the rare drops
             if (player.sessionId === topDamageId && rareItems.length > 0) {
@@ -954,11 +998,192 @@ export class CombatSystem {
 
             if (target.hp <= 0) {
                 deaths.push({ entityType: 'player', entityId: target.sessionId, killerType: 'npc', killerId: monster.id });
-                this.onPlayerDeathByMonster(target, monster);
+                this.onPlayerDeathByMonster(target, monster, state);
             }
         }
 
         return { hitsplats, deaths, xpGains };
+    }
+
+    // ============================================================
+    // Food Eating — heal during combat with cooldown
+    // ============================================================
+
+    /** Eat food from inventory. Returns heal amount or 0 if can't eat. */
+    eatFood(player: PlayerSchema, inventorySlot: number): number {
+        if (player.isDead) return 0;
+
+        // Check food cooldown
+        const cooldown = this.foodCooldowns.get(player.sessionId) || 0;
+        if (cooldown > 0) return 0;
+
+        const item = player.inventory[inventorySlot];
+        if (!item || !item.id) return 0;
+
+        const itemDef = ITEMS[item.id];
+        if (!itemDef || itemDef.type !== 'food') return 0;
+
+        const healAmount = (itemDef as any).healAmount || 10;
+        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+
+        // Consume the food
+        this.inventorySystem.clearSlot(player, inventorySlot);
+
+        // Set cooldown (in seconds, based on combat ticks)
+        this.foodCooldowns.set(player.sessionId, FOOD_COOLDOWN * COMBAT_TICK);
+
+        return healAmount;
+    }
+
+    // ============================================================
+    // Antipoison — cure poison + grant immunity
+    // ============================================================
+
+    /** Use antipoison potion. Cures poison and grants immunity. Returns true if consumed. */
+    useAntipoison(player: PlayerSchema): boolean {
+        // Cure existing poison
+        this.poisonTimers.delete(player.sessionId);
+
+        // Grant immunity
+        this.antipoisonImmunity.set(player.sessionId, ANTIPOISON_IMMUNITY);
+
+        return true;
+    }
+
+    /** Check if a player has antipoison immunity. */
+    hasAntipoisonImmunity(playerId: string): boolean {
+        return (this.antipoisonImmunity.get(playerId) || 0) > 0;
+    }
+
+    // ============================================================
+    // Bones Burying — prayer XP
+    // ============================================================
+
+    /** Bury bones from inventory. Returns prayer XP gained, or 0 if invalid. */
+    buryBones(player: PlayerSchema, inventorySlot: number): { prayerXP: number } {
+        if (player.isDead) return { prayerXP: 0 };
+
+        const item = player.inventory[inventorySlot];
+        if (!item || !item.id) return { prayerXP: 0 };
+
+        const itemDef = ITEMS[item.id];
+        if (!itemDef || itemDef.type !== 'bones') return { prayerXP: 0 };
+
+        const xp = BONES_XP[item.id] || 15;
+
+        // Consume the bones
+        this.inventorySystem.clearSlot(player, inventorySlot);
+
+        return { prayerXP: xp };
+    }
+
+    // ============================================================
+    // Combat Flee — retreat with penalty
+    // ============================================================
+
+    /** Attempt to flee from combat. Player takes damage for FLEE_DELAY seconds, then disengages. */
+    attemptFlee(player: PlayerSchema): boolean {
+        if (player.isDead) return false;
+        if (this.fleeTimers.has(player.sessionId)) return false; // already fleeing
+
+        if (player.combatTargetMonsterId) {
+            this.fleeTimers.set(player.sessionId, {
+                remaining: FLEE_DELAY,
+                targetType: 'monster',
+                targetId: player.combatTargetMonsterId,
+            });
+            return true;
+        }
+        if (player.combatTargetNpcId) {
+            this.fleeTimers.set(player.sessionId, {
+                remaining: FLEE_DELAY,
+                targetType: 'npc',
+                targetId: player.combatTargetNpcId,
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /** Check if a player is currently fleeing. */
+    isFleeing(playerId: string): boolean {
+        return this.fleeTimers.has(playerId);
+    }
+
+    /** Update flee timers. Returns list of playerIds who completed their flee. Call once per second. */
+    updateFleeTimers(dt: number): string[] {
+        const completed: string[] = [];
+        this.fleeTimers.forEach((flee, playerId) => {
+            flee.remaining -= dt;
+            if (flee.remaining <= 0) {
+                completed.push(playerId);
+                this.fleeTimers.delete(playerId);
+            }
+        });
+        return completed;
+    }
+
+    /** Complete a flee — disengage from combat and reset threat. */
+    completeFlee(player: PlayerSchema, npc?: NPCSchema, monster?: MonsterSchema): void {
+        if (npc) {
+            this.disengageCombat(player, npc);
+        }
+        if (monster) {
+            player.combatTargetMonsterId = null;
+            player.state = 'idle';
+            if (this.monsterBehavior) {
+                this.monsterBehavior.removeThreat(monster.id, player.sessionId);
+                const engaged = this.monsterBehavior.getEngagedPlayers(monster.id, new Map() as any);
+                if (engaged.length === 0) {
+                    monster.inCombat = false;
+                    monster.combatPlayerId = null;
+                    monster.state = 'LEASHING';
+                } else {
+                    monster.combatPlayerId = engaged[0].sessionId;
+                }
+            }
+        }
+    }
+
+    // ============================================================
+    // Death Grave System — drop items as reclaimable grave
+    // ============================================================
+
+    /** Create a grave loot pile on player death. Only the owner can loot for GRAVE_DURATION seconds. */
+    createGrave(player: PlayerSchema, state: GameState): void {
+        const graveItems: { id: string; qty: number }[] = [];
+
+        // Drop all non-equipped inventory items (keep equipped gear)
+        for (let i = 0; i < player.inventory.length; i++) {
+            const item = player.inventory[i];
+            if (item && item.id) {
+                graveItems.push({ id: item.id, qty: item.quantity || 1 });
+                this.inventorySystem.clearSlot(player, i);
+            }
+        }
+
+        if (graveItems.length === 0) return;
+
+        const graveId = `grave_${player.sessionId}_${Date.now()}`;
+        const pile = new LootPile();
+        pile.id = graveId;
+        pile.x = player.x;
+        pile.z = player.z;
+        pile.timer = GRAVE_DURATION;
+        pile.itemsJson = JSON.stringify(graveItems);
+        // Store owner info in the ID prefix so the room can check ownership
+        state.lootPiles.set(graveId, pile);
+    }
+
+    // ============================================================
+    // Bone type helpers — bosses drop better bones
+    // ============================================================
+
+    /** Get the appropriate bone type for a monster. */
+    private getMonsterBoneType(monster: MonsterSchema): string {
+        if (monster.monsterId === 'data_breach_dragon') return 'dragon_bones';
+        if (monster.isBoss) return 'big_bones';
+        return 'bones';
     }
 
     updateEnergyRegen(player: PlayerSchema, dt: number): void {

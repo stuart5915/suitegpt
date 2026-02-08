@@ -188,6 +188,8 @@ export const ITEMS: Record<string, ItemDef> = {
 
     // --- Bones ---
     bones:          { id: 'bones', name: 'Bones', icon: '\u{1F9B4}', stackable: false, type: 'bones' },
+    big_bones:      { id: 'big_bones', name: 'Big Bones', icon: '\u{1F9B4}', stackable: false, type: 'bones' },
+    dragon_bones:   { id: 'dragon_bones', name: 'Dragon Bones', icon: '\u{1F9B4}', stackable: false, type: 'bones' },
 
     // --- Potions ---
     attack_potion:  { id: 'attack_potion', name: 'Attack Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
@@ -228,6 +230,7 @@ export const ITEMS: Record<string, ItemDef> = {
     super_attack_potion: { id: 'super_attack_potion', name: 'Super Attack Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     super_strength_potion:{ id: 'super_strength_potion', name: 'Super Strength Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     super_defence_potion:{ id: 'super_defence_potion', name: 'Super Defence Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
+    antipoison:          { id: 'antipoison', name: 'Antipoison', icon: '\u{1F48A}', stackable: false, type: 'potion' },
 };
 
 // ============================================================
@@ -861,6 +864,7 @@ export const RECIPES: RecipeDef[] = [
     { result: 'super_attack_potion', resultQty: 2, ingredients: [{ id: 'attack_potion', qty: 2 }, { id: 'rogue_script_trophy', qty: 1 }], coinCost: 200 },
     { result: 'super_strength_potion', resultQty: 2, ingredients: [{ id: 'strength_potion', qty: 2 }, { id: 'golem_heart', qty: 1 }], coinCost: 500 },
     { result: 'super_defence_potion', resultQty: 2, ingredients: [{ id: 'defence_potion', qty: 2 }, { id: 'hallucinator_eye', qty: 1 }], coinCost: 800 },
+    { result: 'antipoison', resultQty: 3, ingredients: [{ id: 'corrupted_byte', qty: 5 }, { id: 'defence_potion', qty: 1 }], coinCost: 100 },
     // Unique accessories (crafted from endgame materials)
     { result: 'antivirus_amulet', resultQty: 1, ingredients: [{ id: 'corrupted_byte', qty: 20 }, { id: 'rogue_script', qty: 10 }, { id: 'agent_core', qty: 3 }], coinCost: 500 },
     { result: 'firewall_ring', resultQty: 1, ingredients: [{ id: 'firewall_core', qty: 8 }, { id: 'dark_packet', qty: 15 }, { id: 'memory_shard', qty: 10 }], coinCost: 2000 },
@@ -1274,6 +1278,137 @@ export function getRandomSlayerTask(combatLevel: number): SlayerTaskDef | null {
         if (roll <= 0) return task;
     }
     return eligible[eligible.length - 1];
+}
+
+// ============================================================
+// Prayer System — combat buffs that drain prayer points
+// ============================================================
+
+export interface PrayerDef {
+    id: string;
+    name: string;
+    icon: string;
+    levelReq: number; // prayer level required
+    drainRate: number; // prayer points drained per combat tick
+    type: 'protection' | 'offensive' | 'utility';
+    effects: {
+        damageReduction?: number;   // 0-1 multiplier (0.5 = 50% less damage taken)
+        attackBoost?: number;       // flat bonus
+        strengthBoost?: number;     // flat bonus
+        defenceBoost?: number;      // flat bonus
+        attackMultiplier?: number;  // 1.0 = normal, 1.15 = 15% boost
+        strengthMultiplier?: number;
+    };
+    description: string;
+}
+
+export const PRAYERS: Record<string, PrayerDef> = {
+    // --- Tier 1: Low level ---
+    thick_skin: {
+        id: 'thick_skin', name: 'Thick Skin', icon: '\u{1F6E1}\uFE0F', levelReq: 1, drainRate: 1,
+        type: 'utility', effects: { defenceBoost: 3 },
+        description: 'Boosts Defence by 3.',
+    },
+    burst_of_strength: {
+        id: 'burst_of_strength', name: 'Burst of Strength', icon: '\u{1F4AA}', levelReq: 4, drainRate: 1,
+        type: 'offensive', effects: { strengthBoost: 3 },
+        description: 'Boosts Strength by 3.',
+    },
+    clarity_of_thought: {
+        id: 'clarity_of_thought', name: 'Clarity of Thought', icon: '\u{1F9E0}', levelReq: 7, drainRate: 1,
+        type: 'offensive', effects: { attackBoost: 3 },
+        description: 'Boosts Attack by 3.',
+    },
+
+    // --- Tier 2: Mid level ---
+    rock_skin: {
+        id: 'rock_skin', name: 'Rock Skin', icon: '\u{1FAA8}', levelReq: 10, drainRate: 2,
+        type: 'utility', effects: { defenceBoost: 6 },
+        description: 'Boosts Defence by 6.',
+    },
+    superhuman_strength: {
+        id: 'superhuman_strength', name: 'Superhuman Strength', icon: '\u26A1', levelReq: 13, drainRate: 2,
+        type: 'offensive', effects: { strengthMultiplier: 1.1 },
+        description: 'Boosts Strength by 10%.',
+    },
+    improved_reflexes: {
+        id: 'improved_reflexes', name: 'Improved Reflexes', icon: '\u{1F441}\uFE0F', levelReq: 16, drainRate: 2,
+        type: 'offensive', effects: { attackMultiplier: 1.1 },
+        description: 'Boosts Attack accuracy by 10%.',
+    },
+
+    // --- Tier 3: Protection ---
+    protect_from_melee: {
+        id: 'protect_from_melee', name: 'Protect from Melee', icon: '\u2694\uFE0F', levelReq: 25, drainRate: 4,
+        type: 'protection', effects: { damageReduction: 0.5 },
+        description: 'Reduces incoming melee damage by 50%.',
+    },
+
+    // --- Tier 4: High level ---
+    steel_skin: {
+        id: 'steel_skin', name: 'Steel Skin', icon: '\u{1F6E1}\uFE0F', levelReq: 28, drainRate: 3,
+        type: 'utility', effects: { defenceBoost: 10 },
+        description: 'Boosts Defence by 10.',
+    },
+    ultimate_strength: {
+        id: 'ultimate_strength', name: 'Ultimate Strength', icon: '\u{1F525}', levelReq: 31, drainRate: 4,
+        type: 'offensive', effects: { strengthMultiplier: 1.15 },
+        description: 'Boosts Strength by 15%.',
+    },
+    incredible_reflexes: {
+        id: 'incredible_reflexes', name: 'Incredible Reflexes', icon: '\u{1F4A5}', levelReq: 34, drainRate: 4,
+        type: 'offensive', effects: { attackMultiplier: 1.15 },
+        description: 'Boosts Attack accuracy by 15%.',
+    },
+
+    // --- Tier 5: Endgame ---
+    piety: {
+        id: 'piety', name: 'Piety', icon: '\u{1F31F}', levelReq: 40, drainRate: 6,
+        type: 'offensive',
+        effects: { attackMultiplier: 1.2, strengthMultiplier: 1.2, defenceBoost: 8 },
+        description: 'Boosts Attack and Strength by 20%, Defence by 8. The ultimate combat prayer.',
+    },
+};
+
+// Bones → Prayer XP table
+export const BONES_XP: Record<string, number> = {
+    bones: 15,           // regular bones from monsters
+    big_bones: 30,       // from bosses
+    dragon_bones: 72,    // from Corrupted Dragon
+};
+
+// Max prayer points formula: 1 point per prayer level
+export function maxPrayerPoints(prayerLevel: number): number {
+    return prayerLevel;
+}
+
+// ============================================================
+// Equipment Set Bonuses — full set of same tier grants extra stats
+// ============================================================
+
+export interface SetBonusDef {
+    tier: number;
+    name: string;
+    attackBonus: number;
+    strengthBonus: number;
+    defenceBonus: number;
+    description: string;
+}
+
+export const SET_BONUSES: SetBonusDef[] = [
+    { tier: 1, name: 'Bronze Set', attackBonus: 1, strengthBonus: 1, defenceBonus: 2, description: 'Full bronze: +1 atk, +1 str, +2 def' },
+    { tier: 2, name: 'Iron Set', attackBonus: 2, strengthBonus: 2, defenceBonus: 3, description: 'Full iron: +2 atk, +2 str, +3 def' },
+    { tier: 3, name: 'Steel Set', attackBonus: 3, strengthBonus: 3, defenceBonus: 5, description: 'Full steel: +3 atk, +3 str, +5 def' },
+    { tier: 4, name: 'Mithril Set', attackBonus: 5, strengthBonus: 4, defenceBonus: 7, description: 'Full mithril: +5 atk, +4 str, +7 def' },
+    { tier: 5, name: 'Rune Set', attackBonus: 7, strengthBonus: 6, defenceBonus: 10, description: 'Full rune: +7 atk, +6 str, +10 def' },
+    { tier: 6, name: 'Dragon Set', attackBonus: 10, strengthBonus: 8, defenceBonus: 14, description: 'Full dragon: +10 atk, +8 str, +14 def' },
+];
+
+/** Check if player has a full set (weapon + helm + shield of same tier). Returns bonus or null. */
+export function getSetBonus(weaponTier: number | undefined, helmTier: number | undefined, shieldTier: number | undefined): SetBonusDef | null {
+    if (!weaponTier || !helmTier || !shieldTier) return null;
+    if (weaponTier !== helmTier || helmTier !== shieldTier) return null;
+    return SET_BONUSES.find(s => s.tier === weaponTier) || null;
 }
 
 // ============================================================
