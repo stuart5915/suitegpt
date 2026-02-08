@@ -278,17 +278,15 @@
         .cc-field label { display: block; color: #9ca3af; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         .cc-field input[type="text"] { width: 100%; background: #1a1a1f; border: 1px solid #3a3a40; color: #fff; padding: 8px 12px; font-size: 14px; font-family: inherit; border-radius: 4px; outline: none; }
         .cc-field input[type="text"]:focus { border-color: #6366f1; }
-        .cc-colors { display: flex; gap: 6px; flex-wrap: wrap; }
-        .cc-color-btn { width: 28px; height: 28px; border-radius: 4px; border: 2px solid #3a3a40; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
-        .cc-color-btn:hover { transform: scale(1.15); }
-        .cc-color-btn.selected { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.3); }
-        .cc-classes { display: flex; gap: 8px; }
-        .cc-class-btn { flex: 1; padding: 10px 6px; background: #1a1a1f; border: 1px solid #3a3a40; border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.15s; }
-        .cc-class-btn:hover { border-color: #6366f1; background: #222230; }
-        .cc-class-btn.selected { border-color: #6366f1; background: #6366f122; }
-        .cc-class-icon { font-size: 20px; display: block; margin-bottom: 4px; }
-        .cc-class-name { color: #fff; font-size: 11px; font-weight: bold; display: block; }
-        .cc-class-desc { color: #6b7280; font-size: 9px; display: block; margin-top: 2px; }
+        .cc-gender { display: flex; gap: 8px; margin-bottom: 4px; }
+        .cc-gender-btn { flex: 1; padding: 8px; background: #1a1a1f; border: 2px solid #3a3a40; border-radius: 4px; color: #ccc; cursor: pointer; text-align: center; font-family: inherit; font-size: 13px; }
+        .cc-gender-btn.selected { border-color: #6366f1; color: #fff; background: #6366f122; }
+        .cc-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+        .cc-row-label { width: 50px; font-size: 10px; color: #9ca3af; text-transform: uppercase; }
+        .cc-arrow { width: 28px; height: 28px; background: #1a1a1f; border: 1px solid #3a3a40; border-radius: 4px; color: #ccc; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+        .cc-arrow:hover { border-color: #6366f1; color: #fff; }
+        .cc-swatch { flex: 1; height: 28px; border-radius: 4px; border: 1px solid #3a3a40; }
+        .cc-style-name { flex: 1; text-align: center; font-size: 11px; color: #fff; }
         .cc-models { display: flex; gap: 8px; flex-wrap: wrap; }
         .cc-model-btn { width: 72px; padding: 6px; background: #1a1a1f; border: 2px solid #3a3a40; border-radius: 6px; cursor: pointer; text-align: center; transition: all 0.15s; }
         .cc-model-btn:hover { border-color: #6366f1; background: #222230; }
@@ -362,16 +360,12 @@
                     <input type="text" id="cc-name" maxlength="16" placeholder="Enter a name..." autocomplete="off">
                 </div>
                 <div class="cc-field">
-                    <label>Body Color</label>
-                    <div class="cc-colors" id="cc-body-colors"></div>
+                    <label>Gender</label>
+                    <div class="cc-gender" id="cc-gender"></div>
                 </div>
                 <div class="cc-field">
-                    <label>Hair Color</label>
-                    <div class="cc-colors" id="cc-hair-colors"></div>
-                </div>
-                <div class="cc-field">
-                    <label>Class</label>
-                    <div class="cc-classes" id="cc-classes"></div>
+                    <label>Appearance</label>
+                    <div id="cc-appearance-rows"></div>
                 </div>
                 <div class="cc-field" id="cc-model-field" style="display:none">
                     <label>Character Model <span style="font-size:11px;color:#888">(from Forge)</span></label>
@@ -469,13 +463,20 @@
         // ============================================================
         // CHARACTER CREATION
         // ============================================================
-        const BODY_COLORS = ['#3355aa','#aa3333','#33aa55','#aa8833','#8833aa','#33aaaa','#aa5533','#5533aa','#336699','#993366'];
-        const HAIR_COLORS = ['#4a3728','#1a1a1a','#c4a35a','#8c4a2f','#d4d4d4','#aa2222','#2244aa','#6633aa','#22aa44','#ff8844'];
-        const CLASSES = [
-            { id:'warrior', icon:'\u2694\uFE0F', name:'Warrior', desc:'+2 Attack, +1 Strength', bonuses:{attack:2,strength:1} },
-            { id:'sentinel', icon:'\u{1F6E1}\uFE0F', name:'Sentinel', desc:'+2 Defence, +1 HP', bonuses:{defence:2,hitpoints:1} },
-            { id:'explorer', icon:'\u{1F9ED}', name:'Explorer', desc:'+1 All combat stats', bonuses:{attack:1,strength:1,defence:1} }
+        const GENDERS = ['Male', 'Female'];
+        const SKIN_COLORS = ['#ffcc99','#f5d0a9','#d4a574','#a0724a','#6b4226','#3d2311'];
+        const HAIR_STYLES = [
+            { name:'Short', maleOnly:false },
+            { name:'Spiky', maleOnly:true },
+            { name:'Long', maleOnly:false },
+            { name:'Ponytail', maleOnly:false },
+            { name:'Bald', maleOnly:true },
+            { name:'Pigtails', femaleOnly:true },
         ];
+        const HAIR_COLORS = ['#4a3728','#1a1a1a','#c4a35a','#8c4a2f','#d4d4d4','#aa2222','#f5f5dc','#ff8844'];
+        const SHIRT_COLORS = ['#3355aa','#aa3333','#33aa55','#aa8833','#8833aa','#33aaaa','#aa5533','#5533aa'];
+        const LEG_COLORS = ['#554433','#333366','#336633','#663333','#444444','#665533','#553355','#335555'];
+        const FEET_COLORS = ['#3d2311','#1a1a1a','#554433','#666666'];
 
         const savedChar = localStorage.getItem('agentscape_character');
         let charData = savedChar ? JSON.parse(savedChar) : null;
@@ -504,37 +505,107 @@
                     return resolve(charData);
                 }
 
-                let selBody = BODY_COLORS[0], selHair = HAIR_COLORS[0], selClass = 'explorer';
+                let selGender = 0, selHairStyle = 0, selHairColor = 0, selSkin = 0, selShirt = 0, selLegs = 0, selFeet = 0;
                 const nameInput = document.getElementById('cc-name');
                 const startBtn = document.getElementById('cc-start');
                 if (authName) { nameInput.value = authName; startBtn.disabled = false; }
 
-                const bodyDiv = document.getElementById('cc-body-colors');
-                BODY_COLORS.forEach((c, i) => {
-                    const btn = document.createElement('div');
-                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
-                    btn.style.background = c;
-                    btn.onclick = () => { selBody = c; bodyDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); drawPreview(); };
-                    bodyDiv.appendChild(btn);
-                });
+                function getFilteredHairStyles() {
+                    return HAIR_STYLES.filter(h => {
+                        if (selGender === 0 && h.femaleOnly) return false;
+                        if (selGender === 1 && h.maleOnly) return false;
+                        return true;
+                    });
+                }
 
-                const hairDiv = document.getElementById('cc-hair-colors');
-                HAIR_COLORS.forEach((c, i) => {
-                    const btn = document.createElement('div');
-                    btn.className = 'cc-color-btn' + (i === 0 ? ' selected' : '');
-                    btn.style.background = c;
-                    btn.onclick = () => { selHair = c; hairDiv.querySelectorAll('.cc-color-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); drawPreview(); };
-                    hairDiv.appendChild(btn);
-                });
+                function cycle(len, cur, dir) { return (cur + dir + len) % len; }
 
-                const classDiv = document.getElementById('cc-classes');
-                CLASSES.forEach(cls => {
-                    const btn = document.createElement('div');
-                    btn.className = 'cc-class-btn' + (cls.id === 'explorer' ? ' selected' : '');
-                    btn.innerHTML = '<span class="cc-class-icon">' + cls.icon + '</span><span class="cc-class-name">' + cls.name + '</span><span class="cc-class-desc">' + cls.desc + '</span>';
-                    btn.onclick = () => { selClass = cls.id; classDiv.querySelectorAll('.cc-class-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); };
-                    classDiv.appendChild(btn);
-                });
+                // Gender toggle
+                const genderDiv = document.getElementById('cc-gender');
+                function renderGender() {
+                    genderDiv.innerHTML = '';
+                    GENDERS.forEach((g, i) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'cc-gender-btn' + (i === selGender ? ' selected' : '');
+                        btn.textContent = g;
+                        btn.onclick = () => { selGender = i; selHairStyle = 0; renderGender(); renderRows(); drawPreview(); };
+                        genderDiv.appendChild(btn);
+                    });
+                }
+
+                // Appearance rows
+                const rowsDiv = document.getElementById('cc-appearance-rows');
+                function makeRow(label, type, getVal, onLeft, onRight) {
+                    const row = document.createElement('div');
+                    row.className = 'cc-row';
+                    row.dataset.type = type;
+                    const lbl = document.createElement('span');
+                    lbl.className = 'cc-row-label';
+                    lbl.textContent = label;
+                    const leftBtn = document.createElement('button');
+                    leftBtn.className = 'cc-arrow';
+                    leftBtn.innerHTML = '&#9664;';
+                    leftBtn.onclick = () => { onLeft(); renderRows(); drawPreview(); };
+                    const rightBtn = document.createElement('button');
+                    rightBtn.className = 'cc-arrow';
+                    rightBtn.innerHTML = '&#9654;';
+                    rightBtn.onclick = () => { onRight(); renderRows(); drawPreview(); };
+                    const val = getVal();
+                    row.appendChild(lbl);
+                    row.appendChild(leftBtn);
+                    if (val.color) {
+                        const swatch = document.createElement('div');
+                        swatch.className = 'cc-swatch';
+                        swatch.style.background = val.color;
+                        row.appendChild(swatch);
+                    } else {
+                        const name = document.createElement('span');
+                        name.className = 'cc-style-name';
+                        name.textContent = val.name;
+                        row.appendChild(name);
+                    }
+                    row.appendChild(rightBtn);
+                    return row;
+                }
+
+                function renderRows() {
+                    rowsDiv.innerHTML = '';
+                    const filtered = getFilteredHairStyles();
+                    if (selHairStyle >= filtered.length) selHairStyle = 0;
+                    rowsDiv.appendChild(makeRow('Head', 'hairStyle',
+                        () => ({ name: filtered[selHairStyle].name }),
+                        () => { selHairStyle = cycle(filtered.length, selHairStyle, -1); },
+                        () => { selHairStyle = cycle(filtered.length, selHairStyle, 1); }
+                    ));
+                    rowsDiv.appendChild(makeRow('Hair', 'hairColor',
+                        () => ({ color: HAIR_COLORS[selHairColor] }),
+                        () => { selHairColor = cycle(HAIR_COLORS.length, selHairColor, -1); },
+                        () => { selHairColor = cycle(HAIR_COLORS.length, selHairColor, 1); }
+                    ));
+                    rowsDiv.appendChild(makeRow('Skin', 'skin',
+                        () => ({ color: SKIN_COLORS[selSkin] }),
+                        () => { selSkin = cycle(SKIN_COLORS.length, selSkin, -1); },
+                        () => { selSkin = cycle(SKIN_COLORS.length, selSkin, 1); }
+                    ));
+                    rowsDiv.appendChild(makeRow('Shirt', 'shirt',
+                        () => ({ color: SHIRT_COLORS[selShirt] }),
+                        () => { selShirt = cycle(SHIRT_COLORS.length, selShirt, -1); },
+                        () => { selShirt = cycle(SHIRT_COLORS.length, selShirt, 1); }
+                    ));
+                    rowsDiv.appendChild(makeRow('Legs', 'legs',
+                        () => ({ color: LEG_COLORS[selLegs] }),
+                        () => { selLegs = cycle(LEG_COLORS.length, selLegs, -1); },
+                        () => { selLegs = cycle(LEG_COLORS.length, selLegs, 1); }
+                    ));
+                    rowsDiv.appendChild(makeRow('Feet', 'feet',
+                        () => ({ color: FEET_COLORS[selFeet] }),
+                        () => { selFeet = cycle(FEET_COLORS.length, selFeet, -1); },
+                        () => { selFeet = cycle(FEET_COLORS.length, selFeet, 1); }
+                    ));
+                }
+
+                renderGender();
+                renderRows();
 
                 // Load character models from Forge IndexedDB
                 let selCharModel = null;
@@ -584,10 +655,32 @@
                     const grad = pvCtx.createLinearGradient(0, 0, 0, 240); grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#111118');
                     pvCtx.fillStyle = grad; pvCtx.fillRect(0, 0, 180, 240);
                     pvCtx.fillStyle = 'rgba(0,0,0,0.3)'; pvCtx.beginPath(); pvCtx.ellipse(90, 200, 25, 8, 0, 0, Math.PI * 2); pvCtx.fill();
-                    pvCtx.fillStyle = '#554433'; pvCtx.fillRect(75, 165, 12, 30); pvCtx.fillRect(93, 165, 12, 30);
-                    pvCtx.fillStyle = selBody; pvCtx.fillRect(70, 115, 40, 55); pvCtx.fillRect(55, 118, 15, 45); pvCtx.fillRect(110, 118, 15, 45);
-                    pvCtx.fillStyle = '#ffcc99'; pvCtx.fillRect(72, 75, 36, 38);
-                    pvCtx.fillStyle = selHair; pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(70, 70, 8, 30); pvCtx.fillRect(102, 70, 8, 30);
+                    // Feet
+                    pvCtx.fillStyle = FEET_COLORS[selFeet]; pvCtx.fillRect(75, 193, 12, 6); pvCtx.fillRect(93, 193, 12, 6);
+                    // Legs
+                    pvCtx.fillStyle = LEG_COLORS[selLegs]; pvCtx.fillRect(75, 165, 12, 30); pvCtx.fillRect(93, 165, 12, 30);
+                    // Shirt (body + arms)
+                    pvCtx.fillStyle = SHIRT_COLORS[selShirt]; pvCtx.fillRect(70, 115, 40, 55); pvCtx.fillRect(55, 118, 15, 45); pvCtx.fillRect(110, 118, 15, 45);
+                    // Head (skin)
+                    pvCtx.fillStyle = SKIN_COLORS[selSkin]; pvCtx.fillRect(72, 75, 36, 38);
+                    // Hair
+                    const filtered = getFilteredHairStyles();
+                    const style = filtered[selHairStyle] || filtered[0];
+                    pvCtx.fillStyle = HAIR_COLORS[selHairColor];
+                    if (style.name === 'Bald') {
+                        pvCtx.fillRect(70, 70, 40, 8);
+                    } else if (style.name === 'Ponytail') {
+                        pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(84, 85, 12, 25);
+                    } else if (style.name === 'Pigtails') {
+                        pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(65, 75, 8, 25); pvCtx.fillRect(107, 75, 8, 25);
+                    } else if (style.name === 'Long') {
+                        pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(70, 70, 8, 40); pvCtx.fillRect(102, 70, 8, 40);
+                    } else if (style.name === 'Spiky') {
+                        pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(74, 60, 6, 15); pvCtx.fillRect(87, 58, 6, 17); pvCtx.fillRect(100, 62, 6, 13);
+                    } else {
+                        pvCtx.fillRect(70, 70, 40, 15); pvCtx.fillRect(70, 70, 8, 30); pvCtx.fillRect(102, 70, 8, 30);
+                    }
+                    // Eyes
                     pvCtx.fillStyle = '#fff'; pvCtx.fillRect(80, 86, 6, 5); pvCtx.fillRect(94, 86, 6, 5);
                     pvCtx.fillStyle = '#222'; pvCtx.fillRect(82, 87, 3, 3); pvCtx.fillRect(96, 87, 3, 3);
                 }
@@ -595,7 +688,8 @@
 
                 startBtn.onclick = () => {
                     const name = nameInput.value.trim(); if (!name) return;
-                    const data = { name, bodyColor: selBody, hairColor: selHair, classId: selClass, characterModelId: selCharModel || null };
+                    const filtered = getFilteredHairStyles();
+                    const data = { name, gender: GENDERS[selGender], skinColor: SKIN_COLORS[selSkin], hairStyle: (filtered[selHairStyle]||filtered[0]).name, hairColor: HAIR_COLORS[selHairColor], bodyColor: SHIRT_COLORS[selShirt], legColor: LEG_COLORS[selLegs], feetColor: FEET_COLORS[selFeet], characterModelId: selCharModel || null };
                     localStorage.setItem('agentscape_character', JSON.stringify(data));
                     charData = data;
                     document.getElementById('char-create-screen').classList.add('hidden');
@@ -1605,17 +1699,24 @@
         // ============================================================
         // PLAYER CHARACTER (local visual)
         // ============================================================
-        function createCharacterMesh(bodyCol, hairCol){
+        function createCharacterMesh(bodyCol, hairCol, skinCol, legCol, feetCol){
+            skinCol = skinCol || new THREE.Color(0xffcc99);
+            legCol = legCol || new THREE.Color(0x554433);
+            feetCol = feetCol || new THREE.Color(0x3d2311);
             const g=new THREE.Group();
             const body=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.5,0.2),new THREE.MeshLambertMaterial({color:bodyCol}));body.position.y=0.5;body.castShadow=true;g.add(body);
-            const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:0xffcc99}));head.position.y=0.9;head.castShadow=true;g.add(head);
+            const head=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.25,0.25),new THREE.MeshLambertMaterial({color:skinCol}));head.position.y=0.9;head.castShadow=true;g.add(head);
             if(hairCol){const hair=new THREE.Mesh(new THREE.BoxGeometry(0.27,0.08,0.27),new THREE.MeshLambertMaterial({color:hairCol}));hair.position.y=1.04;g.add(hair);}
-            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:0x554433});
+            const lGeo=new THREE.BoxGeometry(0.1,0.3,0.15),lMat=new THREE.MeshLambertMaterial({color:legCol});
             // Leg pivots at hip joints
             const llPivot=new THREE.Group();llPivot.position.set(-0.08,0.30,0);
             const llMesh=new THREE.Mesh(lGeo,lMat);llMesh.position.set(0,-0.15,0);llMesh.castShadow=true;llPivot.add(llMesh);g.add(llPivot);
             const rlPivot=new THREE.Group();rlPivot.position.set(0.08,0.30,0);
             const rlMesh=new THREE.Mesh(lGeo,lMat);rlMesh.position.set(0,-0.15,0);rlMesh.castShadow=true;rlPivot.add(rlMesh);g.add(rlPivot);
+            // Feet
+            const fGeo=new THREE.BoxGeometry(0.12,0.06,0.18),fMat=new THREE.MeshLambertMaterial({color:feetCol});
+            const lfMesh=new THREE.Mesh(fGeo,fMat);lfMesh.position.set(-0.08,0.03,0.02);lfMesh.castShadow=true;g.add(lfMesh);
+            const rfMesh=new THREE.Mesh(fGeo,fMat);rfMesh.position.set(0.08,0.03,0.02);rfMesh.castShadow=true;g.add(rfMesh);
             // Arm pivots at shoulder joints
             const aGeo=new THREE.BoxGeometry(0.08,0.35,0.1),aMat=new THREE.MeshLambertMaterial({color:bodyCol});
             const laPivot=new THREE.Group();laPivot.position.set(-0.22,0.72,0);
@@ -1822,7 +1923,7 @@
             } catch(e) {}
         });
 
-        let myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor));
+        let myChar=createCharacterMesh(new THREE.Color(playerColor),new THREE.Color(playerHairColor),new THREE.Color(charInfo.skinColor||'#ffcc99'),new THREE.Color(charInfo.legColor||'#554433'),new THREE.Color(charInfo.feetColor||'#3d2311'));
         myChar.group.position.set(mapCenter,heightMap[mapCenter]?heightMap[mapCenter][mapCenter]||0:0,mapCenter);
         scene.add(myChar.group);
         let myWorldX=100,myWorldZ=95;
@@ -2381,7 +2482,7 @@
                     '<div class="equip-stat-row"><span>Strength bonus</span><b class="'+(strBonus>0?'positive':'')+'">+'+(strBonus)+'</b></div>'+
                     '<div class="equip-stat-row"><span>Defence bonus</span><b class="'+(defBonus>0?'positive':'')+'">+'+(defBonus)+'</b></div>'+
                 '</div>';
-            // Sync 3D equipment models — direct synchronous removal for unequipped slots
+            // Sync 3D equipment models — removal only (attaching handled by updateAllEquipment via onChange)
             const equipState = {
                 weapon: weapon ? weapon.id : null,
                 helm: helm ? helm.id : null,
@@ -2389,14 +2490,10 @@
             };
             ['weapon', 'helm', 'shield'].forEach(slot => {
                 if (!equipState[slot] && myChar.equipMeshes[slot]) {
-                    // UNEQUIPPED: immediately remove 3D model from scene
                     const old = myChar.equipMeshes[slot];
                     if (old.parent) old.parent.remove(old);
-                    else myChar.group.remove(old); // fallback
+                    else myChar.group.remove(old);
                     delete myChar.equipMeshes[slot];
-                } else if (equipState[slot] && !myChar.equipMeshes[slot]) {
-                    // EQUIPPED: load 3D model (async is fine for adding)
-                    attachEquipModel(myChar, slot, equipState[slot]);
                 }
             });
         }
