@@ -1485,6 +1485,15 @@ async function loadLeaderboard() {
             return;
         }
 
+        // Client-side dedup by name (keep first/best occurrence)
+        const seen = new Set();
+        players = players.filter(p => {
+            const key = (p.name || '').toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
         tbody.innerHTML = players.map((p, i) => {
             const rank = i + 1;
             const rc = rank <= 3 ? ' r' + rank : '';
