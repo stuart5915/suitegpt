@@ -85,6 +85,21 @@
         .skill-detail-row { font-size: 10px; color: #9ca3af; padding: 1px 0; }
         .skill-detail-row b { color: #fff; }
 
+        /* Equipment Panel */
+        #equip-panel { padding: 8px; display: flex; flex-direction: column; align-items: center; }
+        .equip-title { font-size: 12px; color: #eab308; font-weight: bold; text-align: center; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .equip-grid { position: relative; width: 180px; height: 260px; }
+        .equip-slot { position: absolute; width: 42px; height: 42px; background: #1a1a1f; border: 1px solid #3a3a40; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+        .equip-slot:hover { border-color: #6366f1; background: #222230; }
+        .equip-slot.has-item { border-color: #22c55e; box-shadow: inset 0 0 6px rgba(34,197,94,0.2); }
+        .equip-slot-label { position: absolute; font-size: 8px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
+        .equip-slot-name { font-size: 9px; color: #9ca3af; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 42px; }
+        .equip-silhouette { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 50px; height: 120px; border: 1px dashed #2a2a2e; border-radius: 8px 8px 4px 4px; pointer-events: none; }
+        .equip-stats { width: 100%; margin-top: 10px; padding: 8px; background: #1a1a1f; border: 1px solid #2a2a2e; border-radius: 3px; }
+        .equip-stat-row { display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; padding: 2px 0; }
+        .equip-stat-row b { color: #fff; }
+        .equip-stat-row .positive { color: #22c55e; }
+
         /* Bottom Panel */
         #game-bottom { grid-row: 2; grid-column: 1; background: linear-gradient(0deg, #1a1a1f, #222226); border-top: 2px solid #4a4a50; display: flex; }
 
@@ -289,10 +304,12 @@
             </div>
             <div id="sidebar-tabs">
                 <button class="sidebar-tab active" onclick="switchSidebarTab('inv')">Inv</button>
+                <button class="sidebar-tab" onclick="switchSidebarTab('equip')">Equip</button>
                 <button class="sidebar-tab" onclick="switchSidebarTab('stats')">Stats</button>
                 <button class="sidebar-tab" onclick="switchSidebarTab('quests')">Quest</button>
             </div>
             <div class="sidebar-content active" id="tab-inv"><div id="inv-grid"></div></div>
+            <div class="sidebar-content" id="tab-equip"><div id="equip-panel"></div></div>
             <div class="sidebar-content" id="tab-stats">
                 <div class="stat-player-info"><div class="stat-player-name">Player</div><div class="stat-combat-lvl">Combat Level: <span id="statCombatLvl">3</span></div></div>
                 <div id="stats-content"></div>
@@ -316,7 +333,7 @@
                 <button class="action-btn" onclick="toggleDayNight()">Day/Night</button>
                 <button class="action-btn" onclick="deleteCharacter()" style="color:#ef4444;border-color:#ef444466;">Delete Char</button>
                 <div id="skill-action-area"></div>
-                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">WASD Walk | Q/E Rotate<br>Scroll Zoom | Click Move | F Spec</div>
+                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">Click to Move | Q/E Rotate<br>Scroll Zoom | F Spec</div>
             </div>
         </div>
     </div>
@@ -1017,6 +1034,43 @@
                 slot.addEventListener('click',()=>{if(!item||!item.id)return;if(item.type==='food')sendAction('eat_food',{inventorySlot:i});else if(item.type==='weapon'||item.type==='helm'||item.type==='shield'||item.type==='axe')sendAction('equip_item',{inventorySlot:i});});
                 grid2.appendChild(slot);
             }
+            renderEquipFromState(p);
+        }
+
+        function renderEquipFromState(p){
+            if(!p)return;
+            const panel=document.getElementById('equip-panel');if(!panel)return;
+            const wSlot=p.equippedWeaponSlot,hSlot=p.equippedHelmSlot,sSlot=p.equippedShieldSlot;
+            const weapon=(wSlot>=0&&p.inventory[wSlot])?p.inventory[wSlot]:null;
+            const helm=(hSlot>=0&&p.inventory[hSlot])?p.inventory[hSlot]:null;
+            const shield=(sSlot>=0&&p.inventory[sSlot])?p.inventory[sSlot]:null;
+            let atkBonus=0,strBonus=0,defBonus=0;
+            [weapon,helm,shield].forEach(item=>{if(item&&item.id){atkBonus+=item.attackStat||0;strBonus+=item.strengthStat||0;defBonus+=item.defenceStat||0;}});
+            function slotHTML(label,item,slotType,top,left){
+                const hasItem=item&&item.id;
+                const icon=hasItem?(item.icon||'?'):'';
+                const name=hasItem?item.name:'Empty';
+                const cls='equip-slot'+(hasItem?' has-item':'');
+                const click=hasItem?'onclick="sendAction(\'equip_item\',{inventorySlot:'+(slotType==='weapon'?wSlot:slotType==='helm'?hSlot:sSlot)+'})"':'';
+                return '<div style="position:absolute;top:'+top+'px;left:'+left+'px;text-align:center;">'+
+                    '<div class="equip-slot-label" style="top:-12px;left:0;width:42px;text-align:center;">'+label+'</div>'+
+                    '<div class="'+cls+'" '+click+'>'+icon+'</div>'+
+                    '<div class="equip-slot-name">'+name+'</div></div>';
+            }
+            panel.innerHTML=
+                '<div class="equip-title">Equipment</div>'+
+                '<div class="equip-grid">'+
+                    '<div class="equip-silhouette"></div>'+
+                    slotHTML('Helm',helm,'helm',0,69)+
+                    slotHTML('Weapon',weapon,'weapon',75,10)+
+                    slotHTML('Shield',shield,'shield',75,128)+
+                    '<div style="position:absolute;top:80px;left:69px;width:42px;height:52px;border:1px solid #2a2a2e;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#2a2a2e;">&#x1F464;</div>'+
+                '</div>'+
+                '<div class="equip-stats">'+
+                    '<div class="equip-stat-row"><span>Attack bonus</span><b class="'+(atkBonus>0?'positive':'')+'">+'+(atkBonus)+'</b></div>'+
+                    '<div class="equip-stat-row"><span>Strength bonus</span><b class="'+(strBonus>0?'positive':'')+'">+'+(strBonus)+'</b></div>'+
+                    '<div class="equip-stat-row"><span>Defence bonus</span><b class="'+(defBonus>0?'positive':'')+'">+'+(defBonus)+'</b></div>'+
+                '</div>';
         }
 
         let selectedSkill=null;
