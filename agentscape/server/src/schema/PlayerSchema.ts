@@ -162,6 +162,7 @@ export class PlayerSchema extends Schema {
     moveToZ: number = 0;
     isMoving: boolean = false;
     pendingBuildingAction: string | null = null;
+    pendingPickpocket: { type: 'npc' | 'monster'; id: string } | null = null;
     skillingAction: { type: string; timer: number; maxTime: number } | null = null;
     skillingCooldown: number = 0;
     stunTimer: number = 0;

@@ -328,6 +328,16 @@ export class AgentScapeRoom extends Room<GameState> {
                         }
                     }
                 }
+                // Pickpocket arrival
+                if (player.pendingPickpocket) {
+                    const pp = player.pendingPickpocket;
+                    const client = this.clients.find(c => c.sessionId === player.sessionId);
+                    if (client) {
+                        player.pendingPickpocket = null;
+                        // Re-send the pickpocket action now that we're adjacent
+                        this.handleAction(client, { type: 'pickpocket', payload: pp.type === 'npc' ? { npcId: pp.id } : { monsterId: pp.id } });
+                    }
+                }
                 // Building arrival
                 if (player.pendingBuildingAction) {
                     const bid = player.pendingBuildingAction;
@@ -496,6 +506,8 @@ export class AgentScapeRoom extends Room<GameState> {
                 const { tileX, tileZ } = action.payload;
                 // Cancel resting if moving
                 if (player.isResting) { player.isResting = false; }
+                // Cancel pending pickpocket
+                player.pendingPickpocket = null;
                 // Cancel combat if moving away
                 if (player.combatTargetNpcId) {
                     const npc = this.state.npcs.get(player.combatTargetNpcId);
@@ -705,10 +717,14 @@ export class AgentScapeRoom extends Room<GameState> {
                     targetId = monsterId;
                 } else break;
 
-                // Must be adjacent
+                // Must be adjacent — walk there first if not
                 const ppDist = Math.abs(player.tileX - targetTileX) + Math.abs(player.tileZ - targetTileZ);
                 if (ppDist > 1) {
-                    client.send('system_message', { message: 'You need to get closer.' });
+                    const adj = findAdjacentWalkable(this.map.grid, targetTileX, targetTileZ);
+                    if (adj) {
+                        player.pendingPickpocket = npcId ? { type: 'npc', id: npcId } : { type: 'monster', id: monsterId };
+                        this.movementSystem.startPlayerMove(player, adj.x, adj.z);
+                    }
                     break;
                 }
 
