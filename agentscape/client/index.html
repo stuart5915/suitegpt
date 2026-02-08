@@ -1828,10 +1828,15 @@
         };
 
         async function attachEquipModel(charMesh, slot, itemId) {
+            // Generation counter prevents stale async attaches after unequip
+            if (!charMesh._equipGen) charMesh._equipGen = {};
+            charMesh._equipGen[slot] = (charMesh._equipGen[slot] || 0) + 1;
+            const myGen = charMesh._equipGen[slot];
+
             // Remove existing model for this slot
             if (charMesh.equipMeshes[slot]) {
                 const old = charMesh.equipMeshes[slot];
-                old.parent.remove(old);
+                if (old.parent) old.parent.remove(old);
                 delete charMesh.equipMeshes[slot];
             }
             if (!itemId) return;
@@ -1844,6 +1849,9 @@
                     modelCache[itemId] = await loadEquipModel(asset.modelUrl);
                 } catch(e) { console.warn('Failed to load model for', itemId, e); return; }
             }
+
+            // Bail if slot state changed during async load (e.g. unequip happened)
+            if (charMesh._equipGen[slot] !== myGen) return;
 
             const cfg = EQUIP_SLOTS[slot];
             if (!cfg) return;
@@ -1888,9 +1896,12 @@
         }
 
         function removeEquipModel(charMesh, slot) {
+            // Bump generation to invalidate any in-flight async attachEquipModel
+            if (!charMesh._equipGen) charMesh._equipGen = {};
+            charMesh._equipGen[slot] = (charMesh._equipGen[slot] || 0) + 1;
             if (charMesh.equipMeshes && charMesh.equipMeshes[slot]) {
                 const old = charMesh.equipMeshes[slot];
-                old.parent.remove(old);
+                if (old.parent) old.parent.remove(old);
                 delete charMesh.equipMeshes[slot];
             }
         }
