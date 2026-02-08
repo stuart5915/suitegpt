@@ -108,6 +108,12 @@
         .modal-preview-img { width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 80px; background: var(--bg-elevated); border-radius: 12px; border: 2px dashed var(--border); overflow: hidden; }
         .modal-preview-img img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
         .modal-preview-img.has-image { border-style: solid; border-color: var(--success); }
+        .preview-3d { margin-top: 12px; width: 180px; display: none; }
+        .preview-3d.visible { display: block; }
+        .preview-3d-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 6px; text-align: center; }
+        .preview-3d-img { width: 180px; height: 140px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; background: var(--bg-elevated); cursor: pointer; transition: border-color 0.15s; }
+        .preview-3d-img:hover { border-color: var(--accent); }
+        .preview-3d-img img { width: 100%; height: 100%; object-fit: cover; }
         .modal-stats { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
         .stat-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--border); }
         .modal-controls { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -193,6 +199,10 @@
         <div class="modal-body">
             <div class="modal-preview">
                 <div class="modal-preview-img" id="modal-preview-img"></div>
+                <div class="preview-3d" id="preview-3d">
+                    <div class="preview-3d-label">3D Preview</div>
+                    <div class="preview-3d-img" id="preview-3d-img" onclick="download3D()" title="Click to download .glb"></div>
+                </div>
                 <div class="modal-stats" id="modal-stats"></div>
             </div>
             <div class="modal-controls">
@@ -587,6 +597,16 @@ function openItemModal(itemId) {
     document.getElementById('asset-actions').style.display = asset ? 'flex' : 'none';
     // Show 3D button only if 2D image exists
     document.getElementById('btn-3d-row').style.display = asset?.imageData ? 'flex' : 'none';
+    // Show 3D preview if model exists
+    const preview3d = document.getElementById('preview-3d');
+    const preview3dImg = document.getElementById('preview-3d-img');
+    if (asset?.modelThumbnail) {
+        preview3dImg.innerHTML = `<img src="${asset.modelThumbnail}" alt="3D preview">`;
+        preview3d.classList.add('visible');
+    } else {
+        preview3dImg.innerHTML = '';
+        preview3d.classList.remove('visible');
+    }
     // Show 3D download if model exists
     document.getElementById('btn-dl-3d').style.display = asset?.modelUrl ? 'inline-flex' : 'none';
     // Update 3D button text
