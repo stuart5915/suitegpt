@@ -412,6 +412,7 @@ export class NPCBehaviorSystem {
 
         // ---- Dead: wait for respawn ----
         if (npc.isDead) {
+            npc.activity = 'Dead';
             npc.respawnTimer -= dt;
             // Death announcement (once)
             if (!memory.deathAnnounced) {
@@ -433,6 +434,7 @@ export class NPCBehaviorSystem {
             memory.coins = Math.max(memory.coins - 20, 10);
             memory.currentGoal = null;
             memory.partyWith = null;
+            npc.activity = 'Idle';
             const n = memory.totalDeaths;
             const msg = template(pick(RESPAWN_DIALOGUE), { n, monster: memory.lastDeathMonster || 'something' });
             memory.chatCooldown = 0;
@@ -540,6 +542,7 @@ export class NPCBehaviorSystem {
                 }
                 if (npc.workTimer <= 0) {
                     npc.state = 'IDLE';
+                    npc.activity = 'Idle';
                     npc.stateTimer = 3 + Math.random() * 5;
                     memory.currentGoal = null;
                 }
@@ -576,21 +579,25 @@ export class NPCBehaviorSystem {
         switch (goal.type) {
             case 'eat':
                 npc.state = 'RESTING';
+                npc.activity = 'Eating';
                 memory.restTimer = 1.0 + Math.random() * 0.5;
                 this.tryChat(npc, memory, profile, profile.dialogue.eating, events);
                 break;
 
             case 'flee':
+                npc.activity = 'Fleeing';
                 this.tryChat(npc, memory, profile, profile.dialogue.fleeing, events);
                 npc.state = 'CHOOSING';
                 break;
 
             case 'shop':
+                npc.activity = 'Shopping';
                 this.tryChat(npc, memory, profile, profile.dialogue.shopping, events);
                 npc.state = 'CHOOSING';
                 break;
 
             case 'hunt':
+                npc.activity = 'Hunting ' + (goal.monsterName || 'monster');
                 // Party chat if joining someone
                 if (memory.partyWith) {
                     const partner = this.npcCache.get(memory.partyWith);
@@ -608,22 +615,26 @@ export class NPCBehaviorSystem {
                 break;
 
             case 'work':
+                npc.activity = 'Working at ' + (goal.buildingId || 'building');
                 this.tryChat(npc, memory, profile, profile.dialogue.working, events);
                 npc.state = 'CHOOSING';
                 break;
 
             case 'patrol':
+                npc.activity = 'Patrolling ' + (goal.zone || 'area');
                 this.tryChat(npc, memory, profile, profile.dialogue.patrolling, events);
                 memory.tripsSinceShop++;
                 npc.state = 'CHOOSING';
                 break;
 
             case 'explore':
+                npc.activity = 'Exploring';
                 npc.state = 'CHOOSING';
                 break;
 
             default:
                 npc.state = 'IDLE';
+                npc.activity = 'Idle';
                 npc.stateTimer = 3 + Math.random() * 4;
                 break;
         }
@@ -697,6 +708,7 @@ export class NPCBehaviorSystem {
             }
 
             npc.state = 'IDLE';
+            npc.activity = 'Idle';
             npc.stateTimer = 2 + Math.random() * 4;
             memory.currentGoal = null;
         }
@@ -715,6 +727,7 @@ export class NPCBehaviorSystem {
                 npc.hp = Math.min(npc.maxHp, npc.hp + healAmt);
             }
             npc.state = 'IDLE';
+            npc.activity = 'Idle';
             npc.stateTimer = 1 + Math.random() * 2;
             memory.currentGoal = null;
         }
@@ -733,6 +746,7 @@ export class NPCBehaviorSystem {
             memory.tripsSinceShop = 0;
             npc.hp = Math.min(npc.maxHp, npc.hp + Math.floor(npc.maxHp * 0.2));
             npc.state = 'IDLE';
+            npc.activity = 'Idle';
             npc.stateTimer = 2 + Math.random() * 3;
             memory.currentGoal = null;
         }
@@ -760,6 +774,7 @@ export class NPCBehaviorSystem {
                 memory.fightTimer = profile.fightDurationBase + (Math.random() * 2 - 1) * profile.fightDurationVar;
                 memory.fightDamage = estimateFightDamage(monsterType, npc.combatStats);
                 memory.fightMonsterName = goal.monsterName || 'monster';
+                npc.activity = 'Fighting ' + memory.fightMonsterName;
                 this.tryChat(npc, memory, profile, profile.dialogue.fightStart, events);
                 break;
             }
@@ -779,6 +794,7 @@ export class NPCBehaviorSystem {
             case 'patrol':
             case 'explore':
                 npc.state = 'IDLE';
+                npc.activity = 'Idle';
                 npc.stateTimer = 2 + Math.random() * 5;
                 memory.currentGoal = null;
                 break;

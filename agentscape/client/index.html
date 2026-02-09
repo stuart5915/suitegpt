@@ -206,6 +206,29 @@
         .overlay-close:hover { color: #fff; }
         .overlay-body { padding: 10px; }
 
+        /* Agent Dashboard */
+        .agent-dashboard-panel { width: 720px; }
+        .agent-summary { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #3a3a40; align-items: center; }
+        .agent-race-badge { font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+        .agent-activity-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #2a2a2e; color: #9ca3af; white-space: nowrap; }
+        .agent-filter-tabs { display: flex; gap: 1px; padding: 4px 8px; border-bottom: 1px solid #3a3a40; }
+        .agent-filter-btn { padding: 4px 10px; font-size: 10px; font-weight: bold; background: #2a2a2e; color: #6b7280; border: 1px solid #3a3a40; cursor: pointer; border-radius: 3px; font-family: inherit; }
+        .agent-filter-btn.active { background: #6366f122; color: #6366f1; border-color: #6366f1; }
+        .agent-filter-btn:hover { color: #fff; }
+        .agent-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-bottom: 1px solid #1a1a1f; cursor: pointer; font-size: 11px; color: #ccc; }
+        .agent-row:hover { background: #2a2a3e; }
+        .agent-race-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .agent-name { width: 120px; font-weight: bold; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .agent-activity-text { flex: 1; color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .agent-activity-text.fighting { color: #ef4444; }
+        .agent-activity-text.walking { color: #eab308; }
+        .agent-activity-text.working { color: #22c55e; }
+        .agent-activity-text.dead { color: #6b7280; }
+        .agent-hp-bar { width: 44px; height: 6px; background: #333; border-radius: 2px; flex-shrink: 0; overflow: hidden; }
+        .agent-hp-fill { height: 100%; background: #22c55e; transition: width 0.3s; }
+        .agent-hp-fill.low { background: #ef4444; }
+        .agent-hp-fill.mid { background: #eab308; }
+
         /* Quest List */
         .quest-item { padding: 8px 10px; border-bottom: 1px solid #2a2a2e; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .quest-item:hover { background: #2a2a3e; }
@@ -446,6 +469,7 @@
                 <div class="bank-inv-grid" id="bank-inv-grid"></div>
             </div></div>
             <div class="game-overlay" id="cook-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F373; Tavern &mdash; Cooking</h2><button class="overlay-close" onclick="closeOverlay('cook-overlay')">&times;</button></div><div class="overlay-body" id="cook-content"></div></div></div>
+            <div class="game-overlay" id="agent-dashboard"><div class="overlay-panel agent-dashboard-panel"><div class="overlay-header"><h2>Agent Dashboard</h2><button class="overlay-close" onclick="closeAgentDashboard()">&times;</button></div><div id="agent-summary" class="agent-summary"></div><div id="agent-filters" class="agent-filter-tabs"></div><div class="overlay-body" id="agent-list" style="max-height:55vh;overflow-y:auto;padding:4px 8px;"></div></div></div>
         </div>
         <div id="game-sidebar">
             <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas><div id="run-orb" title="Click: Toggle Run | Right-click: Rest"><div id="run-orb-inner"><span id="run-orb-icon">🏃</span></div></div></div>
@@ -486,7 +510,7 @@
                 <button class="action-btn" onclick="deleteCharacter()" style="color:#ef4444;border-color:#ef444466;">Delete Char</button>
                 <button class="action-btn" id="btnMute" onclick="toggleSoundMute()">🔊 Sound</button>
                 <div id="skill-action-area"></div>
-                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">Click to Move | Q/E Rotate<br>Scroll Zoom | F Spec</div>
+                <div style="font-size:9px;color:#6b7280;text-align:center;padding:4px;">Click to Move | Q/E Rotate<br>Scroll Zoom | F Spec | Tab Agents</div>
             </div>
         </div>
     </div>
@@ -3598,9 +3622,112 @@
 
         // Keyboard
         const keys={};
-        window.addEventListener('keydown',e=>{if(!chatInputFocused){keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='f')sendAction('use_special_attack');}});
+        window.addEventListener('keydown',e=>{
+            if(!chatInputFocused){
+                keys[e.key.toLowerCase()]=true;
+                if(e.key.toLowerCase()==='f')sendAction('use_special_attack');
+                if(e.key==='Tab'){e.preventDefault();toggleAgentDashboard();}
+            }
+        });
         window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
         renderer.domElement.addEventListener('wheel',e=>{camDist+=e.deltaY*0.01;camDist=Math.max(6,Math.min(30,camDist));});
+
+        // ============================================================
+        // AGENT DASHBOARD
+        // ============================================================
+        let agentDashboardOpen=false, agentDashboardInterval=null, agentDashboardFilter='all';
+        const RACE_ORDER=['aligned','inverse','expressive','aware'];
+
+        window.toggleAgentDashboard=function(){
+            const el=document.getElementById('agent-dashboard');
+            if(agentDashboardOpen){closeAgentDashboard();return;}
+            agentDashboardOpen=true;
+            el.classList.add('open');
+            refreshAgentDashboard();
+            agentDashboardInterval=setInterval(refreshAgentDashboard,1000);
+        };
+        window.closeAgentDashboard=function(){
+            agentDashboardOpen=false;
+            document.getElementById('agent-dashboard').classList.remove('open');
+            if(agentDashboardInterval){clearInterval(agentDashboardInterval);agentDashboardInterval=null;}
+        };
+
+        function refreshAgentDashboard(){
+            const agents=[];
+            npcMeshes.forEach((m,id)=>{
+                const s=m.state;
+                agents.push({id,name:s.name,role:s.role,hp:s.hp,maxHp:s.maxHp,activity:s.activity||'Idle',isDead:s.isDead,state:s.state,x:s.x,z:s.z});
+            });
+
+            // Race counts
+            const raceCounts={};
+            RACE_ORDER.forEach(r=>raceCounts[r]=0);
+            agents.forEach(a=>{raceCounts[a.role]=(raceCounts[a.role]||0)+1;});
+
+            // Activity counts
+            const actCounts={};
+            agents.forEach(a=>{
+                const act=a.isDead?'Dead':a.activity.split(' ')[0];
+                actCounts[act]=(actCounts[act]||0)+1;
+            });
+
+            // Summary bar
+            let summaryHtml='';
+            RACE_ORDER.forEach(r=>{
+                const rc=ROLE_COLORS[r];
+                summaryHtml+=`<span class="agent-race-badge" style="background:${rc.hex}22;color:${rc.hex};border:1px solid ${rc.hex}44">${rc.name} ${raceCounts[r]||0}</span>`;
+            });
+            Object.entries(actCounts).sort((a,b)=>b[1]-a[1]).forEach(([act,cnt])=>{
+                summaryHtml+=`<span class="agent-activity-badge">${act} ${cnt}</span>`;
+            });
+            document.getElementById('agent-summary').innerHTML=summaryHtml;
+
+            // Filter tabs
+            let filterHtml=`<button class="agent-filter-btn ${agentDashboardFilter==='all'?'active':''}" onclick="setAgentFilter('all')">All (${agents.length})</button>`;
+            RACE_ORDER.forEach(r=>{
+                const rc=ROLE_COLORS[r];
+                filterHtml+=`<button class="agent-filter-btn ${agentDashboardFilter===r?'active':''}" onclick="setAgentFilter('${r}')" style="${agentDashboardFilter===r?'color:'+rc.hex+';border-color:'+rc.hex:''}">${rc.name} (${raceCounts[r]||0})</button>`;
+            });
+            document.getElementById('agent-filters').innerHTML=filterHtml;
+
+            // Filter agents
+            let filtered=agentDashboardFilter==='all'?agents:agents.filter(a=>a.role===agentDashboardFilter);
+
+            // Sort: fighting first, then walking/working, idle, dead last
+            const actPriority=a=>{
+                if(a.isDead)return 4;
+                const s=a.state;
+                if(s==='FIGHTING')return 0;
+                if(s==='WALKING'||s==='CHOOSING'||s==='WAITING_PATH')return 1;
+                if(s==='WORKING'||s==='BANKING'||s==='RESTING')return 2;
+                return 3;
+            };
+            filtered.sort((a,b)=>actPriority(a)-actPriority(b));
+
+            // Render rows
+            let listHtml='';
+            filtered.forEach(a=>{
+                const rc=ROLE_COLORS[a.role]||ROLE_COLORS.aligned;
+                const hpPct=a.maxHp>0?Math.round(a.hp/a.maxHp*100):0;
+                const hpClass=hpPct<25?'low':hpPct<50?'mid':'';
+                const actClass=a.isDead?'dead':a.state==='FIGHTING'?'fighting':(a.state==='WALKING'||a.state==='CHOOSING'||a.state==='WAITING_PATH')?'walking':(a.state==='WORKING'||a.state==='BANKING')?'working':'';
+                const displayActivity=a.isDead?'Dead':a.activity;
+                listHtml+=`<div class="agent-row" onclick="flyToAgent('${a.id}')"><div class="agent-race-dot" style="background:${rc.hex}"></div><div class="agent-name" style="color:${rc.hex}">${a.name}</div><div class="agent-activity-text ${actClass}">${displayActivity}</div><div class="agent-hp-bar"><div class="agent-hp-fill ${hpClass}" style="width:${hpPct}%"></div></div></div>`;
+            });
+            document.getElementById('agent-list').innerHTML=listHtml;
+        }
+
+        window.setAgentFilter=function(f){agentDashboardFilter=f;refreshAgentDashboard();};
+
+        window.flyToAgent=function(npcId){
+            const m=npcMeshes.get(npcId);
+            if(!m)return;
+            camTargetX=m.state.x;
+            camTargetZ=m.state.z;
+            camSmoothX=m.state.x;
+            camSmoothZ=m.state.z;
+            closeAgentDashboard();
+        };
 
         // ============================================================
         // MINIMAP

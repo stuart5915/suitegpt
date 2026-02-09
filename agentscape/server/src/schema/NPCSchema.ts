@@ -14,6 +14,7 @@ export class NPCSchema extends Schema {
     @type('string') state: string = 'IDLE'; // IDLE, CHOOSING, WAITING_PATH, WALKING, WORKING
     @type('boolean') isDead: boolean = false;
     @type('float32') rotation: number = 0;
+    @type('string') activity: string = 'Idle';
 
     // Server-only state
     spawnX: number = 0;
