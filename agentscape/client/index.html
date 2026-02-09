@@ -1751,8 +1751,13 @@
             }
 
             group.position.set(bData.x,baseH,bData.z);
-            group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;if(!c.userData.type)c.userData.type='building';}});
-            scene.add(group);addRayTarget(group);
+            if(bData.id==='bank'){
+                // Bank is walk-in: don't make walls clickable so raycasts pass through to floor tiles & teller
+                scene.add(group);
+            }else{
+                group.traverse(c=>{if(c.isMesh){c.userData.buildingId=bData.id;if(!c.userData.type)c.userData.type='building';}});
+                scene.add(group);addRayTarget(group);
+            }
         }
         BUILDINGS.forEach(b=>createNamedBuilding(b));
 
@@ -3332,16 +3337,7 @@
                 }
                 return;
             }
-            if(hitBld){
-                // Bank: walk to door tile instead of enter_building, so player can walk inside
-                if(hitBld==='bank'){
-                    spawnClickX(e,'yellow');
-                    const door=buildingDoors[hitBld];
-                    if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);sendAction('move_to',{tileX:door.x,tileZ:door.z});}
-                    return;
-                }
-                spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);}sendAction('enter_building',{buildingId:hitBld});return;
-            }
+            if(hitBld){spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);}sendAction('enter_building',{buildingId:hitBld});return;}
             if(hitTile&&hitTile.walkable){spawnClickX(e,'yellow');const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
@@ -3395,7 +3391,7 @@
                 if(npc&&!npc.state.isDead){showContextMenu(e,[{label:'Talk to '+npc.state.name,action:"talkToNPC('"+hitNPC+"')"},{label:'Pickpocket '+npc.state.name,action:"sendAction('pickpocket',{npcId:'"+hitNPC+"'})"},{label:'Attack '+npc.state.name,action:"sendAction('attack_npc',{npcId:'"+hitNPC+"'})"},{label:'Examine',action:"examineNPC('"+hitNPC+"')"},{label:'Cancel',action:'hideCtxMenu()'}],npc.state.name);}
                 return;
             }
-            if(hitBld){const bd=BUILDINGS.find(b=>b.id===hitBld);if(bd){if(hitBld==='bank'){showContextMenu(e,[{label:'Walk inside',action:"walkToTile("+buildingDoors[hitBld].x+","+buildingDoors[hitBld].z+")"},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}else{showContextMenu(e,[{label:'Enter '+bd.name,action:"enterBuilding('"+hitBld+"')"},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}}return;}
+            if(hitBld){const bd=BUILDINGS.find(b=>b.id===hitBld);if(bd){showContextMenu(e,[{label:'Enter '+bd.name,action:"enterBuilding('"+hitBld+"')"},{label:'Cancel',action:'hideCtxMenu()'}],bd.icon+' '+bd.name);}return;}
             if(hitTile){showContextMenu(e,[{label:'Walk here',action:"walkToTile("+hitTile.tileX+","+hitTile.tileZ+")"},{label:'Cancel',action:'hideCtxMenu()'}]);}
         });
 
