@@ -742,7 +742,7 @@ export const BUILDINGS: BuildingDef[] = [
     // === SUITE CASTLE (starter town) ===
     { id: 'town_hall', name: 'Town Hall', icon: '\u{1F3DB}\uFE0F', x: 94, z: 86, w: 3, d: 3, h: 2.5, doorSide: 'south', district: 'castle' },
     { id: 'quest_board', name: 'Quest Board', icon: '\u{1F4CB}', x: 106, z: 87, w: 1, d: 1, h: 1.2, doorSide: 'south', type: 'pedestal', district: 'castle' },
-    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 91, z: 96, w: 2.5, d: 2, h: 2.0, doorSide: 'south', district: 'castle' },
+    { id: 'bank', name: 'SUITE Bank', icon: '\u{1F3E6}', x: 91, z: 96, w: 4, d: 3, h: 2.0, doorSide: 'south', district: 'castle' },
     { id: 'general_store', name: 'General Store', icon: '\u{1F3EA}', x: 102, z: 96, w: 2.5, d: 2, h: 1.4, doorSide: 'south', district: 'castle' },
     { id: 'arena', name: 'Arena', icon: '\u2694\uFE0F', x: 92, z: 103, w: 4, d: 4, h: 1.8, doorSide: 'north', district: 'castle' },
     { id: 'tavern', name: 'Tavern', icon: '\u{1F37A}', x: 106, z: 103, w: 2.5, d: 2, h: 1.5, doorSide: 'north', district: 'castle' },
