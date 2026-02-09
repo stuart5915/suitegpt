@@ -29,6 +29,7 @@ import { AgentMemory, AgentMemoryManager, CachedNPC } from '../agents/AgentMemor
 import { AgentProfile, getProfile, notecardToProfile,
     SOCIAL_DIALOGUE, PROGRESSION_DIALOGUE, DEATH_DIALOGUE, RESPAWN_DIALOGUE,
     PLAYER_COMBAT_DIALOGUE, QUEST_DIALOGUE, PARTY_DIALOGUE, GEAR_TIER_NAMES,
+    RAID_DIALOGUE,
 } from '../agents/AgentProfiles';
 import {
     randomWalkableInZone,
@@ -40,6 +41,8 @@ import {
     getTownDoor,
     pickQuest,
 } from '../agents/AgentContext';
+import { RaidCoordinator } from '../agents/RaidCoordinator';
+import { RAID_GATHER_POINTS, AGENT_XP_MULTIPLIER, BOSSES } from '../config';
 
 export interface NPCChatEvent {
     npcId: string;
@@ -74,12 +77,17 @@ export class NPCBehaviorSystem {
     private pathfindQueue: PathfindRequest[] = [];
     private memories: AgentMemoryManager = new AgentMemoryManager();
     private behaviorTrees: Map<string, BTNode> = new Map();
+    private raidCoordinator: RaidCoordinator | null = null;
 
     // NPC position cache for social interactions & party detection
     private npcCache: Map<string, CachedNPC> = new Map();
 
     constructor(map: GameMap) {
         this.map = map;
+    }
+
+    setRaidCoordinator(rc: RaidCoordinator): void {
+        this.raidCoordinator = rc;
     }
 
     getPathfindQueue(): PathfindRequest[] {
@@ -143,6 +151,17 @@ export class NPCBehaviorSystem {
                 action(ctx => {
                     const door = getShopDoor(ctx.map);
                     if (door) ctx.memory.currentGoal = { type: 'shop', targetX: door.x, targetZ: door.z, buildingId: 'general_store' };
+                }),
+            ),
+
+            // Priority 2.5: Raid objective (requires level >= 10)
+            sequence(
+                condition(ctx => ctx.memory.effectiveLevel >= 10),
+                condition(ctx => ctx.memory.foodCount > 0),
+                condition(ctx => (ctx.npc.hp / ctx.npc.maxHp) > 0.5),
+                condition(() => !!this.raidCoordinator),
+                action(ctx => {
+                    this.evaluateRaidBehavior(ctx.npc, ctx.memory, profile);
                 }),
             ),
 
@@ -313,9 +332,10 @@ export class NPCBehaviorSystem {
     // Progression — XP gain and level ups
     // ================================================================
 
-    private awardXP(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, monsterType: string, events: NPCChatEvent[]): void {
+    awardXP(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile, monsterType: string, events: NPCChatEvent[]): void {
         const monster = MONSTERS[monsterType];
-        const xpGain = monster ? monster.level * 5 + Math.floor(Math.random() * monster.level * 2) : 10;
+        const baseXp = monster ? monster.level * 5 + Math.floor(Math.random() * monster.level * 2) : 10;
+        const xpGain = baseXp * AGENT_XP_MULTIPLIER;
         memory.xp += xpGain;
 
         // Level formula: sqrt(xp / 15) + 1, capped at 50
@@ -552,6 +572,16 @@ export class NPCBehaviorSystem {
                 this.updateFighting(npc, memory, profile, dt, events);
                 break;
 
+            case 'REAL_COMBAT':
+                // Handled by AgentCombatAdapter in room game loop.
+                // We just handle chat and flee detection here.
+                if (Math.random() < 0.002 && memory.notecard) {
+                    const role = memory.notecard.race;
+                    const fightLines = RAID_DIALOGUE[role]?.fight || ['Fighting!'];
+                    this.tryChat(npc, memory, profile, fightLines, events);
+                }
+                break;
+
             case 'RESTING':
                 this.updateResting(npc, memory, profile, dt, events);
                 break;
@@ -632,11 +662,103 @@ export class NPCBehaviorSystem {
                 npc.state = 'CHOOSING';
                 break;
 
+            case 'raid_gather':
+            case 'raid_travel':
+                npc.activity = 'Traveling to raid';
+                npc.state = 'CHOOSING';
+                break;
+
+            case 'raid_fight':
+                // Will transition to REAL_COMBAT on path completion
+                npc.activity = 'Charging boss!';
+                npc.state = 'CHOOSING';
+                break;
+
+            case 'supply_run':
+                npc.activity = 'Resupplying for raid';
+                npc.state = 'CHOOSING';
+                break;
+
             default:
                 npc.state = 'IDLE';
                 npc.activity = 'Idle';
                 npc.stateTimer = 3 + Math.random() * 4;
                 break;
+        }
+    }
+
+    // ================================================================
+    // RAID BEHAVIOR — evaluate whether to join/start/scout raids
+    // ================================================================
+
+    private evaluateRaidBehavior(npc: NPCSchema, memory: AgentMemory, profile: AgentProfile): void {
+        if (!this.raidCoordinator) return;
+        const nc = memory.notecard;
+        if (!nc) return;
+
+        // Already in raid state — continue
+        if (memory.raidState === 'traveling' || memory.raidState === 'fighting') return;
+
+        // Check for active rally to join
+        const rallies = this.raidCoordinator.getActiveRallies();
+        for (const rally of rallies) {
+            if (rally.memberIds.has(npc.id)) continue; // already joined
+            if (this.raidCoordinator.shouldJoinRaid(nc, memory, rally.memberIds.size, rally.targetBossId)) {
+                this.raidCoordinator.joinRally(rally.id, npc.id);
+                memory.raidPartyId = rally.id;
+                memory.raidState = 'preparing';
+                memory.raidRole = this.raidCoordinator.determineRaidRole(nc);
+                memory.targetBossId = rally.targetBossId;
+
+                // Travel to gather point
+                const gp = rally.gatherPoint;
+                memory.currentGoal = { type: 'raid_gather', targetX: gp.x, targetZ: gp.z };
+                npc.activity = 'Rallying for ' + (BOSSES[rally.targetBossId]?.name || 'boss');
+
+                // Recruit chat
+                const recruitLines = RAID_DIALOGUE[nc.race]?.recruit || ['Join us for the raid!'];
+                const line = recruitLines[Math.floor(Math.random() * recruitLines.length)];
+                this.emitChat(npc, memory, profile, line.replace('{name}', ''), []);
+                memory.addEvent({ timestamp: Date.now(), type: 'raid_join', description: `Joined rally for ${BOSSES[rally.targetBossId]?.name || 'boss'}` });
+                return;
+            }
+        }
+
+        // No rally exists — consider starting one
+        if (memory.effectiveLevel >= 15 && nc.aggression > 45 && Math.random() < 0.01) {
+            const bossId = this.raidCoordinator.pickBossTarget(memory.effectiveLevel, nc.aggression);
+            if (bossId) {
+                const rally = this.raidCoordinator.createRally(npc, bossId);
+                if (rally) {
+                    memory.raidPartyId = rally.id;
+                    memory.raidState = 'preparing';
+                    memory.raidRole = this.raidCoordinator.determineRaidRole(nc);
+                    memory.targetBossId = bossId;
+
+                    const gp = rally.gatherPoint;
+                    memory.currentGoal = { type: 'raid_gather', targetX: gp.x, targetZ: gp.z };
+                    npc.activity = 'Rallying for ' + (BOSSES[bossId]?.name || 'boss');
+
+                    const rallyLines = RAID_DIALOGUE[nc.race]?.rally || ['Raid forming!'];
+                    this.emitChat(npc, memory, profile, rallyLines[Math.floor(Math.random() * rallyLines.length)], []);
+                    memory.addEvent({ timestamp: Date.now(), type: 'rally_call', description: `Called rally for ${BOSSES[bossId]?.name || 'boss'}` });
+                    return;
+                }
+            }
+        }
+
+        // Scout boss zone if high curiosity and low knowledge
+        if (nc.curiosity > 50 && memory.dragonKnowledge < 50 && memory.effectiveLevel >= 12 && Math.random() < 0.005) {
+            const bossId = this.raidCoordinator.pickBossTarget(memory.effectiveLevel, nc.aggression);
+            if (bossId) {
+                const gp = RAID_GATHER_POINTS[bossId];
+                if (gp) {
+                    memory.currentGoal = { type: 'explore', targetX: gp.x, targetZ: gp.z };
+                    npc.activity = 'Scouting ' + (BOSSES[bossId]?.name || 'boss area');
+                    memory.dragonKnowledge = Math.min(100, memory.dragonKnowledge + 3);
+                    return;
+                }
+            }
         }
     }
 
@@ -797,6 +919,54 @@ export class NPCBehaviorSystem {
                 npc.activity = 'Idle';
                 npc.stateTimer = 2 + Math.random() * 5;
                 memory.currentGoal = null;
+                break;
+
+            case 'raid_gather':
+                // Arrived at gather point — wait for launch
+                npc.state = 'IDLE';
+                npc.activity = 'Waiting for raid';
+                npc.stateTimer = 2 + Math.random() * 3;
+                memory.raidState = 'preparing';
+                // Check if we should launch
+                if (this.raidCoordinator && memory.raidPartyId) {
+                    const rally = this.raidCoordinator.getRally(memory.raidPartyId);
+                    if (rally && this.raidCoordinator.shouldLaunchRaid(rally, this.memories)) {
+                        this.raidCoordinator.launchRaid(rally.id);
+                        // All gathered members get raid_fight goal
+                        const bossDef = BOSSES[rally.targetBossId];
+                        const bossSpawn = bossDef?.spawnPos;
+                        if (bossSpawn) {
+                            for (const memberId of rally.memberIds) {
+                                const memberMem = this.memories.get(memberId);
+                                memberMem.raidState = 'traveling';
+                                memberMem.currentGoal = {
+                                    type: 'raid_fight',
+                                    targetX: bossSpawn.x,
+                                    targetZ: bossSpawn.z,
+                                    monsterType: rally.targetBossId,
+                                    monsterName: bossDef?.name,
+                                };
+                            }
+                        }
+                    }
+                }
+                memory.currentGoal = null;
+                break;
+
+            case 'raid_fight':
+                // Arrived at boss — transition to REAL_COMBAT
+                // The AgentCombatAdapter will handle actual engagement
+                npc.state = 'REAL_COMBAT';
+                npc.activity = 'Fighting ' + (goal.monsterName || 'boss');
+                memory.raidState = 'fighting';
+                memory.raidAttempts++;
+                memory.addEvent({ timestamp: Date.now(), type: 'raid_engage', description: `Engaging ${goal.monsterName || 'boss'}` });
+                // Don't clear goal — room will use it to know which boss to engage
+                break;
+
+            case 'supply_run':
+                npc.state = 'BANKING';
+                npc.workTimer = 3 + Math.random() * 4;
                 break;
 
             default:

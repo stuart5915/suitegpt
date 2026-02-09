@@ -5,6 +5,7 @@
 
 import { MonsterSchema } from '../schema/MonsterSchema';
 import { PlayerSchema } from '../schema/PlayerSchema';
+import { NPCSchema } from '../schema/NPCSchema';
 import { GameMap } from '../utils/MapGenerator';
 import {
     ZONES, MONSTERS, BOSSES, BossPhase,
@@ -12,6 +13,8 @@ import {
     isInSafeZone,
 } from '../config';
 import { MapSchema } from '@colyseus/schema';
+import { AgentCombatAdapter, AgentCombatResults } from '../agents/AgentCombatAdapter';
+import { AgentMemoryManager } from '../agents/AgentMemory';
 
 export interface MonsterPathfindRequest {
     monster: MonsterSchema;
@@ -54,8 +57,18 @@ export class MonsterBehaviorSystem {
     // Boss phase tracking: monsterId → current phase index
     private bossPhases: Map<string, number> = new Map();
 
+    // Agent combat adapter (set after construction)
+    private agentCombatAdapter: AgentCombatAdapter | null = null;
+    private agentMemories: AgentMemoryManager | null = null;
+
     constructor(map: GameMap) {
         this.map = map;
+    }
+
+    /** Link to the agent combat adapter so boss abilities can hit agents. */
+    setAgentCombatAdapter(adapter: AgentCombatAdapter, memories: AgentMemoryManager): void {
+        this.agentCombatAdapter = adapter;
+        this.agentMemories = memories;
     }
 
     // --- Threat management ---
@@ -134,6 +147,7 @@ export class MonsterBehaviorSystem {
         monster: MonsterSchema,
         dt: number,
         players: MapSchema<PlayerSchema>,
+        npcs?: MapSchema<NPCSchema>,
     ): MonsterAbilityEvent[] {
         const events: MonsterAbilityEvent[] = [];
 
@@ -154,8 +168,8 @@ export class MonsterBehaviorSystem {
             if (monster.isBoss) {
                 // Check phase transitions
                 this.checkBossPhase(monster);
-                // Check boss abilities during combat
-                const abilityEvents = this.checkBossAbilities(monster, players);
+                // Check boss abilities during combat — now also hits agents
+                const abilityEvents = this.checkBossAbilities(monster, players, npcs);
                 events.push(...abilityEvents);
             }
             return events;
@@ -396,9 +410,13 @@ export class MonsterBehaviorSystem {
         });
     }
 
+    /** Store last agent combat results from boss abilities for room to broadcast. */
+    lastAgentAbilityResults: AgentCombatResults | null = null;
+
     private checkBossAbilities(
         monster: MonsterSchema,
         players: MapSchema<PlayerSchema>,
+        npcs?: MapSchema<NPCSchema>,
     ): MonsterAbilityEvent[] {
         const events: MonsterAbilityEvent[] = [];
         const hpPercent = (monster.hp / monster.maxHp) * 100;
@@ -437,6 +455,12 @@ export class MonsterBehaviorSystem {
                             }
                         }
                     });
+                    // Also damage agents in REAL_COMBAT
+                    if (this.agentCombatAdapter && this.agentMemories && npcs) {
+                        this.lastAgentAbilityResults = this.agentCombatAdapter.applyBossAOEToAgents(
+                            monster, npcs, this.agentMemories, ability.damage || 10, r,
+                        );
+                    }
                     break;
                 }
 
@@ -488,8 +512,10 @@ export class MonsterBehaviorSystem {
                             x: monster.x,
                             z: monster.z,
                         });
-                        // Stun effect: skip player's next combat tick(s)
-                        // Handled by setting a stun timer on the player (room handles this)
+                    }
+                    // Also stun a random agent
+                    if (this.agentCombatAdapter && this.agentMemories && npcs) {
+                        this.agentCombatAdapter.applyBossStunToAgents(monster, npcs, this.agentMemories);
                     }
                     break;
                 }
@@ -518,12 +544,17 @@ export class MonsterBehaviorSystem {
                         if (dist <= drainRadius) {
                             const drainAmount = ability.damage || 20;
                             player.energy = Math.max(0, player.energy - drainAmount);
-                            // Boss heals a fraction of drained energy
                             if (ability.heal) {
                                 monster.hp = Math.min(monster.maxHp, monster.hp + ability.heal);
                             }
                         }
                     });
+                    // Also drain agents
+                    if (this.agentCombatAdapter && this.agentMemories && npcs) {
+                        this.agentCombatAdapter.applyBossDrainToAgents(
+                            monster, npcs, this.agentMemories, ability.damage || 20, drainRadius,
+                        );
+                    }
                     events.push({
                         monsterId: monster.id,
                         monsterName: monster.name,

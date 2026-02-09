@@ -229,6 +229,24 @@
         .agent-hp-fill.low { background: #ef4444; }
         .agent-hp-fill.mid { background: #eab308; }
 
+        /* Raid Feed */
+        #raid-feed { position: absolute; top: 8px; right: 8px; width: 280px; max-height: 320px; overflow-y: auto; z-index: 35; background: rgba(10,10,15,0.88); border: 1px solid #4a4a50; border-radius: 4px; font-size: 11px; pointer-events: auto; display: none; }
+        #raid-feed.active { display: block; }
+        #raid-feed-header { padding: 6px 10px; border-bottom: 1px solid #3a3a40; color: #ef4444; font-weight: bold; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        #raid-feed-header span { color: #9ca3af; font-weight: normal; font-size: 10px; cursor: pointer; }
+        .raid-entry { padding: 4px 10px; color: #ccc; border-bottom: 1px solid #1a1a1f; animation: raidFadeIn 0.3s ease; }
+        .raid-entry.victory { color: #22c55e; font-weight: bold; }
+        .raid-entry.wipe { color: #ef4444; }
+        .raid-entry.death { color: #9ca3af; }
+        .raid-entry.rally { color: #eab308; }
+        .raid-entry.start { color: #6366f1; font-weight: bold; }
+        #raid-boss-hp { padding: 4px 10px; display: none; }
+        #raid-boss-hp.active { display: block; }
+        .raid-boss-bar { width: 100%; height: 8px; background: #333; border-radius: 3px; overflow: hidden; }
+        .raid-boss-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #dc2626); transition: width 0.5s; }
+        .raid-boss-label { font-size: 10px; color: #f87171; margin-bottom: 2px; }
+        @keyframes raidFadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
         /* Quest List */
         .quest-item { padding: 8px 10px; border-bottom: 1px solid #2a2a2e; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .quest-item:hover { background: #2a2a3e; }
@@ -454,6 +472,7 @@
             <div id="npc-labels"></div>
             <div id="chat-bubbles"></div>
             <div id="conn-status" class="connecting">Connecting...</div>
+            <div id="raid-feed"><div id="raid-feed-header">Raid Feed <span onclick="document.getElementById('raid-feed').classList.remove('active')">&times;</span></div><div id="raid-boss-hp"><div class="raid-boss-label">Data Breach Dragon</div><div class="raid-boss-bar"><div class="raid-boss-fill" id="raid-boss-fill" style="width:100%"></div></div></div><div id="raid-entries"></div></div>
             <div id="death-screen"><h1>Oh dear, you are dead!</h1><p>Respawning at Town Hall...</p></div>
             <div class="game-overlay" id="quest-overlay"><div class="overlay-panel"><div class="overlay-header"><h2>&#x1F4CB; Quest Board</h2><button class="overlay-close" onclick="closeOverlay('quest-overlay')">&times;</button></div><div class="overlay-body" id="quest-board-content"></div></div></div>
             <div class="game-overlay" id="shop-overlay"><div class="overlay-panel" style="width:600px;"><div class="overlay-header"><h2>&#x1F3EA; General Store</h2><button class="overlay-close" onclick="closeOverlay('shop-overlay')">&times;</button></div><div class="shop-coins" id="shop-coins-display">&#x1FA99; 0 Coins</div><div class="overlay-body" style="display:flex;gap:2px;" id="shop-body-content"></div></div></div>
@@ -2944,7 +2963,7 @@
             });
             room.onMessage('system_message',(data)=>{addChat('system',data.message);});
             room.onMessage('error',(data)=>{addChat('system',data.message);});
-            room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='monster')addChat('combat',data.monsterName+' has been slain!');if(data.entityType==='player'&&data.entityId===mySessionId){addChat('combat','Oh dear, you are dead!');SoundEngine.play('death');}});
+            room.onMessage('death',(data)=>{if(data.entityType==='npc')addChat('combat','An agent has been defeated!');if(data.entityType==='monster')addChat('combat',data.monsterName+' has been slain!');if(data.entityType==='player'&&data.entityId===mySessionId){addChat('combat','Oh dear, you are dead!');SoundEngine.play('death');}if(data.type==='agent_death')addChat('combat',(data.entityName||'Agent')+' was killed by '+(data.killedBy||'something')+'!');if(data.type==='monster_death_by_agents')addChat('combat',(data.entityName||'Monster')+' defeated by agents!');});
             room.onMessage('level_up',(data)=>{addChat('system','Level up! '+data.skill+' is now level '+data.level+'!');playCharAnim(myChar,'level_up');SoundEngine.play('level_up');const el=document.getElementById('skill-'+data.skill);if(el){el.classList.add('skill-levelup');setTimeout(()=>el.classList.remove('skill-levelup'),1500);}});
             room.onMessage('quest_event',(data)=>{if(data.type==='completed'){addChat('system','Quest complete: '+data.questName+'!');SoundEngine.play('quest_complete');}if(data.type==='accepted')addChat('system','Quest accepted: '+data.questName);});
             room.onMessage('building_arrived',(data)=>{
@@ -2989,6 +3008,38 @@
                 }
             });
             room.onMessage('monster_ability',(data)=>{addChat('combat',data.monsterName+' uses '+data.abilityName+'!');});
+
+            // === RAID EVENT FEED ===
+            room.onMessage('raid_event',(data)=>{
+                const feed=document.getElementById('raid-feed');
+                const entries=document.getElementById('raid-entries');
+                feed.classList.add('active');
+                let cls='',text='';
+                switch(data.type){
+                    case 'rally_call': cls='rally'; text='\u2694\uFE0F '+(data.agentName||'Agent')+' rallies for '+(data.bossName||'boss')+'! ('+(data.count||'?')+' gathered)'; break;
+                    case 'raid_start': cls='start'; text='\uD83D\uDE80 RAID: '+(data.count||'?')+' agents vs '+(data.bossName||'boss'); break;
+                    case 'raid_wipe': cls='wipe'; text='\uD83D\uDC80 WIPE! '+(data.bossName||'boss')+' at '+(data.bossHpPercent||'?')+'%. '+(data.deaths||0)+' fell.'; break;
+                    case 'raid_victory': cls='victory'; text='\uD83C\uDF89 VICTORY! '+(data.bossName||'boss')+' defeated!'; break;
+                    case 'agent_death': cls='death'; text='\u2620\uFE0F '+(data.agentName||'Agent')+' killed by '+(data.bossName||'boss'); break;
+                    case 'boss_damage': cls=''; text='\uD83D\uDCA5 '+(data.bossName||'boss')+' at '+(data.bossHpPercent||'?')+'%'; break;
+                    default: cls=''; text=data.message||'Raid event';
+                }
+                const div=document.createElement('div');
+                div.className='raid-entry '+cls;
+                div.textContent=text;
+                entries.appendChild(div);
+                if(entries.children.length>20) entries.removeChild(entries.firstChild);
+                entries.scrollTop=entries.scrollHeight;
+                // Update boss HP bar
+                if(data.bossId==='data_breach_dragon'&& data.bossHpPercent!==undefined){
+                    const hpBar=document.getElementById('raid-boss-hp');
+                    hpBar.classList.add('active');
+                    document.getElementById('raid-boss-fill').style.width=data.bossHpPercent+'%';
+                }
+                // Also add to chat
+                addChat('combat',text);
+            });
+
             room.onMessage('player_respawn',(data)=>{if(data.playerId===mySessionId)addChat('system','You have respawned.');});
             room.onMessage('welcome',(data)=>{addChat('system','Welcome to AgentScape! Click to interact, right-click for options.');});
 

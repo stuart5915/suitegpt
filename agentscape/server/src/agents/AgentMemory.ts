@@ -6,7 +6,11 @@
 
 import { Notecard, NotecardEvent } from './Notecard';
 
-export type GoalType = 'hunt' | 'shop' | 'flee' | 'patrol' | 'work' | 'eat' | 'explore';
+export type GoalType = 'hunt' | 'shop' | 'flee' | 'patrol' | 'work' | 'eat' | 'explore'
+    | 'hunt_monster' | 'raid_gather' | 'raid_travel' | 'raid_fight' | 'supply_run';
+
+export type RaidState = 'none' | 'preparing' | 'traveling' | 'fighting' | 'recovering';
+export type RaidRole = 'tank' | 'dps' | 'support' | null;
 
 export interface AgentGoal {
     type: GoalType;
@@ -68,6 +72,17 @@ export class AgentMemory {
     totalKills: number = 0;
     totalDeaths: number = 0;
     sessionsHunted: number = 0;
+
+    // ---- Raid system ----
+    raidState: RaidState = 'none';
+    raidPartyId: string | null = null;
+    raidRole: RaidRole = null;
+    raidAttempts: number = 0;
+    raidKills: number = 0;
+    lastRaidResult: 'none' | 'wipe' | 'victory' = 'none';
+    dragonKnowledge: number = 0;  // 0-100, increases per attempt/observation
+    targetBossId: string | null = null;
+    raidStunTimer: number = 0;    // skip attack ticks when stunned by boss
 
     // ---- Notecard (personality) ----
     notecard: Notecard | null = null;

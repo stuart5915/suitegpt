@@ -15,6 +15,7 @@ export class NPCSchema extends Schema {
     @type('boolean') isDead: boolean = false;
     @type('float32') rotation: number = 0;
     @type('string') activity: string = 'Idle';
+    @type('string') combatTargetMonsterId: string = '';
 
     // Server-only state
     spawnX: number = 0;

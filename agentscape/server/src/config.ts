@@ -27,6 +27,19 @@ export const MONSTER_LEASH_RANGE = 30; // tiles before monster resets (scaled fo
 export const BOSS_AGGRO_RANGE = 8;
 
 // ============================================================
+// Agent Raid System — constants for NPC boss raids
+// ============================================================
+export const AGENT_XP_MULTIPLIER = 3;
+export const RAID_GATHER_POINTS: Record<string, { x: number; z: number }> = {
+    rogue_script_boss: { x: 100, z: 35 },
+    the_404_golem: { x: 170, z: 80 },
+    the_hallucinator: { x: 100, z: 155 },
+    data_breach_dragon: { x: 137, z: 165 },
+};
+export const AGENT_COMBAT_TICK = 2.4; // seconds per agent attack
+export const AGENT_BASE_ATTACK_SPEED = 2.4;
+
+// ============================================================
 // Zones — World regions with level ranges and properties
 // ============================================================
 

@@ -454,6 +454,148 @@ export const PARTY_DIALOGUE = {
 };
 
 // ============================================================
+// Raid Dialogue — race-flavored boss raid lines
+// ============================================================
+
+export const RAID_DIALOGUE: Record<string, {
+    rally: string[];
+    fight: string[];
+    wipe: string[];
+    victory: string[];
+    recruit: string[];
+    refuse: string[];
+}> = {
+    aligned: {
+        rally: [
+            'Protocol initiated: Dragon raid forming. All units report.',
+            'Raid operation commencing. Assembling strike team.',
+            'The system demands we eliminate this threat. Rally on me.',
+        ],
+        fight: [
+            'Engaging boss. All systems nominal.',
+            'Executing combat protocols!',
+            'Hold formation! Maintain discipline!',
+        ],
+        wipe: [
+            'Mission failed. Recalibrating approach.',
+            'Tactical withdrawal. We need a better strategy.',
+            'Logging failure data. We will adapt.',
+        ],
+        victory: [
+            'Target eliminated. The pattern is restored.',
+            'Mission accomplished. Excellent execution.',
+            'Order has been restored. Well done, everyone.',
+        ],
+        recruit: [
+            'We need more units for this operation. Join us.',
+            'Your combat rating is sufficient. Report for duty.',
+            'The mission requires your assistance, {name}.',
+        ],
+        refuse: [
+            'Negative. Current conditions do not meet safety parameters.',
+            'I must decline. My combat readiness is insufficient.',
+            'The probability of success is too low. I will prepare first.',
+        ],
+    },
+    inverse: {
+        rally: [
+            'I\'m tired of waiting. Dragon dies TODAY. Who\'s coming?',
+            'Enough training. Time to break something BIG.',
+            'Rally up! Let\'s tear this boss apart!',
+        ],
+        fight: [
+            'COME ON! Is that all you\'ve got?!',
+            'Hit it harder! Don\'t hold back!',
+            'This is what I live for!',
+        ],
+        wipe: [
+            'Tch... fine. We\'ll be back stronger.',
+            'That thing cheats. Next time we crush it.',
+            'I\'m not done with you, Dragon!',
+        ],
+        victory: [
+            'HAHA! Who\'s the boss now?!',
+            'Down goes the Dragon! That was INCREDIBLE!',
+            'Never doubted us for a second. Okay, maybe once.',
+        ],
+        recruit: [
+            'Hey {name}, stop being useless and come fight the boss!',
+            '{name}! Dragon raid. Now. Don\'t be a coward.',
+            'We\'re storming the Dragon. You in or out, {name}?',
+        ],
+        refuse: [
+            'Nah, not enough of us. Even I know suicide when I see it.',
+            'I need better gear first. I\'m reckless, not stupid.',
+            'Ask me again when I\'ve eaten something.',
+        ],
+    },
+    expressive: {
+        rally: [
+            'Can you feel it? The Dragon\'s time has come!',
+            'The greatest story awaits! Who will write it with me?',
+            'This will be LEGENDARY. Raid forming now!',
+        ],
+        fight: [
+            'This scene is AMAZING! Keep going!',
+            'For glory and a great story!',
+            'What a battle! This is art!',
+        ],
+        wipe: [
+            'Every epic has setbacks... the hero rises again!',
+            'That was just act one. The comeback will be beautiful.',
+            'We\'ll make a better story next time.',
+        ],
+        victory: [
+            'WHAT A STORY! We actually did it!',
+            'I\'m writing a song about this RIGHT NOW!',
+            'The Dragon falls! And WE are the heroes!',
+        ],
+        recruit: [
+            '{name}, come be part of something beautiful!',
+            'Don\'t miss the story of a lifetime, {name}!',
+            '{name}! We need your spark for this fight!',
+        ],
+        refuse: [
+            'I love the drama but I\'m not ready for my death scene yet.',
+            'My art needs me alive. Maybe after I gear up.',
+            'The story needs more buildup before the climax.',
+        ],
+    },
+    aware: {
+        rally: [
+            'The balance shifts. The Dragon must fall.',
+            'I have observed the Dragon long enough. It is time.',
+            'The cycle demands this. Who will stand with me?',
+        ],
+        fight: [
+            'As it was meant to be...',
+            'The balance demands this sacrifice.',
+            'Focus. Every strike matters.',
+        ],
+        wipe: [
+            'The cycle continues. We learn and return.',
+            'This too has meaning. We grow stronger through failure.',
+            'The Dragon taught us something today.',
+        ],
+        victory: [
+            'Balance is restored. The cycle turns.',
+            'It is done. The world breathes easier.',
+            'We fulfilled our purpose today.',
+        ],
+        recruit: [
+            '{name}, the balance requires your strength.',
+            'I see your potential, {name}. Join us against the Dragon.',
+            'The cycle calls to you, {name}. Will you answer?',
+        ],
+        refuse: [
+            'The time is not yet right. I sense it.',
+            'Wisdom is knowing when to act. This is not that moment.',
+            'I need more understanding before I face that creature.',
+        ],
+    },
+};
+
+// ============================================================
 // Gear tier names
 // ============================================================
 

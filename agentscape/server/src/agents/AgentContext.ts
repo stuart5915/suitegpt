@@ -8,7 +8,7 @@ import { NPCSchema } from '../schema/NPCSchema';
 import { GameState } from '../schema/GameState';
 import { PlayerSchema } from '../schema/PlayerSchema';
 import { GameMap } from '../utils/MapGenerator';
-import { BUILDINGS, ZONES, MONSTERS, QUESTS, getZoneAt } from '../config';
+import { BUILDINGS, ZONES, MONSTERS, QUESTS, BOSSES, getZoneAt } from '../config';
 import { AgentProfile } from './AgentProfiles';
 import { Notecard } from './Notecard';
 
@@ -126,6 +126,29 @@ export function estimateFightDamage(monsterType: string, npcCombatStats: { defen
     const rawDamage = Math.max(1, monster.strength - Math.floor(npcCombatStats.defence * 0.5));
     // Add variance: 60%-140% of base
     return Math.floor(rawDamage * (0.6 + Math.random() * 0.8));
+}
+
+// ---- Boss targeting ----
+
+/** Pick a boss target based on agent's effective level. */
+export function pickBossTarget(effectiveLevel: number): string | null {
+    if (effectiveLevel >= 25) return 'data_breach_dragon';
+    if (effectiveLevel >= 20) return 'the_hallucinator';
+    if (effectiveLevel >= 15) return 'the_404_golem';
+    if (effectiveLevel >= 10) return 'rogue_script_boss';
+    return null;
+}
+
+/** Estimate how hard a boss will be for a group of agents at a given level. */
+export function estimateBossDifficulty(bossId: string, agentLevel: number, partySize: number): 'impossible' | 'hard' | 'medium' | 'easy' {
+    const boss = BOSSES[bossId];
+    if (!boss) return 'impossible';
+
+    const ratio = (agentLevel * partySize) / (boss.level * boss.minPlayers);
+    if (ratio < 0.5) return 'impossible';
+    if (ratio < 0.8) return 'hard';
+    if (ratio < 1.2) return 'medium';
+    return 'easy';
 }
 
 // ---- Quest helpers ----

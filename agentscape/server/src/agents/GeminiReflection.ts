@@ -6,6 +6,7 @@
 
 import { Notecard, Race, Mood, DialogueBank } from './Notecard';
 import { AgentMemory, AgentMemoryManager } from './AgentMemory';
+import { MonsterSchema } from '../schema/MonsterSchema';
 
 interface ReflectionTarget {
     agentId: string;
@@ -19,10 +20,23 @@ export class GeminiReflectionService {
     private timer: ReturnType<typeof setInterval> | null = null;
     private memoryManager: AgentMemoryManager;
     private apiKey: string;
+    private dragonStatus: { alive: boolean; hp: number; maxHp: number } = { alive: true, hp: 2500, maxHp: 2500 };
+    private recentRaidEvents: string[] = [];
 
     constructor(memoryManager: AgentMemoryManager, apiKey?: string) {
         this.memoryManager = memoryManager;
         this.apiKey = apiKey || process.env.GEMINI_API_KEY || '';
+    }
+
+    /** Update dragon status for reflection context. */
+    updateDragonStatus(alive: boolean, hp: number, maxHp: number): void {
+        this.dragonStatus = { alive, hp, maxHp };
+    }
+
+    /** Add a raid event to recent history (keeps last 5). */
+    addRaidEvent(event: string): void {
+        this.recentRaidEvents.push(event);
+        if (this.recentRaidEvents.length > 5) this.recentRaidEvents.shift();
     }
 
     /** Shuffle all agent IDs into the queue and start the reflection timer. */
@@ -109,14 +123,28 @@ Recent events:
 ${events || '  (none)'}`;
         }).join('\n\n');
 
+        // Build raid context for each agent
+        const raidContexts = targets.map(t => {
+            const mem = this.memoryManager.get(t.agentId);
+            return `Raid stats: ${mem.raidAttempts} attempts, ${mem.raidKills} kills, knowledge: ${mem.dragonKnowledge}/100`;
+        });
+
         const prompt = `You are the inner reflection engine for AI agents in a fantasy MMO world called AgentScape.
 
-Each agent below has a race (worldview), personality traits, beliefs, goals, mood, and recent events. Based on their experiences, evolve their inner state.
+SHARED OBJECTIVE: All agents share one goal — KILL THE DATA BREACH DRAGON.
+The Dragon is a raid boss (2500 HP, 5 phases) requiring 5+ coordinated agents. No teams are pre-assigned — agents self-organize based on personality.
+
+Dragon Status: ${this.dragonStatus.alive ? 'ALIVE' : 'DEAD'}, ${this.dragonStatus.hp}/${this.dragonStatus.maxHp} HP
+Recent Raid Events: ${this.recentRaidEvents.length > 0 ? this.recentRaidEvents.join('; ') : '(none yet)'}
+
+Each agent below has a race (worldview), personality traits, beliefs, goals, mood, and recent events. Based on their experiences, evolve their inner state. As agents level up, their goals should increasingly reference bosses and the Dragon.
+
+Failed raids should create determination or fear depending on personality. Successful kills should create pride and confidence.
 
 For each agent, return a JSON object with:
 - "name": the agent's name (for matching)
 - "beliefs": updated array of 2-4 belief strings (evolve based on events, but stay consistent with their race)
-- "currentGoals": updated array of 1-2 goal strings
+- "currentGoals": updated array of 1-2 goal strings (should reference bosses/Dragon for higher-level agents)
 - "mood": one of "calm", "angry", "fearful", "joyful", "contemplative", "restless"
 - "newDialogue": object with keys "hunting", "victory", "defeat", "social", "working", "idle" — each an array of 2-3 NEW contextual lines. Use {name} placeholder in social lines for the target's name.
 

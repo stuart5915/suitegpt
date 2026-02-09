@@ -21,6 +21,12 @@ export interface DialogueBank {
     social: string[];
     working: string[];
     idle: string[];
+    raidRally?: string[];
+    raidFight?: string[];
+    raidWipe?: string[];
+    raidVictory?: string[];
+    raidRecruit?: string[];
+    raidRefuse?: string[];
 }
 
 export interface Notecard {

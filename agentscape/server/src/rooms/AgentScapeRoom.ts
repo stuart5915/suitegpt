@@ -30,6 +30,8 @@ import { AgentConnectionManager } from '../agents/AgentConnectionManager';
 import { AgentDecisionQueue } from '../agents/AgentDecisionQueue';
 import { generateAgents } from '../agents/AgentGenerator';
 import { GeminiReflectionService } from '../agents/GeminiReflection';
+import { AgentCombatAdapter } from '../agents/AgentCombatAdapter';
+import { RaidCoordinator } from '../agents/RaidCoordinator';
 import {
     TICK_RATE, COMBAT_TICK, COMBAT_TICK_INTERVAL, PATHFINDING_BUDGET_PER_TICK,
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
@@ -63,8 +65,11 @@ export class AgentScapeRoom extends Room<GameState> {
     private agentManager!: AgentConnectionManager;
     private agentDecisionQueue!: AgentDecisionQueue;
     private geminiReflection!: GeminiReflectionService;
+    private agentCombatAdapter!: AgentCombatAdapter;
+    private raidCoordinator!: RaidCoordinator;
     private combatTickCounter: number = 0;
     private stallTimers: Map<string, number> = new Map();
+    private raidCleanupTimer: number = 0;
 
     maxClients = MAX_PLAYERS_PER_ROOM;
 
@@ -88,6 +93,11 @@ export class AgentScapeRoom extends Room<GameState> {
         this.skillPersistence = new SkillPersistence(this.skillingSystem, this.craftingSystem, this.bankSystem);
         this.actionValidator = new ActionValidator();
         this.rateLimiter = new RateLimiter(10);
+
+        // Initialize agent raid systems
+        this.agentCombatAdapter = new AgentCombatAdapter(this.monsterBehaviorSystem);
+        this.raidCoordinator = new RaidCoordinator();
+        this.npcBehaviorSystem.setRaidCoordinator(this.raidCoordinator);
 
         // Initialize persistence
         this.supabase = new SupabaseAdapter();
@@ -271,12 +281,20 @@ export class AgentScapeRoom extends Room<GameState> {
             });
         });
 
-        // 1b. Process monster behavior
+        // 1b. Process monster behavior (pass npcs so boss abilities can hit agents)
         this.state.monsters.forEach((monster) => {
-            const events = this.monsterBehaviorSystem.updateMonster(monster, dtSec, this.state.players);
+            const events = this.monsterBehaviorSystem.updateMonster(monster, dtSec, this.state.players, this.state.npcs);
             events.forEach(evt => {
                 this.broadcast('monster_ability', evt);
             });
+            // Broadcast agent ability results from boss AOE/stun/drain
+            const agentResults = this.monsterBehaviorSystem.lastAgentAbilityResults;
+            if (agentResults) {
+                agentResults.hitsplats.forEach(h => this.broadcast('hitsplat', h));
+                agentResults.deaths.forEach(d => this.broadcast('death', d));
+                agentResults.raidEvents.forEach(e => this.broadcast('raid_event', e));
+                this.monsterBehaviorSystem.lastAgentAbilityResults = null;
+            }
         });
 
         // 2. Process pathfinding queue (budget limited) — NPCs + Monsters
@@ -472,6 +490,62 @@ export class AgentScapeRoom extends Room<GameState> {
                     if (d.type === 'player_death') this.broadcastAnim('player', d.playerId, 'death');
                 });
             });
+        }
+
+        // 5c. Agent real combat — adapter processes agents in REAL_COMBAT state
+        {
+            // First, engage any agents that arrived at boss (state=REAL_COMBAT, no combatTargetMonsterId yet)
+            const memManager = this.npcBehaviorSystem.getMemoryManager();
+            this.state.npcs.forEach((npc) => {
+                if (npc.state === 'REAL_COMBAT' && !npc.combatTargetMonsterId) {
+                    const mem = memManager.get(npc.id);
+                    const bossType = mem.currentGoal?.monsterType || mem.targetBossId;
+                    if (bossType) {
+                        // Find the live monster instance for this boss type
+                        let targetMonster: MonsterSchema | null = null;
+                        this.state.monsters.forEach((m) => {
+                            if (m.monsterId === bossType && !m.isDead) targetMonster = m;
+                        });
+                        if (targetMonster) {
+                            this.agentCombatAdapter.engageMonster(npc, targetMonster, mem);
+                        } else {
+                            // Boss is dead, go idle
+                            npc.state = 'IDLE';
+                            npc.stateTimer = 3;
+                            npc.activity = 'Idle';
+                            mem.raidState = 'none';
+                        }
+                    }
+                }
+            });
+
+            // Process all agent combat ticks
+            const agentResults = this.agentCombatAdapter.processAllTicks(
+                this.state.npcs, this.state.monsters, memManager, dtSec,
+            );
+            agentResults.hitsplats.forEach(h => this.broadcast('hitsplat', h));
+            agentResults.deaths.forEach(d => this.broadcast('death', d));
+            agentResults.raidEvents.forEach(e => {
+                this.broadcast('raid_event', e);
+                // Feed raid events to Gemini reflection
+                if (this.geminiReflection && e.message) {
+                    this.geminiReflection.addRaidEvent(e.message);
+                }
+                // Update dragon status in Gemini
+                if (e.bossId === 'data_breach_dragon' && this.geminiReflection) {
+                    const dragon = this.findMonsterByType('data_breach_dragon');
+                    if (dragon) {
+                        this.geminiReflection.updateDragonStatus(!dragon.isDead, dragon.hp, dragon.maxHp);
+                    }
+                }
+            });
+        }
+
+        // 5d. Raid coordinator cleanup (every ~30 seconds)
+        this.raidCleanupTimer += dtSec;
+        if (this.raidCleanupTimer >= 30) {
+            this.raidCleanupTimer = 0;
+            this.raidCoordinator.cleanup();
         }
 
         // 6. Respawn dead NPCs
@@ -1129,6 +1203,9 @@ export class AgentScapeRoom extends Room<GameState> {
         this.geminiReflection = new GeminiReflectionService(memManager);
         this.geminiReflection.start(agents.map(a => a.id));
 
+        // Link agent combat adapter to monster behavior system
+        this.monsterBehaviorSystem.setAgentCombatAdapter(this.agentCombatAdapter, memManager);
+
         console.log(`[AgentScapeRoom] Spawned ${this.state.npcs.size} NPCs (${agents.length} generated)`);
     }
 
@@ -1459,6 +1536,14 @@ export class AgentScapeRoom extends Room<GameState> {
         pile.timer = LOOT_DECAY_TIME;
         pile.itemsJson = JSON.stringify(lootItems);
         this.state.lootPiles.set(pile.id, pile);
+    }
+
+    private findMonsterByType(monsterId: string): MonsterSchema | null {
+        let found: MonsterSchema | null = null;
+        this.state.monsters.forEach((m) => {
+            if (m.monsterId === monsterId) found = m;
+        });
+        return found;
     }
 
     private respawnMonster(monster: MonsterSchema) {
