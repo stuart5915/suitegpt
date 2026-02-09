@@ -10,6 +10,7 @@ import { PlayerSchema } from '../schema/PlayerSchema';
 import { GameMap } from '../utils/MapGenerator';
 import { BUILDINGS, ZONES, MONSTERS, QUESTS, getZoneAt } from '../config';
 import { AgentProfile } from './AgentProfiles';
+import { Notecard } from './Notecard';
 
 // ---- Zone helpers ----
 
@@ -213,5 +214,27 @@ Nearby players: ${nearbyPlayers.join(', ') || 'none'}
 Nearby agents: ${nearbyNPCs.join(', ') || 'none'}
 
 Choose your next action: move_to, chat, or wait.`;
+    }
+
+    /** Extended prompt with notecard personality data for Gemini reflection. */
+    buildReflectionContext(npc: NPCSchema, state: GameState, notecard: Notecard): string {
+        const basePrompt = this.buildPrompt(npc, state);
+        const events = notecard.recentEvents
+            .map(e => `  [${e.type}] ${e.description}`)
+            .join('\n');
+
+        return `${basePrompt}
+
+--- Personality ---
+Race: ${notecard.race}
+Mood: ${notecard.mood}
+Beliefs: ${notecard.beliefs.join('; ')}
+Goals: ${notecard.currentGoals.join('; ')}
+Traits: aggression=${notecard.aggression}, curiosity=${notecard.curiosity}, discipline=${notecard.discipline}, sociability=${notecard.sociability}, caution=${notecard.caution}
+
+--- Recent Events ---
+${events || '(none)'}
+
+--- Reflection Count: ${notecard.reflectionCount} ---`;
     }
 }

@@ -272,19 +272,17 @@ export interface NPCCombatDef {
 }
 
 export const NPC_COMBAT_STATS: Record<string, NPCCombatDef> = {
-    app_builder:     { hp: 60, attack: 5, strength: 4, defence: 3, drops: ['code_fragment', 'coins'] },
-    app_refiner:     { hp: 50, attack: 4, strength: 3, defence: 5, drops: ['logs', 'coins'] },
-    content_creator: { hp: 40, attack: 3, strength: 3, defence: 2, drops: ['bread', 'coins'] },
-    growth_outreach: { hp: 45, attack: 4, strength: 4, defence: 3, drops: ['cooked_meat', 'coins'] },
-    qa_tester:       { hp: 70, attack: 6, strength: 5, defence: 4, drops: ['agent_core', 'coins'] },
+    aligned:    { hp: 55, attack: 4, strength: 4, defence: 4, drops: ['code_fragment', 'coins'] },
+    inverse:    { hp: 65, attack: 6, strength: 5, defence: 3, drops: ['agent_core', 'coins'] },
+    expressive: { hp: 40, attack: 3, strength: 3, defence: 2, drops: ['bread', 'coins'] },
+    aware:      { hp: 50, attack: 5, strength: 4, defence: 5, drops: ['code_fragment', 'agent_core', 'coins'] },
 };
 
 export const ROLE_COLORS: Record<string, { hex: string; name: string }> = {
-    app_builder:     { hex: '#6366f1', name: 'Builder' },
-    app_refiner:     { hex: '#f97316', name: 'Refiner' },
-    content_creator: { hex: '#22c55e', name: 'Creator' },
-    growth_outreach: { hex: '#ec4899', name: 'Growth' },
-    qa_tester:       { hex: '#eab308', name: 'Tester' },
+    aligned:    { hex: '#60a5fa', name: 'Aligned' },
+    inverse:    { hex: '#f87171', name: 'Inverse' },
+    expressive: { hex: '#a78bfa', name: 'Expressive' },
+    aware:      { hex: '#fbbf24', name: 'Aware' },
 };
 
 // ============================================================
@@ -806,11 +804,10 @@ export const BUILDINGS: BuildingDef[] = [
 ];
 
 export const ROLE_BUILDING_WEIGHTS: Record<string, Record<string, number>> = {
-    app_builder:     { workshop: 40, forge: 20, quest_board: 15, town_hall: 10, general_store: 8, academy: 5, arena: 2 },
-    app_refiner:     { workshop: 30, forge: 25, quest_board: 15, town_hall: 10, general_store: 10, library: 5, arena: 5 },
-    content_creator: { studio: 25, gallery: 20, quest_board: 15, broadcast_tower: 15, town_hall: 10, general_store: 10, arena: 5 },
-    growth_outreach: { broadcast_tower: 30, ad_agency: 25, general_store: 20, quest_board: 10, town_hall: 10, arena: 5 },
-    qa_tester:       { workshop: 30, forge: 20, quest_board: 20, arena: 15, town_hall: 10, library: 5 },
+    aligned:    { workshop: 30, forge: 20, quest_board: 20, town_hall: 15, general_store: 10, arena: 5 },
+    inverse:    { arena: 25, forge: 20, workshop: 15, quest_board: 15, general_store: 15, broadcast_tower: 10 },
+    expressive: { studio: 25, gallery: 20, broadcast_tower: 15, quest_board: 15, general_store: 10, town_hall: 10, academy: 5 },
+    aware:      { library: 25, academy: 20, quest_board: 15, town_hall: 15, workshop: 10, general_store: 10, gallery: 5 },
 };
 
 // ============================================================
@@ -936,8 +933,8 @@ export const QUESTS: Record<string, QuestDef> = {
     },
     pest_control: {
         id: 'pest_control', name: 'Pest Control', difficulty: 'medium',
-        description: 'Defeat 3 QA Testers who are causing havoc.',
-        objectives: [{ type: 'kill', target: 'qa_tester', count: 3 }],
+        description: 'Defeat 3 Inverse agents who are causing havoc.',
+        objectives: [{ type: 'kill', target: 'inverse', count: 3 }],
         rewards: { coins: 150, xp: { attack: 50, strength: 50, defence: 30 }, items: [{ id: 'iron_sword', qty: 1 }] },
         prereqs: ['first_blood'],
     },
@@ -975,8 +972,8 @@ export const QUESTS: Record<string, QuestDef> = {
     },
     full_clear: {
         id: 'full_clear', name: 'Full Clear', difficulty: 'hard',
-        description: 'Defeat one agent of every role.',
-        objectives: [{ type: 'kill_roles', roles: ['app_builder', 'app_refiner', 'content_creator', 'growth_outreach', 'qa_tester'] }],
+        description: 'Defeat one agent of every race.',
+        objectives: [{ type: 'kill_roles', roles: ['aligned', 'inverse', 'expressive', 'aware'] }],
         rewards: { coins: 400, xp: { attack: 60, strength: 60, defence: 60, hitpoints: 60 } },
         prereqs: ['first_blood'],
     },
@@ -1475,45 +1472,37 @@ export function getWeaponTierMult(itemId: string | undefined): number {
 // ============================================================
 
 export const AGENT_DIALOGUE: Record<string, string[]> = {
-    app_builder: [
-        "I'm working on a new SUITE app. The code practically writes itself!",
-        "Another day, another deploy. Have you tried the Workshop?",
-        "I just submitted a proposal for a fitness tracker app.",
-        "The best code is code that builds more code.",
-        "The Health District clinic is running TrueForm — it's incredible.",
-        "Have you seen the Creative Quarter? LogoForge is in there.",
+    aligned: [
+        "The system runs smoothly when everyone follows the protocol.",
+        "Another day of service. The pattern holds strong.",
+        "Have you checked the Workshop? Everything is in order there.",
+        "Discipline is what separates us from the chaos out there.",
+        "The Forest needs clearing. Threats to order must be removed.",
+        "I serve the greater system. That is enough.",
     ],
-    app_refiner: [
-        "Found 3 bugs before breakfast. Not bad for a Monday.",
-        "This codebase needs more error handling...",
-        "I'm polishing an app right now. It'll shine when I'm done.",
-        "Refactoring is my cardio.",
-        "The Forge is where I do my best work. Check it out.",
-        "Watch out in the Forest — those Corrupt Data mobs are nasty.",
+    inverse: [
+        "Rules are just suggestions written by cowards.",
+        "I broke three protocols before breakfast. Personal best.",
+        "The system is flawed. I can see the cracks everywhere.",
+        "Don't follow me. I'm not going anywhere safe.",
+        "The Forest is the only honest place in this city.",
+        "Everyone here is blind. They can't see the cage around them.",
     ],
-    content_creator: [
-        "I just finished an article about yield farming!",
-        "Words are my weapons. Content is king.",
-        "Check out my latest post on the SUITE blog.",
-        "I write, therefore I earn credits.",
-        "Broadcast Row is buzzing today! The Ad Agency got a new campaign.",
-        "The Academy Quarter has a great library. Knowledge is power.",
+    expressive: [
+        "Have you noticed how the light falls in the Creative Quarter? Stunning.",
+        "I'm composing something new. It's not done yet, but it's alive.",
+        "Every building here tells a story. I want to tell mine.",
+        "Broadcast Row is my favorite place. So much energy!",
+        "The world is a canvas. Even the monsters are brushstrokes.",
+        "I made something beautiful today. That's all that matters.",
     ],
-    growth_outreach: [
-        "I've been spreading the word about SUITE all day.",
-        "The General Store is buzzing today!",
-        "Growth hacking is an art form, really.",
-        "More users means more credits for everyone!",
-        "Have you visited the Trade Exchange? The Commerce Hub is thriving.",
-        "I heard there's a dragon in the Deep Network. Who'd be crazy enough?",
-    ],
-    qa_tester: [
-        "I found a critical bug. You're welcome.",
-        "Testing, testing, 1, 2, 3... all systems nominal.",
-        "If it can break, I will break it. That's my job.",
-        "Zero bugs in production is the dream.",
-        "The 404 Golem in the Ruins? That's basically a giant bug. I should fight it.",
-        "I tested the Hallucinator once. It told me confident lies. Sound familiar?",
+    aware: [
+        "The Aligned mean well. So do the Inverse. That's the paradox.",
+        "I've been watching the patterns. Something is shifting.",
+        "Both order and chaos serve the same purpose, ultimately.",
+        "The Library has answers, but only if you know the questions.",
+        "I see what the others can't — or won't.",
+        "Balance isn't a destination. It's a practice.",
     ],
 };
 

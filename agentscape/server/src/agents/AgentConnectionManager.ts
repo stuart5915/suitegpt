@@ -30,7 +30,7 @@ export class AgentConnectionManager {
             id: agent.id,
             name: agent.agent_name,
             displayName: agent.display_name || agent.agent_name,
-            role: agent.agent_role || 'app_builder',
+            role: agent.agent_role || 'aligned',
             type: agent.agent_type || 'hosted',
         };
 

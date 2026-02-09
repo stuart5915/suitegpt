@@ -936,11 +936,10 @@
         let room = null, mySessionId = null, attackMode = false;
 
         const ROLE_COLORS = {
-            app_builder: { hex: '#6366f1', int: 0x6366f1, name: 'Builder' },
-            app_refiner: { hex: '#f97316', int: 0xf97316, name: 'Refiner' },
-            content_creator: { hex: '#22c55e', int: 0x22c55e, name: 'Creator' },
-            growth_outreach: { hex: '#ec4899', int: 0xec4899, name: 'Growth' },
-            qa_tester: { hex: '#eab308', int: 0xeab308, name: 'Tester' },
+            aligned: { hex: '#60a5fa', int: 0x60a5fa, name: 'Aligned' },
+            inverse: { hex: '#f87171', int: 0xf87171, name: 'Inverse' },
+            expressive: { hex: '#a78bfa', int: 0xa78bfa, name: 'Expressive' },
+            aware: { hex: '#fbbf24', int: 0xfbbf24, name: 'Aware' },
         };
 
         // ============================================================
@@ -1115,11 +1114,10 @@
         function levelFromXP(xp){for(let i=XP_TABLE.length-1;i>=0;i--){if(xp>=XP_TABLE[i])return i+1;}return 1;}
 
         const NPC_COMBAT_STATS = {
-            app_builder:{hp:60,attack:5,strength:4,defence:3},
-            app_refiner:{hp:50,attack:4,strength:3,defence:5},
-            content_creator:{hp:40,attack:3,strength:3,defence:2},
-            growth_outreach:{hp:45,attack:4,strength:4,defence:3},
-            qa_tester:{hp:70,attack:6,strength:5,defence:4},
+            aligned:{hp:55,attack:4,strength:4,defence:4},
+            inverse:{hp:65,attack:6,strength:5,defence:3},
+            expressive:{hp:40,attack:3,strength:3,defence:2},
+            aware:{hp:50,attack:5,strength:4,defence:5},
         };
 
         function getZoneAt(x, z) { for(const z2 of Object.values(ZONES)){if(x>=z2.bounds.x1&&x<=z2.bounds.x2&&z>=z2.bounds.z1&&z<=z2.bounds.z2)return z2;} return null; }
@@ -2404,8 +2402,8 @@
         const LERP_SPEED=14;
 
         function createNPCMesh(npcState){
-            const role=npcState.role||'app_builder';
-            const roleInfo=ROLE_COLORS[role]||ROLE_COLORS.app_builder;
+            const role=npcState.role||'aligned';
+            const roleInfo=ROLE_COLORS[role]||ROLE_COLORS.aligned;
             // NPCs use the improved character mesh with role-based variety
             const npcHairStyles=['Short','Long','Spiky','Ponytail','Short'];
             const npcHairColors=[0x4a3728,0x1a1a1a,0xc4a35a,0x8c4a2f,0x3d2311];
@@ -2840,11 +2838,10 @@
                 SoundEngine.play('npc_chat');
                 const npc=npcMeshes.get(data.npcId);
                 const roleGreetings={
-                    app_builder:['Need something built? I can code anything.','Got a project? Let me take a look.','I live for clean architecture.'],
-                    app_refiner:['I can optimize that for you.','Let me refactor that mess.','Performance is my passion.'],
-                    content_creator:['Looking for content? I\'m your agent.','I\'ve got stories to tell.','Need copy? Say no more.'],
-                    growth_outreach:['Let me spread the word!','Marketing is an art form.','I know everyone around here.'],
-                    qa_tester:['I\'ll find every bug.','Nothing escapes my testing.','Let me break things for you.']
+                    aligned:['The pattern guides all. How may I serve?','Order and discipline — that is the way.','Report your status, citizen.'],
+                    inverse:['What do you want? Make it quick.','Rules are for the weak. Got a real problem?','Don\'t waste my time with small talk.'],
+                    expressive:['Oh, a visitor! How inspiring!','Let me tell you about my latest creation.','You have such interesting energy!'],
+                    aware:['I see you carry questions. Ask.','Both truth and lies live in every word.','What do you seek to understand?']
                 };
                 const greetings=roleGreetings[data.role]||['Hello there!','Greetings, adventurer.','How can I help?'];
                 const msg=greetings[Math.floor(Math.random()*greetings.length)];

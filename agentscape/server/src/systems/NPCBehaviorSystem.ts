@@ -26,7 +26,7 @@ import { ROLE_BUILDING_WEIGHTS, RESPAWN_TIME, AGENT_DIALOGUE, MONSTERS } from '.
 // Behavior tree imports
 import { BTContext, BTNode, selector, sequence, weightedRandom, condition, action } from '../agents/BehaviorTree';
 import { AgentMemory, AgentMemoryManager, CachedNPC } from '../agents/AgentMemory';
-import { AgentProfile, getProfile,
+import { AgentProfile, getProfile, notecardToProfile,
     SOCIAL_DIALOGUE, PROGRESSION_DIALOGUE, DEATH_DIALOGUE, RESPAWN_DIALOGUE,
     PLAYER_COMBAT_DIALOGUE, QUEST_DIALOGUE, PARTY_DIALOGUE, GEAR_TIER_NAMES,
 } from '../agents/AgentProfiles';
@@ -99,17 +99,24 @@ export class NPCBehaviorSystem {
     // Behavior Tree — built per role, cached
     // ================================================================
 
-    private getTree(role: string): BTNode {
-        let tree = this.behaviorTrees.get(role);
+    /** Expose memory manager for notecard attachment. */
+    getMemoryManager(): AgentMemoryManager {
+        return this.memories;
+    }
+
+    private getTree(npcId: string, role: string): BTNode {
+        // Cache by npcId so each agent's notecard-driven weights are used
+        let tree = this.behaviorTrees.get(npcId);
         if (!tree) {
-            tree = this.buildTree(role);
-            this.behaviorTrees.set(role, tree);
+            tree = this.buildTree(npcId, role);
+            this.behaviorTrees.set(npcId, tree);
         }
         return tree;
     }
 
-    private buildTree(role: string): BTNode {
-        const profile = getProfile(role);
+    private buildTree(npcId: string, role: string): BTNode {
+        const memory = this.memories.get(npcId);
+        const profile = memory.notecard ? notecardToProfile(memory.notecard) : getProfile(role);
 
         return selector(
             // Priority 1: Survival — eat or flee when low HP
@@ -206,7 +213,7 @@ export class NPCBehaviorSystem {
     // ================================================================
 
     private chooseTargetBuilding(role: string): string {
-        const weights = ROLE_BUILDING_WEIGHTS[role] || ROLE_BUILDING_WEIGHTS.app_builder;
+        const weights = ROLE_BUILDING_WEIGHTS[role] || ROLE_BUILDING_WEIGHTS.aligned;
         const entries = Object.entries(weights);
         const total = entries.reduce((s, [, w]) => s + w, 0);
         let r = Math.random() * total;
@@ -281,6 +288,7 @@ export class NPCBehaviorSystem {
                 message: line,
                 roleColor: npc.roleColor, x: npc.x, z: npc.z,
             });
+            memory.addEvent({ timestamp: Date.now(), type: 'social', description: `Talked to ${cached.name} (${cached.role})` });
             memory.socialCooldown = 20 + Math.random() * 15;
             memory.chatCooldown = profile.chatInterval + Math.random() * 5;
             return;
@@ -315,6 +323,7 @@ export class NPCBehaviorSystem {
 
         if (newLevel > memory.effectiveLevel) {
             memory.effectiveLevel = newLevel;
+            memory.addEvent({ timestamp: Date.now(), type: 'level_up', description: `Reached level ${newLevel}` });
             const msg = template(pick(PROGRESSION_DIALOGUE.levelUp), { level: newLevel });
             this.emitChat(npc, memory, profile, msg, events);
 
@@ -372,6 +381,7 @@ export class NPCBehaviorSystem {
         // Quest complete
         if (memory.questKillCount >= memory.questKillTarget) {
             memory.questsCompleted++;
+            memory.addEvent({ timestamp: Date.now(), type: 'quest_complete', description: `Completed quest: ${memory.currentQuestName} (#${memory.questsCompleted} total)` });
             const msg = template(pick(QUEST_DIALOGUE.complete), {
                 quest: memory.currentQuestName, total: memory.questsCompleted,
             });
@@ -391,7 +401,7 @@ export class NPCBehaviorSystem {
     updateNPC(npc: NPCSchema, dt: number): NPCChatEvent[] {
         const events: NPCChatEvent[] = [];
         const memory = this.memories.get(npc.id);
-        const profile = getProfile(npc.role);
+        const profile = memory.notecard ? notecardToProfile(memory.notecard) : getProfile(npc.role);
 
         // Tick cooldowns
         if (memory.chatCooldown > 0) memory.chatCooldown -= dt;
@@ -437,7 +447,7 @@ export class NPCBehaviorSystem {
         if (npc.inCombat) {
             if (!memory.wasInPlayerCombat) {
                 memory.wasInPlayerCombat = true;
-                const lines = PLAYER_COMBAT_DIALOGUE[npc.role] || PLAYER_COMBAT_DIALOGUE.app_builder;
+                const lines = PLAYER_COMBAT_DIALOGUE[npc.role] || PLAYER_COMBAT_DIALOGUE.aligned;
                 memory.chatCooldown = 0;
                 this.tryChat(npc, memory, profile, lines, events);
             }
@@ -458,7 +468,7 @@ export class NPCBehaviorSystem {
                     // Evaluate behavior tree to pick next goal
                     memory.currentGoal = null;
                     const ctx: BTContext = { npc, memory, profile, map: this.map };
-                    this.getTree(npc.role)(ctx);
+                    this.getTree(npc.id, npc.role)(ctx);
 
                     if (memory.currentGoal) {
                         this.executeGoal(npc, memory, profile, events);
@@ -474,7 +484,7 @@ export class NPCBehaviorSystem {
 
                 // Rare ambient chat
                 if (Math.random() < 0.0003) {
-                    const lines = AGENT_DIALOGUE[npc.role] || AGENT_DIALOGUE.app_builder;
+                    const lines = AGENT_DIALOGUE[npc.role] || AGENT_DIALOGUE.aligned;
                     this.tryChat(npc, memory, profile, lines, events);
                 }
                 break;
@@ -587,6 +597,7 @@ export class NPCBehaviorSystem {
                     if (partner) {
                         const msg = template(pick(PARTY_DIALOGUE.join), { name: partner.name });
                         this.emitChat(npc, memory, profile, msg, events);
+                        memory.addEvent({ timestamp: Date.now(), type: 'party_formed', description: `Joined ${partner.name} for hunting` });
                     }
                 } else {
                     this.tryChat(npc, memory, profile, profile.dialogue.hunting, events);
@@ -646,6 +657,7 @@ export class NPCBehaviorSystem {
             npc.respawnTimer = RESPAWN_TIME;
             memory.totalDeaths++;
             memory.lastDeathMonster = memory.fightMonsterName;
+            memory.addEvent({ timestamp: Date.now(), type: 'death', description: `Killed by ${memory.fightMonsterName}` });
             memory.currentGoal = null;
             memory.fightTimer = 0;
             return;
@@ -655,6 +667,7 @@ export class NPCBehaviorSystem {
         if (memory.fightTimer <= 0) {
             memory.killCount++;
             memory.totalKills++;
+            memory.addEvent({ timestamp: Date.now(), type: 'kill', description: `Defeated ${memory.fightMonsterName} (kill #${memory.totalKills})` });
 
             // Progression: award XP
             const monsterType = memory.currentGoal?.monsterType || 'spam_bot';
@@ -731,7 +744,7 @@ export class NPCBehaviorSystem {
 
     onPathComplete(npc: NPCSchema, events: NPCChatEvent[] = []): void {
         const memory = this.memories.get(npc.id);
-        const profile = getProfile(npc.role);
+        const profile = memory.notecard ? notecardToProfile(memory.notecard) : getProfile(npc.role);
         const goal = memory.currentGoal;
 
         if (!goal) {

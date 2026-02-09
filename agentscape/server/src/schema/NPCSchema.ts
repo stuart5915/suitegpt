@@ -3,8 +3,8 @@ import { Schema, type } from '@colyseus/schema';
 export class NPCSchema extends Schema {
     @type('string') id: string = '';
     @type('string') name: string = '';
-    @type('string') role: string = 'app_builder';
-    @type('string') roleColor: string = '#6366f1';
+    @type('string') role: string = 'aligned';
+    @type('string') roleColor: string = '#60a5fa';
     @type('float32') x: number = 0;
     @type('float32') z: number = 0;
     @type('uint8') tileX: number = 0;

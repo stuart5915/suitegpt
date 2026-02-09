@@ -1,8 +1,10 @@
 // ============================================================
 // AgentScape — Agent Memory (per-NPC state tracking)
 // Tracks simulated inventory, goals, combat, progression,
-// quests, social state, and party info.
+// quests, social state, party info, and notecard personality.
 // ============================================================
+
+import { Notecard, NotecardEvent } from './Notecard';
 
 export type GoalType = 'hunt' | 'shop' | 'flee' | 'patrol' | 'work' | 'eat' | 'explore';
 
@@ -66,6 +68,18 @@ export class AgentMemory {
     totalKills: number = 0;
     totalDeaths: number = 0;
     sessionsHunted: number = 0;
+
+    // ---- Notecard (personality) ----
+    notecard: Notecard | null = null;
+
+    /** Push an event to the notecard's ring buffer (max 10). */
+    addEvent(event: NotecardEvent): void {
+        if (!this.notecard) return;
+        this.notecard.recentEvents.push(event);
+        if (this.notecard.recentEvents.length > 10) {
+            this.notecard.recentEvents.shift();
+        }
+    }
 }
 
 /** Cached NPC data for social interactions and party finding. */

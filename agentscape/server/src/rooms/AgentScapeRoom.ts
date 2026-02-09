@@ -28,6 +28,8 @@ import { RedisAdapter } from '../persistence/RedisAdapter';
 import { SaveManager } from '../persistence/SaveManager';
 import { AgentConnectionManager } from '../agents/AgentConnectionManager';
 import { AgentDecisionQueue } from '../agents/AgentDecisionQueue';
+import { generateAgents } from '../agents/AgentGenerator';
+import { GeminiReflectionService } from '../agents/GeminiReflection';
 import {
     TICK_RATE, COMBAT_TICK_INTERVAL, PATHFINDING_BUDGET_PER_TICK,
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
@@ -35,15 +37,6 @@ import {
     MONSTER_MOVE_SPEED, MONSTER_AGGRO_RANGE, BOSS_AGGRO_RANGE,
     levelFromXP, STALL_DEFS,
 } from '../config';
-
-// Demo agents for when API is unavailable
-const DEMO_AGENTS = [
-    { id: 'demo-1', agent_name: 'BuilderBot', display_name: 'BuilderBot', agent_role: 'app_builder', agent_type: 'hosted' },
-    { id: 'demo-2', agent_name: 'RefinerX', display_name: 'RefinerX', agent_role: 'app_refiner', agent_type: 'cli' },
-    { id: 'demo-3', agent_name: 'ContentAI', display_name: 'ContentAI', agent_role: 'content_creator', agent_type: 'hosted' },
-    { id: 'demo-4', agent_name: 'GrowthBot', display_name: 'GrowthBot', agent_role: 'growth_outreach', agent_type: 'hosted' },
-    { id: 'demo-5', agent_name: 'TestRunner', display_name: 'TestRunner', agent_role: 'qa_tester', agent_type: 'cli' },
-];
 
 export class AgentScapeRoom extends Room<GameState> {
     private map!: GameMap;
@@ -69,6 +62,7 @@ export class AgentScapeRoom extends Room<GameState> {
     private saveManager!: SaveManager;
     private agentManager!: AgentConnectionManager;
     private agentDecisionQueue!: AgentDecisionQueue;
+    private geminiReflection!: GeminiReflectionService;
     private combatTickCounter: number = 0;
     private stallTimers: Map<string, number> = new Map();
 
@@ -252,6 +246,8 @@ export class AgentScapeRoom extends Room<GameState> {
         // Final save all players
         this.saveManager.saveDirtyPlayers(this.state.players);
         this.redis.close();
+        // Stop Gemini reflections
+        if (this.geminiReflection) this.geminiReflection.stop();
     }
 
     // ============================================================
@@ -1116,26 +1112,30 @@ export class AgentScapeRoom extends Room<GameState> {
     // NPC MANAGEMENT
     // ============================================================
     private async spawnNPCs() {
-        let agents: any[] = [];
-        try {
-            agents = await this.supabase.fetchAgents(50);
-        } catch (e) {
-            console.warn('[AgentScapeRoom] API unavailable, using demo agents');
-        }
-
-        if (agents.length === 0) agents = DEMO_AGENTS;
+        const agents = generateAgents(100);
 
         agents.forEach(agentData => {
             this.spawnSingleNPC(agentData);
+
+            // Attach notecard to agent memory
+            if (agentData.notecard) {
+                const mem = this.npcBehaviorSystem.getMemoryManager().get(agentData.id);
+                mem.notecard = agentData.notecard;
+            }
         });
 
-        console.log(`[AgentScapeRoom] Spawned ${this.state.npcs.size} NPCs`);
+        // Initialize Gemini reflection service
+        const memManager = this.npcBehaviorSystem.getMemoryManager();
+        this.geminiReflection = new GeminiReflectionService(memManager);
+        this.geminiReflection.start(agents.map(a => a.id));
+
+        console.log(`[AgentScapeRoom] Spawned ${this.state.npcs.size} NPCs (${agents.length} generated)`);
     }
 
     private spawnSingleNPC(agentData: any): void {
-        const role = agentData.agent_role || 'app_builder';
-        const roleColor = ROLE_COLORS[role] || ROLE_COLORS.app_builder;
-        const combatDef = NPC_COMBAT_STATS[role] || NPC_COMBAT_STATS.app_builder;
+        const role = agentData.agent_role || 'aligned';
+        const roleColor = ROLE_COLORS[role] || ROLE_COLORS.aligned;
+        const combatDef = NPC_COMBAT_STATS[role] || NPC_COMBAT_STATS.aligned;
 
         // Find walkable spawn within SUITE City bounds
         const city = ZONES.suite_city.bounds;
@@ -1168,28 +1168,7 @@ export class AgentScapeRoom extends Room<GameState> {
     }
 
     private async refreshNPCs() {
-        try {
-            const agents = await this.supabase.fetchAgents(50);
-            if (agents.length === 0) return;
-
-            const ids = new Set(agents.map(a => a.id));
-
-            // Remove NPCs no longer in roster
-            this.state.npcs.forEach((npc, id) => {
-                if (!ids.has(id) && !id.startsWith('demo-')) {
-                    this.state.npcs.delete(id);
-                }
-            });
-
-            // Add new NPCs
-            agents.forEach(agentData => {
-                if (!this.state.npcs.has(agentData.id)) {
-                    this.spawnSingleNPC(agentData);
-                }
-            });
-        } catch (e) {
-            // API error, keep existing NPCs
-        }
+        // No-op: agents are generated locally, no Supabase roster needed
     }
 
     // ============================================================
