@@ -2654,9 +2654,15 @@
                 qty=999999;
             }
             sendAction('bank_withdraw', {bankSlot: slot, quantity: qty});
+            // Delayed re-render to catch inventory schema sync
+            setTimeout(renderBankUI,150);
+            setTimeout(renderBankUI,400);
         };
         window.depositBank = function(slot) {
             sendAction('bank_deposit', {inventorySlot: slot, quantity: 999999});
+            // Delayed re-render to catch inventory schema sync
+            setTimeout(renderBankUI,150);
+            setTimeout(renderBankUI,400);
         };
 
         // ============================================================
@@ -2739,8 +2745,18 @@
                         const curZoneId=zone?zone.id:'wilderness';
                         if(curZoneId!==lastZoneId){lastZoneId=curZoneId;showZoneBanner(zone);}
                     });
-                    player.inventory.onAdd(()=>{renderInventoryFromState(player);if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();});
-                    player.inventory.onChange(()=>{renderInventoryFromState(player);if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();});
+                    player.inventory.onAdd((item,idx)=>{
+                        renderInventoryFromState(player);
+                        if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();
+                        // Listen to each item's property changes (deposit/withdraw clears properties)
+                        if(item.onChange)item.onChange(()=>{renderInventoryFromState(player);if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();});
+                    });
+                    player.inventory.onChange((item,idx)=>{renderInventoryFromState(player);if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();});
+                    // Attach onChange to all existing inventory items
+                    for(let ii=0;ii<player.inventory.length;ii++){
+                        const itm=player.inventory[ii];
+                        if(itm&&itm.onChange)itm.onChange(()=>{renderInventoryFromState(player);if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();});
+                    }
                     if(player.equippedWeapon)player.equippedWeapon.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
                     if(player.equippedHelm)player.equippedHelm.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
                     if(player.equippedShield)player.equippedShield.onChange(()=>{renderInventoryFromState(player);updateAllEquipment(myChar,player);});
@@ -2908,7 +2924,11 @@
             });
             room.onMessage('bank_update',(data)=>{
                 bankContents=data;
-                if(document.getElementById('bank-overlay').classList.contains('open'))renderBankUI();
+                if(document.getElementById('bank-overlay').classList.contains('open')){
+                    renderBankUI();
+                    // Re-render after schema sync catches up for inventory side
+                    setTimeout(renderBankUI,200);
+                }
             });
 
             // === SELL PRICE ===
