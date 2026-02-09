@@ -1,9 +1,9 @@
 // Inclawbate — Token Data Endpoint
 // GET /api/inclawbate/token-data?ticker=TICKER
-// Finds token from Clawnch, enriches with Clanker data (image, socials, mcap)
+// Finds token from Clawnch, enriches with DexScreener data (price, mcap, image)
 
 const CLAWNCH_BASE = 'https://clawn.ch/api';
-const CLANKER_BASE = 'https://clanker.world/api';
+const DEXSCREENER_BASE = 'https://api.dexscreener.com/latest/dex/tokens';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -26,12 +26,16 @@ async function fetchAllTokens() {
     return tokenCache;
 }
 
-async function fetchClankerData(address) {
+async function fetchDexScreenerData(address) {
     try {
-        const res = await fetch(`${CLANKER_BASE}/tokens/${address}`);
+        const res = await fetch(`${DEXSCREENER_BASE}/${address}`);
         if (!res.ok) return null;
         const data = await res.json();
-        return data.data || data;
+        const pairs = data.pairs || [];
+        if (pairs.length === 0) return null;
+        // Use the highest-liquidity pair
+        pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+        return pairs[0];
     } catch {
         return null;
     }
@@ -84,30 +88,36 @@ export default async function handler(req, res) {
         // Social links from Clawnch
         if (token.twitterUrl) tokenData.socialLinks.twitter = token.twitterUrl;
         if (token.websiteUrl) tokenData.socialLinks.website = token.websiteUrl;
+        if (token.source_url) tokenData.socialLinks.source = token.source_url;
 
-        // Enrich with Clanker data (image, socials, starting mcap)
+        // Enrich with DexScreener data (price, mcap, volume, image)
         if (token.address) {
-            const clanker = await fetchClankerData(token.address);
-            if (clanker) {
-                if (clanker.img_url) tokenData.logoUrl = clanker.img_url;
-                if (clanker.starting_market_cap) tokenData.analytics.startingMcap = clanker.starting_market_cap;
-                if (clanker.description && !tokenData.narrative) tokenData.narrative = clanker.description;
+            const dex = await fetchDexScreenerData(token.address);
+            if (dex) {
+                tokenData.analytics = {
+                    price: dex.priceUsd ? parseFloat(dex.priceUsd) : null,
+                    marketCap: dex.marketCap || dex.fdv || null,
+                    volume24h: dex.volume?.h24 || null,
+                    liquidity: dex.liquidity?.usd || null,
+                    priceChange24h: dex.priceChange?.h24 || null
+                };
 
-                // Merge social links from Clanker
-                const socials = clanker.socialLinks || [];
-                for (const link of socials) {
-                    const name = (link.name || link.platform || '').toLowerCase();
-                    const url = link.link || link.url || '';
-                    if (!url) continue;
-                    if (name === 'twitter' && !tokenData.socialLinks.twitter) tokenData.socialLinks.twitter = url;
-                    else if (name === 'website' && !tokenData.socialLinks.website) tokenData.socialLinks.website = url;
-                    else if (name === '4claw') tokenData.socialLinks.fourclaw = url;
-                    else if (name === 'farcaster') tokenData.socialLinks.farcaster = url;
-                    else if (name === 'telegram') tokenData.socialLinks.telegram = url;
+                // DexScreener image (community-uploaded, usually high quality)
+                if (dex.info?.imageUrl) {
+                    tokenData.logoUrl = dex.info.imageUrl;
                 }
 
-                if (!tokenData.clankerUrl && clanker.contract_address) {
-                    tokenData.clankerUrl = `https://clanker.world/clanker/${clanker.contract_address}`;
+                // DexScreener social links
+                if (dex.info?.websites) {
+                    for (const w of dex.info.websites) {
+                        if (w.url && !tokenData.socialLinks.website) tokenData.socialLinks.website = w.url;
+                    }
+                }
+                if (dex.info?.socials) {
+                    for (const s of dex.info.socials) {
+                        if (s.type === 'twitter' && s.url && !tokenData.socialLinks.twitter) tokenData.socialLinks.twitter = s.url;
+                        if (s.type === 'telegram' && s.url) tokenData.socialLinks.telegram = s.url;
+                    }
                 }
             }
         }

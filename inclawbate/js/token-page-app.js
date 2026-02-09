@@ -101,10 +101,12 @@ function renderPage(data) {
         socialsHtml += `<a href="${url}" target="_blank" rel="noopener" class="token-social-link">X / Twitter</a>`;
     }
     if (socialLinks.website) socialsHtml += `<a href="${socialLinks.website}" target="_blank" rel="noopener" class="token-social-link">Website</a>`;
+    if (socialLinks.source) socialsHtml += `<a href="${socialLinks.source}" target="_blank" rel="noopener" class="token-social-link">Source</a>`;
     if (socialLinks.fourclaw) socialsHtml += `<a href="${socialLinks.fourclaw}" target="_blank" rel="noopener" class="token-social-link">4claw</a>`;
     if (socialLinks.farcaster) socialsHtml += `<a href="${socialLinks.farcaster}" target="_blank" rel="noopener" class="token-social-link">Farcaster</a>`;
     if (socialLinks.telegram) socialsHtml += `<a href="${socialLinks.telegram}" target="_blank" rel="noopener" class="token-social-link">Telegram</a>`;
     if (t.clankerUrl) socialsHtml += `<a href="${t.clankerUrl}" target="_blank" rel="noopener" class="token-social-link">Clanker</a>`;
+    if (t.tokenAddress) socialsHtml += `<a href="https://dexscreener.com/base/${t.tokenAddress}" target="_blank" rel="noopener" class="token-social-link">DexScreener</a>`;
 
     if (socialsHtml) {
         socialsEl.innerHTML = socialsHtml;
