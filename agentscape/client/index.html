@@ -3018,7 +3018,6 @@
 
         renderer.domElement.addEventListener('contextmenu',e=>{
             e.preventDefault();
-            spawnClickX(e,'yellow');
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
             let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null;
@@ -3030,6 +3029,7 @@
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
+            spawnClickX(e,(hitNPC||hitMonster||hitNode||hitBld)?'red':'yellow');
             if(hitNode){
                 const node=resourceNodes.get(hitNode);
                 if(node&&!node.depleted){
