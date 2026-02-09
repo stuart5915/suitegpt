@@ -1,8 +1,9 @@
 // Inclawbate — Token Data Endpoint
 // GET /api/inclawbate/token-data?ticker=TICKER
-// Finds token by symbol from Clawnch's /api/tokens, returns formatted data
+// Finds token from Clawnch, enriches with Clanker data (image, socials, mcap)
 
 const CLAWNCH_BASE = 'https://clawn.ch/api';
+const CLANKER_BASE = 'https://clanker.world/api';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -11,20 +12,29 @@ const ALLOWED_ORIGINS = [
     'http://localhost:5500'
 ];
 
-// Cache all tokens in memory (shared with proxy if same instance)
 let tokenCache = null;
 let cacheTime = 0;
-const CACHE_TTL = 60_000;
+const CACHE_TTL = 120_000;
 
 async function fetchAllTokens() {
     if (tokenCache && Date.now() - cacheTime < CACHE_TTL) return tokenCache;
-
     const res = await fetch(`${CLAWNCH_BASE}/tokens`);
     if (!res.ok) throw new Error(`Clawnch API: ${res.status}`);
     const data = await res.json();
     tokenCache = data.tokens || [];
     cacheTime = Date.now();
     return tokenCache;
+}
+
+async function fetchClankerData(address) {
+    try {
+        const res = await fetch(`${CLANKER_BASE}/tokens/${address}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.data || data;
+    } catch {
+        return null;
+    }
 }
 
 export default async function handler(req, res) {
@@ -53,7 +63,7 @@ export default async function handler(req, res) {
             return res.status(404).json({ success: false, error: 'Token not found' });
         }
 
-        // Format for the token page renderer
+        // Build base token data from Clawnch
         const tokenData = {
             name: token.name || symbol,
             ticker: symbol,
@@ -71,9 +81,36 @@ export default async function handler(req, res) {
             explorerUrl: token.explorer_url || null
         };
 
-        // Social links
+        // Social links from Clawnch
         if (token.twitterUrl) tokenData.socialLinks.twitter = token.twitterUrl;
         if (token.websiteUrl) tokenData.socialLinks.website = token.websiteUrl;
+
+        // Enrich with Clanker data (image, socials, starting mcap)
+        if (token.address) {
+            const clanker = await fetchClankerData(token.address);
+            if (clanker) {
+                if (clanker.img_url) tokenData.logoUrl = clanker.img_url;
+                if (clanker.starting_market_cap) tokenData.analytics.startingMcap = clanker.starting_market_cap;
+                if (clanker.description && !tokenData.narrative) tokenData.narrative = clanker.description;
+
+                // Merge social links from Clanker
+                const socials = clanker.socialLinks || [];
+                for (const link of socials) {
+                    const name = (link.name || link.platform || '').toLowerCase();
+                    const url = link.link || link.url || '';
+                    if (!url) continue;
+                    if (name === 'twitter' && !tokenData.socialLinks.twitter) tokenData.socialLinks.twitter = url;
+                    else if (name === 'website' && !tokenData.socialLinks.website) tokenData.socialLinks.website = url;
+                    else if (name === '4claw') tokenData.socialLinks.fourclaw = url;
+                    else if (name === 'farcaster') tokenData.socialLinks.farcaster = url;
+                    else if (name === 'telegram') tokenData.socialLinks.telegram = url;
+                }
+
+                if (!tokenData.clankerUrl && clanker.contract_address) {
+                    tokenData.clankerUrl = `https://clanker.world/clanker/${clanker.contract_address}`;
+                }
+            }
+        }
 
         return res.status(200).json({
             success: true,

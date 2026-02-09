@@ -95,10 +95,17 @@ function renderPage(data) {
     const socialsEl = document.getElementById('tokenSocials');
     const socialLinks = t.socialLinks || {};
     let socialsHtml = '';
-    if (socialLinks.twitter) socialsHtml += `<a href="https://x.com/${socialLinks.twitter.replace('@','')}" target="_blank" rel="noopener" class="token-social-link">X / Twitter</a>`;
-    if (socialLinks.farcaster) socialsHtml += `<a href="${socialLinks.farcaster}" target="_blank" rel="noopener" class="token-social-link">Farcaster</a>`;
+
+    if (socialLinks.twitter) {
+        const url = socialLinks.twitter.startsWith('http') ? socialLinks.twitter : `https://x.com/${socialLinks.twitter.replace('@','')}`;
+        socialsHtml += `<a href="${url}" target="_blank" rel="noopener" class="token-social-link">X / Twitter</a>`;
+    }
     if (socialLinks.website) socialsHtml += `<a href="${socialLinks.website}" target="_blank" rel="noopener" class="token-social-link">Website</a>`;
+    if (socialLinks.fourclaw) socialsHtml += `<a href="${socialLinks.fourclaw}" target="_blank" rel="noopener" class="token-social-link">4claw</a>`;
+    if (socialLinks.farcaster) socialsHtml += `<a href="${socialLinks.farcaster}" target="_blank" rel="noopener" class="token-social-link">Farcaster</a>`;
     if (socialLinks.telegram) socialsHtml += `<a href="${socialLinks.telegram}" target="_blank" rel="noopener" class="token-social-link">Telegram</a>`;
+    if (t.clankerUrl) socialsHtml += `<a href="${t.clankerUrl}" target="_blank" rel="noopener" class="token-social-link">Clanker</a>`;
+
     if (socialsHtml) {
         socialsEl.innerHTML = socialsHtml;
     } else {
