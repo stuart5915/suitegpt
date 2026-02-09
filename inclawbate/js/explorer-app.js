@@ -1,6 +1,6 @@
 // Inclawbate — Token Explorer
 import { clawnch } from './clawnch.js';
-import { formatNumber, timeAgo, debounce, escapeHtml } from './utils.js';
+import { formatNumber, formatUSD, timeAgo, debounce, escapeHtml } from './utils.js';
 
 let currentSort = 'newest';
 let currentOffset = 0;
@@ -82,15 +82,21 @@ async function loadTokens(append = false) {
 function tokenCard(t) {
     const ticker = escapeHtml(t.symbol || '???');
     const name = escapeHtml(t.name || ticker);
-    const desc = escapeHtml((t.description || '').slice(0, 60));
     const age = t.launchedAt ? timeAgo(t.launchedAt) : '';
     const source = escapeHtml(t.source || '');
     const initial = ticker.slice(0, 2);
+    const mcap = t.startingMcap ? '$' + formatNumber(t.startingMcap) : '';
+    const addr = t.address || '';
+    const shortAddr = addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+
+    const logo = t.imgUrl
+        ? `<img src="${escapeHtml(t.imgUrl)}" alt="${ticker}" onerror="this.style.display='none';this.parentElement.textContent='${initial}'">`
+        : initial;
 
     return `<a href="/tokens/${ticker}" class="token-card">
         <div class="token-card-header">
-            <div class="token-card-logo">${initial}</div>
-            <div>
+            <div class="token-card-logo">${logo}</div>
+            <div class="token-card-info">
                 <div class="token-card-name">${name}</div>
                 <div class="token-card-ticker">$${ticker}</div>
             </div>
@@ -98,8 +104,15 @@ function tokenCard(t) {
         <div class="token-card-meta">
             ${source ? `<span class="token-card-source">${source}</span>` : ''}
             ${age ? `<span class="token-card-age">${age}</span>` : ''}
+            ${mcap ? `<span class="token-card-age">${mcap} launch</span>` : ''}
         </div>
-        ${desc ? `<div class="token-card-desc">${desc}</div>` : ''}
+        ${addr ? `<div class="token-card-links">
+            <span class="token-card-addr">${shortAddr}</span>
+            <span class="token-card-link-row">
+                <a href="https://app.uniswap.org/swap?outputCurrency=${addr}&chain=base" target="_blank" rel="noopener" class="token-card-action" onclick="event.stopPropagation()">Trade</a>
+                <a href="https://basescan.org/token/${addr}" target="_blank" rel="noopener" class="token-card-action" onclick="event.stopPropagation()">BaseScan</a>
+            </span>
+        </div>` : ''}
     </a>`;
 }
 
