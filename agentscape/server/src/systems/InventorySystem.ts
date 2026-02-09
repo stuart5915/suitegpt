@@ -96,6 +96,13 @@ export class InventorySystem {
         if (itemType === 'weapon' || itemType === 'axe') return player.equippedWeapon;
         if (itemType === 'helm') return player.equippedHelm;
         if (itemType === 'shield') return player.equippedShield;
+        if (itemType === 'body') return player.equippedBody;
+        if (itemType === 'legs') return player.equippedLegs;
+        if (itemType === 'boots') return player.equippedBoots;
+        if (itemType === 'gloves') return player.equippedGloves;
+        if (itemType === 'cape') return player.equippedCape;
+        if (itemType === 'ring') return player.equippedRing;
+        if (itemType === 'amulet') return player.equippedAmulet;
         return null;
     }
 
@@ -105,6 +112,17 @@ export class InventorySystem {
 
         const equipSlot = this.getEquipSlot(player, invItem.type);
         if (!equipSlot) return { success: false, message: 'Cannot equip that item.' };
+
+        // Check level requirements
+        const def = ITEMS[invItem.id];
+        if (def?.levelReq) {
+            if (def.levelReq.attack && player.attack < def.levelReq.attack)
+                return { success: false, message: `You need ${def.levelReq.attack} Attack to equip that.` };
+            if (def.levelReq.strength && player.strength < def.levelReq.strength)
+                return { success: false, message: `You need ${def.levelReq.strength} Strength to equip that.` };
+            if (def.levelReq.defence && player.defence < def.levelReq.defence)
+                return { success: false, message: `You need ${def.levelReq.defence} Defence to equip that.` };
+        }
 
         if (equipSlot.id) {
             // Swap: old equipped → inv slot, new inv → equip slot
@@ -143,10 +161,15 @@ export class InventorySystem {
         return { success: true };
     }
 
-    unequipSlot(player: PlayerSchema, slotName: 'weapon' | 'helm' | 'shield'): { success: boolean; message?: string } {
-        const equipSlot = slotName === 'weapon' ? player.equippedWeapon
-            : slotName === 'helm' ? player.equippedHelm
-            : player.equippedShield;
+    unequipSlot(player: PlayerSchema, slotName: string): { success: boolean; message?: string } {
+        const slotMap: Record<string, InventoryItem> = {
+            weapon: player.equippedWeapon, helm: player.equippedHelm, shield: player.equippedShield,
+            body: player.equippedBody, legs: player.equippedLegs, boots: player.equippedBoots,
+            gloves: player.equippedGloves, cape: player.equippedCape, ring: player.equippedRing,
+            amulet: player.equippedAmulet,
+        };
+        const equipSlot = slotMap[slotName];
+        if (!equipSlot) return { success: false, message: 'Invalid slot.' };
 
         if (!equipSlot.id) return { success: false, message: 'Nothing equipped there.' };
 
@@ -272,17 +295,37 @@ export class InventorySystem {
     }
 
     // --- Combat stat helpers ---
+    private getAllEquipSlots(player: PlayerSchema): InventoryItem[] {
+        return [player.equippedWeapon, player.equippedHelm, player.equippedShield,
+                player.equippedBody, player.equippedLegs, player.equippedBoots,
+                player.equippedGloves, player.equippedCape, player.equippedRing,
+                player.equippedAmulet];
+    }
+
     getPlayerAttack(player: PlayerSchema): number {
-        return player.attack + (player.equippedWeapon.id ? player.equippedWeapon.attackStat : 0);
+        let atk = player.attack;
+        for (const slot of this.getAllEquipSlots(player)) {
+            if (slot.id) atk += slot.attackStat;
+        }
+        return atk;
     }
 
     getPlayerStrength(player: PlayerSchema): number {
-        return player.strength + (player.equippedWeapon.id ? player.equippedWeapon.strengthStat : 0);
+        let str = player.strength;
+        for (const slot of this.getAllEquipSlots(player)) {
+            if (slot.id) str += slot.strengthStat;
+        }
+        return str;
     }
 
     getPlayerDefence(player: PlayerSchema): number {
-        return player.defence
-            + (player.equippedHelm.id ? player.equippedHelm.defenceStat : 0)
-            + (player.equippedShield.id ? player.equippedShield.defenceStat : 0);
+        let def = player.defence;
+        const armorSlots = [player.equippedHelm, player.equippedShield, player.equippedBody,
+                           player.equippedLegs, player.equippedBoots, player.equippedGloves,
+                           player.equippedCape, player.equippedRing, player.equippedAmulet];
+        for (const slot of armorSlots) {
+            if (slot.id) def += slot.defenceStat;
+        }
+        return def;
     }
 }

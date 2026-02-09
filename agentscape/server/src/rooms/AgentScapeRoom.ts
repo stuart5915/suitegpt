@@ -31,7 +31,7 @@ import { AgentDecisionQueue } from '../agents/AgentDecisionQueue';
 import { generateAgents } from '../agents/AgentGenerator';
 import { GeminiReflectionService } from '../agents/GeminiReflection';
 import {
-    TICK_RATE, COMBAT_TICK_INTERVAL, PATHFINDING_BUDGET_PER_TICK,
+    TICK_RATE, COMBAT_TICK, COMBAT_TICK_INTERVAL, PATHFINDING_BUDGET_PER_TICK,
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
     MAX_PLAYERS_PER_ROOM, MAP_SIZE, MONSTERS, BOSSES, ZONES,
     MONSTER_MOVE_SPEED, MONSTER_AGGRO_RANGE, BOSS_AGGRO_RANGE,
@@ -442,14 +442,14 @@ export class AgentScapeRoom extends Room<GameState> {
             });
         }
 
-        // 5b. Process monster combat (on combat tick)
-        if (isCombatTick) {
+        // 5b. Process monster combat (every tick — per-weapon attack speed handled inside)
+        {
             this.state.players.forEach((player) => {
                 if (!player.combatTargetMonsterId || player.isDead) return;
                 const monster = this.state.monsters.get(player.combatTargetMonsterId);
                 if (!monster || monster.isDead) { player.combatTargetMonsterId = null; return; }
 
-                const result = this.processMonsterCombatTick(player, monster, dtSec * COMBAT_TICK_INTERVAL);
+                const result = this.processMonsterCombatTick(player, monster, dtSec);
                 result.hitsplats.forEach(h => {
                     this.broadcast('hitsplat', h);
                     if (h.targetType === 'monster') {
@@ -1311,6 +1311,14 @@ export class AgentScapeRoom extends Room<GameState> {
         const deaths: any[] = [];
 
         if (player.isDead || monster.isDead) return { hitsplats, xpGains, deaths };
+
+        // Per-weapon attack speed (defaults to COMBAT_TICK if no weapon or no attackSpeed)
+        const weaponDef = player.equippedWeapon.id ? ITEMS[player.equippedWeapon.id] : null;
+        const attackSpeed = weaponDef?.attackSpeed ?? COMBAT_TICK;
+
+        player.combatTimer += dt;
+        if (player.combatTimer < attackSpeed) return { hitsplats, xpGains, deaths };
+        player.combatTimer -= attackSpeed;
 
         // Player attacks monster
         const playerAtk = this.inventorySystem.getPlayerAttack(player);

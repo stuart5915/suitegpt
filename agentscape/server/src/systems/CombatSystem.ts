@@ -183,7 +183,7 @@ export class CombatSystem {
             }
             // Antivirus amulet halves poison damage
             let dmg = poison.damage;
-            if (player.equippedHelm.id === 'antivirus_amulet' || player.equippedShield.id === 'antivirus_amulet') {
+            if (player.equippedAmulet.id === 'antivirus_amulet') {
                 dmg = Math.max(1, Math.floor(dmg * 0.5));
             }
             player.hp = Math.max(0, player.hp - dmg);
@@ -416,9 +416,13 @@ export class CombatSystem {
         player.rotation = faceAngle;
         npc.rotation = faceAngle + Math.PI;
 
+        // Per-weapon attack speed (defaults to COMBAT_TICK if no weapon or no attackSpeed)
+        const weaponDef = player.equippedWeapon.id ? ITEMS[player.equippedWeapon.id] : null;
+        const attackSpeed = weaponDef?.attackSpeed ?? COMBAT_TICK;
+
         player.combatTimer += dt;
-        if (player.combatTimer < COMBAT_TICK) return { hitsplats, deaths, xpGains };
-        player.combatTimer -= COMBAT_TICK;
+        if (player.combatTimer < attackSpeed) return { hitsplats, deaths, xpGains };
+        player.combatTimer -= attackSpeed;
 
         // Mark player as in combat for HP regen tracking
         this.markInCombat(player.sessionId);
@@ -459,9 +463,7 @@ export class CombatSystem {
         // === NPC attacks Player (potions + style + prayer + set bonus) ===
         const nAtk = npc.combatStats.attack;
         const nStr = npc.combatStats.strength;
-        const helm = player.equippedHelm.id ? player.equippedHelm : null;
-        const shield = player.equippedShield.id ? player.equippedShield : null;
-        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
+        const pDef = this.inventorySystem.getPlayerDefence(player) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
 
         if (Math.random() * (nAtk + 1) > Math.random() * (pDef + 1)) {
             let dmg = Math.max(1, Math.floor(Math.random() * (nStr + 1)));
@@ -682,9 +684,7 @@ export class CombatSystem {
         // === Monster attacks player (enrage + potions + style + prayer + set bonus) ===
         const monAtk = monster.combatStats.attack * monster.enrageMultiplier;
         const monStr = monster.combatStats.strength * monster.enrageMultiplier;
-        const helm = player.equippedHelm.id ? player.equippedHelm : null;
-        const shield = player.equippedShield.id ? player.equippedShield : null;
-        const pDef = player.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
+        const pDef = this.inventorySystem.getPlayerDefence(player) + this.getPotionBoost(player.sessionId, 'defence') + style.defenceBonus + prayer.defenceBoost + setBonus.defence;
 
         if (Math.random() * (monAtk + 5) > Math.random() * (pDef + 5)) {
             const maxHit = Math.floor(monStr * 0.8 + 2);
@@ -1021,9 +1021,7 @@ export class CombatSystem {
             const tPrayer = this.getPrayerEffects(target.sessionId);
             const tStyle = this.getPlayerStyle(target.sessionId);
             const tSetBonus = this.getPlayerSetBonus(target);
-            const helm = target.equippedHelm.id ? target.equippedHelm : null;
-            const shield = target.equippedShield.id ? target.equippedShield : null;
-            const pDef = target.defence + (helm ? helm.defenceStat : 0) + (shield ? shield.defenceStat : 0)
+            const pDef = this.inventorySystem.getPlayerDefence(target)
                 + this.getPotionBoost(target.sessionId, 'defence') + tStyle.defenceBonus + tPrayer.defenceBoost + tSetBonus.defence;
 
             if (Math.random() * (monAtk + 5) > Math.random() * (pDef + 5)) {

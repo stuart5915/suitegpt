@@ -143,40 +143,42 @@ export interface ItemDef {
     name: string;
     icon: string;
     stackable: boolean;
-    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'food' | 'material' | 'misc' | 'potion' | 'bones';
+    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'body' | 'legs' | 'boots' | 'gloves' | 'cape' | 'ring' | 'amulet' | 'food' | 'material' | 'misc' | 'potion' | 'bones';
     stats?: { attack?: number; strength?: number; defence?: number };
     healAmount?: number;
     tier?: number; // 1=bronze, 2=iron, 3=steel, 4=mithril, 5=rune, 6=dragon
     zoneReq?: string; // zone ID where this drops
+    attackSpeed?: number; // seconds between attacks (overrides COMBAT_TICK). Only for weapons.
+    levelReq?: { attack?: number; strength?: number; defence?: number }; // skill levels needed to equip
 }
 
 export const ITEMS: Record<string, ItemDef> = {
     // --- Coins ---
     coins:          { id: 'coins', name: 'Coins', icon: '\u{1FA99}', stackable: true, type: 'coin' },
 
-    // --- Weapons (tiered) ---
-    bronze_sword:   { id: 'bronze_sword', name: 'Bronze Sword', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 4, strength: 3 }, tier: 1 },
-    iron_sword:     { id: 'iron_sword', name: 'Iron Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 8, strength: 6 }, tier: 2 },
-    steel_sword:    { id: 'steel_sword', name: 'Steel Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 12, strength: 10 }, tier: 3 },
-    mithril_sword:  { id: 'mithril_sword', name: 'Mithril Sword', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 18, strength: 15 }, tier: 4 },
-    rune_sword:     { id: 'rune_sword', name: 'Rune Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 26, strength: 22 }, tier: 5 },
-    dragon_sword:   { id: 'dragon_sword', name: 'Dragon Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 36, strength: 30 }, tier: 6 },
+    // --- Swords (tiered, attack speed 2.4s) ---
+    bronze_sword:   { id: 'bronze_sword', name: 'Bronze Sword', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 4, strength: 3 }, tier: 1, attackSpeed: 2.4, levelReq: { attack: 1 } },
+    iron_sword:     { id: 'iron_sword', name: 'Iron Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 8, strength: 6 }, tier: 2, attackSpeed: 2.4, levelReq: { attack: 1 } },
+    steel_sword:    { id: 'steel_sword', name: 'Steel Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 12, strength: 10 }, tier: 3, attackSpeed: 2.4, levelReq: { attack: 5 } },
+    mithril_sword:  { id: 'mithril_sword', name: 'Mithril Sword', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 18, strength: 15 }, tier: 4, attackSpeed: 2.4, levelReq: { attack: 20 } },
+    rune_sword:     { id: 'rune_sword', name: 'Rune Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 26, strength: 22 }, tier: 5, attackSpeed: 2.4, levelReq: { attack: 40 } },
+    dragon_sword:   { id: 'dragon_sword', name: 'Dragon Sword', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 36, strength: 30 }, tier: 6, attackSpeed: 2.4, levelReq: { attack: 60 } },
 
     // --- Helms (tiered) ---
-    bronze_helm:    { id: 'bronze_helm', name: 'Bronze Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 3 }, tier: 1 },
-    iron_helm:      { id: 'iron_helm', name: 'Iron Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 6 }, tier: 2 },
-    steel_helm:     { id: 'steel_helm', name: 'Steel Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 10 }, tier: 3 },
-    mithril_helm:   { id: 'mithril_helm', name: 'Mithril Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 15 }, tier: 4 },
-    rune_helm:      { id: 'rune_helm', name: 'Rune Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 22 }, tier: 5 },
-    dragon_helm:    { id: 'dragon_helm', name: 'Dragon Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 30 }, tier: 6 },
+    bronze_helm:    { id: 'bronze_helm', name: 'Bronze Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 3 }, tier: 1, levelReq: { defence: 1 } },
+    iron_helm:      { id: 'iron_helm', name: 'Iron Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 6 }, tier: 2, levelReq: { defence: 1 } },
+    steel_helm:     { id: 'steel_helm', name: 'Steel Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 10 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_helm:   { id: 'mithril_helm', name: 'Mithril Helm', icon: '\u{1FA96}', stackable: false, type: 'helm', stats: { defence: 15 }, tier: 4, levelReq: { defence: 20 } },
+    rune_helm:      { id: 'rune_helm', name: 'Rune Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 22 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_helm:    { id: 'dragon_helm', name: 'Dragon Helm', icon: '\u26D1\uFE0F', stackable: false, type: 'helm', stats: { defence: 30 }, tier: 6, levelReq: { defence: 60 } },
 
     // --- Shields (tiered) ---
-    bronze_shield:  { id: 'bronze_shield', name: 'Bronze Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 4 }, tier: 1 },
-    iron_shield:    { id: 'iron_shield', name: 'Iron Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 8 }, tier: 2 },
-    steel_shield:   { id: 'steel_shield', name: 'Steel Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 12 }, tier: 3 },
-    mithril_shield: { id: 'mithril_shield', name: 'Mithril Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 18 }, tier: 4 },
-    rune_shield:    { id: 'rune_shield', name: 'Rune Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 25 }, tier: 5 },
-    dragon_shield:  { id: 'dragon_shield', name: 'Dragon Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 34 }, tier: 6 },
+    bronze_shield:  { id: 'bronze_shield', name: 'Bronze Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 4 }, tier: 1, levelReq: { defence: 1 } },
+    iron_shield:    { id: 'iron_shield', name: 'Iron Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 8 }, tier: 2, levelReq: { defence: 1 } },
+    steel_shield:   { id: 'steel_shield', name: 'Steel Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 12 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_shield: { id: 'mithril_shield', name: 'Mithril Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 18 }, tier: 4, levelReq: { defence: 20 } },
+    rune_shield:    { id: 'rune_shield', name: 'Rune Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 25 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_shield:  { id: 'dragon_shield', name: 'Dragon Shield', icon: '\u{1F6E1}\uFE0F', stackable: false, type: 'shield', stats: { defence: 34 }, tier: 6, levelReq: { defence: 60 } },
 
     // --- Food (tiered healing) ---
     bread:          { id: 'bread', name: 'Bread', icon: '\u{1F35E}', stackable: false, type: 'food', healAmount: 10 },
@@ -220,17 +222,86 @@ export const ITEMS: Record<string, ItemDef> = {
     hallucinator_eye:    { id: 'hallucinator_eye', name: 'Hallucinator Eye', icon: '\u{1F441}\uFE0F', stackable: false, type: 'misc' },
     dragon_heart:        { id: 'dragon_heart', name: 'Dragon Heart', icon: '\u2764\uFE0F\u200D\u{1F525}', stackable: false, type: 'misc' },
 
-    // --- Craftable unique items ---
-    // NOTE for Terminal 6 (schemas): These accessories need an equipment slot system.
-    // Suggested: add 'amulet', 'ring', 'cape' to ItemDef.type and PlayerSchema equipment slots.
-    // Until then, stats are defined here ready for integration.
-    antivirus_amulet:    { id: 'antivirus_amulet', name: 'Antivirus Amulet', icon: '\u{1F48E}', stackable: false, type: 'misc', stats: { attack: 6, strength: 4, defence: 8 } },
-    firewall_ring:       { id: 'firewall_ring', name: 'Firewall Ring', icon: '\u{1F48D}', stackable: false, type: 'misc', stats: { attack: 3, defence: 15 } },
-    rootkit_cloak:       { id: 'rootkit_cloak', name: 'Rootkit Cloak', icon: '\u{1F9E5}', stackable: false, type: 'misc', stats: { attack: 10, strength: 8, defence: 5 } },
+    // --- Craftable unique accessories ---
+    antivirus_amulet:    { id: 'antivirus_amulet', name: 'Antivirus Amulet', icon: '\u{1F48E}', stackable: false, type: 'amulet', stats: { attack: 6, strength: 4, defence: 8 } },
+    firewall_ring:       { id: 'firewall_ring', name: 'Firewall Ring', icon: '\u{1F48D}', stackable: false, type: 'ring', stats: { attack: 3, defence: 15 } },
+    rootkit_cloak:       { id: 'rootkit_cloak', name: 'Rootkit Cloak', icon: '\u{1F9E5}', stackable: false, type: 'cape', stats: { attack: 10, strength: 8, defence: 5 } },
     super_attack_potion: { id: 'super_attack_potion', name: 'Super Attack Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     super_strength_potion:{ id: 'super_strength_potion', name: 'Super Strength Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     super_defence_potion:{ id: 'super_defence_potion', name: 'Super Defence Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     antipoison:          { id: 'antipoison', name: 'Antipoison', icon: '\u{1F48A}', stackable: false, type: 'potion' },
+
+    // --- Scimitars (tiered, attack speed 2.0s — fast, attack-focused) ---
+    bronze_scimitar:  { id: 'bronze_scimitar', name: 'Bronze Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 5, strength: 2 }, tier: 1, attackSpeed: 2.0, levelReq: { attack: 1 } },
+    iron_scimitar:    { id: 'iron_scimitar', name: 'Iron Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 9, strength: 5 }, tier: 2, attackSpeed: 2.0, levelReq: { attack: 1 } },
+    steel_scimitar:   { id: 'steel_scimitar', name: 'Steel Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 14, strength: 8 }, tier: 3, attackSpeed: 2.0, levelReq: { attack: 5 } },
+    mithril_scimitar: { id: 'mithril_scimitar', name: 'Mithril Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 20, strength: 13 }, tier: 4, attackSpeed: 2.0, levelReq: { attack: 20 } },
+    rune_scimitar:    { id: 'rune_scimitar', name: 'Rune Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 28, strength: 20 }, tier: 5, attackSpeed: 2.0, levelReq: { attack: 40 } },
+    dragon_scimitar:  { id: 'dragon_scimitar', name: 'Dragon Scimitar', icon: '\u2694\uFE0F', stackable: false, type: 'weapon', stats: { attack: 38, strength: 28 }, tier: 6, attackSpeed: 2.0, levelReq: { attack: 60 } },
+
+    // --- Daggers (tiered, attack speed 1.6s — very fast, lower damage) ---
+    bronze_dagger:  { id: 'bronze_dagger', name: 'Bronze Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 3, strength: 1 }, tier: 1, attackSpeed: 1.6, levelReq: { attack: 1 } },
+    iron_dagger:    { id: 'iron_dagger', name: 'Iron Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 6, strength: 3 }, tier: 2, attackSpeed: 1.6, levelReq: { attack: 1 } },
+    steel_dagger:   { id: 'steel_dagger', name: 'Steel Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 9, strength: 6 }, tier: 3, attackSpeed: 1.6, levelReq: { attack: 5 } },
+    mithril_dagger: { id: 'mithril_dagger', name: 'Mithril Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 13, strength: 10 }, tier: 4, attackSpeed: 1.6, levelReq: { attack: 20 } },
+    rune_dagger:    { id: 'rune_dagger', name: 'Rune Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 19, strength: 15 }, tier: 5, attackSpeed: 1.6, levelReq: { attack: 40 } },
+    dragon_dagger:  { id: 'dragon_dagger', name: 'Dragon Dagger', icon: '\u{1F5E1}\uFE0F', stackable: false, type: 'weapon', stats: { attack: 26, strength: 21 }, tier: 6, attackSpeed: 1.6, levelReq: { attack: 60 } },
+
+    // --- Maces (tiered, attack speed 2.8s — slow, high strength) ---
+    bronze_mace:  { id: 'bronze_mace', name: 'Bronze Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 3, strength: 4 }, tier: 1, attackSpeed: 2.8, levelReq: { attack: 1 } },
+    iron_mace:    { id: 'iron_mace', name: 'Iron Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 6, strength: 8 }, tier: 2, attackSpeed: 2.8, levelReq: { attack: 1 } },
+    steel_mace:   { id: 'steel_mace', name: 'Steel Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 10, strength: 12 }, tier: 3, attackSpeed: 2.8, levelReq: { attack: 5 } },
+    mithril_mace: { id: 'mithril_mace', name: 'Mithril Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 15, strength: 18 }, tier: 4, attackSpeed: 2.8, levelReq: { attack: 20 } },
+    rune_mace:    { id: 'rune_mace', name: 'Rune Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 22, strength: 26 }, tier: 5, attackSpeed: 2.8, levelReq: { attack: 40 } },
+    dragon_mace:  { id: 'dragon_mace', name: 'Dragon Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 30, strength: 36 }, tier: 6, attackSpeed: 2.8, levelReq: { attack: 60 } },
+
+    // --- Body Armor — Platebodies (tiered) ---
+    bronze_platebody:  { id: 'bronze_platebody', name: 'Bronze Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 5 }, tier: 1, levelReq: { defence: 1 } },
+    iron_platebody:    { id: 'iron_platebody', name: 'Iron Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 10 }, tier: 2, levelReq: { defence: 1 } },
+    steel_platebody:   { id: 'steel_platebody', name: 'Steel Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 16 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_platebody: { id: 'mithril_platebody', name: 'Mithril Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 22 }, tier: 4, levelReq: { defence: 20 } },
+    rune_platebody:    { id: 'rune_platebody', name: 'Rune Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 32 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_platebody:  { id: 'dragon_platebody', name: 'Dragon Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 44 }, tier: 6, levelReq: { defence: 60 } },
+
+    // --- Body Armor — Chainbodies (tiered, lighter alternative) ---
+    bronze_chainbody:  { id: 'bronze_chainbody', name: 'Bronze Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 3 }, tier: 1, levelReq: { defence: 1 } },
+    iron_chainbody:    { id: 'iron_chainbody', name: 'Iron Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 7 }, tier: 2, levelReq: { defence: 1 } },
+    steel_chainbody:   { id: 'steel_chainbody', name: 'Steel Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 11 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_chainbody: { id: 'mithril_chainbody', name: 'Mithril Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 16 }, tier: 4, levelReq: { defence: 20 } },
+    rune_chainbody:    { id: 'rune_chainbody', name: 'Rune Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 23 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_chainbody:  { id: 'dragon_chainbody', name: 'Dragon Chainbody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 32 }, tier: 6, levelReq: { defence: 60 } },
+
+    // --- Leg Armor — Platelegs (tiered) ---
+    bronze_platelegs:  { id: 'bronze_platelegs', name: 'Bronze Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 4 }, tier: 1, levelReq: { defence: 1 } },
+    iron_platelegs:    { id: 'iron_platelegs', name: 'Iron Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 8 }, tier: 2, levelReq: { defence: 1 } },
+    steel_platelegs:   { id: 'steel_platelegs', name: 'Steel Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 13 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_platelegs: { id: 'mithril_platelegs', name: 'Mithril Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 18 }, tier: 4, levelReq: { defence: 20 } },
+    rune_platelegs:    { id: 'rune_platelegs', name: 'Rune Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 26 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_platelegs:  { id: 'dragon_platelegs', name: 'Dragon Platelegs', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 36 }, tier: 6, levelReq: { defence: 60 } },
+
+    // --- Leg Armor — Plateskirts (tiered, lighter alternative) ---
+    bronze_plateskirt:  { id: 'bronze_plateskirt', name: 'Bronze Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 3 }, tier: 1, levelReq: { defence: 1 } },
+    iron_plateskirt:    { id: 'iron_plateskirt', name: 'Iron Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 6 }, tier: 2, levelReq: { defence: 1 } },
+    steel_plateskirt:   { id: 'steel_plateskirt', name: 'Steel Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 10 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_plateskirt: { id: 'mithril_plateskirt', name: 'Mithril Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 14 }, tier: 4, levelReq: { defence: 20 } },
+    rune_plateskirt:    { id: 'rune_plateskirt', name: 'Rune Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 20 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_plateskirt:  { id: 'dragon_plateskirt', name: 'Dragon Plateskirt', icon: '\u{1F456}', stackable: false, type: 'legs', stats: { defence: 28 }, tier: 6, levelReq: { defence: 60 } },
+
+    // --- Boots (tiered) ---
+    bronze_boots:  { id: 'bronze_boots', name: 'Bronze Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 1 }, tier: 1, levelReq: { defence: 1 } },
+    iron_boots:    { id: 'iron_boots', name: 'Iron Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 2 }, tier: 2, levelReq: { defence: 1 } },
+    steel_boots:   { id: 'steel_boots', name: 'Steel Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 4 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_boots: { id: 'mithril_boots', name: 'Mithril Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 6 }, tier: 4, levelReq: { defence: 20 } },
+    rune_boots:    { id: 'rune_boots', name: 'Rune Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 8 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_boots:  { id: 'dragon_boots', name: 'Dragon Boots', icon: '\u{1F97E}', stackable: false, type: 'boots', stats: { defence: 12 }, tier: 6, levelReq: { defence: 60 } },
+
+    // --- Gloves (tiered) ---
+    bronze_gloves:  { id: 'bronze_gloves', name: 'Bronze Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 1 }, tier: 1, levelReq: { defence: 1 } },
+    iron_gloves:    { id: 'iron_gloves', name: 'Iron Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 2 }, tier: 2, levelReq: { defence: 1 } },
+    steel_gloves:   { id: 'steel_gloves', name: 'Steel Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 4 }, tier: 3, levelReq: { defence: 5 } },
+    mithril_gloves: { id: 'mithril_gloves', name: 'Mithril Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 6 }, tier: 4, levelReq: { defence: 20 } },
+    rune_gloves:    { id: 'rune_gloves', name: 'Rune Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 8 }, tier: 5, levelReq: { defence: 40 } },
+    dragon_gloves:  { id: 'dragon_gloves', name: 'Dragon Gloves', icon: '\u{1F9E4}', stackable: false, type: 'gloves', stats: { defence: 12 }, tier: 6, levelReq: { defence: 60 } },
 
     // --- Thieving loot ---
     cake:   { id: 'cake', name: 'Cake', icon: '\u{1F370}', stackable: false, type: 'food', healAmount: 15 },

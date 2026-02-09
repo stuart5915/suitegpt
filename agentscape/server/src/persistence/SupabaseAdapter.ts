@@ -90,7 +90,20 @@ export class SupabaseAdapter {
         if (saved.equipped_shield && typeof saved.equipped_shield === 'string') {
             this.restoreEquipItem(player.equippedShield, saved.equipped_shield);
         }
-        // Gracefully ignore old integer format (equipped_weapon_slot etc.)
+
+        // Restore extended equipment from extra_data JSON
+        if (saved.extra_data) {
+            try {
+                const extra = typeof saved.extra_data === 'string' ? JSON.parse(saved.extra_data) : saved.extra_data;
+                if (extra.equipped_body) this.restoreEquipItem(player.equippedBody, extra.equipped_body);
+                if (extra.equipped_legs) this.restoreEquipItem(player.equippedLegs, extra.equipped_legs);
+                if (extra.equipped_boots) this.restoreEquipItem(player.equippedBoots, extra.equipped_boots);
+                if (extra.equipped_gloves) this.restoreEquipItem(player.equippedGloves, extra.equipped_gloves);
+                if (extra.equipped_cape) this.restoreEquipItem(player.equippedCape, extra.equipped_cape);
+                if (extra.equipped_ring) this.restoreEquipItem(player.equippedRing, extra.equipped_ring);
+                if (extra.equipped_amulet) this.restoreEquipItem(player.equippedAmulet, extra.equipped_amulet);
+            } catch (e) { /* gracefully ignore bad extra_data */ }
+        }
     }
 
     private restoreEquipItem(slot: InventoryItem, itemId: string): void {
@@ -159,7 +172,15 @@ export class SupabaseAdapter {
             equipped_shield: player.equippedShield.id || null,
             inventory: JSON.stringify(inventoryData),
             quests: JSON.stringify(questsData),
-            extra_data: extraData || null,
+            extra_data: JSON.stringify({
+                equipped_body: player.equippedBody.id || null,
+                equipped_legs: player.equippedLegs.id || null,
+                equipped_boots: player.equippedBoots.id || null,
+                equipped_gloves: player.equippedGloves.id || null,
+                equipped_cape: player.equippedCape.id || null,
+                equipped_ring: player.equippedRing.id || null,
+                equipped_amulet: player.equippedAmulet.id || null,
+            }),
             updated_at: new Date().toISOString(),
         };
 
