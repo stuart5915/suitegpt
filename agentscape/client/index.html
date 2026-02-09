@@ -1186,8 +1186,8 @@
         let camSmoothX=mapCenter,camSmoothZ=mapCenter;
         let camDt=0.016; // updated each frame from animate()
         function updateCamera(){
-            // Smooth camera follow — lerp toward target instead of snapping
-            const camLerp=1-Math.exp(-5*camDt);
+            // Smooth camera follow — tight lerp for responsive feel
+            const camLerp=1-Math.exp(-12*camDt);
             camSmoothX+=(camTargetX-camSmoothX)*camLerp;
             camSmoothZ+=(camTargetZ-camSmoothZ)*camLerp;
             const camHeight=camDist*camPitch;
@@ -3469,15 +3469,20 @@
         const _projVec=new THREE.Vector3();
         let _overlayRect=null;
         function projectToScreen(wx,wz,yOffset){_projVec.set(wx,yOffset,wz);_projVec.project(camera);return{x:(_projVec.x*0.5+0.5)*_overlayRect.width,y:(-_projVec.y*0.5+0.5)*_overlayRect.height,visible:_projVec.z>-1&&_projVec.z<1};}
+        // Cache viewport rect — only recompute on resize
+        let _cachedRect=viewport.getBoundingClientRect();
+        window.addEventListener('resize',()=>{_cachedRect=viewport.getBoundingClientRect();});
         function updateOverlays(){
-            _overlayRect=viewport.getBoundingClientRect();
+            _overlayRect=_cachedRect;
             if(bankTellerMesh&&bankTellerMesh._label){const bp=projectToScreen(91,95,1.4);if(bp.visible){bankTellerMesh._label.style.display='block';bankTellerMesh._label.style.left=bp.x+'px';bankTellerMesh._label.style.top=bp.y+'px';}else{bankTellerMesh._label.style.display='none';}}
             npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.4);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
             monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             lootPileMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,0.3);if(p.visible){m.dot.style.display='block';m.dot.style.left=p.x+'px';m.dot.style.top=p.y+'px';}else{m.dot.style.display='none';}});
             resourceNodes.forEach(n=>{if(n.depleted){n.label.style.display='none';return;}const p=projectToScreen(n.x,n.z,1.2);if(p.visible){n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}else{n.label.style.display='none';}});
-            document.querySelectorAll('.chat-bubble, .hitsplat').forEach(el=>{const wx=parseFloat(el.dataset.worldX),wz=parseFloat(el.dataset.worldZ);const p=projectToScreen(wx,wz,el.classList.contains('hitsplat')?1.5:1.6);if(p.visible){el.style.left=p.x+'px';el.style.top=p.y+'px';}else el.style.display='none';});
+            // Update floating chat/hitsplats — use the parent container instead of querySelectorAll
+            const bubbleContainer=document.getElementById('chat-bubbles');
+            for(let i=bubbleContainer.children.length-1;i>=0;i--){const el=bubbleContainer.children[i];const wx=parseFloat(el.dataset.worldX),wz=parseFloat(el.dataset.worldZ);if(isNaN(wx))continue;const p=projectToScreen(wx,wz,el.classList.contains('hitsplat')?1.5:1.6);if(p.visible){el.style.left=p.x+'px';el.style.top=p.y+'px';}else el.style.display='none';}
         }
 
         // ============================================================
@@ -3606,17 +3611,14 @@
             }
         }
         const clock=new THREE.Clock();
-        const TARGET_FPS=30,FRAME_INTERVAL=1/TARGET_FPS;
-        let frameAccum=0,minimapTimer=0,waterTimer=0;
+        let minimapTimer=0,waterTimer=0;
         function animate(){
             requestAnimationFrame(animate);
             const rawDt=clock.getDelta();const time=clock.getElapsedTime();
-            frameAccum+=rawDt;
-            if(frameAccum<FRAME_INTERVAL)return;
-            const dt=frameAccum;frameAccum=0;
-            // Camera follows player (smooth)
-            camTargetX=myChar.group.position.x;
-            camTargetZ=myChar.group.position.z;
+            const dt=Math.min(rawDt,0.1); // cap dt to prevent teleport on tab-switch/GC pauses
+            // Camera follows target directly — no double-smoothing
+            camTargetX=myTargetX;
+            camTargetZ=myTargetZ;
             camDt=dt;
             if(!chatInputFocused){
                 if(keys['a'])camAngle-=1.5*dt;
