@@ -156,13 +156,15 @@ export interface ItemDef {
     name: string;
     icon: string;
     stackable: boolean;
-    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'body' | 'legs' | 'boots' | 'gloves' | 'cape' | 'ring' | 'amulet' | 'food' | 'material' | 'misc' | 'potion' | 'bones';
+    type: 'coin' | 'weapon' | 'helm' | 'shield' | 'body' | 'legs' | 'boots' | 'gloves' | 'cape' | 'ring' | 'amulet' | 'food' | 'material' | 'misc' | 'potion' | 'bones' | 'axe';
     stats?: { attack?: number; strength?: number; defence?: number };
     healAmount?: number;
     tier?: number; // 1=bronze, 2=iron, 3=steel, 4=mithril, 5=rune, 6=dragon
     zoneReq?: string; // zone ID where this drops
     attackSpeed?: number; // seconds between attacks (overrides COMBAT_TICK). Only for weapons.
-    levelReq?: { attack?: number; strength?: number; defence?: number }; // skill levels needed to equip
+    levelReq?: { attack?: number; strength?: number; defence?: number; woodcutting?: number; mining?: number; fishing?: number }; // skill levels needed to equip
+    gatherSpeedMultiplier?: number; // multiplier on actionTime (0.3 = 70% faster)
+    toolFor?: 'woodcutting' | 'mining' | 'fishing'; // which gathering skill this tool is for
 }
 
 export const ITEMS: Record<string, ItemDef> = {
@@ -268,6 +270,14 @@ export const ITEMS: Record<string, ItemDef> = {
     rune_mace:    { id: 'rune_mace', name: 'Rune Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 22, strength: 26 }, tier: 5, attackSpeed: 2.8, levelReq: { attack: 40 } },
     dragon_mace:  { id: 'dragon_mace', name: 'Dragon Mace', icon: '\u{1F528}', stackable: false, type: 'weapon', stats: { attack: 30, strength: 36 }, tier: 6, attackSpeed: 2.8, levelReq: { attack: 60 } },
 
+    // --- Axes (tiered, used for woodcutting + modest combat, attack speed 2.8s) ---
+    bronze_axe:   { id: 'bronze_axe', name: 'Bronze Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 3, strength: 4 }, tier: 1, attackSpeed: 2.8, levelReq: { woodcutting: 1 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 1.0 },
+    iron_axe:     { id: 'iron_axe', name: 'Iron Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 6, strength: 7 }, tier: 2, attackSpeed: 2.8, levelReq: { woodcutting: 1 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 0.85 },
+    steel_axe:    { id: 'steel_axe', name: 'Steel Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 9, strength: 11 }, tier: 3, attackSpeed: 2.8, levelReq: { woodcutting: 6 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 0.70 },
+    mithril_axe:  { id: 'mithril_axe', name: 'Mithril Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 14, strength: 16 }, tier: 4, attackSpeed: 2.8, levelReq: { woodcutting: 21 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 0.55 },
+    rune_axe:     { id: 'rune_axe', name: 'Rune Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 20, strength: 23 }, tier: 5, attackSpeed: 2.8, levelReq: { woodcutting: 41 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 0.40 },
+    dragon_axe:   { id: 'dragon_axe', name: 'Dragon Axe', icon: '\u{1FA93}', stackable: false, type: 'axe', stats: { attack: 28, strength: 32 }, tier: 6, attackSpeed: 2.8, levelReq: { woodcutting: 61 }, toolFor: 'woodcutting', gatherSpeedMultiplier: 0.30 },
+
     // --- Body Armor — Platebodies (tiered) ---
     bronze_platebody:  { id: 'bronze_platebody', name: 'Bronze Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 5 }, tier: 1, levelReq: { defence: 1 } },
     iron_platebody:    { id: 'iron_platebody', name: 'Iron Platebody', icon: '\u{1F9BA}', stackable: false, type: 'body', stats: { defence: 10 }, tier: 2, levelReq: { defence: 1 } },
@@ -320,6 +330,18 @@ export const ITEMS: Record<string, ItemDef> = {
     cake:   { id: 'cake', name: 'Cake', icon: '\u{1F370}', stackable: false, type: 'food', healAmount: 15 },
     silk:   { id: 'silk', name: 'Silk', icon: '\u{1F9F5}', stackable: true, type: 'material' },
     spice:  { id: 'spice', name: 'Spice', icon: '\u{1F336}\uFE0F', stackable: true, type: 'material' },
+
+    // --- Utility items (General Store) ---
+    tinderbox: { id: 'tinderbox', name: 'Tinderbox', icon: '\u{1F525}', stackable: false, type: 'misc' },
+    bucket:    { id: 'bucket', name: 'Bucket', icon: '\u{1FAA3}', stackable: false, type: 'misc' },
+    pot:       { id: 'pot', name: 'Pot', icon: '\u{1FAD8}', stackable: false, type: 'misc' },
+    jug:       { id: 'jug', name: 'Jug', icon: '\u{1F3FA}', stackable: false, type: 'misc' },
+    hammer:    { id: 'hammer', name: 'Hammer', icon: '\u{1F528}', stackable: false, type: 'misc' },
+    chisel:    { id: 'chisel', name: 'Chisel', icon: '\u{1FAA8}', stackable: false, type: 'misc' },
+    needle:    { id: 'needle', name: 'Needle', icon: '\u{1FAA1}', stackable: false, type: 'misc' },
+    thread:    { id: 'thread', name: 'Thread', icon: '\u{1F9F5}', stackable: true, type: 'misc' },
+    shears:    { id: 'shears', name: 'Shears', icon: '\u2702\uFE0F', stackable: false, type: 'misc' },
+    knife:     { id: 'knife', name: 'Knife', icon: '\u{1F52A}', stackable: false, type: 'misc' },
 };
 
 // ============================================================
@@ -932,6 +954,22 @@ export const SHOP_ITEMS: ShopItemDef[] = [
     { id: 'mithril_sword', price: 1200, stock: 2 },
     { id: 'mithril_helm', price: 900, stock: 2 },
     { id: 'mithril_shield', price: 1000, stock: 2 },
+    // Axes (woodcutting tools)
+    { id: 'bronze_axe', price: 25, stock: 10 },
+    { id: 'iron_axe', price: 100, stock: 5 },
+    { id: 'steel_axe', price: 350, stock: 3 },
+    { id: 'mithril_axe', price: 1000, stock: 2 },
+    // Utility items
+    { id: 'tinderbox', price: 5, stock: 10 },
+    { id: 'bucket', price: 3, stock: 10 },
+    { id: 'pot', price: 2, stock: 10 },
+    { id: 'jug', price: 2, stock: 10 },
+    { id: 'hammer', price: 5, stock: 10 },
+    { id: 'chisel', price: 5, stock: 10 },
+    { id: 'needle', price: 3, stock: 10 },
+    { id: 'thread', price: 2, stock: 99 },
+    { id: 'shears', price: 3, stock: 10 },
+    { id: 'knife', price: 7, stock: 10 },
 ];
 
 // ============================================================
@@ -979,6 +1017,9 @@ export const RECIPES: RecipeDef[] = [
     // Cooked food from raw materials (for skilling system — Terminal 2)
     { result: 'cooked_fish', resultQty: 1, ingredients: [{ id: 'raw_fish', qty: 1 }], coinCost: 0 },
     { result: 'cooked_meat', resultQty: 1, ingredients: [{ id: 'logs', qty: 1 }, { id: 'raw_fish', qty: 2 }], coinCost: 0 },
+    // Axes (crafted from zone materials)
+    { result: 'rune_axe', resultQty: 1, ingredients: [{ id: 'null_fragment', qty: 10 }, { id: 'overflow_essence', qty: 6 }, { id: 'logs', qty: 20 }], coinCost: 400 },
+    { result: 'dragon_axe', resultQty: 1, ingredients: [{ id: 'dragon_scale', qty: 8 }, { id: 'firewall_core', qty: 4 }, { id: 'logs', qty: 30 }], coinCost: 1500 },
 ];
 
 // ============================================================

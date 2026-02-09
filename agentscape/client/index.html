@@ -460,6 +460,10 @@
             <div id="hover-info"></div>
             <div id="zone-indicator">SUITE City</div>
             <div id="zone-banner"></div>
+            <div id="gather-progress" style="display:none;position:absolute;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);border:1px solid #4a4a50;border-radius:4px;padding:6px 14px;min-width:180px;text-align:center;z-index:30;">
+                <div id="gather-progress-label" style="color:#ccc;font-size:11px;margin-bottom:4px;"></div>
+                <div class="skill-timer"><div class="skill-timer-fill" id="gather-progress-fill" style="width:0%"></div></div>
+            </div>
             <div id="tutorial-overlay" style="display:none;">
                 <div class="tutorial-panel">
                     <h2>Welcome to AgentScape</h2>
@@ -1034,7 +1038,12 @@
             normal_logs:{id:'normal_logs',name:'Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
             oak_logs:{id:'oak_logs',name:'Oak Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
             willow_logs:{id:'willow_logs',name:'Willow Logs',icon:'\u{1FAB5}',stackable:true,type:'resource'},
-            bronze_axe:{id:'bronze_axe',name:'Bronze Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:3}},
+            bronze_axe:{id:'bronze_axe',name:'Bronze Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:3,strength:4}},
+            iron_axe:{id:'iron_axe',name:'Iron Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:6,strength:7}},
+            steel_axe:{id:'steel_axe',name:'Steel Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:9,strength:11}},
+            mithril_axe:{id:'mithril_axe',name:'Mithril Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:14,strength:16}},
+            rune_axe:{id:'rune_axe',name:'Rune Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:20,strength:23}},
+            dragon_axe:{id:'dragon_axe',name:'Dragon Axe',icon:'\u{1FA93}',stackable:false,type:'axe',stats:{attack:28,strength:32}},
             bones:{id:'bones',name:'Bones',icon:'\u{1F9B4}',stackable:true,type:'bones'},
             rogue_script_trophy:{id:'rogue_script_trophy',name:'Rogue Script Trophy',icon:'\u{1F3C6}',stackable:false,type:'misc'},
             golem_heart:{id:'golem_heart',name:'Golem Heart',icon:'\u{1F5A4}',stackable:false,type:'misc'},
@@ -1107,6 +1116,17 @@
             mithril_gloves:{id:'mithril_gloves',name:'Mithril Gloves',icon:'\u{1F9E4}',stackable:false,type:'gloves',stats:{defence:6}},
             rune_gloves:{id:'rune_gloves',name:'Rune Gloves',icon:'\u{1F9E4}',stackable:false,type:'gloves',stats:{defence:8}},
             dragon_gloves:{id:'dragon_gloves',name:'Dragon Gloves',icon:'\u{1F9E4}',stackable:false,type:'gloves',stats:{defence:12}},
+            // Utility items
+            tinderbox:{id:'tinderbox',name:'Tinderbox',icon:'\u{1F525}',stackable:false,type:'misc'},
+            bucket:{id:'bucket',name:'Bucket',icon:'\u{1FAA3}',stackable:false,type:'misc'},
+            pot:{id:'pot',name:'Pot',icon:'\u{1FAD8}',stackable:false,type:'misc'},
+            jug:{id:'jug',name:'Jug',icon:'\u{1F3FA}',stackable:false,type:'misc'},
+            hammer:{id:'hammer',name:'Hammer',icon:'\u{1F528}',stackable:false,type:'misc'},
+            chisel:{id:'chisel',name:'Chisel',icon:'\u{1FAA8}',stackable:false,type:'misc'},
+            needle:{id:'needle',name:'Needle',icon:'\u{1FAA1}',stackable:false,type:'misc'},
+            thread:{id:'thread',name:'Thread',icon:'\u{1F9F5}',stackable:true,type:'misc'},
+            shears:{id:'shears',name:'Shears',icon:'\u2702\uFE0F',stackable:false,type:'misc'},
+            knife:{id:'knife',name:'Knife',icon:'\u{1F52A}',stackable:false,type:'misc'},
         };
 
         // ============================================================
@@ -1153,7 +1173,10 @@
             {id:'iron_sword',price:150,stock:5},{id:'iron_helm',price:100,stock:5},{id:'iron_shield',price:120,stock:5},
             {id:'steel_sword',price:400,stock:3},{id:'steel_helm',price:300,stock:3},{id:'steel_shield',price:350,stock:3},
             {id:'mithril_sword',price:1200,stock:2},{id:'mithril_helm',price:900,stock:2},{id:'mithril_shield',price:1000,stock:2},
-            {id:'bronze_axe',price:25,stock:10},
+            {id:'bronze_axe',price:25,stock:10},{id:'iron_axe',price:100,stock:5},{id:'steel_axe',price:350,stock:3},{id:'mithril_axe',price:1000,stock:2},
+            // Utility items
+            {id:'tinderbox',price:5,stock:10},{id:'bucket',price:3,stock:10},{id:'pot',price:2,stock:10},{id:'jug',price:2,stock:10},{id:'hammer',price:5,stock:10},
+            {id:'chisel',price:5,stock:10},{id:'needle',price:3,stock:10},{id:'thread',price:2,stock:99},{id:'shears',price:3,stock:10},{id:'knife',price:7,stock:10},
         ];
 
         const RECIPES = [
@@ -1164,6 +1187,8 @@
             {result:'mithril_sword',resultQty:1,ingredients:[{id:'rogue_script',qty:5},{id:'code_fragment',qty:10}],coinCost:100},
             {result:'rune_sword',resultQty:1,ingredients:[{id:'null_fragment',qty:8},{id:'overflow_essence',qty:5}],coinCost:300},
             {result:'dragon_sword',resultQty:1,ingredients:[{id:'dragon_scale',qty:10},{id:'firewall_core',qty:5},{id:'dark_packet',qty:8}],coinCost:1000},
+            {result:'rune_axe',resultQty:1,ingredients:[{id:'null_fragment',qty:10},{id:'overflow_essence',qty:6},{id:'logs',qty:20}],coinCost:400},
+            {result:'dragon_axe',resultQty:1,ingredients:[{id:'dragon_scale',qty:8},{id:'firewall_core',qty:4},{id:'logs',qty:30}],coinCost:1500},
         ];
 
         const QUESTS = {
@@ -1897,6 +1922,36 @@
             lbl.style.borderBottom='1px solid #D4AF37';
             document.getElementById('npc-labels').appendChild(lbl);
             bankTellerMesh._label=lbl;
+        })();
+
+        // ============================================================
+        // SHOP KEEPER NPC (client-side static decoration)
+        // ============================================================
+        let shopkeeperMesh=null;
+        (function createShopKeeper(){
+            const baseH=heightMap[102]?heightMap[102][97]||0:0;
+            const charData=createCharacterMesh(
+                new THREE.Color(0x2d8c3c), // green shirt
+                new THREE.Color(0x8B4513), // brown hair
+                new THREE.Color(0xffcc99), // skin
+                new THREE.Color(0x3a2a1a), // dark trousers
+                new THREE.Color(0x1a1008), // dark boots
+                {hairStyle:'Short'}
+            );
+            const keeper=charData.group;
+            keeper.position.set(102,baseH,97);
+            keeper.rotation.y=Math.PI; // face south toward players
+            keeper.traverse(c=>{if(c.isMesh){c.userData.type='shopkeeper';}});
+            scene.add(keeper);
+            addRayTarget(keeper);
+            shopkeeperMesh=keeper;
+            // NPC label
+            const lbl=document.createElement('div');
+            lbl.className='npc-label';
+            lbl.innerHTML='<span style="color:#2d8c3c">Shop Keeper</span>';
+            lbl.style.borderBottom='1px solid #2d8c3c';
+            document.getElementById('npc-labels').appendChild(lbl);
+            shopkeeperMesh._label=lbl;
         })();
 
         // ============================================================
@@ -2682,6 +2737,16 @@
             setTimeout(()=>{ sendAction('bank_open'); },600);
         };
 
+        window.walkToShopkeeperAndTrade=function(){
+            hideCtxMenu();
+            const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);
+            const targetX=102,targetZ=98;
+            const p=clientFindPath(curTX,curTZ,targetX,targetZ);
+            if(p.length>1)renderWalkPath(p,targetX,targetZ);
+            sendAction('move_to',{tileX:targetX,tileZ:targetZ});
+            setTimeout(()=>{ sendAction('enter_building',{buildingId:'general_store'}); },600);
+        };
+
         function fmtQty(n){if(n>=1000000)return Math.floor(n/1000000)+'M';if(n>=100000)return Math.floor(n/1000)+'K';return n;}
 
         function renderBankUI() {
@@ -2997,9 +3062,44 @@
                 if(data.animId==='attack_slash'||data.animId==='attack_stab')SoundEngine.play('combat_swing');
                 else if(data.animId==='special_attack')SoundEngine.play('special_attack');
             });
+            // === Gathering Progress Bar ===
+            let gatherAnimFrame=null;
+            function showGatherProgress(label,maxTimeMs){
+                const el=document.getElementById('gather-progress');
+                const fill=document.getElementById('gather-progress-fill');
+                const lbl=document.getElementById('gather-progress-label');
+                lbl.textContent=label;
+                fill.style.width='0%';
+                el.style.display='';
+                if(gatherAnimFrame)cancelAnimationFrame(gatherAnimFrame);
+                const start=performance.now();
+                function tick(){
+                    const elapsed=performance.now()-start;
+                    const pct=Math.min(100,(elapsed/maxTimeMs)*100);
+                    fill.style.width=pct+'%';
+                    if(pct<100)gatherAnimFrame=requestAnimationFrame(tick);
+                }
+                gatherAnimFrame=requestAnimationFrame(tick);
+            }
+            function hideGatherProgress(){
+                document.getElementById('gather-progress').style.display='none';
+                if(gatherAnimFrame){cancelAnimationFrame(gatherAnimFrame);gatherAnimFrame=null;}
+            }
             room.onMessage('skilling_event',(data)=>{
                 addChat('system',data.message);
                 if(data.message&&(data.message.includes('You start')||data.message.includes('You swing')||data.message.includes('You cast')))playCharAnim(myChar,'gather');
+                // Progress bar logic
+                if(data.type==='started'&&data.maxTime){
+                    const verb=data.skill==='woodcutting'?'Chopping':data.skill==='mining'?'Mining':data.skill==='fishing'?'Fishing':'Gathering';
+                    showGatherProgress(verb+'...',data.maxTime*1000);
+                } else if(data.type==='gather_complete'&&data.maxTime){
+                    // Auto-repeat: restart progress bar
+                    const verb=data.skill==='woodcutting'?'Chopping':data.skill==='mining'?'Mining':data.skill==='fishing'?'Fishing':'Gathering';
+                    showGatherProgress(verb+'...',data.maxTime*1000);
+                } else if(data.type==='gather_complete'||data.type==='node_depleted'||data.type==='no_tool'||data.type==='level_req'||data.type==='too_far'){
+                    hideGatherProgress();
+                }
+                // Sound effects
                 if(data.message){
                     if(data.message.includes('mine')||data.message.includes('rock')||data.message.includes('ore'))SoundEngine.play('gather_hit');
                     else if(data.message.includes('chop')||data.message.includes('tree')||data.message.includes('log'))SoundEngine.play('gather_chop');
@@ -3449,6 +3549,7 @@
             monsterMeshes.forEach(m=>objs.push(m.group));
             resourceNodes.forEach(n=>{if(!n.depleted)objs.push(n.mesh);});
             if(bankTellerMesh)objs.push(bankTellerMesh);
+            if(shopkeeperMesh)objs.push(shopkeeperMesh);
             stallMeshes.forEach(s=>objs.push(s.group));
             return objs;
         }
@@ -3488,6 +3589,7 @@
             while(obj){
                 const ud=obj.userData;
                 if(ud.type==='bank_teller')return{type:'bank_teller'};
+                if(ud.type==='shopkeeper')return{type:'shopkeeper'};
                 if(ud.type==='stall')return{type:'stall',stallId:ud.stallId};
                 if(ud.type==='npc')return{type:'npc',npcId:ud.npcId};
                 if(ud.type==='monster')return{type:'monster',monsterId:ud.monsterId};
@@ -3504,10 +3606,11 @@
             if(e.target!==renderer.domElement)return;
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
-            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitStall=null;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitShopkeeper=false,hitStall=null;
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller')hitTeller=true;
+                if(r.type==='shopkeeper')hitShopkeeper=true;
                 if(r.type==='stall'&&!hitStall)hitStall=r.stallId;
                 if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
                 if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
@@ -3515,8 +3618,15 @@
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
+            if(hitShopkeeper){
+                spawnClickX(e,'red');
+                hideGatherProgress();
+                walkToShopkeeperAndTrade();
+                return;
+            }
             if(hitTeller){
                 spawnClickX(e,'red');
+                hideGatherProgress();
                 walkToTellerAndBank();
                 return;
             }
@@ -3563,18 +3673,19 @@
                 }
                 return;
             }
-            if(hitBld){spawnClickX(e,'red');const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);}sendAction('enter_building',{buildingId:hitBld});return;}
-            if(hitTile&&hitTile.walkable){spawnClickX(e,'yellow');const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
+            if(hitBld){spawnClickX(e,'red');hideGatherProgress();const door=buildingDoors[hitBld];if(door){const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,door.x,door.z);if(p.length>1)renderWalkPath(p,door.x,door.z);}sendAction('enter_building',{buildingId:hitBld});return;}
+            if(hitTile&&hitTile.walkable){spawnClickX(e,'yellow');hideGatherProgress();const curTX=Math.round(myWorldX),curTZ=Math.round(myWorldZ);const p=clientFindPath(curTX,curTZ,hitTile.tileX,hitTile.tileZ);if(p.length>1)renderWalkPath(p,hitTile.tileX,hitTile.tileZ);sendAction('move_to',{tileX:hitTile.tileX,tileZ:hitTile.tileZ});}
         });
 
         renderer.domElement.addEventListener('contextmenu',e=>{
             e.preventDefault();
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
-            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitStall=null;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitShopkeeper=false,hitStall=null;
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller')hitTeller=true;
+                if(r.type==='shopkeeper')hitShopkeeper=true;
                 if(r.type==='stall'&&!hitStall)hitStall=r.stallId;
                 if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
                 if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
@@ -3582,7 +3693,16 @@
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
-            spawnClickX(e,(hitNPC||hitMonster||hitNode||hitBld||hitTeller||hitStall)?'red':'yellow');
+            spawnClickX(e,(hitNPC||hitMonster||hitNode||hitBld||hitTeller||hitShopkeeper||hitStall)?'red':'yellow');
+            if(hitShopkeeper){
+                showContextMenu(e,[
+                    {label:'Trade Shop Keeper',action:"walkToShopkeeperAndTrade()"},
+                    {label:'Talk-to Shop Keeper',action:"addChat('system','The Shop Keeper smiles. Browse my wares!')"},
+                    {label:'Examine',action:"addChat('system','A friendly shopkeeper selling useful supplies.')"},
+                    {label:'Cancel',action:'hideCtxMenu()'}
+                ],'\u{1F3EA} Shop Keeper');
+                return;
+            }
             if(hitTeller){
                 showContextMenu(e,[
                     {label:'Bank Bank Teller',action:"walkToTellerAndBank()"},
@@ -3641,6 +3761,7 @@
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller'){if(bankTellerMesh)newHover={group:bankTellerMesh,color:0x444444};document.body.style.cursor='default';cursorSet=true;hoverText='<span class="hover-action">Bank</span> Bank Teller';break;}
+                if(r.type==='shopkeeper'){if(shopkeeperMesh)newHover={group:shopkeeperMesh,color:0x444444};document.body.style.cursor='default';cursorSet=true;hoverText='\u{1F3EA} <span class="hover-action">Trade</span> Shop Keeper';break;}
                 if(r.type==='stall'){const sm=stallMeshes.get(r.stallId);if(sm){newHover={group:sm.group,color:0x444444};hoverText='\u{1F90F} <span class="hover-action">Steal-from</span> '+sm.data.name+' <span class="hover-level">(Lv.'+sm.data.lvl+')</span>';}document.body.style.cursor='default';cursorSet=true;break;}
                 if(r.type==='resource_node'){const nd=resourceNodes.get(r.nodeId);if(nd){newHover={group:nd.mesh,color:0x444444};const def=resourceDefs.get(nd.defId);const nm=def?def.name:nd.defId;const sk=def?def.skill:'gathering';const ic=def?def.icon:'\u{1F333}';hoverText=ic+' <span class="hover-action">'+sk.charAt(0).toUpperCase()+sk.slice(1)+'</span> '+nm;if(def&&def.levelReq>1)hoverText+=' <span class="hover-level">(Lv.'+def.levelReq+')</span>';}document.body.style.cursor='default';cursorSet=true;break;}
                 if(r.type==='npc'){const np=npcMeshes.get(r.npcId);if(np){newHover={group:np.group,color:0x444444};if(attackMode)hoverText='\u2694\uFE0F <span class="hover-action">Attack</span> '+np.state.name+' <span class="hover-level">(Lv.'+Math.floor((np.state.hp||10)/5+1)+')</span>';else hoverText='\uD83D\uDDE8\uFE0F <span class="hover-action">Talk-to</span> '+np.state.name;}document.body.style.cursor='default';cursorSet=true;break;}
@@ -3813,6 +3934,7 @@
         function updateOverlays(){
             _overlayRect=_cachedRect;
             if(bankTellerMesh&&bankTellerMesh._label){const bp=projectToScreen(91,95,1.4);if(bp.visible){bankTellerMesh._label.style.display='block';bankTellerMesh._label.style.left=bp.x+'px';bankTellerMesh._label.style.top=bp.y+'px';}else{bankTellerMesh._label.style.display='none';}}
+            if(shopkeeperMesh&&shopkeeperMesh._label){const sp=projectToScreen(102,97,1.4);if(sp.visible){shopkeeperMesh._label.style.display='block';shopkeeperMesh._label.style.left=sp.x+'px';shopkeeperMesh._label.style.top=sp.y+'px';}else{shopkeeperMesh._label.style.display='none';}}
             npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.4);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
             monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});

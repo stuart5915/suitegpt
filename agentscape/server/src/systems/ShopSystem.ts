@@ -96,6 +96,18 @@ const RESOURCE_SELL_PRICES: Record<string, number> = {
     dragon_sword:      2000,
     dragon_helm:       1500,
     dragon_shield:     1800,
+
+    // Utility items (~40-50% of buy price)
+    tinderbox:         2,
+    bucket:            1,
+    pot:               1,
+    jug:               1,
+    hammer:            2,
+    chisel:            2,
+    needle:            1,
+    thread:            1,
+    shears:            1,
+    knife:             3,
 };
 
 // ============================================================
