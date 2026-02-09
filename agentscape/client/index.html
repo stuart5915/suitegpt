@@ -962,10 +962,11 @@
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.006);
         const camera = new THREE.PerspectiveCamera(45, viewport.clientWidth/viewport.clientHeight, 0.1, 200);
-        const renderer = new THREE.WebGLRenderer({antialias:true});
+        const renderer = new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,1));
         renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         viewport.insertBefore(renderer.domElement, viewport.firstChild);
 
         const mapCenter=Math.floor(MAP_SIZE/2);
@@ -1700,7 +1701,8 @@
 
         // Fireflies
         const particles=[];
-        for(let i=0;i<250;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.03,4,4),new THREE.MeshBasicMaterial({color:0xffff88}));p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
+        const fireflyGeo=new THREE.SphereGeometry(0.03,4,4);const fireflyMat=new THREE.MeshBasicMaterial({color:0xffff88});
+        for(let i=0;i<250;i++){const p=new THREE.Mesh(fireflyGeo,fireflyMat);p.position.set(rng()*MAP_SIZE,0.5+rng()*1.5,rng()*MAP_SIZE);p.userData.speed=0.2+rng()*0.5;p.userData.offset=rng()*Math.PI*2;p.visible=false;scene.add(p);particles.push(p);}
 
         // Tile highlight
         const highlightMat=new THREE.MeshBasicMaterial({color:0xffff00,transparent:true,opacity:0.3});
@@ -3117,8 +3119,11 @@
         // ============================================================
         // OVERLAY PROJECTION
         // ============================================================
-        function projectToScreen(wx,wz,yOffset){const pos=new THREE.Vector3(wx,yOffset,wz);pos.project(camera);const rect=viewport.getBoundingClientRect();return{x:(pos.x*0.5+0.5)*rect.width,y:(-pos.y*0.5+0.5)*rect.height,visible:pos.z>-1&&pos.z<1};}
+        const _projVec=new THREE.Vector3();
+        let _overlayRect=null;
+        function projectToScreen(wx,wz,yOffset){_projVec.set(wx,yOffset,wz);_projVec.project(camera);return{x:(_projVec.x*0.5+0.5)*_overlayRect.width,y:(-_projVec.y*0.5+0.5)*_overlayRect.height,visible:_projVec.z>-1&&_projVec.z<1};}
         function updateOverlays(){
+            _overlayRect=viewport.getBoundingClientRect();
             npcMeshes.forEach(n=>{const p=projectToScreen(n.state.x,n.state.z,1.4);if(!p.visible||n.state.isDead){n.label.style.display='none';}else{n.label.style.display='block';n.label.style.left=p.x+'px';n.label.style.top=p.y+'px';}});
             monsterMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
             otherPlayerMeshes.forEach(m=>{const p=projectToScreen(m.state.x,m.state.z,1.4);if(!p.visible||m.state.isDead){m.label.style.display='none';}else{m.label.style.display='block';m.label.style.left=p.x+'px';m.label.style.top=p.y+'px';}});
@@ -3253,9 +3258,14 @@
             }
         }
         const clock=new THREE.Clock();
+        const TARGET_FPS=30,FRAME_INTERVAL=1/TARGET_FPS;
+        let frameAccum=0,minimapTimer=0,waterTimer=0;
         function animate(){
             requestAnimationFrame(animate);
-            const dt=clock.getDelta();const time=clock.getElapsedTime();
+            const rawDt=clock.getDelta();const time=clock.getElapsedTime();
+            frameAccum+=rawDt;
+            if(frameAccum<FRAME_INTERVAL)return;
+            const dt=frameAccum;frameAccum=0;
             // Camera follows player (smooth)
             camTargetX=myChar.group.position.x;
             camTargetZ=myChar.group.position.z;
@@ -3276,10 +3286,10 @@
             });
             // Update chunks based on player position
             updateChunks(myChar.group.position.x,myChar.group.position.z);
-            // Water animation
-            const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;
-            // Fireflies
-            particles.forEach(p=>{p.visible=isNight;if(isNight){p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;p.material.opacity=0.5+Math.sin(time*2+p.userData.offset)*0.5;}});
+            // Water animation (throttled to ~10fps)
+            waterTimer+=dt;if(waterTimer>0.1){waterTimer=0;const v=waterGeo.attributes.position;for(let i=0;i<v.count;i++){v.setY(i,Math.sin(v.getX(i)*2+time)*0.02+Math.cos(v.getZ(i)*2+time*1.3)*0.02);}v.needsUpdate=true;}
+            // Fireflies (only animate when night)
+            if(isNight){fireflyMat.transparent=true;fireflyMat.opacity=0.5+Math.sin(time*2)*0.5;particles.forEach(p=>{p.visible=true;p.position.y+=Math.sin(time*p.userData.speed+p.userData.offset)*0.003;p.position.x+=Math.sin(time*0.3+p.userData.offset)*0.005;});}else if(particles[0]&&particles[0].visible){particles.forEach(p=>{p.visible=false;});}
             // Fountain spray animation
             fountainSpray.forEach(s=>{s.angle+=s.speed*dt;const r=0.35;s.mesh.position.x=Math.cos(s.angle)*r;s.mesh.position.z=Math.sin(s.angle)*r;s.mesh.position.y=1.6+Math.sin(time*3+s.angle)*0.15;});
             // Smooth interpolation
@@ -3320,7 +3330,7 @@
                 if(!myIsMoving){clearWalkPath();}
             }
             updateOverlays();
-            drawMinimap();
+            minimapTimer+=dt;if(minimapTimer>0.25){minimapTimer=0;drawMinimap();}
             renderer.render(scene,camera);
         }
 
