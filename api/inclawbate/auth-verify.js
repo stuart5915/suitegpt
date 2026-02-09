@@ -2,6 +2,7 @@
 // POST /api/inclawbate/auth-verify
 // Verifies wallet signature and returns JWT
 
+import { createHmac } from 'crypto';
 import { ethers } from 'ethers';
 
 const ALLOWED_ORIGINS = [
@@ -22,7 +23,6 @@ function base64url(str) {
 function createJwt(payload) {
     const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const body = base64url(JSON.stringify(payload));
-    const { createHmac } = require('crypto');
     const sig = createHmac('sha256', JWT_SECRET)
         .update(`${header}.${body}`)
         .digest('base64url');
@@ -32,7 +32,6 @@ function createJwt(payload) {
 export function verifyJwt(token) {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const { createHmac } = require('crypto');
     const expectedSig = createHmac('sha256', JWT_SECRET)
         .update(`${parts[0]}.${parts[1]}`)
         .digest('base64url');
