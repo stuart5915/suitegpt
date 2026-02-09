@@ -301,6 +301,7 @@ export class PlayerSchema extends Schema {
     isMoving: boolean = false;
     pendingBuildingAction: string | null = null;
     pendingPickpocket: { type: 'npc' | 'monster'; id: string } | null = null;
+    pendingStallSteal: string | null = null; // stallId to steal from on arrival
     pendingNpcInteraction: string | null = null; // npcId to talk to on arrival
     skillingAction: { type: string; timer: number; maxTime: number } | null = null;
     skillingCooldown: number = 0;

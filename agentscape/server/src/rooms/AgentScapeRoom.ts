@@ -33,7 +33,7 @@ import {
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
     MAX_PLAYERS_PER_ROOM, MAP_SIZE, MONSTERS, BOSSES, ZONES,
     MONSTER_MOVE_SPEED, MONSTER_AGGRO_RANGE, BOSS_AGGRO_RANGE,
-    levelFromXP,
+    levelFromXP, STALL_DEFS,
 } from '../config';
 
 // Demo agents for when API is unavailable
@@ -70,6 +70,7 @@ export class AgentScapeRoom extends Room<GameState> {
     private agentManager!: AgentConnectionManager;
     private agentDecisionQueue!: AgentDecisionQueue;
     private combatTickCounter: number = 0;
+    private stallTimers: Map<string, number> = new Map();
 
     maxClients = MAX_PLAYERS_PER_ROOM;
 
@@ -360,6 +361,21 @@ export class AgentScapeRoom extends Room<GameState> {
                         this.handleAction(client, { type: 'pickpocket', payload: pp.type === 'npc' ? { npcId: pp.id } : { monsterId: pp.id } });
                     }
                 }
+                // Stall steal arrival
+                if (player.pendingStallSteal) {
+                    const stallId = player.pendingStallSteal;
+                    const stallDef = STALL_DEFS.find(s => s.id === stallId);
+                    player.pendingStallSteal = null;
+                    if (stallDef) {
+                        const dist = Math.abs(player.tileX - stallDef.x) + Math.abs(player.tileZ - stallDef.z);
+                        if (dist <= 1) {
+                            const client = this.clients.find(c => c.sessionId === player.sessionId);
+                            if (client) {
+                                this.handleAction(client, { type: 'steal_from_stall', payload: { stallId } });
+                            }
+                        }
+                    }
+                }
                 // NPC interaction arrival (talk)
                 if (player.pendingNpcInteraction) {
                     const npcId = player.pendingNpcInteraction;
@@ -540,6 +556,17 @@ export class AgentScapeRoom extends Room<GameState> {
             }
         });
 
+        // 8d. Stall restock timers
+        this.stallTimers.forEach((ticks, stallId) => {
+            const remaining = ticks - 1;
+            if (remaining <= 0) {
+                this.stallTimers.delete(stallId);
+                this.broadcast('stall_restocked', { stallId });
+            } else {
+                this.stallTimers.set(stallId, remaining);
+            }
+        });
+
         // 9. Loot pile decay
         const expiredLoot: string[] = [];
         this.state.lootPiles.forEach((pile, id) => {
@@ -576,6 +603,7 @@ export class AgentScapeRoom extends Room<GameState> {
                 if (player.isResting) { player.isResting = false; }
                 // Cancel pending interactions
                 player.pendingPickpocket = null;
+                player.pendingStallSteal = null;
                 player.pendingNpcInteraction = null;
                 player.pendingBuildingAction = null;
                 // Cancel gathering if moving
@@ -882,6 +910,67 @@ export class AgentScapeRoom extends Room<GameState> {
                     this.broadcast('npc_chat', { npcId: targetId, name: targetName, message: 'What do you think you\'re doing?', x: targetX, z: targetZ });
                     this.broadcast('hitsplat', { targetType: 'player', targetId: player.sessionId, damage: 1, isMiss: false, isSpec: false, x: player.x, z: player.z });
                 }
+                player.dirty = true;
+                break;
+            }
+
+            case 'steal_from_stall': {
+                const stallDef = STALL_DEFS.find(s => s.id === action.payload.stallId);
+                if (!stallDef) break;
+
+                // Must be adjacent (within 1 tile) — walk there if not
+                const stallDist = Math.abs(player.tileX - stallDef.x) + Math.abs(player.tileZ - stallDef.z);
+                if (stallDist > 1) {
+                    const adj = findAdjacentWalkable(this.map.grid, stallDef.x, stallDef.z);
+                    if (adj) {
+                        player.pendingStallSteal = stallDef.id;
+                        this.movementSystem.startPlayerMove(player, adj.x, adj.z);
+                    }
+                    break;
+                }
+
+                // Check stun
+                if (player.stunTimer > 0) {
+                    client.send('system_message', { message: "You're stunned!" });
+                    break;
+                }
+
+                // Check thieving level
+                const thievingLvl = player.thieving || 1;
+                if (thievingLvl < stallDef.thievingReq) {
+                    client.send('system_message', { message: `You need level ${stallDef.thievingReq} Thieving to steal from the ${stallDef.name}.` });
+                    break;
+                }
+
+                // Check stall cooldown
+                const stallCd = this.stallTimers.get(stallDef.id) || 0;
+                if (stallCd > 0) {
+                    client.send('system_message', { message: `The ${stallDef.name} is empty. Wait for it to restock.` });
+                    break;
+                }
+
+                // Face the stall
+                player.rotation = Math.atan2(stallDef.x - player.x, stallDef.z - player.z);
+
+                // Give loot (checks inventory space)
+                const itemDef = ITEMS[stallDef.loot];
+                if (!itemDef) break;
+                const added = this.inventorySystem.addToInventory(player, stallDef.loot, 1);
+                if (!added) {
+                    client.send('system_message', { message: 'Your inventory is full.' });
+                    break;
+                }
+                const stallLevelResult = this.inventorySystem.gainXP(player, 'thieving', stallDef.xp);
+                client.send('system_message', { message: `You steal a ${itemDef.name} from the ${stallDef.name}. +${stallDef.xp} Thieving XP.` });
+                client.send('pickpocket_result', { success: true, targetX: stallDef.x, targetZ: stallDef.z });
+                if (stallLevelResult.leveledUp) {
+                    client.send('level_up', { skill: 'thieving', level: stallLevelResult.newLevel });
+                }
+
+                // Set cooldown and broadcast depleted
+                this.stallTimers.set(stallDef.id, stallDef.respawnTicks);
+                this.broadcast('stall_depleted', { stallId: stallDef.id });
+
                 player.dirty = true;
                 break;
             }

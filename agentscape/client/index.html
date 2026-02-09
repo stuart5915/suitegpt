@@ -1899,20 +1899,47 @@
             lampposts.push({group:g,glow:glow,light:light});
         });
 
-        // Market Stalls (inside castle courtyard)
-        const stallColors=[0xcc3333,0x3366cc,0xccaa33,0x33aa55];
-        [{x:97,z:91},{x:100,z:91},{x:103,z:91},{x:97,z:93}].forEach((sp,i)=>{
+        // Market Stalls (interactive thieving targets)
+        const STALL_DATA=[
+            {id:'bakery_stall',name:'Bakery Stall',x:97,z:91,color:0xcc3333,lvl:5,goodsColor:0xdda15e},
+            {id:'silk_stall',name:'Silk Stall',x:100,z:91,color:0x3366cc,lvl:20,goodsColor:0x7eb8da},
+            {id:'spice_stall',name:'Spice Stall',x:103,z:91,color:0xccaa33,lvl:65,goodsColor:0xc1440e}
+        ];
+        const stallMeshes=new Map();
+        STALL_DATA.forEach(sd=>{
             const g=new THREE.Group();
+            g.userData={type:'stall',stallId:sd.id};
             const counter=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6),new THREE.MeshLambertMaterial({color:0x8B6914}));
             counter.position.y=0.3;counter.castShadow=true;g.add(counter);
-            const canopy=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.8),new THREE.MeshLambertMaterial({color:stallColors[i]}));
+            const canopy=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.8),new THREE.MeshLambertMaterial({color:sd.color}));
             canopy.position.set(0,1.3,0);canopy.rotation.x=-0.15;canopy.castShadow=true;g.add(canopy);
             const poleGeo=new THREE.CylinderGeometry(0.03,0.03,1.3,4);const poleMat=new THREE.MeshLambertMaterial({color:0x5a3a1a});
             [{x:-0.55,z:-0.3},{x:0.55,z:-0.3},{x:-0.55,z:0.3},{x:0.55,z:0.3}].forEach(pp=>{
                 const p=new THREE.Mesh(poleGeo,poleMat);p.position.set(pp.x,0.65,pp.z);g.add(p);
             });
-            g.position.set(sp.x,0,sp.z);scene.add(g);
+            // Goods on counter
+            const goodsGroup=new THREE.Group();
+            for(let gi=0;gi<3;gi++){
+                const box=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.12,0.12),new THREE.MeshLambertMaterial({color:sd.goodsColor}));
+                box.position.set(-0.25+gi*0.25,0.66,0);box.castShadow=true;goodsGroup.add(box);
+            }
+            g.add(goodsGroup);
+            g.position.set(sd.x,0,sd.z);scene.add(g);
+            stallMeshes.set(sd.id,{group:g,counter:counter,goods:goodsGroup,data:sd});
         });
+        // 4th decorative stall (no thieving)
+        (function(){
+            const g=new THREE.Group();
+            const counter=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.6,0.6),new THREE.MeshLambertMaterial({color:0x8B6914}));
+            counter.position.y=0.3;counter.castShadow=true;g.add(counter);
+            const canopy=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.8),new THREE.MeshLambertMaterial({color:0x33aa55}));
+            canopy.position.set(0,1.3,0);canopy.rotation.x=-0.15;canopy.castShadow=true;g.add(canopy);
+            const poleGeo=new THREE.CylinderGeometry(0.03,0.03,1.3,4);const poleMat=new THREE.MeshLambertMaterial({color:0x5a3a1a});
+            [{x:-0.55,z:-0.3},{x:0.55,z:-0.3},{x:-0.55,z:0.3},{x:0.55,z:0.3}].forEach(pp=>{
+                const p=new THREE.Mesh(poleGeo,poleMat);p.position.set(pp.x,0.65,pp.z);g.add(p);
+            });
+            g.position.set(97,0,93);scene.add(g);
+        })();
 
         // Crates & Barrels (decorative, around castle exterior)
         const crateBarrelPositions=[
@@ -2831,6 +2858,14 @@
                 else{const bd=BUILDINGS.find(b=>b.id===bid);addChat('system','You arrive at the '+(bd?bd.name:'building')+'.');}
             });
             room.onMessage('pickpocket_result',(data)=>{playCharAnim(myChar,'pickpocket');SoundEngine.play('pickpocket');});
+            room.onMessage('stall_depleted',(data)=>{
+                const sm=stallMeshes.get(data.stallId);
+                if(sm){sm.counter.material.color.set(0x444444);sm.goods.visible=false;}
+            });
+            room.onMessage('stall_restocked',(data)=>{
+                const sm=stallMeshes.get(data.stallId);
+                if(sm){sm.counter.material.color.set(0x8B6914);sm.goods.visible=true;}
+            });
             room.onMessage('play_anim',(data)=>{
                 let mesh=null;
                 if(data.entityType==='player'){if(data.entityId===mySessionId)mesh=myChar;else mesh=otherPlayerMeshes.get(data.entityId);}
@@ -2990,7 +3025,7 @@
             defence:[{lvl:1,name:'Bronze armour',icon:'\u{1F6E1}\uFE0F'},{lvl:5,name:'Iron armour',icon:'\u{1F6E1}\uFE0F'},{lvl:10,name:'Steel armour',icon:'\u26D1\uFE0F'},{lvl:20,name:'Mithril armour',icon:'\u{1FA96}'},{lvl:30,name:'Adamant armour',icon:'\u{1F6E1}\uFE0F'},{lvl:40,name:'Rune armour',icon:'\u26D1\uFE0F'},{lvl:60,name:'Dragon armour',icon:'\u26D1\uFE0F'}],
             hitpoints:[{lvl:10,name:'Start with 100 HP',icon:'\u2764\uFE0F'},{lvl:20,name:'200 HP',icon:'\u2764\uFE0F'},{lvl:40,name:'400 HP',icon:'\u2764\uFE0F'},{lvl:60,name:'600 HP',icon:'\u2764\uFE0F'},{lvl:80,name:'800 HP',icon:'\u2764\uFE0F'},{lvl:99,name:'Max HP',icon:'\u{1F31F}'}],
             prayer:[{lvl:1,name:'Bury bones (+4 XP)',icon:'\u{1F9B4}'},{lvl:10,name:'Improved prayers',icon:'\u2728'},{lvl:30,name:'Protection prayers',icon:'\u{1F6E1}\uFE0F'},{lvl:45,name:'Combat prayers',icon:'\u2694\uFE0F'},{lvl:70,name:'Piety',icon:'\u{1F31F}'},{lvl:99,name:'Max prayer',icon:'\u{1F31F}'}],
-            thieving:[{lvl:1,name:'Pickpocket men & women',icon:'\u{1F90F}'},{lvl:10,name:'Improved success rate',icon:'\u{1F44D}'},{lvl:20,name:'Pickpocket warriors',icon:'\u{1F90F}'},{lvl:40,name:'Pickpocket guards',icon:'\u{1F90F}'},{lvl:50,name:'Steal from stalls',icon:'\u{1F6D2}'},{lvl:70,name:'Pickpocket heroes',icon:'\u{1F90F}'},{lvl:99,name:'Master thief',icon:'\u{1F31F}'}],
+            thieving:[{lvl:1,name:'Pickpocket men & women',icon:'\u{1F90F}'},{lvl:5,name:'Steal from Bakery Stalls',icon:'\u{1F370}'},{lvl:10,name:'Improved success rate',icon:'\u{1F44D}'},{lvl:20,name:'Steal from Silk Stalls',icon:'\u{1F9F5}'},{lvl:20,name:'Pickpocket warriors',icon:'\u{1F90F}'},{lvl:40,name:'Pickpocket guards',icon:'\u{1F90F}'},{lvl:65,name:'Steal from Spice Stalls',icon:'\u{1F336}\uFE0F'},{lvl:70,name:'Pickpocket heroes',icon:'\u{1F90F}'},{lvl:99,name:'Master thief',icon:'\u{1F31F}'}],
             woodcutting:[{lvl:1,name:'Cut normal trees',icon:'\u{1FA93}'},{lvl:15,name:'Cut oak trees',icon:'\u{1F333}'},{lvl:30,name:'Cut willow trees',icon:'\u{1F333}'},{lvl:45,name:'Cut maple trees',icon:'\u{1F341}'},{lvl:60,name:'Cut yew trees',icon:'\u{1F332}'},{lvl:75,name:'Cut magic trees',icon:'\u{1F31F}'}],
             mining:[{lvl:1,name:'Mine copper & tin',icon:'\u26CF\uFE0F'},{lvl:15,name:'Mine iron',icon:'\u26CF\uFE0F'},{lvl:30,name:'Mine coal',icon:'\u26CF\uFE0F'},{lvl:40,name:'Mine gold',icon:'\u{1FA99}'},{lvl:55,name:'Mine mithril',icon:'\u26CF\uFE0F'},{lvl:70,name:'Mine adamantite',icon:'\u26CF\uFE0F'},{lvl:85,name:'Mine runite',icon:'\u{1F31F}'}],
             fishing:[{lvl:1,name:'Catch shrimp',icon:'\u{1F990}'},{lvl:15,name:'Catch trout',icon:'\u{1F41F}'},{lvl:30,name:'Catch lobster',icon:'\u{1F99E}'},{lvl:40,name:'Catch swordfish',icon:'\u{1F41F}'},{lvl:62,name:'Catch monkfish',icon:'\u{1F420}'},{lvl:76,name:'Catch shark',icon:'\u{1F988}'},{lvl:81,name:'Catch manta ray',icon:'\u{1F420}'}],
@@ -3269,6 +3304,7 @@
             while(obj){
                 const ud=obj.userData;
                 if(ud.type==='bank_teller')return{type:'bank_teller'};
+                if(ud.type==='stall')return{type:'stall',stallId:ud.stallId};
                 if(ud.type==='npc')return{type:'npc',npcId:ud.npcId};
                 if(ud.type==='monster')return{type:'monster',monsterId:ud.monsterId};
                 if(ud.type==='resource_node')return{type:'resource_node',nodeId:ud.nodeId};
@@ -3284,10 +3320,11 @@
             if(e.target!==renderer.domElement)return;
             const m=getViewportMouse(e);raycasterMain.setFromCamera(m,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
-            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitStall=null;
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller')hitTeller=true;
+                if(r.type==='stall'&&!hitStall)hitStall=r.stallId;
                 if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
                 if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
                 if(r.type==='resource_node'&&!hitNode)hitNode=r.nodeId;
@@ -3297,6 +3334,11 @@
             if(hitTeller){
                 spawnClickX(e,'red');
                 walkToTellerAndBank();
+                return;
+            }
+            if(hitStall){
+                spawnClickX(e,'red');
+                sendAction('steal_from_stall',{stallId:hitStall});
                 return;
             }
             if(hitMonster){
@@ -3345,17 +3387,18 @@
             e.preventDefault();
             const m2=getViewportMouse(e);raycasterMain.setFromCamera(m2,camera);
             const hits=raycasterMain.intersectObjects(getRayObjects(),true);
-            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false;
+            let hitNPC=null,hitMonster=null,hitBld=null,hitTile=null,hitNode=null,hitTeller=false,hitStall=null;
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller')hitTeller=true;
+                if(r.type==='stall'&&!hitStall)hitStall=r.stallId;
                 if(r.type==='npc'&&!hitNPC)hitNPC=r.npcId;
                 if(r.type==='monster'&&!hitMonster)hitMonster=r.monsterId;
                 if(r.type==='resource_node'&&!hitNode)hitNode=r.nodeId;
                 if(r.type==='building'&&!hitBld)hitBld=r.buildingId;
                 if(r.type==='tile'&&!hitTile)hitTile=r;
             }
-            spawnClickX(e,(hitNPC||hitMonster||hitNode||hitBld||hitTeller)?'red':'yellow');
+            spawnClickX(e,(hitNPC||hitMonster||hitNode||hitBld||hitTeller||hitStall)?'red':'yellow');
             if(hitTeller){
                 showContextMenu(e,[
                     {label:'Bank Bank Teller',action:"walkToTellerAndBank()"},
@@ -3363,6 +3406,17 @@
                     {label:'Examine',action:"addChat('system','Keeps your items safe.')"},
                     {label:'Cancel',action:'hideCtxMenu()'}
                 ],'\u{1F3E6} Bank Teller');
+                return;
+            }
+            if(hitStall){
+                const sm=stallMeshes.get(hitStall);
+                if(sm){
+                    showContextMenu(e,[
+                        {label:'Steal-from '+sm.data.name,action:"sendAction('steal_from_stall',{stallId:'"+hitStall+"'})"},
+                        {label:'Examine',action:"addChat('system','"+sm.data.name+" \u2014 Requires level "+sm.data.lvl+" Thieving')"},
+                        {label:'Cancel',action:'hideCtxMenu()'}
+                    ],'\u{1F90F} '+sm.data.name);
+                }
                 return;
             }
             if(hitNode){
@@ -3403,6 +3457,7 @@
             for(const h of hits){
                 const r=resolveHit(h);if(!r)continue;
                 if(r.type==='bank_teller'){if(bankTellerMesh)newHover={group:bankTellerMesh,color:0x444444};document.body.style.cursor='pointer';cursorSet=true;hoverText='<span class="hover-action">Bank</span> Bank Teller';break;}
+                if(r.type==='stall'){const sm=stallMeshes.get(r.stallId);if(sm){newHover={group:sm.group,color:0x444444};hoverText='\u{1F90F} <span class="hover-action">Steal-from</span> '+sm.data.name+' <span class="hover-level">(Lv.'+sm.data.lvl+')</span>';}document.body.style.cursor='pointer';cursorSet=true;break;}
                 if(r.type==='resource_node'){const nd=resourceNodes.get(r.nodeId);if(nd){newHover={group:nd.mesh,color:0x444444};const def=resourceDefs.get(nd.defId);const nm=def?def.name:nd.defId;const sk=def?def.skill:'gathering';const ic=def?def.icon:'\u{1F333}';hoverText=ic+' <span class="hover-action">'+sk.charAt(0).toUpperCase()+sk.slice(1)+'</span> '+nm;if(def&&def.levelReq>1)hoverText+=' <span class="hover-level">(Lv.'+def.levelReq+')</span>';}document.body.style.cursor='pointer';cursorSet=true;break;}
                 if(r.type==='npc'){const np=npcMeshes.get(r.npcId);if(np){newHover={group:np.group,color:0x444444};if(attackMode)hoverText='\u2694\uFE0F <span class="hover-action">Attack</span> '+np.state.name+' <span class="hover-level">(Lv.'+Math.floor((np.state.hp||10)/5+1)+')</span>';else hoverText='\uD83D\uDDE8\uFE0F <span class="hover-action">Talk-to</span> '+np.state.name;}document.body.style.cursor=attackMode?'crosshair':'pointer';cursorSet=true;break;}
                 if(r.type==='monster'){const mo=monsterMeshes.get(r.monsterId);if(mo){newHover={group:mo.group,color:0x553333};hoverText='\u2694\uFE0F <span class="hover-action">Attack</span> '+mo.state.name+' <span class="hover-level">(Lv.'+mo.state.level+')</span>';}document.body.style.cursor='crosshair';cursorSet=true;break;}

@@ -41,7 +41,8 @@ export type ActionType =
     | 'sell_resource'
     | 'get_sell_price'
     | 'interact_npc'
-    | 'enter_building';
+    | 'enter_building'
+    | 'steal_from_stall';
 
 export interface GameAction {
     type: ActionType;
@@ -267,6 +268,12 @@ export class ActionValidator {
             case 'get_sell_price': {
                 const { itemId } = action.payload;
                 if (typeof itemId !== 'string') return { valid: false, reason: 'Invalid item' };
+                return { valid: true };
+            }
+
+            case 'steal_from_stall': {
+                const { stallId } = action.payload;
+                if (typeof stallId !== 'string') return { valid: false, reason: 'Invalid stall ID' };
                 return { valid: true };
             }
 

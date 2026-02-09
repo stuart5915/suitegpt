@@ -231,7 +231,33 @@ export const ITEMS: Record<string, ItemDef> = {
     super_strength_potion:{ id: 'super_strength_potion', name: 'Super Strength Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     super_defence_potion:{ id: 'super_defence_potion', name: 'Super Defence Potion', icon: '\u2697\uFE0F', stackable: false, type: 'potion' },
     antipoison:          { id: 'antipoison', name: 'Antipoison', icon: '\u{1F48A}', stackable: false, type: 'potion' },
+
+    // --- Thieving loot ---
+    cake:   { id: 'cake', name: 'Cake', icon: '\u{1F370}', stackable: false, type: 'food', healAmount: 15 },
+    silk:   { id: 'silk', name: 'Silk', icon: '\u{1F9F5}', stackable: true, type: 'material' },
+    spice:  { id: 'spice', name: 'Spice', icon: '\u{1F336}\uFE0F', stackable: true, type: 'material' },
 };
+
+// ============================================================
+// Thieving Stalls — Market stall definitions
+// ============================================================
+
+export interface StallDef {
+    id: string;
+    name: string;
+    x: number;
+    z: number;
+    thievingReq: number;
+    loot: string;
+    xp: number;
+    respawnTicks: number;
+}
+
+export const STALL_DEFS: StallDef[] = [
+    { id: 'bakery_stall', name: 'Bakery Stall', x: 97, z: 91, thievingReq: 5, loot: 'cake', xp: 16, respawnTicks: 100 },
+    { id: 'silk_stall', name: 'Silk Stall', x: 100, z: 91, thievingReq: 20, loot: 'silk', xp: 36, respawnTicks: 160 },
+    { id: 'spice_stall', name: 'Spice Stall', x: 103, z: 91, thievingReq: 65, loot: 'spice', xp: 81, respawnTicks: 240 },
+];
 
 // ============================================================
 // NPC (Agent) Combat — existing agents that roam SUITE City
