@@ -182,6 +182,40 @@
         .anim-duration-input { width: 60px !important; padding: 4px 8px !important; font-size: 12px !important; min-height: auto !important; }
         .anim-timeline-track { height: 80px; position: relative; cursor: crosshair; }
         .anim-timeline-track canvas { width: 100%; height: 100%; display: block; }
+
+        /* ============ SOUND EDITOR ============ */
+        .sound-editor { display: none; flex-direction: column; padding: 24px !important; overflow-y: auto; }
+        .sound-editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .sound-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 16px 12px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.15s; position: relative; }
+        .sound-card:hover { background: var(--bg-hover); border-color: var(--border-light); transform: translateY(-2px); }
+        .sound-card.has-custom { border-color: var(--success); }
+        .sound-card.has-custom::after { content: ''; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: var(--success); border-radius: 50%; }
+        .sound-card-icon { font-size: 32px; margin-bottom: 8px; }
+        .sound-card-name { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.3; }
+        .sound-card-layers { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+        /* Sound Modal */
+        .sound-modal { width: 760px; }
+        .sound-modal .modal-body { flex-direction: row; min-height: 400px; }
+        .sound-preview-pane { flex: 0 0 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: var(--bg-base); border-right: 1px solid var(--border); gap: 16px; }
+        .sound-play-btn { width: 80px; height: 80px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .sound-play-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+        .sound-wave-canvas { width: 240px; height: 80px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border); }
+        .sound-controls-pane { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .sound-layer { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .sound-layer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .sound-layer-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); }
+        .sound-layer-remove { background: none; border: 1px solid var(--danger); color: var(--danger); font-size: 10px; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+        .sound-layer-remove:hover { background: rgba(239,68,68,0.1); }
+        .sound-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .sound-slider-row:last-child { margin-bottom: 0; }
+        .sound-slider-row label { font-size: 12px; color: var(--text-secondary); width: 80px; flex-shrink: 0; }
+        .sound-slider-row input[type=range] { flex: 1; accent-color: var(--accent); }
+        .sound-slider-row select { background: var(--bg-base); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-family: inherit; }
+        .sound-slider-val { font-size: 11px; color: var(--text-muted); width: 55px; text-align: right; font-family: 'Courier New', monospace; }
+        .sound-add-layer { width: 100%; padding: 10px; border: 2px dashed var(--border); border-radius: 8px; background: none; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+        .sound-add-layer:hover { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.05); }
     </style>
 </head>
 <body>
@@ -263,6 +297,32 @@
             <div class="anim-timeline-track" id="anim-timeline-track">
                 <canvas id="timeline-canvas"></canvas>
             </div>
+        </div>
+    </div>
+
+    <!-- SOUND EDITOR (grid view, replaces main when in sound mode) -->
+    <div class="main sound-editor" id="sound-editor"></div>
+</div>
+
+<!-- SOUND MODAL -->
+<div class="modal-overlay" id="sound-modal">
+    <div class="modal sound-modal">
+        <div class="modal-header">
+            <h2 id="sound-modal-title">Edit Sound</h2>
+            <button class="modal-close" onclick="closeSoundModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="sound-preview-pane">
+                <button class="sound-play-btn" onclick="previewCurrentSound()">&#9654;</button>
+                <canvas class="sound-wave-canvas" id="sound-wave-canvas" width="240" height="80"></canvas>
+                <div style="font-size:11px;color:var(--text-muted);text-align:center;">Click play to preview</div>
+            </div>
+            <div class="sound-controls-pane" id="sound-layers-container"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="previewCurrentSound()">&#9654; Preview</button>
+            <button class="btn" onclick="resetSoundToDefault()">Reset</button>
+            <button class="btn btn-primary" onclick="saveCurrentSound()">Save</button>
         </div>
     </div>
 </div>
@@ -770,6 +830,93 @@ const ANIMATION_PRESETS = [
 ];
 
 // ============================================================
+// SOUND CATEGORIES & PRESETS
+// ============================================================
+const SOUND_CATEGORIES = [
+    { id:'snd_combat', name:'Combat', icon:'\u2694\uFE0F' },
+    { id:'snd_skilling', name:'Skilling', icon:'\u26CF\uFE0F' },
+    { id:'snd_ui', name:'UI & Clicks', icon:'\uD83D\uDD0A' },
+    { id:'snd_social', name:'Social', icon:'\uD83D\uDCAC' },
+    { id:'snd_misc', name:'Misc', icon:'\u2728' },
+];
+
+const SOUND_PRESETS = [
+    { id:'combat_hit', name:'Combat Hit', category:'snd_combat', icon:'\uD83D\uDCA5', layers:[
+        { waveform:'square', freqStart:280, freqEnd:80, duration:0.12, gain:0.4 },
+        { type:'noise', duration:0.08, gain:0.25, filterType:'lowpass', filterFreq:2000 }
+    ]},
+    { id:'combat_miss', name:'Combat Miss', category:'snd_combat', icon:'\uD83D\uDCA8', layers:[
+        { waveform:'triangle', freqStart:800, freqEnd:400, duration:0.1, gain:0.15 }
+    ]},
+    { id:'combat_swing', name:'Combat Swing', category:'snd_combat', icon:'\uD83D\uDDE1\uFE0F', layers:[
+        { waveform:'sawtooth', freqStart:400, freqEnd:100, duration:0.1, gain:0.2 }
+    ]},
+    { id:'special_attack', name:'Special Attack', category:'snd_combat', icon:'\u26A1', layers:[
+        { waveform:'sawtooth', freqStart:500, freqEnd:80, duration:0.2, gain:0.3 },
+        { type:'noise', duration:0.15, gain:0.2, filterType:'bandpass', filterFreq:1500, delay:0.05 },
+        { waveform:'sine', freqStart:60, freqEnd:30, duration:0.25, gain:0.35 }
+    ]},
+    { id:'death', name:'Death', category:'snd_combat', icon:'\uD83D\uDC80', layers:[
+        { waveform:'square', freqStart:400, freqEnd:380, duration:0.2, gain:0.3 },
+        { waveform:'square', freqStart:350, freqEnd:330, duration:0.2, gain:0.3, delay:0.2 },
+        { waveform:'square', freqStart:280, freqEnd:260, duration:0.2, gain:0.3, delay:0.4 },
+        { waveform:'square', freqStart:200, freqEnd:100, duration:0.4, gain:0.3, delay:0.6 }
+    ]},
+    { id:'gather_hit', name:'Mining Hit', category:'snd_skilling', icon:'\u26CF\uFE0F', layers:[
+        { waveform:'triangle', freqStart:800, freqEnd:1200, duration:0.06, gain:0.25 },
+        { waveform:'sine', freqStart:2000, freqEnd:1500, duration:0.04, gain:0.1, delay:0.02 }
+    ]},
+    { id:'gather_chop', name:'Woodcutting Chop', category:'snd_skilling', icon:'\uD83E\uDE93', layers:[
+        { waveform:'square', freqStart:300, freqEnd:150, duration:0.08, gain:0.25 },
+        { type:'noise', duration:0.05, gain:0.15, filterType:'lowpass', filterFreq:800, delay:0.03 }
+    ]},
+    { id:'gather_fish', name:'Fishing Splash', category:'snd_skilling', icon:'\uD83C\uDFA3', layers:[
+        { type:'noise', duration:0.2, gain:0.2, filterType:'bandpass', filterFreq:600 },
+        { type:'noise', duration:0.1, gain:0.1, filterType:'highpass', filterFreq:2000, delay:0.05 }
+    ]},
+    { id:'click_move', name:'Click Move', category:'snd_ui', icon:'\uD83D\uDDB1\uFE0F', layers:[
+        { waveform:'square', freqStart:1200, freqEnd:1000, duration:0.03, gain:0.1 }
+    ]},
+    { id:'click_action', name:'Click Action', category:'snd_ui', icon:'\uD83D\uDD34', layers:[
+        { waveform:'square', freqStart:800, freqEnd:600, duration:0.03, gain:0.15 }
+    ]},
+    { id:'building_enter', name:'Building Enter', category:'snd_ui', icon:'\uD83C\uDFE0', layers:[
+        { waveform:'sine', freqStart:600, freqEnd:600, duration:0.12, gain:0.2 },
+        { waveform:'sine', freqStart:800, freqEnd:800, duration:0.15, gain:0.25, delay:0.12 }
+    ]},
+    { id:'ui_open', name:'UI Open', category:'snd_ui', icon:'\uD83D\uDCE6', layers:[
+        { waveform:'sine', freqStart:400, freqEnd:800, duration:0.15, gain:0.2 }
+    ]},
+    { id:'npc_chat', name:'NPC Chat', category:'snd_social', icon:'\uD83D\uDDE8\uFE0F', layers:[
+        { waveform:'sine', freqStart:600, freqEnd:580, duration:0.1, gain:0.15 }
+    ]},
+    { id:'level_up', name:'Level Up', category:'snd_social', icon:'\u2B50', layers:[
+        { waveform:'sine', freqStart:523, freqEnd:523, duration:0.15, gain:0.3 },
+        { waveform:'sine', freqStart:659, freqEnd:659, duration:0.15, gain:0.3, delay:0.15 },
+        { waveform:'sine', freqStart:784, freqEnd:784, duration:0.15, gain:0.3, delay:0.3 },
+        { waveform:'sine', freqStart:1047, freqEnd:1047, duration:0.3, gain:0.35, delay:0.45 }
+    ]},
+    { id:'quest_complete', name:'Quest Complete', category:'snd_social', icon:'\uD83C\uDFC6', layers:[
+        { waveform:'sine', freqStart:523, freqEnd:523, duration:0.12, gain:0.3 },
+        { waveform:'sine', freqStart:659, freqEnd:659, duration:0.12, gain:0.3, delay:0.12 },
+        { waveform:'sine', freqStart:784, freqEnd:784, duration:0.12, gain:0.3, delay:0.24 },
+        { waveform:'sine', freqStart:1047, freqEnd:1047, duration:0.2, gain:0.35, delay:0.36 },
+        { waveform:'sine', freqStart:1175, freqEnd:1175, duration:0.3, gain:0.3, delay:0.56 }
+    ]},
+    { id:'eat_food', name:'Eat Food', category:'snd_misc', icon:'\uD83C\uDF56', layers:[
+        { type:'noise', duration:0.1, gain:0.2, filterType:'bandpass', filterFreq:1200 },
+        { type:'noise', duration:0.08, gain:0.15, filterType:'lowpass', filterFreq:600, delay:0.08 }
+    ]},
+    { id:'item_pickup', name:'Item Pickup', category:'snd_misc', icon:'\uD83D\uDCE5', layers:[
+        { waveform:'sine', freqStart:200, freqEnd:600, duration:0.12, gain:0.2 }
+    ]},
+    { id:'pickpocket', name:'Pickpocket', category:'snd_misc', icon:'\uD83E\uDD0F', layers:[
+        { waveform:'sine', freqStart:300, freqEnd:500, duration:0.08, gain:0.15 },
+        { waveform:'sine', freqStart:500, freqEnd:700, duration:0.06, gain:0.12, delay:0.06 }
+    ]},
+];
+
+// ============================================================
 // ASSET STORE (IndexedDB)
 // ============================================================
 class AssetStore {
@@ -777,11 +924,12 @@ class AssetStore {
 
     init() {
         return new Promise((resolve, reject) => {
-            const req = indexedDB.open('agentscape-forge', 2);
+            const req = indexedDB.open('agentscape-forge', 3);
             req.onupgradeneeded = (e) => {
                 const db = e.target.result;
                 if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets', { keyPath: 'id' });
                 if (!db.objectStoreNames.contains('animations')) db.createObjectStore('animations', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('sounds')) db.createObjectStore('sounds', { keyPath: 'id' });
             };
             req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
             req.onerror = (e) => reject(e);
@@ -841,6 +989,24 @@ class AssetStore {
             req.onerror = (e) => reject(e);
         });
     }
+
+    saveSound(id, data) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('sounds', 'readwrite');
+            tx.objectStore('sounds').put({ id, ...data });
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e);
+        });
+    }
+
+    getAllSounds() {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('sounds', 'readonly');
+            const req = tx.objectStore('sounds').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = (e) => reject(e);
+        });
+    }
 }
 
 // ============================================================
@@ -851,6 +1017,11 @@ let assets = {};  // id -> { imageData, prompt, generatedAt }
 let selectedCategory = 'swords';
 let selectedItemId = null;
 let generating = false;
+let soundMode = false;
+let selectedSoundCategory = 'snd_combat';
+let savedSounds = {};
+let editingSound = null;
+let editingSoundLayers = [];
 
 // ============================================================
 // SETTINGS
@@ -920,6 +1091,18 @@ function renderSidebar() {
             <span class="sidebar-item-icon">${cat.icon}</span>
             <span class="sidebar-item-name">${cat.name}</span>
             <span class="sidebar-item-count">${anims.length}</span>
+        </div>`;
+    }
+
+    // Sound categories
+    html += `<div class="sidebar-group"><div class="sidebar-group-label">Sounds</div></div>`;
+    for (const cat of SOUND_CATEGORIES) {
+        const sounds = SOUND_PRESETS.filter(s => s.category === cat.id);
+        const customized = sounds.filter(s => savedSounds[s.id]).length;
+        html += `<div class="sidebar-item ${soundMode && cat.id === selectedSoundCategory ? 'active' : ''}" onclick="selectSoundCategory('${cat.id}')">
+            <span class="sidebar-item-icon">${cat.icon}</span>
+            <span class="sidebar-item-name">${cat.name}</span>
+            <span class="sidebar-item-count ${customized === sounds.length && sounds.length > 0 ? 'complete' : ''}">${customized}/${sounds.length}</span>
         </div>`;
     }
 
@@ -1231,6 +1414,17 @@ async function exportAll() {
     }
     zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
+    // Include sounds
+    const soundData = {};
+    for (const preset of SOUND_PRESETS) {
+        soundData[preset.id] = {
+            name: preset.name,
+            category: preset.category,
+            layers: savedSounds[preset.id] ? savedSounds[preset.id].layers : preset.layers
+        };
+    }
+    zip.file('sounds.json', JSON.stringify(soundData, null, 2));
+
     const blob = await zip.generateAsync({ type: 'blob' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1425,23 +1619,38 @@ function cancelBatch() {
 // ============================================================
 function selectCategory(catId) {
     animMode = false;
+    soundMode = false;
     selectedCategory = catId;
     document.getElementById('main').style.display = 'block';
     document.getElementById('anim-editor').style.display = 'none';
+    document.getElementById('sound-editor').style.display = 'none';
     renderSidebar();
     renderGrid();
 }
 
 function selectAnimCategory(catId) {
     animMode = true;
+    soundMode = false;
     selectedAnimCategory = catId;
     document.getElementById('main').style.display = 'none';
     document.getElementById('anim-editor').style.display = 'flex';
+    document.getElementById('sound-editor').style.display = 'none';
     initAnimEditor();
     // Filter to first animation in this category
     const catAnims = ANIMATION_PRESETS.filter(a => a.category === catId);
     populateAnimSelect();
     if (catAnims.length > 0) selectAnimation(catAnims[0].id);
+    renderSidebar();
+}
+
+function selectSoundCategory(catId) {
+    animMode = false;
+    soundMode = true;
+    selectedSoundCategory = catId;
+    document.getElementById('main').style.display = 'none';
+    document.getElementById('anim-editor').style.display = 'none';
+    document.getElementById('sound-editor').style.display = 'flex';
+    renderSoundGrid();
     renderSidebar();
 }
 
@@ -1966,7 +2175,8 @@ function createNewAnimation() {
 // ============================================================
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        if (document.getElementById('settings-modal').classList.contains('open')) closeSettings();
+        if (document.getElementById('sound-modal').classList.contains('open')) closeSoundModal();
+        else if (document.getElementById('settings-modal').classList.contains('open')) closeSettings();
         else if (document.getElementById('item-modal').classList.contains('open')) closeItemModal();
     }
     // Animation editor shortcuts
@@ -1988,6 +2198,333 @@ document.getElementById('settings-modal').addEventListener('click', (e) => {
 });
 
 // ============================================================
+// SOUND EDITOR
+// ============================================================
+let forgeAudioCtx = null;
+function getForgeAudioCtx() {
+    if (!forgeAudioCtx) forgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (forgeAudioCtx.state === 'suspended') forgeAudioCtx.resume();
+    return forgeAudioCtx;
+}
+
+function forgePlayLayer(ctx, dest, layer) {
+    const now = ctx.currentTime + (layer.delay || 0);
+    const dur = layer.duration || 0.15;
+    const gain = ctx.createGain();
+    gain.connect(dest);
+
+    if (layer.type === 'noise') {
+        const bufSize = Math.max(1, Math.floor(ctx.sampleRate * dur));
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        if (layer.filterType) {
+            const filt = ctx.createBiquadFilter();
+            filt.type = layer.filterType;
+            filt.frequency.value = layer.filterFreq || 1000;
+            src.connect(filt);
+            filt.connect(gain);
+        } else {
+            src.connect(gain);
+        }
+        gain.gain.setValueAtTime(layer.gainStart != null ? layer.gainStart : layer.gain || 0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        src.start(now);
+        src.stop(now + dur);
+    } else {
+        const osc = ctx.createOscillator();
+        osc.type = layer.waveform || 'sine';
+        const freqStart = layer.freqStart || 440;
+        const freqEnd = layer.freqEnd || freqStart;
+        osc.frequency.setValueAtTime(freqStart, now);
+        if (freqEnd !== freqStart) {
+            if (layer.ramp === 'linear') osc.frequency.linearRampToValueAtTime(freqEnd, now + dur);
+            else osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), now + dur);
+        }
+        osc.connect(gain);
+        const gv = layer.gain || 0.3;
+        gain.gain.setValueAtTime(layer.gainStart != null ? layer.gainStart : gv, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc.start(now);
+        osc.stop(now + dur);
+    }
+}
+
+function playPresetSound(layers) {
+    const ctx = getForgeAudioCtx();
+    for (const layer of layers) forgePlayLayer(ctx, ctx.destination, layer);
+}
+
+function renderSoundGrid() {
+    const editor = document.getElementById('sound-editor');
+    const cat = SOUND_CATEGORIES.find(c => c.id === selectedSoundCategory);
+    const sounds = SOUND_PRESETS.filter(s => s.category === selectedSoundCategory);
+
+    let html = `<div class="sound-editor-header">
+        <div>
+            <div class="main-title">${cat.icon} ${cat.name} Sounds</div>
+            <div class="main-subtitle">${sounds.filter(s => savedSounds[s.id]).length} of ${sounds.length} customized</div>
+        </div>
+        <button class="btn" onclick="exportSoundsJSON()">Export Sounds JSON</button>
+    </div>`;
+
+    html += '<div class="sound-grid">';
+    for (const snd of sounds) {
+        const isCustom = savedSounds[snd.id];
+        const layers = isCustom ? savedSounds[snd.id].layers : snd.layers;
+        html += `<div class="sound-card ${isCustom ? 'has-custom' : ''}" onclick="openSoundModal('${snd.id}')">
+            <div class="sound-card-icon">${snd.icon}</div>
+            <div class="sound-card-name">${snd.name}</div>
+            <div class="sound-card-layers">${layers.length} layer${layers.length !== 1 ? 's' : ''}</div>
+        </div>`;
+    }
+    html += '</div>';
+    editor.innerHTML = html;
+}
+
+function openSoundModal(soundId) {
+    const preset = SOUND_PRESETS.find(s => s.id === soundId);
+    if (!preset) return;
+    editingSound = preset;
+    const saved = savedSounds[soundId];
+    editingSoundLayers = JSON.parse(JSON.stringify(saved ? saved.layers : preset.layers));
+    document.getElementById('sound-modal-title').textContent = preset.icon + ' ' + preset.name;
+    renderSoundLayers();
+    drawWaveformPlaceholder();
+    document.getElementById('sound-modal').classList.add('open');
+}
+
+function closeSoundModal() {
+    document.getElementById('sound-modal').classList.remove('open');
+    editingSound = null;
+    editingSoundLayers = [];
+}
+
+function renderSoundLayers() {
+    const container = document.getElementById('sound-layers-container');
+    let html = '';
+    for (let i = 0; i < editingSoundLayers.length; i++) {
+        const L = editingSoundLayers[i];
+        const isNoise = L.type === 'noise';
+        html += `<div class="sound-layer">
+            <div class="sound-layer-header">
+                <span class="sound-layer-title">Layer ${i + 1}</span>
+                <button class="sound-layer-remove" onclick="removeSoundLayer(${i})">Remove</button>
+            </div>
+            <div class="sound-slider-row">
+                <label>Type</label>
+                <select onchange="updateSoundLayer(${i},'waveform',this.value)">
+                    <option value="sine" ${!isNoise && L.waveform === 'sine' ? 'selected' : ''}>Sine</option>
+                    <option value="square" ${!isNoise && L.waveform === 'square' ? 'selected' : ''}>Square</option>
+                    <option value="sawtooth" ${!isNoise && L.waveform === 'sawtooth' ? 'selected' : ''}>Sawtooth</option>
+                    <option value="triangle" ${!isNoise && L.waveform === 'triangle' ? 'selected' : ''}>Triangle</option>
+                    <option value="noise" ${isNoise ? 'selected' : ''}>Noise</option>
+                </select>
+            </div>`;
+
+        if (!isNoise) {
+            html += `
+            <div class="sound-slider-row">
+                <label>Freq Start</label>
+                <input type="range" min="50" max="4000" step="10" value="${L.freqStart || 440}" oninput="updateSoundLayer(${i},'freqStart',+this.value)">
+                <span class="sound-slider-val">${L.freqStart || 440}Hz</span>
+            </div>
+            <div class="sound-slider-row">
+                <label>Freq End</label>
+                <input type="range" min="50" max="4000" step="10" value="${L.freqEnd || L.freqStart || 440}" oninput="updateSoundLayer(${i},'freqEnd',+this.value)">
+                <span class="sound-slider-val">${L.freqEnd || L.freqStart || 440}Hz</span>
+            </div>
+            <div class="sound-slider-row">
+                <label>Ramp</label>
+                <select onchange="updateSoundLayer(${i},'ramp',this.value)">
+                    <option value="exponential" ${L.ramp !== 'linear' ? 'selected' : ''}>Exponential</option>
+                    <option value="linear" ${L.ramp === 'linear' ? 'selected' : ''}>Linear</option>
+                </select>
+            </div>`;
+        } else {
+            html += `
+            <div class="sound-slider-row">
+                <label>Filter</label>
+                <select onchange="updateSoundLayer(${i},'filterType',this.value)">
+                    <option value="" ${!L.filterType ? 'selected' : ''}>None</option>
+                    <option value="lowpass" ${L.filterType === 'lowpass' ? 'selected' : ''}>Lowpass</option>
+                    <option value="highpass" ${L.filterType === 'highpass' ? 'selected' : ''}>Highpass</option>
+                    <option value="bandpass" ${L.filterType === 'bandpass' ? 'selected' : ''}>Bandpass</option>
+                </select>
+            </div>
+            <div class="sound-slider-row">
+                <label>Filter Freq</label>
+                <input type="range" min="100" max="8000" step="50" value="${L.filterFreq || 1000}" oninput="updateSoundLayer(${i},'filterFreq',+this.value)">
+                <span class="sound-slider-val">${L.filterFreq || 1000}Hz</span>
+            </div>`;
+        }
+
+        html += `
+            <div class="sound-slider-row">
+                <label>Duration</label>
+                <input type="range" min="0.02" max="2" step="0.01" value="${L.duration || 0.15}" oninput="updateSoundLayer(${i},'duration',+this.value)">
+                <span class="sound-slider-val">${(L.duration || 0.15).toFixed(2)}s</span>
+            </div>
+            <div class="sound-slider-row">
+                <label>Gain</label>
+                <input type="range" min="0" max="1" step="0.01" value="${L.gain || 0.3}" oninput="updateSoundLayer(${i},'gain',+this.value)">
+                <span class="sound-slider-val">${(L.gain || 0.3).toFixed(2)}</span>
+            </div>
+            <div class="sound-slider-row">
+                <label>Delay</label>
+                <input type="range" min="0" max="1" step="0.01" value="${L.delay || 0}" oninput="updateSoundLayer(${i},'delay',+this.value)">
+                <span class="sound-slider-val">${(L.delay || 0).toFixed(2)}s</span>
+            </div>
+        </div>`;
+    }
+    html += `<button class="sound-add-layer" onclick="addSoundLayer()">+ Add Layer</button>`;
+    container.innerHTML = html;
+}
+
+function updateSoundLayer(idx, key, value) {
+    const L = editingSoundLayers[idx];
+    if (key === 'waveform' && value === 'noise') {
+        L.type = 'noise';
+        delete L.waveform;
+        delete L.freqStart;
+        delete L.freqEnd;
+        delete L.ramp;
+        L.filterType = 'lowpass';
+        L.filterFreq = 1000;
+        renderSoundLayers();
+        return;
+    } else if (key === 'waveform') {
+        delete L.type;
+        L.waveform = value;
+        if (!L.freqStart) L.freqStart = 440;
+        if (!L.freqEnd) L.freqEnd = 440;
+        delete L.filterType;
+        delete L.filterFreq;
+        renderSoundLayers();
+        return;
+    }
+    L[key] = value;
+    // Update the display value next to the slider
+    const container = document.getElementById('sound-layers-container');
+    const layers = container.querySelectorAll('.sound-layer');
+    if (layers[idx]) {
+        const rows = layers[idx].querySelectorAll('.sound-slider-row');
+        for (const row of rows) {
+            const lbl = row.querySelector('label');
+            const val = row.querySelector('.sound-slider-val');
+            if (!lbl || !val) continue;
+            const name = lbl.textContent.trim();
+            if (name === 'Freq Start' && key === 'freqStart') val.textContent = value + 'Hz';
+            if (name === 'Freq End' && key === 'freqEnd') val.textContent = value + 'Hz';
+            if (name === 'Filter Freq' && key === 'filterFreq') val.textContent = value + 'Hz';
+            if (name === 'Duration' && key === 'duration') val.textContent = value.toFixed(2) + 's';
+            if (name === 'Gain' && key === 'gain') val.textContent = value.toFixed(2);
+            if (name === 'Delay' && key === 'delay') val.textContent = value.toFixed(2) + 's';
+        }
+    }
+}
+
+function removeSoundLayer(idx) {
+    editingSoundLayers.splice(idx, 1);
+    renderSoundLayers();
+}
+
+function addSoundLayer() {
+    editingSoundLayers.push({ waveform: 'sine', freqStart: 440, freqEnd: 440, duration: 0.15, gain: 0.3, delay: 0 });
+    renderSoundLayers();
+}
+
+function previewCurrentSound() {
+    playPresetSound(editingSoundLayers);
+    drawWaveformViz();
+}
+
+function drawWaveformPlaceholder() {
+    const canvas = document.getElementById('sound-wave-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#3a3a52';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
+}
+
+function drawWaveformViz() {
+    const canvas = document.getElementById('sound-wave-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw a visual representation based on layers
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 2;
+    const totalDur = editingSoundLayers.reduce((max, L) => Math.max(max, (L.delay || 0) + (L.duration || 0.15)), 0.1);
+
+    for (const L of editingSoundLayers) {
+        const startX = ((L.delay || 0) / totalDur) * W;
+        const endX = (((L.delay || 0) + (L.duration || 0.15)) / totalDur) * W;
+        const gain = L.gain || 0.3;
+        const amp = gain * (H / 2 - 4);
+        const isNoise = L.type === 'noise';
+        ctx.strokeStyle = isNoise ? '#eab308' : '#6366f1';
+        ctx.beginPath();
+        for (let x = startX; x <= endX; x++) {
+            const t = (x - startX) / (endX - startX);
+            const envelope = (1 - t);
+            let val;
+            if (isNoise) {
+                val = (Math.random() * 2 - 1) * envelope;
+            } else {
+                const freq = (L.freqStart || 440) + ((L.freqEnd || L.freqStart || 440) - (L.freqStart || 440)) * t;
+                val = Math.sin(t * freq * 0.1) * envelope;
+            }
+            const y = H / 2 - val * amp;
+            if (x === startX) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+}
+
+async function saveCurrentSound() {
+    if (!editingSound) return;
+    savedSounds[editingSound.id] = { layers: JSON.parse(JSON.stringify(editingSoundLayers)) };
+    await store.saveSound(editingSound.id, savedSounds[editingSound.id]);
+    showToast('Sound saved: ' + editingSound.name, 'success');
+    renderSoundGrid();
+    renderSidebar();
+}
+
+function resetSoundToDefault() {
+    if (!editingSound) return;
+    editingSoundLayers = JSON.parse(JSON.stringify(editingSound.layers));
+    renderSoundLayers();
+    drawWaveformPlaceholder();
+    showToast('Reset to default', 'success');
+}
+
+function exportSoundsJSON() {
+    const data = {};
+    for (const preset of SOUND_PRESETS) {
+        data[preset.id] = {
+            name: preset.name,
+            category: preset.category,
+            layers: savedSounds[preset.id] ? savedSounds[preset.id].layers : preset.layers
+        };
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'agentscape-sounds.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('Exported sounds JSON', 'success');
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function init() {
@@ -1999,6 +2536,11 @@ async function init() {
         const allAnims = await store.getAllAnims();
         for (const a of allAnims) { savedAnimations[a.id] = a; }
     } catch(e) { /* first run, no animations store yet */ }
+    // Load saved sounds
+    try {
+        const allSounds = await store.getAllSounds();
+        for (const s of allSounds) { savedSounds[s.id] = s; }
+    } catch(e) { /* first run, no sounds store yet */ }
     renderSidebar();
     renderGrid();
     updateProgress();

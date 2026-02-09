@@ -1212,6 +1212,11 @@ export class AgentScapeRoom extends Room<GameState> {
         monster.combatPlayerId = player.sessionId;
         monster.aggroTargetId = player.sessionId;
         monster.state = 'ATTACKING';
+
+        // Face each other
+        const angle = Math.atan2(monster.x - player.x, monster.z - player.z);
+        player.rotation = angle;
+        monster.rotation = angle + Math.PI;
     }
 
     private disengageMonsterCombat(player: PlayerSchema) {

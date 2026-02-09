@@ -411,6 +411,11 @@ export class CombatSystem {
             return { hitsplats, deaths, xpGains };
         }
 
+        // Keep facing each other during combat
+        const faceAngle = Math.atan2(npc.x - player.x, npc.z - player.z);
+        player.rotation = faceAngle;
+        npc.rotation = faceAngle + Math.PI;
+
         player.combatTimer += dt;
         if (player.combatTimer < COMBAT_TICK) return { hitsplats, deaths, xpGains };
         player.combatTimer -= COMBAT_TICK;
@@ -615,6 +620,11 @@ export class CombatSystem {
         const xpGains: { skill: string; amount: number }[] = [];
 
         if (player.isDead || monster.isDead) return { hitsplats, deaths, xpGains };
+
+        // Keep facing each other during combat
+        const faceAngle = Math.atan2(monster.x - player.x, monster.z - player.z);
+        player.rotation = faceAngle;
+        monster.rotation = faceAngle + Math.PI;
 
         // Mark player as in combat for HP regen tracking
         this.markInCombat(player.sessionId);
@@ -912,6 +922,10 @@ export class CombatSystem {
         for (const player of engagedPlayers) {
             if (player.isDead) continue;
 
+            // Face the boss during combat
+            const faceAngle = Math.atan2(monster.x - player.x, monster.z - player.z);
+            player.rotation = faceAngle;
+
             this.markInCombat(player.sessionId);
             const weapon = player.equippedWeapon.id ? player.equippedWeapon : null;
             const weaponMult = getWeaponTierMult(player.equippedWeapon.id || undefined);
@@ -1000,6 +1014,8 @@ export class CombatSystem {
         // === Boss attacks highest-threat player (prayer + style + set bonus applied) ===
         const target = this.monsterBehavior?.getTopThreatPlayer(monster.id, state.players as any) ?? engagedPlayers[0];
         if (target && !target.isDead) {
+            // Boss faces its target
+            monster.rotation = Math.atan2(target.x - monster.x, target.z - monster.z);
             const monAtk = monster.combatStats.attack * monster.enrageMultiplier;
             const monStr = monster.combatStats.strength * monster.enrageMultiplier;
             const tPrayer = this.getPrayerEffects(target.sessionId);
