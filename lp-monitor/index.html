@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LP Range Monitor | SUITE</title>
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-hover: #1a1a2e;
+            --border: #1e1e2e;
+            --text: #e2e8f0;
+            --text-dim: #64748b;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --green: #22c55e;
+            --red: #ef4444;
+            --font: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .app-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6366f1, #a78bfa);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .app-title h1 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        select, button { font-family: var(--font); font-size: 13px; }
+
+        .chain-select {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .chain-select:focus { border-color: var(--accent); }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #5558e6; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+        .wallet-btn.connected {
+            background: var(--bg-card);
+            border: 1px solid var(--green);
+            color: var(--green);
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value { font-size: 24px; font-weight: 700; }
+        .stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+        /* Position cards */
+        .positions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .position-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .position-card:hover { border-color: #2a2a3e; }
+        .position-card.out-of-range { border-left: 3px solid var(--red); }
+        .position-card.in-range { border-left: 3px solid var(--green); }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .token-pair {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .token-pair h3 { font-size: 16px; font-weight: 600; }
+
+        .fee-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.in-range { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+        .status-badge.out-of-range { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+
+        /* Range bar */
+        .range-bar-container { margin: 16px 0; }
+
+        .range-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            position: relative;
+            overflow: visible;
+        }
+
+        .range-fill {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .range-fill.in-range { background: linear-gradient(90deg, var(--green), #4ade80); }
+        .range-fill.out-of-range-low { background: linear-gradient(90deg, var(--red), transparent); width: 100%; opacity: 0.3; }
+        .range-fill.out-of-range-high { background: linear-gradient(90deg, transparent, var(--red)); width: 100%; opacity: 0.3; }
+
+        .tick-marker {
+            position: absolute;
+            top: -4px;
+            width: 3px;
+            height: 16px;
+            background: white;
+            border-radius: 2px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 6px rgba(255,255,255,0.5);
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .range-labels .current-label { color: var(--text); font-weight: 500; }
+
+        /* Price details */
+        .price-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .price-item { font-size: 12px; }
+        .price-item .label { color: var(--text-dim); margin-bottom: 2px; }
+        .price-item .value { font-weight: 600; font-size: 13px; }
+
+        /* Card footer */
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .position-id { font-size: 12px; color: var(--text-dim); }
+        .position-id a { color: var(--accent); text-decoration: none; }
+        .position-id a:hover { text-decoration: underline; }
+
+        /* Alert toggle */
+        .alert-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: var(--border);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-switch.active { background: var(--accent); }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.active::after { transform: translateX(16px); }
+
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .empty-state h3 { font-size: 16px; color: var(--text); margin-bottom: 8px; }
+        .empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto; }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-card) 25%, #1a1a2e 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 12px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card { height: 200px; margin-bottom: 12px; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            max-width: 360px;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: rgba(34, 197, 94, 0.15); border: 1px solid var(--green); color: var(--green); }
+        .toast.error { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--red); color: var(--red); }
+        .toast.info { background: rgba(99, 102, 241, 0.15); border: 1px solid var(--accent); color: var(--accent); }
+
+        .last-checked {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .app-header { flex-direction: column; align-items: flex-start; }
+            .stats-bar { flex-direction: column; }
+            .price-details { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="app-title">
+                <div class="app-icon">📊</div>
+                <h1>LP Range Monitor</h1>
+            </div>
+            <div class="header-controls">
+                <select class="chain-select" id="chainSelect">
+                    <option value="1">Ethereum</option>
+                    <option value="42161">Arbitrum</option>
+                    <option value="8453">Base</option>
+                    <option value="137">Polygon</option>
+                </select>
+                <button class="btn btn-ghost" id="refreshBtn" title="Refresh">&#8635;</button>
+                <button class="btn btn-primary wallet-btn" id="connectBtn">Connect Wallet</button>
+            </div>
+        </header>
+
+        <div id="statsBar" style="display: none;">
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">Total Positions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--green);" id="inRangeCount">0</div>
+                    <div class="stat-label">In Range</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--red);" id="outRangeCount">0</div>
+                    <div class="stat-label">Out of Range</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content">
+            <div class="empty-state">
+                <div class="empty-icon">🔗</div>
+                <h3>Connect Your Wallet</h3>
+                <p>Connect your wallet to view and monitor your Uniswap V3 LP positions.</p>
+            </div>
+        </div>
+
+        <div id="lastChecked" class="last-checked" style="display: none;"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ========================
+        // Chain Configurations
+        // ========================
+        const CHAINS = {
+            1: {
+                name: 'Ethereum',
+                chainIdHex: '0x1',
+                rpc: 'https://eth.llamarpc.com',
+                explorer: 'https://etherscan.io',
+                npm: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+                factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+            },
+            42161: {
+                name: 'Arbitrum',
+                chainIdHex: '0xa4b1',
+                rpc: 'https://arb1.arbitrum.io/rpc',
+                explorer: 'https://arbiscan.io',
+                npm: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+                factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+            },
+            8453: {
+                name: 'Base',
+                chainIdHex: '0x2105',
+                rpc: 'https://mainnet.base.org',
+                explorer: 'https://basescan.org',
+                npm: '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1',
+                factory: '0x33128a8fC17869897dcE68Ed026d694621f6FDfD'
+            },
+            137: {
+                name: 'Polygon',
+                chainIdHex: '0x89',
+                rpc: 'https://polygon-rpc.com',
+                explorer: 'https://polygonscan.com',
+                npm: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+                factory: '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+            }
+        };
+
+        // Minimal ABIs
+        const NPM_ABI = [
+            'function balanceOf(address) view returns (uint256)',
+            'function tokenOfOwnerByIndex(address, uint256) view returns (uint256)',
+            'function positions(uint256) view returns (uint96 nonce, address operator, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint256 tokensOwed0, uint256 tokensOwed1)'
+        ];
+
+        const POOL_ABI = [
+            'function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)'
+        ];
+
+        const FACTORY_ABI = [
+            'function getPool(address, address, uint24) view returns (address)'
+        ];
+
+        const ERC20_ABI = [
+            'function symbol() view returns (string)',
+            'function decimals() view returns (uint8)'
+        ];
+
+        // ========================
+        // App State
+        // ========================
+        let wallet = null;
+        let selectedChainId = 1;
+        let positions = [];
+        let activeAlerts = new Set();
+        let refreshInterval = null;
+        let tokenCache = {};
+
+        // DOM
+        const connectBtn = document.getElementById('connectBtn');
+        const chainSelect = document.getElementById('chainSelect');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const content = document.getElementById('content');
+        const statsBar = document.getElementById('statsBar');
+        const lastChecked = document.getElementById('lastChecked');
+
+        // Events
+        connectBtn.addEventListener('click', handleConnect);
+        chainSelect.addEventListener('change', handleChainChange);
+        refreshBtn.addEventListener('click', () => fetchPositions());
+
+        // Restore saved wallet on load
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('connectedWallet');
+            if (saved && window.ethereum) {
+                wallet = saved;
+                updateWalletButton();
+                fetchPositions();
+            }
+        });
+
+        // Listen for account/chain changes from MetaMask
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    wallet = null;
+                    localStorage.removeItem('connectedWallet');
+                    updateWalletButton();
+                    renderEmpty('connect');
+                    statsBar.style.display = 'none';
+                } else {
+                    wallet = accounts[0];
+                    localStorage.setItem('connectedWallet', wallet);
+                    updateWalletButton();
+                    fetchPositions();
+                }
+            });
+
+            window.ethereum.on('chainChanged', () => {
+                if (wallet) fetchPositions();
+            });
+        }
+
+        // ========================
+        // Wallet Connection
+        // ========================
+        async function handleConnect() {
+            if (wallet) {
+                wallet = null;
+                localStorage.removeItem('connectedWallet');
+                updateWalletButton();
+                positions = [];
+                renderEmpty('connect');
+                statsBar.style.display = 'none';
+                lastChecked.style.display = 'none';
+                if (refreshInterval) clearInterval(refreshInterval);
+                return;
+            }
+
+            if (!window.ethereum) {
+                showToast('Install MetaMask to continue', 'error');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                wallet = accounts[0];
+                localStorage.setItem('connectedWallet', wallet);
+                updateWalletButton();
+                await switchChain(selectedChainId);
+                fetchPositions();
+            } catch (e) {
+                showToast('Wallet connection cancelled', 'error');
+            }
+        }
+
+        function updateWalletButton() {
+            if (wallet) {
+                connectBtn.textContent = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+                connectBtn.classList.add('connected');
+                connectBtn.classList.remove('btn-primary');
+            } else {
+                connectBtn.textContent = 'Connect Wallet';
+                connectBtn.classList.remove('connected');
+                connectBtn.classList.add('btn-primary');
+            }
+        }
+
+        async function switchChain(chainId) {
+            if (!window.ethereum) return;
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CHAINS[chainId].chainIdHex }]
+                });
+            } catch (e) {
+                // User rejected or chain not added — we use our own RPC anyway
+            }
+        }
+
+        async function handleChainChange() {
+            selectedChainId = parseInt(chainSelect.value);
+            tokenCache = {};
+            if (wallet) {
+                await switchChain(selectedChainId);
+                fetchPositions();
+            }
+        }
+
+        // ========================
+        // Token Info Cache
+        // ========================
+        async function getTokenInfo(address, provider) {
+            const key = `${selectedChainId}:${address}`;
+            if (tokenCache[key]) return tokenCache[key];
+
+            try {
+                const token = new ethers.Contract(address, ERC20_ABI, provider);
+                const [symbol, decimals] = await Promise.all([
+                    token.symbol(),
+                    token.decimals()
+                ]);
+                tokenCache[key] = { symbol, decimals: Number(decimals) };
+            } catch {
+                tokenCache[key] = { symbol: address.slice(0, 6) + '...', decimals: 18 };
+            }
+            return tokenCache[key];
+        }
+
+        // ========================
+        // Position Fetching
+        // ========================
+        async function fetchPositions() {
+            if (!wallet) return;
+
+            const chain = CHAINS[selectedChainId];
+            renderLoading();
+
+            try {
+                const provider = new ethers.JsonRpcProvider(chain.rpc);
+                const npm = new ethers.Contract(chain.npm, NPM_ABI, provider);
+                const factory = new ethers.Contract(chain.factory, FACTORY_ABI, provider);
+
+                // Get position count
+                const balance = await npm.balanceOf(wallet);
+                const count = Number(balance);
+
+                if (count === 0) {
+                    positions = [];
+                    renderEmpty('no-positions');
+                    statsBar.style.display = 'none';
+                    return;
+                }
+
+                // Get all token IDs
+                const tokenIds = await Promise.all(
+                    Array.from({ length: count }, (_, i) => npm.tokenOfOwnerByIndex(wallet, i))
+                );
+
+                // Get all position data
+                const positionData = await Promise.all(tokenIds.map(id => npm.positions(id)));
+
+                // Filter out closed positions (0 liquidity)
+                const active = [];
+                for (let i = 0; i < positionData.length; i++) {
+                    if (positionData[i].liquidity > 0n) {
+                        active.push({ tokenId: tokenIds[i], data: positionData[i] });
+                    }
+                }
+
+                if (active.length === 0) {
+                    positions = [];
+                    renderEmpty('no-positions');
+                    statsBar.style.display = 'none';
+                    return;
+                }
+
+                // Get unique pools — one RPC call per pool
+                const poolMap = {};
+                const poolPromises = [];
+
+                for (const pos of active) {
+                    const key = `${pos.data.token0}-${pos.data.token1}-${pos.data.fee}`;
+                    if (!poolMap[key]) {
+                        poolMap[key] = { pending: true };
+                        poolPromises.push(
+                            factory.getPool(pos.data.token0, pos.data.token1, pos.data.fee)
+                                .then(async poolAddr => {
+                                    if (poolAddr === ethers.ZeroAddress) {
+                                        poolMap[key] = { address: null, tick: 0 };
+                                        return;
+                                    }
+                                    const pool = new ethers.Contract(poolAddr, POOL_ABI, provider);
+                                    const slot0 = await pool.slot0();
+                                    poolMap[key] = { address: poolAddr, tick: Number(slot0.tick) };
+                                })
+                                .catch(() => {
+                                    poolMap[key] = { address: null, tick: 0 };
+                                })
+                        );
+                    }
+                }
+                await Promise.all(poolPromises);
+
+                // Resolve token symbols/decimals for all unique tokens
+                const tokenAddrs = new Set();
+                for (const pos of active) {
+                    tokenAddrs.add(pos.data.token0);
+                    tokenAddrs.add(pos.data.token1);
+                }
+                await Promise.all([...tokenAddrs].map(addr => getTokenInfo(addr, provider)));
+
+                // Build position objects
+                positions = active.map(pos => {
+                    const key = `${pos.data.token0}-${pos.data.token1}-${pos.data.fee}`;
+                    const pool = poolMap[key];
+                    const t0 = tokenCache[`${selectedChainId}:${pos.data.token0}`];
+                    const t1 = tokenCache[`${selectedChainId}:${pos.data.token1}`];
+                    const tickLower = Number(pos.data.tickLower);
+                    const tickUpper = Number(pos.data.tickUpper);
+                    const currentTick = pool.tick;
+                    const inRange = currentTick >= tickLower && currentTick <= tickUpper;
+
+                    return {
+                        tokenId: pos.tokenId.toString(),
+                        token0: pos.data.token0,
+                        token1: pos.data.token1,
+                        token0Symbol: t0.symbol,
+                        token1Symbol: t1.symbol,
+                        decimals0: t0.decimals,
+                        decimals1: t1.decimals,
+                        fee: Number(pos.data.fee),
+                        tickLower,
+                        tickUpper,
+                        currentTick,
+                        inRange,
+                        liquidity: pos.data.liquidity.toString(),
+                        poolAddress: pool.address
+                    };
+                });
+
+                // Sort: out of range first, then by liquidity descending
+                positions.sort((a, b) => {
+                    if (a.inRange !== b.inRange) return a.inRange ? 1 : -1;
+                    return BigInt(b.liquidity) > BigInt(a.liquidity) ? 1 : -1;
+                });
+
+                // Fetch existing alerts
+                await fetchAlerts();
+
+                renderPositions();
+                updateStats();
+                updateLastChecked();
+
+                // Auto-refresh every 60s
+                if (refreshInterval) clearInterval(refreshInterval);
+                refreshInterval = setInterval(() => fetchPositions(), 60000);
+
+            } catch (e) {
+                console.error('Error fetching positions:', e);
+                showToast('Error fetching positions — check console', 'error');
+                renderEmpty('error');
+            }
+        }
+
+        // ========================
+        // Alert Management
+        // ========================
+        async function fetchAlerts() {
+            if (!wallet) return;
+            try {
+                const res = await fetch(`/api/lp-monitor/get-alerts?wallet=${wallet}&chainId=${selectedChainId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    activeAlerts = new Set(data.alerts.map(a => a.token_id));
+                }
+            } catch {
+                // API not ready yet — silently continue
+            }
+        }
+
+        async function toggleAlert(tokenId) {
+            const pos = positions.find(p => p.tokenId === tokenId);
+            if (!pos) return;
+
+            const isEnabled = activeAlerts.has(tokenId);
+
+            // Need Telegram linked to enable
+            if (!isEnabled) {
+                const tgUser = localStorage.getItem('telegram_user');
+                if (!tgUser) {
+                    showToast('Link your Telegram in SuiteGPT settings to enable alerts', 'info');
+                    return;
+                }
+            }
+
+            try {
+                const tgUser = JSON.parse(localStorage.getItem('telegram_user') || '{}');
+                const res = await fetch('/api/lp-monitor/save-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet_address: wallet,
+                        telegram_chat_id: tgUser.id?.toString(),
+                        chain_id: selectedChainId,
+                        token_id: tokenId,
+                        pool_address: pos.poolAddress,
+                        token0_symbol: pos.token0Symbol,
+                        token1_symbol: pos.token1Symbol,
+                        fee: pos.fee,
+                        tick_lower: pos.tickLower,
+                        tick_upper: pos.tickUpper,
+                        is_active: !isEnabled
+                    })
+                });
+
+                if (res.ok) {
+                    if (isEnabled) {
+                        activeAlerts.delete(tokenId);
+                        showToast('Alerts disabled', 'info');
+                    } else {
+                        activeAlerts.add(tokenId);
+                        showToast('Alerts enabled — Telegram notifications active', 'success');
+                    }
+                    renderPositions();
+                } else {
+                    showToast('Failed to update alert', 'error');
+                }
+            } catch {
+                showToast('Failed to update alert', 'error');
+            }
+        }
+
+        // ========================
+        // Rendering
+        // ========================
+        function renderPositions() {
+            statsBar.style.display = 'block';
+            lastChecked.style.display = 'block';
+
+            const chain = CHAINS[selectedChainId];
+
+            content.innerHTML = '<div class="positions-grid">' + positions.map(pos => {
+                const feePercent = pos.fee / 10000;
+                const priceLower = tickToPrice(pos.tickLower, pos.decimals0, pos.decimals1);
+                const priceUpper = tickToPrice(pos.tickUpper, pos.decimals0, pos.decimals1);
+                const priceCurrent = tickToPrice(pos.currentTick, pos.decimals0, pos.decimals1);
+                const barPercent = getBarPercent(pos.currentTick, pos.tickLower, pos.tickUpper);
+                const statusClass = pos.inRange ? 'in-range' : 'out-of-range';
+                const statusText = pos.inRange ? 'In Range' : 'Out of Range';
+                const statusIcon = pos.inRange ? '&#x1F7E2;' : '&#x1F534;';
+                const alertActive = activeAlerts.has(pos.tokenId);
+
+                const belowRange = pos.currentTick < pos.tickLower;
+                let fillClass = 'in-range';
+                if (!pos.inRange) fillClass = belowRange ? 'out-of-range-low' : 'out-of-range-high';
+                const fillWidth = pos.inRange ? barPercent : 100;
+                const fillLeft = pos.inRange ? 0 : 0;
+
+                return `
+                    <div class="position-card ${statusClass}">
+                        <div class="card-header">
+                            <div class="token-pair">
+                                <h3>${esc(pos.token0Symbol)} / ${esc(pos.token1Symbol)}</h3>
+                                <span class="fee-badge">${feePercent}%</span>
+                            </div>
+                            <span class="status-badge ${statusClass}">${statusIcon} ${statusText}</span>
+                        </div>
+
+                        <div class="range-bar-container">
+                            <div class="range-bar">
+                                <div class="range-fill ${fillClass}" style="left: ${fillLeft}%; width: ${fillWidth}%;"></div>
+                                <div class="tick-marker" style="left: ${barPercent}%;"></div>
+                            </div>
+                            <div class="range-labels">
+                                <span>${formatPrice(priceLower)}</span>
+                                <span class="current-label">Current: ${formatPrice(priceCurrent)}</span>
+                                <span>${formatPrice(priceUpper)}</span>
+                            </div>
+                        </div>
+
+                        <div class="price-details">
+                            <div class="price-item">
+                                <div class="label">Lower Tick</div>
+                                <div class="value">${pos.tickLower.toLocaleString()}</div>
+                            </div>
+                            <div class="price-item">
+                                <div class="label">Current Tick</div>
+                                <div class="value">${pos.currentTick.toLocaleString()}</div>
+                            </div>
+                            <div class="price-item">
+                                <div class="label">Upper Tick</div>
+                                <div class="value">${pos.tickUpper.toLocaleString()}</div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="position-id">
+                                #${pos.tokenId} &middot;
+                                <a href="${chain.explorer}/token/${chain.npm}?a=${pos.tokenId}" target="_blank" rel="noopener">View on Explorer</a>
+                            </span>
+                            <div class="alert-toggle">
+                                <span>Telegram Alerts</span>
+                                <div class="toggle-switch ${alertActive ? 'active' : ''}" onclick="toggleAlert('${pos.tokenId}')"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') + '</div>';
+        }
+
+        function renderLoading() {
+            statsBar.style.display = 'none';
+            content.innerHTML = `
+                <div class="positions-grid">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+            `;
+        }
+
+        function renderEmpty(type) {
+            statsBar.style.display = 'none';
+            lastChecked.style.display = 'none';
+
+            const states = {
+                'connect': { icon: '&#x1F517;', title: 'Connect Your Wallet', desc: 'Connect your wallet to view and monitor your Uniswap V3 LP positions.' },
+                'no-positions': { icon: '&#x1F4AD;', title: 'No Active Positions', desc: `No active Uniswap V3 LP positions found on ${CHAINS[selectedChainId].name}.` },
+                'error': { icon: '&#x26A0;&#xFE0F;', title: 'Error Loading Positions', desc: 'Something went wrong. Try refreshing or switching chains.' }
+            };
+
+            const s = states[type] || states['error'];
+            content.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">${s.icon}</div>
+                    <h3>${s.title}</h3>
+                    <p>${s.desc}</p>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            const inRange = positions.filter(p => p.inRange).length;
+            document.getElementById('totalCount').textContent = positions.length;
+            document.getElementById('inRangeCount').textContent = inRange;
+            document.getElementById('outRangeCount').textContent = positions.length - inRange;
+        }
+
+        function updateLastChecked() {
+            lastChecked.style.display = 'block';
+            lastChecked.textContent = `Last checked: ${new Date().toLocaleTimeString()} \u00B7 Auto-refreshes every 60s`;
+        }
+
+        // ========================
+        // Utilities
+        // ========================
+        function tickToPrice(tick, decimals0, decimals1) {
+            return Math.pow(1.0001, tick) * Math.pow(10, decimals0 - decimals1);
+        }
+
+        function formatPrice(price) {
+            if (price === 0 || !isFinite(price)) return '0';
+            if (price < 0.0001) return price.toExponential(2);
+            if (price < 1) return price.toFixed(6);
+            if (price < 10000) return price.toFixed(4);
+            return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
+
+        function getBarPercent(current, lower, upper) {
+            if (current <= lower) return Math.max(0, -2);
+            if (current >= upper) return Math.min(100, 102);
+            return ((current - lower) / (upper - lower)) * 100;
+        }
+
+        function esc(str) {
+            const el = document.createElement('span');
+            el.textContent = str;
+            return el.innerHTML;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+    </script>
+</body>
+</html>
