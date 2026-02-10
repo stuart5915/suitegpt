@@ -180,21 +180,8 @@ async function publishProfile() {
         profile = result.profile;
         localStorage.setItem('inclawbate_profile', JSON.stringify(profile));
 
-        // Show success
-        document.getElementById('previewPanel').innerHTML = `
-            <div class="launch-preview">
-                <img class="launch-preview-avatar" src="${profile.x_avatar_url || ''}" alt="">
-                <h3>${esc(profile.x_name || profile.x_handle)}</h3>
-                <div class="handle">@${esc(profile.x_handle)}</div>
-                <p class="launch-success-msg">Your human profile is live!</p>
-                <div class="flex gap-md" style="justify-content: center;">
-                    <a href="/u/${profile.x_handle}" class="btn btn-primary">View Profile</a>
-                    <a href="/humans" class="btn btn-secondary">Browse Humans</a>
-                </div>
-            </div>
-        `;
-        prevBtn.classList.add('hidden');
-        nextBtn.classList.add('hidden');
+        // Redirect to their profile page
+        window.location.href = `/u/${profile.x_handle}`;
     } catch (err) {
         nextBtn.disabled = false;
         nextBtn.textContent = 'PUBLISH PROFILE';

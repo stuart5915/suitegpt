@@ -1,4 +1,4 @@
-// Inclawbate — Profile Page Controller (Payment Model)
+// Inclawbate — Profile Page Controller (Payment + Edit)
 import { humansApi } from './humans-api.js';
 
 const SECTIONS = {
@@ -8,6 +8,7 @@ const SECTIONS = {
 };
 
 let currentProfile = null;
+let isOwnProfile = false;
 
 function showSection(name) {
     Object.values(SECTIONS).forEach(el => { if (el) el.classList.add('hidden'); });
@@ -26,11 +27,24 @@ function esc(str) {
     return div.innerHTML;
 }
 
+function getStoredProfile() {
+    try {
+        const str = localStorage.getItem('inclawbate_profile');
+        return str ? JSON.parse(str) : null;
+    } catch { return null; }
+}
+
 async function init() {
     const handle = getHandle();
     if (!handle) { showSection('notFound'); return; }
 
     showSection('loading');
+
+    // Check if this is the logged-in user's own profile
+    const stored = getStoredProfile();
+    if (stored && stored.x_handle && stored.x_handle.toLowerCase() === handle) {
+        isOwnProfile = true;
+    }
 
     try {
         const res = await humansApi.getProfile(handle);
@@ -84,7 +98,6 @@ function renderProfile(p) {
     const detailsHtml = [];
 
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Available Capacity</div><div class="profile-detail-value">${capacity}%</div></div>`);
-
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Contact</div><div class="profile-detail-value"><a href="/dashboard" style="color:var(--lobster-300)">Via Inbox</a></div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Payment</div><div class="profile-detail-value">$CLAWNCH</div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Platform Fee</div><div class="profile-detail-value" style="color:var(--seafoam-400)">None</div></div>`);
@@ -99,6 +112,12 @@ function renderProfile(p) {
     // Action links
     document.getElementById('skillDocLink').href = `/u/${p.x_handle}/skill`;
 
+    // Show edit button if own profile
+    const editBtn = document.getElementById('editProfileBtn');
+    if (isOwnProfile && editBtn) {
+        editBtn.classList.remove('hidden');
+    }
+
     // Set up payment modal
     document.getElementById('payHumanName').textContent = p.x_name || p.x_handle;
     document.getElementById('payRecipient').textContent = `@${p.x_handle}`;
@@ -106,6 +125,107 @@ function renderProfile(p) {
 
     showSection('page');
 }
+
+// ── Edit Modal ──
+const editModal = document.getElementById('editModal');
+let editSkills = [];
+
+function openEditModal() {
+    if (!currentProfile) return;
+
+    // Pre-fill fields
+    document.getElementById('editTagline').value = currentProfile.tagline || '';
+    document.getElementById('editBio').value = currentProfile.bio || '';
+    document.getElementById('editWallet').value = currentProfile.wallet_address || '';
+    document.getElementById('editAvailability').value = currentProfile.availability || 'available';
+
+    const cap = currentProfile.available_capacity !== undefined ? currentProfile.available_capacity : 100;
+    document.getElementById('editCapacity').value = cap;
+    document.getElementById('editCapacityVal').textContent = cap + '%';
+
+    editSkills = [...(currentProfile.skills || [])];
+    renderEditSkills();
+
+    editModal.classList.remove('hidden');
+}
+
+function closeEditModal() {
+    editModal.classList.add('hidden');
+}
+
+function renderEditSkills() {
+    const container = document.getElementById('editSkillTags');
+    container.innerHTML = editSkills.map(s =>
+        `<span class="badge badge-primary" style="cursor:pointer;" data-skill="${esc(s)}">${esc(s)} &times;</span>`
+    ).join('');
+
+    container.querySelectorAll('[data-skill]').forEach(el => {
+        el.addEventListener('click', () => {
+            editSkills = editSkills.filter(s => s !== el.dataset.skill);
+            renderEditSkills();
+        });
+    });
+}
+
+async function saveProfile() {
+    const btn = document.getElementById('editSaveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        const updates = {
+            tagline: document.getElementById('editTagline').value.trim(),
+            bio: document.getElementById('editBio').value.trim(),
+            skills: editSkills,
+            available_capacity: parseInt(document.getElementById('editCapacity').value) || 100,
+            wallet_address: document.getElementById('editWallet').value.trim() || null,
+            availability: document.getElementById('editAvailability').value
+        };
+
+        const result = await humansApi.updateProfile(updates);
+        currentProfile = result.profile;
+        localStorage.setItem('inclawbate_profile', JSON.stringify(currentProfile));
+
+        // Re-render the profile page with new data
+        renderProfile(currentProfile);
+        closeEditModal();
+    } catch (err) {
+        alert('Failed to save: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+}
+
+// Edit button
+document.getElementById('editProfileBtn')?.addEventListener('click', openEditModal);
+
+// Close edit modal
+document.getElementById('editClose')?.addEventListener('click', closeEditModal);
+editModal?.addEventListener('click', (e) => {
+    if (e.target === editModal) closeEditModal();
+});
+
+// Capacity slider
+document.getElementById('editCapacity')?.addEventListener('input', (e) => {
+    document.getElementById('editCapacityVal').textContent = e.target.value + '%';
+});
+
+// Skill input
+document.getElementById('editSkillInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().replace(/,/g, '').toLowerCase();
+        if (val && !editSkills.includes(val)) {
+            editSkills.push(val);
+            renderEditSkills();
+            e.target.value = '';
+        }
+    }
+});
+
+// Save button
+document.getElementById('editSaveBtn')?.addEventListener('click', saveProfile);
 
 // ── Payment Modal ──
 const modal = document.getElementById('paymentModal');
@@ -139,7 +259,7 @@ modal?.addEventListener('click', (e) => {
     if (e.target === modal) closePaymentModal();
 });
 
-// Connect wallet (V1: placeholder for wagmi/viem integration)
+// Connect wallet
 document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('connectWalletBtn');
     btn.disabled = true;
@@ -175,7 +295,7 @@ document.getElementById('payAmountInput')?.addEventListener('input', (e) => {
     document.getElementById('sendPaymentBtn').disabled = amt <= 0;
 });
 
-// Send payment (V1: direct ERC20 transfer)
+// Send payment
 document.getElementById('sendPaymentBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('sendPaymentBtn');
     const amount = parseFloat(document.getElementById('payAmountInput').value) || 0;
@@ -185,7 +305,6 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
     btn.textContent = 'Sending...';
 
     try {
-        // Check human has a wallet
         if (!currentProfile?.wallet_address) {
             alert('This human has not set a wallet address yet. Contact them directly.');
             btn.disabled = false;
@@ -193,12 +312,9 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             return;
         }
 
-        // ERC20 transfer via eth_sendTransaction
-        // CLAWNCH contract on Base — address TBD, using placeholder
         const CLAWNCH_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: set real CLAWNCH address
         const humanWallet = currentProfile.wallet_address;
 
-        // ERC20 transfer(address, uint256) function selector
         const amountWei = BigInt(Math.floor(amount * 1e18));
         const transferData = '0xa9059cbb' +
             humanWallet.slice(2).padStart(64, '0') +
@@ -214,7 +330,6 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             }]
         });
 
-        // Success
         document.getElementById('paySuccessAmount').textContent = amount.toLocaleString();
         document.getElementById('payTxLink').href = `https://basescan.org/tx/${tx}`;
         showPayStep(3);
@@ -223,7 +338,7 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
         console.error('Payment error:', err);
         btn.disabled = false;
         btn.textContent = 'Send Payment';
-        if (err.code !== 4001) { // 4001 = user rejected
+        if (err.code !== 4001) {
             alert('Payment failed: ' + (err.message || 'Unknown error'));
         }
     }
@@ -234,7 +349,10 @@ document.getElementById('payDoneBtn')?.addEventListener('click', closePaymentMod
 
 // Keyboard escape
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.classList.contains('hidden')) closePaymentModal();
+    if (e.key === 'Escape') {
+        if (!editModal.classList.contains('hidden')) closeEditModal();
+        else if (!modal.classList.contains('hidden')) closePaymentModal();
+    }
 });
 
 init();
