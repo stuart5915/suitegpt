@@ -56,7 +56,7 @@ export async function handleXCallback(code, state) {
         body: JSON.stringify({
             code,
             code_verifier: codeVerifier,
-            redirect_uri: window.location.origin + '/launch'
+            redirect_uri: 'https://inclawbate.com/launch'
         })
     });
 
