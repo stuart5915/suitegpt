@@ -1,4 +1,4 @@
-// Inclawbate — Launch Page Controller (Staking Model)
+// Inclawbate — Launch Page Controller (Capacity Allocation Model)
 import { startXAuth, handleXCallback, getStoredAuth, logout } from './x-auth-client.js';
 import { humansApi } from './humans-api.js';
 
@@ -59,7 +59,10 @@ function showBuilder() {
     if (profile.bio) document.getElementById('bioInput').value = profile.bio;
     if (profile.tagline) document.getElementById('taglineInput').value = profile.tagline;
     if (profile.wallet_address) document.getElementById('walletInput').value = profile.wallet_address;
-    if (profile.min_stake_clawnch) document.getElementById('minStakeInput').value = profile.min_stake_clawnch;
+    if (profile.available_capacity !== undefined) {
+        document.getElementById('capacityInput').value = profile.available_capacity;
+        document.getElementById('capacityValue').textContent = profile.available_capacity + '%';
+    }
     if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
     if (profile.contact_preference) document.getElementById('contactPref').value = profile.contact_preference;
 
@@ -132,7 +135,7 @@ function renderPreview() {
     const skillsHtml = skills.map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
     document.getElementById('previewSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills added</span>';
 
-    const minStake = document.getElementById('minStakeInput').value || '0';
+    const capacity = document.getElementById('capacityInput').value || '100';
     const wallet = document.getElementById('walletInput').value;
     const contact = document.getElementById('contactPref').value;
     const avail = document.getElementById('availabilitySelect').value;
@@ -141,8 +144,8 @@ function renderPreview() {
     let detailsHtml = `
         <div class="profile-details" style="margin-top:var(--space-lg);">
             <div class="profile-detail">
-                <div class="profile-detail-label">Min Stake</div>
-                <div class="profile-detail-value">${esc(minStake)} $CLAWNCH</div>
+                <div class="profile-detail-label">Available Capacity</div>
+                <div class="profile-detail-value">${esc(capacity)}%</div>
             </div>
             <div class="profile-detail">
                 <div class="profile-detail-label">Availability</div>
@@ -176,7 +179,7 @@ async function publishProfile() {
             tagline: document.getElementById('taglineInput').value.trim(),
             bio: document.getElementById('bioInput').value.trim(),
             skills,
-            min_stake_clawnch: parseInt(document.getElementById('minStakeInput').value) || 0,
+            available_capacity: parseInt(document.getElementById('capacityInput').value) || 100,
             wallet_address: document.getElementById('walletInput').value.trim() || null,
             availability: document.getElementById('availabilitySelect').value,
             contact_preference: document.getElementById('contactPref').value
@@ -226,6 +229,10 @@ connectBtn?.addEventListener('click', async () => {
         connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
         alert('Failed: ' + err.message);
     }
+});
+
+document.getElementById('capacityInput')?.addEventListener('input', (e) => {
+    document.getElementById('capacityValue').textContent = e.target.value + '%';
 });
 
 document.getElementById('skillInput')?.addEventListener('keydown', (e) => {

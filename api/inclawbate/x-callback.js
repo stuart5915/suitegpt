@@ -156,7 +156,7 @@ export default async function handler(req, res) {
                 tagline: profile.tagline,
                 skills: profile.skills,
                 wallet_address: profile.wallet_address,
-                min_stake_clawnch: profile.min_stake_clawnch,
+                available_capacity: profile.available_capacity,
                 availability: profile.availability,
                 contact_preference: profile.contact_preference
             }
