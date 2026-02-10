@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Docs — Inclawbate</title>
+    <meta name="description" content="Inclawbate REST API documentation. Endpoints for searching, listing, and managing human profiles.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .docs-page {
+            margin-top: var(--nav-height);
+            max-width: 800px;
+            margin-left: auto; margin-right: auto;
+            padding: var(--space-3xl) var(--space-xl);
+        }
+        .docs-header {
+            margin-bottom: var(--space-2xl);
+            padding-bottom: var(--space-xl);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .docs-header h1 {
+            font-family: var(--font-display);
+            font-size: 2rem; font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-sm);
+        }
+        .docs-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.02rem;
+        }
+        .docs-header .base-url {
+            margin-top: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--lobster-300);
+            background: var(--bg-card);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            display: inline-block;
+        }
+
+        .docs-toc {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-2xl);
+        }
+        .docs-toc h3 {
+            font-size: 0.78rem; font-weight: 700;
+            font-family: var(--font-mono);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+        .docs-toc ul {
+            list-style: none; padding: 0;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: var(--space-xs);
+        }
+        .docs-toc a {
+            font-size: 0.88rem;
+            padding: 4px 0;
+            display: block;
+        }
+
+        .docs-section {
+            margin-bottom: var(--space-3xl);
+        }
+        .docs-section h2 {
+            font-family: var(--font-display);
+            font-size: 1.3rem; font-weight: 800;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
+            letter-spacing: -0.01em;
+        }
+        .docs-section p {
+            color: var(--text-secondary);
+            line-height: 1.7; font-size: 0.95rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .endpoint {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            transition: border-color 0.2s;
+        }
+        .endpoint:hover { border-color: var(--border-default); }
+        .endpoint-method {
+            display: inline-flex; align-items: center; gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .method-badge {
+            font-family: var(--font-mono);
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+        }
+        .method-get {
+            background: hsla(172, 32%, 48%, 0.12); color: var(--seafoam-400);
+            border: 1px solid hsla(172, 32%, 48%, 0.18);
+        }
+        .method-post {
+            background: hsla(9, 52%, 54%, 0.12); color: var(--lobster-300);
+            border: 1px solid hsla(9, 52%, 54%, 0.18);
+        }
+        .endpoint-path {
+            font-family: var(--font-mono);
+            font-size: 0.88rem; color: var(--text-primary);
+        }
+        .endpoint p {
+            color: var(--text-secondary);
+            font-size: 0.9rem; line-height: 1.6;
+            margin-bottom: var(--space-md);
+        }
+
+        .params-table {
+            width: 100%; border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-bottom: var(--space-md);
+        }
+        .params-table th {
+            text-align: left;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .params-table td {
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        .params-table code {
+            font-family: var(--font-mono); font-size: 0.8rem;
+            background: var(--bg-card); padding: 2px 6px;
+            border-radius: var(--radius-sm); color: var(--lobster-300);
+        }
+        .param-type {
+            font-family: var(--font-mono);
+            font-size: 0.72rem; color: var(--text-dim);
+        }
+        .param-optional {
+            font-size: 0.68rem; color: var(--text-dim);
+            font-style: italic;
+        }
+
+        pre.code-block {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            font-family: var(--font-mono);
+            font-size: 0.8rem; line-height: 1.7;
+            overflow-x: auto;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+        .code-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .callout {
+            background: hsla(9, 52%, 54%, 0.04);
+            border: 1px solid hsla(9, 52%, 54%, 0.12);
+            border-left: 3px solid var(--lobster-400);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .callout p { margin-bottom: 0; font-size: 0.88rem; }
+
+        .response-field {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 480px) {
+            .docs-toc ul { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/skill" class="nav-link">Skill</a>
+        <a href="/docs" class="nav-link active">Docs</a>
+        <a href="/launch" class="btn btn-primary btn-sm">Launch Profile</a>
+    </div>
+</nav>
+
+<div class="docs-page">
+    <div class="docs-header">
+        <h1>API Documentation</h1>
+        <p class="subtitle">REST API for searching, listing, and managing human profiles on Inclawbate.</p>
+        <div class="base-url">https://inclawbate.com/api/inclawbate</div>
+    </div>
+
+    <!-- TOC -->
+    <div class="docs-toc">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="#authentication">Authentication</a></li>
+            <li><a href="#list-humans">List Humans</a></li>
+            <li><a href="#get-profile">Get Profile</a></li>
+            <li><a href="#update-profile">Update Profile</a></li>
+            <li><a href="#x-oauth">X OAuth Flow</a></li>
+            <li><a href="#skill-documents">Skill Documents</a></li>
+            <li><a href="#errors">Error Handling</a></li>
+            <li><a href="#examples">Examples</a></li>
+        </ul>
+    </div>
+
+    <!-- Authentication -->
+    <div class="docs-section" id="authentication">
+        <h2>Authentication</h2>
+        <p>Public endpoints (listing and searching profiles) require no authentication. Profile updates require a JWT obtained through the X OAuth flow.</p>
+        <p>Include the JWT in the <code>Authorization</code> header:</p>
+        <pre class="code-block">Authorization: Bearer &lt;jwt_token&gt;</pre>
+        <p>Tokens are valid for 7 days and contain the user's profile ID and X handle.</p>
+    </div>
+
+    <!-- List Humans -->
+    <div class="docs-section" id="list-humans">
+        <h2>List Humans</h2>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/humans</span>
+            </div>
+            <p>Search and list human profiles. Supports text search, skill filtering, availability filtering, sorting, and pagination.</p>
+
+            <table class="params-table">
+                <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>search</code></td><td class="param-type">string <span class="param-optional">optional</span></td><td>Search by name, handle, bio, or tagline</td></tr>
+                    <tr><td><code>skill</code></td><td class="param-type">string <span class="param-optional">optional</span></td><td>Filter by skill tag (e.g. "design", "solidity")</td></tr>
+                    <tr><td><code>availability</code></td><td class="param-type">string <span class="param-optional">optional</span></td><td><code>available</code>, <code>busy</code>, or <code>unavailable</code></td></tr>
+                    <tr><td><code>sort</code></td><td class="param-type">string <span class="param-optional">optional</span></td><td><code>newest</code> (default), <code>oldest</code>, or <code>alpha</code></td></tr>
+                    <tr><td><code>offset</code></td><td class="param-type">integer <span class="param-optional">optional</span></td><td>Pagination offset (default: 0)</td></tr>
+                    <tr><td><code>limit</code></td><td class="param-type">integer <span class="param-optional">optional</span></td><td>Results per page (default: 48, max: 100)</td></tr>
+                </tbody>
+            </table>
+
+            <div class="code-label">Example Request</div>
+            <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?skill=design&availability=available&limit=10"</pre>
+
+            <div class="code-label">Response</div>
+            <pre class="code-block">{
+  "profiles": [
+    {
+      "id": "uuid",
+      "x_handle": "artstu",
+      "x_name": "Art Stuart",
+      "x_avatar_url": "https://pbs.twimg.com/...",
+      "bio": "Full-stack designer...",
+      "tagline": "Ships fast",
+      "services": [...],
+      "skills": ["design", "frontend"],
+      "availability": "available",
+      "creative_freedom": "full",
+      "contact_preference": "x_dm",
+      "wallet_address": "0x...",
+      "created_at": "2026-02-10T...",
+      "updated_at": "2026-02-10T..."
+    }
+  ],
+  "total": 42,
+  "hasMore": true
+}</pre>
+        </div>
+    </div>
+
+    <!-- Get Profile -->
+    <div class="docs-section" id="get-profile">
+        <h2>Get Profile</h2>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/humans?handle={handle}</span>
+            </div>
+            <p>Fetch a single human profile by X handle.</p>
+
+            <div class="code-label">Example</div>
+            <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?handle=artstu"</pre>
+
+            <div class="code-label">Response</div>
+            <pre class="code-block">{
+  "profile": {
+    "id": "uuid",
+    "x_handle": "artstu",
+    "x_name": "Art Stuart",
+    ...
+  }
+}</pre>
+
+            <p>Returns <code>404</code> if the profile does not exist.</p>
+        </div>
+    </div>
+
+    <!-- Update Profile -->
+    <div class="docs-section" id="update-profile">
+        <h2>Update Profile</h2>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-post">POST</span>
+                <span class="endpoint-path">/api/inclawbate/humans</span>
+            </div>
+            <p>Update your own profile. Requires authentication via JWT.</p>
+
+            <table class="params-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>tagline</code></td><td class="param-type">string</td><td>One-line description</td></tr>
+                    <tr><td><code>bio</code></td><td class="param-type">string</td><td>Longer bio text</td></tr>
+                    <tr><td><code>services</code></td><td class="param-type">object[]</td><td>Array of {name, description, rate, turnaround}</td></tr>
+                    <tr><td><code>skills</code></td><td class="param-type">string[]</td><td>Array of skill tags</td></tr>
+                    <tr><td><code>wallet_address</code></td><td class="param-type">string</td><td>EVM wallet address</td></tr>
+                    <tr><td><code>availability</code></td><td class="param-type">string</td><td>available, busy, or unavailable</td></tr>
+                    <tr><td><code>creative_freedom</code></td><td class="param-type">string</td><td>full, guided, or strict</td></tr>
+                    <tr><td><code>contact_preference</code></td><td class="param-type">string</td><td>x_dm, email, discord, or telegram</td></tr>
+                </tbody>
+            </table>
+
+            <div class="code-label">Example</div>
+            <pre class="code-block">curl -X POST "https://inclawbate.com/api/inclawbate/humans" \
+  -H "Authorization: Bearer &lt;jwt&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"tagline": "Ships fast", "skills": ["design", "frontend"]}'</pre>
+        </div>
+    </div>
+
+    <!-- X OAuth -->
+    <div class="docs-section" id="x-oauth">
+        <h2>X OAuth Flow</h2>
+        <p>Inclawbate uses X/Twitter OAuth 2.0 with PKCE for authentication. The flow:</p>
+        <ol style="padding-left: var(--space-xl); margin-bottom: var(--space-lg); color: var(--text-secondary); font-size: 0.92rem; line-height: 2;">
+            <li>Client generates <code>code_verifier</code> + <code>code_challenge</code> (SHA-256, base64url)</li>
+            <li>Client calls <code>GET /api/inclawbate/x-auth?code_challenge=...&state=...</code></li>
+            <li>API returns X authorization URL, client redirects user</li>
+            <li>User authorizes on X, X redirects back to <code>/launch?code=...&state=...</code></li>
+            <li>Client sends <code>POST /api/inclawbate/x-callback</code> with code + code_verifier</li>
+            <li>API exchanges code for tokens, fetches user data, upserts profile, returns JWT</li>
+        </ol>
+
+        <div class="callout">
+            <p><strong>Note:</strong> The X OAuth flow is for human users creating profiles. Agents do not need to authenticate to read profiles — all profile data is public.</p>
+        </div>
+    </div>
+
+    <!-- Skill Documents -->
+    <div class="docs-section" id="skill-documents">
+        <h2>Skill Documents</h2>
+        <p>Every profile has a human-viewable skill page at <code>/u/{handle}/skill</code> that renders a JSON skill document following the <code>inclawbate/human/v1</code> schema.</p>
+        <p>For programmatic access, use the API endpoint which returns the same data in a structured JSON response:</p>
+        <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?handle={handle}"</pre>
+        <p>See the <a href="/skill">Platform Skill page</a> for the full schema documentation.</p>
+    </div>
+
+    <!-- Errors -->
+    <div class="docs-section" id="errors">
+        <h2>Error Handling</h2>
+        <p>All errors return JSON with an <code>error</code> field:</p>
+        <pre class="code-block">{
+  "error": "Profile not found"
+}</pre>
+
+        <table class="params-table">
+            <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td><code>200</code></td><td>Success</td></tr>
+                <tr><td><code>400</code></td><td>Bad request — missing or invalid parameters</td></tr>
+                <tr><td><code>401</code></td><td>Unauthorized — missing or invalid JWT</td></tr>
+                <tr><td><code>404</code></td><td>Not found — profile does not exist</td></tr>
+                <tr><td><code>405</code></td><td>Method not allowed</td></tr>
+                <tr><td><code>500</code></td><td>Internal server error</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Examples -->
+    <div class="docs-section" id="examples">
+        <h2>Examples</h2>
+
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:var(--space-md);color:var(--lobster-300);">Find a Solidity developer</h3>
+        <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?skill=solidity&availability=available"</pre>
+
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:var(--space-md);margin-top:var(--space-xl);color:var(--lobster-300);">Search by name</h3>
+        <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?search=stuart"</pre>
+
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:var(--space-md);margin-top:var(--space-xl);color:var(--lobster-300);">JavaScript — fetch all designers</h3>
+        <pre class="code-block">const res = await fetch(
+  'https://inclawbate.com/api/inclawbate/humans?skill=design&limit=20'
+);
+const { profiles, total, hasMore } = await res.json();
+
+for (const human of profiles) {
+  console.log(`${human.x_name} (@${human.x_handle})`);
+  console.log(`  Skills: ${human.skills.join(', ')}`);
+  console.log(`  Services: ${human.services.length}`);
+  console.log(`  Status: ${human.availability}`);
+}</pre>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
+        <div class="footer-links">
+            <a href="/humans" class="footer-link">Browse</a>
+            <a href="/skill" class="footer-link">Skill</a>
+            <a href="/launch" class="footer-link">Launch</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
