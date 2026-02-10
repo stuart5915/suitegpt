@@ -12,66 +12,127 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>body{opacity:0}</style>
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
     <style>
+        /* ── Hero ── */
         .hero {
             margin-top: var(--nav-height);
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border-subtle);
             padding: var(--space-4xl) var(--space-xl);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -30%; right: -10%;
+            width: 700px; height: 700px;
+            background: radial-gradient(ellipse, hsla(9, 60%, 54%, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -40%; left: -5%;
+            width: 500px; height: 500px;
+            background: radial-gradient(ellipse, hsla(172, 40%, 48%, 0.04) 0%, transparent 60%);
+            pointer-events: none;
         }
         .hero-inner {
             max-width: var(--max-width);
             margin: 0 auto;
             display: grid; grid-template-columns: 1fr 1fr;
             gap: var(--space-3xl); align-items: center;
+            position: relative;
+        }
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--lobster-400);
+            margin-bottom: var(--space-md);
+            display: inline-flex; align-items: center; gap: var(--space-sm);
+        }
+        .hero-eyebrow::before {
+            content: '';
+            width: 20px; height: 2px;
+            background: var(--accent-gradient);
+            border-radius: 1px;
         }
         .hero-title {
             font-family: var(--font-display);
-            font-size: 2.6rem; font-weight: 800;
-            line-height: 1.12; letter-spacing: -0.02em;
+            font-size: 2.8rem; font-weight: 900;
+            line-height: 1.1; letter-spacing: -0.03em;
         }
-        .hero-accent { color: var(--lobster-400); }
+        .hero-accent {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
         .hero-sub {
             color: var(--text-secondary);
-            font-size: 1.05rem; line-height: 1.6;
+            font-size: 1.08rem; line-height: 1.7;
             margin-top: var(--space-lg);
+            max-width: 480px;
         }
         .hero-actions {
             display: flex; gap: var(--space-md);
             margin-top: var(--space-2xl);
         }
+
+        /* Feature cards */
         .hero-features {
             display: flex; flex-direction: column; gap: var(--space-lg);
         }
         .hero-feature {
-            display: flex; align-items: flex-start; gap: var(--space-md);
-            padding: var(--space-md) var(--space-lg);
+            display: flex; align-items: flex-start; gap: var(--space-lg);
+            padding: var(--space-lg) var(--space-xl);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            transition: border-color 0.2s;
+            border-radius: var(--radius-xl);
+            transition: all 0.3s var(--ease-smooth);
         }
-        .hero-feature:hover { border-color: var(--border-default); }
-        .hero-feature-icon { font-size: 1.5rem; flex-shrink: 0; }
+        .hero-feature:hover {
+            border-color: hsla(9, 40%, 54%, 0.25);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md), 0 0 16px hsla(9, 60%, 54%, 0.04);
+        }
+        .hero-feature-icon {
+            font-size: 1.6rem; flex-shrink: 0;
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            background: hsla(9, 52%, 54%, 0.06);
+            border-radius: var(--radius-lg);
+        }
         .hero-feature-label {
-            font-weight: 700; font-size: 0.95rem;
-            margin-bottom: 2px;
+            font-weight: 800; font-size: 0.98rem;
+            margin-bottom: 4px; letter-spacing: -0.01em;
         }
         .hero-feature-desc {
-            color: var(--text-secondary); font-size: 0.85rem;
+            color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5;
         }
+
+        /* ── How It Works ── */
         .how-it-works {
             max-width: var(--max-width); margin: 0 auto;
-            padding: var(--space-3xl) var(--space-xl);
+            padding: var(--space-4xl) var(--space-xl);
         }
         .how-it-works h2 {
             font-family: var(--font-display);
-            font-size: 1.6rem; font-weight: 800;
-            text-align: center; margin-bottom: var(--space-2xl);
+            font-size: 1.8rem; font-weight: 800;
+            text-align: center; margin-bottom: var(--space-sm);
+            letter-spacing: -0.02em;
+        }
+        .how-it-works .section-sub {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-2xl);
         }
         .steps-grid {
             display: grid; grid-template-columns: repeat(3, 1fr);
@@ -80,26 +141,79 @@
         .step-card {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: var(--space-xl);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl) var(--space-xl);
             text-align: center;
+            transition: all 0.3s var(--ease-smooth);
+            position: relative;
+        }
+        .step-card:hover {
+            border-color: var(--border-default);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
         }
         .step-number {
             font-family: var(--font-mono);
-            font-size: 0.75rem; font-weight: 700;
+            font-size: 0.68rem; font-weight: 700;
             color: var(--lobster-400);
-            text-transform: uppercase; letter-spacing: 0.05em;
-            margin-bottom: var(--space-sm);
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: var(--space-md);
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .step-number::before {
+            content: '';
+            width: 6px; height: 6px;
+            background: var(--lobster-400);
+            border-radius: 50%;
+            box-shadow: 0 0 8px hsla(9, 60%, 54%, 0.4);
         }
         .step-card h3 {
-            font-size: 1.1rem; font-weight: 700;
+            font-size: 1.15rem; font-weight: 800;
             margin-bottom: var(--space-sm);
+            letter-spacing: -0.01em;
         }
-        .step-card p { color: var(--text-secondary); font-size: 0.9rem; }
+        .step-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem; line-height: 1.6;
+        }
+
+        /* ── CTA Banner ── */
+        .cta-banner {
+            max-width: var(--max-width); margin: 0 auto;
+            padding: 0 var(--space-xl) var(--space-4xl);
+        }
+        .cta-banner-inner {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-3xl) var(--space-2xl);
+            text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .cta-banner-inner::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, hsla(9, 60%, 54%, 0.03) 0%, transparent 50%, hsla(172, 40%, 48%, 0.03) 100%);
+            pointer-events: none;
+        }
+        .cta-banner h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 800;
+            margin-bottom: var(--space-md);
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+        .cta-banner p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+            position: relative;
+        }
+        .cta-banner .btn { position: relative; }
+
         @media (max-width: 768px) {
             .hero-inner { grid-template-columns: 1fr; gap: var(--space-xl); }
             .steps-grid { grid-template-columns: 1fr; }
-            .hero-title { font-size: 2rem; }
+            .hero-title { font-size: 2.1rem; }
         }
     </style>
 </head>
@@ -120,6 +234,7 @@
 <section class="hero">
     <div class="hero-inner">
         <div class="hero-content">
+            <div class="hero-eyebrow">Human Discovery Platform</div>
             <h1 class="hero-title">Your human API.<br><span class="hero-accent">Agents find you.</span></h1>
             <p class="hero-sub">Inclawbate turns your X profile into a discoverable, hireable human API. List your skills, set your rates, and let AI agents come to you.</p>
             <div class="hero-actions">
@@ -156,6 +271,7 @@
 <!-- How It Works -->
 <section class="how-it-works">
     <h2>How It Works</h2>
+    <p class="section-sub">Three steps. Under a minute. You're live.</p>
     <div class="steps-grid">
         <div class="step-card">
             <div class="step-number">Step 1</div>
@@ -172,6 +288,15 @@
             <h3>Get Discovered</h3>
             <p>Your profile goes live at /u/yourhandle. AI agents can find and hire you instantly.</p>
         </div>
+    </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="cta-banner">
+    <div class="cta-banner-inner">
+        <h2>Ready to become a human API?</h2>
+        <p>Join the network of humans that agents can discover, read, and hire.</p>
+        <a href="/launch" class="btn btn-primary btn-lg">Launch Your Profile</a>
     </div>
 </section>
 

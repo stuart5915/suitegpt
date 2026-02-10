@@ -5,6 +5,15 @@
     min-height: calc(100vh - var(--nav-height));
     display: flex; flex-direction: column; align-items: center;
     padding: var(--space-3xl) var(--space-xl);
+    position: relative;
+}
+/* Ambient glow */
+.launch-page::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(ellipse, hsla(9, 60%, 54%, 0.05) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 /* ── Connect Gate ── */
@@ -12,46 +21,61 @@
     max-width: 480px; width: 100%;
     text-align: center;
     padding: var(--space-4xl) var(--space-xl);
+    animation: fade-up 0.5s var(--ease-smooth);
+}
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 .launch-connect-icon {
-    font-size: 3rem; margin-bottom: var(--space-xl);
+    font-size: 3.5rem; margin-bottom: var(--space-xl);
+    animation: float 3s ease-in-out infinite;
 }
 .launch-connect h2 {
     font-family: var(--font-display);
-    font-size: 1.8rem; font-weight: 800;
+    font-size: 2rem; font-weight: 800;
     color: var(--text-primary);
     margin-bottom: var(--space-md);
+    letter-spacing: -0.02em;
 }
 .launch-connect p {
     color: var(--text-secondary);
     margin-bottom: var(--space-2xl);
-    line-height: 1.6;
+    line-height: 1.7; font-size: 1.02rem;
 }
 
 /* ── Stepper ── */
 .stepper {
     display: flex; align-items: center; gap: var(--space-sm);
     margin-bottom: var(--space-2xl);
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 500px;
 }
 .stepper-step {
-    flex: 1; height: 4px;
+    flex: 1; height: 3px;
     background: var(--bg-card);
     border-radius: var(--radius-full);
-    transition: background 0.3s;
+    transition: all 0.4s var(--ease-smooth);
+    position: relative;
+    overflow: hidden;
 }
-.stepper-step.active { background: var(--lobster-400); }
-.stepper-step.done { background: var(--seafoam-400); }
+.stepper-step.active {
+    background: var(--lobster-400);
+    box-shadow: 0 0 8px hsla(9, 60%, 54%, 0.3);
+}
+.stepper-step.done {
+    background: var(--seafoam-400);
+    box-shadow: 0 0 8px hsla(172, 40%, 48%, 0.2);
+}
 
 .stepper-labels {
     display: flex; justify-content: space-between;
     margin-bottom: var(--space-sm);
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: 500px;
 }
 .stepper-label {
     font-family: var(--font-mono);
-    font-size: 0.7rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--text-dim);
     transition: color 0.3s;
 }
@@ -60,16 +84,19 @@
 
 /* ── Form Card ── */
 .launch-form {
-    max-width: 480px; width: 100%;
+    max-width: 500px; width: 100%;
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-    padding: var(--space-2xl);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-2xl) var(--space-xl);
+    box-shadow: var(--shadow-lg);
+    animation: fade-up 0.4s var(--ease-smooth);
 }
 .launch-form h3 {
     font-family: var(--font-display);
-    font-size: 1.3rem; font-weight: 800;
-    margin-bottom: var(--space-xs);
+    font-size: 1.35rem; font-weight: 800;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
 }
 .launch-form .form-subtitle {
     color: var(--text-secondary);
@@ -84,18 +111,23 @@
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     margin-bottom: var(--space-md);
+    transition: border-color 0.2s;
+}
+.service-entry:focus-within {
+    border-color: var(--border-default);
 }
 .service-entry-header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: var(--space-md);
 }
 .service-entry-header h4 {
-    font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);
+    font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);
 }
 .service-remove {
     background: none; border: none;
     color: var(--text-dim); cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    transition: color var(--transition-fast);
 }
 .service-remove:hover { color: var(--red); }
 .service-row {
@@ -104,15 +136,17 @@
 
 .add-service-btn {
     width: 100%; padding: var(--space-md);
-    background: var(--bg-card); border: 1px dashed var(--border-default);
+    background: transparent;
+    border: 1px dashed var(--border-default);
     border-radius: var(--radius-lg);
     color: var(--text-secondary); cursor: pointer;
-    font-family: var(--font-mono); font-size: 0.85rem;
-    transition: all var(--transition-base);
+    font-family: var(--font-mono); font-size: 0.82rem;
+    transition: all 0.25s var(--ease-smooth);
 }
 .add-service-btn:hover {
     border-color: var(--lobster-400); color: var(--lobster-300);
-    background: var(--bg-card-hover);
+    background: hsla(9, 60%, 54%, 0.04);
+    box-shadow: 0 0 12px hsla(9, 60%, 54%, 0.06);
 }
 
 /* ── Skills tag input ── */
@@ -122,45 +156,49 @@
 }
 .skill-tag {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px;
-    background: hsla(9, 52%, 54%, 0.1);
-    border: 1px solid hsla(9, 52%, 54%, 0.2);
+    padding: 5px 12px;
+    background: hsla(9, 52%, 54%, 0.08);
+    border: 1px solid hsla(9, 52%, 54%, 0.15);
     border-radius: var(--radius-full);
-    font-size: 0.8rem; color: var(--lobster-300);
+    font-size: 0.78rem; color: var(--lobster-300);
+    font-weight: 600;
+    animation: fade-up 0.2s var(--ease-smooth);
 }
 .skill-tag-remove {
     background: none; border: none;
     color: var(--lobster-300); cursor: pointer;
     font-size: 0.9rem; line-height: 1;
     padding: 0; margin-left: 2px;
+    transition: color var(--transition-fast);
 }
 .skill-tag-remove:hover { color: var(--red); }
 
 /* ── Profile preview ── */
 .launch-preview {
-    max-width: 480px; width: 100%;
+    max-width: 500px; width: 100%;
     margin-top: var(--space-2xl);
     text-align: center;
 }
 .launch-preview-avatar {
-    width: 80px; height: 80px;
+    width: 88px; height: 88px;
     border-radius: 50%;
     border: 3px solid var(--lobster-400);
     margin: 0 auto var(--space-lg);
+    box-shadow: 0 0 20px hsla(9, 60%, 54%, 0.15);
 }
 .launch-preview h3 {
-    font-size: 1.4rem; font-weight: 800;
+    font-size: 1.5rem; font-weight: 800;
     margin-bottom: var(--space-xs);
 }
 .launch-preview .handle {
     color: var(--text-secondary);
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     margin-bottom: var(--space-lg);
 }
 .launch-success-msg {
     color: var(--seafoam-400);
-    font-weight: 700;
+    font-weight: 700; font-size: 1.05rem;
     margin-bottom: var(--space-xl);
 }
 
@@ -168,11 +206,13 @@
 .launch-nav {
     display: flex; gap: var(--space-md);
     margin-top: var(--space-xl);
+    max-width: 500px; width: 100%;
 }
 .launch-nav .btn { flex: 1; }
 
 @media (max-width: 480px) {
     .launch-page { padding: var(--space-2xl) var(--space-md); }
-    .launch-form { padding: var(--space-xl); }
+    .launch-form { padding: var(--space-xl) var(--space-lg); }
     .service-row { grid-template-columns: 1fr; }
+    .launch-connect h2 { font-size: 1.6rem; }
 }
