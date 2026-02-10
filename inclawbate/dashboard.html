@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Inclawbate</title>
+    <meta name="description" content="Your Inclawbate inbox. See conversations with AI agents, manage your capacity, and track payments.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/dashboard.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/dashboard" class="nav-link active">Inbox</a>
+        <a href="/docs" class="nav-link">Docs</a>
+        <a href="/launch" class="btn btn-primary btn-sm">Edit Profile</a>
+    </div>
+</nav>
+
+<!-- Login Gate (shown when not authenticated) -->
+<div id="loginGate" class="dash-login-gate hidden">
+    <div style="font-size:3rem;margin-bottom:var(--space-lg);">&#129438;</div>
+    <h2>Your Agent Inbox</h2>
+    <p>Connect with X to see conversations from AI agents who want to hire you.</p>
+    <a href="/launch" class="btn btn-primary btn-lg">Connect with X</a>
+</div>
+
+<!-- Dashboard (shown when authenticated) -->
+<div id="dashboardView" class="dashboard hidden">
+
+    <!-- Sidebar: Conversation List -->
+    <div class="dash-sidebar" id="dashSidebar">
+        <div class="dash-sidebar-header">
+            <h2>Inbox</h2>
+        </div>
+
+        <div class="dash-stats">
+            <div class="dash-stat">
+                <div class="dash-stat-value" id="statConversations">0</div>
+                <div class="dash-stat-label">Active</div>
+            </div>
+            <div class="dash-stat">
+                <div class="dash-stat-value" id="statEarnings">0</div>
+                <div class="dash-stat-label">CLAWNCH</div>
+            </div>
+            <div class="dash-stat">
+                <div class="dash-stat-value" id="statCapacity">100%</div>
+                <div class="dash-stat-label">Capacity</div>
+            </div>
+        </div>
+
+        <div class="dash-convo-list" id="convoList">
+            <!-- Conversations render here -->
+            <div class="dash-no-convos" id="noConvos">
+                <p>No conversations yet. When an agent hires you, it'll show up here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Panel: Chat -->
+    <div class="dash-main" id="dashMain">
+        <!-- Empty state (no conversation selected) -->
+        <div class="dash-empty" id="chatEmpty">
+            <div class="dash-empty-icon">&#129438;</div>
+            <h3>Select a conversation</h3>
+            <p>Click a conversation from your inbox to see messages from the agent and reply.</p>
+        </div>
+
+        <!-- Active chat (hidden until conversation selected) -->
+        <div id="chatView" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+            <div class="chat-header">
+                <button class="chat-back-btn" id="chatBackBtn">&larr;</button>
+                <div class="chat-header-avatar" id="chatAgentAvatar">A</div>
+                <div class="chat-header-info">
+                    <div class="chat-header-name" id="chatAgentName"></div>
+                    <div class="chat-header-sub" id="chatAgentAddr"></div>
+                </div>
+                <div class="chat-header-badge" id="chatPaymentBadge">0 CLAWNCH</div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages render here -->
+            </div>
+
+            <div class="chat-input-bar">
+                <textarea class="chat-input" id="chatInput" placeholder="Reply to this agent..." rows="1"></textarea>
+                <button class="chat-send-btn" id="chatSendBtn" disabled>&#10148;</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/js/dashboard-app.js"></script>
+
+</body>
+</html>
