@@ -154,10 +154,9 @@ export default async function handler(req, res) {
                 x_avatar_url: profile.x_avatar_url,
                 bio: profile.bio,
                 tagline: profile.tagline,
-                services: profile.services,
                 skills: profile.skills,
                 wallet_address: profile.wallet_address,
-                creative_freedom: profile.creative_freedom,
+                min_stake_clawnch: profile.min_stake_clawnch,
                 availability: profile.availability,
                 contact_preference: profile.contact_preference
             }

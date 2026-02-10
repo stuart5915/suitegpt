@@ -18,7 +18,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,services,skills,wallet_address,creative_freedom,availability,contact_preference,metadata,created_at,updated_at';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,min_stake_clawnch,availability,contact_preference,metadata,created_at,updated_at';
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -107,18 +107,17 @@ export default async function handler(req, res) {
             }
 
             const {
-                tagline, bio, services, skills,
-                wallet_address, creative_freedom,
+                tagline, bio, skills,
+                wallet_address, min_stake_clawnch,
                 availability, contact_preference, metadata
             } = req.body;
 
             const updates = {};
             if (tagline !== undefined) updates.tagline = tagline;
             if (bio !== undefined) updates.bio = bio;
-            if (services !== undefined) updates.services = services;
             if (skills !== undefined) updates.skills = skills;
             if (wallet_address !== undefined) updates.wallet_address = wallet_address;
-            if (creative_freedom !== undefined) updates.creative_freedom = creative_freedom;
+            if (min_stake_clawnch !== undefined) updates.min_stake_clawnch = min_stake_clawnch;
             if (availability !== undefined) updates.availability = availability;
             if (contact_preference !== undefined) updates.contact_preference = contact_preference;
             if (metadata !== undefined) updates.metadata = metadata;

@@ -1,11 +1,10 @@
-// Inclawbate — Launch Page Controller
+// Inclawbate — Launch Page Controller (Staking Model)
 import { startXAuth, handleXCallback, getStoredAuth, logout } from './x-auth-client.js';
 import { humansApi } from './humans-api.js';
 
-const STEPS = ['services', 'details', 'preview'];
+const STEPS = ['profile', 'preferences', 'preview'];
 let currentStep = 0;
 let profile = null;
-let services = [];
 let skills = [];
 
 // DOM refs
@@ -20,7 +19,6 @@ const nextBtn = document.getElementById('nextBtn');
 
 // ── Init ──
 async function init() {
-    // Check for OAuth callback
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
@@ -33,7 +31,6 @@ async function init() {
         try {
             const result = await handleXCallback(code, state);
             profile = result.profile;
-            // Clean URL
             window.history.replaceState({}, '', '/launch');
             showBuilder();
         } catch (err) {
@@ -45,11 +42,9 @@ async function init() {
         return;
     }
 
-    // Check stored auth
     const stored = getStoredAuth();
     if (stored) {
         profile = stored.profile;
-        services = profile.services || [];
         skills = profile.skills || [];
         showBuilder();
         return;
@@ -64,15 +59,15 @@ function showBuilder() {
     if (profile.bio) document.getElementById('bioInput').value = profile.bio;
     if (profile.tagline) document.getElementById('taglineInput').value = profile.tagline;
     if (profile.wallet_address) document.getElementById('walletInput').value = profile.wallet_address;
-    if (profile.creative_freedom) document.getElementById('creativeFreedom').value = profile.creative_freedom;
+    if (profile.min_stake_clawnch) document.getElementById('minStakeInput').value = profile.min_stake_clawnch;
     if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
     if (profile.contact_preference) document.getElementById('contactPref').value = profile.contact_preference;
 
-    // Render existing services
-    services.forEach(s => addServiceEntry(s));
-
     // Render existing skills
     skills.forEach(s => addSkillTag(s));
+
+    // Show logout button
+    document.getElementById('logoutBtn')?.classList.remove('hidden');
 
     updateStepper();
     showStep(0);
@@ -104,55 +99,6 @@ function showStep(idx) {
     if (idx === STEPS.length - 1) renderPreview();
 }
 
-// ── Services ──
-let serviceCount = 0;
-
-function addServiceEntry(data = {}) {
-    const idx = serviceCount++;
-    const container = document.getElementById('servicesList');
-    const entry = document.createElement('div');
-    entry.className = 'service-entry';
-    entry.dataset.idx = idx;
-    entry.innerHTML = `
-        <div class="service-entry-header">
-            <h4>Service ${idx + 1}</h4>
-            <button type="button" class="service-remove" data-idx="${idx}">&times; Remove</button>
-        </div>
-        <div class="form-group">
-            <input class="input svc-name" placeholder="e.g. Logo Design" value="${esc(data.name || '')}">
-        </div>
-        <div class="form-group">
-            <textarea class="textarea svc-desc" placeholder="Describe what you deliver..." rows="2">${esc(data.description || '')}</textarea>
-        </div>
-        <div class="service-row">
-            <div class="form-group">
-                <input class="input svc-rate" placeholder="e.g. $500" value="${esc(data.rate || '')}">
-            </div>
-            <div class="form-group">
-                <input class="input svc-turnaround" placeholder="e.g. 3 days" value="${esc(data.turnaround || '')}">
-            </div>
-        </div>
-    `;
-    container.appendChild(entry);
-
-    entry.querySelector('.service-remove').addEventListener('click', () => {
-        entry.remove();
-    });
-}
-
-function collectServices() {
-    const entries = document.querySelectorAll('.service-entry');
-    const result = [];
-    entries.forEach(entry => {
-        const name = entry.querySelector('.svc-name')?.value.trim();
-        const description = entry.querySelector('.svc-desc')?.value.trim();
-        const rate = entry.querySelector('.svc-rate')?.value.trim();
-        const turnaround = entry.querySelector('.svc-turnaround')?.value.trim();
-        if (name) result.push({ name, description, rate, turnaround });
-    });
-    return result;
-}
-
 // ── Skills ──
 function addSkillTag(skill) {
     if (!skill || skills.includes(skill)) return;
@@ -178,9 +124,6 @@ function renderSkillTags() {
 
 // ── Preview ──
 function renderPreview() {
-    const preview = document.getElementById('previewPanel');
-    const svc = collectServices();
-
     document.getElementById('previewAvatar').src = profile.x_avatar_url || '';
     document.getElementById('previewName').textContent = profile.x_name || profile.x_handle;
     document.getElementById('previewHandle').textContent = `@${profile.x_handle}`;
@@ -189,17 +132,38 @@ function renderPreview() {
     const skillsHtml = skills.map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
     document.getElementById('previewSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills added</span>';
 
-    const servicesHtml = svc.map(s => `
-        <div class="profile-service">
-            <div class="profile-service-header">
-                <span class="profile-service-name">${esc(s.name)}</span>
-                ${s.rate ? `<span class="profile-service-rate">${esc(s.rate)}</span>` : ''}
+    const minStake = document.getElementById('minStakeInput').value || '0';
+    const wallet = document.getElementById('walletInput').value;
+    const contact = document.getElementById('contactPref').value;
+    const avail = document.getElementById('availabilitySelect').value;
+    const contactLabel = { x_dm: 'X DM', email: 'Email', discord: 'Discord', telegram: 'Telegram' }[contact] || contact;
+
+    let detailsHtml = `
+        <div class="profile-details" style="margin-top:var(--space-lg);">
+            <div class="profile-detail">
+                <div class="profile-detail-label">Min Stake</div>
+                <div class="profile-detail-value">${esc(minStake)} $CLAWNCH</div>
             </div>
-            ${s.description ? `<div class="profile-service-desc">${esc(s.description)}</div>` : ''}
-            ${s.turnaround ? `<div class="profile-service-turnaround">${esc(s.turnaround)}</div>` : ''}
-        </div>
-    `).join('');
-    document.getElementById('previewServices').innerHTML = servicesHtml || '<p class="text-dim">No services added</p>';
+            <div class="profile-detail">
+                <div class="profile-detail-label">Availability</div>
+                <div class="profile-detail-value">${esc(avail)}</div>
+            </div>
+            <div class="profile-detail">
+                <div class="profile-detail-label">Contact</div>
+                <div class="profile-detail-value">${esc(contactLabel)}</div>
+            </div>
+    `;
+    if (wallet) {
+        const short = wallet.length > 12 ? wallet.slice(0, 6) + '...' + wallet.slice(-4) : wallet;
+        detailsHtml += `
+            <div class="profile-detail">
+                <div class="profile-detail-label">Wallet</div>
+                <div class="profile-detail-value" style="font-family:var(--font-mono);font-size:0.8rem">${esc(short)}</div>
+            </div>
+        `;
+    }
+    detailsHtml += '</div>';
+    document.getElementById('previewDetails').innerHTML = detailsHtml;
 }
 
 // ── Publish ──
@@ -211,10 +175,9 @@ async function publishProfile() {
         const updates = {
             tagline: document.getElementById('taglineInput').value.trim(),
             bio: document.getElementById('bioInput').value.trim(),
-            services: collectServices(),
             skills,
+            min_stake_clawnch: parseInt(document.getElementById('minStakeInput').value) || 0,
             wallet_address: document.getElementById('walletInput').value.trim() || null,
-            creative_freedom: document.getElementById('creativeFreedom').value,
             availability: document.getElementById('availabilitySelect').value,
             contact_preference: document.getElementById('contactPref').value
         };
@@ -264,8 +227,6 @@ connectBtn?.addEventListener('click', async () => {
         alert('Failed: ' + err.message);
     }
 });
-
-document.getElementById('addServiceBtn')?.addEventListener('click', () => addServiceEntry());
 
 document.getElementById('skillInput')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ',') {

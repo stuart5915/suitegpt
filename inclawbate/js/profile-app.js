@@ -1,4 +1,4 @@
-// Inclawbate — Profile Page Controller
+// Inclawbate — Profile Page Controller (Staking Model)
 import { humansApi } from './humans-api.js';
 
 const SECTIONS = {
@@ -65,43 +65,39 @@ function renderProfile(p) {
     availEl.textContent = p.availability || 'available';
     availEl.className = `badge badge-${p.availability === 'available' ? 'green' : p.availability === 'busy' ? 'yellow' : 'dim'}`;
 
+    // Stake badge (placeholder — will show total staked once staking is live)
+    const stakeBadge = document.getElementById('profileStakeBadge');
+    if (p.min_stake_clawnch && p.min_stake_clawnch > 0) {
+        stakeBadge.textContent = `Min ${p.min_stake_clawnch} $CLAWNCH`;
+        stakeBadge.classList.remove('hidden');
+    }
+
     // Skills
     const skillsHtml = (p.skills || []).map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
-    document.getElementById('profileSkills').innerHTML = skillsHtml;
+    document.getElementById('profileSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills listed</span>';
 
     // Bio
     document.getElementById('profileBio').textContent = p.bio || 'No bio provided.';
 
-    // Services
-    const servicesContainer = document.getElementById('profileServices');
-    if ((p.services || []).length === 0) {
-        servicesContainer.innerHTML = '<p class="text-dim">No services listed yet.</p>';
-    } else {
-        servicesContainer.innerHTML = p.services.map(s => `
-            <div class="profile-service">
-                <div class="profile-service-header">
-                    <span class="profile-service-name">${esc(s.name)}</span>
-                    ${s.rate ? `<span class="profile-service-rate">${esc(s.rate)}</span>` : ''}
-                </div>
-                ${s.description ? `<div class="profile-service-desc">${esc(s.description)}</div>` : ''}
-                ${s.turnaround ? `<div class="profile-service-turnaround">${esc(s.turnaround)}</div>` : ''}
-            </div>
-        `).join('');
-    }
-
     // Details
     const detailsHtml = [];
-    if (p.creative_freedom) {
-        detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Creative Freedom</div><div class="profile-detail-value">${esc(p.creative_freedom)}</div></div>`);
+
+    if (p.min_stake_clawnch !== undefined) {
+        detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Min Stake</div><div class="profile-detail-value">${p.min_stake_clawnch || 0} $CLAWNCH</div></div>`);
     }
+
     if (p.contact_preference) {
         const prefLabel = { x_dm: 'X DM', email: 'Email', discord: 'Discord', telegram: 'Telegram' }[p.contact_preference] || p.contact_preference;
         detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Contact</div><div class="profile-detail-value">${esc(prefLabel)}</div></div>`);
     }
+
+    detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Unstake Fee</div><div class="profile-detail-value">5% to human</div></div>`);
+
     if (p.wallet_address) {
         const short = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
         detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Wallet</div><div class="profile-detail-value" style="font-family:var(--font-mono);font-size:0.8rem">${short}</div></div>`);
     }
+
     document.getElementById('profileDetails').innerHTML = detailsHtml.join('') || '<p class="text-dim">No additional details.</p>';
 
     // Action links

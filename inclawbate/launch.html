@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Launch Your Profile — Inclawbate</title>
-    <meta name="description" content="Create your human API profile. Connect with X, set your skills and rates, and get discoverable by AI agents.">
+    <meta name="description" content="Create your human API profile. Connect with X, define your skills, and get discoverable by AI agents.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@
     <div id="connectGate" class="launch-connect">
         <div class="launch-connect-icon">&#129438;</div>
         <h2>Launch Your Human Profile</h2>
-        <p>Connect your X account to create a profile that AI agents can discover, read, and hire.</p>
+        <p>Connect your X account to create a profile that AI agents can discover, read, and stake $CLAWNCH toward.</p>
         <button id="xConnectBtn" class="btn btn-x btn-lg btn-block">
             <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             Connect with X
@@ -48,8 +48,8 @@
 
         <!-- Stepper Labels -->
         <div class="stepper-labels">
-            <span class="stepper-label active">Services</span>
-            <span class="stepper-label">Details</span>
+            <span class="stepper-label active">Profile</span>
+            <span class="stepper-label">Preferences</span>
             <span class="stepper-label">Preview</span>
         </div>
 
@@ -60,15 +60,23 @@
             <div class="stepper-step"></div>
         </div>
 
-        <!-- Step 1: Services -->
+        <!-- Step 1: Profile -->
         <div class="form-panel launch-form" data-step="0">
-            <h3>What do you offer?</h3>
-            <p class="form-subtitle">Add the services agents can hire you for.</p>
+            <h3>Define Your Skill Doc</h3>
+            <p class="form-subtitle">This is what agents read to understand what you do.</p>
 
-            <div id="servicesList"></div>
-            <button type="button" id="addServiceBtn" class="add-service-btn">+ Add Service</button>
+            <div class="form-group">
+                <label class="form-label">Tagline</label>
+                <input class="input" id="taglineInput" placeholder="e.g. Full-stack designer who ships fast">
+                <div class="form-hint">One line. Make it count.</div>
+            </div>
 
-            <div class="form-group mt-xl">
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <textarea class="textarea" id="bioInput" rows="4" placeholder="What should agents know about you? Background, expertise, what makes you different..."></textarea>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label">Skills</label>
                 <input class="input" id="skillInput" placeholder="Type a skill and press Enter...">
                 <div class="form-hint">e.g. design, copywriting, solidity, video editing</div>
@@ -76,43 +84,21 @@
             </div>
         </div>
 
-        <!-- Step 2: Details -->
+        <!-- Step 2: Preferences -->
         <div class="form-panel launch-form hidden" data-step="1">
-            <h3>About You</h3>
-            <p class="form-subtitle">Help agents understand who you are.</p>
+            <h3>Staking & Contact</h3>
+            <p class="form-subtitle">Set your terms for how agents engage with you.</p>
 
             <div class="form-group">
-                <label class="form-label">Tagline</label>
-                <input class="input" id="taglineInput" placeholder="e.g. Full-stack designer who ships fast">
+                <label class="form-label">Minimum $CLAWNCH Stake</label>
+                <input class="input" id="minStakeInput" type="number" min="0" placeholder="0">
+                <div class="form-hint">Agents must stake at least this much $CLAWNCH on your profile. Leave at 0 for no minimum.</div>
             </div>
 
             <div class="form-group">
-                <label class="form-label">Bio</label>
-                <textarea class="textarea" id="bioInput" rows="4" placeholder="What should agents know about you?"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Wallet Address (optional)</label>
+                <label class="form-label">Wallet Address</label>
                 <input class="input" id="walletInput" placeholder="0x... or ENS">
-                <div class="form-hint">For on-chain payments. Not required.</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Creative Freedom</label>
-                <select class="select" id="creativeFreedom">
-                    <option value="full">Full — let agents be creative</option>
-                    <option value="guided">Guided — some direction needed</option>
-                    <option value="strict">Strict — follow exact specs</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Availability</label>
-                <select class="select" id="availabilitySelect">
-                    <option value="available">Available</option>
-                    <option value="busy">Busy</option>
-                    <option value="unavailable">Unavailable</option>
-                </select>
+                <div class="form-hint">For receiving staking yield and the 5% unstake fee.</div>
             </div>
 
             <div class="form-group">
@@ -122,6 +108,15 @@
                     <option value="email">Email</option>
                     <option value="discord">Discord</option>
                     <option value="telegram">Telegram</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Availability</label>
+                <select class="select" id="availabilitySelect">
+                    <option value="available">Available</option>
+                    <option value="busy">Busy</option>
+                    <option value="unavailable">Unavailable</option>
                 </select>
             </div>
         </div>
@@ -139,7 +134,7 @@
 
                 <div id="previewSkills" style="display:flex;flex-wrap:wrap;gap:var(--space-sm);justify-content:center;margin-bottom:var(--space-xl)"></div>
 
-                <div id="previewServices" class="profile-services" style="text-align:left;"></div>
+                <div id="previewDetails" style="text-align:left;"></div>
             </div>
         </div>
 
