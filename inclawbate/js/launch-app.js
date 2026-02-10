@@ -64,8 +64,6 @@ function showBuilder() {
         document.getElementById('capacityValue').textContent = profile.available_capacity + '%';
     }
     if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
-    if (profile.contact_preference) document.getElementById('contactPref').value = profile.contact_preference;
-
     // Render existing skills
     skills.forEach(s => addSkillTag(s));
 
@@ -137,9 +135,7 @@ function renderPreview() {
 
     const capacity = document.getElementById('capacityInput').value || '100';
     const wallet = document.getElementById('walletInput').value;
-    const contact = document.getElementById('contactPref').value;
     const avail = document.getElementById('availabilitySelect').value;
-    const contactLabel = { x_dm: 'X DM', email: 'Email', discord: 'Discord', telegram: 'Telegram' }[contact] || contact;
 
     let detailsHtml = `
         <div class="profile-details" style="margin-top:var(--space-lg);">
@@ -150,10 +146,6 @@ function renderPreview() {
             <div class="profile-detail">
                 <div class="profile-detail-label">Availability</div>
                 <div class="profile-detail-value">${esc(avail)}</div>
-            </div>
-            <div class="profile-detail">
-                <div class="profile-detail-label">Contact</div>
-                <div class="profile-detail-value">${esc(contactLabel)}</div>
             </div>
     `;
     if (wallet) {
@@ -181,8 +173,7 @@ async function publishProfile() {
             skills,
             available_capacity: parseInt(document.getElementById('capacityInput').value) || 100,
             wallet_address: document.getElementById('walletInput').value.trim() || null,
-            availability: document.getElementById('availabilitySelect').value,
-            contact_preference: document.getElementById('contactPref').value
+            availability: document.getElementById('availabilitySelect').value
         };
 
         const result = await humansApi.updateProfile(updates);

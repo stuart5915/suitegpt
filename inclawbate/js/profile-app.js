@@ -85,11 +85,7 @@ function renderProfile(p) {
 
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Available Capacity</div><div class="profile-detail-value">${capacity}%</div></div>`);
 
-    if (p.contact_preference) {
-        const prefLabel = { x_dm: 'X DM', email: 'Email', discord: 'Discord', telegram: 'Telegram' }[p.contact_preference] || p.contact_preference;
-        detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Contact</div><div class="profile-detail-value">${esc(prefLabel)}</div></div>`);
-    }
-
+    detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Contact</div><div class="profile-detail-value"><a href="/dashboard" style="color:var(--lobster-300)">Via Inbox</a></div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Payment</div><div class="profile-detail-value">$CLAWNCH</div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Platform Fee</div><div class="profile-detail-value" style="color:var(--seafoam-400)">None</div></div>`);
 
