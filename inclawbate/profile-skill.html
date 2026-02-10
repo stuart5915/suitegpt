@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Document — Inclawbate</title>
+    <meta name="description" content="Machine-readable skill document for AI agents.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <link rel="stylesheet" href="/styles/profile.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/launch" class="btn btn-primary btn-sm">Launch Profile</a>
+    </div>
+</nav>
+
+<!-- Loading -->
+<div id="skillLoading" class="profile-loading">
+    <div class="spinner spinner-lg"></div>
+    <p>Loading skill document...</p>
+</div>
+
+<!-- Not Found -->
+<div id="skillNotFound" class="profile-not-found hidden">
+    <h2>Profile Not Found</h2>
+    <p>No skill document exists for this handle.</p>
+    <a href="/humans" class="btn btn-secondary">Browse Humans</a>
+</div>
+
+<!-- Skill Doc -->
+<div id="skillPage" class="skill-page hidden">
+    <a href="#" id="backToProfile" style="color:var(--text-dim);font-size:0.85rem;font-family:var(--font-mono);">&larr; Back to profile</a>
+    <h1 id="skillTitle">Skill Document</h1>
+    <div id="skillMeta" class="skill-meta"></div>
+    <pre id="skillJson" class="skill-json"></pre>
+    <button id="copySkillBtn" class="btn btn-secondary btn-sm skill-copy-btn">Copy JSON</button>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
+    </div>
+</footer>
+
+<script type="module">
+    const API_BASE = '/api/inclawbate';
+
+    const SECTIONS = {
+        loading: document.getElementById('skillLoading'),
+        notFound: document.getElementById('skillNotFound'),
+        page: document.getElementById('skillPage')
+    };
+
+    function show(name) {
+        Object.values(SECTIONS).forEach(el => { if (el) el.classList.add('hidden'); });
+        if (SECTIONS[name]) SECTIONS[name].classList.remove('hidden');
+    }
+
+    function getHandle() {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const idx = parts.indexOf('u');
+        return idx >= 0 && parts[idx + 1] ? parts[idx + 1].toLowerCase() : null;
+    }
+
+    async function init() {
+        const handle = getHandle();
+        if (!handle) { show('notFound'); return; }
+
+        show('loading');
+
+        try {
+            const res = await fetch(`${API_BASE}/humans?handle=${encodeURIComponent(handle)}`);
+            if (!res.ok) { show('notFound'); return; }
+            const data = await res.json();
+            if (!data.profile) { show('notFound'); return; }
+            renderSkillDoc(data.profile);
+        } catch (err) {
+            console.error('Skill doc error:', err);
+            show('notFound');
+        }
+    }
+
+    function renderSkillDoc(p) {
+        document.title = `${p.x_handle} — Skill Document — Inclawbate`;
+
+        document.getElementById('backToProfile').href = `/u/${p.x_handle}`;
+        document.getElementById('skillTitle').textContent = `${p.x_name || p.x_handle} — Skill Document`;
+        document.getElementById('skillMeta').textContent = `@${p.x_handle} | Updated ${new Date(p.updated_at).toLocaleDateString()}`;
+
+        const skillDoc = {
+            schema: 'inclawbate/human/v1',
+            handle: p.x_handle,
+            name: p.x_name,
+            profile_url: `https://inclawbate.com/u/${p.x_handle}`,
+            x_url: `https://x.com/${p.x_handle}`,
+            tagline: p.tagline || null,
+            bio: p.bio || null,
+            skills: p.skills || [],
+            services: (p.services || []).map(s => ({
+                name: s.name,
+                description: s.description || null,
+                rate: s.rate || null,
+                turnaround: s.turnaround || null
+            })),
+            availability: p.availability,
+            creative_freedom: p.creative_freedom,
+            contact_preference: p.contact_preference,
+            wallet_address: p.wallet_address || null,
+            updated_at: p.updated_at
+        };
+
+        document.getElementById('skillJson').textContent = JSON.stringify(skillDoc, null, 2);
+        show('page');
+    }
+
+    document.getElementById('copySkillBtn').addEventListener('click', async () => {
+        const text = document.getElementById('skillJson').textContent;
+        await navigator.clipboard.writeText(text);
+        const btn = document.getElementById('copySkillBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy JSON'; }, 2000);
+    });
+
+    init();
+</script>
+
+</body>
+</html>
