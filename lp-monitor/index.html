@@ -479,6 +479,18 @@
         ];
 
         // ========================
+        // Ethereum Provider (works inside iframes)
+        // ========================
+        function getEthereum() {
+            if (window.ethereum) return window.ethereum;
+            try { if (window.parent && window.parent.ethereum) return window.parent.ethereum; } catch {}
+            try { if (window.top && window.top.ethereum) return window.top.ethereum; } catch {}
+            return null;
+        }
+
+        const ethereum = getEthereum();
+
+        // ========================
         // App State
         // ========================
         let wallet = null;
@@ -504,7 +516,7 @@
         // Restore saved wallet on load
         window.addEventListener('load', () => {
             const saved = localStorage.getItem('connectedWallet');
-            if (saved && window.ethereum) {
+            if (saved && ethereum) {
                 wallet = saved;
                 updateWalletButton();
                 fetchPositions();
@@ -512,8 +524,8 @@
         });
 
         // Listen for account/chain changes from MetaMask
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', (accounts) => {
+        if (ethereum) {
+            ethereum.on('accountsChanged', (accounts) => {
                 if (accounts.length === 0) {
                     wallet = null;
                     localStorage.removeItem('connectedWallet');
@@ -528,7 +540,7 @@
                 }
             });
 
-            window.ethereum.on('chainChanged', () => {
+            ethereum.on('chainChanged', () => {
                 if (wallet) fetchPositions();
             });
         }
@@ -549,13 +561,13 @@
                 return;
             }
 
-            if (!window.ethereum) {
+            if (!ethereum) {
                 showToast('Install MetaMask to continue', 'error');
                 return;
             }
 
             try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
                 wallet = accounts[0];
                 localStorage.setItem('connectedWallet', wallet);
                 updateWalletButton();
@@ -579,9 +591,9 @@
         }
 
         async function switchChain(chainId) {
-            if (!window.ethereum) return;
+            if (!ethereum) return;
             try {
-                await window.ethereum.request({
+                await ethereum.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: CHAINS[chainId].chainIdHex }]
                 });
