@@ -19,7 +19,7 @@ const JWT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const REDIRECT_URI = 'https://inclawbate.com/launch';
 
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
