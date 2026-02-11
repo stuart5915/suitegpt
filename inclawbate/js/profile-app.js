@@ -146,6 +146,20 @@ function openEditModal() {
     editSkills = [...(currentProfile.skills || [])];
     renderEditSkills();
 
+    // Telegram status
+    const telegramLabel = document.getElementById('telegramLabel');
+    const telegramBtn = document.getElementById('telegramConnectBtn');
+    if (currentProfile.telegram_chat_id) {
+        telegramLabel.textContent = 'Connected';
+        telegramLabel.style.color = 'var(--seafoam-400)';
+        telegramBtn.textContent = 'Reconnect';
+    } else {
+        telegramLabel.textContent = 'Not connected';
+        telegramLabel.style.color = '';
+        telegramBtn.textContent = 'Connect Telegram';
+    }
+    telegramBtn.href = `https://t.me/InclawbateBot?start=${currentProfile.x_handle}`;
+
     editModal.classList.remove('hidden');
 }
 

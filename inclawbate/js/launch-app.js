@@ -64,6 +64,13 @@ function showBuilder() {
         document.getElementById('capacityValue').textContent = profile.available_capacity + '%';
     }
     if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
+
+    // Set Telegram deep link
+    const tgLink = document.getElementById('telegramLink');
+    if (tgLink && profile.x_handle) {
+        tgLink.href = `https://t.me/InclawbateBot?start=${profile.x_handle}`;
+    }
+
     // Render existing skills
     skills.forEach(s => addSkillTag(s));
 

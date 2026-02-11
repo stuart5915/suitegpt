@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
+import { notifyHuman } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -142,6 +143,22 @@ export default async function handler(req, res) {
             if (error) {
                 console.error('Message insert error:', error);
                 return res.status(500).json({ error: 'Failed to send message' });
+            }
+
+            // Notify human via Telegram when agent sends a message
+            if (sender_type === 'agent') {
+                const { data: human } = await supabase
+                    .from('human_profiles')
+                    .select('telegram_chat_id')
+                    .eq('id', convo.human_id)
+                    .single();
+
+                if (human?.telegram_chat_id) {
+                    const preview = content.trim().slice(0, 200);
+                    notifyHuman(human.telegram_chat_id,
+                        `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
+                    );
+                }
             }
 
             return res.status(201).json({ success: true, message: msg });

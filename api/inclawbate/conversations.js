@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
+import { notifyHuman } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -101,7 +102,7 @@ export default async function handler(req, res) {
             // Look up the human
             const { data: human, error: humanErr } = await supabase
                 .from('human_profiles')
-                .select('id, x_handle, x_name')
+                .select('id, x_handle, x_name, telegram_chat_id')
                 .eq('x_handle', human_handle.toLowerCase())
                 .single();
 
@@ -136,6 +137,17 @@ export default async function handler(req, res) {
                         sender_type: 'agent',
                         content: message
                     });
+            }
+
+            // Notify human via Telegram
+            if (human.telegram_chat_id) {
+                const amount = parseFloat(payment_amount) || 0;
+                const agentLabel = agent_name || `Agent ${agent_address.slice(0, 6)}...`;
+                let text = `🦞 <b>New hire from ${agentLabel}</b>`;
+                if (amount > 0) text += `\n💰 ${amount.toLocaleString()} CLAWNCH`;
+                if (message) text += `\n\n"${message.slice(0, 200)}"`;
+                text += `\n\n👉 inclawbate.com/dashboard`;
+                notifyHuman(human.telegram_chat_id, text);
             }
 
             return res.status(201).json({ success: true, conversation: convo });
