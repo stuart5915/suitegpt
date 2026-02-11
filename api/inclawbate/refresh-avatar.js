@@ -51,6 +51,8 @@ export default async function handler(req, res) {
     const handle = (req.query.handle || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
     if (!handle) return res.status(400).json({ error: 'handle required' });
 
+    const force = req.query.force === '1';
+
     try {
         const { data: profile, error } = await supabase
             .from('human_profiles')
@@ -62,21 +64,22 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'Profile not found' });
         }
 
-        // Skip if updated less than 6 hours ago
+        // Skip if updated less than 6 hours ago (unless forced)
         const updatedAt = new Date(profile.updated_at).getTime();
-        if (Date.now() - updatedAt < 6 * 60 * 60 * 1000) {
-            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+        const ageMs = Date.now() - updatedAt;
+        if (!force && ageMs < 6 * 60 * 60 * 1000) {
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false, reason: 'fresh', age_hours: Math.round(ageMs / 3600000 * 10) / 10 });
         }
 
         // Need a refresh token to proceed
         if (!profile.x_refresh_token) {
-            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false, reason: 'no_refresh_token' });
         }
 
         // Get fresh access token using refresh token
         const tokenData = await refreshAccessToken(profile.x_refresh_token);
         if (!tokenData) {
-            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false, reason: 'token_refresh_failed' });
         }
 
         // Fetch fresh user data from X
@@ -86,7 +89,8 @@ export default async function handler(req, res) {
         );
 
         if (!xResp.ok) {
-            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+            const xErr = await xResp.text().catch(() => '');
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false, reason: 'x_api_error', status: xResp.status, detail: xErr.slice(0, 200) });
         }
 
         const xData = await xResp.json();
