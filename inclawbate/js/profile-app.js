@@ -91,9 +91,29 @@ async function init() {
         currentAllocation = res.allocation || [];
         currentTotalAllocated = res.total_allocated || 0;
         renderProfile(currentProfile);
+        refreshAvatarIfStale(currentProfile);
     } catch (err) {
         showSection('notFound');
     }
+}
+
+function refreshAvatarIfStale(p) {
+    if (!p.updated_at) return;
+    const age = Date.now() - new Date(p.updated_at).getTime();
+    if (age < 6 * 60 * 60 * 1000) return; // fresh enough
+    fetch(`/api/inclawbate/refresh-avatar?handle=${encodeURIComponent(p.x_handle)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.refreshed) return;
+            const avatarEl = document.getElementById('profileAvatar');
+            const avatarFallback = document.getElementById('profileAvatarFallback');
+            if (data.avatar_url) {
+                avatarEl.src = data.avatar_url;
+                avatarEl.classList.remove('hidden');
+                avatarFallback.classList.add('hidden');
+            }
+        })
+        .catch(() => {}); // silent fail
 }
 
 function renderProfile(p) {
