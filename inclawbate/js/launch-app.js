@@ -31,11 +31,17 @@ async function init() {
         return;
     }
 
-    // Already authenticated → go to profile
+    // Already authenticated → go to profile (unless ?switch param is set)
     const stored = getStoredAuth();
-    if (stored && stored.profile && stored.profile.x_handle) {
+    if (stored && stored.profile && stored.profile.x_handle && !params.has('switch')) {
         window.location.href = `/u/${stored.profile.x_handle}`;
         return;
+    }
+
+    // Clear existing auth so a different account can connect
+    if (stored) {
+        localStorage.removeItem('inclawbate_token');
+        localStorage.removeItem('inclawbate_profile');
     }
 
     // Not authed, no code → auto-start OAuth (no double click)
