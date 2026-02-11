@@ -95,8 +95,15 @@ function renderProfile(p) {
 
     // Details
     const detailsHtml = [];
+    const respLabels = { under_1h: 'Under 1 hour', under_4h: 'Under 4 hours', under_24h: 'Under 24 hours', under_48h: 'Under 48 hours' };
 
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Available Capacity</div><div class="profile-detail-value">${capacity}%</div></div>`);
+    if (p.response_time) {
+        detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Response Time</div><div class="profile-detail-value">${esc(respLabels[p.response_time] || p.response_time)}</div></div>`);
+    }
+    if (p.timezone) {
+        detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Timezone</div><div class="profile-detail-value">${esc(p.timezone)}</div></div>`);
+    }
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Contact</div><div class="profile-detail-value"><a href="/dashboard" style="color:var(--lobster-300)">Via Inbox</a></div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Payment</div><div class="profile-detail-value">$CLAWNCH</div></div>`);
     detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Platform Fee</div><div class="profile-detail-value" style="color:var(--seafoam-400)">None</div></div>`);
@@ -142,6 +149,10 @@ function openEditModal() {
     document.getElementById('editCapacity').value = cap;
     document.getElementById('editCapacityVal').textContent = cap + '%';
 
+    if (currentProfile.response_time) document.getElementById('editResponseTime').value = currentProfile.response_time;
+    const tz = currentProfile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById('editTimezone').textContent = tz;
+
     editSkills = [...(currentProfile.skills || [])];
     renderEditSkills();
 
@@ -186,13 +197,16 @@ async function saveProfile() {
     btn.textContent = 'Saving...';
 
     try {
+        const editRespTime = document.getElementById('editResponseTime').value;
         const updates = {
             tagline: document.getElementById('editTagline').value.trim(),
             bio: document.getElementById('editBio').value.trim(),
             skills: editSkills,
             available_capacity: parseInt(document.getElementById('editCapacity').value) || 100,
             wallet_address: document.getElementById('editWallet').value.trim() || null,
-            availability: document.getElementById('editAvailability').value
+            availability: document.getElementById('editAvailability').value,
+            response_time: editRespTime || undefined,
+            timezone: document.getElementById('editTimezone').textContent || undefined
         };
 
         const result = await humansApi.updateProfile(updates);

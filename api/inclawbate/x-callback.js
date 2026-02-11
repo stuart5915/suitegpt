@@ -155,6 +155,8 @@ export default async function handler(req, res) {
                 available_capacity: profile.available_capacity,
                 availability: profile.availability,
                 creative_freedom: profile.creative_freedom,
+                response_time: profile.response_time,
+                timezone: profile.timezone,
                 telegram_chat_id: profile.telegram_chat_id
             }
         });

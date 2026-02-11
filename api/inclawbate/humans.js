@@ -16,7 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,telegram_chat_id,metadata,created_at,updated_at';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,telegram_chat_id,metadata,created_at,updated_at';
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -125,6 +125,8 @@ export default async function handler(req, res) {
             if (available_capacity !== undefined) updates.available_capacity = Math.max(0, Math.min(100, parseInt(available_capacity) || 100));
             if (availability !== undefined && ['available', 'busy', 'unavailable'].includes(availability)) updates.availability = availability;
             if (creative_freedom !== undefined && ['full', 'guided', 'strict'].includes(creative_freedom)) updates.creative_freedom = creative_freedom;
+            if (req.body.response_time !== undefined && ['under_1h', 'under_4h', 'under_24h', 'under_48h'].includes(req.body.response_time)) updates.response_time = req.body.response_time;
+            if (req.body.timezone !== undefined) updates.timezone = String(req.body.timezone).slice(0, 100) || null;
 
             if (Object.keys(updates).length === 0) {
                 return res.status(400).json({ error: 'No fields to update' });

@@ -64,6 +64,11 @@ function showBuilder() {
         document.getElementById('capacityValue').textContent = profile.available_capacity + '%';
     }
     if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
+    if (profile.response_time) document.getElementById('responseTimeSelect').value = profile.response_time;
+
+    // Auto-detect timezone (use stored value if available)
+    const tz = profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById('timezoneDisplay').textContent = tz;
 
     // Set Telegram deep link
     const tgLink = document.getElementById('telegramLink');
@@ -143,6 +148,10 @@ function renderPreview() {
     const capacity = document.getElementById('capacityInput').value || '100';
     const wallet = document.getElementById('walletInput').value;
     const avail = document.getElementById('availabilitySelect').value;
+    const respTime = document.getElementById('responseTimeSelect').value;
+    const tz = document.getElementById('timezoneDisplay').textContent;
+
+    const respLabels = { under_1h: 'Under 1 hour', under_4h: 'Under 4 hours', under_24h: 'Under 24 hours', under_48h: 'Under 48 hours' };
 
     let detailsHtml = `
         <div class="profile-details" style="margin-top:var(--space-lg);">
@@ -155,6 +164,22 @@ function renderPreview() {
                 <div class="profile-detail-value">${esc(avail)}</div>
             </div>
     `;
+    if (respTime) {
+        detailsHtml += `
+            <div class="profile-detail">
+                <div class="profile-detail-label">Response Time</div>
+                <div class="profile-detail-value">${esc(respLabels[respTime] || respTime)}</div>
+            </div>
+        `;
+    }
+    if (tz) {
+        detailsHtml += `
+            <div class="profile-detail">
+                <div class="profile-detail-label">Timezone</div>
+                <div class="profile-detail-value">${esc(tz)}</div>
+            </div>
+        `;
+    }
     if (wallet) {
         const short = wallet.length > 12 ? wallet.slice(0, 6) + '...' + wallet.slice(-4) : wallet;
         detailsHtml += `
@@ -174,13 +199,16 @@ async function publishProfile() {
     nextBtn.textContent = 'PUBLISHING...';
 
     try {
+        const responseTime = document.getElementById('responseTimeSelect').value;
         const updates = {
             tagline: document.getElementById('taglineInput').value.trim(),
             bio: document.getElementById('bioInput').value.trim(),
             skills,
             available_capacity: parseInt(document.getElementById('capacityInput').value) || 100,
             wallet_address: document.getElementById('walletInput').value.trim() || null,
-            availability: document.getElementById('availabilitySelect').value
+            availability: document.getElementById('availabilitySelect').value,
+            response_time: responseTime || undefined,
+            timezone: document.getElementById('timezoneDisplay').textContent || undefined
         };
 
         const result = await humansApi.updateProfile(updates);
