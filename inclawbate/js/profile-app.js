@@ -210,6 +210,34 @@ function renderProfile(p) {
         heroAlloc.classList.remove('hidden');
     }
 
+    // Allocation list (payers breakdown)
+    if (currentAllocation.length > 0) {
+        const allocSection = document.getElementById('allocationSection');
+        const allocList = document.getElementById('allocationList');
+        if (allocSection && allocList) {
+            const colors = [
+                'hsl(9, 52%, 56%)', 'hsl(172, 32%, 48%)', 'hsl(32, 32%, 66%)',
+                'hsl(210, 28%, 54%)', 'hsl(280, 30%, 55%)', 'hsl(45, 50%, 55%)'
+            ];
+            allocList.innerHTML = currentAllocation.map((a, i) => {
+                const short = a.agent_address.slice(0, 6) + '...' + a.agent_address.slice(-4);
+                const color = colors[i % colors.length];
+                return `<div class="alloc-row">
+                    <div class="alloc-bar" style="width:${a.share}%;background:${color}"></div>
+                    <div class="alloc-info">
+                        <span class="alloc-name">${esc(a.agent_name)}</span>
+                        <a href="https://basescan.org/address/${a.agent_address}" target="_blank" rel="noopener" class="alloc-addr">${short}</a>
+                    </div>
+                    <div class="alloc-stats">
+                        <span class="alloc-amount">${a.total_paid.toLocaleString()} CLAWNCH</span>
+                        <span class="alloc-share">${a.share}%</span>
+                    </div>
+                </div>`;
+            }).join('');
+            allocSection.style.display = '';
+        }
+    }
+
     // Set up payment modal
     document.getElementById('payHumanName').textContent = p.x_name || p.x_handle;
     document.getElementById('payRecipient').textContent = `@${p.x_handle}`;
