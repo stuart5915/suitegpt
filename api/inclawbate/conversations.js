@@ -33,18 +33,42 @@ export default async function handler(req, res) {
         if (!user) return res.status(401).json({ error: 'Authentication required' });
 
         try {
-            const { id, status } = req.query;
+            const { id, status, direction } = req.query;
+
+            // Look up user's wallet address (needed for outbound queries)
+            let userWallet = null;
+            if (direction === 'outbound' || id) {
+                const { data: profile } = await supabase
+                    .from('human_profiles')
+                    .select('wallet_address')
+                    .eq('id', user.sub)
+                    .single();
+                userWallet = profile?.wallet_address?.toLowerCase() || null;
+            }
 
             // Single conversation with messages
             if (id) {
-                const { data: convo, error: convoErr } = await supabase
+                // Allow access if human_id matches OR user's wallet matches agent_address
+                let convo = null;
+                const { data: c1 } = await supabase
                     .from('inclawbate_conversations')
                     .select('*')
                     .eq('id', id)
                     .eq('human_id', user.sub)
                     .single();
+                convo = c1;
 
-                if (convoErr || !convo) {
+                if (!convo && userWallet) {
+                    const { data: c2 } = await supabase
+                        .from('inclawbate_conversations')
+                        .select('*')
+                        .eq('id', id)
+                        .eq('agent_address', userWallet)
+                        .single();
+                    convo = c2;
+                }
+
+                if (!convo) {
                     return res.status(404).json({ error: 'Conversation not found' });
                 }
 
@@ -61,7 +85,44 @@ export default async function handler(req, res) {
                 return res.status(200).json({ conversation: convo, messages: messages || [] });
             }
 
-            // List all conversations for this human
+            // Outbound: conversations where user is the payer (agent_address = wallet)
+            if (direction === 'outbound') {
+                if (!userWallet) {
+                    return res.status(200).json({ conversations: [], total: 0 });
+                }
+
+                const { data: convos, count: outCount, error: outErr } = await supabase
+                    .from('inclawbate_conversations')
+                    .select('*', { count: 'exact' })
+                    .eq('agent_address', userWallet)
+                    .order('last_message_at', { ascending: false });
+
+                if (outErr) {
+                    return res.status(500).json({ error: 'Failed to fetch conversations' });
+                }
+
+                // Enrich with hired human's profile info
+                const humanIds = [...new Set((convos || []).map(c => c.human_id))];
+                let humanMap = {};
+                if (humanIds.length > 0) {
+                    const { data: humans } = await supabase
+                        .from('human_profiles')
+                        .select('id, x_handle, x_name, x_avatar_url')
+                        .in('id', humanIds);
+                    (humans || []).forEach(h => { humanMap[h.id] = h; });
+                }
+
+                const enriched = (convos || []).map(c => ({
+                    ...c,
+                    human_x_handle: humanMap[c.human_id]?.x_handle || null,
+                    human_x_name: humanMap[c.human_id]?.x_name || null,
+                    human_x_avatar_url: humanMap[c.human_id]?.x_avatar_url || null
+                }));
+
+                return res.status(200).json({ conversations: enriched, total: outCount || 0 });
+            }
+
+            // Default: list inbound conversations for this human
             let query = supabase
                 .from('inclawbate_conversations')
                 .select('*', { count: 'exact' })

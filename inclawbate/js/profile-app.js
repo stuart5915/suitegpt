@@ -556,12 +556,15 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
         const initialMessage = document.getElementById('payMessageInput')?.value?.trim() || '';
 
         try {
+            const storedProfile = getStoredProfile();
+            const agentName = storedProfile?.x_name || storedProfile?.x_handle || null;
             await fetch('/api/inclawbate/conversations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     human_handle: currentProfile.x_handle,
                     agent_address: accounts[0],
+                    agent_name: agentName,
                     payment_amount: amount,
                     payment_tx: tx,
                     message: initialMessage || `Hired via inclawbate.com \u2014 ${amount} CLAWNCH sent.`

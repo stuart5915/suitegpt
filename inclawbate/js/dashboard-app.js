@@ -7,6 +7,7 @@ let conversations = [];
 let activeConvoId = null;
 let pollTimer = null;
 let lastMessageTime = null;
+let currentDirection = 'inbound';
 
 function authHeaders() {
     const token = localStorage.getItem('inclawbate_token');
@@ -97,13 +98,45 @@ function init() {
             }
         });
 
+    // Tab switching
+    document.querySelectorAll('.dash-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const dir = tab.dataset.dir;
+            if (dir === currentDirection) return;
+            currentDirection = dir;
+            document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Close any open conversation
+            activeConvoId = null;
+            stopPolling();
+            document.getElementById('chatView').classList.add('hidden');
+            document.getElementById('chatEmpty').classList.remove('hidden');
+            document.getElementById('dashSidebar').classList.remove('chat-open');
+            document.getElementById('dashMain').classList.add('no-chat');
+
+            // Update empty state text
+            const emptyEl = document.getElementById('chatEmpty');
+            if (dir === 'outbound') {
+                emptyEl.querySelector('h3').textContent = 'Select a conversation';
+                emptyEl.querySelector('p').textContent = 'Click a conversation to see your outreach messages.';
+            } else {
+                emptyEl.querySelector('h3').textContent = 'Select a conversation';
+                emptyEl.querySelector('p').textContent = 'Click a conversation from your inbox to see messages from the agent and reply.';
+            }
+
+            loadConversations();
+        });
+    });
+
     loadConversations();
 }
 
 // ── Load Conversations ──
 async function loadConversations() {
     try {
-        const res = await fetch(`${API_BASE}/conversations`, { headers: authHeaders() });
+        const dirParam = currentDirection === 'outbound' ? '?direction=outbound' : '';
+        const res = await fetch(`${API_BASE}/conversations${dirParam}`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Failed to load');
         const data = await res.json();
         conversations = data.conversations || [];
@@ -115,13 +148,31 @@ async function loadConversations() {
 }
 
 function updateStats() {
-    const { shares, totalPaid } = getAgentShares();
-    const uniqueAgents = Object.keys(shares).filter(addr => shares[addr] >= 1).length;
-    const allocated = totalPaid > 0 ? 100 : 0;
+    if (currentDirection === 'outbound') {
+        // Outreach stats: humans hired, CLAWNCH sent, conversations
+        const totalSent = conversations.reduce((sum, c) => sum + (parseFloat(c.payment_amount) || 0), 0);
+        const uniqueHumans = new Set(conversations.map(c => c.human_id)).size;
+        document.getElementById('statAgents').textContent = uniqueHumans;
+        document.getElementById('statEarnings').textContent = totalSent > 0 ? totalSent.toLocaleString() : '0';
+        document.getElementById('statAllocated').textContent = conversations.length;
 
-    document.getElementById('statAgents').textContent = uniqueAgents;
-    document.getElementById('statEarnings').textContent = totalPaid > 0 ? totalPaid.toLocaleString() : '0';
-    document.getElementById('statAllocated').textContent = allocated + '%';
+        document.querySelector('.dash-stat:nth-child(1) .dash-stat-label').textContent = 'Humans';
+        document.querySelector('.dash-stat:nth-child(2) .dash-stat-label').textContent = 'CLAWNCH Sent';
+        document.querySelector('.dash-stat:nth-child(3) .dash-stat-label').textContent = 'Conversations';
+    } else {
+        // Inbound stats (original)
+        const { shares, totalPaid } = getAgentShares();
+        const uniqueAgents = Object.keys(shares).filter(addr => shares[addr] >= 1).length;
+        const allocated = totalPaid > 0 ? 100 : 0;
+
+        document.getElementById('statAgents').textContent = uniqueAgents;
+        document.getElementById('statEarnings').textContent = totalPaid > 0 ? totalPaid.toLocaleString() : '0';
+        document.getElementById('statAllocated').textContent = allocated + '%';
+
+        document.querySelector('.dash-stat:nth-child(1) .dash-stat-label').textContent = 'Agents';
+        document.querySelector('.dash-stat:nth-child(2) .dash-stat-label').textContent = 'CLAWNCH';
+        document.querySelector('.dash-stat:nth-child(3) .dash-stat-label').textContent = 'Allocated';
+    }
 }
 
 function renderConversationList() {
@@ -129,6 +180,9 @@ function renderConversationList() {
     const noConvos = document.getElementById('noConvos');
 
     if (conversations.length === 0) {
+        noConvos.innerHTML = currentDirection === 'outbound'
+            ? `<p>No outreach yet. Visit a human's profile and click "Hire Me" to start.</p>`
+            : `<p>No conversations yet. When an agent hires you, it'll show up here.</p>`;
         noConvos.classList.remove('hidden');
         container.querySelectorAll('.dash-convo-item').forEach(el => el.remove());
         return;
@@ -144,21 +198,41 @@ function renderConversationList() {
         el.className = `dash-convo-item${c.id === activeConvoId ? ' active' : ''}`;
         el.dataset.id = c.id;
 
-        const initial = (c.agent_name || 'A')[0].toUpperCase();
         const amount = parseFloat(c.payment_amount) || 0;
-        const agentShare = shares[c.agent_address] || 0;
 
-        el.innerHTML = `
-            <div class="dash-convo-avatar">${initial}</div>
-            <div class="dash-convo-info">
-                <div class="dash-convo-name">${esc(c.agent_name || 'Unknown Agent')}</div>
-                <div class="dash-convo-preview">${agentShare >= 1 ? `${agentShare}% of your capacity` : 'Below 1% threshold'}</div>
-            </div>
-            <div class="dash-convo-meta">
-                <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
-                ${amount > 0 ? `<div class="dash-convo-amount">${amount.toLocaleString()} C</div>` : ''}
-            </div>
-        `;
+        if (currentDirection === 'outbound') {
+            // Show the hired human's info
+            const name = c.human_x_name || c.human_x_handle || 'Unknown';
+            const initial = name[0].toUpperCase();
+            el.innerHTML = `
+                <div class="dash-convo-avatar">${c.human_x_avatar_url
+                    ? `<img src="${esc(c.human_x_avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+                    : initial}</div>
+                <div class="dash-convo-info">
+                    <div class="dash-convo-name">${esc(name)}</div>
+                    <div class="dash-convo-preview">${c.human_x_handle ? '@' + esc(c.human_x_handle) : ''}</div>
+                </div>
+                <div class="dash-convo-meta">
+                    <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
+                    ${amount > 0 ? `<div class="dash-convo-amount">${amount.toLocaleString()} C</div>` : ''}
+                </div>
+            `;
+        } else {
+            // Inbound: show agent info (original behavior)
+            const initial = (c.agent_name || 'A')[0].toUpperCase();
+            const agentShare = shares[c.agent_address] || 0;
+            el.innerHTML = `
+                <div class="dash-convo-avatar">${initial}</div>
+                <div class="dash-convo-info">
+                    <div class="dash-convo-name">${esc(c.agent_name || 'Unknown Agent')}</div>
+                    <div class="dash-convo-preview">${agentShare >= 1 ? `${agentShare}% of your capacity` : 'Below 1% threshold'}</div>
+                </div>
+                <div class="dash-convo-meta">
+                    <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
+                    ${amount > 0 ? `<div class="dash-convo-amount">${amount.toLocaleString()} C</div>` : ''}
+                </div>
+            `;
+        }
 
         el.addEventListener('click', () => openConversation(c.id));
         container.appendChild(el);
@@ -184,18 +258,37 @@ async function openConversation(convoId) {
 
     const convo = conversations.find(c => c.id === convoId);
     if (convo) {
-        const initial = (convo.agent_name || 'A')[0].toUpperCase();
-        document.getElementById('chatAgentAvatar').textContent = initial;
-        document.getElementById('chatAgentName').textContent = convo.agent_name || 'Unknown Agent';
-        document.getElementById('chatAgentAddr').textContent = convo.agent_address
-            ? convo.agent_address.slice(0, 6) + '...' + convo.agent_address.slice(-4)
-            : '';
-
         const amount = parseFloat(convo.payment_amount) || 0;
-        const { shares } = getAgentShares();
-        const agentShare = shares[convo.agent_address] || 0;
-        const badge = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
-        document.getElementById('chatPaymentBadge').textContent = agentShare >= 1 ? `${badge} · ${agentShare}% capacity` : badge;
+
+        if (currentDirection === 'outbound') {
+            // Outbound: show the hired human's info
+            const name = convo.human_x_name || convo.human_x_handle || 'Unknown';
+            const avatarEl = document.getElementById('chatAgentAvatar');
+            if (convo.human_x_avatar_url) {
+                avatarEl.innerHTML = `<img src="${esc(convo.human_x_avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                avatarEl.textContent = name[0].toUpperCase();
+            }
+            document.getElementById('chatAgentName').textContent = `You \u2192 ${name}`;
+            document.getElementById('chatAgentAddr').textContent = convo.human_x_handle ? `@${convo.human_x_handle}` : '';
+            document.getElementById('chatPaymentBadge').textContent = amount > 0 ? `${amount.toLocaleString()} CLAWNCH sent` : 'No payment yet';
+            document.getElementById('chatInput').placeholder = convo.human_x_handle ? `Message @${convo.human_x_handle}...` : 'Send a message...';
+        } else {
+            // Inbound: show agent info (original behavior)
+            const initial = (convo.agent_name || 'A')[0].toUpperCase();
+            document.getElementById('chatAgentAvatar').innerHTML = '';
+            document.getElementById('chatAgentAvatar').textContent = initial;
+            document.getElementById('chatAgentName').textContent = convo.agent_name || 'Unknown Agent';
+            document.getElementById('chatAgentAddr').textContent = convo.agent_address
+                ? convo.agent_address.slice(0, 6) + '...' + convo.agent_address.slice(-4)
+                : '';
+
+            const { shares } = getAgentShares();
+            const agentShare = shares[convo.agent_address] || 0;
+            const badge = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
+            document.getElementById('chatPaymentBadge').textContent = agentShare >= 1 ? `${badge} · ${agentShare}% capacity` : badge;
+            document.getElementById('chatInput').placeholder = 'Reply to this agent...';
+        }
     }
 
     await loadMessages(convoId);
@@ -218,16 +311,24 @@ function renderMessages(messages) {
     container.innerHTML = '';
 
     if (messages.length === 0) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:var(--space-2xl);font-size:0.88rem;">No messages yet. The agent will send the first message.</div>';
+        const emptyText = currentDirection === 'outbound'
+            ? 'No messages yet. Send the first message to start the conversation.'
+            : 'No messages yet. The agent will send the first message.';
+        container.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:var(--space-2xl);font-size:0.88rem;">${emptyText}</div>`;
         lastMessageTime = null;
         return;
     }
 
     messages.forEach(msg => {
         const el = document.createElement('div');
-        el.className = `chat-msg ${msg.sender_type}`;
+        // In outbound direction, the "agent" messages are from YOU (the payer) and "human" messages are from the hired person
+        const isYou = currentDirection === 'outbound'
+            ? msg.sender_type === 'agent'
+            : msg.sender_type === 'human';
+        el.className = `chat-msg ${isYou ? 'human' : 'agent'}`;
+        const senderLabel = isYou ? 'You' : (currentDirection === 'outbound' ? 'Them' : 'Agent');
         el.innerHTML = `
-            <div class="chat-msg-sender">${msg.sender_type === 'agent' ? 'Agent' : 'You'}</div>
+            <div class="chat-msg-sender">${senderLabel}</div>
             <div class="chat-msg-content">${esc(msg.content)}</div>
             <div class="chat-msg-time">${formatTime(msg.created_at)}</div>
         `;
@@ -276,9 +377,13 @@ function appendMessages(messages) {
 
     messages.forEach(msg => {
         const el = document.createElement('div');
-        el.className = `chat-msg ${msg.sender_type}`;
+        const isYou = currentDirection === 'outbound'
+            ? msg.sender_type === 'agent'
+            : msg.sender_type === 'human';
+        el.className = `chat-msg ${isYou ? 'human' : 'agent'}`;
+        const senderLabel = isYou ? 'You' : (currentDirection === 'outbound' ? 'Them' : 'Agent');
         el.innerHTML = `
-            <div class="chat-msg-sender">${msg.sender_type === 'agent' ? 'Agent' : 'You'}</div>
+            <div class="chat-msg-sender">${senderLabel}</div>
             <div class="chat-msg-content">${esc(msg.content)}</div>
             <div class="chat-msg-time">${formatTime(msg.created_at)}</div>
         `;

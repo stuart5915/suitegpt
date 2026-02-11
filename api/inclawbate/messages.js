@@ -53,9 +53,17 @@ export default async function handler(req, res) {
                 return res.status(404).json({ error: 'Conversation not found' });
             }
 
-            // Check authorization
+            // Check authorization (human_id match OR wallet matches agent_address)
             if (user && convo.human_id !== user.sub) {
-                return res.status(403).json({ error: 'Not your conversation' });
+                const { data: prof } = await supabase
+                    .from('human_profiles')
+                    .select('wallet_address')
+                    .eq('id', user.sub)
+                    .single();
+                const wallet = prof?.wallet_address?.toLowerCase();
+                if (!wallet || convo.agent_address !== wallet) {
+                    return res.status(403).json({ error: 'Not your conversation' });
+                }
             }
             if (agentAddress && convo.agent_address !== agentAddress.toLowerCase()) {
                 return res.status(403).json({ error: 'Not your conversation' });
@@ -121,8 +129,20 @@ export default async function handler(req, res) {
             // Verify sender authorization
             if (sender_type === 'human') {
                 const user = authenticateRequest(req);
-                if (!user || convo.human_id !== user.sub) {
+                if (!user) {
                     return res.status(403).json({ error: 'Not authorized' });
+                }
+                // Allow if human_id matches OR wallet matches agent_address (payer)
+                if (convo.human_id !== user.sub) {
+                    const { data: prof } = await supabase
+                        .from('human_profiles')
+                        .select('wallet_address')
+                        .eq('id', user.sub)
+                        .single();
+                    const wallet = prof?.wallet_address?.toLowerCase();
+                    if (!wallet || convo.agent_address !== wallet) {
+                        return res.status(403).json({ error: 'Not authorized' });
+                    }
                 }
             } else if (sender_type === 'agent') {
                 if (!agent_address || convo.agent_address !== agent_address.toLowerCase()) {
