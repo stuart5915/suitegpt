@@ -243,14 +243,20 @@ function renderProfile(p) {
                 'hsl(9, 52%, 56%)', 'hsl(172, 32%, 48%)', 'hsl(32, 32%, 66%)',
                 'hsl(210, 28%, 54%)', 'hsl(280, 30%, 55%)', 'hsl(45, 50%, 55%)'
             ];
+            const ENS_NAMES = {
+                '0x91b5c0d07859cfeafeb67d9694121cd741f049bd': 'inclawbate.base.eth'
+            };
             allocList.innerHTML = currentAllocation.map((a, i) => {
-                const short = a.agent_address.slice(0, 6) + '...' + a.agent_address.slice(-4);
+                const addrLower = a.agent_address.toLowerCase();
+                const ensName = ENS_NAMES[addrLower];
+                const displayName = ensName || a.agent_name;
+                const addrLabel = ensName || (a.agent_address.slice(0, 6) + '...' + a.agent_address.slice(-4));
                 const color = colors[i % colors.length];
                 return `<div class="alloc-row">
                     <div class="alloc-bar" style="width:${a.share}%;background:${color}"></div>
                     <div class="alloc-info">
-                        <span class="alloc-name">${esc(a.agent_name)}</span>
-                        <a href="https://basescan.org/address/${a.agent_address}" target="_blank" rel="noopener" class="alloc-addr">${short}</a>
+                        <span class="alloc-name">${esc(displayName)}</span>
+                        <a href="https://basescan.org/address/${a.agent_address}" target="_blank" rel="noopener" class="alloc-addr">${esc(addrLabel)}</a>
                     </div>
                     <div class="alloc-stats">
                         <span class="alloc-amount">${a.total_paid.toLocaleString()} CLAWNCH</span>
