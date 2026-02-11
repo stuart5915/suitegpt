@@ -137,19 +137,20 @@ function renderProfile(p) {
 
     // X timeline feed
     const feedSection = document.getElementById('feedSection');
-    const timelineEl = document.getElementById('xTimeline');
-    if (feedSection && timelineEl && p.x_handle) {
-        timelineEl.href = `https://x.com/${p.x_handle}`;
+    const timelineContainer = document.getElementById('xTimelineContainer');
+    if (feedSection && timelineContainer && p.x_handle) {
         feedSection.style.display = '';
-        const loadTimeline = () => {
-            if (window.twttr && window.twttr.widgets) {
-                window.twttr.widgets.load(feedSection);
-            }
+        const renderTimeline = () => {
+            window.twttr.widgets.createTimeline(
+                { sourceType: 'profile', screenName: p.x_handle },
+                timelineContainer,
+                { theme: 'dark', chrome: 'noheader nofooter noborders', tweetLimit: 5 }
+            );
         };
-        if (window.twttr && window.twttr.ready) {
-            window.twttr.ready(loadTimeline);
-        } else {
-            loadTimeline();
+        if (window.twttr && window.twttr.widgets) {
+            renderTimeline();
+        } else if (window.twttr && window.twttr.ready) {
+            window.twttr.ready(renderTimeline);
         }
     }
 
