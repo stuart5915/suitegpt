@@ -33,6 +33,18 @@ function discoverWallets() {
     });
 }
 
+async function waitForReceipt(provider, txHash, maxAttempts = 30) {
+    for (let i = 0; i < maxAttempts; i++) {
+        const receipt = await provider.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash]
+        });
+        if (receipt) return receipt;
+        await new Promise(r => setTimeout(r, 2000)); // poll every 2s
+    }
+    return null; // timed out after ~60s
+}
+
 function showSection(name) {
     Object.values(SECTIONS).forEach(el => { if (el) el.classList.add('hidden'); });
     if (SECTIONS[name]) SECTIONS[name].classList.remove('hidden');
@@ -533,27 +545,40 @@ async function executeSend(provider) {
             }]
         });
 
-        // Payment succeeded — now create conversation via API
-        btn.textContent = 'Creating conversation...';
+        // Wait for tx to be mined before recording
+        btn.textContent = 'Waiting for confirmation...';
+        const receipt = await waitForReceipt(provider, tx);
+        if (!receipt || receipt.status === '0x0') {
+            alert('Transaction failed on-chain. Your wallet may have reverted the transfer.');
+            btn.disabled = false;
+            btn.textContent = 'Send Payment';
+            return;
+        }
+
+        // Tx confirmed — now create conversation via API
+        btn.textContent = 'Recording hire...';
         const initialMessage = document.getElementById('payMessageInput')?.value?.trim() || '';
 
-        try {
-            const storedProfile = getStoredProfile();
-            const agentName = storedProfile?.x_name || storedProfile?.x_handle || null;
-            await fetch('/api/inclawbate/conversations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    human_handle: currentProfile.x_handle,
-                    agent_address: accounts[0],
-                    agent_name: agentName,
-                    payment_amount: amount,
-                    payment_tx: tx,
-                    message: initialMessage || `Hired via inclawbate.com \u2014 ${amount} CLAWNCH sent.`
-                })
-            });
-        } catch (convErr) {
-            console.error('Failed to create conversation:', convErr);
+        const storedProfile = getStoredProfile();
+        const agentName = storedProfile?.x_name || storedProfile?.x_handle || null;
+        const convRes = await fetch('/api/inclawbate/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                human_handle: currentProfile.x_handle,
+                agent_address: accounts[0],
+                agent_name: agentName,
+                payment_amount: amount,
+                payment_tx: tx,
+                message: initialMessage || `Hired via inclawbate.com \u2014 ${amount} CLAWNCH sent.`
+            })
+        });
+
+        if (!convRes.ok) {
+            const errData = await convRes.json().catch(() => ({}));
+            console.error('Failed to record hire:', errData);
+            // Payment went through but recording failed — show tx link so user can prove it
+            alert('Payment sent but failed to record on inclawbate: ' + (errData.error || 'Unknown error') + '. Your tx hash: ' + tx);
         }
 
         document.getElementById('paySuccessAmount').textContent = amount.toLocaleString();
