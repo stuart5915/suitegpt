@@ -34,22 +34,34 @@ function checkRateLimit(ip) {
     return true;
 }
 
-// Verify payment tx on Base via public RPC
+// Verify payment tx on Base via public RPC (with fallback)
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'.toLowerCase();
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org'
+];
+
+async function rpcCall(method, params) {
+    for (let i = 0; i < BASE_RPCS.length; i++) {
+        try {
+            const resp = await fetch(BASE_RPCS[i], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+            });
+            if (resp.status === 429) continue;
+            const data = await resp.json();
+            if (data.result !== undefined) return data.result;
+        } catch (e) { /* try next RPC */ }
+    }
+    return null;
+}
 
 async function verifyPaymentTx(txHash, expectedFrom, expectedTo, expectedAmount) {
     try {
-        const resp = await fetch('https://mainnet.base.org', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0', id: 1,
-                method: 'eth_getTransactionReceipt',
-                params: [txHash]
-            })
-        });
-        const { result: receipt } = await resp.json();
+        const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
         if (!receipt || receipt.status !== '0x1') return { valid: false, reason: 'Transaction failed or not found' };
 
         // Find ERC-20 Transfer event from the CLAWNCH contract
