@@ -159,7 +159,7 @@ export default async function handler(req, res) {
             return res.status(201).json({ success: true, conversation: convo });
 
         } catch (err) {
-            return res.status(500).json({ error: 'Internal server error', debug: err.message || String(err) });
+            return res.status(500).json({ error: 'Internal server error' });
         }
     }
 
