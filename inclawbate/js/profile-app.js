@@ -10,6 +10,28 @@ const SECTIONS = {
 let currentProfile = null;
 let isOwnProfile = false;
 let editPortfolioLinks = [];
+let selectedProvider = null;
+
+function discoverWallets() {
+    return new Promise(resolve => {
+        const wallets = [];
+        const handler = (e) => {
+            wallets.push({ info: e.detail.info, provider: e.detail.provider });
+        };
+        window.addEventListener('eip6963:announceProvider', handler);
+        window.dispatchEvent(new Event('eip6963:requestProvider'));
+        setTimeout(() => {
+            window.removeEventListener('eip6963:announceProvider', handler);
+            if (wallets.length === 0 && window.ethereum) {
+                wallets.push({
+                    info: { name: 'Browser Wallet', icon: null },
+                    provider: window.ethereum
+                });
+            }
+            resolve(wallets);
+        }, 300);
+    });
+}
 
 function showSection(name) {
     Object.values(SECTIONS).forEach(el => { if (el) el.classList.add('hidden'); });
@@ -373,32 +395,67 @@ modal?.addEventListener('click', (e) => {
     if (e.target === modal) closePaymentModal();
 });
 
-// Connect wallet
-document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
-    const btn = document.getElementById('connectWalletBtn');
-    btn.disabled = true;
-    btn.textContent = 'Connecting...';
-
+// Connect wallet (EIP-6963 multi-wallet support)
+async function connectWithProvider(provider) {
     try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('No wallet detected. Please install MetaMask or another Base-compatible wallet.');
-            btn.disabled = false;
-            btn.textContent = 'Connect Wallet';
-            return;
-        }
-
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts && accounts.length > 0) {
+            selectedProvider = provider;
             const addr = accounts[0];
             const short = addr.slice(0, 6) + '...' + addr.slice(-4);
             document.getElementById('payWalletInfo').textContent = `Connected: ${short}`;
             showPayStep(2);
         }
     } catch (err) {
-        // Wallet connection failed
+        const btn = document.getElementById('connectWalletBtn');
         btn.disabled = false;
         btn.textContent = 'Connect Wallet';
+        document.getElementById('walletPicker').classList.add('hidden');
         alert('Wallet connection failed: ' + (err.message || 'Unknown error'));
+    }
+}
+
+document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('connectWalletBtn');
+    btn.disabled = true;
+    btn.textContent = 'Detecting wallets...';
+
+    const wallets = await discoverWallets();
+
+    if (wallets.length === 0) {
+        alert('No wallet detected. Please install MetaMask or another Base-compatible wallet.');
+        btn.disabled = false;
+        btn.textContent = 'Connect Wallet';
+        return;
+    }
+
+    if (wallets.length === 1) {
+        btn.textContent = 'Connecting...';
+        await connectWithProvider(wallets[0].provider);
+        return;
+    }
+
+    // Multiple wallets — show picker
+    btn.classList.add('hidden');
+    const picker = document.getElementById('walletPicker');
+    picker.innerHTML = '';
+    picker.classList.remove('hidden');
+
+    for (const wallet of wallets) {
+        const option = document.createElement('button');
+        option.className = 'wallet-option';
+        if (wallet.info.icon) {
+            option.innerHTML = `<img src="${wallet.info.icon}" alt="">${wallet.info.name}`;
+        } else {
+            option.innerHTML = `<span class="wallet-icon-fallback">&#128176;</span>${wallet.info.name}`;
+        }
+        option.addEventListener('click', async () => {
+            picker.classList.add('hidden');
+            btn.classList.remove('hidden');
+            btn.textContent = 'Connecting...';
+            await connectWithProvider(wallet.provider);
+        });
+        picker.appendChild(option);
     }
 });
 
@@ -427,14 +484,15 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
         }
 
         // Ensure wallet is on Base network
+        const provider = selectedProvider || window.ethereum;
         try {
-            await window.ethereum.request({
+            await provider.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: '0x2105' }]
             });
         } catch (switchErr) {
             if (switchErr.code === 4902) {
-                await window.ethereum.request({
+                await provider.request({
                     method: 'wallet_addEthereumChain',
                     params: [{
                         chainId: '0x2105',
@@ -457,10 +515,10 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             humanWallet.slice(2).padStart(64, '0') +
             amountWei.toString(16).padStart(64, '0');
 
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await provider.request({ method: 'eth_accounts' });
 
         btn.textContent = 'Confirm in wallet...';
-        const tx = await window.ethereum.request({
+        const tx = await provider.request({
             method: 'eth_sendTransaction',
             params: [{
                 from: accounts[0],
