@@ -49,7 +49,6 @@ function humanCard(p) {
         ${skillBadges ? `<div class="human-card-skills">${skillBadges}</div>` : ''}
         <div class="human-card-meta">
             <span class="human-card-availability ${availClass}">${availClass}</span>
-            ${(p.services || []).length ? `<span class="text-dim">${p.services.length} service${p.services.length > 1 ? 's' : ''}</span>` : ''}
         </div>
     </a>`;
 }
