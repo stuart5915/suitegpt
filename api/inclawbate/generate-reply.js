@@ -1,7 +1,9 @@
 // Generate an AI reply to a tweet using Claude Sonnet
 // Called by the Inclawbate Chrome extension
-// Requires JWT authentication to prevent abuse
+// Supports JWT auth (dashboard) or API key auth (extension)
+// Deducts 1 credit per generation
 
+import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
@@ -9,21 +11,55 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
+const supabase = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
-    if (ALLOWED_ORIGINS.includes(origin)) {
+    if (ALLOWED_ORIGINS.includes(origin) || /^chrome-extension:\/\//.test(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    // Require authentication
+    // Dual auth: try JWT first, then API key
+    let profileId = null;
     const user = authenticateRequest(req);
-    if (!user) {
-        return res.status(401).json({ error: 'Authentication required' });
+    if (user) {
+        profileId = user.sub;
+    } else {
+        const apiKey = req.headers['x-api-key'];
+        if (apiKey) {
+            const { data } = await supabase
+                .from('human_profiles')
+                .select('id')
+                .eq('api_key', apiKey)
+                .single();
+            if (data) profileId = data.id;
+        }
+    }
+
+    if (!profileId) {
+        return res.status(401).json({ error: 'Authentication required. Provide a JWT token or X-API-Key header.' });
+    }
+
+    // Check credits before generating
+    const { data: profile } = await supabase
+        .from('human_profiles')
+        .select('credits')
+        .eq('id', profileId)
+        .single();
+
+    if (!profile || profile.credits <= 0) {
+        return res.status(402).json({
+            error: 'No credits remaining. Deposit $CLAWNCH at inclawbate.com/dashboard to get more.',
+            credits: 0
+        });
     }
 
     const { ANTHROPIC_API_KEY } = process.env;
@@ -95,7 +131,16 @@ Write a reply:`;
 
         const reply = data.content?.[0]?.text?.trim() || '';
 
-        return res.status(200).json({ reply });
+        // Deduct 1 credit
+        const { data: newBalance } = await supabase
+            .rpc('deduct_inclawbate_credit', { profile_id: profileId });
+
+        // Increment lifetime reply counter (for leaderboard)
+        await supabase.rpc('increment_inclawbator_replies', { profile_id: profileId });
+
+        const creditsRemaining = newBalance >= 0 ? newBalance : 0;
+
+        return res.status(200).json({ reply, credits_remaining: creditsRemaining });
 
     } catch (error) {
         console.error('Generate reply error:', error);
