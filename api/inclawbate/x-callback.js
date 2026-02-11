@@ -8,13 +8,12 @@ import { createClient } from '@supabase/supabase-js';
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com',
-    'http://localhost:3000',
-    'http://localhost:5500'
 ];
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const JWT_SECRET = process.env.INCLAWBATE_JWT_SECRET || 'dev-secret-change-me';
+const JWT_SECRET = process.env.INCLAWBATE_JWT_SECRET;
+if (!JWT_SECRET) throw new Error('INCLAWBATE_JWT_SECRET env var is required');
 const JWT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const REDIRECT_URI = 'https://inclawbate.com/launch';
 
@@ -95,8 +94,7 @@ export default async function handler(req, res) {
         const tokenData = await tokenRes.json();
 
         if (!tokenRes.ok || !tokenData.access_token) {
-            console.error('X token exchange failed:', tokenData);
-            return res.status(400).json({ error: 'Failed to exchange code for token', details: tokenData.error_description || tokenData.error });
+            return res.status(400).json({ error: 'Failed to exchange code for token' });
         }
 
         // Fetch X user data
@@ -107,7 +105,6 @@ export default async function handler(req, res) {
         const userData = await userRes.json();
 
         if (!userRes.ok || !userData.data) {
-            console.error('X user fetch failed:', userData);
             return res.status(400).json({ error: 'Failed to fetch X user data' });
         }
 
@@ -130,7 +127,6 @@ export default async function handler(req, res) {
             .single();
 
         if (dbError) {
-            console.error('Supabase upsert error:', dbError);
             return res.status(500).json({ error: 'Failed to save profile' });
         }
 
@@ -158,12 +154,12 @@ export default async function handler(req, res) {
                 wallet_address: profile.wallet_address,
                 available_capacity: profile.available_capacity,
                 availability: profile.availability,
-                contact_preference: profile.contact_preference
+                creative_freedom: profile.creative_freedom,
+                telegram_chat_id: profile.telegram_chat_id
             }
         });
 
     } catch (err) {
-        console.error('X callback error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }

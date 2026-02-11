@@ -53,8 +53,9 @@ export default async function handler(req, res) {
                 .single();
 
             if (error || !profile) {
+                const safeHandle = String(handle).replace(/[<>&]/g, '');
                 await sendTelegramMessage(chatId,
-                    `❌ No profile found for @${handle}. Make sure you've created your profile at inclawbate.com/launch first.`
+                    `❌ No profile found for @${safeHandle}. Make sure you've created your profile at inclawbate.com/launch first.`
                 );
                 return res.status(200).json({ ok: true });
             }
@@ -66,7 +67,6 @@ export default async function handler(req, res) {
                 .eq('id', profile.id);
 
             if (updateErr) {
-                console.error('Telegram link error:', updateErr);
                 await sendTelegramMessage(chatId, '❌ Something went wrong. Try again.');
                 return res.status(200).json({ ok: true });
             }
@@ -87,7 +87,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
 
     } catch (err) {
-        console.error('Telegram webhook error:', err);
         return res.status(200).json({ ok: true }); // Always 200 so Telegram doesn't retry
     }
 }

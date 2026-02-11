@@ -93,7 +93,7 @@ async function loadConversations() {
         renderConversationList();
         updateStats();
     } catch (err) {
-        console.error('Load conversations error:', err);
+        // Load failed
     }
 }
 
@@ -189,7 +189,7 @@ async function loadMessages(convoId) {
         const data = await res.json();
         renderMessages(data.messages || []);
     } catch (err) {
-        console.error('Load messages error:', err);
+        // Load failed
     }
 }
 
@@ -239,7 +239,7 @@ function startPolling(convoId) {
         } catch (err) {
             // Silent fail on poll
         }
-    }, 4000);
+    }, 15000);
 }
 
 function stopPolling() {
@@ -306,7 +306,7 @@ async function sendMessage() {
         appendMessages([data.message]);
 
     } catch (err) {
-        console.error('Send message error:', err);
+        // Send failed
         alert('Failed to send: ' + err.message);
     } finally {
         btn.disabled = false;

@@ -3,6 +3,12 @@
 
 const BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 
+// Escape HTML special chars for Telegram HTML parse mode
+export function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export async function notifyHuman(telegramChatId, text) {
     if (!BOT_TOKEN || !telegramChatId) return;
 
@@ -17,6 +23,6 @@ export async function notifyHuman(telegramChatId, text) {
             })
         });
     } catch (err) {
-        console.error('Telegram notify error:', err);
+        // Silent fail — don't block API response for notification failure
     }
 }

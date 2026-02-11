@@ -4,9 +4,7 @@
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com',
-    'http://localhost:3000',
-    'http://localhost:5500'
+    'https://www.inclawbate.com'
 ];
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;

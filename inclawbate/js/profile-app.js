@@ -52,7 +52,6 @@ async function init() {
         currentProfile = res.profile;
         renderProfile(currentProfile);
     } catch (err) {
-        console.error('Profile load error:', err);
         showSection('notFound');
     }
 }
@@ -295,7 +294,7 @@ document.getElementById('connectWalletBtn')?.addEventListener('click', async () 
             showPayStep(2);
         }
     } catch (err) {
-        console.error('Wallet connect error:', err);
+        // Wallet connection failed
         btn.disabled = false;
         btn.textContent = 'Connect Wallet';
         alert('Wallet connection failed: ' + (err.message || 'Unknown error'));
@@ -326,7 +325,7 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             return;
         }
 
-        const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'; // TODO: set real CLAWNCH address
+        const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
         const humanWallet = currentProfile.wallet_address;
 
         const amountWei = BigInt(Math.floor(amount * 1e18));
@@ -349,7 +348,7 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
         showPayStep(3);
 
     } catch (err) {
-        console.error('Payment error:', err);
+        // Payment failed
         btn.disabled = false;
         btn.textContent = 'Send Payment';
         if (err.code !== 4001) {

@@ -8,9 +8,7 @@ import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com',
-    'http://localhost:3000',
-    'http://localhost:5500'
+    'https://www.inclawbate.com'
 ];
 
 const supabase = createClient(
@@ -54,9 +52,12 @@ export default async function handler(req, res) {
                 .from('human_profiles')
                 .select(PUBLIC_FIELDS, { count: 'exact' });
 
-            // Search by name or handle
+            // Search by name or handle — sanitize to prevent filter injection
             if (search) {
-                query = query.or(`x_handle.ilike.%${search}%,x_name.ilike.%${search}%,bio.ilike.%${search}%,tagline.ilike.%${search}%`);
+                const safe = String(search).replace(/[%_,().]/g, '').slice(0, 100);
+                if (safe) {
+                    query = query.or(`x_handle.ilike.%${safe}%,x_name.ilike.%${safe}%,bio.ilike.%${safe}%,tagline.ilike.%${safe}%`);
+                }
             }
 
             // Filter by skill
@@ -82,7 +83,6 @@ export default async function handler(req, res) {
             const { data, count, error } = await query;
 
             if (error) {
-                console.error('Humans list error:', error);
                 return res.status(500).json({ error: 'Failed to fetch profiles' });
             }
 
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
             });
 
         } catch (err) {
-            console.error('Humans GET error:', err);
+            // GET error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -109,18 +109,22 @@ export default async function handler(req, res) {
             const {
                 tagline, bio, skills,
                 wallet_address, available_capacity,
-                availability, contact_preference, metadata
+                availability, creative_freedom
             } = req.body;
 
             const updates = {};
-            if (tagline !== undefined) updates.tagline = tagline;
-            if (bio !== undefined) updates.bio = bio;
-            if (skills !== undefined) updates.skills = skills;
-            if (wallet_address !== undefined) updates.wallet_address = wallet_address;
+            if (tagline !== undefined) updates.tagline = String(tagline).slice(0, 200);
+            if (bio !== undefined) updates.bio = String(bio).slice(0, 2000);
+            if (skills !== undefined && Array.isArray(skills)) updates.skills = skills.slice(0, 20).map(s => String(s).slice(0, 50).toLowerCase());
+            if (wallet_address !== undefined) {
+                if (wallet_address && !/^0x[0-9a-fA-F]{40}$/.test(wallet_address)) {
+                    return res.status(400).json({ error: 'Invalid wallet address format' });
+                }
+                updates.wallet_address = wallet_address || null;
+            }
             if (available_capacity !== undefined) updates.available_capacity = Math.max(0, Math.min(100, parseInt(available_capacity) || 100));
-            if (availability !== undefined) updates.availability = availability;
-            if (contact_preference !== undefined) updates.contact_preference = contact_preference;
-            if (metadata !== undefined) updates.metadata = metadata;
+            if (availability !== undefined && ['available', 'busy', 'unavailable'].includes(availability)) updates.availability = availability;
+            if (creative_freedom !== undefined && ['full', 'guided', 'strict'].includes(creative_freedom)) updates.creative_freedom = creative_freedom;
 
             if (Object.keys(updates).length === 0) {
                 return res.status(400).json({ error: 'No fields to update' });
@@ -134,14 +138,13 @@ export default async function handler(req, res) {
                 .single();
 
             if (error) {
-                console.error('Profile update error:', error);
                 return res.status(500).json({ error: 'Failed to update profile' });
             }
 
             return res.status(200).json({ success: true, profile: data });
 
         } catch (err) {
-            console.error('Humans POST error:', err);
+            // POST error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

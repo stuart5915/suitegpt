@@ -17,12 +17,27 @@
         const launchBtn = navLinks.querySelector('a[href="/launch"]');
         if (launchBtn) {
             const userLink = document.createElement('a');
-            userLink.href = `/u/${profile.x_handle}`;
+            userLink.href = `/u/${encodeURIComponent(profile.x_handle)}`;
             userLink.className = 'nav-user';
-            userLink.innerHTML = profile.x_avatar_url
-                ? `<img src="${profile.x_avatar_url}" class="nav-avatar" alt="">`
-                : `<span class="nav-avatar-fallback">${(profile.x_name || profile.x_handle)[0].toUpperCase()}</span>`;
-            userLink.innerHTML += `<span class="nav-handle">@${profile.x_handle}</span>`;
+
+            if (profile.x_avatar_url) {
+                const img = document.createElement('img');
+                img.src = profile.x_avatar_url;
+                img.className = 'nav-avatar';
+                img.alt = '';
+                userLink.appendChild(img);
+            } else {
+                const span = document.createElement('span');
+                span.className = 'nav-avatar-fallback';
+                span.textContent = (profile.x_name || profile.x_handle || '?')[0].toUpperCase();
+                userLink.appendChild(span);
+            }
+
+            const handleSpan = document.createElement('span');
+            handleSpan.className = 'nav-handle';
+            handleSpan.textContent = `@${profile.x_handle}`;
+            userLink.appendChild(handleSpan);
+
             launchBtn.replaceWith(userLink);
         }
 

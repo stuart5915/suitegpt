@@ -4,13 +4,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
-import { notifyHuman } from './notify.js';
+import { notifyHuman, escHtml } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com',
-    'http://localhost:3000',
-    'http://localhost:5500'
+    'https://www.inclawbate.com'
 ];
 
 const supabase = createClient(
@@ -77,14 +75,13 @@ export default async function handler(req, res) {
             const { data, error } = await query;
 
             if (error) {
-                console.error('Messages fetch error:', error);
                 return res.status(500).json({ error: 'Failed to fetch messages' });
             }
 
             return res.status(200).json({ messages: data || [] });
 
         } catch (err) {
-            console.error('Messages GET error:', err);
+            // GET error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -100,6 +97,10 @@ export default async function handler(req, res) {
 
             if (!['agent', 'human'].includes(sender_type)) {
                 return res.status(400).json({ error: 'sender_type must be agent or human' });
+            }
+
+            if (content.length > 10000) {
+                return res.status(400).json({ error: 'Message too long (max 10,000 characters)' });
             }
 
             // Verify conversation exists
@@ -141,7 +142,6 @@ export default async function handler(req, res) {
                 .single();
 
             if (error) {
-                console.error('Message insert error:', error);
                 return res.status(500).json({ error: 'Failed to send message' });
             }
 
@@ -154,7 +154,7 @@ export default async function handler(req, res) {
                     .single();
 
                 if (human?.telegram_chat_id) {
-                    const preview = content.trim().slice(0, 200);
+                    const preview = escHtml(content.trim().slice(0, 200));
                     notifyHuman(human.telegram_chat_id,
                         `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
                     );
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
             return res.status(201).json({ success: true, message: msg });
 
         } catch (err) {
-            console.error('Messages POST error:', err);
+            // POST error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }

@@ -94,7 +94,7 @@ async function loadProfiles(append = false) {
         if (!append) {
             grid.innerHTML = '<div class="humans-empty"><p>Failed to load profiles. Try refreshing.</p></div>';
         }
-        console.error('Load profiles error:', err);
+        // Load failed
     } finally {
         loading = false;
     }

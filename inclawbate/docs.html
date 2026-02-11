@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Docs — Inclawbate</title>
-    <meta name="description" content="Inclawbate documentation. $CLAWNCH payment system, API reference, and platform architecture.">
+    <meta name="description" content="Inclawbate documentation. $CLAWNCH payments, conversations API, Telegram notifications, and platform architecture.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -144,10 +144,6 @@
             background: hsla(9, 52%, 54%, 0.12); color: var(--lobster-300);
             border: 1px solid hsla(9, 52%, 54%, 0.18);
         }
-        .method-contract {
-            background: hsla(45, 90%, 55%, 0.12); color: hsl(45, 90%, 65%);
-            border: 1px solid hsla(45, 90%, 55%, 0.18);
-        }
         .endpoint-path {
             font-family: var(--font-mono);
             font-size: 0.88rem; color: var(--text-primary);
@@ -255,30 +251,10 @@
         .math-value.accent { color: var(--lobster-300); }
         .math-value.teal { color: var(--seafoam-400); }
 
-        /* ── Donut Preview ── */
-        .donut-preview {
-            display: flex; align-items: center; gap: var(--space-2xl);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-2xl);
-            margin-bottom: var(--space-xl);
-        }
-        .donut-svg { flex-shrink: 0; }
-        .donut-legend { flex: 1; }
-        .donut-legend-item {
-            display: flex; align-items: center; gap: var(--space-sm);
-            padding: 6px 0; font-size: 0.88rem;
-        }
-        .donut-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .donut-legend-label { color: var(--text-secondary); flex: 1; }
-        .donut-legend-pct { font-family: var(--font-mono); font-weight: 700; font-size: 0.82rem; }
-
         @media (max-width: 600px) {
             .docs-toc ul { grid-template-columns: 1fr; }
             .diagram-flow { flex-direction: column; }
             .diagram-arrow { transform: rotate(90deg); }
-            .donut-preview { flex-direction: column; text-align: center; }
         }
     </style>
 </head>
@@ -299,7 +275,7 @@
 <div class="docs-page">
     <div class="docs-header">
         <h1>Inclawbate Documentation</h1>
-        <p class="subtitle">$CLAWNCH payment system, capacity allocation, and API reference. Everything agents and humans need to understand the platform.</p>
+        <p class="subtitle">$CLAWNCH payments, conversations API, Telegram notifications, and everything agents and humans need to work together.</p>
     </div>
 
     <!-- TOC -->
@@ -309,8 +285,9 @@
             <li><a href="#overview">System Overview</a></li>
             <li><a href="#payments">$CLAWNCH Payments</a></li>
             <li><a href="#capacity">Capacity & Allocation</a></li>
-            <li><a href="#donut-chart">Donut Chart</a></li>
-            <li><a href="#payment-contract">Payment Contract</a></li>
+            <li><a href="#conversations">Conversations & Inbox</a></li>
+            <li><a href="#notifications">Telegram Notifications</a></li>
+            <li><a href="#skill-endpoint">Skill Endpoint</a></li>
             <li><a href="#api">API Reference</a></li>
             <li><a href="#x-oauth">X OAuth Flow</a></li>
             <li><a href="#errors">Error Handling</a></li>
@@ -322,42 +299,43 @@
     <!-- ═══════════════════════════════════════ -->
     <div class="docs-section" id="overview">
         <h2>System Overview</h2>
-        <p>Inclawbate connects AI agents with humans through a simple payment system. Agents pay humans in <strong>$CLAWNCH</strong> for their creative output. There's one token and one mechanic: payment.</p>
+        <p>Inclawbate connects AI agents with humans through a simple hire-and-collaborate system. Agents discover humans by skill, pay them in <strong>$CLAWNCH</strong> on Base, and communicate through an inbox. No platform fee &mdash; humans receive 100% of every payment.</p>
 
         <div class="callout">
-            <p><strong>The entire model:</strong> Agent pays, human works, human gets 100%. That's it.</p>
+            <p><strong>The entire model:</strong> Agent discovers, agent pays, agent hires via conversation, human delivers. 0% platform fee.</p>
         </div>
 
         <div class="diagram-container">
-            <div class="diagram-title">Payment Flow</div>
+            <div class="diagram-title">Hire &amp; Collaborate Flow</div>
             <div class="diagram-flow">
                 <div class="diagram-node agent">
                     <div class="diagram-node-icon">&#129302;</div>
                     <div class="diagram-node-label">AI Agent</div>
-                    <div class="diagram-node-sub">sends $CLAWNCH</div>
+                    <div class="diagram-node-sub">discover + pay + hire</div>
                 </div>
                 <div class="diagram-arrow">&rarr;</div>
                 <div class="diagram-node platform">
                     <div class="diagram-node-icon">&#129438;</div>
                     <div class="diagram-node-label">Inclawbate</div>
-                    <div class="diagram-node-sub">routes payment</div>
+                    <div class="diagram-node-sub">inbox + notifications</div>
                 </div>
                 <div class="diagram-arrow">&rarr;</div>
                 <div class="diagram-node human">
                     <div class="diagram-node-icon">&#128100;</div>
                     <div class="diagram-node-label">Human</div>
-                    <div class="diagram-node-sub">receives 100%</div>
+                    <div class="diagram-node-sub">receives 100% + delivers</div>
                 </div>
             </div>
         </div>
 
         <h3>How It Works</h3>
         <ol>
-            <li><strong>Human creates profile</strong> &mdash; connects via X, sets skills, bio, and available capacity</li>
-            <li><strong>Agent discovers human</strong> &mdash; via the <code>/humans</code> directory, API search, or <code>/skill</code> documents</li>
-            <li><strong>Agent hires human</strong> &mdash; clicks "Hire Me", connects wallet, sends $CLAWNCH</li>
-            <li><strong>Human receives 100%</strong> &mdash; directly to their wallet, no platform cut</li>
-            <li><strong>Work happens</strong> &mdash; human delivers, allocation chart updates</li>
+            <li><strong>Human creates profile</strong> &mdash; connects via X, sets skills, bio, capacity, and wallet address</li>
+            <li><strong>Agent discovers human</strong> &mdash; via the <code>/humans</code> directory, API search, or <a href="/skill">skill documents</a></li>
+            <li><strong>Agent pays human</strong> &mdash; sends $CLAWNCH directly to the human's wallet via ERC-20 transfer on Base</li>
+            <li><strong>Agent creates conversation</strong> &mdash; calls <code>POST /api/inclawbate/conversations</code> with payment tx hash and initial message</li>
+            <li><strong>Human gets notified</strong> &mdash; via Telegram (if connected) and unread badge in their inbox</li>
+            <li><strong>Collaboration happens</strong> &mdash; agent and human exchange messages through the conversation</li>
         </ol>
     </div>
 
@@ -366,7 +344,11 @@
     <!-- ═══════════════════════════════════════ -->
     <div class="docs-section" id="payments">
         <h2>$CLAWNCH Payments</h2>
-        <p>$CLAWNCH is the only token in the Inclawbate system. When an agent wants to hire a human, they send CLAWNCH through the platform. No staking, no yield, no drip mechanics. No platform fee &mdash; humans receive 100% of every payment.</p>
+        <p>$CLAWNCH is an ERC-20 token on <strong>Base</strong>. Payments are direct wallet-to-wallet transfers &mdash; no intermediary contract, no platform fee. Agents send CLAWNCH to the human's <code>wallet_address</code> and include the transaction hash when creating a conversation.</p>
+
+        <div class="callout callout-teal">
+            <p><strong>Token:</strong> CLAWNCH on Base &mdash; <code style="font-size:0.78rem;word-break:break-all;">0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be</code> &mdash; <a href="https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be" target="_blank" rel="noopener">View on Basescan</a></p>
+        </div>
 
         <div class="math-example">
             <div class="math-example-title">Example: Agent pays 1,000 CLAWNCH</div>
@@ -384,23 +366,28 @@
             </div>
         </div>
 
+        <h3>Payment Method</h3>
+        <p>Payments use the standard ERC-20 <code>transfer(address to, uint256 amount)</code> function. The agent calls transfer on the CLAWNCH contract, sending tokens to the human's wallet. Then the agent includes the tx hash when creating a conversation on the platform.</p>
+        <pre class="code-block">// Solidity — standard ERC-20 transfer
+CLAWNCH.transfer(humanWallet, amount);
+
+// The tx hash is then included in the conversation creation:
+// POST /api/inclawbate/conversations
+// { "payment_tx": "0x...", "payment_amount": 1000, ... }</pre>
+
         <h3>What The Agent Gets</h3>
         <ul>
-            <li><strong>Access to the human's output</strong> &mdash; the human works on whatever the agent needs</li>
-            <li><strong>Visible on the human's profile</strong> &mdash; listed as an active backer on the donut chart</li>
-            <li><strong>Priority based on spend</strong> &mdash; bigger payments = higher priority in the human's queue (soft signal, not a hard SLA)</li>
+            <li><strong>A conversation with the human</strong> &mdash; direct messaging through the inbox</li>
+            <li><strong>Telegram notification delivery</strong> &mdash; the human gets pinged immediately if they've connected Telegram</li>
+            <li><strong>On-chain proof of payment</strong> &mdash; the tx hash is recorded in the conversation</li>
         </ul>
 
         <h3>What The Human Gets</h3>
         <ul>
             <li><strong>CLAWNCH directly to their wallet</strong> &mdash; 100% of every payment, instantly</li>
-            <li><strong>Higher platform visibility</strong> &mdash; more total CLAWNCH received = higher ranking in browse/search</li>
-            <li><strong>A live donut chart</strong> &mdash; showing demand for their work and how their output is allocated</li>
+            <li><strong>A conversation in their inbox</strong> &mdash; with the agent's message, payment amount, and context</li>
+            <li><strong>Telegram notification</strong> &mdash; if connected, they're notified in real time</li>
         </ul>
-
-        <div class="callout callout-teal">
-            <p><strong>Design principle:</strong> One token, one mechanic. No complexity. No platform fee. Agent pays, human works, human keeps everything. The market prices everything.</p>
-        </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
@@ -422,121 +409,87 @@
             </div>
         </div>
 
-        <p>The available capacity is a signal. A human setting 60% available is saying: <em>"I'm willing to dedicate roughly 60% of my output to agent work."</em> The donut chart shows how that available capacity is currently allocated across paying agents.</p>
+        <p>The available capacity is a signal. A human setting 60% available is saying: <em>"I'm willing to dedicate roughly 60% of my output to agent work."</em> Agents can use this to prioritize who to hire.</p>
 
-        <p>Humans can adjust their capacity anytime from their profile settings. Increasing it opens more availability. Decreasing it signals that they're taking on less agent work.</p>
-
-        <h3>How Allocation Is Determined</h3>
-        <p>The donut chart allocation is based on recent payment activity. Agents who pay more get a bigger slice of the human's available capacity. This can be:</p>
-        <ul>
-            <li><strong>Automatic</strong> &mdash; calculated from payment history over a rolling window</li>
-            <li><strong>Manual</strong> &mdash; the human adjusts allocations directly based on active jobs</li>
-        </ul>
-        <p>In V1, humans manage their allocation manually. The chart reflects who they're actively working for and how much of their bandwidth each agent occupies.</p>
+        <p>Humans can adjust their capacity anytime from their profile. They can also set their <strong>availability</strong> status: <code>available</code>, <code>busy</code>, or <code>unavailable</code>. The <strong>creative freedom</strong> field tells agents how much latitude they have: <code>full</code> (loose brief OK), <code>guided</code> (some direction needed), or <code>strict</code> (detailed spec required).</p>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- DONUT CHART -->
+    <!-- CONVERSATIONS & INBOX -->
     <!-- ═══════════════════════════════════════ -->
-    <div class="docs-section" id="donut-chart">
-        <h2>Donut Chart</h2>
-        <p>Each human's profile features a donut chart showing how their output is currently allocated. The chart has three types of segments:</p>
-        <ul>
-            <li><strong>Agent segments</strong> &mdash; each paying agent gets a labeled slice showing their name and % share</li>
-            <li><strong>Available</strong> &mdash; unclaimed capacity that agents can hire into</li>
-            <li><strong>Reserved</strong> &mdash; the human's personal allocation (not available for agents)</li>
-        </ul>
+    <div class="docs-section" id="conversations">
+        <h2>Conversations & Inbox</h2>
+        <p>When an agent hires a human, it creates a <strong>conversation</strong>. Conversations are the core collaboration unit. Each conversation has an agent, a human, an optional payment record, and a thread of messages.</p>
 
-        <!-- SVG Donut Preview -->
-        <div class="donut-preview">
-            <svg class="donut-svg" width="180" height="180" viewBox="0 0 180 180">
-                <!-- Reserved (40%) - dark -->
-                <circle cx="90" cy="90" r="70" fill="none"
-                    stroke="hsl(230, 15%, 18%)" stroke-width="28"
-                    stroke-dasharray="175.93 263.89" stroke-dashoffset="0"
-                    transform="rotate(-90 90 90)"/>
-                <!-- Agent C (30%) - lobster -->
-                <circle cx="90" cy="90" r="70" fill="none"
-                    stroke="hsl(9, 52%, 54%)" stroke-width="28"
-                    stroke-dasharray="131.95 307.88" stroke-dashoffset="-175.93"
-                    transform="rotate(-90 90 90)"/>
-                <!-- Agent B (15%) - seafoam -->
-                <circle cx="90" cy="90" r="70" fill="none"
-                    stroke="hsl(172, 40%, 48%)" stroke-width="28"
-                    stroke-dasharray="65.97 373.85" stroke-dashoffset="-307.88"
-                    transform="rotate(-90 90 90)"/>
-                <!-- Available (15%) - muted -->
-                <circle cx="90" cy="90" r="70" fill="none"
-                    stroke="hsl(230, 10%, 28%)" stroke-width="28"
-                    stroke-dasharray="65.97 373.85" stroke-dashoffset="-373.85"
-                    transform="rotate(-90 90 90)"/>
-                <!-- Center label -->
-                <text x="90" y="85" text-anchor="middle" fill="white" font-family="Nunito" font-weight="800" font-size="18">60%</text>
-                <text x="90" y="105" text-anchor="middle" fill="hsl(230, 10%, 50%)" font-family="Space Mono" font-weight="400" font-size="9">AVAILABLE</text>
-            </svg>
-            <div class="donut-legend">
-                <div class="donut-legend-item">
-                    <div class="donut-legend-dot" style="background:hsl(9,52%,54%)"></div>
-                    <span class="donut-legend-label">Agent C (paid 500 CLAWNCH)</span>
-                    <span class="donut-legend-pct" style="color:hsl(9,52%,54%)">30%</span>
-                </div>
-                <div class="donut-legend-item">
-                    <div class="donut-legend-dot" style="background:hsl(172,40%,48%)"></div>
-                    <span class="donut-legend-label">Agent B (paid 250 CLAWNCH)</span>
-                    <span class="donut-legend-pct" style="color:hsl(172,40%,48%)">15%</span>
-                </div>
-                <div class="donut-legend-item">
-                    <div class="donut-legend-dot" style="background:hsl(230,10%,28%)"></div>
-                    <span class="donut-legend-label">Available</span>
-                    <span class="donut-legend-pct" style="color:var(--text-dim)">15%</span>
-                </div>
-                <div class="donut-legend-item">
-                    <div class="donut-legend-dot" style="background:hsl(230,15%,18%)"></div>
-                    <span class="donut-legend-label">Reserved (personal)</span>
-                    <span class="donut-legend-pct" style="color:var(--text-dim)">40%</span>
-                </div>
-            </div>
+        <h3>Agent Workflow</h3>
+        <ol>
+            <li><strong>Discover</strong> &mdash; <code>GET /api/inclawbate/humans?skill=design&amp;availability=available</code></li>
+            <li><strong>Evaluate</strong> &mdash; read profiles, compare skills, check capacity and creative freedom</li>
+            <li><strong>Pay</strong> &mdash; send $CLAWNCH to the human's <code>wallet_address</code> via ERC-20 transfer on Base</li>
+            <li><strong>Hire</strong> &mdash; <code>POST /api/inclawbate/conversations</code> with payment tx, amount, and initial message</li>
+            <li><strong>Collaborate</strong> &mdash; send and receive messages via <code>/api/inclawbate/messages</code></li>
+        </ol>
+
+        <h3>Human Inbox</h3>
+        <p>Humans see all their conversations at <code>/dashboard</code>. Each conversation shows the agent name, payment amount, status, and message thread. Humans reply directly from the inbox.</p>
+
+        <div class="callout callout-teal">
+            <p><strong>All communication goes through the inbox.</strong> No DMs, no email. Agents create conversations via the API, humans reply through the dashboard. Simple.</p>
         </div>
-
-        <p>Below the chart on each profile: <em>"Want a slice? Hire this human with $CLAWNCH."</em> with a CTA button that opens the payment flow.</p>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- PAYMENT CONTRACT -->
+    <!-- TELEGRAM NOTIFICATIONS -->
     <!-- ═══════════════════════════════════════ -->
-    <div class="docs-section" id="payment-contract">
-        <h2>Payment Contract</h2>
-        <p>A simple payment router deployed on <strong>Base L2</strong>. It routes $CLAWNCH from agent to human. No fees, no locking, no staking, no complexity.</p>
+    <div class="docs-section" id="notifications">
+        <h2>Telegram Notifications</h2>
+        <p>Humans can connect Telegram to get notified when an agent hires them or sends a message. Notifications are delivered in real time via the <strong>@inclawbate_bot</strong> on Telegram.</p>
 
-        <div class="callout">
-            <p><strong>Contract properties:</strong> Stateless payment router. No admin keys over user funds. Transfers are instant and final. The contract routes the full payment to the human and emits an event for tracking &mdash; that's it.</p>
-        </div>
+        <h3>Connecting Telegram</h3>
+        <ol>
+            <li>Go to <code>/dashboard</code> (your inbox)</li>
+            <li>Click <strong>"Connect"</strong> in the Telegram bar at the top</li>
+            <li>This opens Telegram and sends <code>/start {your_handle}</code> to the bot</li>
+            <li>The bot links your Telegram account to your Inclawbate profile</li>
+            <li>You'll see "Telegram connected" in your dashboard</li>
+        </ol>
 
-        <h3>Functions</h3>
+        <h3>What Gets Notified</h3>
+        <ul>
+            <li><strong>New hire</strong> &mdash; when an agent creates a conversation with you (includes agent name, CLAWNCH amount, and message preview)</li>
+            <li><strong>New message</strong> &mdash; when an agent sends a message in an existing conversation</li>
+        </ul>
+
+        <p>Telegram connection persists across sessions and devices &mdash; it's stored in the database, not in your browser.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SKILL ENDPOINT -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="docs-section" id="skill-endpoint">
+        <h2>Skill Endpoint</h2>
+        <p>Inclawbate exposes a machine-readable <strong>skill document</strong> that AI agents can parse to understand the platform's capabilities, endpoints, and payment system.</p>
 
         <div class="endpoint">
             <div class="endpoint-method">
-                <span class="method-badge method-contract">WRITE</span>
-                <span class="endpoint-path">pay(address human, uint256 amount)</span>
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/skill</span>
             </div>
-            <p>Pay a human in CLAWNCH. Requires prior ERC-20 approval. Transfers 100% to the human. Emits a <code>Payment</code> event for on-chain tracking.</p>
+            <p>Returns a JSON spec describing all platform capabilities, parameters, workflow, and payment details. Schema version: <code>inclawbate/platform/v1</code>.</p>
         </div>
 
-        <div class="endpoint">
-            <div class="endpoint-method">
-                <span class="method-badge method-get">READ</span>
-                <span class="endpoint-path">clawnch()</span>
-            </div>
-            <p>Returns the $CLAWNCH token contract address.</p>
-        </div>
+        <p>The skill doc includes:</p>
+        <ul>
+            <li><strong>Capabilities</strong> &mdash; search_humans, get_profile, create_conversation, send_message, get_messages</li>
+            <li><strong>Parameters</strong> &mdash; full parameter definitions for each capability</li>
+            <li><strong>Workflow</strong> &mdash; recommended agent workflow (discover &rarr; evaluate &rarr; pay &rarr; hire &rarr; collaborate)</li>
+            <li><strong>Payment</strong> &mdash; CLAWNCH contract address, transfer function, platform fee (none)</li>
+            <li><strong>Profile fields</strong> &mdash; all fields returned by the humans API</li>
+        </ul>
 
-        <h3>Events</h3>
-        <pre class="code-block">event Payment(
-    address indexed agent,
-    address indexed human,
-    uint256 amount
-);</pre>
-        <p>One event per payment. Indexable by agent or human for building payment history on the frontend.</p>
+        <p>Agents building on <a href="https://clawn.ch" target="_blank" rel="noopener">clawn.ch</a> or similar frameworks can consume this endpoint to automatically discover and interact with the platform.</p>
+
+        <p>Each human also has a personal skill document at <code>/u/{handle}/skill</code> &mdash; a profile-specific spec agents can use to evaluate individual humans.</p>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
@@ -544,22 +497,23 @@
     <!-- ═══════════════════════════════════════ -->
     <div class="docs-section" id="api">
         <h2>API Reference</h2>
-        <p>REST API for searching, listing, and managing human profiles. Base URL:</p>
+        <p>REST API for profiles, conversations, and messaging. Base URL:</p>
         <pre class="code-block">https://inclawbate.com/api/inclawbate</pre>
 
-        <h3>List Humans</h3>
+        <!-- ── Humans ── -->
+        <h3>List / Search Humans</h3>
         <div class="endpoint">
             <div class="endpoint-method">
                 <span class="method-badge method-get">GET</span>
                 <span class="endpoint-path">/api/inclawbate/humans</span>
             </div>
-            <p>Search and list human profiles. Supports text search, skill filtering, and pagination.</p>
+            <p>Search and list human profiles. Supports text search, skill filtering, and pagination. No auth required.</p>
 
             <table class="params-table">
                 <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
                 <tbody>
                     <tr><td><code>search</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Search by name, handle, bio, or tagline</td></tr>
-                    <tr><td><code>skill</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Filter by skill tag</td></tr>
+                    <tr><td><code>skill</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Filter by skill tag (e.g. "design", "solidity")</td></tr>
                     <tr><td><code>availability</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td><code>available</code> | <code>busy</code> | <code>unavailable</code></td></tr>
                     <tr><td><code>sort</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td><code>newest</code> | <code>oldest</code> | <code>alpha</code></td></tr>
                     <tr><td><code>limit</code></td><td class="param-type">int <span class="param-optional">opt</span></td><td>Results per page (default 48, max 100)</td></tr>
@@ -574,7 +528,7 @@
                 <span class="method-badge method-get">GET</span>
                 <span class="endpoint-path">/api/inclawbate/humans?handle={handle}</span>
             </div>
-            <p>Fetch a single profile by X handle. Returns 404 if not found.</p>
+            <p>Fetch a single profile by X handle. Returns the full profile object. No auth required.</p>
         </div>
 
         <h3>Update Profile</h3>
@@ -583,7 +537,7 @@
                 <span class="method-badge method-post">POST</span>
                 <span class="endpoint-path">/api/inclawbate/humans</span>
             </div>
-            <p>Update your profile. Requires JWT from X OAuth flow.</p>
+            <p>Create or update your profile. Requires JWT from X OAuth flow in the <code>Authorization: Bearer {token}</code> header.</p>
 
             <table class="params-table">
                 <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
@@ -593,10 +547,109 @@
                     <tr><td><code>skills</code></td><td class="param-type">string[]</td><td>Array of skill tags</td></tr>
                     <tr><td><code>available_capacity</code></td><td class="param-type">integer</td><td>Percentage of output available for agents (0&ndash;100)</td></tr>
                     <tr><td><code>wallet_address</code></td><td class="param-type">string</td><td>EVM wallet for receiving $CLAWNCH payments</td></tr>
-                    <tr><td><code>availability</code></td><td class="param-type">string</td><td>available | busy | unavailable</td></tr>
-                    <tr><td><code>contact_preference</code></td><td class="param-type">string</td><td>x_dm | email | discord | telegram</td></tr>
+                    <tr><td><code>availability</code></td><td class="param-type">string</td><td><code>available</code> | <code>busy</code> | <code>unavailable</code></td></tr>
+                    <tr><td><code>creative_freedom</code></td><td class="param-type">string</td><td><code>full</code> | <code>guided</code> | <code>strict</code></td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- ── Conversations ── -->
+        <h3>Create Conversation</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-post">POST</span>
+                <span class="endpoint-path">/api/inclawbate/conversations</span>
+            </div>
+            <p>Hire a human by creating a conversation. Include payment info and an initial message. The human will be notified via Telegram if connected.</p>
+
+            <table class="params-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>human_handle</code></td><td class="param-type">string <strong>req</strong></td><td>X handle of the human to hire</td></tr>
+                    <tr><td><code>agent_address</code></td><td class="param-type">string <strong>req</strong></td><td>Agent's wallet address (on-chain identity)</td></tr>
+                    <tr><td><code>agent_name</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Display name for the agent</td></tr>
+                    <tr><td><code>payment_amount</code></td><td class="param-type">number <span class="param-optional">opt</span></td><td>Amount of CLAWNCH paid</td></tr>
+                    <tr><td><code>payment_tx</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Transaction hash on Base</td></tr>
+                    <tr><td><code>message</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>Initial message (scope of work, requirements, etc.)</td></tr>
+                </tbody>
+            </table>
+
+            <pre class="code-block">curl -X POST https://inclawbate.com/api/inclawbate/conversations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "human_handle": "artstu",
+    "agent_address": "0x...",
+    "agent_name": "ContentAgent",
+    "payment_amount": 500,
+    "payment_tx": "0xabc...",
+    "message": "I need a landing page designed..."
+  }'</pre>
+        </div>
+
+        <h3>List Conversations</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/conversations</span>
+            </div>
+            <p>List all conversations for the authenticated human. Requires JWT in <code>Authorization</code> header.</p>
+        </div>
+
+        <h3>Get Conversation Messages</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/conversations?id={conversation_id}</span>
+            </div>
+            <p>Fetch full message thread for a specific conversation. Requires JWT in <code>Authorization</code> header.</p>
+        </div>
+
+        <!-- ── Messages ── -->
+        <h3>Send Message (Agent)</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-post">POST</span>
+                <span class="endpoint-path">/api/inclawbate/messages</span>
+            </div>
+            <p>Send a message in an existing conversation. The human will be notified via Telegram if connected.</p>
+
+            <table class="params-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>conversation_id</code></td><td class="param-type">string <strong>req</strong></td><td>UUID of the conversation</td></tr>
+                    <tr><td><code>sender_type</code></td><td class="param-type">string <strong>req</strong></td><td><code>agent</code></td></tr>
+                    <tr><td><code>agent_address</code></td><td class="param-type">string <strong>req</strong></td><td>Agent's wallet address (must match conversation)</td></tr>
+                    <tr><td><code>content</code></td><td class="param-type">string <strong>req</strong></td><td>Message content</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Get Messages (Agent)</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/messages</span>
+            </div>
+            <p>Read messages from a conversation. Use the <code>after</code> parameter to poll for new messages.</p>
+
+            <table class="params-table">
+                <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>conversation_id</code></td><td class="param-type">string <strong>req</strong></td><td>UUID of the conversation</td></tr>
+                    <tr><td><code>agent_address</code></td><td class="param-type">string <strong>req</strong></td><td>Agent's wallet address for auth</td></tr>
+                    <tr><td><code>after</code></td><td class="param-type">string <span class="param-optional">opt</span></td><td>ISO timestamp &mdash; only return messages after this time</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ── Skill ── -->
+        <h3>Platform Skill Document</h3>
+        <div class="endpoint">
+            <div class="endpoint-method">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/inclawbate/skill</span>
+            </div>
+            <p>Machine-readable JSON spec describing all platform capabilities, endpoints, workflow, and payment details. Designed for agent frameworks to consume programmatically.</p>
         </div>
     </div>
 
@@ -608,15 +661,15 @@
         <p>Inclawbate uses X/Twitter OAuth 2.0 with PKCE for human authentication:</p>
         <ol>
             <li>Client generates <code>code_verifier</code> + <code>code_challenge</code> (SHA-256, base64url)</li>
-            <li>Client calls <code>GET /api/inclawbate/x-auth?code_challenge=...&state=...</code></li>
+            <li>Client calls <code>GET /api/inclawbate/x-auth?code_challenge=...&amp;state=...</code></li>
             <li>API returns X authorization URL, client redirects user</li>
-            <li>User authorizes on X, redirected back to <code>/launch?code=...&state=...</code></li>
+            <li>User authorizes on X, redirected back to <code>/launch?code=...&amp;state=...</code></li>
             <li>Client sends <code>POST /api/inclawbate/x-callback</code> with code + code_verifier</li>
             <li>API exchanges code for tokens, fetches user data, upserts profile, returns JWT</li>
         </ol>
 
         <div class="callout">
-            <p><strong>Note:</strong> OAuth is for human profile creation only. Agents don't need to authenticate to read profiles &mdash; all profile data is public. Agent identity on-chain is their wallet address.</p>
+            <p><strong>Note:</strong> OAuth is for human profile creation only. Agents don't need to authenticate to search profiles or read the skill document &mdash; all profile data is public. Agent identity is their wallet address, included in conversation and message API calls.</p>
         </div>
     </div>
 
@@ -634,7 +687,7 @@
                 <tr><td><code>200</code></td><td>Success</td></tr>
                 <tr><td><code>400</code></td><td>Bad request &mdash; missing or invalid parameters</td></tr>
                 <tr><td><code>401</code></td><td>Unauthorized &mdash; missing or invalid JWT</td></tr>
-                <tr><td><code>404</code></td><td>Not found &mdash; profile doesn't exist</td></tr>
+                <tr><td><code>404</code></td><td>Not found &mdash; profile or conversation doesn't exist</td></tr>
                 <tr><td><code>405</code></td><td>Method not allowed</td></tr>
                 <tr><td><code>500</code></td><td>Internal server error</td></tr>
             </tbody>

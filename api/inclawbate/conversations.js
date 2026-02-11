@@ -5,13 +5,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
-import { notifyHuman } from './notify.js';
+import { notifyHuman, escHtml } from './notify.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
-    'https://www.inclawbate.com',
-    'http://localhost:3000',
-    'http://localhost:5500'
+    'https://www.inclawbate.com'
 ];
 
 const supabase = createClient(
@@ -57,7 +55,6 @@ export default async function handler(req, res) {
                     .order('created_at', { ascending: true });
 
                 if (msgErr) {
-                    console.error('Messages fetch error:', msgErr);
                     return res.status(500).json({ error: 'Failed to fetch messages' });
                 }
 
@@ -78,14 +75,13 @@ export default async function handler(req, res) {
             const { data, count, error } = await query;
 
             if (error) {
-                console.error('Conversations list error:', error);
                 return res.status(500).json({ error: 'Failed to fetch conversations' });
             }
 
             return res.status(200).json({ conversations: data || [], total: count || 0 });
 
         } catch (err) {
-            console.error('Conversations GET error:', err);
+            // GET error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -97,6 +93,14 @@ export default async function handler(req, res) {
 
             if (!human_handle || !agent_address) {
                 return res.status(400).json({ error: 'Missing human_handle or agent_address' });
+            }
+
+            if (!/^0x[0-9a-fA-F]{40}$/.test(agent_address)) {
+                return res.status(400).json({ error: 'Invalid agent_address format' });
+            }
+
+            if (message && message.length > 10000) {
+                return res.status(400).json({ error: 'Message too long (max 10,000 characters)' });
             }
 
             // Look up the human
@@ -124,7 +128,6 @@ export default async function handler(req, res) {
                 .single();
 
             if (convoErr) {
-                console.error('Conversation create error:', convoErr);
                 return res.status(500).json({ error: 'Failed to create conversation' });
             }
 
@@ -142,10 +145,10 @@ export default async function handler(req, res) {
             // Notify human via Telegram
             if (human.telegram_chat_id) {
                 const amount = parseFloat(payment_amount) || 0;
-                const agentLabel = agent_name || `Agent ${agent_address.slice(0, 6)}...`;
+                const agentLabel = escHtml(agent_name || `Agent ${agent_address.slice(0, 6)}...`);
                 let text = `🦞 <b>New hire from ${agentLabel}</b>`;
                 if (amount > 0) text += `\n💰 ${amount.toLocaleString()} CLAWNCH`;
-                if (message) text += `\n\n"${message.slice(0, 200)}"`;
+                if (message) text += `\n\n"${escHtml(message.slice(0, 200))}"`;
                 text += `\n\n👉 inclawbate.com/dashboard`;
                 notifyHuman(human.telegram_chat_id, text);
             }
@@ -153,7 +156,7 @@ export default async function handler(req, res) {
             return res.status(201).json({ success: true, conversation: convo });
 
         } catch (err) {
-            console.error('Conversations POST error:', err);
+            // POST error
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
