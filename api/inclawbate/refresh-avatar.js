@@ -1,6 +1,6 @@
 // Inclawbate — Refresh Avatar from X API
 // GET ?handle=xxx — refreshes avatar for a single profile (called from client)
-// Uses X API app-only auth (client credentials) to fetch fresh profile_image_url
+// Uses the user's stored X refresh token to get fresh profile data
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -17,29 +17,24 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
-// Cache the app-only bearer token (lasts until server restarts)
-let cachedBearerToken = null;
-
-async function getAppBearerToken() {
-    if (cachedBearerToken) return cachedBearerToken;
-
+async function refreshAccessToken(refreshToken) {
     const basicAuth = Buffer.from(`${X_CLIENT_ID}:${X_CLIENT_SECRET}`).toString('base64');
-    const resp = await fetch('https://api.twitter.com/oauth2/token', {
+    const resp = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
         headers: {
-            'Authorization': `Basic ${basicAuth}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${basicAuth}`
         },
-        body: 'grant_type=client_credentials'
+        body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: X_CLIENT_ID
+        }).toString()
     });
 
     const data = await resp.json();
-    if (!resp.ok || !data.access_token) {
-        throw new Error('Failed to get X app bearer token');
-    }
-
-    cachedBearerToken = data.access_token;
-    return cachedBearerToken;
+    if (!resp.ok || !data.access_token) return null;
+    return data; // { access_token, refresh_token, ... }
 }
 
 export default async function handler(req, res) {
@@ -57,10 +52,9 @@ export default async function handler(req, res) {
     if (!handle) return res.status(400).json({ error: 'handle required' });
 
     try {
-        // Check profile exists and when it was last updated
         const { data: profile, error } = await supabase
             .from('human_profiles')
-            .select('id, x_handle, x_avatar_url, updated_at')
+            .select('id, x_handle, x_avatar_url, x_refresh_token, updated_at')
             .eq('x_handle', handle)
             .single();
 
@@ -70,21 +64,28 @@ export default async function handler(req, res) {
 
         // Skip if updated less than 6 hours ago
         const updatedAt = new Date(profile.updated_at).getTime();
-        const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
-        if (updatedAt > sixHoursAgo) {
+        if (Date.now() - updatedAt < 6 * 60 * 60 * 1000) {
             return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
         }
 
-        // Fetch fresh data from X
-        const bearerToken = await getAppBearerToken();
+        // Need a refresh token to proceed
+        if (!profile.x_refresh_token) {
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+        }
+
+        // Get fresh access token using refresh token
+        const tokenData = await refreshAccessToken(profile.x_refresh_token);
+        if (!tokenData) {
+            return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
+        }
+
+        // Fetch fresh user data from X
         const xResp = await fetch(
-            `https://api.twitter.com/2/users/by/username/${encodeURIComponent(handle)}?user.fields=profile_image_url,name,description`,
-            { headers: { 'Authorization': `Bearer ${bearerToken}` } }
+            'https://api.twitter.com/2/users/me?user.fields=profile_image_url,name,description',
+            { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }
         );
 
         if (!xResp.ok) {
-            // Token might be expired, clear cache and fail gracefully
-            if (xResp.status === 401) cachedBearerToken = null;
             return res.status(200).json({ avatar_url: profile.x_avatar_url, refreshed: false });
         }
 
@@ -98,12 +99,14 @@ export default async function handler(req, res) {
             ? xUser.profile_image_url.replace('_normal', '_400x400')
             : null;
 
-        // Update profile with fresh data
+        // Update profile with fresh data + new tokens
         await supabase
             .from('human_profiles')
             .update({
                 x_avatar_url: newAvatarUrl,
                 x_name: xUser.name || profile.x_handle,
+                x_access_token: tokenData.access_token,
+                x_refresh_token: tokenData.refresh_token || profile.x_refresh_token,
                 updated_at: new Date().toISOString()
             })
             .eq('id', profile.id);
