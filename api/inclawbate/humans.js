@@ -100,14 +100,52 @@ export default async function handler(req, res) {
                 query = query.eq('availability', availability);
             }
 
-            // Sorting
-            const sortField = sort === 'oldest' ? 'created_at' : sort === 'alpha' ? 'x_handle' : 'created_at';
+            // Pagination params
+            const lim = Math.min(parseInt(limit) || 48, 100);
+            const off = parseInt(offset) || 0;
+
+            // Sort by earnings requires a different query path
+            if (sort === 'earnings') {
+                // Get earnings per human from conversations
+                const { data: convos } = await supabase
+                    .from('inclawbate_conversations')
+                    .select('human_id, payment_amount');
+
+                const earningsMap = {};
+                (convos || []).forEach(c => {
+                    if (!c.human_id) return;
+                    earningsMap[c.human_id] = (earningsMap[c.human_id] || 0) + (parseFloat(c.payment_amount) || 0);
+                });
+
+                // Get all matching profiles (apply filters but not sort)
+                const { data: allProfiles, error: allErr } = await query.order('created_at', { ascending: false });
+
+                if (allErr) {
+                    return res.status(500).json({ error: 'Failed to fetch profiles' });
+                }
+
+                // Attach earnings and sort
+                const withEarnings = (allProfiles || []).map(p => ({
+                    ...p,
+                    total_earned: earningsMap[p.id] || 0
+                }));
+                withEarnings.sort((a, b) => b.total_earned - a.total_earned);
+
+                const total = withEarnings.length;
+                const page = withEarnings.slice(off, off + lim);
+
+                return res.status(200).json({
+                    profiles: page,
+                    total,
+                    hasMore: (off + lim) < total
+                });
+            }
+
+            // Standard sorting
+            const sortField = sort === 'oldest' ? 'created_at' : sort === 'alpha' ? 'x_handle' : sort === 'hires' ? 'hire_count' : 'created_at';
             const sortAsc = sort === 'oldest' || sort === 'alpha';
             query = query.order(sortField, { ascending: sortAsc });
 
-            // Pagination
-            const lim = Math.min(parseInt(limit) || 48, 100);
-            const off = parseInt(offset) || 0;
             query = query.range(off, off + lim - 1);
 
             const { data, count, error } = await query;
