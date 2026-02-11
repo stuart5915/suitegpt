@@ -68,7 +68,7 @@ function showBuilder() {
     // Set Telegram deep link
     const tgLink = document.getElementById('telegramLink');
     if (tgLink && profile.x_handle) {
-        tgLink.href = `https://t.me/InclawbateBot?start=${profile.x_handle}`;
+        tgLink.href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
     }
 
     // Render existing skills

@@ -158,7 +158,7 @@ function openEditModal() {
         telegramLabel.style.color = '';
         telegramBtn.textContent = 'Connect Telegram';
     }
-    telegramBtn.href = `https://t.me/InclawbateBot?start=${currentProfile.x_handle}`;
+    telegramBtn.href = `https://t.me/inclawbate_bot?start=${currentProfile.x_handle}`;
 
     editModal.classList.remove('hidden');
 }
