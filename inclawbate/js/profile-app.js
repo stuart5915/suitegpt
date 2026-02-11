@@ -105,65 +105,6 @@ function renderProfile(p) {
     const skillsHtml = (p.skills || []).map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
     document.getElementById('profileSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills listed</span>';
 
-    // Allocation (market-driven capacity — pie chart)
-    const allocationSection = document.getElementById('allocationSection');
-    if (currentAllocation.length > 0 && allocationSection) {
-        allocationSection.style.display = '';
-        const colors = [
-            'hsl(9, 52%, 56%)',    // lobster
-            'hsl(172, 32%, 48%)',  // seafoam
-            'hsl(32, 32%, 66%)',   // sand
-            'hsl(210, 28%, 54%)', // blue
-            'hsl(280, 30%, 55%)', // purple
-            'hsl(45, 50%, 55%)',  // gold
-            'hsl(0, 60%, 50%)',   // red
-            'hsl(140, 30%, 50%)' // green
-        ];
-
-        // Build conic-gradient stops
-        let cumulative = 0;
-        const stops = currentAllocation.map((a, i) => {
-            const color = colors[i % colors.length];
-            const start = cumulative;
-            cumulative += a.share;
-            return `${color} ${start}% ${cumulative}%`;
-        });
-        // Fill remainder if < 100%
-        if (cumulative < 100) {
-            stops.push(`hsl(240, 4%, 16%) ${cumulative}% 100%`);
-        }
-        const gradient = `conic-gradient(${stops.join(', ')})`;
-
-        // Legend rows
-        const legendHtml = currentAllocation.map((a, i) => {
-            const name = esc(a.agent_name || 'Unknown Agent');
-            const addr = a.agent_address ? a.agent_address.slice(0, 6) + '...' + a.agent_address.slice(-4) : '';
-            const color = colors[i % colors.length];
-            const paid = parseFloat(a.total_paid || 0);
-            return `<div class="alloc-legend-row">
-                <span class="alloc-dot" style="background:${color}"></span>
-                <div class="alloc-legend-info">
-                    <span class="alloc-legend-name">${name}</span>
-                    <span class="alloc-legend-addr">${addr}</span>
-                </div>
-                <div class="alloc-legend-values">
-                    <span class="alloc-legend-clawnch">${paid.toLocaleString()} CLAWNCH</span>
-                    <span class="alloc-legend-share">${a.share}%</span>
-                </div>
-            </div>`;
-        }).join('');
-
-        document.getElementById('profileAllocation').innerHTML = `
-            <div class="alloc-chart-wrap">
-                <div class="alloc-pie" style="background:${gradient}">
-                    <div class="alloc-pie-center">
-                        <span class="alloc-pie-total">${currentTotalAllocated.toLocaleString()}</span>
-                        <span class="alloc-pie-label">CLAWNCH</span>
-                    </div>
-                </div>
-                <div class="alloc-legend">${legendHtml}</div>
-            </div>`;
-    }
 
     // Portfolio
     const links = p.portfolio_links || [];
@@ -251,15 +192,9 @@ function renderProfile(p) {
             <div class="hero-alloc-pie" style="background:conic-gradient(${stops.join(', ')})"></div>
             <div class="hero-alloc-info">
                 <span class="hero-alloc-total">${currentTotalAllocated.toLocaleString()} CLAWNCH</span>
-                <span class="hero-alloc-sub">${payers} payer${payers !== 1 ? 's' : ''} &middot; ${isOwnProfile ? 'Share your profile to get more' : 'Get allocation &darr;'}</span>
+                <span class="hero-alloc-sub">${payers} payer${payers !== 1 ? 's' : ''} &middot; ${isOwnProfile ? 'Share your profile to get more' : 'Hire to get allocation'}</span>
             </div>`;
         heroAlloc.classList.remove('hidden');
-        if (!isOwnProfile) {
-            heroAlloc.style.cursor = 'pointer';
-            heroAlloc.addEventListener('click', () => {
-                document.getElementById('allocationSection')?.scrollIntoView({ behavior: 'smooth' });
-            });
-        }
     } else if (heroAlloc && isOwnProfile) {
         heroAlloc.innerHTML = `
             <div class="hero-alloc-pie hero-alloc-empty"></div>
