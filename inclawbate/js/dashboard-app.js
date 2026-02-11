@@ -54,6 +54,15 @@ function init() {
     const capacity = profile.available_capacity !== undefined ? profile.available_capacity : 100;
     document.getElementById('statCapacity').textContent = capacity + '%';
 
+    // Telegram notification bar
+    if (profile.telegram_chat_id) {
+        document.getElementById('telegramConnected').classList.remove('hidden');
+    } else {
+        const bar = document.getElementById('telegramBar');
+        bar.classList.remove('hidden');
+        document.getElementById('telegramBarBtn').href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
+    }
+
     loadConversations();
 }
 
