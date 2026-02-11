@@ -141,6 +141,16 @@ function renderProfile(p) {
     if (feedSection && timelineEl && p.x_handle) {
         timelineEl.href = `https://x.com/${p.x_handle}`;
         feedSection.style.display = '';
+        const loadTimeline = () => {
+            if (window.twttr && window.twttr.widgets) {
+                window.twttr.widgets.load(feedSection);
+            }
+        };
+        if (window.twttr && window.twttr.ready) {
+            window.twttr.ready(loadTimeline);
+        } else {
+            loadTimeline();
+        }
     }
 
     // Action links
