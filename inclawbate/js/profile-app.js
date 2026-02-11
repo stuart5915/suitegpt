@@ -312,7 +312,7 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             return;
         }
 
-        const CLAWNCH_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: set real CLAWNCH address
+        const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'; // TODO: set real CLAWNCH address
         const humanWallet = currentProfile.wallet_address;
 
         const amountWei = BigInt(Math.floor(amount * 1e18));
