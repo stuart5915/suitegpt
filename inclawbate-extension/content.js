@@ -4,6 +4,8 @@
 (function () {
     'use strict';
 
+    console.log('[Inclawbate] Content script loaded on', window.location.href);
+
     const BUTTON_CLASS = 'inclawbate-reply-btn';
     const PANEL_CLASS = 'inclawbate-panel';
     let activePanel = null;
@@ -28,6 +30,9 @@
     // Inject buttons on tweets via MutationObserver
     function injectButtons() {
         const tweets = document.querySelectorAll('article[data-testid="tweet"]');
+        if (tweets.length > 0) {
+            console.log('[Inclawbate] Found', tweets.length, 'tweets');
+        }
         tweets.forEach((tweet) => {
             if (tweet.querySelector(`.${BUTTON_CLASS}`)) return;
 
@@ -37,7 +42,7 @@
             const btn = document.createElement('button');
             btn.className = BUTTON_CLASS;
             btn.innerHTML = '🦞';
-            btn.title = 'Generate reply with Inclawbate (Alt+R)';
+            btn.title = 'Generate reply with Inclawbator (Alt+R)';
 
             // Use capture phase to beat X's event handling
             btn.addEventListener('click', (e) => {
@@ -114,12 +119,17 @@
             });
 
             if (!response || response.error) {
-                panel.querySelector('.inclawbate-panel-body').innerHTML =
-                    `<div class="inclawbate-error">Error: ${response?.error || 'No response from background'}</div>`;
+                if (response?.error === 'NO_CREDITS') {
+                    panel.querySelector('.inclawbate-panel-body').innerHTML =
+                        `<div class="inclawbate-error">No credits remaining.<br><a href="https://inclawbate.com/deposit" target="_blank" style="color:#ef4444;">Buy credits</a></div>`;
+                } else {
+                    panel.querySelector('.inclawbate-panel-body').innerHTML =
+                        `<div class="inclawbate-error">Error: ${response?.error || 'No response from background'}</div>`;
+                }
                 return;
             }
 
-            showReplyPanel(panel, response.reply, article);
+            showReplyPanel(panel, response.reply, article, response.credits_remaining);
         } catch (err) {
             panel.querySelector('.inclawbate-panel-body').innerHTML =
                 `<div class="inclawbate-error">Error: ${err.message}</div>`;
@@ -135,7 +145,7 @@
         panel.className = PANEL_CLASS;
         panel.innerHTML = `
             <div class="inclawbate-panel-header">
-                <span>🦞 Inclawbate</span>
+                <span class="inclawbate-header-title">🦞 Inclawbator</span>
                 <button class="inclawbate-panel-close">&times;</button>
             </div>
             <div class="inclawbate-panel-body"></div>
@@ -153,7 +163,15 @@
     }
 
     // Show the generated reply with actions
-    function showReplyPanel(panel, reply, article) {
+    function showReplyPanel(panel, reply, article, creditsRemaining) {
+        // Show credits in header if available
+        if (creditsRemaining !== undefined) {
+            const headerTitle = panel.querySelector('.inclawbate-header-title');
+            if (headerTitle) {
+                headerTitle.innerHTML = `🦞 Inclawbator <span style="font-size:11px;color:#888;font-weight:400;margin-left:8px;">${creditsRemaining} credits left</span>`;
+            }
+        }
+
         const body = panel.querySelector('.inclawbate-panel-body');
         body.innerHTML = `
             <textarea class="inclawbate-reply-text" rows="4">${escapeHtml(reply)}</textarea>

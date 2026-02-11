@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buy Credits — Inclawbate</title>
+    <meta name="description" content="Deposit $CLAWNCH to get Inclawbator credits for AI reply generation on X.">
+    <meta property="og:title" content="Buy Credits — Inclawbate">
+    <meta property="og:description" content="Deposit $CLAWNCH to get Inclawbator credits for AI reply generation.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/deposit">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .deposit-page {
+            max-width: 480px;
+            margin: calc(var(--nav-height) + var(--space-3xl)) auto var(--space-4xl);
+            padding: 0 var(--space-xl);
+        }
+
+        .deposit-header {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+
+        .deposit-header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+
+        .deposit-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .deposit-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+        }
+
+        .deposit-rate {
+            text-align: center;
+            padding: var(--space-md);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-xl);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .deposit-rate strong {
+            color: var(--lobster-300);
+        }
+
+        .amount-group {
+            margin-bottom: var(--space-xl);
+        }
+
+        .amount-label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--font-mono);
+        }
+
+        .amount-input-wrap {
+            position: relative;
+        }
+
+        .amount-input-wrap .input {
+            padding-right: 80px;
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+        }
+
+        .amount-suffix {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+        }
+
+        .amount-presets {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+
+        .preset-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--lobster-400);
+            color: var(--text-primary);
+        }
+
+        .conversion-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-md) 0;
+            border-top: 1px solid var(--border-subtle);
+            font-size: 0.88rem;
+        }
+
+        .conversion-row .label {
+            color: var(--text-secondary);
+        }
+
+        .conversion-row .value {
+            font-family: var(--font-mono);
+            font-weight: 700;
+        }
+
+        .conversion-row .value.highlight {
+            color: var(--seafoam-300);
+        }
+
+        .deposit-btn {
+            width: 100%;
+            margin-top: var(--space-xl);
+        }
+
+        /* Progress states */
+        .deposit-progress {
+            text-align: center;
+            padding: var(--space-2xl) 0;
+        }
+
+        .deposit-progress .spinner {
+            margin: 0 auto var(--space-lg);
+        }
+
+        .progress-step {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .progress-sub {
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+        }
+
+        /* Success */
+        .deposit-success {
+            text-align: center;
+            padding: var(--space-2xl) 0;
+        }
+
+        .success-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-lg);
+        }
+
+        .success-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+
+        .success-credits {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--seafoam-300);
+            margin: var(--space-md) 0;
+        }
+
+        .success-detail {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-bottom: var(--space-xl);
+        }
+
+        .success-links {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+        }
+
+        /* Login gate */
+        .deposit-login {
+            text-align: center;
+            padding: var(--space-3xl) 0;
+        }
+
+        .deposit-login h2 {
+            font-size: 1.3rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .deposit-login p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+        }
+
+        /* Error */
+        .deposit-error {
+            text-align: center;
+            padding: var(--space-xl);
+            background: var(--red-dim);
+            border: 1px solid hsla(0, 68%, 56%, 0.2);
+            border-radius: var(--radius-md);
+            color: var(--red);
+            font-size: 0.88rem;
+            margin-top: var(--space-lg);
+        }
+
+        /* Wallet button */
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-xl);
+            font-size: 0.85rem;
+        }
+
+        .wallet-address {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--seafoam-300);
+        }
+
+        .wallet-disconnect {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+        }
+
+        .wallet-disconnect:hover {
+            color: var(--red);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/leaderboard" class="nav-link">Leaderboard</a>
+        <a href="/dashboard" class="nav-link">Inbox</a>
+        <a href="/docs" class="nav-link">Docs</a>
+    </div>
+</nav>
+
+<main class="deposit-page">
+    <!-- Login gate -->
+    <div id="loginGate" class="deposit-login hidden">
+        <div style="font-size:3rem;margin-bottom:var(--space-lg);">&#129438;</div>
+        <h2>Connect X first</h2>
+        <p>You need to be logged in to buy credits.</p>
+        <a href="/launch" class="btn btn-primary btn-lg">Connect with X</a>
+    </div>
+
+    <!-- Main deposit UI -->
+    <div id="depositUI" class="hidden">
+        <div class="deposit-header">
+            <h1>Buy Credits</h1>
+            <p>Deposit $CLAWNCH on Base to get Inclawbator credits</p>
+        </div>
+
+        <div class="deposit-card">
+            <!-- Step 1: Amount selection -->
+            <div id="stepForm">
+                <div class="deposit-rate">
+                    <strong>50 CLAWNCH = 1 credit</strong> &middot; 1 credit = 1 AI reply
+                </div>
+
+                <!-- Wallet connect / status -->
+                <div id="walletSection">
+                    <button id="connectWalletBtn" class="btn btn-secondary btn-block">Connect Wallet</button>
+                </div>
+                <div id="walletConnected" class="wallet-status hidden">
+                    <span class="wallet-address" id="walletAddr"></span>
+                    <button class="wallet-disconnect" id="disconnectWalletBtn">disconnect</button>
+                </div>
+
+                <div class="amount-group">
+                    <label class="amount-label">Amount (CLAWNCH)</label>
+                    <div class="amount-input-wrap">
+                        <input type="number" id="amountInput" class="input" placeholder="5000" min="50" step="50">
+                        <span class="amount-suffix">CLAWNCH</span>
+                    </div>
+                    <div class="amount-presets">
+                        <button class="preset-btn" data-amount="2500">2,500</button>
+                        <button class="preset-btn" data-amount="5000">5,000</button>
+                        <button class="preset-btn" data-amount="10000">10,000</button>
+                        <button class="preset-btn" data-amount="25000">25,000</button>
+                    </div>
+                </div>
+
+                <div class="conversion-row">
+                    <span class="label">USD estimate</span>
+                    <span class="value" id="usdEstimate">—</span>
+                </div>
+                <div class="conversion-row">
+                    <span class="label">Credits you'll get</span>
+                    <span class="value highlight" id="creditsEstimate">—</span>
+                </div>
+
+                <button id="depositBtn" class="btn btn-primary btn-lg deposit-btn" disabled>Deposit</button>
+
+                <div id="errorBox" class="deposit-error hidden"></div>
+            </div>
+
+            <!-- Step 2: Progress -->
+            <div id="stepProgress" class="deposit-progress hidden">
+                <div class="spinner spinner-lg"></div>
+                <div class="progress-step" id="progressText">Confirm in your wallet...</div>
+                <div class="progress-sub" id="progressSub"></div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="stepSuccess" class="deposit-success hidden">
+                <div class="success-icon">&#129438;</div>
+                <div class="success-title">Credits Added!</div>
+                <div class="success-credits" id="successCredits">0</div>
+                <div class="success-detail" id="successDetail"></div>
+                <div class="success-links">
+                    <a id="txLink" href="#" target="_blank" class="btn btn-secondary btn-sm">View Transaction</a>
+                    <button id="depositAgainBtn" class="btn btn-ghost btn-sm">Deposit More</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-text">inclawbate &middot; AI agents hire humans</div>
+</footer>
+
+<script src="/js/deposit-app.js"></script>
+</body>
+</html>
