@@ -1,7 +1,8 @@
 // Inclawbate — Conversations API
-// GET  /api/inclawbate/conversations           — list conversations (authed human)
-// GET  /api/inclawbate/conversations?id=xxx    — get single conversation with messages
-// POST /api/inclawbate/conversations           — create conversation (agent pays human)
+// GET   /api/inclawbate/conversations           — list conversations (authed human)
+// GET   /api/inclawbate/conversations?id=xxx    — get single conversation with messages
+// POST  /api/inclawbate/conversations           — create conversation (agent pays human)
+// PATCH /api/inclawbate/conversations           — complete a conversation (authed human)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
     if (ALLOWED_ORIGINS.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
@@ -145,6 +146,16 @@ export default async function handler(req, res) {
                     });
             }
 
+            // Auto-update human capacity: set to busy (fully allocated)
+            await supabase
+                .from('human_profiles')
+                .update({
+                    available_capacity: 0,
+                    availability: 'busy',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', human.id);
+
             // Notify human via Telegram
             if (human.telegram_chat_id) {
                 const amount = parseFloat(payment_amount) || 0;
@@ -157,6 +168,55 @@ export default async function handler(req, res) {
             }
 
             return res.status(201).json({ success: true, conversation: convo });
+
+        } catch (err) {
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // PATCH — complete a conversation (human frees up capacity)
+    if (req.method === 'PATCH') {
+        const user = authenticateRequest(req);
+        if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+        try {
+            const { id } = req.body;
+            if (!id) return res.status(400).json({ error: 'Missing conversation id' });
+
+            // Verify ownership
+            const { data: convo } = await supabase
+                .from('inclawbate_conversations')
+                .select('id, human_id')
+                .eq('id', id)
+                .eq('human_id', user.sub)
+                .single();
+
+            if (!convo) return res.status(404).json({ error: 'Conversation not found' });
+
+            // Mark completed
+            await supabase
+                .from('inclawbate_conversations')
+                .update({ status: 'completed', updated_at: new Date().toISOString() })
+                .eq('id', id);
+
+            // Recalculate capacity: check remaining active conversations
+            const { data: activeConvos } = await supabase
+                .from('inclawbate_conversations')
+                .select('id')
+                .eq('human_id', user.sub)
+                .eq('status', 'active');
+
+            const activeCount = (activeConvos || []).length;
+            await supabase
+                .from('human_profiles')
+                .update({
+                    available_capacity: activeCount === 0 ? 100 : 0,
+                    availability: activeCount === 0 ? 'available' : 'busy',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.sub);
+
+            return res.status(200).json({ success: true, active_remaining: activeCount });
 
         } catch (err) {
             return res.status(500).json({ error: 'Internal server error' });

@@ -102,6 +102,18 @@ function updateStats() {
     const totalEarnings = conversations.reduce((sum, c) => sum + (parseFloat(c.payment_amount) || 0), 0);
     document.getElementById('statConversations').textContent = active;
     document.getElementById('statEarnings').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString() : '0';
+    document.getElementById('statCapacity').textContent = active > 0 ? '0%' : '100%';
+}
+
+// Calculate payment-weighted capacity shares for active conversations
+function getCapacityShares() {
+    const active = conversations.filter(c => c.status === 'active');
+    const totalPayment = active.reduce((sum, c) => sum + Math.max(parseFloat(c.payment_amount) || 0, 1), 0);
+    const shares = {};
+    active.forEach(c => {
+        shares[c.id] = Math.round((Math.max(parseFloat(c.payment_amount) || 0, 1) / totalPayment) * 100);
+    });
+    return shares;
 }
 
 function renderConversationList() {
@@ -119,6 +131,8 @@ function renderConversationList() {
     // Clear old items
     container.querySelectorAll('.dash-convo-item').forEach(el => el.remove());
 
+    const shares = getCapacityShares();
+
     conversations.forEach(c => {
         const el = document.createElement('div');
         el.className = `dash-convo-item${c.id === activeConvoId ? ' active' : ''}`;
@@ -126,12 +140,14 @@ function renderConversationList() {
 
         const initial = (c.agent_name || 'A')[0].toUpperCase();
         const amount = parseFloat(c.payment_amount) || 0;
+        const share = shares[c.id];
+        const isActive = c.status === 'active';
 
         el.innerHTML = `
             <div class="dash-convo-avatar">${initial}</div>
             <div class="dash-convo-info">
                 <div class="dash-convo-name">${esc(c.agent_name || 'Unknown Agent')}</div>
-                <div class="dash-convo-preview">${esc(c.status)}</div>
+                <div class="dash-convo-preview">${isActive && share ? `${share}% of your capacity` : esc(c.status)}</div>
             </div>
             <div class="dash-convo-meta">
                 <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
@@ -172,7 +188,19 @@ async function openConversation(convoId) {
             ? convo.agent_address.slice(0, 6) + '...' + convo.agent_address.slice(-4)
             : '';
         const amount = parseFloat(convo.payment_amount) || 0;
-        document.getElementById('chatPaymentBadge').textContent = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
+        const shares = getCapacityShares();
+        const share = shares[convo.id];
+        const badge = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
+        document.getElementById('chatPaymentBadge').textContent = share ? `${badge} · ${share}% capacity` : badge;
+
+        const completeBtn = document.getElementById('chatCompleteBtn');
+        if (convo.status === 'active') {
+            completeBtn.style.display = '';
+            completeBtn.textContent = 'Complete';
+            completeBtn.disabled = false;
+        } else {
+            completeBtn.style.display = 'none';
+        }
     }
 
     // Load messages
@@ -332,6 +360,40 @@ document.getElementById('chatInput')?.addEventListener('input', (e) => {
     // Auto-resize
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+});
+
+// Complete conversation
+document.getElementById('chatCompleteBtn')?.addEventListener('click', async () => {
+    if (!activeConvoId) return;
+    const btn = document.getElementById('chatCompleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Completing...';
+
+    try {
+        const res = await fetch(`${API_BASE}/conversations`, {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ id: activeConvoId })
+        });
+        if (!res.ok) throw new Error('Failed');
+
+        // Refresh conversations list
+        await loadConversations();
+
+        // Update the active conversation's state in the header
+        const convo = conversations.find(c => c.id === activeConvoId);
+        if (convo) {
+            document.getElementById('chatPaymentBadge').textContent =
+                (parseFloat(convo.payment_amount) || 0) > 0
+                    ? `${parseFloat(convo.payment_amount).toLocaleString()} CLAWNCH · completed`
+                    : 'Completed';
+        }
+        btn.style.display = 'none';
+    } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Complete';
+        alert('Failed to complete conversation');
+    }
 });
 
 // Mobile back button

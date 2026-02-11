@@ -85,7 +85,8 @@ function renderProfile(p) {
     // Capacity badge
     const capacityBadge = document.getElementById('profileCapacityBadge');
     const capacity = p.available_capacity !== undefined ? p.available_capacity : 100;
-    capacityBadge.textContent = `${capacity}% capacity`;
+    capacityBadge.textContent = capacity === 0 ? 'Fully allocated' : `${capacity}% capacity`;
+    capacityBadge.className = `badge ${capacity === 0 ? 'badge-yellow' : 'badge-dim'}`;
 
     // Hire count badge
     const hireCount = p.hire_count || 0;
