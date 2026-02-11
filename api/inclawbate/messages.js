@@ -221,6 +221,40 @@ export default async function handler(req, res) {
                 }
             }
 
+            // Notify payer via Telegram when human replies
+            if (sender_type === 'human') {
+                // Find the profile that owns the agent_address (primary or linked)
+                const { data: payers } = await supabase
+                    .from('human_profiles')
+                    .select('telegram_chat_id, wallet_address, linked_wallets')
+                    .not('telegram_chat_id', 'is', null);
+
+                if (payers) {
+                    const payer = payers.find(p => {
+                        const wallets = [];
+                        if (p.wallet_address) wallets.push(p.wallet_address.toLowerCase());
+                        if (Array.isArray(p.linked_wallets)) {
+                            p.linked_wallets.forEach(w => wallets.push(w.toLowerCase()));
+                        }
+                        return wallets.includes(convo.agent_address);
+                    });
+
+                    if (payer?.telegram_chat_id) {
+                        // Get the human's name for the notification
+                        const { data: sender } = await supabase
+                            .from('human_profiles')
+                            .select('x_name, x_handle')
+                            .eq('id', convo.human_id)
+                            .single();
+                        const senderName = sender?.x_name || sender?.x_handle || 'Someone';
+                        const preview = escHtml(content.trim().slice(0, 200));
+                        await notifyHuman(payer.telegram_chat_id,
+                            `💬 <b>Reply from ${escHtml(senderName)}</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
+                        );
+                    }
+                }
+            }
+
             return res.status(201).json({ success: true, message: msg });
 
         } catch (err) {
