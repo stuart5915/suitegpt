@@ -223,10 +223,51 @@ function renderProfile(p) {
     // Action links
     document.getElementById('skillDocLink').href = `/u/${p.x_handle}/skill`;
 
-    // Show edit button if own profile
+    // Own profile: hide Hire Me, show edit
     const editBtn = document.getElementById('editProfileBtn');
-    if (isOwnProfile && editBtn) {
-        editBtn.classList.remove('hidden');
+    const hireBtn = document.getElementById('hireCta');
+    if (isOwnProfile) {
+        if (editBtn) editBtn.classList.remove('hidden');
+        if (hireBtn) hireBtn.style.display = 'none';
+    }
+
+    // Hero mini allocation (visible to everyone)
+    const heroAlloc = document.getElementById('heroAllocation');
+    if (heroAlloc && currentAllocation.length > 0) {
+        const colors = [
+            'hsl(9, 52%, 56%)', 'hsl(172, 32%, 48%)', 'hsl(32, 32%, 66%)',
+            'hsl(210, 28%, 54%)', 'hsl(280, 30%, 55%)', 'hsl(45, 50%, 55%)'
+        ];
+        let cum = 0;
+        const stops = currentAllocation.map((a, i) => {
+            const c = colors[i % colors.length];
+            const s = cum; cum += a.share;
+            return `${c} ${s}% ${cum}%`;
+        });
+        if (cum < 100) stops.push(`hsl(240, 4%, 16%) ${cum}% 100%`);
+
+        const payers = currentAllocation.length;
+        heroAlloc.innerHTML = `
+            <div class="hero-alloc-pie" style="background:conic-gradient(${stops.join(', ')})"></div>
+            <div class="hero-alloc-info">
+                <span class="hero-alloc-total">${currentTotalAllocated.toLocaleString()} CLAWNCH</span>
+                <span class="hero-alloc-sub">${payers} payer${payers !== 1 ? 's' : ''} &middot; ${isOwnProfile ? 'Share your profile to get more' : 'Get allocation &darr;'}</span>
+            </div>`;
+        heroAlloc.classList.remove('hidden');
+        if (!isOwnProfile) {
+            heroAlloc.style.cursor = 'pointer';
+            heroAlloc.addEventListener('click', () => {
+                document.getElementById('allocationSection')?.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+    } else if (heroAlloc && isOwnProfile) {
+        heroAlloc.innerHTML = `
+            <div class="hero-alloc-pie hero-alloc-empty"></div>
+            <div class="hero-alloc-info">
+                <span class="hero-alloc-total">0 CLAWNCH</span>
+                <span class="hero-alloc-sub">Share your profile to get allocation</span>
+            </div>`;
+        heroAlloc.classList.remove('hidden');
     }
 
     // Set up payment modal
