@@ -145,7 +145,23 @@ export default async function handler(req, res) {
                     }
                 }
             } else if (sender_type === 'agent') {
-                if (!agent_address || convo.agent_address !== agent_address.toLowerCase()) {
+                // Allow agent_address in body OR JWT-authed user whose wallet matches
+                const user = authenticateRequest(req);
+                let authed = false;
+                if (agent_address && convo.agent_address === agent_address.toLowerCase()) {
+                    authed = true;
+                } else if (user) {
+                    const { data: prof } = await supabase
+                        .from('human_profiles')
+                        .select('wallet_address')
+                        .eq('id', user.sub)
+                        .single();
+                    const wallet = prof?.wallet_address?.toLowerCase();
+                    if (wallet && convo.agent_address === wallet) {
+                        authed = true;
+                    }
+                }
+                if (!authed) {
                     return res.status(403).json({ error: 'Not authorized' });
                 }
             }

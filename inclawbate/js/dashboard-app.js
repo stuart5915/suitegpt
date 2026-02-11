@@ -411,7 +411,7 @@ async function sendMessage() {
             headers: authHeaders(),
             body: JSON.stringify({
                 conversation_id: activeConvoId,
-                sender_type: 'human',
+                sender_type: currentDirection === 'outbound' ? 'agent' : 'human',
                 content
             })
         });
