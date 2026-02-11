@@ -7,6 +7,7 @@
     const BUTTON_CLASS = 'inclawbate-reply-btn';
     const PANEL_CLASS = 'inclawbate-panel';
     let activePanel = null;
+    let activeTweetArticle = null;
     let hoveredTweet = null;
 
     // Track which tweet the mouse is over
@@ -37,11 +38,20 @@
             btn.className = BUTTON_CLASS;
             btn.innerHTML = '🦞';
             btn.title = 'Generate reply with Inclawbate (Alt+R)';
+
+            // Use capture phase to beat X's event handling
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 handleTweetReply(tweet);
-            });
+            }, true);
+
+            // Also handle mousedown as backup
+            btn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, true);
 
             actionBar.appendChild(btn);
         });
@@ -75,7 +85,7 @@
                 if (t) texts.push(t.innerText);
             }
             if (texts.length > 0) {
-                threadContext = texts.slice(-3).join('\n---\n'); // Last 3 parent tweets
+                threadContext = texts.slice(-3).join('\n---\n');
             }
         }
 
@@ -90,8 +100,10 @@
         // Close any existing panel
         closePanel();
 
-        // Show loading panel
-        const panel = createPanel(article);
+        activeTweetArticle = article;
+
+        // Show loading panel (fixed overlay)
+        const panel = createPanel();
         panel.querySelector('.inclawbate-panel-body').innerHTML =
             '<div class="inclawbate-loading"><span class="inclawbate-spinner"></span> Generating reply...</div>';
 
@@ -101,9 +113,9 @@
                 data
             });
 
-            if (response.error) {
+            if (!response || response.error) {
                 panel.querySelector('.inclawbate-panel-body').innerHTML =
-                    `<div class="inclawbate-error">Error: ${response.error}</div>`;
+                    `<div class="inclawbate-error">Error: ${response?.error || 'No response from background'}</div>`;
                 return;
             }
 
@@ -114,8 +126,11 @@
         }
     }
 
-    // Create the floating panel
-    function createPanel(article) {
+    // Create fixed-position overlay panel
+    function createPanel() {
+        const overlay = document.createElement('div');
+        overlay.className = 'inclawbate-overlay';
+
         const panel = document.createElement('div');
         panel.className = PANEL_CLASS;
         panel.innerHTML = `
@@ -127,11 +142,13 @@
         `;
 
         panel.querySelector('.inclawbate-panel-close').addEventListener('click', closePanel);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closePanel();
+        });
 
-        // Position near the tweet
-        article.style.position = 'relative';
-        article.appendChild(panel);
-        activePanel = panel;
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+        activePanel = overlay;
         return panel;
     }
 
@@ -139,7 +156,7 @@
     function showReplyPanel(panel, reply, article) {
         const body = panel.querySelector('.inclawbate-panel-body');
         body.innerHTML = `
-            <textarea class="inclawbate-reply-text" rows="3">${escapeHtml(reply)}</textarea>
+            <textarea class="inclawbate-reply-text" rows="4">${escapeHtml(reply)}</textarea>
             <div class="inclawbate-char-count"><span class="inclawbate-count-num">${reply.length}</span>/280</div>
             <div class="inclawbate-panel-actions">
                 <button class="inclawbate-btn inclawbate-btn-insert">Insert Reply</button>
@@ -174,29 +191,34 @@
         body.querySelector('.inclawbate-btn-regen').addEventListener('click', () => {
             handleTweetReply(article);
         });
+
+        // Focus the textarea so user can edit immediately
+        textarea.focus();
+        textarea.select();
     }
 
     // Insert reply text into X's reply composer
     function insertReply(article, text) {
-        // Click X's reply button to open composer
         const replyBtn = article.querySelector('[data-testid="reply"]');
         if (replyBtn) {
             replyBtn.click();
 
-            // Wait for composer to appear
-            setTimeout(() => {
+            // Wait for composer to appear, retry a few times
+            let attempts = 0;
+            const tryInsert = () => {
                 const composer = document.querySelector('[data-testid="tweetTextarea_0"]');
                 if (composer) {
                     composer.focus();
-                    // Use execCommand for React compatibility
                     document.execCommand('insertText', false, text);
+                } else if (attempts < 10) {
+                    attempts++;
+                    setTimeout(tryInsert, 200);
                 } else {
-                    // Fallback: copy to clipboard
                     navigator.clipboard.writeText(text);
                 }
-            }, 500);
+            };
+            setTimeout(tryInsert, 300);
         } else {
-            // Fallback: copy to clipboard
             navigator.clipboard.writeText(text);
         }
     }
@@ -205,6 +227,7 @@
         if (activePanel) {
             activePanel.remove();
             activePanel = null;
+            activeTweetArticle = null;
         }
     }
 
