@@ -20,7 +20,7 @@ function base64urlEncode(buffer) {
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export async function startXAuth({ forceLogin = false } = {}) {
+export async function startXAuth() {
     const codeVerifier = generateRandomString(128);
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
@@ -29,9 +29,7 @@ export async function startXAuth({ forceLogin = false } = {}) {
     sessionStorage.setItem('x_code_verifier', codeVerifier);
     sessionStorage.setItem('x_auth_state', state);
 
-    let url = `/api/inclawbate/x-auth?code_challenge=${encodeURIComponent(codeChallenge)}&state=${encodeURIComponent(state)}`;
-    if (forceLogin) url += '&force_login=true';
-    const res = await fetch(url);
+    const res = await fetch(`/api/inclawbate/x-auth?code_challenge=${encodeURIComponent(codeChallenge)}&state=${encodeURIComponent(state)}`);
     const data = await res.json();
 
     if (!res.ok || !data.url) {

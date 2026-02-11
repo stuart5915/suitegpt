@@ -39,7 +39,6 @@ async function init() {
     }
 
     // Clear existing auth so a different account can connect
-    const switching = !!stored;
     if (stored) {
         localStorage.removeItem('inclawbate_token');
         localStorage.removeItem('inclawbate_profile');
@@ -51,7 +50,7 @@ async function init() {
     connectBtn.classList.add('hidden');
 
     try {
-        await startXAuth({ forceLogin: switching });
+        await startXAuth();
     } catch (err) {
         // Fallback: show the button if auto-redirect fails
         connectGate.querySelector('h2').textContent = 'Connect X to get started';
