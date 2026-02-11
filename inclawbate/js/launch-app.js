@@ -4,6 +4,7 @@ import { startXAuth, handleXCallback, getStoredAuth } from './x-auth-client.js';
 const connectGate = document.getElementById('connectGate');
 const connectBtn = document.getElementById('xConnectBtn');
 const walletGate = document.getElementById('walletGate');
+const extensionDone = document.getElementById('extensionDone');
 
 let currentProfile = null;
 let currentToken = null;
@@ -19,6 +20,10 @@ function afterAuth(profile, token, dest) {
     currentProfile = profile;
     currentToken = token;
 
+    const fromExtension = new URLSearchParams(window.location.search).get('from') === 'extension'
+        || sessionStorage.getItem('inclawbate_from_extension') === '1';
+    sessionStorage.removeItem('inclawbate_from_extension');
+
     // Post API key for extension auth-relay
     if (profile.api_key) {
         window.postMessage({
@@ -26,6 +31,14 @@ function afterAuth(profile, token, dest) {
             apiKey: profile.api_key,
             xHandle: profile.x_handle
         }, '*');
+    }
+
+    // If opened from extension, show "Connected!" and don't redirect
+    if (fromExtension) {
+        connectGate.classList.add('hidden');
+        walletGate.classList.add('hidden');
+        extensionDone.classList.remove('hidden');
+        return;
     }
 
     // If wallet already linked, go straight through
@@ -52,6 +65,11 @@ async function init() {
     const redirectParam = params.get('redirect');
     if (redirectParam && /^\/[a-z]/.test(redirectParam)) {
         sessionStorage.setItem('inclawbate_redirect', redirectParam);
+    }
+
+    // Persist extension context through OAuth redirect
+    if (params.get('from') === 'extension') {
+        sessionStorage.setItem('inclawbate_from_extension', '1');
     }
 
     // X sent back an error
