@@ -104,32 +104,46 @@ export default async function handler(req, res) {
             const lim = Math.min(parseInt(limit) || 48, 100);
             const off = parseInt(offset) || 0;
 
-            // Sort by earnings requires a different query path
-            if (sort === 'earnings') {
-                // Get earnings per human from conversations
-                const { data: convos } = await supabase
-                    .from('inclawbate_conversations')
-                    .select('human_id, payment_amount');
+            // Get total CLAWNCH paid to each human (for all sort modes)
+            const { data: convos } = await supabase
+                .from('inclawbate_conversations')
+                .select('human_id, payment_amount');
 
-                const earningsMap = {};
-                (convos || []).forEach(c => {
-                    if (!c.human_id) return;
-                    earningsMap[c.human_id] = (earningsMap[c.human_id] || 0) + (parseFloat(c.payment_amount) || 0);
-                });
+            const paidMap = {};
+            (convos || []).forEach(c => {
+                if (!c.human_id) return;
+                paidMap[c.human_id] = (paidMap[c.human_id] || 0) + (parseFloat(c.payment_amount) || 0);
+            });
 
-                // Get all matching profiles (apply filters but not sort)
+            function attachPaid(profiles) {
+                return profiles.map(p => ({ ...p, total_paid: paidMap[p.id] || 0 }));
+            }
+
+            // Sort by wallet connected (wallet first, then newest)
+            if (sort === 'wallet') {
                 const { data: allProfiles, error: allErr } = await query.order('created_at', { ascending: false });
+                if (allErr) {
+                    return res.status(500).json({ error: 'Failed to fetch profiles' });
+                }
+                const sorted = attachPaid(allProfiles || []).sort((a, b) => {
+                    const aHas = a.wallet_address ? 1 : 0;
+                    const bHas = b.wallet_address ? 1 : 0;
+                    return bHas - aHas;
+                });
+                const total = sorted.length;
+                const page = sorted.slice(off, off + lim);
+                return res.status(200).json({ profiles: page, total, hasMore: (off + lim) < total });
+            }
 
+            // Sort by earnings
+            if (sort === 'earnings') {
+                const { data: allProfiles, error: allErr } = await query.order('created_at', { ascending: false });
                 if (allErr) {
                     return res.status(500).json({ error: 'Failed to fetch profiles' });
                 }
 
-                // Attach earnings and sort
-                const withEarnings = (allProfiles || []).map(p => ({
-                    ...p,
-                    total_earned: earningsMap[p.id] || 0
-                }));
-                withEarnings.sort((a, b) => b.total_earned - a.total_earned);
+                const withEarnings = attachPaid(allProfiles || []);
+                withEarnings.sort((a, b) => b.total_paid - a.total_paid);
 
                 const total = withEarnings.length;
                 const page = withEarnings.slice(off, off + lim);
@@ -155,7 +169,7 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({
-                profiles: data || [],
+                profiles: attachPaid(data || []),
                 total: count || 0,
                 hasMore: (off + lim) < (count || 0)
             });

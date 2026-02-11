@@ -36,8 +36,11 @@ function humanCard(p) {
     ).join('');
 
     const availClass = p.availability || 'available';
+    const hasWallet = !!p.wallet_address;
+    const cardClass = hasWallet ? 'human-card' : 'human-card no-wallet';
+    const totalPaid = p.total_paid || 0;
 
-    return `<a href="/u/${handle}" class="human-card">
+    return `<a href="/u/${handle}" class="${cardClass}">
         <div class="human-card-header">
             ${avatar}${fallback}
             <div>
@@ -49,9 +52,10 @@ function humanCard(p) {
         ${skillBadges ? `<div class="human-card-skills">${skillBadges}</div>` : ''}
         <div class="human-card-meta">
             <span class="human-card-availability ${availClass}">${availClass}</span>
-            ${(p.total_earned || 0) > 0 ? `<span class="human-card-earned">${Math.round(p.total_earned).toLocaleString()} CLAWNCH</span>` : ''}
+            ${totalPaid > 0 ? `<span class="human-card-earned">${Math.round(totalPaid).toLocaleString()} CLAWNCH</span>` : ''}
             ${(p.hire_count || 0) > 0 ? `<span class="text-dim">${p.hire_count} hire${p.hire_count > 1 ? 's' : ''}</span>` : ''}
         </div>
+        ${!hasWallet ? '<div class="no-wallet-hint">No wallet connected</div>' : ''}
     </a>`;
 }
 
