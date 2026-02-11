@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'X_CLIENT_ID not configured' });
     }
 
-    const { code_challenge, state } = req.query;
+    const { code_challenge, state, force_login } = req.query;
 
     if (!code_challenge) {
         return res.status(400).json({ error: 'Missing code_challenge parameter' });
@@ -40,6 +40,10 @@ export default async function handler(req, res) {
         code_challenge: code_challenge,
         code_challenge_method: 'S256'
     });
+
+    if (force_login === 'true') {
+        params.set('force_login', 'true');
+    }
 
     const authUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
 
