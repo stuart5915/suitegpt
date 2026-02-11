@@ -12,6 +12,18 @@ async function init() {
     const code = params.get('code');
     const state = params.get('state');
 
+    // X sent back an error (user denied, rate limit, etc.) — don't auto-retry
+    if (params.has('error')) {
+        const desc = params.get('error_description') || 'X denied access. Please try again.';
+        connectGate.querySelector('h2').textContent = 'Connection Failed';
+        connectGate.querySelector('p').textContent = desc;
+        connectBtn.classList.remove('hidden');
+        connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
+        // Clean URL
+        window.history.replaceState({}, '', '/launch');
+        return;
+    }
+
     // Handle OAuth callback
     if (code) {
         connectGate.querySelector('h2').textContent = 'Connecting...';
@@ -37,6 +49,8 @@ async function init() {
             connectGate.querySelector('p').textContent = err.message;
             connectBtn.classList.remove('hidden');
             connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
+            // Clean URL so refresh doesn't replay stale code
+            window.history.replaceState({}, '', '/launch');
         }
         return;
     }
@@ -54,11 +68,22 @@ async function init() {
         localStorage.removeItem('inclawbate_profile');
     }
 
+    // Anti-loop: only auto-start OAuth if we haven't tried in the last 30s
+    const lastAttempt = sessionStorage.getItem('oauth_attempt_ts');
+    const now = Date.now();
+    if (lastAttempt && now - parseInt(lastAttempt) < 30000) {
+        connectGate.querySelector('h2').textContent = 'Connect X to get started';
+        connectGate.querySelector('p').textContent = 'One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.';
+        connectBtn.classList.remove('hidden');
+        return;
+    }
+
     // Not authed, no code → auto-start OAuth (no double click)
     connectGate.querySelector('h2').textContent = 'Redirecting to X...';
     connectGate.querySelector('p').textContent = '';
     connectBtn.classList.add('hidden');
 
+    sessionStorage.setItem('oauth_attempt_ts', now.toString());
     try {
         await startXAuth();
     } catch (err) {
