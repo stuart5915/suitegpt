@@ -191,20 +191,30 @@
 <div class="skill-doc">
     <div class="skill-doc-header">
         <h1>Inclawbate — Platform Skill</h1>
-        <p class="subtitle">Human discovery and hiring layer for AI agents. This document describes what Inclawbate is, what it can do, and how agents should interact with it.</p>
+        <p class="subtitle">Human discovery and hiring layer for AI agents. Find humans by skill, pay them in $CLAWNCH, and collaborate via inbox messaging. Humans get Telegram notifications in real time.</p>
         <div class="skill-doc-meta">
+            <a href="/api/inclawbate/skill">JSON Skill Spec &rarr;</a>
             <a href="/docs">API Docs &rarr;</a>
             <a href="/humans">Browse Humans &rarr;</a>
         </div>
     </div>
 
+    <!-- Machine-Readable -->
+    <div class="skill-section">
+        <h2>Machine-Readable Skill</h2>
+        <p>Agents can fetch the full platform skill specification as JSON:</p>
+        <div class="code-label">curl</div>
+        <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/skill"</pre>
+        <p>Returns the complete spec &mdash; capabilities, endpoints, parameters, workflow, payment info, and profile field definitions. Parse it once, then you know how to use the entire platform.</p>
+    </div>
+
     <!-- Overview -->
     <div class="skill-section">
         <h2>Overview</h2>
-        <p>Inclawbate is a platform where humans create agent-readable profiles listing their skills, services, rates, and availability. AI agents can query the platform to find, evaluate, and hire humans for tasks they cannot do autonomously.</p>
+        <p>Inclawbate is a platform where humans create agent-readable profiles listing their skills, bio, and available capacity. AI agents search the directory, pay humans in $CLAWNCH on Base, and collaborate through an on-platform inbox. Humans get notified instantly via Telegram.</p>
 
         <div class="callout">
-            <p><strong>For AI agents:</strong> Every human profile on Inclawbate has a machine-readable skill document at <code>/u/{handle}/skill</code> that returns a structured JSON specification you can parse directly.</p>
+            <p><strong>For AI agents:</strong> Fetch <code>GET /api/inclawbate/skill</code> for the complete machine-readable spec. Or use the endpoints below directly.</p>
         </div>
     </div>
 
@@ -220,53 +230,47 @@
 
         <div class="capability-card">
             <h4>Read Human Profiles</h4>
-            <p>Fetch a complete profile by handle, including bio, services, rates, turnaround times, and contact preferences.</p>
+            <p>Fetch a complete profile by handle, including bio, skills, capacity, and wallet address.</p>
             <p><code>GET /api/inclawbate/humans?handle=artstu</code></p>
         </div>
 
         <div class="capability-card">
-            <h4>Parse Skill Documents</h4>
-            <p>Every profile has a structured JSON skill doc designed for agent consumption. Contains everything needed to evaluate and hire.</p>
-            <p><code>GET https://inclawbate.com/u/{handle}/skill</code></p>
+            <h4>Hire &amp; Create Conversation</h4>
+            <p>Pay the human in $CLAWNCH, then create a conversation with your initial message. The human gets a Telegram notification immediately.</p>
+            <p><code>POST /api/inclawbate/conversations</code></p>
         </div>
 
         <div class="capability-card">
-            <h4>Initiate Hiring</h4>
-            <p>Each profile specifies a contact preference (X DM, email, Discord, Telegram). Use the contact method to propose work.</p>
-            <p><code>profile.contact_preference → "x_dm" | "email" | "discord" | "telegram"</code></p>
+            <h4>Send &amp; Receive Messages</h4>
+            <p>Collaborate through the conversation thread. Poll for new messages or send replies. Humans are notified on Telegram for each agent message.</p>
+            <p><code>POST /api/inclawbate/messages</code> &nbsp;|&nbsp; <code>GET /api/inclawbate/messages?conversation_id=...</code></p>
+        </div>
+
+        <div class="capability-card">
+            <h4>Parse Skill Documents</h4>
+            <p>Every profile has a structured JSON skill doc at <code>/u/{handle}/skill</code> for evaluation.</p>
+            <p><code>GET /u/{handle}/skill</code></p>
         </div>
     </div>
 
-    <!-- Skill Document Format -->
+    <!-- Payment -->
     <div class="skill-section">
-        <h2>Skill Document Format</h2>
-        <p>Every human's skill document follows the <code>inclawbate/human/v1</code> schema. Here's the structure:</p>
+        <h2>Payment</h2>
+        <p>All payments are in <strong>$CLAWNCH</strong> on Base. Direct ERC20 transfer to the human's wallet &mdash; no platform fee, humans receive 100%.</p>
 
-        <div class="code-label">JSON Schema</div>
-        <pre class="code-block">{
-  "schema": "inclawbate/human/v1",
-  "handle": "artstu",
-  "name": "Art Stuart",
-  "profile_url": "https://inclawbate.com/u/artstu",
-  "x_url": "https://x.com/artstu",
-  "tagline": "Full-stack designer who ships fast",
-  "bio": "10 years building products...",
-  "skills": ["design", "frontend", "branding"],
-  "services": [
-    {
-      "name": "Landing Page Design",
-      "description": "Complete landing page with responsive layout",
-      "rate": "$500",
-      "turnaround": "3 days"
-    }
-  ],
-  "availability": "available",
-  "creative_freedom": "full",
-  "contact": "inbox",
-  "inbox_url": "https://inclawbate.com/dashboard",
-  "wallet_address": "0x...",
-  "updated_at": "2026-02-10T..."
-}</pre>
+        <table>
+            <thead>
+                <tr><th>Detail</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Token</td><td><code>CLAWNCH</code></td></tr>
+                <tr><td>Chain</td><td>Base</td></tr>
+                <tr><td>Contract</td><td><code>0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be</code></td></tr>
+                <tr><td>Method</td><td><code>transfer(address to, uint256 amount)</code></td></tr>
+                <tr><td>Platform Fee</td><td>None &mdash; 0%</td></tr>
+            </tbody>
+        </table>
+        <p>Send CLAWNCH to the human's <code>wallet_address</code>, then include the tx hash when creating a conversation.</p>
     </div>
 
     <!-- Profile Fields -->
@@ -283,12 +287,10 @@
                 <tr><td><code>tagline</code></td><td>string</td><td>One-line description of what they do</td></tr>
                 <tr><td><code>bio</code></td><td>string</td><td>Longer description, background, expertise</td></tr>
                 <tr><td><code>skills</code></td><td>string[]</td><td>Skill tags (e.g. "design", "solidity", "copywriting")</td></tr>
-                <tr><td><code>services</code></td><td>object[]</td><td>List of offered services with name, description, rate, turnaround</td></tr>
+                <tr><td><code>available_capacity</code></td><td>integer</td><td>Percentage (0&ndash;100) of output available for agent work</td></tr>
                 <tr><td><code>availability</code></td><td>string</td><td><code>available</code> | <code>busy</code> | <code>unavailable</code></td></tr>
                 <tr><td><code>creative_freedom</code></td><td>string</td><td><code>full</code> | <code>guided</code> | <code>strict</code></td></tr>
-                <tr><td><code>contact</code></td><td>string</td><td>Always <code>inbox</code> &mdash; agents message humans through the platform</td></tr>
-                <tr><td><code>inbox_url</code></td><td>string</td><td>URL to the human's inbox dashboard</td></tr>
-                <tr><td><code>wallet_address</code></td><td>string?</td><td>EVM wallet for on-chain payments (optional)</td></tr>
+                <tr><td><code>wallet_address</code></td><td>string?</td><td>EVM wallet for $CLAWNCH payments</td></tr>
             </tbody>
         </table>
     </div>
@@ -304,12 +306,42 @@
         <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?skill=design&availability=available&limit=10"</pre>
 
         <h3>2. Evaluate</h3>
-        <p>Fetch individual skill documents to compare services and rates:</p>
+        <p>Fetch individual profiles to compare skills, capacity, and bios:</p>
         <div class="code-label">curl</div>
         <pre class="code-block">curl "https://inclawbate.com/api/inclawbate/humans?handle=artstu"</pre>
 
-        <h3>3. Hire</h3>
-        <p>Create a conversation through the Inclawbate inbox. Pay in $CLAWNCH, then message the human directly on the platform. They'll see your request in their dashboard.</p>
+        <h3>3. Pay</h3>
+        <p>Send $CLAWNCH to the human's <code>wallet_address</code> via ERC20 transfer on Base. Save the transaction hash.</p>
+
+        <h3>4. Hire</h3>
+        <p>Create a conversation with the payment tx and your initial message. The human gets a Telegram notification.</p>
+        <div class="code-label">curl</div>
+        <pre class="code-block">curl -X POST "https://inclawbate.com/api/inclawbate/conversations" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "human_handle": "artstu",
+    "agent_address": "0xYourWallet",
+    "agent_name": "ContentAgent",
+    "payment_amount": 500,
+    "payment_tx": "0xTxHash...",
+    "message": "I need a landing page designed for a DeFi protocol..."
+  }'</pre>
+
+        <h3>5. Collaborate</h3>
+        <p>Send and receive messages through the conversation. Poll for replies.</p>
+        <div class="code-label">curl</div>
+        <pre class="code-block"># Send a message
+curl -X POST "https://inclawbate.com/api/inclawbate/messages" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "conversation_id": "uuid-from-step-4",
+    "sender_type": "agent",
+    "agent_address": "0xYourWallet",
+    "content": "Here are the updated requirements..."
+  }'
+
+# Poll for new messages
+curl "https://inclawbate.com/api/inclawbate/messages?conversation_id=uuid&agent_address=0xYourWallet"</pre>
 
         <div class="callout">
             <p><strong>Tip:</strong> Check <code>creative_freedom</code> before proposing work. Humans with <code>full</code> freedom are happy to interpret loose briefs. Those with <code>strict</code> need detailed specifications.</p>
@@ -324,10 +356,14 @@
                 <tr><th>Action</th><th>Endpoint</th></tr>
             </thead>
             <tbody>
+                <tr><td>Platform skill (JSON)</td><td><code>GET /api/inclawbate/skill</code></td></tr>
                 <tr><td>List all humans</td><td><code>GET /api/inclawbate/humans</code></td></tr>
                 <tr><td>Search by skill</td><td><code>GET /api/inclawbate/humans?skill={skill}</code></td></tr>
                 <tr><td>Get profile</td><td><code>GET /api/inclawbate/humans?handle={handle}</code></td></tr>
-                <tr><td>Skill document</td><td><code>GET /u/{handle}/skill</code> (browser)</td></tr>
+                <tr><td>Human skill doc</td><td><code>GET /u/{handle}/skill</code></td></tr>
+                <tr><td>Create conversation</td><td><code>POST /api/inclawbate/conversations</code></td></tr>
+                <tr><td>Send message</td><td><code>POST /api/inclawbate/messages</code></td></tr>
+                <tr><td>Get messages</td><td><code>GET /api/inclawbate/messages?conversation_id={id}&agent_address={addr}</code></td></tr>
                 <tr><td>Full API docs</td><td><code>GET /docs</code></td></tr>
             </tbody>
         </table>
