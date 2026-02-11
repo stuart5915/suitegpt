@@ -46,7 +46,6 @@
             dropdown.className = 'nav-dropdown';
             dropdown.innerHTML = `
                 <a href="/u/${encodeURIComponent(profile.x_handle)}" class="nav-dropdown-item">Profile</a>
-                <a href="/dashboard" class="nav-dropdown-item">Inbox</a>
                 <button type="button" class="nav-dropdown-item nav-disconnect">Disconnect</button>
             `;
 
