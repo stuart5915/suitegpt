@@ -54,14 +54,31 @@ function init() {
     const capacity = profile.available_capacity !== undefined ? profile.available_capacity : 100;
     document.getElementById('statCapacity').textContent = capacity + '%';
 
-    // Telegram notification bar
-    if (profile.telegram_chat_id) {
-        document.getElementById('telegramConnected').classList.remove('hidden');
-    } else {
-        const bar = document.getElementById('telegramBar');
-        bar.classList.remove('hidden');
-        document.getElementById('telegramBarBtn').href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
-    }
+    // Fetch fresh profile from API to check Telegram status
+    fetch(`/api/inclawbate/humans?handle=${profile.x_handle}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (!data || !data.profile) return;
+            const fresh = data.profile;
+            // Update localStorage with fresh data
+            localStorage.setItem('inclawbate_profile', JSON.stringify(fresh));
+            if (fresh.telegram_chat_id) {
+                document.getElementById('telegramBar').classList.add('hidden');
+                document.getElementById('telegramConnected').classList.remove('hidden');
+            } else {
+                document.getElementById('telegramBar').classList.remove('hidden');
+                document.getElementById('telegramBarBtn').href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
+            }
+        })
+        .catch(() => {
+            // Fallback to localStorage
+            if (profile.telegram_chat_id) {
+                document.getElementById('telegramConnected').classList.remove('hidden');
+            } else {
+                document.getElementById('telegramBar').classList.remove('hidden');
+                document.getElementById('telegramBarBtn').href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
+            }
+        });
 
     loadConversations();
 }
