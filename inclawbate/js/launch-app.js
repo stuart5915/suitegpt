@@ -37,6 +37,20 @@ async function init() {
         window.location.href = `/u/${stored.profile.x_handle}`;
         return;
     }
+
+    // Not authed, no code → auto-start OAuth (no double click)
+    connectGate.querySelector('h2').textContent = 'Redirecting to X...';
+    connectGate.querySelector('p').textContent = '';
+    connectBtn.classList.add('hidden');
+
+    try {
+        await startXAuth();
+    } catch (err) {
+        // Fallback: show the button if auto-redirect fails
+        connectGate.querySelector('h2').textContent = 'Connect X to get started';
+        connectGate.querySelector('p').textContent = 'One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.';
+        connectBtn.classList.remove('hidden');
+    }
 }
 
 // Connect button → start OAuth
