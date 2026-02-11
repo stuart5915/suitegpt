@@ -1,13 +1,30 @@
 // Generate an AI reply to a tweet using Claude Sonnet
 // Called by the Inclawbate Chrome extension
+// Requires JWT authentication to prevent abuse
+
+import { authenticateRequest } from './x-callback.js';
+
+const ALLOWED_ORIGINS = [
+    'https://inclawbate.com',
+    'https://www.inclawbate.com'
+];
 
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Require authentication
+    const user = authenticateRequest(req);
+    if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
 
     const { ANTHROPIC_API_KEY } = process.env;
     if (!ANTHROPIC_API_KEY) {

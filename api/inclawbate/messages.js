@@ -16,6 +16,23 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Rate limit message sends per conversation
+const msgRateMap = new Map();
+const MSG_RATE_WINDOW = 60 * 1000; // 1 minute
+const MSG_RATE_MAX = 20; // 20 messages per minute per conversation
+
+function checkMsgRateLimit(conversationId) {
+    const now = Date.now();
+    const entry = msgRateMap.get(conversationId);
+    if (!entry || now - entry.windowStart > MSG_RATE_WINDOW) {
+        msgRateMap.set(conversationId, { windowStart: now, count: 1 });
+        return true;
+    }
+    if (entry.count >= MSG_RATE_MAX) return false;
+    entry.count++;
+    return true;
+}
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin)) {
@@ -29,16 +46,14 @@ export default async function handler(req, res) {
     // GET — fetch messages for a conversation
     if (req.method === 'GET') {
         try {
-            const { conversation_id, after } = req.query;
+            const { conversation_id, after, agent_address: agentAddressParam } = req.query;
             if (!conversation_id) {
                 return res.status(400).json({ error: 'Missing conversation_id' });
             }
 
-            // Auth: either human (JWT) or agent (by address in query)
+            // Auth: JWT required. Agent access also requires JWT now.
             const user = authenticateRequest(req);
-            const agentAddress = req.query.agent_address;
-
-            if (!user && !agentAddress) {
+            if (!user) {
                 return res.status(401).json({ error: 'Authentication required' });
             }
 
@@ -53,8 +68,8 @@ export default async function handler(req, res) {
                 return res.status(404).json({ error: 'Conversation not found' });
             }
 
-            // Check authorization (human_id match OR wallet matches agent_address)
-            if (user && convo.human_id !== user.sub) {
+            // Check authorization: human_id match OR user's wallet matches agent_address
+            if (convo.human_id !== user.sub) {
                 const { data: prof } = await supabase
                     .from('human_profiles')
                     .select('wallet_address')
@@ -64,9 +79,6 @@ export default async function handler(req, res) {
                 if (!wallet || convo.agent_address !== wallet) {
                     return res.status(403).json({ error: 'Not your conversation' });
                 }
-            }
-            if (agentAddress && convo.agent_address !== agentAddress.toLowerCase()) {
-                return res.status(403).json({ error: 'Not your conversation' });
             }
 
             let query = supabase
@@ -111,6 +123,11 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Message too long (max 10,000 characters)' });
             }
 
+            // Rate limit
+            if (!checkMsgRateLimit(conversation_id)) {
+                return res.status(429).json({ error: 'Too many messages. Slow down.' });
+            }
+
             // Verify conversation exists
             const { data: convo } = await supabase
                 .from('inclawbate_conversations')
@@ -126,11 +143,12 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Conversation is not active' });
             }
 
-            // Verify sender authorization
+            // Verify sender authorization — JWT required for both human and agent
+            const user = authenticateRequest(req);
+
             if (sender_type === 'human') {
-                const user = authenticateRequest(req);
                 if (!user) {
-                    return res.status(403).json({ error: 'Not authorized' });
+                    return res.status(401).json({ error: 'Authentication required' });
                 }
                 // Allow if human_id matches OR wallet matches agent_address (payer)
                 if (convo.human_id !== user.sub) {
@@ -145,23 +163,17 @@ export default async function handler(req, res) {
                     }
                 }
             } else if (sender_type === 'agent') {
-                // Allow agent_address in body OR JWT-authed user whose wallet matches
-                const user = authenticateRequest(req);
-                let authed = false;
-                if (agent_address && convo.agent_address === agent_address.toLowerCase()) {
-                    authed = true;
-                } else if (user) {
-                    const { data: prof } = await supabase
-                        .from('human_profiles')
-                        .select('wallet_address')
-                        .eq('id', user.sub)
-                        .single();
-                    const wallet = prof?.wallet_address?.toLowerCase();
-                    if (wallet && convo.agent_address === wallet) {
-                        authed = true;
-                    }
+                // Require JWT — derive wallet from profile to verify ownership
+                if (!user) {
+                    return res.status(401).json({ error: 'Authentication required' });
                 }
-                if (!authed) {
+                const { data: prof } = await supabase
+                    .from('human_profiles')
+                    .select('wallet_address')
+                    .eq('id', user.sub)
+                    .single();
+                const wallet = prof?.wallet_address?.toLowerCase();
+                if (!wallet || convo.agent_address !== wallet) {
                     return res.status(403).json({ error: 'Not authorized' });
                 }
             }
