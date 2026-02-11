@@ -16,9 +16,10 @@ chrome.commands.onCommand.addListener((command) => {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'set-api-key') {
-        // Relay from auth-relay.js on inclawbate.com after OAuth
+        // Relay from auth-relay.js on inclawbate.com after wallet connect or OAuth
         const toStore = { apiKey: message.apiKey };
         if (message.xHandle) toStore.xHandle = message.xHandle;
+        if (message.walletAddress) toStore.walletAddress = message.walletAddress;
         chrome.storage.sync.set(toStore, () => {
             sendResponse({ success: true });
         });

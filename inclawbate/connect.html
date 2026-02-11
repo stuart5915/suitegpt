@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Wallet — Inclawbate</title>
+    <meta name="description" content="Connect your wallet to use the Inclawbator extension.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .connect-page {
+            margin-top: var(--nav-height);
+            min-height: calc(100vh - var(--nav-height));
+            display: flex; align-items: center; justify-content: center;
+            padding: var(--space-xl);
+        }
+        .connect-box {
+            text-align: center;
+            max-width: 420px;
+        }
+        .connect-icon {
+            font-size: 3.5rem;
+            margin-bottom: var(--space-xl);
+            filter: drop-shadow(0 0 20px hsla(9, 70%, 50%, 0.2));
+        }
+        .connect-box h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 800;
+            margin-bottom: var(--space-md);
+            letter-spacing: -0.02em;
+        }
+        .connect-box p {
+            color: var(--text-secondary);
+            font-size: 0.95rem; line-height: 1.6;
+            margin-bottom: var(--space-2xl);
+        }
+        .connect-box .btn { margin-bottom: var(--space-md); }
+        .connect-hint {
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+        }
+        .connect-error {
+            color: var(--red);
+            font-size: 0.82rem;
+            margin-top: var(--space-md);
+            min-height: 1.2em;
+        }
+        .connect-wallet-addr {
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--seafoam-400);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--seafoam-300);
+            margin-bottom: var(--space-xl);
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/leaderboard" class="nav-link">Leaderboard</a>
+        <a href="/dashboard" class="nav-link">Inbox</a>
+        <a href="/docs" class="nav-link">Docs</a>
+    </div>
+</nav>
+
+<div class="connect-page">
+    <!-- Step 1: Connect wallet -->
+    <div id="stepConnect" class="connect-box">
+        <div class="connect-icon">&#129438;</div>
+        <h2>Connect your wallet</h2>
+        <p>Connect a Base wallet to authenticate the Inclawbator extension. One click.</p>
+        <button id="connectBtn" class="btn btn-primary btn-lg btn-block">Connect Wallet</button>
+        <p class="connect-hint">MetaMask, Coinbase Wallet, or any EVM wallet.</p>
+        <div id="connectError" class="connect-error"></div>
+    </div>
+
+    <!-- Step 2: Done -->
+    <div id="stepDone" class="connect-box hidden">
+        <div class="connect-icon" style="font-size:2.5rem;">&#10004;&#65039;</div>
+        <h2 style="color:var(--seafoam-300);">Connected!</h2>
+        <div id="walletAddr" class="connect-wallet-addr"></div>
+        <p>Your extension is ready. Close this tab and go to X to start generating replies.</p>
+        <a href="https://x.com" class="btn btn-primary btn-lg btn-block">Back to X</a>
+        <a href="/deposit" class="btn btn-secondary btn-lg btn-block">Buy Credits</a>
+    </div>
+</div>
+
+<script>
+(async function() {
+    const stepConnect = document.getElementById('stepConnect');
+    const stepDone = document.getElementById('stepDone');
+    const connectBtn = document.getElementById('connectBtn');
+    const connectError = document.getElementById('connectError');
+    const walletAddrEl = document.getElementById('walletAddr');
+
+    connectBtn.addEventListener('click', async () => {
+        connectError.textContent = '';
+
+        if (!window.ethereum) {
+            connectError.textContent = 'No wallet detected. Install MetaMask or Coinbase Wallet.';
+            return;
+        }
+
+        connectBtn.disabled = true;
+        connectBtn.textContent = 'Connecting...';
+
+        try {
+            // Connect wallet
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const address = accounts[0];
+
+            // Switch to Base
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x2105' }]
+                });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x2105',
+                            chainName: 'Base',
+                            rpcUrls: ['https://mainnet.base.org'],
+                            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                            blockExplorerUrls: ['https://basescan.org']
+                        }]
+                    });
+                }
+            }
+
+            connectBtn.textContent = 'Sign message...';
+
+            // Sign a message to prove ownership
+            const timestamp = Math.floor(Date.now() / 1000);
+            const message = 'Sign in to Inclawbate\nTimestamp: ' + timestamp;
+            const signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, address]
+            });
+
+            connectBtn.textContent = 'Authenticating...';
+
+            // Call wallet-login API
+            const resp = await fetch('/api/inclawbate/wallet-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address, signature, message })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || 'Login failed');
+            }
+
+            // Store profile in localStorage (auth-relay will pick this up)
+            const profile = {
+                id: null,
+                api_key: data.api_key,
+                wallet_address: data.wallet_address,
+                x_handle: data.x_handle || '',
+                x_name: data.x_name || '',
+                credits: data.credits || 0
+            };
+            localStorage.setItem('inclawbate_profile', JSON.stringify(profile));
+
+            // Show success
+            const short = address.slice(0, 6) + '...' + address.slice(-4);
+            walletAddrEl.textContent = short;
+            stepConnect.classList.add('hidden');
+            stepDone.classList.remove('hidden');
+
+        } catch (err) {
+            if (err.code !== 4001) { // user rejection
+                connectError.textContent = err.message || 'Connection failed';
+            }
+            connectBtn.disabled = false;
+            connectBtn.textContent = 'Connect Wallet';
+        }
+    });
+})();
+</script>
+
+</body>
+</html>

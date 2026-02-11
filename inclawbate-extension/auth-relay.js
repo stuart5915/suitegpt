@@ -1,5 +1,5 @@
 // Auth relay — runs in ISOLATED world on inclawbate.com pages
-// Listens for postMessage from auth-read.js (MAIN world) and relays API key to extension background
+// Listens for postMessage from auth-read.js (MAIN world) and relays to extension background
 
 window.addEventListener('message', (event) => {
     if (event.source !== window) return;
@@ -8,6 +8,7 @@ window.addEventListener('message', (event) => {
     chrome.runtime.sendMessage({
         action: 'set-api-key',
         apiKey: event.data.apiKey,
-        xHandle: event.data.xHandle
+        xHandle: event.data.xHandle,
+        walletAddress: event.data.walletAddress
     });
 });

@@ -6,7 +6,8 @@ try {
         window.postMessage({
             type: 'inclawbate-auth',
             apiKey: profile.api_key,
-            xHandle: profile.x_handle || ''
+            xHandle: profile.x_handle || '',
+            walletAddress: profile.wallet_address || ''
         }, '*');
     }
 } catch(e) {}

@@ -81,7 +81,7 @@ function showConnectScreen() {
 }
 
 connectBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://inclawbate.com/launch' });
+    chrome.tabs.create({ url: 'https://inclawbate.com/connect' });
 });
 
 // ── Connected state ──
@@ -90,8 +90,10 @@ function showConnected(data) {
     connectScreen.classList.add('hidden');
     connectedUI.classList.remove('hidden');
 
-    // Show handle
-    if (data.xHandle) {
+    // Show wallet or handle
+    if (data.walletAddress) {
+        userHandle.textContent = data.walletAddress.slice(0, 6) + '...' + data.walletAddress.slice(-4);
+    } else if (data.xHandle) {
         userHandle.textContent = '@' + data.xHandle;
     } else {
         userHandle.textContent = 'Connected';
