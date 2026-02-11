@@ -374,14 +374,34 @@ function showPayStep(n) {
     });
 }
 
+let clawnchPriceUsd = null;
+
+async function fetchClawnchPrice() {
+    try {
+        const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be');
+        const data = await r.json();
+        const pair = data.pairs?.[0];
+        if (pair?.priceUsd) {
+            clawnchPriceUsd = parseFloat(pair.priceUsd);
+            document.getElementById('payClawnchPrice').textContent = `$${clawnchPriceUsd.toFixed(6)}`;
+        } else {
+            document.getElementById('payClawnchPrice').textContent = 'Unavailable';
+        }
+    } catch {
+        document.getElementById('payClawnchPrice').textContent = 'Unavailable';
+    }
+}
+
 function openPaymentModal() {
     showPayStep(1);
     modal.classList.remove('hidden');
+    fetchClawnchPrice();
 }
 
 function closePaymentModal() {
     modal.classList.add('hidden');
     document.getElementById('payAmountInput').value = '';
+    document.getElementById('payHumanGets').textContent = '0 CLAWNCH';
     document.getElementById('sendPaymentBtn').disabled = true;
     document.getElementById('sendPaymentBtn').textContent = 'Send Payment';
     document.getElementById('walletPicker').classList.add('hidden');
@@ -397,17 +417,29 @@ modal?.addEventListener('click', (e) => {
     if (e.target === modal) closePaymentModal();
 });
 
-// Amount input updates breakdown
+// Amount input updates breakdown (USD → CLAWNCH conversion)
 document.getElementById('payAmountInput')?.addEventListener('input', (e) => {
-    const amt = parseFloat(e.target.value) || 0;
-    document.getElementById('payHumanGets').textContent = `${amt.toLocaleString()} CLAWNCH`;
-    document.getElementById('sendPaymentBtn').disabled = amt <= 0;
+    const usd = parseFloat(e.target.value) || 0;
+    if (usd > 0 && clawnchPriceUsd > 0) {
+        const clawnch = usd / clawnchPriceUsd;
+        document.getElementById('payHumanGets').textContent = `${Math.floor(clawnch).toLocaleString()} CLAWNCH`;
+    } else {
+        document.getElementById('payHumanGets').textContent = '0 CLAWNCH';
+    }
+    document.getElementById('sendPaymentBtn').disabled = usd <= 0;
 });
 
 // Send payment (handles wallet discovery + connection + tx in one flow)
 async function executeSend(provider) {
     const btn = document.getElementById('sendPaymentBtn');
-    const amount = parseFloat(document.getElementById('payAmountInput').value) || 0;
+    const usdAmount = parseFloat(document.getElementById('payAmountInput').value) || 0;
+    if (!clawnchPriceUsd || clawnchPriceUsd <= 0) {
+        alert('Could not fetch CLAWNCH price. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Send Payment';
+        return;
+    }
+    const amount = Math.floor(usdAmount / clawnchPriceUsd);
 
     try {
         btn.textContent = 'Connecting wallet...';
@@ -494,8 +526,8 @@ async function executeSend(provider) {
 
 document.getElementById('sendPaymentBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('sendPaymentBtn');
-    const amount = parseFloat(document.getElementById('payAmountInput').value) || 0;
-    if (amount <= 0) return;
+    const usd = parseFloat(document.getElementById('payAmountInput').value) || 0;
+    if (usd <= 0) return;
 
     btn.disabled = true;
 
