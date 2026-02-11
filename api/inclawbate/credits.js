@@ -25,18 +25,31 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Verify CLAWNCH transfer on Base chain
+// Verify CLAWNCH transfer on Base chain (with retry + fallback RPC)
+const BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org'
+];
+
+async function rpcCall(method, params) {
+    for (let i = 0; i < BASE_RPCS.length; i++) {
+        try {
+            const resp = await fetch(BASE_RPCS[i], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+            });
+            if (resp.status === 429) continue; // rate limited, try next
+            const data = await resp.json();
+            if (data.result !== undefined) return data.result;
+        } catch (e) { /* try next RPC */ }
+    }
+    return null;
+}
+
 async function verifyDepositTx(txHash) {
-    const resp = await fetch('https://mainnet.base.org', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            jsonrpc: '2.0', id: 1,
-            method: 'eth_getTransactionReceipt',
-            params: [txHash]
-        })
-    });
-    const { result: receipt } = await resp.json();
+    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
     if (!receipt || receipt.status !== '0x1') {
         return { valid: false, reason: 'Transaction failed or not found' };
     }
