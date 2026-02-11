@@ -169,12 +169,24 @@ function renderProfile(p) {
     // Action links
     document.getElementById('skillDocLink').href = `/u/${p.x_handle}/skill`;
 
-    // Own profile: hide Hire Me, show edit
+    // Own profile: hide Hire Me, show edit, check wallet
     const editBtn = document.getElementById('editProfileBtn');
     const hireBtn = document.getElementById('hireCta');
+    const walletBanner = document.getElementById('walletBanner');
     if (isOwnProfile) {
         if (editBtn) editBtn.classList.remove('hidden');
         if (hireBtn) hireBtn.style.display = 'none';
+
+        // Show wallet setup banner if no wallet
+        if (!p.wallet_address && walletBanner) {
+            walletBanner.classList.remove('hidden');
+        }
+
+        // Auto-open edit modal for first-time users (no bio, no skills, no wallet)
+        const isNewUser = !p.bio && (!p.skills || p.skills.length === 0) && !p.wallet_address;
+        if (isNewUser) {
+            setTimeout(() => openEditModal(), 400);
+        }
     }
 
     // Hero mini allocation (visible to everyone)
@@ -345,6 +357,12 @@ async function saveProfile() {
         // Re-render the profile page with new data
         renderProfile(currentProfile);
         closeEditModal();
+
+        // Hide wallet banner if wallet is now set
+        const walletBanner = document.getElementById('walletBanner');
+        if (walletBanner && currentProfile.wallet_address) {
+            walletBanner.classList.add('hidden');
+        }
     } catch (err) {
         alert('Failed to save: ' + err.message);
     } finally {
