@@ -81,7 +81,7 @@ function showConnectScreen() {
 }
 
 connectBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://inclawbate.com/launch?from=extension' });
+    chrome.tabs.create({ url: 'https://inclawbate.com/launch' });
 });
 
 // ── Connected state ──
