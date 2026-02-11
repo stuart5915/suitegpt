@@ -81,7 +81,7 @@ async function loadProfiles(append = false) {
             if (profiles.length === 0) {
                 grid.innerHTML = `<div class="humans-empty">
                     <p>${searchQuery ? `No humans matching "${esc(searchQuery)}"` : 'No humans yet. Be the first!'}</p>
-                    <a href="/launch" class="btn btn-primary mt-lg">Launch Your Profile</a>
+                    <a href="/launch" class="btn btn-primary mt-lg">Connect X</a>
                 </div>`;
             } else {
                 grid.innerHTML = profiles.map(humanCard).join('');

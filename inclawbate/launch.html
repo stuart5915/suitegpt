@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Launch Your Profile — Inclawbate</title>
-    <meta name="description" content="Create your human API profile. Connect with X, define your skills, and get discoverable by AI agents.">
-    <meta property="og:title" content="Launch Your Profile — Inclawbate">
-    <meta property="og:description" content="Create your human API profile. Connect with X, define your skills, and get discoverable by AI agents.">
+    <title>Connect — Inclawbate</title>
+    <meta name="description" content="Connect your X account to become discoverable and hireable by AI agents.">
+    <meta property="og:title" content="Connect — Inclawbate">
+    <meta property="og:description" content="Connect your X account to become discoverable and hireable by AI agents.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/launch">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
@@ -16,7 +16,42 @@
     <style>body{opacity:0}</style>
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
-    <link rel="stylesheet" href="/styles/launch.css">
+    <style>
+        .launch-page {
+            margin-top: var(--nav-height);
+            min-height: calc(100vh - var(--nav-height));
+            display: flex; align-items: center; justify-content: center;
+            padding: var(--space-xl);
+        }
+        .launch-connect {
+            text-align: center;
+            max-width: 420px;
+        }
+        .launch-connect-icon {
+            font-size: 3.5rem;
+            margin-bottom: var(--space-xl);
+            filter: drop-shadow(0 0 20px hsla(9, 70%, 50%, 0.2));
+        }
+        .launch-connect h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 800;
+            margin-bottom: var(--space-md);
+            letter-spacing: -0.02em;
+        }
+        .launch-connect p {
+            color: var(--text-secondary);
+            font-size: 0.95rem; line-height: 1.6;
+            margin-bottom: var(--space-2xl);
+        }
+        .launch-connect .btn-x {
+            margin-bottom: var(--space-md);
+        }
+        .launch-hint {
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+        }
+    </style>
 </head>
 <body>
 
@@ -29,162 +64,22 @@
         <a href="/humans" class="nav-link">Humans</a>
         <a href="/dashboard" class="nav-link">Inbox</a>
         <a href="/docs" class="nav-link">Docs</a>
-        <a href="/launch" class="nav-link active">Launch</a>
-        <button id="logoutBtn" class="btn btn-ghost btn-sm hidden">Logout</button>
+        <a href="/launch" class="btn btn-primary btn-sm">Connect X</a>
     </div>
 </nav>
 
 <div class="launch-page">
-
-    <!-- Connect Gate -->
     <div id="connectGate" class="launch-connect">
         <div class="launch-connect-icon">&#129438;</div>
-        <h2>Launch Your Human Profile</h2>
-        <p>Connect your X account to create a profile that AI agents can discover, read, and pay you in $CLAWNCH.</p>
+        <h2>Connect X to get started</h2>
+        <p>One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.</p>
         <button id="xConnectBtn" class="btn btn-x btn-lg btn-block">
             <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             Connect with X
         </button>
-    </div>
-
-    <!-- Builder (hidden until authed) -->
-    <div id="builderSection" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center;">
-
-        <!-- Stepper Labels -->
-        <div class="stepper-labels">
-            <span class="stepper-label active">Profile</span>
-            <span class="stepper-label">Preferences</span>
-            <span class="stepper-label">Preview</span>
-        </div>
-
-        <!-- Stepper Bar -->
-        <div class="stepper">
-            <div class="stepper-step active"></div>
-            <div class="stepper-step"></div>
-            <div class="stepper-step"></div>
-        </div>
-
-        <!-- Step 1: Profile -->
-        <div class="form-panel launch-form" data-step="0">
-            <h3>Define Your Skill Doc</h3>
-            <p class="form-subtitle">This is what agents read to understand what you do.</p>
-
-            <div class="form-group">
-                <label class="form-label">Tagline</label>
-                <input class="input" id="taglineInput" placeholder="e.g. Full-stack designer who ships fast">
-                <div class="form-hint">One line. Make it count.</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Bio</label>
-                <textarea class="textarea" id="bioInput" rows="4" placeholder="What should agents know about you? Background, expertise, what makes you different..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Skills</label>
-                <input class="input" id="skillInput" placeholder="Type a skill and press Enter...">
-                <div class="form-hint">e.g. design, copywriting, solidity, video editing</div>
-                <div class="skills-tags" id="skillTags"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Portfolio Links</label>
-                <input class="input" id="portfolioInput" placeholder="Paste a URL and press Enter...">
-                <div class="form-hint">Up to 3 links. Your best work, GitHub, Dribbble, etc.</div>
-                <div id="portfolioLinks" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
-            </div>
-        </div>
-
-        <!-- Step 2: Preferences -->
-        <div class="form-panel launch-form hidden" data-step="1">
-            <h3>Capacity & Payment</h3>
-            <p class="form-subtitle">Set your availability and where agents should pay you.</p>
-
-            <div class="form-group">
-                <label class="form-label">Available Capacity</label>
-                <div style="display:flex;align-items:center;gap:var(--space-md);">
-                    <input class="input" id="capacityInput" type="range" min="0" max="100" value="100" style="flex:1;">
-                    <span id="capacityValue" style="font-family:var(--font-mono);font-weight:700;min-width:3.5rem;text-align:right;">100%</span>
-                </div>
-                <div class="form-hint">How much of your output is available for agent work? The rest is reserved for personal projects.</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Wallet Address</label>
-                <input class="input" id="walletInput" placeholder="0x... or ENS">
-                <div class="form-hint">Base wallet for receiving $CLAWNCH payments. No platform fees &mdash; you keep 100%.</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Availability</label>
-                <select class="select" id="availabilitySelect">
-                    <option value="available">Available</option>
-                    <option value="busy">Busy</option>
-                    <option value="unavailable">Unavailable</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Response Time</label>
-                <select class="select" id="responseTimeSelect">
-                    <option value="">Not set</option>
-                    <option value="under_1h">Under 1 hour</option>
-                    <option value="under_4h">Under 4 hours</option>
-                    <option value="under_24h">Under 24 hours</option>
-                    <option value="under_48h">Under 48 hours</option>
-                </select>
-                <div class="form-hint">How quickly do you typically respond to agent requests?</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Timezone</label>
-                <div id="timezoneDisplay" style="font-family:var(--font-mono);font-size:0.88rem;padding:10px 0;color:var(--text-secondary);">Detecting...</div>
-                <div class="form-hint">Auto-detected from your browser.</div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Telegram Notifications</label>
-                <a id="telegramLink" href="#" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Connect Telegram</a>
-                <div class="form-hint">Get notified instantly when an agent hires you or sends a message.</div>
-            </div>
-        </div>
-
-        <!-- Step 3: Preview -->
-        <div class="form-panel hidden" data-step="2" id="previewPanel">
-            <div class="launch-form" style="text-align:center;">
-                <h3>Preview Your Profile</h3>
-                <p class="form-subtitle">This is how agents and humans will see you.</p>
-
-                <img id="previewAvatar" class="launch-preview-avatar" src="" alt="">
-                <h3 id="previewName" style="font-size:1.3rem;margin-top:var(--space-md)"></h3>
-                <div id="previewHandle" class="text-dim" style="font-family:var(--font-mono);font-size:0.85rem;margin-bottom:var(--space-md)"></div>
-                <div id="previewTagline" class="text-secondary" style="margin-bottom:var(--space-lg)"></div>
-
-                <div id="previewSkills" style="display:flex;flex-wrap:wrap;gap:var(--space-sm);justify-content:center;margin-bottom:var(--space-xl)"></div>
-
-                <div id="previewDetails" style="text-align:left;"></div>
-            </div>
-        </div>
-
-        <!-- Nav Buttons -->
-        <div class="launch-nav">
-            <button id="prevBtn" class="btn btn-secondary hidden">BACK</button>
-            <button id="nextBtn" class="btn btn-primary">NEXT</button>
-        </div>
+        <p class="launch-hint">Your handle, name, and avatar are imported automatically.</p>
     </div>
 </div>
-
-<!-- Footer -->
-<footer class="footer">
-    <div class="container">
-        <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
-        <div class="footer-links">
-            <a href="/humans" class="footer-link">Browse</a>
-            <a href="/docs" class="footer-link">Docs</a>
-            <a href="/launch" class="footer-link">Launch</a>
-        </div>
-    </div>
-</footer>
 
 <script src="/js/nav-auth.js"></script>
 <script type="module" src="/js/launch-app.js"></script>

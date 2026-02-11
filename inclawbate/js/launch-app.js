@@ -1,272 +1,45 @@
-// Inclawbate — Launch Page Controller (Capacity Allocation Model)
-import { startXAuth, handleXCallback, getStoredAuth, logout } from './x-auth-client.js';
-import { humansApi } from './humans-api.js';
+// Inclawbate — Launch Page (OAuth handler + redirect)
+// If already authed → redirect to profile
+// If has OAuth code → handle callback → redirect to profile
+// If not authed → show Connect X button
+import { startXAuth, handleXCallback, getStoredAuth } from './x-auth-client.js';
 
-const STEPS = ['profile', 'preferences', 'preview'];
-let currentStep = 0;
-let profile = null;
-let skills = [];
-let portfolioLinks = [];
-
-// DOM refs
 const connectGate = document.getElementById('connectGate');
-const builderSection = document.getElementById('builderSection');
 const connectBtn = document.getElementById('xConnectBtn');
-const stepperSteps = document.querySelectorAll('.stepper-step');
-const stepperLabels = document.querySelectorAll('.stepper-label');
-const formPanels = document.querySelectorAll('.form-panel');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
 
-// ── Init ──
 async function init() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
 
+    // Handle OAuth callback
     if (code) {
         connectGate.querySelector('h2').textContent = 'Connecting...';
-        connectGate.querySelector('p').textContent = 'Exchanging tokens with X...';
+        connectGate.querySelector('p').textContent = 'Setting up your profile...';
         connectBtn.classList.add('hidden');
 
         try {
             const result = await handleXCallback(code, state);
-            profile = result.profile;
-            window.history.replaceState({}, '', '/launch');
-            showBuilder();
+            // Redirect to their profile
+            window.location.href = `/u/${result.profile.x_handle}`;
         } catch (err) {
             connectGate.querySelector('h2').textContent = 'Connection Failed';
             connectGate.querySelector('p').textContent = err.message;
             connectBtn.classList.remove('hidden');
-            connectBtn.textContent = 'Try Again';
+            connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
         }
         return;
     }
 
+    // Already authenticated → go to profile
     const stored = getStoredAuth();
-    if (stored) {
-        profile = stored.profile;
-        skills = profile.skills || [];
-        showBuilder();
+    if (stored && stored.profile && stored.profile.x_handle) {
+        window.location.href = `/u/${stored.profile.x_handle}`;
         return;
     }
 }
 
-function showBuilder() {
-    connectGate.classList.add('hidden');
-    builderSection.classList.remove('hidden');
-
-    // Pre-fill from profile
-    if (profile.bio) document.getElementById('bioInput').value = profile.bio;
-    if (profile.tagline) document.getElementById('taglineInput').value = profile.tagline;
-    if (profile.wallet_address) document.getElementById('walletInput').value = profile.wallet_address;
-    if (profile.available_capacity !== undefined) {
-        document.getElementById('capacityInput').value = profile.available_capacity;
-        document.getElementById('capacityValue').textContent = profile.available_capacity + '%';
-    }
-    if (profile.availability) document.getElementById('availabilitySelect').value = profile.availability;
-    if (profile.response_time) document.getElementById('responseTimeSelect').value = profile.response_time;
-
-    // Auto-detect timezone (use stored value if available)
-    const tz = profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    document.getElementById('timezoneDisplay').textContent = tz;
-
-    // Set Telegram deep link
-    const tgLink = document.getElementById('telegramLink');
-    if (tgLink && profile.x_handle) {
-        tgLink.href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
-    }
-
-    // Pre-fill portfolio links
-    portfolioLinks = profile.portfolio_links || [];
-    renderPortfolioLinks();
-
-    // Render existing skills
-    skills.forEach(s => addSkillTag(s));
-
-    // Show logout button
-    document.getElementById('logoutBtn')?.classList.remove('hidden');
-
-    updateStepper();
-    showStep(0);
-}
-
-// ── Stepper ──
-function updateStepper() {
-    stepperSteps.forEach((el, i) => {
-        el.classList.remove('active', 'done');
-        if (i < currentStep) el.classList.add('done');
-        if (i === currentStep) el.classList.add('active');
-    });
-    stepperLabels.forEach((el, i) => {
-        el.classList.remove('active', 'done');
-        if (i < currentStep) el.classList.add('done');
-        if (i === currentStep) el.classList.add('active');
-    });
-}
-
-function showStep(idx) {
-    currentStep = idx;
-    formPanels.forEach((p, i) => {
-        p.classList.toggle('hidden', i !== idx);
-    });
-    prevBtn.classList.toggle('hidden', idx === 0);
-    nextBtn.textContent = idx === STEPS.length - 1 ? 'PUBLISH PROFILE' : 'NEXT';
-    updateStepper();
-
-    if (idx === STEPS.length - 1) renderPreview();
-}
-
-// ── Skills ──
-function addSkillTag(skill) {
-    if (!skill || skills.includes(skill)) return;
-    skills.push(skill);
-    renderSkillTags();
-}
-
-function removeSkill(skill) {
-    skills = skills.filter(s => s !== skill);
-    renderSkillTags();
-}
-
-function renderSkillTags() {
-    const container = document.getElementById('skillTags');
-    container.innerHTML = skills.map(s =>
-        `<span class="skill-tag">${esc(s)}<button type="button" class="skill-tag-remove" data-skill="${esc(s)}">&times;</button></span>`
-    ).join('');
-
-    container.querySelectorAll('.skill-tag-remove').forEach(btn => {
-        btn.addEventListener('click', () => removeSkill(btn.dataset.skill));
-    });
-}
-
-// ── Portfolio Links ──
-function addPortfolioLink(url) {
-    if (!url || portfolioLinks.length >= 3 || portfolioLinks.includes(url)) return;
-    if (!/^https?:\/\/.+/.test(url)) return;
-    portfolioLinks.push(url);
-    renderPortfolioLinks();
-}
-
-function renderPortfolioLinks() {
-    const container = document.getElementById('portfolioLinks');
-    container.innerHTML = portfolioLinks.map(u => {
-        const display = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        return `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
-            <a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--lobster-300);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(display)}</a>
-            <button type="button" class="portfolio-remove" data-url="${esc(u)}" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0 4px;">&times;</button>
-        </div>`;
-    }).join('');
-
-    container.querySelectorAll('.portfolio-remove').forEach(btn => {
-        btn.addEventListener('click', () => {
-            portfolioLinks = portfolioLinks.filter(u => u !== btn.dataset.url);
-            renderPortfolioLinks();
-        });
-    });
-}
-
-// ── Preview ──
-function renderPreview() {
-    document.getElementById('previewAvatar').src = profile.x_avatar_url || '';
-    document.getElementById('previewName').textContent = profile.x_name || profile.x_handle;
-    document.getElementById('previewHandle').textContent = `@${profile.x_handle}`;
-    document.getElementById('previewTagline').textContent = document.getElementById('taglineInput').value || 'No tagline set';
-
-    const skillsHtml = skills.map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
-    document.getElementById('previewSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills added</span>';
-
-    const capacity = document.getElementById('capacityInput').value || '100';
-    const wallet = document.getElementById('walletInput').value;
-    const avail = document.getElementById('availabilitySelect').value;
-    const respTime = document.getElementById('responseTimeSelect').value;
-    const tz = document.getElementById('timezoneDisplay').textContent;
-
-    const respLabels = { under_1h: 'Under 1 hour', under_4h: 'Under 4 hours', under_24h: 'Under 24 hours', under_48h: 'Under 48 hours' };
-
-    let detailsHtml = `
-        <div class="profile-details" style="margin-top:var(--space-lg);">
-            <div class="profile-detail">
-                <div class="profile-detail-label">Available Capacity</div>
-                <div class="profile-detail-value">${esc(capacity)}%</div>
-            </div>
-            <div class="profile-detail">
-                <div class="profile-detail-label">Availability</div>
-                <div class="profile-detail-value">${esc(avail)}</div>
-            </div>
-    `;
-    if (respTime) {
-        detailsHtml += `
-            <div class="profile-detail">
-                <div class="profile-detail-label">Response Time</div>
-                <div class="profile-detail-value">${esc(respLabels[respTime] || respTime)}</div>
-            </div>
-        `;
-    }
-    if (tz) {
-        detailsHtml += `
-            <div class="profile-detail">
-                <div class="profile-detail-label">Timezone</div>
-                <div class="profile-detail-value">${esc(tz)}</div>
-            </div>
-        `;
-    }
-    if (wallet) {
-        const short = wallet.length > 12 ? wallet.slice(0, 6) + '...' + wallet.slice(-4) : wallet;
-        detailsHtml += `
-            <div class="profile-detail">
-                <div class="profile-detail-label">Wallet</div>
-                <div class="profile-detail-value" style="font-family:var(--font-mono);font-size:0.8rem">${esc(short)}</div>
-            </div>
-        `;
-    }
-    if (portfolioLinks.length > 0) {
-        detailsHtml += `<div class="profile-detail"><div class="profile-detail-label">Portfolio</div><div class="profile-detail-value">${portfolioLinks.length} link${portfolioLinks.length > 1 ? 's' : ''}</div></div>`;
-    }
-    detailsHtml += '</div>';
-    document.getElementById('previewDetails').innerHTML = detailsHtml;
-}
-
-// ── Publish ──
-async function publishProfile() {
-    nextBtn.disabled = true;
-    nextBtn.textContent = 'PUBLISHING...';
-
-    try {
-        const responseTime = document.getElementById('responseTimeSelect').value;
-        const updates = {
-            tagline: document.getElementById('taglineInput').value.trim(),
-            bio: document.getElementById('bioInput').value.trim(),
-            skills,
-            available_capacity: parseInt(document.getElementById('capacityInput').value) || 100,
-            wallet_address: document.getElementById('walletInput').value.trim() || null,
-            availability: document.getElementById('availabilitySelect').value,
-            response_time: responseTime || undefined,
-            timezone: document.getElementById('timezoneDisplay').textContent || undefined,
-            portfolio_links: portfolioLinks.length > 0 ? portfolioLinks : undefined
-        };
-
-        const result = await humansApi.updateProfile(updates);
-        profile = result.profile;
-        localStorage.setItem('inclawbate_profile', JSON.stringify(profile));
-
-        // Redirect to their profile page
-        window.location.href = `/u/${profile.x_handle}`;
-    } catch (err) {
-        nextBtn.disabled = false;
-        nextBtn.textContent = 'PUBLISH PROFILE';
-        alert('Failed to publish: ' + err.message);
-    }
-}
-
-// ── Escape helper ──
-function esc(str) {
-    const div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
-}
-
-// ── Events ──
+// Connect button → start OAuth
 connectBtn?.addEventListener('click', async () => {
     connectBtn.disabled = true;
     connectBtn.textContent = 'Redirecting to X...';
@@ -279,49 +52,4 @@ connectBtn?.addEventListener('click', async () => {
     }
 });
 
-document.getElementById('capacityInput')?.addEventListener('input', (e) => {
-    document.getElementById('capacityValue').textContent = e.target.value + '%';
-});
-
-document.getElementById('skillInput')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        const val = e.target.value.trim().replace(/,/g, '');
-        if (val) {
-            addSkillTag(val.toLowerCase());
-            e.target.value = '';
-        }
-    }
-});
-
-document.getElementById('portfolioInput')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const val = e.target.value.trim();
-        if (val) {
-            addPortfolioLink(val);
-            e.target.value = '';
-        }
-    }
-});
-
-prevBtn?.addEventListener('click', () => {
-    if (currentStep > 0) showStep(currentStep - 1);
-});
-
-nextBtn?.addEventListener('click', () => {
-    if (currentStep === STEPS.length - 1) {
-        publishProfile();
-    } else {
-        showStep(currentStep + 1);
-    }
-});
-
-// Logout handler
-document.getElementById('logoutBtn')?.addEventListener('click', () => {
-    logout();
-    window.location.reload();
-});
-
-// Boot
 init();
