@@ -82,24 +82,7 @@ function renderProfile(p) {
     document.getElementById('profileHandle').innerHTML = `<a href="https://x.com/${esc(p.x_handle)}" target="_blank" rel="noopener">@${esc(p.x_handle)}</a>`;
     document.getElementById('profileTagline').textContent = p.tagline || '';
 
-    // Availability badge
-    const availEl = document.getElementById('profileAvailability');
-    availEl.textContent = p.availability || 'available';
-    availEl.className = `badge badge-${p.availability === 'available' ? 'green' : p.availability === 'busy' ? 'yellow' : 'dim'}`;
-
-    // Capacity badge (market-driven: allocated if any agents are paying)
-    const capacityBadge = document.getElementById('profileCapacityBadge');
     const isAllocated = currentAllocation.length > 0;
-    capacityBadge.textContent = isAllocated ? 'Fully allocated' : 'Available';
-    capacityBadge.className = `badge ${isAllocated ? 'badge-yellow' : 'badge-green'}`;
-
-    // Hire count badge
-    const hireCount = p.hire_count || 0;
-    const hireBadge = document.getElementById('profileHireCount');
-    if (hireCount > 0 && hireBadge) {
-        hireBadge.textContent = `Hired ${hireCount} time${hireCount !== 1 ? 's' : ''}`;
-        hireBadge.style.display = '';
-    }
 
     // Skills
     const skillsHtml = (p.skills || []).map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
