@@ -1,11 +1,12 @@
-// Inclawbate — Launch Page (OAuth handler + redirect)
-// If already authed → redirect to profile
-// If has OAuth code → handle callback → redirect to profile
-// If not authed → show Connect X button
+// Inclawbate — Launch Page (OAuth handler + wallet gate + redirect)
 import { startXAuth, handleXCallback, getStoredAuth } from './x-auth-client.js';
 
 const connectGate = document.getElementById('connectGate');
 const connectBtn = document.getElementById('xConnectBtn');
+const walletGate = document.getElementById('walletGate');
+
+let currentProfile = null;
+let currentToken = null;
 
 function getPostLoginRedirect() {
     const r = sessionStorage.getItem('inclawbate_redirect');
@@ -13,25 +14,53 @@ function getPostLoginRedirect() {
     return r || null;
 }
 
+// ── Post-auth: check wallet, then redirect or show wallet step ──
+function afterAuth(profile, token, dest) {
+    currentProfile = profile;
+    currentToken = token;
+
+    // Post API key for extension auth-relay
+    if (profile.api_key) {
+        window.postMessage({
+            type: 'inclawbate-auth',
+            apiKey: profile.api_key,
+            xHandle: profile.x_handle
+        }, '*');
+    }
+
+    // If wallet already linked, go straight through
+    if (profile.wallet_address) {
+        setTimeout(() => {
+            window.location.href = dest || `/u/${profile.x_handle}`;
+        }, 500); // small delay for auth-relay
+        return;
+    }
+
+    // No wallet — show wallet step
+    connectGate.classList.add('hidden');
+    walletGate.classList.remove('hidden');
+
+    // Store dest so wallet continue button knows where to go
+    walletGate.dataset.dest = dest || `/u/${profile.x_handle}`;
+}
+
 async function init() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
 
-    // Stash redirect param before OAuth clears the URL
     const redirectParam = params.get('redirect');
     if (redirectParam && /^\/[a-z]/.test(redirectParam)) {
         sessionStorage.setItem('inclawbate_redirect', redirectParam);
     }
 
-    // X sent back an error (user denied, rate limit, etc.) — don't auto-retry
+    // X sent back an error
     if (params.has('error')) {
         const desc = params.get('error_description') || 'X denied access. Please try again.';
         connectGate.querySelector('h2').textContent = 'Connection Failed';
         connectGate.querySelector('p').textContent = desc;
         connectBtn.classList.remove('hidden');
         connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
-        // Clean URL
         window.history.replaceState({}, '', '/launch');
         return;
     }
@@ -44,52 +73,23 @@ async function init() {
 
         try {
             const result = await handleXCallback(code, state);
-            // Post API key for extension auth-relay to pick up
-            if (result.profile && result.profile.api_key) {
-                window.postMessage({
-                    type: 'inclawbate-auth',
-                    apiKey: result.profile.api_key,
-                    xHandle: result.profile.x_handle
-                }, '*');
-            }
-            // Delay so auth-relay content script can relay to extension
-            await new Promise(r => setTimeout(r, 1000));
-            // Redirect to stashed destination or profile
-            window.location.href = getPostLoginRedirect() || `/u/${result.profile.x_handle}`;
+            const dest = getPostLoginRedirect();
+            afterAuth(result.profile, result.token, dest);
         } catch (err) {
             connectGate.querySelector('h2').textContent = 'Connection Failed';
             connectGate.querySelector('p').textContent = err.message;
             connectBtn.classList.remove('hidden');
             connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
-            // Clean URL so refresh doesn't replay stale code
             window.history.replaceState({}, '', '/launch');
         }
         return;
     }
 
-    // Already authenticated → post API key for extension, then redirect
+    // Already authenticated
     const stored = getStoredAuth();
     if (stored && stored.profile && stored.profile.x_handle && !params.has('switch')) {
-        if (stored.profile.api_key) {
-            window.postMessage({
-                type: 'inclawbate-auth',
-                apiKey: stored.profile.api_key,
-                xHandle: stored.profile.x_handle
-            }, '*');
-            // Give auth-relay time to relay to extension before navigating away
-            await new Promise(r => setTimeout(r, 1000));
-        }
         const dest = getPostLoginRedirect() || redirectParam;
-        if (dest) {
-            window.location.href = dest;
-        } else {
-            // Show success message (extension opened this tab — don't bounce to profile)
-            connectGate.querySelector('h2').textContent = 'Connected!';
-            connectGate.querySelector('p').textContent = `Signed in as @${stored.profile.x_handle}. You can close this tab and use the extension.`;
-            connectBtn.classList.remove('hidden');
-            connectBtn.innerHTML = `Go to profile →`;
-            connectBtn.onclick = () => { window.location.href = `/u/${stored.profile.x_handle}`; };
-        }
+        afterAuth(stored.profile, stored.token, dest);
         return;
     }
 
@@ -109,7 +109,7 @@ async function init() {
         return;
     }
 
-    // Not authed, no code → auto-start OAuth (no double click)
+    // Not authed, no code → auto-start OAuth
     connectGate.querySelector('h2').textContent = 'Redirecting to X...';
     connectGate.querySelector('p').textContent = '';
     connectBtn.classList.add('hidden');
@@ -118,14 +118,13 @@ async function init() {
     try {
         await startXAuth();
     } catch (err) {
-        // Fallback: show the button if auto-redirect fails
         connectGate.querySelector('h2').textContent = 'Connect X to get started';
         connectGate.querySelector('p').textContent = 'One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.';
         connectBtn.classList.remove('hidden');
     }
 }
 
-// Connect button → start OAuth
+// ── Connect X button ──
 connectBtn?.addEventListener('click', async () => {
     connectBtn.disabled = true;
     connectBtn.textContent = 'Redirecting to X...';
@@ -136,6 +135,91 @@ connectBtn?.addEventListener('click', async () => {
         connectBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Try Again`;
         alert('Failed: ' + err.message);
     }
+});
+
+// ── Wallet step ──
+const walletConnectBtn = document.getElementById('walletConnectBtn');
+const walletContinueBtn = document.getElementById('walletContinueBtn');
+const walletDisplay = document.getElementById('walletDisplay');
+const walletError = document.getElementById('walletError');
+
+walletConnectBtn?.addEventListener('click', async () => {
+    walletError.textContent = '';
+
+    if (!window.ethereum) {
+        walletError.textContent = 'No wallet detected. Install MetaMask or Coinbase Wallet.';
+        return;
+    }
+
+    walletConnectBtn.disabled = true;
+    walletConnectBtn.textContent = 'Connecting...';
+
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const address = accounts[0];
+
+        // Switch to Base
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x2105' }]
+            });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base',
+                        rpcUrls: ['https://mainnet.base.org'],
+                        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+            }
+        }
+
+        // Save wallet to profile
+        const token = localStorage.getItem('inclawbate_token');
+        const resp = await fetch('/api/inclawbate/humans', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ wallet_address: address })
+        });
+
+        if (!resp.ok) {
+            throw new Error('Failed to save wallet');
+        }
+
+        // Update stored profile
+        try {
+            const stored = JSON.parse(localStorage.getItem('inclawbate_profile') || '{}');
+            stored.wallet_address = address;
+            localStorage.setItem('inclawbate_profile', JSON.stringify(stored));
+        } catch (e) {}
+
+        // Show connected state
+        const short = address.slice(0, 6) + '...' + address.slice(-4);
+        walletDisplay.textContent = short;
+        walletDisplay.classList.remove('hidden');
+        walletConnectBtn.classList.add('hidden');
+        walletContinueBtn.classList.remove('hidden');
+
+    } catch (err) {
+        if (err.code !== 4001) {
+            walletError.textContent = err.message || 'Wallet connection failed';
+        }
+        walletConnectBtn.disabled = false;
+        walletConnectBtn.textContent = 'Connect Wallet';
+    }
+});
+
+walletContinueBtn?.addEventListener('click', () => {
+    const dest = walletGate.dataset.dest || '/';
+    window.location.href = dest;
 });
 
 init();
