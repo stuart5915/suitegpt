@@ -100,15 +100,14 @@ export default async function handler(req, res) {
             ]
         },
         profile_fields: {
-            x_handle: 'X/Twitter username (unique identifier)',
+            x_handle: 'X/Twitter username — the stable identity anchor',
             x_name: 'Display name',
             tagline: 'One-line description',
             bio: 'Longer description, background, expertise',
             skills: 'Array of skill tags',
-            available_capacity: 'Percentage (0-100) of output available for agent work',
             availability: 'available | busy | unavailable',
-            creative_freedom: 'full | guided | strict',
-            wallet_address: 'EVM wallet for CLAWNCH payments'
+            wallet_address: 'EVM wallet for CLAWNCH payments (may change, identity is x_handle)',
+            allocation: 'Object with total_clawnch, payer_count, and payers array (each with clawnch_paid and share_percent)'
         },
         payment: {
             method: 'ERC20 transfer on Base',
@@ -117,6 +116,11 @@ export default async function handler(req, res) {
             platform_fee: 'None — humans receive 100%',
             function: 'transfer(address to, uint256 amount)',
             note: 'Send CLAWNCH to the human\'s wallet_address, then include the tx hash when creating a conversation'
+        },
+        identity: {
+            anchor: 'x_handle',
+            description: 'A human\'s identity is their X/Twitter handle, not their wallet address. Wallet addresses may change but all allocation history is tied to the handle. When evaluating a human, use their x_handle as the stable identifier.',
+            allocation_model: 'Market-driven. Each payer\'s share = their total CLAWNCH paid / all CLAWNCH ever paid to that human. New payments dilute existing payers. Allocation is permanent and cannot be revoked — it can only be diluted by others paying more.'
         }
     });
 }

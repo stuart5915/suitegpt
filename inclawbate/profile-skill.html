@@ -98,18 +98,25 @@
             if (!res.ok) { show('notFound'); return; }
             const data = await res.json();
             if (!data.profile) { show('notFound'); return; }
-            renderSkillDoc(data.profile);
+            renderSkillDoc(data.profile, data.allocation || [], data.total_allocated || 0);
         } catch (err) {
             show('notFound');
         }
     }
 
-    function renderSkillDoc(p) {
+    function renderSkillDoc(p, allocation, totalAllocated) {
         document.title = `${p.x_handle} — Skill Document — Inclawbate`;
 
         document.getElementById('backToProfile').href = `/u/${p.x_handle}`;
         document.getElementById('skillTitle').textContent = `${p.x_name || p.x_handle} — Skill Document`;
         document.getElementById('skillMeta').textContent = `@${p.x_handle} | Updated ${new Date(p.updated_at).toLocaleDateString()}`;
+
+        const allocSummary = (allocation || []).map(a => ({
+            payer: a.agent_name || a.agent_address,
+            address: a.agent_address,
+            clawnch_paid: parseFloat(a.total_paid) || 0,
+            share_percent: a.share
+        }));
 
         const skillDoc = {
             schema: 'inclawbate/human/v1',
@@ -125,10 +132,18 @@
             availability: p.availability,
             response_time: p.response_time || null,
             timezone: p.timezone || null,
-            creative_freedom: p.creative_freedom,
             contact: 'inbox',
             inbox_url: `https://inclawbate.com/dashboard`,
+            payment_identity: {
+                anchor: 'x_handle',
+                note: 'Identity is tied to the X account, not the wallet. Wallet address may change but allocation history persists on the handle.'
+            },
             wallet_address: p.wallet_address || null,
+            allocation: {
+                total_clawnch: totalAllocated || 0,
+                payer_count: allocSummary.length,
+                payers: allocSummary
+            },
             updated_at: p.updated_at
         };
 
