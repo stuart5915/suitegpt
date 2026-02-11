@@ -52,8 +52,8 @@ async function init() {
                     xHandle: result.profile.x_handle
                 }, '*');
             }
-            // Small delay so auth-relay content script can relay to extension
-            await new Promise(r => setTimeout(r, 300));
+            // Delay so auth-relay content script can relay to extension
+            await new Promise(r => setTimeout(r, 1000));
             // Redirect to stashed destination or profile
             window.location.href = getPostLoginRedirect() || `/u/${result.profile.x_handle}`;
         } catch (err) {
@@ -76,9 +76,20 @@ async function init() {
                 apiKey: stored.profile.api_key,
                 xHandle: stored.profile.x_handle
             }, '*');
-            await new Promise(r => setTimeout(r, 300));
+            // Give auth-relay time to relay to extension before navigating away
+            await new Promise(r => setTimeout(r, 1000));
         }
-        window.location.href = getPostLoginRedirect() || redirectParam || `/u/${stored.profile.x_handle}`;
+        const dest = getPostLoginRedirect() || redirectParam;
+        if (dest) {
+            window.location.href = dest;
+        } else {
+            // Show success message (extension opened this tab — don't bounce to profile)
+            connectGate.querySelector('h2').textContent = 'Connected!';
+            connectGate.querySelector('p').textContent = `Signed in as @${stored.profile.x_handle}. You can close this tab and use the extension.`;
+            connectBtn.classList.remove('hidden');
+            connectBtn.innerHTML = `Go to profile →`;
+            connectBtn.onclick = () => { window.location.href = `/u/${stored.profile.x_handle}`; };
+        }
         return;
     }
 
