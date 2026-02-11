@@ -98,20 +98,26 @@ export default async function handler(req, res) {
         try {
             const { id, status, direction } = req.query;
 
-            // Look up user's wallet address (needed for outbound queries)
-            let userWallet = null;
+            // Look up user's wallets (primary + linked)
+            let allWallets = [];
             if (direction === 'outbound' || id) {
                 const { data: profile } = await supabase
                     .from('human_profiles')
-                    .select('wallet_address')
+                    .select('wallet_address, linked_wallets')
                     .eq('id', user.sub)
                     .single();
-                userWallet = profile?.wallet_address?.toLowerCase() || null;
+                if (profile?.wallet_address) allWallets.push(profile.wallet_address.toLowerCase());
+                if (Array.isArray(profile?.linked_wallets)) {
+                    profile.linked_wallets.forEach(w => {
+                        const lower = w.toLowerCase();
+                        if (!allWallets.includes(lower)) allWallets.push(lower);
+                    });
+                }
             }
 
             // Single conversation with messages
             if (id) {
-                // Allow access if human_id matches OR user's wallet matches agent_address
+                // Allow access if human_id matches OR any user wallet matches agent_address
                 let convo = null;
                 const { data: c1 } = await supabase
                     .from('inclawbate_conversations')
@@ -121,14 +127,16 @@ export default async function handler(req, res) {
                     .single();
                 convo = c1;
 
-                if (!convo && userWallet) {
-                    const { data: c2 } = await supabase
-                        .from('inclawbate_conversations')
-                        .select('*')
-                        .eq('id', id)
-                        .eq('agent_address', userWallet)
-                        .single();
-                    convo = c2;
+                if (!convo && allWallets.length > 0) {
+                    for (const w of allWallets) {
+                        const { data: c2 } = await supabase
+                            .from('inclawbate_conversations')
+                            .select('*')
+                            .eq('id', id)
+                            .eq('agent_address', w)
+                            .single();
+                        if (c2) { convo = c2; break; }
+                    }
                 }
 
                 if (!convo) {
@@ -148,16 +156,16 @@ export default async function handler(req, res) {
                 return res.status(200).json({ conversation: convo, messages: messages || [] });
             }
 
-            // Outbound: conversations where user is the payer (agent_address = wallet)
+            // Outbound: conversations where user is the payer (agent_address matches any wallet)
             if (direction === 'outbound') {
-                if (!userWallet) {
+                if (allWallets.length === 0) {
                     return res.status(200).json({ conversations: [], total: 0 });
                 }
 
                 const { data: convos, count: outCount, error: outErr } = await supabase
                     .from('inclawbate_conversations')
                     .select('*', { count: 'exact' })
-                    .eq('agent_address', userWallet)
+                    .in('agent_address', allWallets)
                     .order('last_message_at', { ascending: false });
 
                 if (outErr) {

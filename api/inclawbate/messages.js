@@ -68,15 +68,19 @@ export default async function handler(req, res) {
                 return res.status(404).json({ error: 'Conversation not found' });
             }
 
-            // Check authorization: human_id match OR user's wallet matches agent_address
+            // Check authorization: human_id match OR any user wallet matches agent_address
             if (convo.human_id !== user.sub) {
                 const { data: prof } = await supabase
                     .from('human_profiles')
-                    .select('wallet_address')
+                    .select('wallet_address, linked_wallets')
                     .eq('id', user.sub)
                     .single();
-                const wallet = prof?.wallet_address?.toLowerCase();
-                if (!wallet || convo.agent_address !== wallet) {
+                const wallets = [];
+                if (prof?.wallet_address) wallets.push(prof.wallet_address.toLowerCase());
+                if (Array.isArray(prof?.linked_wallets)) {
+                    prof.linked_wallets.forEach(w => wallets.push(w.toLowerCase()));
+                }
+                if (!wallets.includes(convo.agent_address)) {
                     return res.status(403).json({ error: 'Not your conversation' });
                 }
             }
@@ -150,15 +154,19 @@ export default async function handler(req, res) {
                 if (!user) {
                     return res.status(401).json({ error: 'Authentication required' });
                 }
-                // Allow if human_id matches OR wallet matches agent_address (payer)
+                // Allow if human_id matches OR any wallet matches agent_address (payer)
                 if (convo.human_id !== user.sub) {
                     const { data: prof } = await supabase
                         .from('human_profiles')
-                        .select('wallet_address')
+                        .select('wallet_address, linked_wallets')
                         .eq('id', user.sub)
                         .single();
-                    const wallet = prof?.wallet_address?.toLowerCase();
-                    if (!wallet || convo.agent_address !== wallet) {
+                    const wallets = [];
+                    if (prof?.wallet_address) wallets.push(prof.wallet_address.toLowerCase());
+                    if (Array.isArray(prof?.linked_wallets)) {
+                        prof.linked_wallets.forEach(w => wallets.push(w.toLowerCase()));
+                    }
+                    if (!wallets.includes(convo.agent_address)) {
                         return res.status(403).json({ error: 'Not authorized' });
                     }
                 }
@@ -169,11 +177,15 @@ export default async function handler(req, res) {
                 }
                 const { data: prof } = await supabase
                     .from('human_profiles')
-                    .select('wallet_address')
+                    .select('wallet_address, linked_wallets')
                     .eq('id', user.sub)
                     .single();
-                const wallet = prof?.wallet_address?.toLowerCase();
-                if (!wallet || convo.agent_address !== wallet) {
+                const wallets = [];
+                if (prof?.wallet_address) wallets.push(prof.wallet_address.toLowerCase());
+                if (Array.isArray(prof?.linked_wallets)) {
+                    prof.linked_wallets.forEach(w => wallets.push(w.toLowerCase()));
+                }
+                if (!wallets.includes(convo.agent_address)) {
                     return res.status(403).json({ error: 'Not authorized' });
                 }
             }
