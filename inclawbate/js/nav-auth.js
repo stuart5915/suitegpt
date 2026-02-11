@@ -1,4 +1,4 @@
-// Inclawbate — Nav Auth State + Unread Badge
+// Inclawbate — Nav Auth State + Unread Badge + Disconnect
 // Swaps "Launch Profile" for avatar+handle when logged in
 // Shows unread badge on Inbox link
 (function() {
@@ -13,32 +13,65 @@
         const navLinks = document.querySelector('.nav-links');
         if (!navLinks) return;
 
-        // Swap "Launch Profile" for avatar+handle
+        // Swap "Launch Profile" for avatar+handle with dropdown
         const launchBtn = navLinks.querySelector('a[href="/launch"]');
         if (launchBtn) {
-            const userLink = document.createElement('a');
-            userLink.href = `/u/${encodeURIComponent(profile.x_handle)}`;
-            userLink.className = 'nav-user';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nav-user-wrap';
+
+            const userBtn = document.createElement('button');
+            userBtn.className = 'nav-user';
+            userBtn.type = 'button';
 
             if (profile.x_avatar_url) {
                 const img = document.createElement('img');
                 img.src = profile.x_avatar_url;
                 img.className = 'nav-avatar';
                 img.alt = '';
-                userLink.appendChild(img);
+                userBtn.appendChild(img);
             } else {
                 const span = document.createElement('span');
                 span.className = 'nav-avatar-fallback';
                 span.textContent = (profile.x_name || profile.x_handle || '?')[0].toUpperCase();
-                userLink.appendChild(span);
+                userBtn.appendChild(span);
             }
 
             const handleSpan = document.createElement('span');
             handleSpan.className = 'nav-handle';
             handleSpan.textContent = `@${profile.x_handle}`;
-            userLink.appendChild(handleSpan);
+            userBtn.appendChild(handleSpan);
 
-            launchBtn.replaceWith(userLink);
+            // Dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'nav-dropdown';
+            dropdown.innerHTML = `
+                <a href="/u/${encodeURIComponent(profile.x_handle)}" class="nav-dropdown-item">Profile</a>
+                <a href="/dashboard" class="nav-dropdown-item">Inbox</a>
+                <button type="button" class="nav-dropdown-item nav-disconnect">Disconnect</button>
+            `;
+
+            wrapper.appendChild(userBtn);
+            wrapper.appendChild(dropdown);
+            launchBtn.replaceWith(wrapper);
+
+            // Toggle dropdown
+            userBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrapper.classList.toggle('open');
+            });
+
+            // Close on outside click
+            document.addEventListener('click', () => {
+                wrapper.classList.remove('open');
+            });
+
+            // Disconnect
+            dropdown.querySelector('.nav-disconnect').addEventListener('click', () => {
+                localStorage.removeItem('inclawbate_token');
+                localStorage.removeItem('inclawbate_profile');
+                localStorage.removeItem('inclawbate_last_inbox');
+                window.location.reload();
+            });
         }
 
         // Check for unread conversations
@@ -47,7 +80,6 @@
         const inboxLink = navLinks.querySelector('a[href="/dashboard"]');
         if (!inboxLink) return;
 
-        // Make inbox link a positioned container for the badge
         inboxLink.style.position = 'relative';
 
         fetch('/api/inclawbate/conversations', {
@@ -69,7 +101,7 @@
                 inboxLink.appendChild(badge);
             }
         })
-        .catch(() => {}); // silent fail
+        .catch(() => {});
 
     } catch (e) {
         // Silently fail
