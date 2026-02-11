@@ -24,39 +24,50 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function generateReply({ tweetText, tweetAuthor, threadContext }) {
-    const settings = await chrome.storage.sync.get({
-        apiUrl: DEFAULT_API_URL,
-        tone: 'casual',
-        persona: '',
-        goals: '',
-        topics: '',
-        maxLength: 280,
-        style: ''
-    });
+    const data = await chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', 'tone', 'persona', 'goals', 'topics', 'maxLength', 'style']);
 
-    const response = await fetch(settings.apiUrl, {
+    let params;
+    if (data.profiles && data.activeProfile && data.profiles[data.activeProfile]) {
+        // Profile-aware path
+        const prof = data.profiles[data.activeProfile];
+        params = {
+            tone: prof.tone || 'casual',
+            persona: prof.persona || '',
+            goals: prof.goals || '',
+            topics: prof.topics || '',
+            maxLength: prof.maxLength || 280,
+            style: prof.style || ''
+        };
+    } else {
+        // Backwards-compat: flat keys (pre-migration)
+        params = {
+            tone: data.tone || 'casual',
+            persona: data.persona || '',
+            goals: data.goals || '',
+            topics: data.topics || '',
+            maxLength: data.maxLength || 280,
+            style: data.style || ''
+        };
+    }
+
+    const apiUrl = data.apiUrl || DEFAULT_API_URL;
+
+    const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             tweetText,
             tweetAuthor,
             threadContext,
-            parameters: {
-                tone: settings.tone,
-                persona: settings.persona,
-                goals: settings.goals,
-                topics: settings.topics,
-                maxLength: settings.maxLength,
-                style: settings.style
-            }
+            parameters: params
         })
     });
 
-    const data = await response.json();
+    const result = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate reply');
+        throw new Error(result.error || 'Failed to generate reply');
     }
 
-    return data;
+    return result;
 }
