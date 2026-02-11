@@ -115,6 +115,14 @@ function renderProfile(p) {
 
     document.getElementById('profileDetails').innerHTML = detailsHtml.join('') || '<p class="text-dim">No additional details.</p>';
 
+    // X timeline feed
+    const feedSection = document.getElementById('feedSection');
+    const timelineEl = document.getElementById('xTimeline');
+    if (feedSection && timelineEl && p.x_handle) {
+        timelineEl.href = `https://x.com/${p.x_handle}`;
+        feedSection.style.display = '';
+    }
+
     // Action links
     document.getElementById('skillDocLink').href = `/u/${p.x_handle}/skill`;
 
