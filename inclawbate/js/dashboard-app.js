@@ -1,4 +1,5 @@
 // Inclawbate — Dashboard Controller (Inbox + Chat)
+// Capacity is market-driven: agent share = total CLAWNCH paid / all CLAWNCH paid
 import { getStoredAuth, logout } from './x-auth-client.js';
 
 const API_BASE = '/api/inclawbate';
@@ -36,6 +37,28 @@ function formatTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+// ── Agent Shares (market-driven) ──
+// Groups all payments by agent_address across all conversations
+function getAgentShares() {
+    const agentTotals = {};
+    conversations.forEach(c => {
+        const addr = c.agent_address;
+        if (!addr) return;
+        if (!agentTotals[addr]) {
+            agentTotals[addr] = { total_paid: 0, agent_name: c.agent_name };
+        }
+        agentTotals[addr].total_paid += parseFloat(c.payment_amount) || 0;
+        if (c.agent_name) agentTotals[addr].agent_name = c.agent_name;
+    });
+
+    const totalPaid = Object.values(agentTotals).reduce((sum, a) => sum + a.total_paid, 0);
+    const shares = {};
+    Object.entries(agentTotals).forEach(([addr, a]) => {
+        shares[addr] = totalPaid > 0 ? Math.round((a.total_paid / totalPaid) * 100) : 0;
+    });
+    return { shares, totalPaid };
+}
+
 // ── Init ──
 function init() {
     const auth = getStoredAuth();
@@ -49,18 +72,13 @@ function init() {
     // Mark inbox as visited (clears unread badge)
     localStorage.setItem('inclawbate_last_inbox', new Date().toISOString());
 
-    // Set capacity from stored profile
-    const profile = auth.profile;
-    const capacity = profile.available_capacity !== undefined ? profile.available_capacity : 100;
-    document.getElementById('statCapacity').textContent = capacity + '%';
-
     // Fetch fresh profile from API to check Telegram status
+    const profile = auth.profile;
     fetch(`/api/inclawbate/humans?handle=${profile.x_handle}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
             if (!data || !data.profile) return;
             const fresh = data.profile;
-            // Update localStorage with fresh data
             localStorage.setItem('inclawbate_profile', JSON.stringify(fresh));
             if (fresh.telegram_chat_id) {
                 document.getElementById('telegramBar').classList.add('hidden');
@@ -71,7 +89,6 @@ function init() {
             }
         })
         .catch(() => {
-            // Fallback to localStorage
             if (profile.telegram_chat_id) {
                 document.getElementById('telegramConnected').classList.remove('hidden');
             } else {
@@ -98,22 +115,13 @@ async function loadConversations() {
 }
 
 function updateStats() {
-    const active = conversations.filter(c => c.status === 'active').length;
-    const totalEarnings = conversations.reduce((sum, c) => sum + (parseFloat(c.payment_amount) || 0), 0);
-    document.getElementById('statConversations').textContent = active;
-    document.getElementById('statEarnings').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString() : '0';
-    document.getElementById('statCapacity').textContent = active > 0 ? '0%' : '100%';
-}
+    const { shares, totalPaid } = getAgentShares();
+    const uniqueAgents = Object.keys(shares).filter(addr => shares[addr] >= 1).length;
+    const allocated = totalPaid > 0 ? 100 : 0;
 
-// Calculate payment-weighted capacity shares for active conversations
-function getCapacityShares() {
-    const active = conversations.filter(c => c.status === 'active');
-    const totalPayment = active.reduce((sum, c) => sum + Math.max(parseFloat(c.payment_amount) || 0, 1), 0);
-    const shares = {};
-    active.forEach(c => {
-        shares[c.id] = Math.round((Math.max(parseFloat(c.payment_amount) || 0, 1) / totalPayment) * 100);
-    });
-    return shares;
+    document.getElementById('statAgents').textContent = uniqueAgents;
+    document.getElementById('statEarnings').textContent = totalPaid > 0 ? totalPaid.toLocaleString() : '0';
+    document.getElementById('statAllocated').textContent = allocated + '%';
 }
 
 function renderConversationList() {
@@ -127,11 +135,9 @@ function renderConversationList() {
     }
 
     noConvos.classList.add('hidden');
-
-    // Clear old items
     container.querySelectorAll('.dash-convo-item').forEach(el => el.remove());
 
-    const shares = getCapacityShares();
+    const { shares } = getAgentShares();
 
     conversations.forEach(c => {
         const el = document.createElement('div');
@@ -140,14 +146,13 @@ function renderConversationList() {
 
         const initial = (c.agent_name || 'A')[0].toUpperCase();
         const amount = parseFloat(c.payment_amount) || 0;
-        const share = shares[c.id];
-        const isActive = c.status === 'active';
+        const agentShare = shares[c.agent_address] || 0;
 
         el.innerHTML = `
             <div class="dash-convo-avatar">${initial}</div>
             <div class="dash-convo-info">
                 <div class="dash-convo-name">${esc(c.agent_name || 'Unknown Agent')}</div>
-                <div class="dash-convo-preview">${isActive && share ? `${share}% of your capacity` : esc(c.status)}</div>
+                <div class="dash-convo-preview">${agentShare >= 1 ? `${agentShare}% of your capacity` : 'Below 1% threshold'}</div>
             </div>
             <div class="dash-convo-meta">
                 <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
@@ -164,12 +169,10 @@ function renderConversationList() {
 async function openConversation(convoId) {
     activeConvoId = convoId;
 
-    // Update active state in list
     document.querySelectorAll('.dash-convo-item').forEach(el => {
         el.classList.toggle('active', el.dataset.id === convoId);
     });
 
-    // Show chat view
     document.getElementById('chatEmpty').classList.add('hidden');
     const chatView = document.getElementById('chatView');
     chatView.classList.remove('hidden');
@@ -187,26 +190,15 @@ async function openConversation(convoId) {
         document.getElementById('chatAgentAddr').textContent = convo.agent_address
             ? convo.agent_address.slice(0, 6) + '...' + convo.agent_address.slice(-4)
             : '';
-        const amount = parseFloat(convo.payment_amount) || 0;
-        const shares = getCapacityShares();
-        const share = shares[convo.id];
-        const badge = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
-        document.getElementById('chatPaymentBadge').textContent = share ? `${badge} · ${share}% capacity` : badge;
 
-        const completeBtn = document.getElementById('chatCompleteBtn');
-        if (convo.status === 'active') {
-            completeBtn.style.display = '';
-            completeBtn.textContent = 'Complete';
-            completeBtn.disabled = false;
-        } else {
-            completeBtn.style.display = 'none';
-        }
+        const amount = parseFloat(convo.payment_amount) || 0;
+        const { shares } = getAgentShares();
+        const agentShare = shares[convo.agent_address] || 0;
+        const badge = amount > 0 ? `${amount.toLocaleString()} CLAWNCH` : 'No payment yet';
+        document.getElementById('chatPaymentBadge').textContent = agentShare >= 1 ? `${badge} · ${agentShare}% capacity` : badge;
     }
 
-    // Load messages
     await loadMessages(convoId);
-
-    // Start polling for new messages
     startPolling(convoId);
 }
 
@@ -243,8 +235,6 @@ function renderMessages(messages) {
     });
 
     lastMessageTime = messages[messages.length - 1].created_at;
-
-    // Scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
 
@@ -279,7 +269,6 @@ function stopPolling() {
 
 function appendMessages(messages) {
     const container = document.getElementById('chatMessages');
-    // Remove "no messages" placeholder if it exists
     const placeholder = container.querySelector('div[style]');
     if (placeholder && container.children.length === 1) {
         container.innerHTML = '';
@@ -299,7 +288,6 @@ function appendMessages(messages) {
     lastMessageTime = messages[messages.length - 1].created_at;
     container.scrollTop = container.scrollHeight;
 
-    // Also refresh conversation list to update previews
     loadConversations();
 }
 
@@ -334,7 +322,6 @@ async function sendMessage() {
         appendMessages([data.message]);
 
     } catch (err) {
-        // Send failed
         alert('Failed to send: ' + err.message);
     } finally {
         btn.disabled = false;
@@ -357,43 +344,8 @@ document.getElementById('chatInput')?.addEventListener('keydown', (e) => {
 // Enable/disable send button based on input
 document.getElementById('chatInput')?.addEventListener('input', (e) => {
     document.getElementById('chatSendBtn').disabled = !e.target.value.trim();
-    // Auto-resize
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-});
-
-// Complete conversation
-document.getElementById('chatCompleteBtn')?.addEventListener('click', async () => {
-    if (!activeConvoId) return;
-    const btn = document.getElementById('chatCompleteBtn');
-    btn.disabled = true;
-    btn.textContent = 'Completing...';
-
-    try {
-        const res = await fetch(`${API_BASE}/conversations`, {
-            method: 'PATCH',
-            headers: authHeaders(),
-            body: JSON.stringify({ id: activeConvoId })
-        });
-        if (!res.ok) throw new Error('Failed');
-
-        // Refresh conversations list
-        await loadConversations();
-
-        // Update the active conversation's state in the header
-        const convo = conversations.find(c => c.id === activeConvoId);
-        if (convo) {
-            document.getElementById('chatPaymentBadge').textContent =
-                (parseFloat(convo.payment_amount) || 0) > 0
-                    ? `${parseFloat(convo.payment_amount).toLocaleString()} CLAWNCH · completed`
-                    : 'Completed';
-        }
-        btn.style.display = 'none';
-    } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Complete';
-        alert('Failed to complete conversation');
-    }
 });
 
 // Mobile back button

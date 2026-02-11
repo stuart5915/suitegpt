@@ -44,7 +44,37 @@ export default async function handler(req, res) {
                 if (error || !data) {
                     return res.status(404).json({ error: 'Profile not found' });
                 }
-                return res.status(200).json({ profile: data });
+
+                // Calculate capacity allocation from all payments
+                const { data: convos } = await supabase
+                    .from('inclawbate_conversations')
+                    .select('agent_address, agent_name, payment_amount')
+                    .eq('human_id', data.id);
+
+                const agentTotals = {};
+                (convos || []).forEach(c => {
+                    const addr = c.agent_address;
+                    if (!agentTotals[addr]) {
+                        agentTotals[addr] = { agent_address: addr, agent_name: c.agent_name, total_paid: 0 };
+                    }
+                    agentTotals[addr].total_paid += parseFloat(c.payment_amount) || 0;
+                    if (c.agent_name) agentTotals[addr].agent_name = c.agent_name;
+                });
+
+                const agents = Object.values(agentTotals);
+                const totalPaid = agents.reduce((sum, a) => sum + a.total_paid, 0);
+
+                const allocation = agents
+                    .map(a => ({
+                        agent_address: a.agent_address,
+                        agent_name: a.agent_name,
+                        total_paid: a.total_paid,
+                        share: totalPaid > 0 ? Math.round((a.total_paid / totalPaid) * 100) : 0
+                    }))
+                    .filter(a => a.share >= 1)
+                    .sort((a, b) => b.share - a.share);
+
+                return res.status(200).json({ profile: data, allocation, total_allocated: totalPaid });
             }
 
             // List profiles

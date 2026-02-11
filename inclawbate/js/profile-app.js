@@ -35,6 +35,9 @@ function getStoredProfile() {
     } catch { return null; }
 }
 
+let currentAllocation = [];
+let currentTotalAllocated = 0;
+
 async function init() {
     const handle = getHandle();
     if (!handle) { showSection('notFound'); return; }
@@ -51,6 +54,8 @@ async function init() {
         const res = await humansApi.getProfile(handle);
         if (!res || !res.profile) { showSection('notFound'); return; }
         currentProfile = res.profile;
+        currentAllocation = res.allocation || [];
+        currentTotalAllocated = res.total_allocated || 0;
         renderProfile(currentProfile);
     } catch (err) {
         showSection('notFound');
@@ -82,11 +87,11 @@ function renderProfile(p) {
     availEl.textContent = p.availability || 'available';
     availEl.className = `badge badge-${p.availability === 'available' ? 'green' : p.availability === 'busy' ? 'yellow' : 'dim'}`;
 
-    // Capacity badge
+    // Capacity badge (market-driven: allocated if any agents are paying)
     const capacityBadge = document.getElementById('profileCapacityBadge');
-    const capacity = p.available_capacity !== undefined ? p.available_capacity : 100;
-    capacityBadge.textContent = capacity === 0 ? 'Fully allocated' : `${capacity}% capacity`;
-    capacityBadge.className = `badge ${capacity === 0 ? 'badge-yellow' : 'badge-dim'}`;
+    const isAllocated = currentAllocation.length > 0;
+    capacityBadge.textContent = isAllocated ? 'Fully allocated' : 'Available';
+    capacityBadge.className = `badge ${isAllocated ? 'badge-yellow' : 'badge-green'}`;
 
     // Hire count badge
     const hireCount = p.hire_count || 0;
@@ -99,6 +104,28 @@ function renderProfile(p) {
     // Skills
     const skillsHtml = (p.skills || []).map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
     document.getElementById('profileSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills listed</span>';
+
+    // Allocation (market-driven capacity)
+    const allocationSection = document.getElementById('allocationSection');
+    if (currentAllocation.length > 0 && allocationSection) {
+        allocationSection.style.display = '';
+        const allocHtml = currentAllocation.map(a => {
+            const name = esc(a.agent_name || 'Unknown Agent');
+            const addr = a.agent_address ? a.agent_address.slice(0, 6) + '...' + a.agent_address.slice(-4) : '';
+            return `<div class="allocation-row">
+                <div class="allocation-agent">
+                    <span class="allocation-name">${name}</span>
+                    <span class="allocation-addr">${addr}</span>
+                </div>
+                <div class="allocation-bar-wrap">
+                    <div class="allocation-bar" style="width:${a.share}%"></div>
+                </div>
+                <span class="allocation-share">${a.share}%</span>
+            </div>`;
+        }).join('');
+        document.getElementById('profileAllocation').innerHTML = allocHtml +
+            `<div style="font-size:0.75rem;color:var(--text-dim);margin-top:var(--space-md);font-family:var(--font-mono);">Total: ${currentTotalAllocated.toLocaleString()} CLAWNCH allocated</div>`;
+    }
 
     // Portfolio
     const links = p.portfolio_links || [];
@@ -118,7 +145,7 @@ function renderProfile(p) {
     const detailsHtml = [];
     const respLabels = { under_1h: 'Under 1 hour', under_4h: 'Under 4 hours', under_24h: 'Under 24 hours', under_48h: 'Under 48 hours' };
 
-    detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Available Capacity</div><div class="profile-detail-value">${capacity}%</div></div>`);
+    detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Capacity</div><div class="profile-detail-value">${isAllocated ? `${currentAllocation.length} agent${currentAllocation.length !== 1 ? 's' : ''}` : 'Available'}</div></div>`);
     if (p.response_time) {
         detailsHtml.push(`<div class="profile-detail"><div class="profile-detail-label">Response Time</div><div class="profile-detail-value">${esc(respLabels[p.response_time] || p.response_time)}</div></div>`);
     }
@@ -183,11 +210,6 @@ function openEditModal() {
     document.getElementById('editTagline').value = currentProfile.tagline || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
     document.getElementById('editWallet').value = currentProfile.wallet_address || '';
-    document.getElementById('editAvailability').value = currentProfile.availability || 'available';
-
-    const cap = currentProfile.available_capacity !== undefined ? currentProfile.available_capacity : 100;
-    document.getElementById('editCapacity').value = cap;
-    document.getElementById('editCapacityVal').textContent = cap + '%';
 
     if (currentProfile.response_time) document.getElementById('editResponseTime').value = currentProfile.response_time;
     const tz = currentProfile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -263,9 +285,7 @@ async function saveProfile() {
             tagline: document.getElementById('editTagline').value.trim(),
             bio: document.getElementById('editBio').value.trim(),
             skills: editSkills,
-            available_capacity: parseInt(document.getElementById('editCapacity').value) || 100,
             wallet_address: document.getElementById('editWallet').value.trim() || null,
-            availability: document.getElementById('editAvailability').value,
             response_time: editRespTime || undefined,
             timezone: document.getElementById('editTimezone').textContent || undefined,
             portfolio_links: editPortfolioLinks.length > 0 ? editPortfolioLinks : []
@@ -293,11 +313,6 @@ document.getElementById('editProfileBtn')?.addEventListener('click', openEditMod
 document.getElementById('editClose')?.addEventListener('click', closeEditModal);
 editModal?.addEventListener('click', (e) => {
     if (e.target === editModal) closeEditModal();
-});
-
-// Capacity slider
-document.getElementById('editCapacity')?.addEventListener('input', (e) => {
-    document.getElementById('editCapacityVal').textContent = e.target.value + '%';
 });
 
 // Skill input
