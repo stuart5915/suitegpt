@@ -418,6 +418,30 @@ document.getElementById('editPortfolioInput')?.addEventListener('keydown', (e) =
     }
 });
 
+// Connect Wallet button — auto-fill from MetaMask / Coinbase Wallet / etc.
+document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('connectWalletBtn');
+    if (!window.ethereum) {
+        alert('No wallet detected. Install MetaMask or Coinbase Wallet and try again.');
+        return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Connecting...';
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts[0]) {
+            document.getElementById('editWallet').value = accounts[0];
+        }
+    } catch (err) {
+        if (err.code !== 4001) { // 4001 = user rejected
+            alert('Could not connect wallet: ' + (err.message || 'Unknown error'));
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Connect Wallet';
+    }
+});
+
 // Save button
 document.getElementById('editSaveBtn')?.addEventListener('click', saveProfile);
 
