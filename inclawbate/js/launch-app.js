@@ -20,6 +20,16 @@ async function init() {
 
         try {
             const result = await handleXCallback(code, state);
+            // Post API key for extension auth-relay to pick up
+            if (result.profile && result.profile.api_key) {
+                window.postMessage({
+                    type: 'inclawbate-auth',
+                    apiKey: result.profile.api_key,
+                    xHandle: result.profile.x_handle
+                }, '*');
+            }
+            // Small delay so auth-relay content script can relay to extension
+            await new Promise(r => setTimeout(r, 300));
             // Redirect to their profile
             window.location.href = `/u/${result.profile.x_handle}`;
         } catch (err) {

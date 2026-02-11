@@ -1,6 +1,6 @@
 // Background service worker — handles API calls and hotkey commands
 
-const DEFAULT_API_URL = 'https://inclawbate.com/api/inclawbate/generate-reply';
+const DEFAULT_API_URL = 'https://www.inclawbate.com/api/inclawbate/generate-reply';
 
 // Handle hotkey command
 chrome.commands.onCommand.addListener((command) => {
@@ -15,6 +15,16 @@ chrome.commands.onCommand.addListener((command) => {
 
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'set-api-key') {
+        // Relay from auth-relay.js on inclawbate.com after OAuth
+        const toStore = { apiKey: message.apiKey };
+        if (message.xHandle) toStore.xHandle = message.xHandle;
+        chrome.storage.sync.set(toStore, () => {
+            sendResponse({ success: true });
+        });
+        return true;
+    }
+
     if (message.action === 'generate-reply') {
         generateReply(message.data).then(sendResponse).catch(err => {
             sendResponse({ error: err.message });
@@ -24,7 +34,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function generateReply({ tweetText, tweetAuthor, threadContext }) {
-    const data = await chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', 'tone', 'persona', 'goals', 'topics', 'maxLength', 'style']);
+    const data = await chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', 'apiKey', 'tone', 'persona', 'goals', 'topics', 'maxLength', 'style']);
 
     let params;
     if (data.profiles && data.activeProfile && data.profiles[data.activeProfile]) {
@@ -52,9 +62,14 @@ async function generateReply({ tweetText, tweetAuthor, threadContext }) {
 
     const apiUrl = data.apiUrl || DEFAULT_API_URL;
 
+    const headers = { 'Content-Type': 'application/json' };
+    if (data.apiKey) {
+        headers['X-API-Key'] = data.apiKey;
+    }
+
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
             tweetText,
             tweetAuthor,
@@ -66,6 +81,9 @@ async function generateReply({ tweetText, tweetAuthor, threadContext }) {
     const result = await response.json();
 
     if (!response.ok) {
+        if (response.status === 402) {
+            throw new Error('NO_CREDITS');
+        }
         throw new Error(result.error || 'Failed to generate reply');
     }
 

@@ -25,6 +25,120 @@
         .header-text { font-weight: 700; font-size: 15px; }
         .header-sub { font-size: 11px; color: #888; margin-top: 1px; }
 
+        /* ── Connect screen ── */
+
+        .connect-screen {
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        .connect-screen h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .connect-screen p {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .connect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .connect-btn:hover { opacity: 0.9; }
+
+        .connect-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .deposit-info {
+            margin-top: 20px;
+            padding: 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .deposit-info .label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .deposit-info .value {
+            font-size: 12px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+
+        .deposit-info .ens {
+            font-family: monospace;
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* ── Connected state ── */
+
+        .connected-bar {
+            padding: 12px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-handle {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .connected-badge {
+            font-size: 10px;
+            color: #4ade80;
+            background: rgba(74,222,128,0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .disconnect-btn {
+            font-size: 11px;
+            color: #666;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .disconnect-btn:hover { color: #f87171; }
+
         .section {
             padding: 14px 18px;
             border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -120,76 +234,129 @@
 
         .profile-btn.danger { color: #f87171; }
         .profile-btn.danger:hover { background: rgba(248,113,113,0.15); }
+
+        .credits-bar {
+            padding: 8px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .credits-count {
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .credits-count.has-credits { color: #4ade80; }
+        .credits-count.no-credits { color: #f87171; }
+
+        .credits-link {
+            font-size: 11px;
+            color: #ef4444;
+            text-decoration: none;
+        }
+
+        .credits-link:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <div class="header">
         <span class="header-emoji">🦞</span>
         <div>
-            <div class="header-text">Inclawbate</div>
+            <div class="header-text">Inclawbator</div>
             <div class="header-sub">AI Reply Generator for X</div>
         </div>
     </div>
 
-    <div class="profile-bar">
-        <select id="profileSelect"></select>
-        <button class="profile-btn" id="newProfile">+ New</button>
-        <button class="profile-btn danger" id="deleteProfile">Delete</button>
-    </div>
-
-    <div class="section">
-        <label>Tone</label>
-        <select id="tone">
-            <option value="casual">Casual</option>
-            <option value="witty">Witty / Clever</option>
-            <option value="professional">Professional</option>
-            <option value="provocative">Provocative / Spicy</option>
-            <option value="helpful">Helpful / Informative</option>
-            <option value="friendly">Friendly / Warm</option>
-        </select>
-    </div>
-
-    <div class="section">
-        <label>Your Persona</label>
-        <textarea id="persona" placeholder="Who are you? What do you do? e.g. 'I'm a designer and content strategist building in the AI agent space. Based in NYC.'"
-            rows="3"></textarea>
-        <div class="hint">This shapes how your replies sound — your voice, background, perspective.</div>
-    </div>
-
-    <div class="section">
-        <label>Goals</label>
-        <textarea id="goals" placeholder="What are you trying to achieve? e.g. 'Build my audience in the AI/crypto space. Get noticed by founders. Drive traffic to inclawbate.com.'"
-            rows="2"></textarea>
-    </div>
-
-    <div class="section">
-        <label>Topics of Interest</label>
-        <input type="text" id="topics" placeholder="e.g. AI agents, crypto, design, startups, Base chain">
-        <div class="hint">Comma-separated. Helps generate relevant replies.</div>
-    </div>
-
-    <div class="section">
-        <div class="row">
-            <div>
-                <label>Max Length</label>
-                <input type="number" id="maxLength" value="280" min="50" max="280">
-            </div>
-            <div>
-                <label>Style Notes</label>
-                <input type="text" id="style" placeholder="e.g. no emojis, lowercase only">
+    <!-- ── Not connected ── -->
+    <div id="connectScreen" class="connect-screen hidden">
+        <h2>Connect X to get started</h2>
+        <p>One click to connect your X account. Then deposit $CLAWNCH to generate AI replies.</p>
+        <button class="connect-btn" id="connectBtn">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Connect X
+        </button>
+        <div class="deposit-info">
+            <div class="label">Get Credits</div>
+            <div class="value">
+                Send $CLAWNCH to <span class="ens">inclawbate.base.eth</span> on Base, then DM <span class="ens">@inclawbate</span> on X with tx hash.
             </div>
         </div>
     </div>
 
-    <div class="section">
-        <label>API Endpoint</label>
-        <input type="text" id="apiUrl" value="https://inclawbate.com/api/inclawbate/generate-reply">
-        <div class="hint">Change if self-hosting. Default uses Inclawbate's server.</div>
-    </div>
+    <!-- ── Connected ── -->
+    <div id="connectedUI" class="hidden">
+        <div class="connected-bar">
+            <div class="user-info">
+                <span class="user-handle" id="userHandle">@user</span>
+                <span class="connected-badge">Connected</span>
+            </div>
+            <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+        </div>
 
-    <div class="section">
-        <button class="save-btn" id="save">Save Settings</button>
-        <div class="toast" id="toast"></div>
+        <div class="credits-bar">
+            <span>Credits: <span class="credits-count no-credits" id="creditsCount">--</span></span>
+            <a href="https://inclawbate.com/dashboard" target="_blank" class="credits-link">Get Credits</a>
+        </div>
+
+        <div class="profile-bar">
+            <select id="profileSelect"></select>
+            <button class="profile-btn" id="newProfile">+ New</button>
+            <button class="profile-btn danger" id="deleteProfile">Delete</button>
+        </div>
+
+        <div class="section">
+            <label>Tone</label>
+            <select id="tone">
+                <option value="casual">Casual</option>
+                <option value="witty">Witty / Clever</option>
+                <option value="professional">Professional</option>
+                <option value="provocative">Provocative / Spicy</option>
+                <option value="helpful">Helpful / Informative</option>
+                <option value="friendly">Friendly / Warm</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <label>Your Persona</label>
+            <textarea id="persona" placeholder="Who are you? What do you do? e.g. 'I'm a designer and content strategist building in the AI agent space. Based in NYC.'"
+                rows="3"></textarea>
+            <div class="hint">This shapes how your replies sound — your voice, background, perspective.</div>
+        </div>
+
+        <div class="section">
+            <label>Goals</label>
+            <textarea id="goals" placeholder="What are you trying to achieve? e.g. 'Build my audience in the AI/crypto space. Get noticed by founders. Drive traffic to inclawbate.com.'"
+                rows="2"></textarea>
+        </div>
+
+        <div class="section">
+            <label>Topics of Interest</label>
+            <input type="text" id="topics" placeholder="e.g. AI agents, crypto, design, startups, Base chain">
+            <div class="hint">Comma-separated. Helps generate relevant replies.</div>
+        </div>
+
+        <div class="section">
+            <div class="row">
+                <div>
+                    <label>Max Length</label>
+                    <input type="number" id="maxLength" value="280" min="50" max="280">
+                </div>
+                <div>
+                    <label>Style Notes</label>
+                    <input type="text" id="style" placeholder="e.g. no emojis, lowercase only">
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <button class="save-btn" id="save">Save Settings</button>
+            <div class="toast" id="toast"></div>
+        </div>
     </div>
 
     <script src="popup.js"></script>

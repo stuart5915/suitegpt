@@ -1,4 +1,4 @@
-// Popup settings page — profile-aware
+// Popup — two-state: connect screen vs settings
 
 const profileFields = ['tone', 'persona', 'goals', 'topics', 'maxLength', 'style'];
 
@@ -41,23 +41,72 @@ const starterProfiles = {
     }
 };
 
+const connectScreen = document.getElementById('connectScreen');
+const connectedUI = document.getElementById('connectedUI');
+const connectBtn = document.getElementById('connectBtn');
+const disconnectBtn = document.getElementById('disconnectBtn');
+const userHandle = document.getElementById('userHandle');
+const creditsCount = document.getElementById('creditsCount');
 const profileSelect = document.getElementById('profileSelect');
 const newProfileBtn = document.getElementById('newProfile');
 const deleteProfileBtn = document.getElementById('deleteProfile');
 const saveBtn = document.getElementById('save');
 const toast = document.getElementById('toast');
 
-// ── Load & migrate ──
+// ── Init: check for API key ──
 
-chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', ...profileFields], (data) => {
+chrome.storage.sync.get(['apiKey', 'xHandle', 'profiles', 'activeProfile', ...profileFields], (data) => {
+    if (data.apiKey) {
+        showConnected(data);
+    } else {
+        showConnectScreen();
+    }
+});
+
+// ── Listen for storage changes (auto-update if auth-relay sets key while popup is open) ──
+
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.apiKey && changes.apiKey.newValue) {
+        chrome.storage.sync.get(['apiKey', 'xHandle', 'profiles', 'activeProfile', ...profileFields], (data) => {
+            showConnected(data);
+        });
+    }
+});
+
+// ── Connect screen ──
+
+function showConnectScreen() {
+    connectScreen.classList.remove('hidden');
+    connectedUI.classList.add('hidden');
+}
+
+connectBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://inclawbate.com/launch' });
+});
+
+// ── Connected state ──
+
+function showConnected(data) {
+    connectScreen.classList.add('hidden');
+    connectedUI.classList.remove('hidden');
+
+    // Show handle
+    if (data.xHandle) {
+        userHandle.textContent = '@' + data.xHandle;
+    } else {
+        userHandle.textContent = 'Connected';
+    }
+
+    // Fetch credits
+    fetchCredits(data.apiKey);
+
+    // Load profiles
     let profiles = data.profiles;
     let activeProfile = data.activeProfile;
 
     if (!profiles) {
-        // First run or migration from flat settings
         profiles = { ...starterProfiles };
 
-        // If user had flat settings, migrate them into a "custom" profile
         const hadFlatSettings = profileFields.some(f => data[f] && data[f] !== defaultProfileData[f]);
         if (hadFlatSettings) {
             const migrated = {};
@@ -72,17 +121,21 @@ chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', ...profileFields
         chrome.storage.sync.set({ profiles, activeProfile });
     }
 
-    // Populate dropdown
     populateDropdown(profiles, activeProfile);
-
-    // Load active profile into form
     loadProfile(profiles[activeProfile] || Object.values(profiles)[0]);
-
-    // Load API URL separately (global, not per-profile)
-    document.getElementById('apiUrl').value = data.apiUrl || 'https://inclawbate.com/api/inclawbate/generate-reply';
-
     updateDeleteBtn(profiles);
+}
+
+// ── Disconnect ──
+
+disconnectBtn.addEventListener('click', () => {
+    if (!confirm('Disconnect your X account?')) return;
+    chrome.storage.sync.remove(['apiKey', 'xHandle'], () => {
+        showConnectScreen();
+    });
 });
+
+// ── Profile helpers ──
 
 function populateDropdown(profiles, activeKey) {
     profileSelect.innerHTML = '';
@@ -125,12 +178,10 @@ function showToast(msg) {
 // ── Profile switch ──
 
 profileSelect.addEventListener('change', () => {
-    // Save current profile first, then switch
     chrome.storage.sync.get(['profiles', 'activeProfile'], (data) => {
         const profiles = data.profiles || {};
         const oldKey = data.activeProfile;
 
-        // Save current form into old profile (preserve name)
         if (oldKey && profiles[oldKey]) {
             Object.assign(profiles[oldKey], readFormProfile());
         }
@@ -153,9 +204,7 @@ saveBtn.addEventListener('click', () => {
             Object.assign(profiles[key], readFormProfile());
         }
 
-        const apiUrl = document.getElementById('apiUrl').value;
-
-        chrome.storage.sync.set({ profiles, apiUrl }, () => {
+        chrome.storage.sync.set({ profiles }, () => {
             showToast('Settings saved!');
         });
     });
@@ -177,7 +226,6 @@ newProfileBtn.addEventListener('click', () => {
             return;
         }
 
-        // Save current form into current profile before switching
         const oldKey = data.activeProfile;
         if (oldKey && profiles[oldKey]) {
             Object.assign(profiles[oldKey], readFormProfile());
@@ -216,3 +264,24 @@ deleteProfileBtn.addEventListener('click', () => {
         });
     });
 });
+
+// ── Credits ──
+
+function fetchCredits(key) {
+    if (!key) return;
+    fetch(`https://inclawbate.com/api/inclawbate/credits?key=${encodeURIComponent(key)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.credits !== undefined) {
+                creditsCount.textContent = data.credits;
+                creditsCount.className = data.credits > 0 ? 'credits-count has-credits' : 'credits-count no-credits';
+            } else {
+                creditsCount.textContent = 'Invalid key';
+                creditsCount.className = 'credits-count no-credits';
+            }
+        })
+        .catch(() => {
+            creditsCount.textContent = '??';
+            creditsCount.className = 'credits-count no-credits';
+        });
+}

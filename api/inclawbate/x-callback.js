@@ -2,7 +2,7 @@
 // POST /api/inclawbate/x-callback
 // Exchanges auth code for tokens, fetches user data, upserts profile, returns JWT
 
-import { createHmac } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_ORIGINS = [
@@ -130,6 +130,21 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Failed to save profile' });
         }
 
+        // Auto-generate API key if user doesn't have one
+        if (!profile.api_key) {
+            const newApiKey = 'inclw_' + randomBytes(24).toString('hex');
+            const { data: updated, error: keyError } = await supabase
+                .from('human_profiles')
+                .update({ api_key: newApiKey })
+                .eq('id', profile.id)
+                .select('api_key')
+                .single();
+
+            if (!keyError && updated) {
+                profile.api_key = updated.api_key;
+            }
+        }
+
         // Issue JWT
         const now = Math.floor(Date.now() / 1000);
         const jwt = createJwt({
@@ -159,7 +174,8 @@ export default async function handler(req, res) {
                 timezone: profile.timezone,
                 portfolio_links: profile.portfolio_links,
                 hire_count: profile.hire_count,
-                telegram_chat_id: profile.telegram_chat_id
+                telegram_chat_id: profile.telegram_chat_id,
+                api_key: profile.api_key
             }
         });
 
