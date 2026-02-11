@@ -9,6 +9,7 @@ const SECTIONS = {
 
 let currentProfile = null;
 let isOwnProfile = false;
+let editPortfolioLinks = [];
 
 function showSection(name) {
     Object.values(SECTIONS).forEach(el => { if (el) el.classList.add('hidden'); });
@@ -86,9 +87,28 @@ function renderProfile(p) {
     const capacity = p.available_capacity !== undefined ? p.available_capacity : 100;
     capacityBadge.textContent = `${capacity}% capacity`;
 
+    // Hire count badge
+    const hireCount = p.hire_count || 0;
+    const hireBadge = document.getElementById('profileHireCount');
+    if (hireCount > 0 && hireBadge) {
+        hireBadge.textContent = `Hired ${hireCount} time${hireCount !== 1 ? 's' : ''}`;
+        hireBadge.style.display = '';
+    }
+
     // Skills
     const skillsHtml = (p.skills || []).map(s => `<span class="badge badge-primary">${esc(s)}</span>`).join('');
     document.getElementById('profileSkills').innerHTML = skillsHtml || '<span class="text-dim">No skills listed</span>';
+
+    // Portfolio
+    const links = p.portfolio_links || [];
+    const portfolioSection = document.getElementById('portfolioSection');
+    if (links.length > 0 && portfolioSection) {
+        portfolioSection.style.display = '';
+        document.getElementById('profilePortfolio').innerHTML = links.map(u => {
+            const display = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            return `<a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--lobster-300);font-size:0.92rem;word-break:break-all;">${esc(display)}</a>`;
+        }).join('');
+    }
 
     // Bio
     document.getElementById('profileBio').textContent = p.bio || 'No bio provided.';
@@ -161,6 +181,9 @@ function openEditModal() {
     const tz = currentProfile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     document.getElementById('editTimezone').textContent = tz;
 
+    editPortfolioLinks = [...(currentProfile.portfolio_links || [])];
+    renderEditPortfolioLinks();
+
     editSkills = [...(currentProfile.skills || [])];
     renderEditSkills();
 
@@ -199,6 +222,24 @@ function renderEditSkills() {
     });
 }
 
+function renderEditPortfolioLinks() {
+    const container = document.getElementById('editPortfolioLinks');
+    container.innerHTML = editPortfolioLinks.map(u => {
+        const display = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+            <a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--lobster-300);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(display)}</a>
+            <button type="button" data-url="${esc(u)}" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0 4px;">&times;</button>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('button[data-url]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            editPortfolioLinks = editPortfolioLinks.filter(u => u !== btn.dataset.url);
+            renderEditPortfolioLinks();
+        });
+    });
+}
+
 async function saveProfile() {
     const btn = document.getElementById('editSaveBtn');
     btn.disabled = true;
@@ -214,7 +255,8 @@ async function saveProfile() {
             wallet_address: document.getElementById('editWallet').value.trim() || null,
             availability: document.getElementById('editAvailability').value,
             response_time: editRespTime || undefined,
-            timezone: document.getElementById('editTimezone').textContent || undefined
+            timezone: document.getElementById('editTimezone').textContent || undefined,
+            portfolio_links: editPortfolioLinks.length > 0 ? editPortfolioLinks : []
         };
 
         const result = await humansApi.updateProfile(updates);
@@ -254,6 +296,19 @@ document.getElementById('editSkillInput')?.addEventListener('keydown', (e) => {
         if (val && !editSkills.includes(val)) {
             editSkills.push(val);
             renderEditSkills();
+            e.target.value = '';
+        }
+    }
+});
+
+// Portfolio input
+document.getElementById('editPortfolioInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val && editPortfolioLinks.length < 3 && /^https?:\/\/.+/.test(val) && !editPortfolioLinks.includes(val)) {
+            editPortfolioLinks.push(val);
+            renderEditPortfolioLinks();
             e.target.value = '';
         }
     }

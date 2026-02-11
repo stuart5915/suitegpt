@@ -131,6 +131,9 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to create conversation' });
             }
 
+            // Increment hire count
+            await supabase.rpc('increment_hire_count', { profile_id: human.id });
+
             // If initial message provided, insert it
             if (message) {
                 await supabase

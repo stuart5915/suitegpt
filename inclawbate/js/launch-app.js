@@ -6,6 +6,7 @@ const STEPS = ['profile', 'preferences', 'preview'];
 let currentStep = 0;
 let profile = null;
 let skills = [];
+let portfolioLinks = [];
 
 // DOM refs
 const connectGate = document.getElementById('connectGate');
@@ -76,6 +77,10 @@ function showBuilder() {
         tgLink.href = `https://t.me/inclawbate_bot?start=${profile.x_handle}`;
     }
 
+    // Pre-fill portfolio links
+    portfolioLinks = profile.portfolio_links || [];
+    renderPortfolioLinks();
+
     // Render existing skills
     skills.forEach(s => addSkillTag(s));
 
@@ -135,6 +140,32 @@ function renderSkillTags() {
     });
 }
 
+// ── Portfolio Links ──
+function addPortfolioLink(url) {
+    if (!url || portfolioLinks.length >= 3 || portfolioLinks.includes(url)) return;
+    if (!/^https?:\/\/.+/.test(url)) return;
+    portfolioLinks.push(url);
+    renderPortfolioLinks();
+}
+
+function renderPortfolioLinks() {
+    const container = document.getElementById('portfolioLinks');
+    container.innerHTML = portfolioLinks.map(u => {
+        const display = u.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+            <a href="${esc(u)}" target="_blank" rel="noopener" style="color:var(--lobster-300);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(display)}</a>
+            <button type="button" class="portfolio-remove" data-url="${esc(u)}" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0 4px;">&times;</button>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.portfolio-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+            portfolioLinks = portfolioLinks.filter(u => u !== btn.dataset.url);
+            renderPortfolioLinks();
+        });
+    });
+}
+
 // ── Preview ──
 function renderPreview() {
     document.getElementById('previewAvatar').src = profile.x_avatar_url || '';
@@ -189,6 +220,9 @@ function renderPreview() {
             </div>
         `;
     }
+    if (portfolioLinks.length > 0) {
+        detailsHtml += `<div class="profile-detail"><div class="profile-detail-label">Portfolio</div><div class="profile-detail-value">${portfolioLinks.length} link${portfolioLinks.length > 1 ? 's' : ''}</div></div>`;
+    }
     detailsHtml += '</div>';
     document.getElementById('previewDetails').innerHTML = detailsHtml;
 }
@@ -208,7 +242,8 @@ async function publishProfile() {
             wallet_address: document.getElementById('walletInput').value.trim() || null,
             availability: document.getElementById('availabilitySelect').value,
             response_time: responseTime || undefined,
-            timezone: document.getElementById('timezoneDisplay').textContent || undefined
+            timezone: document.getElementById('timezoneDisplay').textContent || undefined,
+            portfolio_links: portfolioLinks.length > 0 ? portfolioLinks : undefined
         };
 
         const result = await humansApi.updateProfile(updates);
@@ -254,6 +289,17 @@ document.getElementById('skillInput')?.addEventListener('keydown', (e) => {
         const val = e.target.value.trim().replace(/,/g, '');
         if (val) {
             addSkillTag(val.toLowerCase());
+            e.target.value = '';
+        }
+    }
+});
+
+document.getElementById('portfolioInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val) {
+            addPortfolioLink(val);
             e.target.value = '';
         }
     }

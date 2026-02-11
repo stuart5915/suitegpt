@@ -157,6 +157,8 @@ export default async function handler(req, res) {
                 creative_freedom: profile.creative_freedom,
                 response_time: profile.response_time,
                 timezone: profile.timezone,
+                portfolio_links: profile.portfolio_links,
+                hire_count: profile.hire_count,
                 telegram_chat_id: profile.telegram_chat_id
             }
         });
