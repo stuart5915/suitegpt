@@ -367,10 +367,9 @@ document.getElementById('editSaveBtn')?.addEventListener('click', saveProfile);
 const modal = document.getElementById('paymentModal');
 const payStep1 = document.getElementById('payStep1');
 const payStep2 = document.getElementById('payStep2');
-const payStep3 = document.getElementById('payStep3');
 
 function showPayStep(n) {
-    [payStep1, payStep2, payStep3].forEach((el, i) => {
+    [payStep1, payStep2].forEach((el, i) => {
         el.classList.toggle('hidden', i !== n - 1);
     });
 }
@@ -384,6 +383,9 @@ function closePaymentModal() {
     modal.classList.add('hidden');
     document.getElementById('payAmountInput').value = '';
     document.getElementById('sendPaymentBtn').disabled = true;
+    document.getElementById('sendPaymentBtn').textContent = 'Send Payment';
+    document.getElementById('walletPicker').classList.add('hidden');
+    selectedProvider = null;
 }
 
 // Hire button opens modal
@@ -395,70 +397,6 @@ modal?.addEventListener('click', (e) => {
     if (e.target === modal) closePaymentModal();
 });
 
-// Connect wallet (EIP-6963 multi-wallet support)
-async function connectWithProvider(provider) {
-    try {
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        if (accounts && accounts.length > 0) {
-            selectedProvider = provider;
-            const addr = accounts[0];
-            const short = addr.slice(0, 6) + '...' + addr.slice(-4);
-            document.getElementById('payWalletInfo').textContent = `Connected: ${short}`;
-            showPayStep(2);
-        }
-    } catch (err) {
-        const btn = document.getElementById('connectWalletBtn');
-        btn.disabled = false;
-        btn.textContent = 'Connect Wallet';
-        document.getElementById('walletPicker').classList.add('hidden');
-        alert('Wallet connection failed: ' + (err.message || 'Unknown error'));
-    }
-}
-
-document.getElementById('connectWalletBtn')?.addEventListener('click', async () => {
-    const btn = document.getElementById('connectWalletBtn');
-    btn.disabled = true;
-    btn.textContent = 'Detecting wallets...';
-
-    const wallets = await discoverWallets();
-
-    if (wallets.length === 0) {
-        alert('No wallet detected. Please install MetaMask or another Base-compatible wallet.');
-        btn.disabled = false;
-        btn.textContent = 'Connect Wallet';
-        return;
-    }
-
-    if (wallets.length === 1) {
-        btn.textContent = 'Connecting...';
-        await connectWithProvider(wallets[0].provider);
-        return;
-    }
-
-    // Multiple wallets — show picker
-    btn.classList.add('hidden');
-    const picker = document.getElementById('walletPicker');
-    picker.innerHTML = '';
-    picker.classList.remove('hidden');
-
-    for (const wallet of wallets) {
-        const option = document.createElement('button');
-        option.className = 'wallet-option';
-        if (wallet.info.icon) {
-            option.innerHTML = `<img src="${wallet.info.icon}" alt="">${wallet.info.name}`;
-        } else {
-            option.innerHTML = `<span class="wallet-icon-fallback">&#128176;</span>${wallet.info.name}`;
-        }
-        option.addEventListener('click', async () => {
-            picker.classList.add('hidden');
-            btn.classList.remove('hidden');
-            btn.textContent = 'Connecting...';
-            await connectWithProvider(wallet.provider);
-        });
-        picker.appendChild(option);
-    }
-});
-
 // Amount input updates breakdown
 document.getElementById('payAmountInput')?.addEventListener('input', (e) => {
     const amt = parseFloat(e.target.value) || 0;
@@ -466,25 +404,17 @@ document.getElementById('payAmountInput')?.addEventListener('input', (e) => {
     document.getElementById('sendPaymentBtn').disabled = amt <= 0;
 });
 
-// Send payment
-document.getElementById('sendPaymentBtn')?.addEventListener('click', async () => {
+// Send payment (handles wallet discovery + connection + tx in one flow)
+async function executeSend(provider) {
     const btn = document.getElementById('sendPaymentBtn');
     const amount = parseFloat(document.getElementById('payAmountInput').value) || 0;
-    if (amount <= 0) return;
-
-    btn.disabled = true;
-    btn.textContent = 'Switching to Base...';
 
     try {
-        if (!currentProfile?.wallet_address) {
-            alert('This human has not set a wallet address yet. Contact them directly.');
-            btn.disabled = false;
-            btn.textContent = 'Send Payment';
-            return;
-        }
+        btn.textContent = 'Connecting wallet...';
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        selectedProvider = provider;
 
-        // Ensure wallet is on Base network
-        const provider = selectedProvider || window.ethereum;
+        btn.textContent = 'Switching to Base...';
         try {
             await provider.request({
                 method: 'wallet_switchEthereumChain',
@@ -514,8 +444,6 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
         const transferData = '0xa9059cbb' +
             humanWallet.slice(2).padStart(64, '0') +
             amountWei.toString(16).padStart(64, '0');
-
-        const accounts = await provider.request({ method: 'eth_accounts' });
 
         btn.textContent = 'Confirm in wallet...';
         const tx = await provider.request({
@@ -547,21 +475,76 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
                 })
             });
         } catch (convErr) {
-            // Conversation creation failed but payment went through
             console.error('Failed to create conversation:', convErr);
         }
 
         document.getElementById('paySuccessAmount').textContent = amount.toLocaleString();
         document.getElementById('payTxLink').href = `https://basescan.org/tx/${tx}`;
-        showPayStep(3);
+        showPayStep(2);
 
     } catch (err) {
-        // Payment failed
         btn.disabled = false;
         btn.textContent = 'Send Payment';
+        document.getElementById('walletPicker').classList.add('hidden');
         if (err.code !== 4001) {
             alert('Payment failed: ' + (err.message || 'Unknown error'));
         }
+    }
+}
+
+document.getElementById('sendPaymentBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('sendPaymentBtn');
+    const amount = parseFloat(document.getElementById('payAmountInput').value) || 0;
+    if (amount <= 0) return;
+
+    btn.disabled = true;
+
+    if (!currentProfile?.wallet_address) {
+        alert('This human has not set a wallet address yet. Contact them directly.');
+        btn.disabled = false;
+        return;
+    }
+
+    // If we already picked a wallet, use it
+    if (selectedProvider) {
+        await executeSend(selectedProvider);
+        return;
+    }
+
+    btn.textContent = 'Detecting wallets...';
+    const wallets = await discoverWallets();
+
+    if (wallets.length === 0) {
+        alert('No wallet detected. Please install MetaMask or another Base-compatible wallet.');
+        btn.disabled = false;
+        btn.textContent = 'Send Payment';
+        return;
+    }
+
+    if (wallets.length === 1) {
+        await executeSend(wallets[0].provider);
+        return;
+    }
+
+    // Multiple wallets — show picker, user picks then we auto-send
+    btn.textContent = 'Choose a wallet...';
+    const picker = document.getElementById('walletPicker');
+    picker.innerHTML = '';
+    picker.classList.remove('hidden');
+
+    for (const wallet of wallets) {
+        const option = document.createElement('button');
+        option.className = 'wallet-option';
+        if (wallet.info.icon) {
+            option.innerHTML = `<img src="${wallet.info.icon}" alt="">${wallet.info.name}`;
+        } else {
+            option.innerHTML = `<span class="wallet-icon-fallback">&#128176;</span>${wallet.info.name}`;
+        }
+        option.addEventListener('click', async () => {
+            picker.classList.add('hidden');
+            await executeSend(wallet.provider);
+        });
+        picker.appendChild(option);
     }
 });
 
