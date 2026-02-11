@@ -1,31 +1,62 @@
-// Inclawbate — Nav Auth State
-// Swaps "Launch Profile" button for user avatar+handle when logged in
+// Inclawbate — Nav Auth State + Unread Badge
+// Swaps "Launch Profile" for avatar+handle when logged in
+// Shows unread badge on Inbox link
 (function() {
     try {
+        const token = localStorage.getItem('inclawbate_token');
         const profileStr = localStorage.getItem('inclawbate_profile');
         if (!profileStr) return;
 
         const profile = JSON.parse(profileStr);
         if (!profile || !profile.x_handle) return;
 
-        // Find the "Launch Profile" or "Edit Profile" nav button
         const navLinks = document.querySelector('.nav-links');
         if (!navLinks) return;
 
+        // Swap "Launch Profile" for avatar+handle
         const launchBtn = navLinks.querySelector('a[href="/launch"]');
-        if (!launchBtn) return;
+        if (launchBtn) {
+            const userLink = document.createElement('a');
+            userLink.href = `/u/${profile.x_handle}`;
+            userLink.className = 'nav-user';
+            userLink.innerHTML = profile.x_avatar_url
+                ? `<img src="${profile.x_avatar_url}" class="nav-avatar" alt="">`
+                : `<span class="nav-avatar-fallback">${(profile.x_name || profile.x_handle)[0].toUpperCase()}</span>`;
+            userLink.innerHTML += `<span class="nav-handle">@${profile.x_handle}</span>`;
+            launchBtn.replaceWith(userLink);
+        }
 
-        // Replace with avatar + handle link
-        const userLink = document.createElement('a');
-        userLink.href = `/u/${profile.x_handle}`;
-        userLink.className = 'nav-user';
-        userLink.innerHTML = profile.x_avatar_url
-            ? `<img src="${profile.x_avatar_url}" class="nav-avatar" alt="">`
-            : `<span class="nav-avatar-fallback">${(profile.x_name || profile.x_handle)[0].toUpperCase()}</span>`;
-        userLink.innerHTML += `<span class="nav-handle">@${profile.x_handle}</span>`;
+        // Check for unread conversations
+        if (!token) return;
 
-        launchBtn.replaceWith(userLink);
+        const inboxLink = navLinks.querySelector('a[href="/dashboard"]');
+        if (!inboxLink) return;
+
+        // Make inbox link a positioned container for the badge
+        inboxLink.style.position = 'relative';
+
+        fetch('/api/inclawbate/conversations', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (!data || !data.conversations || data.conversations.length === 0) return;
+
+            const lastVisit = localStorage.getItem('inclawbate_last_inbox') || '1970-01-01';
+            const unread = data.conversations.filter(c =>
+                new Date(c.last_message_at) > new Date(lastVisit)
+            ).length;
+
+            if (unread > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'nav-badge';
+                badge.textContent = unread > 9 ? '9+' : unread;
+                inboxLink.appendChild(badge);
+            }
+        })
+        .catch(() => {}); // silent fail
+
     } catch (e) {
-        // Silently fail — nav stays as default
+        // Silently fail
     }
 })();

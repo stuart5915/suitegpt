@@ -46,6 +46,9 @@ function init() {
 
     document.getElementById('dashboardView').classList.remove('hidden');
 
+    // Mark inbox as visited (clears unread badge)
+    localStorage.setItem('inclawbate_last_inbox', new Date().toISOString());
+
     // Set capacity from stored profile
     const profile = auth.profile;
     const capacity = profile.available_capacity !== undefined ? profile.available_capacity : 100;
