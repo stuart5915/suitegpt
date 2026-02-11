@@ -67,9 +67,17 @@ async function init() {
         return;
     }
 
-    // Already authenticated → go to redirect destination or profile
+    // Already authenticated → post API key for extension, then redirect
     const stored = getStoredAuth();
     if (stored && stored.profile && stored.profile.x_handle && !params.has('switch')) {
+        if (stored.profile.api_key) {
+            window.postMessage({
+                type: 'inclawbate-auth',
+                apiKey: stored.profile.api_key,
+                xHandle: stored.profile.x_handle
+            }, '*');
+            await new Promise(r => setTimeout(r, 300));
+        }
         window.location.href = getPostLoginRedirect() || redirectParam || `/u/${stored.profile.x_handle}`;
         return;
     }
