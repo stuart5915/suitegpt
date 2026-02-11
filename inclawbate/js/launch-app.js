@@ -7,10 +7,22 @@ import { startXAuth, handleXCallback, getStoredAuth } from './x-auth-client.js';
 const connectGate = document.getElementById('connectGate');
 const connectBtn = document.getElementById('xConnectBtn');
 
+function getPostLoginRedirect() {
+    const r = sessionStorage.getItem('inclawbate_redirect');
+    sessionStorage.removeItem('inclawbate_redirect');
+    return r || null;
+}
+
 async function init() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
+
+    // Stash redirect param before OAuth clears the URL
+    const redirectParam = params.get('redirect');
+    if (redirectParam && /^\/[a-z]/.test(redirectParam)) {
+        sessionStorage.setItem('inclawbate_redirect', redirectParam);
+    }
 
     // X sent back an error (user denied, rate limit, etc.) — don't auto-retry
     if (params.has('error')) {
@@ -42,8 +54,8 @@ async function init() {
             }
             // Small delay so auth-relay content script can relay to extension
             await new Promise(r => setTimeout(r, 300));
-            // Redirect to their profile
-            window.location.href = `/u/${result.profile.x_handle}`;
+            // Redirect to stashed destination or profile
+            window.location.href = getPostLoginRedirect() || `/u/${result.profile.x_handle}`;
         } catch (err) {
             connectGate.querySelector('h2').textContent = 'Connection Failed';
             connectGate.querySelector('p').textContent = err.message;
@@ -55,10 +67,10 @@ async function init() {
         return;
     }
 
-    // Already authenticated → go to profile (unless ?switch param is set)
+    // Already authenticated → go to redirect destination or profile
     const stored = getStoredAuth();
     if (stored && stored.profile && stored.profile.x_handle && !params.has('switch')) {
-        window.location.href = `/u/${stored.profile.x_handle}`;
+        window.location.href = getPostLoginRedirect() || redirectParam || `/u/${stored.profile.x_handle}`;
         return;
     }
 

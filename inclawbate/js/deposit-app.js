@@ -13,7 +13,7 @@
     let clawnchPrice = 0; // USD per CLAWNCH
 
     // ── Init ──
-    const stored = localStorage.getItem('inclawbate_jwt');
+    const stored = localStorage.getItem('inclawbate_token');
     if (stored) {
         try {
             const parts = stored.split('.');
