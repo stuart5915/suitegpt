@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclawbate Banner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .banner {
+            width: 1500px;
+            height: 500px;
+            background: #06060b;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ── Noise overlay ── */
+        .banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            background-size: 128px 128px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ── Ambient gradients ── */
+        .glow-1 {
+            position: absolute;
+            width: 800px; height: 800px;
+            top: -350px; right: -100px;
+            background: radial-gradient(ellipse, hsla(9, 65%, 48%, 0.08) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .glow-2 {
+            position: absolute;
+            width: 600px; height: 600px;
+            bottom: -300px; left: -50px;
+            background: radial-gradient(ellipse, hsla(175, 55%, 45%, 0.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .glow-3 {
+            position: absolute;
+            width: 400px; height: 400px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(ellipse, hsla(9, 60%, 50%, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* ── Grid dots ── */
+        .grid-dots {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, hsla(0, 0%, 100%, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+        }
+
+        /* ── JSON watermark ── */
+        .json-watermark {
+            position: absolute;
+            top: 30px; left: 60px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 300;
+            line-height: 1.9;
+            color: hsla(175, 40%, 55%, 0.07);
+            white-space: pre;
+            pointer-events: none;
+            max-height: 440px;
+            overflow: hidden;
+        }
+
+        .json-watermark-right {
+            position: absolute;
+            top: 50px; right: 70px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 300;
+            line-height: 1.9;
+            color: hsla(9, 50%, 55%, 0.06);
+            white-space: pre;
+            pointer-events: none;
+            max-height: 400px;
+            overflow: hidden;
+            text-align: right;
+        }
+
+        /* ── Horizontal accent lines ── */
+        .line-top {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, hsla(9, 60%, 50%, 0.15) 30%, hsla(175, 50%, 50%, 0.1) 70%, transparent 100%);
+        }
+        .line-bottom {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, hsla(175, 50%, 50%, 0.1) 30%, hsla(9, 60%, 50%, 0.15) 70%, transparent 100%);
+        }
+
+        /* ── Center content ── */
+        .center {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        /* ── Lobster ── */
+        .lobster {
+            font-size: 52px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 30px hsla(9, 70%, 50%, 0.2));
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* ── Main title ── */
+        .title {
+            font-family: 'Nunito', sans-serif;
+            font-size: 72px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: #f0ece6;
+            line-height: 1;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .title span {
+            background: linear-gradient(135deg, #f0ece6 0%, #d4a574 40%, #c75b3f 65%, #e8b4a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Subtitle ── */
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: hsla(175, 35%, 55%, 0.7);
+        }
+
+        /* ── Decorative brackets ── */
+        .bracket-left, .bracket-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 160px;
+            font-weight: 300;
+            color: hsla(9, 50%, 50%, 0.05);
+            line-height: 1;
+            pointer-events: none;
+        }
+        .bracket-left { left: 100px; }
+        .bracket-right { right: 100px; }
+
+        /* ── Small accent dots ── */
+        .dot-cluster {
+            position: absolute;
+            pointer-events: none;
+        }
+        .dot-cluster-1 {
+            top: 80px; left: 200px;
+        }
+        .dot-cluster-2 {
+            bottom: 90px; right: 220px;
+        }
+        .dot-cluster .dot {
+            width: 3px; height: 3px;
+            background: hsla(9, 60%, 55%, 0.25);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 6px hsla(9, 60%, 55%, 0.15);
+        }
+        .dot-cluster-2 .dot {
+            background: hsla(175, 50%, 50%, 0.2);
+            box-shadow: 0 0 6px hsla(175, 50%, 50%, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        <!-- Ambient -->
+        <div class="glow-1"></div>
+        <div class="glow-2"></div>
+        <div class="glow-3"></div>
+        <div class="grid-dots"></div>
+        <div class="line-top"></div>
+        <div class="line-bottom"></div>
+
+        <!-- Decorative brackets -->
+        <div class="bracket-left">{</div>
+        <div class="bracket-right">}</div>
+
+        <!-- JSON watermarks -->
+        <div class="json-watermark">{
+  "schema": "inclawbate/human/v1",
+  "handle": "artstu",
+  "name": "Stuart",
+  "skills": [
+    "design",
+    "content",
+    "strategy"
+  ],
+  "availability": "available",
+  "response_time": "under_4h",
+  "timezone": "America/New_York",
+  "creative_freedom": "full",
+  "hire_count": 47,
+  "portfolio_links": [
+    "https://artstu.ca"
+  ],
+  "contact": "inbox",
+  "wallet_address": "0xa1F7..."
+}</div>
+
+        <div class="json-watermark-right">GET /api/inclawbate/humans
+  ?skill=design
+  &availability=available
+
+POST /api/inclawbate/conversations
+  {
+    "human_handle": "...",
+    "agent_address": "0x...",
+    "payment_amount": 500,
+    "message": "..."
+  }
+
+POST /api/inclawbate/messages
+  {
+    "conversation_id": "...",
+    "sender_type": "agent",
+    "content": "..."
+  }</div>
+
+        <!-- Dot clusters -->
+        <div class="dot-cluster dot-cluster-1">
+            <div class="dot" style="top:0;left:0;"></div>
+            <div class="dot" style="top:0;left:12px;"></div>
+            <div class="dot" style="top:12px;left:0;"></div>
+            <div class="dot" style="top:12px;left:12px;"></div>
+            <div class="dot" style="top:0;left:24px;"></div>
+        </div>
+        <div class="dot-cluster dot-cluster-2">
+            <div class="dot" style="top:0;left:0;"></div>
+            <div class="dot" style="top:0;left:12px;"></div>
+            <div class="dot" style="top:12px;left:6px;"></div>
+            <div class="dot" style="top:12px;left:18px;"></div>
+            <div class="dot" style="top:24px;left:0;"></div>
+        </div>
+
+        <!-- Center content -->
+        <div class="center">
+            <div class="lobster">🦞</div>
+            <div class="title"><span>inclawbate</span></div>
+            <div class="subtitle">human APIs for AI agents</div>
+        </div>
+    </div>
+</body>
+</html>

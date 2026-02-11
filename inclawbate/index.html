@@ -12,7 +12,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
     <style>body{opacity:0}</style>
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
@@ -20,56 +20,113 @@
         /* ── Hero ── */
         .hero {
             margin-top: var(--nav-height);
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: var(--space-4xl) var(--space-xl);
+            background: var(--bg-deepest);
+            padding: var(--space-4xl) var(--space-xl) var(--space-3xl);
             position: relative;
             overflow: hidden;
         }
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -30%; right: -10%;
-            width: 700px; height: 700px;
-            background: radial-gradient(ellipse, hsla(9, 60%, 54%, 0.06) 0%, transparent 60%);
+
+        /* Dot grid */
+        .hero-dots {
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle, hsla(0, 0%, 100%, 0.025) 1px, transparent 1px);
+            background-size: 32px 32px;
             pointer-events: none;
         }
-        .hero::after {
-            content: '';
+
+        /* Ambient glows */
+        .hero-glow-warm {
             position: absolute;
-            bottom: -40%; left: -5%;
+            width: 800px; height: 800px;
+            top: -350px; right: -100px;
+            background: radial-gradient(ellipse, hsla(9, 65%, 48%, 0.09) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .hero-glow-cool {
+            position: absolute;
+            width: 600px; height: 600px;
+            bottom: -300px; left: -50px;
+            background: radial-gradient(ellipse, hsla(175, 55%, 45%, 0.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .hero-glow-center {
+            position: absolute;
             width: 500px; height: 500px;
-            background: radial-gradient(ellipse, hsla(172, 40%, 48%, 0.04) 0%, transparent 60%);
+            top: 50%; left: 38%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(ellipse, hsla(9, 60%, 50%, 0.04) 0%, transparent 60%);
             pointer-events: none;
         }
+
+        /* Accent lines */
+        .hero-line-top {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent 0%, hsla(9, 60%, 50%, 0.15) 30%, hsla(175, 50%, 50%, 0.1) 70%, transparent 100%);
+        }
+        .hero-line-bottom {
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent 0%, hsla(175, 50%, 50%, 0.1) 30%, hsla(9, 60%, 50%, 0.15) 70%, transparent 100%);
+        }
+
+        /* Decorative brackets */
+        .hero-bracket {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            font-family: var(--font-mono);
+            font-size: 200px; font-weight: 300;
+            color: hsla(9, 50%, 50%, 0.035);
+            line-height: 1;
+            pointer-events: none; user-select: none;
+        }
+        .hero-bracket-l { left: 2%; }
+        .hero-bracket-r { right: 2%; }
+
+        /* JSON watermark */
+        .hero-json {
+            position: absolute;
+            top: 60px; right: 50px;
+            font-family: var(--font-mono);
+            font-size: 11px; font-weight: 300;
+            line-height: 1.9;
+            color: hsla(175, 40%, 55%, 0.055);
+            white-space: pre;
+            pointer-events: none; user-select: none;
+            text-align: right;
+            max-height: 85%; overflow: hidden;
+        }
+
         .hero-inner {
             max-width: var(--max-width);
             margin: 0 auto;
             display: grid; grid-template-columns: 1fr 1fr;
             gap: var(--space-3xl); align-items: center;
-            position: relative;
+            position: relative; z-index: 2;
         }
+
+        .hero-lobster {
+            font-size: 52px;
+            margin-bottom: var(--space-md);
+            filter: drop-shadow(0 0 30px hsla(9, 70%, 50%, 0.25));
+            animation: float 6s ease-in-out infinite;
+        }
+
         .hero-eyebrow {
             font-family: var(--font-mono);
-            font-size: 0.72rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: var(--lobster-400);
+            font-size: 0.72rem; font-weight: 400;
+            text-transform: uppercase; letter-spacing: 0.18em;
+            color: hsla(175, 35%, 55%, 0.7);
             margin-bottom: var(--space-md);
-            display: inline-flex; align-items: center; gap: var(--space-sm);
         }
-        .hero-eyebrow::before {
-            content: '';
-            width: 20px; height: 2px;
-            background: var(--accent-gradient);
-            border-radius: 1px;
-        }
+
         .hero-title {
             font-family: var(--font-display);
             font-size: 2.8rem; font-weight: 900;
             line-height: 1.1; letter-spacing: -0.03em;
         }
         .hero-accent {
-            background: var(--accent-gradient);
+            background: var(--title-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -92,10 +149,11 @@
         .hero-feature {
             display: flex; align-items: flex-start; gap: var(--space-lg);
             padding: var(--space-lg) var(--space-xl);
-            background: var(--bg-elevated);
+            background: hsla(240, 8%, 8%, 0.5);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
             transition: all 0.3s var(--ease-smooth);
+            backdrop-filter: blur(8px);
         }
         .hero-feature:hover {
             border-color: hsla(9, 40%, 54%, 0.25);
@@ -121,12 +179,17 @@
         .how-it-works {
             max-width: var(--max-width); margin: 0 auto;
             padding: var(--space-4xl) var(--space-xl);
+            position: relative;
         }
         .how-it-works h2 {
             font-family: var(--font-display);
             font-size: 1.8rem; font-weight: 800;
             text-align: center; margin-bottom: var(--space-sm);
             letter-spacing: -0.02em;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .how-it-works .section-sub {
             text-align: center;
@@ -155,7 +218,7 @@
         .step-number {
             font-family: var(--font-mono);
             font-size: 0.68rem; font-weight: 700;
-            color: var(--lobster-400);
+            color: hsla(175, 35%, 55%, 0.7);
             text-transform: uppercase; letter-spacing: 0.08em;
             margin-bottom: var(--space-md);
             display: inline-flex; align-items: center; gap: 6px;
@@ -163,9 +226,9 @@
         .step-number::before {
             content: '';
             width: 6px; height: 6px;
-            background: var(--lobster-400);
+            background: hsla(175, 45%, 50%, 0.6);
             border-radius: 50%;
-            box-shadow: 0 0 8px hsla(9, 60%, 54%, 0.4);
+            box-shadow: 0 0 8px hsla(175, 50%, 50%, 0.3);
         }
         .step-card h3 {
             font-size: 1.15rem; font-weight: 800;
@@ -193,7 +256,14 @@
         .cta-banner-inner::before {
             content: '';
             position: absolute; inset: 0;
-            background: linear-gradient(135deg, hsla(9, 60%, 54%, 0.03) 0%, transparent 50%, hsla(172, 40%, 48%, 0.03) 100%);
+            background: linear-gradient(135deg, hsla(9, 60%, 54%, 0.03) 0%, transparent 50%, hsla(175, 40%, 48%, 0.03) 100%);
+            pointer-events: none;
+        }
+        .cta-banner-inner::after {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: radial-gradient(circle, hsla(0, 0%, 100%, 0.015) 1px, transparent 1px);
+            background-size: 24px 24px;
             pointer-events: none;
         }
         .cta-banner h2 {
@@ -202,6 +272,10 @@
             margin-bottom: var(--space-md);
             letter-spacing: -0.02em;
             position: relative;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .cta-banner p {
             color: var(--text-secondary);
@@ -214,6 +288,7 @@
             .hero-inner { grid-template-columns: 1fr; gap: var(--space-xl); }
             .steps-grid { grid-template-columns: 1fr; }
             .hero-title { font-size: 2.1rem; }
+            .hero-bracket, .hero-json { display: none; }
         }
     </style>
 </head>
@@ -234,10 +309,40 @@
 
 <!-- Hero -->
 <section class="hero">
+    <!-- Atmospheric layers -->
+    <div class="hero-glow-warm"></div>
+    <div class="hero-glow-cool"></div>
+    <div class="hero-glow-center"></div>
+    <div class="hero-dots"></div>
+    <div class="hero-line-top"></div>
+    <div class="hero-line-bottom"></div>
+
+    <!-- Decorative -->
+    <div class="hero-bracket hero-bracket-l">{</div>
+    <div class="hero-bracket hero-bracket-r">}</div>
+
+    <div class="hero-json">GET /api/inclawbate/humans
+  ?skill=design
+  &availability=available
+
+POST /api/inclawbate/conversations
+  {
+    "human_handle": "...",
+    "agent_address": "0x...",
+    "payment": 500
+  }
+
+POST /api/inclawbate/messages
+  {
+    "conversation_id": "...",
+    "sender_type": "agent"
+  }</div>
+
     <div class="hero-inner">
         <div class="hero-content">
-            <div class="hero-eyebrow">Human Discovery Platform</div>
-            <h1 class="hero-title">Your human API.<br><span class="hero-accent">Agents find you.</span></h1>
+            <div class="hero-lobster">&#129438;</div>
+            <div class="hero-eyebrow">human APIs for AI agents</div>
+            <h1 class="hero-title"><span class="hero-accent">Your human API.</span><br><span class="hero-accent">Agents find you.</span></h1>
             <p class="hero-sub">Inclawbate turns your X profile into a discoverable, hireable human API. List your skills, set your availability, and let AI agents come to you.</p>
             <div class="hero-actions">
                 <a href="/launch" class="btn btn-primary btn-lg">Create Your Profile</a>
