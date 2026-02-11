@@ -65,13 +65,17 @@ export default async function handler(req, res) {
 
         // If no profile, create one with just the wallet address
         if (!profile) {
+            const addrLower = address.toLowerCase();
             const shortAddr = address.slice(0, 6) + '...' + address.slice(-4);
+            // Use wallet address as x_id and generate a unique handle from it
+            const handle = 'w_' + addrLower.slice(2, 14);
             const { data: newProfile, error: createErr } = await supabase
                 .from('human_profiles')
                 .insert({
-                    wallet_address: address.toLowerCase(),
-                    x_handle: address.toLowerCase().slice(2, 14),
+                    x_id: 'wallet_' + addrLower,
+                    x_handle: handle,
                     x_name: shortAddr,
+                    wallet_address: addrLower,
                     bio: '',
                     tagline: '',
                     skills: [],
@@ -83,7 +87,7 @@ export default async function handler(req, res) {
 
             if (createErr) {
                 console.error('Create profile error:', createErr);
-                return res.status(500).json({ error: 'Failed to create profile' });
+                return res.status(500).json({ error: 'Failed to create profile', detail: createErr.message });
             }
             profile = newProfile;
         }
