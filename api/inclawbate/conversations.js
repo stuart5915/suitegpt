@@ -153,7 +153,7 @@ export default async function handler(req, res) {
                 if (amount > 0) text += `\n💰 ${amount.toLocaleString()} CLAWNCH`;
                 if (message) text += `\n\n"${escHtml(message.slice(0, 200))}"`;
                 text += `\n\n👉 inclawbate.com/dashboard`;
-                notifyHuman(human.telegram_chat_id, text);
+                await notifyHuman(human.telegram_chat_id, text);
             }
 
             return res.status(201).json({ success: true, conversation: convo });

@@ -155,7 +155,7 @@ export default async function handler(req, res) {
 
                 if (human?.telegram_chat_id) {
                     const preview = escHtml(content.trim().slice(0, 200));
-                    notifyHuman(human.telegram_chat_id,
+                    await notifyHuman(human.telegram_chat_id,
                         `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
                     );
                 }

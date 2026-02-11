@@ -403,7 +403,7 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
     if (amount <= 0) return;
 
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = 'Switching to Base...';
 
     try {
         if (!currentProfile?.wallet_address) {
@@ -411,6 +411,29 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             btn.disabled = false;
             btn.textContent = 'Send Payment';
             return;
+        }
+
+        // Ensure wallet is on Base network
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x2105' }]
+            });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x2105',
+                        chainName: 'Base',
+                        rpcUrls: ['https://mainnet.base.org'],
+                        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+            } else {
+                throw switchErr;
+            }
         }
 
         const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
@@ -422,6 +445,8 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
             amountWei.toString(16).padStart(64, '0');
 
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+
+        btn.textContent = 'Confirm in wallet...';
         const tx = await window.ethereum.request({
             method: 'eth_sendTransaction',
             params: [{
@@ -430,6 +455,27 @@ document.getElementById('sendPaymentBtn')?.addEventListener('click', async () =>
                 data: transferData
             }]
         });
+
+        // Payment succeeded — now create conversation via API
+        btn.textContent = 'Creating conversation...';
+        const initialMessage = document.getElementById('payMessageInput')?.value?.trim() || '';
+
+        try {
+            await fetch('/api/inclawbate/conversations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    human_handle: currentProfile.x_handle,
+                    agent_address: accounts[0],
+                    payment_amount: amount,
+                    payment_tx: tx,
+                    message: initialMessage || `Hired via inclawbate.com \u2014 ${amount} CLAWNCH sent.`
+                })
+            });
+        } catch (convErr) {
+            // Conversation creation failed but payment went through
+            console.error('Failed to create conversation:', convErr);
+        }
 
         document.getElementById('paySuccessAmount').textContent = amount.toLocaleString();
         document.getElementById('payTxLink').href = `https://basescan.org/tx/${tx}`;
