@@ -33,6 +33,69 @@ function shortAddr(a) {
     return a.slice(0, 6) + '...' + a.slice(-4);
 }
 
+// ── Rewards Config ──
+(async function loadRewardsConfig() {
+    try {
+        const res = await fetch(API_BASE + '/rewards');
+        const data = await res.json();
+        if (data) {
+            document.getElementById('rwCurrentPool').value = Math.round(data.current_pool || 0);
+            document.getElementById('rwNextPool').value = Math.round(data.next_pool || 0);
+            document.getElementById('rwLastDistributed').value = Math.round(data.last_distributed || 0);
+            document.getElementById('rwTotalDistributed').value = Math.round(data.total_distributed || 0);
+            document.getElementById('rwTopN').value = data.top_n || 10;
+            if (data.week_ends_at) {
+                // Convert UTC to local datetime-local format
+                const d = new Date(data.week_ends_at);
+                const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                document.getElementById('rwWeekEnds').value = local;
+            }
+        }
+    } catch (e) { console.warn('Failed to load rewards config:', e); }
+})();
+
+document.getElementById('saveRewardsBtn').addEventListener('click', async () => {
+    const status = document.getElementById('rewardsStatus');
+    status.textContent = 'Saving...';
+    status.className = 'airdrop-status';
+
+    if (!userAddress) {
+        status.textContent = 'Connect wallet first';
+        status.className = 'airdrop-status error';
+        return;
+    }
+
+    const weekEndsInput = document.getElementById('rwWeekEnds').value;
+    const weekEndsUtc = weekEndsInput ? new Date(weekEndsInput).toISOString() : undefined;
+
+    try {
+        const res = await fetch(API_BASE + '/rewards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet_address: userAddress,
+                current_pool: Number(document.getElementById('rwCurrentPool').value) || 0,
+                next_pool: Number(document.getElementById('rwNextPool').value) || 0,
+                last_distributed: Number(document.getElementById('rwLastDistributed').value) || 0,
+                total_distributed: Number(document.getElementById('rwTotalDistributed').value) || 0,
+                week_ends_at: weekEndsUtc,
+                top_n: Number(document.getElementById('rwTopN').value) || 10
+            })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            status.textContent = 'Saved!';
+            status.className = 'airdrop-status success';
+        } else {
+            status.textContent = data.error || 'Failed';
+            status.className = 'airdrop-status error';
+        }
+    } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+        status.className = 'airdrop-status error';
+    }
+});
+
 // ── Wallet ──
 const connectBtn = document.getElementById('connectBtn');
 const walletStatus = document.getElementById('walletStatus');

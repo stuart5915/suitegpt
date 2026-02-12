@@ -147,6 +147,131 @@
             color: var(--text-secondary);
         }
 
+        /* ── Rewards Banner ── */
+        .rewards-banner {
+            margin-bottom: var(--space-2xl);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            position: relative;
+        }
+        .rewards-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                hsla(9, 70%, 50%, 0.06) 0%,
+                hsla(160, 50%, 40%, 0.04) 50%,
+                hsla(9, 70%, 50%, 0.02) 100%);
+            pointer-events: none;
+        }
+        .rewards-main {
+            padding: var(--space-2xl) var(--space-xl);
+            text-align: center;
+            position: relative;
+        }
+        .rewards-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--lobster-400);
+            margin-bottom: var(--space-sm);
+        }
+        .rewards-pool {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            margin-bottom: var(--space-xs);
+            background: linear-gradient(135deg, var(--lobster-300), var(--seafoam-300));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .rewards-sub {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+        }
+
+        /* Countdown */
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-xs);
+        }
+        .countdown-unit {
+            text-align: center;
+        }
+        .countdown-val {
+            font-family: var(--font-mono);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            display: block;
+            min-width: 48px;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+        .countdown-label {
+            font-size: 0.65rem;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-top: 4px;
+            display: block;
+        }
+        .countdown-sep {
+            font-size: 1.4rem;
+            color: var(--text-dim);
+            align-self: flex-start;
+            padding-top: var(--space-sm);
+        }
+        .countdown-ended {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--seafoam-300);
+            font-weight: 700;
+            padding: var(--space-md);
+        }
+
+        /* Stats row */
+        .rewards-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-top: 1px solid var(--border-subtle);
+            position: relative;
+        }
+        .rewards-stat {
+            padding: var(--space-md) var(--space-sm);
+            text-align: center;
+            border-right: 1px solid var(--border-subtle);
+        }
+        .rewards-stat:last-child { border-right: none; }
+        .rewards-stat-val {
+            font-family: var(--font-mono);
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+        .rewards-stat-label {
+            font-size: 0.65rem;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-top: 2px;
+            display: block;
+        }
+
         .lb-cta {
             margin-top: var(--space-3xl);
             padding: var(--space-2xl);
@@ -213,6 +338,12 @@
             .lb-hero h1 { font-size: 1.8rem; }
             .lb-row { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
             .lb-avatar { width: 34px; height: 34px; }
+            .rewards-pool { font-size: 1.6rem; }
+            .countdown-val { font-size: 1.2rem; min-width: 38px; }
+            .rewards-stats { grid-template-columns: repeat(2, 1fr); }
+            .rewards-stat:nth-child(2) { border-right: none; }
+            .rewards-stat:nth-child(1),
+            .rewards-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
         }
     </style>
 </head>
@@ -240,6 +371,42 @@
 
 <!-- Leaderboard List -->
 <div class="lb-container">
+    <!-- Weekly Rewards Banner -->
+    <div class="rewards-banner" id="rewardsBanner" style="display:none;">
+        <div class="rewards-main">
+            <div class="rewards-label">This Week's Prize Pool</div>
+            <div class="rewards-pool" id="rewardsPool">1,000,000 CLAWNCH</div>
+            <div class="rewards-sub">Top <span id="rewardsTopN">10</span> humans split the pool. Resets weekly.</div>
+            <div class="countdown" id="countdown">
+                <div class="countdown-unit"><span class="countdown-val" id="cdDays">0</span><span class="countdown-label">Days</span></div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-unit"><span class="countdown-val" id="cdHours">0</span><span class="countdown-label">Hours</span></div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-unit"><span class="countdown-val" id="cdMins">0</span><span class="countdown-label">Min</span></div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-unit"><span class="countdown-val" id="cdSecs">0</span><span class="countdown-label">Sec</span></div>
+            </div>
+        </div>
+        <div class="rewards-stats">
+            <div class="rewards-stat">
+                <span class="rewards-stat-val" id="statLastWeek">0</span>
+                <span class="rewards-stat-label">Last Week</span>
+            </div>
+            <div class="rewards-stat">
+                <span class="rewards-stat-val" id="statThisWeek">0</span>
+                <span class="rewards-stat-label">This Week</span>
+            </div>
+            <div class="rewards-stat">
+                <span class="rewards-stat-val" id="statNextWeek">0</span>
+                <span class="rewards-stat-label">Next Week</span>
+            </div>
+            <div class="rewards-stat">
+                <span class="rewards-stat-val" id="statTotal">0</span>
+                <span class="rewards-stat-label">Total Given</span>
+            </div>
+        </div>
+    </div>
+
     <div class="lb-list" id="leaderboardList">
         <div class="lb-loading">
             <div class="spinner spinner-lg"></div>
