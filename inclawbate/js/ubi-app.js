@@ -5,6 +5,7 @@ const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const BASE_CHAIN_ID = '0x2105';
 const TRANSFER_SELECTOR = '0xa9059cbb';
+const BALANCE_SELECTOR = '0x70a08231'; // balanceOf(address)
 
 const TOKEN_CONFIG = {
     clawnch: { address: CLAWNCH_ADDRESS, label: 'CLAWNCH' },
@@ -215,6 +216,9 @@ function daysSince(dateStr) {
                 updateHint(input.getAttribute('data-token'));
             });
 
+            // Fetch and show wallet balances
+            fetchBalances();
+
             // Load user's stakes
             loadMyStakes();
 
@@ -225,6 +229,44 @@ function daysSince(dateStr) {
                 el.className = 'ubi-stake-status stake-status error';
             });
             return null;
+        }
+    }
+
+    // ── Wallet Balances ──
+    let walletBalances = { clawnch: 0, inclawnch: 0 };
+
+    async function fetchBalances() {
+        if (!stakeWallet) return;
+        var callData = BALANCE_SELECTOR + pad32(stakeWallet);
+
+        try {
+            var [clawnchResult, inclawnchResult] = await Promise.all([
+                window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: CLAWNCH_ADDRESS, data: callData }, 'latest']
+                }),
+                window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: INCLAWNCH_ADDRESS, data: callData }, 'latest']
+                })
+            ]);
+
+            walletBalances.clawnch = Number(BigInt(clawnchResult)) / 1e18;
+            walletBalances.inclawnch = Number(BigInt(inclawnchResult)) / 1e18;
+
+            // Show balance displays
+            var clawnchEl = document.getElementById('balanceClawnch');
+            var inclawnchEl = document.getElementById('balanceInclawnch');
+            if (clawnchEl) {
+                clawnchEl.style.display = '';
+                document.getElementById('balValClawnch').textContent = fmt(walletBalances.clawnch) + ' CLAWNCH';
+            }
+            if (inclawnchEl) {
+                inclawnchEl.style.display = '';
+                document.getElementById('balValInclawnch').textContent = fmt(walletBalances.inclawnch) + ' inCLAWNCH';
+            }
+        } catch (e) {
+            // silently fail
         }
     }
 
@@ -451,8 +493,9 @@ function daysSince(dateStr) {
                     updateRoadmap(newUsd);
                 }
 
-                // Reload user's stakes
+                // Reload user's stakes + balance
                 loadMyStakes();
+                fetchBalances();
             } else {
                 status.textContent = apiData.error || 'Failed to record stake';
                 status.className = 'ubi-stake-status stake-status error';
@@ -484,6 +527,20 @@ function daysSince(dateStr) {
     document.querySelectorAll('.stake-deposit-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             doDeposit(btn.getAttribute('data-token'));
+        });
+    });
+
+    // Wire up MAX buttons
+    document.querySelectorAll('.bal-max').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var token = btn.getAttribute('data-token');
+            var bal = Math.floor(walletBalances[token] || 0);
+            if (bal <= 0) return;
+            var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
+            if (input) {
+                input.value = bal;
+                updateHint(token);
+            }
         });
     });
 })();
