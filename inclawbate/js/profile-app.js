@@ -409,6 +409,19 @@ async function saveProfile() {
     }
 }
 
+// Tier tooltip
+const tierInfoBtn = document.getElementById('tierInfoBtn');
+const tierTooltip = document.getElementById('tierTooltip');
+if (tierInfoBtn && tierTooltip) {
+    tierInfoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tierTooltip.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => {
+        tierTooltip.classList.add('hidden');
+    });
+}
+
 // Edit button
 document.getElementById('editProfileBtn')?.addEventListener('click', openEditModal);
 
