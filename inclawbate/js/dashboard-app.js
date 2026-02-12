@@ -10,6 +10,8 @@ let pollTimer = null;
 let lastMessageTime = null;
 let currentDirection = 'inbound';
 let currentFilter = 'all';
+let sending = false;
+const seenMessageIds = new Set();
 
 function authHeaders() {
     const token = localStorage.getItem('inclawbate_token');
@@ -425,6 +427,7 @@ async function loadMessages(convoId) {
 function renderMessages(messages) {
     const container = document.getElementById('chatMessages');
     container.innerHTML = '';
+    seenMessageIds.clear();
 
     if (messages.length === 0) {
         const emptyText = currentDirection === 'outbound'
@@ -436,6 +439,7 @@ function renderMessages(messages) {
     }
 
     messages.forEach(msg => {
+        seenMessageIds.add(msg.id);
         const el = document.createElement('div');
         // In outbound direction, the "agent" messages are from YOU (the payer) and "human" messages are from the hired person
         const isYou = currentDirection === 'outbound'
@@ -491,7 +495,12 @@ function appendMessages(messages) {
         container.innerHTML = '';
     }
 
-    messages.forEach(msg => {
+    // Deduplicate — skip messages we've already rendered
+    const newMsgs = messages.filter(msg => !seenMessageIds.has(msg.id));
+    if (newMsgs.length === 0) return;
+
+    newMsgs.forEach(msg => {
+        seenMessageIds.add(msg.id);
         const el = document.createElement('div');
         const isYou = currentDirection === 'outbound'
             ? msg.sender_type === 'agent'
@@ -506,7 +515,7 @@ function appendMessages(messages) {
         container.appendChild(el);
     });
 
-    lastMessageTime = messages[messages.length - 1].created_at;
+    lastMessageTime = newMsgs[newMsgs.length - 1].created_at;
     container.scrollTop = container.scrollHeight;
 
     loadConversations();
@@ -514,10 +523,12 @@ function appendMessages(messages) {
 
 // ── Send Message ──
 async function sendMessage() {
+    if (sending) return; // Prevent double-send
     const input = document.getElementById('chatInput');
     const content = input.value.trim();
     if (!content || !activeConvoId) return;
 
+    sending = true;
     const btn = document.getElementById('chatSendBtn');
     btn.disabled = true;
 
@@ -545,6 +556,7 @@ async function sendMessage() {
     } catch (err) {
         alert('Failed to send: ' + err.message);
     } finally {
+        sending = false;
         btn.disabled = false;
     }
 }
