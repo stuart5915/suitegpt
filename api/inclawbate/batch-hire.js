@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { tx_hash, agent_address, agent_name, recipients } = req.body;
+    const { tx_hash, agent_address, agent_name, recipients, starting_message } = req.body;
 
     // Admin auth — only the protocol wallet can create batch hires
     const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
             }
 
             // Create conversation
-            const { error: convoErr } = await supabase
+            const { data: convo, error: convoErr } = await supabase
                 .from('inclawbate_conversations')
                 .insert({
                     human_id: human.id,
@@ -80,11 +80,24 @@ export default async function handler(req, res) {
                     agent_name: agent_name || 'inclawbate',
                     payment_amount: amount || 0,
                     payment_tx: uniqueTx
-                });
+                })
+                .select('id')
+                .single();
 
             if (convoErr) {
                 results.errors.push({ handle, error: convoErr.message });
                 continue;
+            }
+
+            // Insert starting message if provided
+            if (starting_message && convo?.id) {
+                await supabase
+                    .from('inclawbate_messages')
+                    .insert({
+                        conversation_id: convo.id,
+                        sender_type: 'agent',
+                        content: starting_message.trim()
+                    });
             }
 
             // Increment hire count

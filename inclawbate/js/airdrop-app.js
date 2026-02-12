@@ -312,7 +312,8 @@ sendBtn.addEventListener('click', async () => {
                     recipients: selected.map(p => ({
                         handle: p.x_handle,
                         amount: amount
-                    }))
+                    })),
+                    starting_message: (document.getElementById('startingMessage')?.value || '').trim() || undefined
                 })
             });
             const hireResult = await hireResp.json();
