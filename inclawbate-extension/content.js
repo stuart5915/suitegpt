@@ -214,46 +214,50 @@
 
     // Insert reply text into X's reply composer
     function insertReply(article, text) {
+        // Copy to clipboard first
+        navigator.clipboard.writeText(text);
+
         const replyBtn = article.querySelector('[data-testid="reply"]');
         if (replyBtn) {
             replyBtn.click();
 
-            // Wait for composer to appear, then paste text in
+            // Wait for composer to appear, then try to insert text
             let attempts = 0;
             const tryInsert = () => {
                 const composer = document.querySelector('[data-testid="tweetTextarea_0"]');
                 const editable = composer ? composer.querySelector('[contenteditable="true"]') || composer : null;
                 if (editable) {
                     editable.focus();
-                    // Use clipboard paste — most reliable for X's React editor
-                    const dt = new DataTransfer();
-                    dt.setData('text/plain', text);
-                    const pasteEvent = new ClipboardEvent('paste', {
-                        bubbles: true,
-                        cancelable: true,
-                        clipboardData: dt
-                    });
-                    editable.dispatchEvent(pasteEvent);
-
-                    // Fallback: if paste didn't work, try execCommand
+                    // Try execCommand insertText
+                    const inserted = document.execCommand('insertText', false, text);
+                    // If it didn't work, show paste hint
                     setTimeout(() => {
                         if (!editable.textContent || editable.textContent.trim().length === 0) {
-                            editable.focus();
-                            document.execCommand('insertText', false, text);
+                            showPasteHint();
                         }
-                    }, 100);
+                    }, 150);
                 } else if (attempts < 15) {
                     attempts++;
                     setTimeout(tryInsert, 200);
                 } else {
-                    // Last resort: copy to clipboard and alert
-                    navigator.clipboard.writeText(text);
+                    showPasteHint();
                 }
             };
             setTimeout(tryInsert, 300);
         } else {
-            navigator.clipboard.writeText(text);
+            showPasteHint();
         }
+    }
+
+    // Show a brief toast telling user to Ctrl+V
+    function showPasteHint() {
+        let hint = document.querySelector('.inclawbate-paste-hint');
+        if (hint) hint.remove();
+        hint = document.createElement('div');
+        hint.className = 'inclawbate-paste-hint';
+        hint.textContent = 'Copied! Press Ctrl+V to paste your reply';
+        document.body.appendChild(hint);
+        setTimeout(() => hint.remove(), 4000);
     }
 
     function closePanel() {
