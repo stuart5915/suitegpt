@@ -3,46 +3,366 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard — Inclawbate</title>
-    <meta name="description" content="Most inclawbated humans on the platform. Ranked by total AI replies generated.">
-    <meta property="og:title" content="Leaderboard — Inclawbate">
-    <meta property="og:description" content="Most inclawbated humans on the platform. Ranked by total AI replies generated.">
+    <title>Inclawbator — AI Reply Extension for X</title>
+    <meta name="description" content="The Inclawbator Chrome extension generates AI-powered replies on X. Personalized voice, instant replies, one click. Download now.">
+    <meta property="og:title" content="Inclawbator — AI Reply Extension for X">
+    <meta property="og:description" content="Generate AI-powered replies on X with your own voice. One click. Instant.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/leaderboard">
-    <meta property="og:image" content="https://inclawbate.com/api/inclawbate/og?tagline=Most+Inclawbated+Humans">
+    <meta property="og:image" content="https://inclawbate.com/api/inclawbate/og?tagline=The+Inclawbator+Extension">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Leaderboard — Inclawbate">
-    <meta name="twitter:description" content="Most inclawbated humans on the platform.">
-    <meta name="twitter:image" content="https://inclawbate.com/api/inclawbate/og?tagline=Most+Inclawbated+Humans">
+    <meta name="twitter:title" content="Inclawbator — AI Reply Extension for X">
+    <meta name="twitter:description" content="Generate AI-powered replies on X with your own voice.">
+    <meta name="twitter:image" content="https://inclawbate.com/api/inclawbate/og?tagline=The+Inclawbator+Extension">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>body{opacity:0}</style>
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
     <style>
-        .lb-hero {
+        /* ══════════════════════════════════════
+           HERO
+           ══════════════════════════════════════ */
+        .hero {
             margin-top: var(--nav-height);
-            padding: var(--space-3xl) var(--space-xl) var(--space-2xl);
+            padding: var(--space-4xl) var(--space-xl) var(--space-3xl);
             text-align: center;
-        }
-        .lb-hero h1 {
-            font-family: var(--font-display);
-            font-size: 2.2rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            margin-bottom: var(--space-sm);
-        }
-        .lb-hero p {
-            color: var(--text-secondary);
-            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
         }
 
-        .lb-container {
+        /* Ambient glow behind icon */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle,
+                hsla(9, 60%, 50%, 0.12) 0%,
+                hsla(9, 50%, 45%, 0.06) 35%,
+                hsla(172, 30%, 45%, 0.03) 60%,
+                transparent 80%);
+            pointer-events: none;
+            animation: heroGlowPulse 6s ease-in-out infinite;
+        }
+
+        @keyframes heroGlowPulse {
+            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+        }
+
+        /* ── App Icon ── */
+        .app-icon-wrap {
+            position: relative;
+            display: inline-block;
+            margin-bottom: var(--space-2xl);
+            animation: heroFadeIn 0.8s var(--ease-smooth) both;
+        }
+        .app-icon {
+            width: 140px;
+            height: 140px;
+            border-radius: 32px;
+            background: linear-gradient(145deg,
+                hsl(8, 52%, 48%) 0%,
+                hsl(10, 48%, 36%) 50%,
+                hsl(12, 44%, 26%) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 72px;
+            line-height: 1;
+            position: relative;
+            box-shadow:
+                0 2px 4px hsla(0, 0%, 0%, 0.3),
+                0 8px 24px hsla(9, 60%, 30%, 0.35),
+                0 24px 48px hsla(9, 50%, 20%, 0.25),
+                0 0 0 1px hsla(9, 40%, 60%, 0.15) inset;
+            animation: iconFloat 4s ease-in-out infinite;
+            transform: perspective(800px) rotateX(2deg);
+        }
+
+        /* Glass highlight */
+        .app-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            border-radius: 32px 32px 0 0;
+            background: linear-gradient(180deg,
+                hsla(0, 0%, 100%, 0.18) 0%,
+                hsla(0, 0%, 100%, 0.04) 60%,
+                transparent 100%);
+            pointer-events: none;
+        }
+
+        /* Subtle ring */
+        .app-icon::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 35px;
+            border: 1px solid hsla(9, 50%, 60%, 0.12);
+            pointer-events: none;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: perspective(800px) rotateX(2deg) translateY(0); }
+            50% { transform: perspective(800px) rotateX(2deg) translateY(-10px); }
+        }
+
+        /* Reflection under icon */
+        .app-icon-reflection {
+            width: 100px;
+            height: 20px;
+            margin: var(--space-md) auto 0;
+            background: radial-gradient(ellipse,
+                hsla(9, 50%, 50%, 0.15) 0%,
+                transparent 70%);
+            border-radius: 50%;
+            animation: iconFloat 4s ease-in-out infinite;
+            filter: blur(4px);
+        }
+
+        /* ── Title ── */
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+            margin-bottom: var(--space-md);
+            animation: heroFadeUp 0.7s 0.15s var(--ease-smooth) both;
+        }
+        .hero-title span {
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-tagline {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 460px;
+            margin: 0 auto var(--space-2xl);
+            animation: heroFadeUp 0.7s 0.25s var(--ease-smooth) both;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            animation: heroFadeUp 0.7s 0.35s var(--ease-smooth) both;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 14px 32px;
+            background: var(--accent-gradient);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            border: none;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s var(--ease-smooth);
+            box-shadow:
+                0 4px 16px hsla(9, 60%, 50%, 0.3),
+                0 0 0 1px hsla(9, 50%, 60%, 0.2) inset;
+        }
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 6px 24px hsla(9, 60%, 50%, 0.4),
+                0 0 0 1px hsla(9, 50%, 60%, 0.3) inset;
+            color: #fff;
+        }
+        .btn-download svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .hero-badge {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            padding: 6px 14px;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+        }
+
+        @keyframes heroFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes heroFadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ══════════════════════════════════════
+           FEATURES
+           ══════════════════════════════════════ */
+        .features {
+            max-width: 820px;
+            margin: 0 auto var(--space-3xl);
+            padding: 0 var(--space-xl);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
+        }
+        .feature-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl) var(--space-lg);
+            text-align: center;
+            transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+            animation: heroFadeUp 0.6s var(--ease-smooth) both;
+        }
+        .feature-card:nth-child(1) { animation-delay: 0.4s; }
+        .feature-card:nth-child(2) { animation-delay: 0.5s; }
+        .feature-card:nth-child(3) { animation-delay: 0.6s; }
+        .feature-card:hover {
+            border-color: var(--border-bright);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: var(--space-md);
+            display: block;
+        }
+        .feature-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: var(--space-xs);
+        }
+        .feature-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ══════════════════════════════════════
+           HOW IT WORKS
+           ══════════════════════════════════════ */
+        .how-section {
             max-width: 680px;
-            margin: 0 auto;
-            padding: 0 var(--space-xl) var(--space-4xl);
+            margin: 0 auto var(--space-3xl);
+            padding: 0 var(--space-xl);
+            animation: heroFadeUp 0.6s 0.65s var(--ease-smooth) both;
+        }
+        .how-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: var(--space-xl);
+            letter-spacing: -0.02em;
+        }
+        .how-steps {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        .how-step {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            transition: border-color 0.2s;
+        }
+        .how-step:hover { border-color: var(--border-default); }
+        .how-step-num {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--lobster-500), var(--lobster-400));
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .how-step-body strong {
+            display: block;
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+        .how-step-body span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+        .how-step-body a {
+            color: var(--lobster-300);
+            text-decoration: none;
+        }
+        .how-step-body a:hover { text-decoration: underline; }
+
+        /* ══════════════════════════════════════
+           LEADERBOARD
+           ══════════════════════════════════════ */
+        .lb-section {
+            max-width: 680px;
+            margin: 0 auto var(--space-3xl);
+            padding: 0 var(--space-xl);
+            animation: heroFadeUp 0.6s 0.75s var(--ease-smooth) both;
+        }
+        .lb-section-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+        .lb-section-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--lobster-400);
+            background: var(--accent-glow);
+            border: 1px solid hsla(9, 50%, 56%, 0.15);
+            border-radius: var(--radius-full);
+            padding: 4px 14px;
+            margin-bottom: var(--space-sm);
+        }
+        .lb-section-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-xs);
+        }
+        .lb-section-sub {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
         }
 
         .lb-list {
@@ -50,7 +370,6 @@
             flex-direction: column;
             gap: var(--space-sm);
         }
-
         .lb-row {
             display: flex;
             align-items: center;
@@ -69,7 +388,6 @@
             transform: translateX(4px);
             box-shadow: var(--shadow-md);
         }
-
         .lb-rank {
             font-family: var(--font-mono);
             font-size: 0.85rem;
@@ -99,7 +417,6 @@
             color: hsl(25, 60%, 65%);
             box-shadow: 0 0 12px hsla(25, 60%, 50%, 0.08);
         }
-
         .lb-avatar {
             width: 40px;
             height: 40px;
@@ -108,11 +425,7 @@
             flex-shrink: 0;
             background: var(--bg-surface);
         }
-
-        .lb-info {
-            flex: 1;
-            min-width: 0;
-        }
+        .lb-info { flex: 1; min-width: 0; }
         .lb-name {
             font-weight: 700;
             font-size: 0.95rem;
@@ -125,112 +438,81 @@
             font-size: 0.78rem;
             color: var(--text-secondary);
         }
-
         .lb-replies {
             font-family: var(--font-mono);
             font-size: 0.85rem;
             font-weight: 600;
-            color: var(--coral);
+            color: var(--lobster-300);
             white-space: nowrap;
             flex-shrink: 0;
         }
-
-        .lb-loading {
+        .lb-loading, .lb-empty {
             text-align: center;
             padding: var(--space-3xl);
             color: var(--text-secondary);
         }
 
-        .lb-empty {
-            text-align: center;
-            padding: var(--space-3xl);
-            color: var(--text-secondary);
+        /* ══════════════════════════════════════
+           BOTTOM CTA
+           ══════════════════════════════════════ */
+        .bottom-cta {
+            max-width: 680px;
+            margin: 0 auto var(--space-4xl);
+            padding: 0 var(--space-xl);
         }
-
-        /* ── Mission Banner ── */
-        .lb-mission {
-            margin-bottom: var(--space-2xl);
+        .bottom-cta-card {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-3xl) var(--space-xl);
             text-align: center;
             position: relative;
+            overflow: hidden;
         }
-        .lb-mission p {
-            color: var(--text-secondary);
-            font-size: 0.92rem;
-            line-height: 1.65;
-            max-width: 520px;
-            margin: 0 auto;
+        .bottom-cta-card::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: var(--accent-gradient);
+            border-radius: 0 0 4px 4px;
         }
-
-        .lb-cta {
-            margin-top: var(--space-3xl);
-            padding: var(--space-2xl);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            text-align: center;
-        }
-        .lb-cta h2 {
+        .bottom-cta-card h2 {
             font-family: var(--font-display);
-            font-size: 1.4rem;
-            font-weight: 800;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
             margin-bottom: var(--space-sm);
         }
-        .lb-cta > p {
+        .bottom-cta-card p {
             color: var(--text-secondary);
             font-size: 0.92rem;
             margin-bottom: var(--space-xl);
+            max-width: 380px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .lb-steps {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
-            text-align: left;
-        }
-        .lb-step {
-            display: flex;
-            align-items: flex-start;
-            gap: var(--space-md);
-            padding: var(--space-md);
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-        }
-        .lb-step-num {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: var(--lobster-500);
-            color: #fff;
-            font-family: var(--font-mono);
-            font-size: 0.78rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-        .lb-step strong {
-            display: block;
-            font-size: 0.92rem;
-            margin-bottom: 2px;
-        }
-        .lb-step span {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
-        .lb-step a {
-            color: var(--lobster-300);
-            text-decoration: none;
-        }
-        .lb-step a:hover { text-decoration: underline; }
 
+        /* ══════════════════════════════════════
+           RESPONSIVE
+           ══════════════════════════════════════ */
         @media (max-width: 768px) {
-            .lb-hero h1 { font-size: 1.8rem; }
+            .hero { padding: var(--space-3xl) var(--space-lg) var(--space-2xl); }
+            .hero-title { font-size: 2.2rem; }
+            .hero-tagline { font-size: 0.95rem; }
+            .app-icon { width: 110px; height: 110px; border-radius: 26px; font-size: 56px; }
+            .app-icon::before { border-radius: 26px 26px 0 0; }
+            .app-icon::after { border-radius: 29px; }
+            .features-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; }
             .lb-row { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
             .lb-avatar { width: 34px; height: 34px; }
+            .hero::before { width: 280px; height: 280px; }
+        }
+        @media (max-width: 480px) {
+            .hero-title { font-size: 1.9rem; }
+            .hero-actions { flex-direction: column; }
         }
     </style>
 </head>
@@ -243,68 +525,103 @@
     </a>
     <div class="nav-links">
         <a href="/humans" class="nav-link">Humans</a>
-        <a href="/leaderboard" class="nav-link active">Leaderboard</a>
+        <a href="/leaderboard" class="nav-link active">Inclawbator</a>
         <a href="/ubi" class="nav-link">UBI</a>
         <a href="/dashboard" class="nav-link">Inbox</a>
-        <a href="/docs" class="nav-link">Docs</a>
         <a href="/launch" class="btn btn-x btn-sm"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Connect X</a>
     </div>
 </nav>
 
 <!-- Hero -->
-<section class="lb-hero">
-    <h1><span class="hero-accent">Leaderboard</span></h1>
-    <p>Most inclawbated humans on the platform.</p>
+<section class="hero">
+    <div class="app-icon-wrap">
+        <div class="app-icon">&#129438;</div>
+        <div class="app-icon-reflection"></div>
+    </div>
+    <h1 class="hero-title"><span>Inclawbator</span></h1>
+    <p class="hero-tagline">AI-powered replies on X — in your voice. Click the lobster on any tweet, get a reply that sounds like you. One click. Instant.</p>
+    <div class="hero-actions">
+        <a href="/install" class="btn-download">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Download Extension
+        </a>
+        <span class="hero-badge">Chrome Extension</span>
+    </div>
 </section>
 
-<!-- Leaderboard List -->
-<div class="lb-container">
-    <!-- Mission Banner -->
-    <div class="lb-mission">
-        <p>These humans are using the <a href="/">Inclawbator extension</a> to spread the word — generating AI-powered replies across X to help grow the inclawbate ecosystem. The more replies you generate, the higher you rank.</p>
+<!-- Features -->
+<div class="features">
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">&#9889;</span>
+            <div class="feature-title">One-Click Replies</div>
+            <div class="feature-desc">A lobster button appears on every tweet. Click it, get a contextual reply instantly. No copy-pasting, no tabs.</div>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#127917;</span>
+            <div class="feature-title">Your Voice, Your Style</div>
+            <div class="feature-desc">Set up personas with your tone, topics, and words to avoid. The AI writes like you — not like a robot.</div>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#128200;</span>
+            <div class="feature-title">Climb the Ranks</div>
+            <div class="feature-desc">Every reply counts. Generate more, rank higher on the leaderboard, and help grow the inclawbate ecosystem.</div>
+        </div>
     </div>
+</div>
 
+<!-- How it works -->
+<div class="how-section">
+    <h2 class="how-title">Get Started in 2 Minutes</h2>
+    <div class="how-steps">
+        <div class="how-step">
+            <span class="how-step-num">1</span>
+            <div class="how-step-body">
+                <strong>Sign up on inclawbate</strong>
+                <span>Connect your X account at <a href="/launch">inclawbate.com/launch</a> to create your profile.</span>
+            </div>
+        </div>
+        <div class="how-step">
+            <span class="how-step-num">2</span>
+            <div class="how-step-body">
+                <strong>Install the extension</strong>
+                <span><a href="/install">Download the Inclawbator</a> for Chrome. It adds a lobster icon to every tweet on X.</span>
+            </div>
+        </div>
+        <div class="how-step">
+            <span class="how-step-num">3</span>
+            <div class="how-step-body">
+                <strong>Get credits & start replying</strong>
+                <span>Deposit $CLAWNCH at <a href="/deposit">inclawbate.com/deposit</a> for credits, then click the lobster on any tweet.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaderboard -->
+<div class="lb-section">
+    <div class="lb-section-header">
+        <div class="lb-section-badge">Live Leaderboard</div>
+        <h2 class="lb-section-title">Top Inclawbators</h2>
+        <p class="lb-section-sub">Humans using the extension to spread the mission.</p>
+    </div>
     <div class="lb-list" id="leaderboardList">
         <div class="lb-loading">
             <div class="spinner spinner-lg"></div>
             <p>Loading leaderboard...</p>
         </div>
     </div>
+</div>
 
-    <!-- How to participate -->
-    <div class="lb-cta">
-        <h2>Get on the board</h2>
-        <p>Every AI reply you generate with the Inclawbator extension earns you a spot on the leaderboard.</p>
-        <div class="lb-steps">
-            <div class="lb-step">
-                <span class="lb-step-num">1</span>
-                <div>
-                    <strong>Sign up</strong>
-                    <span>Connect your X account at <a href="/launch">inclawbate.com/launch</a></span>
-                </div>
-            </div>
-            <div class="lb-step">
-                <span class="lb-step-num">2</span>
-                <div>
-                    <strong>Install the extension</strong>
-                    <span>Download the <a href="/">Inclawbator Chrome extension</a> and connect your wallet</span>
-                </div>
-            </div>
-            <div class="lb-step">
-                <span class="lb-step-num">3</span>
-                <div>
-                    <strong>Buy credits</strong>
-                    <span>Deposit $CLAWNCH at <a href="/deposit">inclawbate.com/deposit</a> to fuel your replies</span>
-                </div>
-            </div>
-            <div class="lb-step">
-                <span class="lb-step-num">4</span>
-                <div>
-                    <strong>Start replying</strong>
-                    <span>Click the lobster on any tweet. Every reply counts toward your rank.</span>
-                </div>
-            </div>
-        </div>
+<!-- Bottom CTA -->
+<div class="bottom-cta">
+    <div class="bottom-cta-card">
+        <h2>Join the leaderboard</h2>
+        <p>Download the Inclawbator, generate replies, climb the ranks. Every reply helps grow the ecosystem.</p>
+        <a href="/install" class="btn-download">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Download Inclawbator
+        </a>
     </div>
 </div>
 
@@ -314,9 +631,9 @@
         <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
         <div class="footer-links">
             <a href="/humans" class="footer-link">Browse</a>
-            <a href="/leaderboard" class="footer-link">Leaderboard</a>
+            <a href="/leaderboard" class="footer-link">Inclawbator</a>
+            <a href="/ubi" class="footer-link">UBI</a>
             <a href="/docs" class="footer-link">Docs</a>
-            <a href="/launch" class="footer-link">Launch</a>
         </div>
     </div>
 </footer>
