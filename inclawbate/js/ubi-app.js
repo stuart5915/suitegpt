@@ -258,11 +258,11 @@ function daysSince(dateStr) {
             var clawnchEl = document.getElementById('balanceClawnch');
             var inclawnchEl = document.getElementById('balanceInclawnch');
             if (clawnchEl) {
-                clawnchEl.style.display = '';
+                clawnchEl.style.display = 'block';
                 document.getElementById('balValClawnch').textContent = fmt(walletBalances.clawnch) + ' CLAWNCH';
             }
             if (inclawnchEl) {
-                inclawnchEl.style.display = '';
+                inclawnchEl.style.display = 'block';
                 document.getElementById('balValInclawnch').textContent = fmt(walletBalances.inclawnch) + ' inCLAWNCH';
             }
         } catch (e) {
