@@ -494,6 +494,7 @@ async function loadDistribution() {
 
     // Set input to current weekly rate
     document.getElementById('weeklyRateInput').value = weeklyRate || '';
+    document.getElementById('splitPctInput').value = Number(data.reward_split_pct) || 80;
 
     // Render staker table
     const tbody = document.getElementById('stakerTableBody');
@@ -587,6 +588,46 @@ document.getElementById('setRateBtn').addEventListener('click', async () => {
     } catch (err) {
         rateStatus.textContent = err.message || 'Failed';
         rateStatus.className = 'airdrop-status error';
+    }
+});
+
+// Set split percentage
+document.getElementById('setSplitBtn').addEventListener('click', async () => {
+    const splitInput = document.getElementById('splitPctInput');
+    const splitStatus = document.getElementById('splitStatus');
+    const pct = Number(splitInput.value);
+
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+        splitStatus.textContent = 'Enter 0-100';
+        splitStatus.className = 'airdrop-status error';
+        return;
+    }
+
+    splitStatus.textContent = 'Saving...';
+    splitStatus.className = 'airdrop-status';
+
+    try {
+        const resp = await fetch(API_BASE + '/ubi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update-config',
+                wallet_address: userAddress,
+                reward_split_pct: pct
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            splitStatus.textContent = 'Split set: ' + pct + '% rewards / ' + (100 - pct) + '% LP';
+            splitStatus.className = 'airdrop-status success';
+            loadDistribution();
+        } else {
+            splitStatus.textContent = data.error || 'Failed';
+            splitStatus.className = 'airdrop-status error';
+        }
+    } catch (err) {
+        splitStatus.textContent = err.message || 'Failed';
+        splitStatus.className = 'airdrop-status error';
     }
 });
 

@@ -188,8 +188,13 @@ export default async function handler(req, res) {
             distribution_count: 0,
             verified_humans: 0,
             weekly_rate: 0,
-            last_distribution_at: null
+            last_distribution_at: null,
+            reward_split_pct: 80
         };
+        // Default split if not set in DB
+        if (result.reward_split_pct === undefined || result.reward_split_pct === null) {
+            result.reward_split_pct = 80;
+        }
 
         result.total_stakers = totalStakers;
         result.contributors = contributors;
@@ -377,21 +382,35 @@ export default async function handler(req, res) {
 
         // ── Update Config (admin only) ──
         if (action === 'update-config') {
-            const { wallet_address, weekly_rate } = req.body;
+            const { wallet_address, weekly_rate, reward_split_pct } = req.body;
             if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
-            if (weekly_rate === undefined || isNaN(Number(weekly_rate)) || Number(weekly_rate) < 0) {
-                return res.status(400).json({ error: 'Valid weekly_rate required' });
+            const updateObj = { updated_at: new Date().toISOString() };
+
+            if (weekly_rate !== undefined) {
+                if (isNaN(Number(weekly_rate)) || Number(weekly_rate) < 0) {
+                    return res.status(400).json({ error: 'Valid weekly_rate required' });
+                }
+                updateObj.weekly_rate = Number(weekly_rate);
+            }
+
+            if (reward_split_pct !== undefined) {
+                const pct = Number(reward_split_pct);
+                if (isNaN(pct) || pct < 0 || pct > 100) {
+                    return res.status(400).json({ error: 'reward_split_pct must be 0-100' });
+                }
+                updateObj.reward_split_pct = pct;
+            }
+
+            if (Object.keys(updateObj).length <= 1) {
+                return res.status(400).json({ error: 'Provide weekly_rate or reward_split_pct' });
             }
 
             const { error: updateErr } = await supabase
                 .from('inclawbate_ubi_treasury')
-                .update({
-                    weekly_rate: Number(weekly_rate),
-                    updated_at: new Date().toISOString()
-                })
+                .update(updateObj)
                 .eq('id', 1);
 
             if (updateErr) {
@@ -400,7 +419,8 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
-                weekly_rate: Number(weekly_rate)
+                weekly_rate: updateObj.weekly_rate,
+                reward_split_pct: updateObj.reward_split_pct
             });
         }
 

@@ -6,6 +6,7 @@ const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const BASE_CHAIN_ID = '0x2105';
 const TRANSFER_SELECTOR = '0xa9059cbb';
 const BALANCE_SELECTOR = '0x70a08231'; // balanceOf(address)
+const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
 
 const TOKEN_CONFIG = {
     clawnch: { address: CLAWNCH_ADDRESS, label: 'CLAWNCH' },
@@ -76,8 +77,9 @@ function daysSince(dateStr) {
         return parseFloat(candidates[0].priceUsd) || 0;
     }
 
-    // Fetch UBI data and prices in parallel (DexScreener + CoinGecko fallback)
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes] = await Promise.all([
+    // Fetch UBI data, prices, and protocol WETH balance in parallel
+    var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, wethBalRes] = await Promise.all([
         fetch('/api/inclawbate/ubi').then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -85,7 +87,13 @@ function daysSince(dateStr) {
             .then(r => r.json()).catch(() => null),
         fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' +
             CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
-            .then(r => r.json()).catch(() => null)
+            .then(r => r.json()).catch(() => null),
+        fetch('https://mainnet.base.org', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
+                params: [{ to: WETH_ADDRESS, data: wethBalCalldata }, 'latest'] })
+        }).then(r => r.json()).catch(() => null)
     ]);
 
     // DexScreener (primary)
@@ -106,6 +114,13 @@ function daysSince(dateStr) {
 
     ubiData = ubiRes;
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
+
+    // ── Protocol Revenue Section ──
+    var protocolWeth = 0;
+    if (wethBalRes && wethBalRes.result) {
+        protocolWeth = Number(BigInt(wethBalRes.result)) / 1e18;
+    }
+    updateRevenueSection(protocolWeth, clawnchPrice);
 
     if (ubiData) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
@@ -281,6 +296,78 @@ function daysSince(dateStr) {
         if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
         if (n >= 1) return n.toFixed(2);
         return n.toFixed(2);
+    }
+
+    // ── Protocol Revenue Logic ──
+    function updateRevenueSection(wethBal, clPrice) {
+        var rewardPct = Number(ubiData?.reward_split_pct) || 80;
+        var lpPct = 100 - rewardPct;
+
+        // Get ETH price from DexScreener CLAWNCH pair (priceNative = CLAWNCH per ETH)
+        var ethPrice = 0;
+        try {
+            if (clawnchDexRes && clawnchDexRes.pairs) {
+                var topPair = clawnchDexRes.pairs.find(function(p) {
+                    return p.baseToken && p.baseToken.address.toLowerCase() === CLAWNCH_ADDRESS.toLowerCase() &&
+                        p.quoteToken && (p.quoteToken.symbol === 'WETH' || p.quoteToken.symbol === 'ETH');
+                });
+                if (topPair && topPair.priceNative && clPrice > 0) {
+                    ethPrice = clPrice / parseFloat(topPair.priceNative);
+                }
+            }
+        } catch (e) {}
+        // Fallback: estimate ETH ~$2500 if we can't get it
+        if (ethPrice <= 0) ethPrice = 2500;
+
+        var wethUsd = wethBal * ethPrice;
+        var rewardWeth = wethBal * (rewardPct / 100);
+        var lpWeth = wethBal * (lpPct / 100);
+        var rewardUsd = rewardWeth * ethPrice;
+        var lpUsd = lpWeth * ethPrice;
+
+        // How much CLAWNCH the reward portion would buy
+        var rewardClawnch = clPrice > 0 ? rewardUsd / clPrice : 0;
+
+        var yieldValEl = document.getElementById('revYieldVal');
+        var yieldUsdEl = document.getElementById('revYieldUsd');
+        var barFillEl = document.getElementById('revBarFill');
+        var barLabelLeft = document.getElementById('revBarLabelLeft');
+        var barLabelRight = document.getElementById('revBarLabelRight');
+        var rewardPctEl = document.getElementById('revRewardPct');
+        var lpPctEl = document.getElementById('revLpPct');
+        var rewardValEl = document.getElementById('revRewardVal');
+        var lpValEl = document.getElementById('revLpVal');
+
+        if (yieldValEl) {
+            yieldValEl.textContent = wethBal > 0 ? wethBal.toFixed(4) + ' WETH' : 'Accumulating...';
+        }
+        if (yieldUsdEl) {
+            yieldUsdEl.textContent = wethUsd > 0 ? '(~$' + fmtUsd(wethUsd) + ')' : '';
+        }
+        if (barFillEl) {
+            barFillEl.style.setProperty('--split-pct', rewardPct + '%');
+        }
+        if (barLabelLeft) barLabelLeft.textContent = rewardPct + '% → Weekly Rewards';
+        if (barLabelRight) barLabelRight.textContent = lpPct + '% → LP Growth';
+        if (rewardPctEl) rewardPctEl.textContent = rewardPct + '%';
+        if (lpPctEl) lpPctEl.textContent = lpPct + '%';
+
+        if (rewardValEl) {
+            if (rewardClawnch > 0) {
+                rewardValEl.textContent = '~' + Math.round(rewardClawnch).toLocaleString() + ' CLAWNCH ($' + fmtUsd(rewardUsd) + ')';
+            } else if (rewardWeth > 0) {
+                rewardValEl.textContent = rewardWeth.toFixed(4) + ' WETH';
+            } else {
+                rewardValEl.textContent = 'Accumulating yield...';
+            }
+        }
+        if (lpValEl) {
+            if (lpUsd > 0) {
+                lpValEl.textContent = lpWeth.toFixed(4) + ' WETH ($' + fmtUsd(lpUsd) + ')';
+            } else {
+                lpValEl.textContent = 'Compounding...';
+            }
+        }
     }
 
     // ── Roadmap Logic ──
