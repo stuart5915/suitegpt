@@ -99,13 +99,8 @@ function daysSince(dateStr) {
         document.getElementById('statInclawnchStaked').textContent = fmt(inclawnchStaked);
         document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
-        // APY: (weekly_rate * 52) / total_weighted_stake * 100
-        const weeklyRate = Number(ubiData.weekly_rate) || 0;
-        const totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
-        if (totalWeightedStake > 0 && weeklyRate > 0) {
-            const apy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
-            document.getElementById('statApy').textContent = apy + '%';
-        }
+        // APY calculation + card APYs
+        updateAllApys();
 
         // Roadmap
         updateRoadmap(totalUsd);
@@ -131,6 +126,63 @@ function daysSince(dateStr) {
         }
     } else {
         updateRoadmap(0);
+    }
+
+    // ── APY Logic ──
+    // Reads current staked amounts from the stat elements so it stays in sync after stake/unstake
+    function updateAllApys() {
+        var clawnchStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var weeklyRate = Number(ubiData?.weekly_rate) || 0;
+        var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
+
+        // Overall APY in header stat
+        if (totalWeightedStake > 0 && weeklyRate > 0) {
+            var overallApy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
+            document.getElementById('statApy').textContent = overallApy + '%';
+        } else {
+            document.getElementById('statApy').textContent = '--';
+        }
+
+        // Per-card APYs
+        // 1x CLAWNCH APY: (weekly_rate * 52 * 1) / total_weighted_stake * 100
+        // 2x inCLAWNCH APY: (weekly_rate * 52 * 2) / total_weighted_stake * 100
+        var clawnchApy = 0;
+        var inclawnchApy = 0;
+        if (totalWeightedStake > 0 && weeklyRate > 0) {
+            clawnchApy = (weeklyRate * 52 * 1) / totalWeightedStake * 100;
+            inclawnchApy = (weeklyRate * 52 * 2) / totalWeightedStake * 100;
+        }
+
+        var apyClawnchEl = document.getElementById('apyValClawnch');
+        var apyInclawnchEl = document.getElementById('apyValInclawnch');
+        var weeklyClawnchEl = document.getElementById('weeklyClawnch');
+        var weeklyInclawnchEl = document.getElementById('weeklyInclawnch');
+
+        if (apyClawnchEl) {
+            apyClawnchEl.textContent = clawnchApy > 0 ? clawnchApy.toFixed(1) + '%' : '--';
+        }
+        if (apyInclawnchEl) {
+            apyInclawnchEl.textContent = inclawnchApy > 0 ? inclawnchApy.toFixed(1) + '%' : '--';
+        }
+
+        // Weekly earnings per 100k staked
+        if (weeklyClawnchEl) {
+            if (totalWeightedStake > 0 && weeklyRate > 0) {
+                var per100k = (100000 / totalWeightedStake) * weeklyRate;
+                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' CLAWNCH/week</span> per 100k staked';
+            } else {
+                weeklyClawnchEl.textContent = '';
+            }
+        }
+        if (weeklyInclawnchEl) {
+            if (totalWeightedStake > 0 && weeklyRate > 0) {
+                var per100k2x = (200000 / totalWeightedStake) * weeklyRate;
+                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' CLAWNCH/week</span> per 100k staked';
+            } else {
+                weeklyInclawnchEl.textContent = '';
+            }
+        }
     }
 
     // ── Roadmap Logic ──
@@ -380,8 +432,9 @@ function daysSince(dateStr) {
                     document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
                 }
 
-                // Reload stakes
+                // Reload stakes + APY
                 loadMyStakes();
+                updateAllApys();
             } else {
                 alert(data.error || 'Unstake failed');
                 if (btn) {
@@ -526,9 +579,10 @@ function daysSince(dateStr) {
                     updateRoadmap(newUsd);
                 }
 
-                // Reload user's stakes + balance
+                // Reload user's stakes + balance + APY
                 loadMyStakes();
                 fetchBalances();
+                updateAllApys();
             } else {
                 status.textContent = apiData.error || 'Failed to record stake';
                 status.className = 'ubi-stake-status stake-status error';
