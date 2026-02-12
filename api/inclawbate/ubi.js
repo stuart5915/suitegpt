@@ -404,6 +404,38 @@ export default async function handler(req, res) {
             });
         }
 
+        // ── Mark Distribution Complete (admin only) ──
+        if (action === 'mark-distributed') {
+            const { wallet_address } = req.body;
+            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+
+            const { data: curr } = await supabase
+                .from('inclawbate_ubi_treasury')
+                .select('distribution_count')
+                .eq('id', 1)
+                .single();
+
+            const { error: updateErr } = await supabase
+                .from('inclawbate_ubi_treasury')
+                .update({
+                    last_distribution_at: new Date().toISOString(),
+                    distribution_count: (Number(curr?.distribution_count) || 0) + 1,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', 1);
+
+            if (updateErr) {
+                return res.status(500).json({ error: 'Failed to record distribution' });
+            }
+
+            return res.status(200).json({
+                success: true,
+                distribution_count: (Number(curr?.distribution_count) || 0) + 1
+            });
+        }
+
         return res.status(400).json({ error: 'Unknown action' });
     }
 

@@ -373,6 +373,57 @@ sendBtn.addEventListener('click', async () => {
 //  UBI DISTRIBUTION
 // ══════════════════════════════════════════════════
 
+let distTimerInterval = null;
+
+function updateDistTimer(lastDistAt, distCount) {
+    const timerEl = document.getElementById('distTimer');
+    const countdownEl = document.getElementById('distCountdown');
+    const labelEl = document.getElementById('distTimerLabel');
+    if (!timerEl) return;
+
+    timerEl.style.display = 'block';
+
+    // Clear previous interval
+    if (distTimerInterval) clearInterval(distTimerInterval);
+
+    if (!lastDistAt) {
+        // Never distributed yet
+        countdownEl.textContent = 'No distributions yet';
+        countdownEl.className = 'ubi-dist-timer-countdown overdue';
+        labelEl.textContent = 'Send your first weekly UBI distribution below';
+        return;
+    }
+
+    const lastDist = new Date(lastDistAt).getTime();
+    const nextDist = lastDist + (7 * 24 * 60 * 60 * 1000); // +7 days
+
+    function tick() {
+        const now = Date.now();
+        const diff = nextDist - now;
+
+        if (diff <= 0) {
+            // Overdue!
+            const overdue = Math.abs(diff);
+            const hrs = Math.floor(overdue / 3600000);
+            const mins = Math.floor((overdue % 3600000) / 60000);
+            countdownEl.textContent = 'OVERDUE by ' + (hrs > 0 ? hrs + 'h ' : '') + mins + 'm';
+            countdownEl.className = 'ubi-dist-timer-countdown overdue';
+            labelEl.textContent = 'Distribution #' + ((distCount || 0) + 1) + ' is ready — send it now!';
+        } else {
+            const days = Math.floor(diff / 86400000);
+            const hrs = Math.floor((diff % 86400000) / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            countdownEl.textContent = (days > 0 ? days + 'd ' : '') + hrs + 'h ' + mins + 'm ' + secs + 's';
+            countdownEl.className = 'ubi-dist-timer-countdown ok';
+            labelEl.textContent = 'Next distribution (#' + ((distCount || 0) + 1) + ') • Last sent ' + new Date(lastDistAt).toLocaleDateString();
+        }
+    }
+
+    tick();
+    distTimerInterval = setInterval(tick, 1000);
+}
+
 async function loadDistribution() {
     // Fetch distribution data, prices, and wallet balances in parallel
     const balCalldata = BALANCE_SELECTOR + pad32(userAddress);
@@ -428,6 +479,9 @@ async function loadDistribution() {
     document.getElementById('distWeeklyRate').textContent = fmtNum(weeklyRate);
     document.getElementById('distTotalWeighted').textContent = fmtNum(totalWeighted);
     document.getElementById('distActiveStakers').textContent = stakers.length;
+
+    // Distribution countdown timer
+    updateDistTimer(data.last_distribution_at, data.distribution_count);
 
     // APY
     const clawnchStaked = Number(data.total_balance) || 0;
@@ -604,8 +658,21 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
         distStatus.textContent = 'Confirming...';
         await waitForReceipt(disperseTx);
 
+        // Mark distribution complete in DB
+        distStatus.textContent = 'Recording distribution...';
+        try {
+            await fetch(API_BASE + '/ubi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'mark-distributed', wallet_address: userAddress })
+            });
+        } catch (e) { /* non-critical */ }
+
         distStatus.textContent = `UBI distributed to ${stakers.length} stakers!`;
         distStatus.className = 'airdrop-status success';
+
+        // Refresh to update timer
+        loadDistribution();
     } catch (err) {
         console.error('UBI airdrop error:', err);
         distStatus.textContent = err.message || 'Airdrop failed';
