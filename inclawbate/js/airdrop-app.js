@@ -136,6 +136,7 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.textContent = shortAddr(userAddress);
         connectBtn.disabled = true;
         selectPanel.style.display = '';
+        document.getElementById('rewardsPanel').style.display = '';
         loadProfiles();
     } catch (err) {
         walletStatus.textContent = err.message || 'Connection failed';
