@@ -16,6 +16,8 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin) || /^chrome-extension:\/\//.test(origin)) {
@@ -48,16 +50,18 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Authentication required. Provide a JWT token or X-API-Key header.' });
     }
 
-    // Check credits before generating
+    // Check credits before generating (admin wallet bypasses)
     const { data: profile } = await supabase
         .from('human_profiles')
-        .select('credits')
+        .select('credits, wallet_address')
         .eq('id', profileId)
         .single();
 
-    if (!profile || profile.credits <= 0) {
+    const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET;
+
+    if (!isAdmin && (!profile || profile.credits <= 0)) {
         return res.status(402).json({
-            error: 'No credits remaining. Deposit $CLAWNCH at inclawbate.com/dashboard to get more.',
+            error: 'No credits remaining. Deposit $CLAWNCH at inclawbate.com/deposit to get more.',
             credits: 0
         });
     }
@@ -131,14 +135,16 @@ Write a reply:`;
 
         const reply = data.content?.[0]?.text?.trim() || '';
 
-        // Deduct 1 credit
-        const { data: newBalance } = await supabase
-            .rpc('deduct_inclawbate_credit', { profile_id: profileId });
+        // Deduct 1 credit (skip for admin)
+        let creditsRemaining = profile?.credits || 0;
+        if (!isAdmin) {
+            const { data: newBalance } = await supabase
+                .rpc('deduct_inclawbate_credit', { profile_id: profileId });
+            creditsRemaining = newBalance >= 0 ? newBalance : 0;
+        }
 
         // Increment lifetime reply counter (for leaderboard)
         await supabase.rpc('increment_inclawbator_replies', { profile_id: profileId });
-
-        const creditsRemaining = newBalance >= 0 ? newBalance : 0;
 
         return res.status(200).json({ reply, credits_remaining: creditsRemaining });
 
