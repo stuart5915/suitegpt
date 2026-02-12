@@ -8,6 +8,7 @@ window.addEventListener('message', (event) => {
     chrome.runtime.sendMessage({
         action: 'set-api-key',
         apiKey: event.data.apiKey,
+        token: event.data.token,
         xHandle: event.data.xHandle,
         walletAddress: event.data.walletAddress
     });

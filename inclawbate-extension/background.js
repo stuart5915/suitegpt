@@ -6,12 +6,17 @@ const CREDITS_URL = 'https://inclawbate.com/api/inclawbate/credits';
 // ── Badge: poll for unread messages ──
 async function updateBadge() {
     try {
-        const data = await chrome.storage.sync.get(['apiKey']);
-        if (!data.apiKey) {
+        const data = await chrome.storage.sync.get(['apiKey', 'token']);
+        if (!data.apiKey && !data.token) {
             chrome.action.setBadgeText({ text: '' });
             return;
         }
-        const resp = await fetch(`${CREDITS_URL}?key=${encodeURIComponent(data.apiKey)}`);
+        let resp;
+        if (data.apiKey) {
+            resp = await fetch(`${CREDITS_URL}?key=${encodeURIComponent(data.apiKey)}`);
+        } else {
+            resp = await fetch(CREDITS_URL, { headers: { 'Authorization': `Bearer ${data.token}` } });
+        }
         if (!resp.ok) return;
         const result = await resp.json();
         const unread = result.unread || 0;
@@ -52,7 +57,9 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'set-api-key') {
         // Relay from auth-relay.js on inclawbate.com after wallet connect or OAuth
-        const toStore = { apiKey: message.apiKey };
+        const toStore = {};
+        if (message.apiKey) toStore.apiKey = message.apiKey;
+        if (message.token) toStore.token = message.token;
         if (message.xHandle) toStore.xHandle = message.xHandle;
         if (message.walletAddress) toStore.walletAddress = message.walletAddress;
         chrome.storage.sync.set(toStore, () => {
@@ -71,7 +78,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function generateReply({ tweetText, tweetAuthor, threadContext }) {
-    const data = await chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', 'apiKey', 'tone', 'persona', 'goals', 'topics', 'maxLength', 'style']);
+    const data = await chrome.storage.sync.get(['profiles', 'activeProfile', 'apiUrl', 'apiKey', 'token', 'tone', 'persona', 'goals', 'topics', 'maxLength', 'style']);
 
     let params;
     if (data.profiles && data.activeProfile && data.profiles[data.activeProfile]) {
@@ -102,6 +109,8 @@ async function generateReply({ tweetText, tweetAuthor, threadContext }) {
     const headers = { 'Content-Type': 'application/json' };
     if (data.apiKey) {
         headers['X-API-Key'] = data.apiKey;
+    } else if (data.token) {
+        headers['Authorization'] = `Bearer ${data.token}`;
     }
 
     const response = await fetch(apiUrl, {
