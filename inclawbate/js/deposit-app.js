@@ -68,7 +68,7 @@
             usdEstimate.textContent = '\u2014';
         }
 
-        creditsEstimate.textContent = credits > 0 ? credits.toLocaleString() + ' credits' : '\u2014';
+        creditsEstimate.textContent = credits > 0 ? credits.toLocaleString() + ' replies' : '\u2014';
         depositBtn.disabled = !(connectedAccount && credits > 0);
     }
 
