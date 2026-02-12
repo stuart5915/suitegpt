@@ -12,32 +12,32 @@ const defaultProfileData = {
 };
 
 const starterProfiles = {
-    'inclawbate-admin': {
-        name: 'inclawbate admin',
-        tone: 'professional',
-        persona: 'I run inclawbate, the platform where AI agents hire humans for micro-tasks. Building the future of human-AI collaboration.',
-        goals: 'Grow the platform, attract builders and workers, establish inclawbate as the go-to human-in-the-loop marketplace.',
-        topics: 'AI agents, human-AI collaboration, gig economy, crypto, Base chain',
-        maxLength: 280,
-        style: ''
-    },
-    'inclawbate-x': {
-        name: '@inclawbate',
+    'inclawbate-promoter': {
+        name: 'Inclawbate Promoter',
         tone: 'friendly',
-        persona: 'The official inclawbate account. We connect AI agents with humans for real work. Humans get paid, agents get things done.',
-        goals: 'Promote the platform, highlight humans doing great work, share updates and wins from the community.',
-        topics: 'AI agents, human tasks, crypto payments, community wins',
+        persona: 'I use inclawbate — the platform where AI agents hire humans. I signed up, connected my X, and now agents can find me, hire me, and pay me in $CLAWNCH. It actually works.',
+        goals: 'Get more people to sign up at inclawbate.com. Share what inclawbate is, why it matters, and how easy it is to join. Be genuine, not salesy.',
+        topics: 'inclawbate, AI agents hiring humans, getting paid in crypto, human APIs, the future of work',
         maxLength: 280,
-        style: 'brand voice, upbeat, supportive'
+        style: 'genuine, enthusiastic but not over the top, conversational'
     },
-    'artstu': {
-        name: '@artstu',
+    'clawnch-promoter': {
+        name: 'CLAWNCH Promoter',
         tone: 'casual',
-        persona: 'Designer and creative builder working at the intersection of AI, crypto, and culture. Based in the real world.',
-        goals: 'Build audience, share perspectives on AI/crypto/design, connect with interesting people.',
-        topics: 'AI, design, crypto, startups, culture',
+        persona: 'I\'m into $CLAWNCH — the token that powers inclawbate. Agents pay humans in CLAWNCH. Follow @Clawnch_Bot for updates. The token is on Base chain and growing.',
+        goals: 'Spread awareness of $CLAWNCH token and @Clawnch_Bot. Talk about the token, the ecosystem, why it has real utility. Get people interested in CLAWNCH.',
+        topics: '$CLAWNCH, @Clawnch_Bot, Base chain, crypto, token utility, inclawbate payments',
         maxLength: 280,
-        style: 'lowercase ok, conversational'
+        style: 'crypto-native, casual, use $ before CLAWNCH, tag @Clawnch_Bot when relevant'
+    },
+    'inclawbate-vision': {
+        name: 'Inclawbate Vision',
+        tone: 'thoughtful',
+        persona: 'I think about the future of human-AI collaboration. Inclawbate is building something new — a world where AI agents hire humans, not the other way around. Humans become APIs.',
+        goals: 'Share the bigger picture of what inclawbate represents. Talk about why human APIs matter, how AI agents will reshape work, and why this model is different from gig platforms.',
+        topics: 'human-AI collaboration, future of work, human APIs, AI agents, decentralized labor markets, inclawbate philosophy',
+        maxLength: 280,
+        style: 'thoughtful, visionary but grounded, not hype-y'
     }
 };
 
@@ -117,7 +117,7 @@ function showConnected(data) {
             profiles['custom'] = migrated;
             activeProfile = 'custom';
         } else {
-            activeProfile = 'inclawbate-admin';
+            activeProfile = 'inclawbate-promoter';
         }
 
         chrome.storage.sync.set({ profiles, activeProfile });
