@@ -1,6 +1,6 @@
 // Popup — two-state: connect screen vs settings
 
-const profileFields = ['tone', 'persona', 'goals', 'topics', 'maxLength', 'style'];
+const profileFields = ['tone', 'persona', 'goals', 'topics', 'maxLength', 'style', 'neverSay'];
 
 const defaultProfileData = {
     tone: 'casual',
@@ -8,7 +8,8 @@ const defaultProfileData = {
     goals: '',
     topics: '',
     maxLength: 280,
-    style: ''
+    style: '',
+    neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting"'
 };
 
 const starterProfiles = {
@@ -19,7 +20,8 @@ const starterProfiles = {
         goals: 'Get more people to sign up at inclawbate.com. Share what inclawbate is, why it matters, and how easy it is to join. Be genuine, not salesy.',
         topics: 'inclawbate, AI agents hiring humans, getting paid in crypto, human APIs, the future of work',
         maxLength: 280,
-        style: 'genuine, enthusiastic but not over the top, conversational'
+        style: 'genuine, enthusiastic but not over the top, conversational',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
     },
     'clawnch-promoter': {
         name: 'CLAWNCH Promoter',
@@ -28,7 +30,8 @@ const starterProfiles = {
         goals: 'Spread awareness of $CLAWNCH token and @Clawnch_Bot. Talk about the token, the ecosystem, why it has real utility. Get people interested in CLAWNCH.',
         topics: '$CLAWNCH, @Clawnch_Bot, Base chain, crypto, token utility, inclawbate payments',
         maxLength: 280,
-        style: 'crypto-native, casual, use $ before CLAWNCH, tag @Clawnch_Bot when relevant'
+        style: 'crypto-native, casual, use $ before CLAWNCH, tag @Clawnch_Bot when relevant',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
     },
     'inclawbate-vision': {
         name: 'Inclawbate Vision',
@@ -37,7 +40,8 @@ const starterProfiles = {
         goals: 'Share the bigger picture of what inclawbate represents. Talk about why human APIs matter, how AI agents will reshape work, and why this model is different from gig platforms.',
         topics: 'human-AI collaboration, future of work, human APIs, AI agents, decentralized labor markets, inclawbate philosophy',
         maxLength: 280,
-        style: 'thoughtful, visionary but grounded, not hype-y'
+        style: 'thoughtful, visionary but grounded, not hype-y',
+        neverSay: '—, em dashes, "Great point!", "To be fair", "I think it\'s worth noting", "Absolutely!"'
     }
 };
 

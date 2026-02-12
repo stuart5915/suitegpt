@@ -84,7 +84,8 @@ export default async function handler(req, res) {
             goals = '',
             topics = '',
             maxLength = 280,
-            style = ''
+            style = '',
+            neverSay = ''
         } = parameters || {};
 
         const systemPrompt = `You are a ghostwriter generating X/Twitter replies for a human user. Write a reply to the tweet below.
@@ -103,6 +104,7 @@ ${persona ? `User persona: ${persona}` : ''}
 ${goals ? `User goals for replies: ${goals}` : ''}
 ${topics ? `Topics the user cares about: ${topics}` : ''}
 ${style ? `Additional style notes: ${style}` : ''}
+${neverSay ? `NEVER use these words or phrases (strictly forbidden): ${neverSay}` : ''}
 Tone: ${tone}`;
 
         const userMessage = `${threadContext ? `Thread context:\n${threadContext}\n\n` : ''}Tweet by @${tweetAuthor || 'unknown'}:\n"${tweetText}"

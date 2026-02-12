@@ -90,7 +90,8 @@ async function generateReply({ tweetText, tweetAuthor, threadContext }) {
             goals: prof.goals || '',
             topics: prof.topics || '',
             maxLength: prof.maxLength || 280,
-            style: prof.style || ''
+            style: prof.style || '',
+            neverSay: prof.neverSay || ''
         };
     } else {
         // Backwards-compat: flat keys (pre-migration)
@@ -100,7 +101,8 @@ async function generateReply({ tweetText, tweetAuthor, threadContext }) {
             goals: data.goals || '',
             topics: data.topics || '',
             maxLength: data.maxLength || 280,
-            style: data.style || ''
+            style: data.style || '',
+            neverSay: data.neverSay || ''
         };
     }
 
