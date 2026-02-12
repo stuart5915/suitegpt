@@ -115,6 +115,14 @@ function daysSince(dateStr) {
     ubiData = ubiRes;
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
 
+    // ── Distribution Countdown Timer ──
+    if (ubiData && ubiData.last_distribution_at) {
+        startCountdown(ubiData.last_distribution_at);
+    } else if (ubiData) {
+        // No distribution yet — show countdown from when treasury was created
+        startCountdown(ubiData.created_at || ubiData.updated_at || new Date().toISOString());
+    }
+
     // ── Protocol Revenue Section ──
     var protocolWeth = 0;
     if (wethBalRes && wethBalRes.result) {
@@ -368,6 +376,74 @@ function daysSince(dateStr) {
                 lpValEl.textContent = 'Compounding...';
             }
         }
+    }
+
+    // ── Distribution Countdown ──
+    function startCountdown(lastDistAt) {
+        var container = document.getElementById('ubiCountdown');
+        if (!container) return;
+
+        var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        var lastDist = new Date(lastDistAt).getTime();
+        var nextDist = lastDist + SEVEN_DAYS;
+
+        // Show the countdown
+        container.classList.remove('hidden');
+
+        // Date labels
+        var lastLabel = document.getElementById('cdLastDist');
+        var nextLabel = document.getElementById('cdNextDist');
+        if (lastLabel) {
+            var ld = new Date(lastDist);
+            lastLabel.textContent = 'Last: ' + ld.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        if (nextLabel) {
+            var nd = new Date(nextDist);
+            nextLabel.textContent = 'Next: ' + nd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function tick() {
+            var now = Date.now();
+            var diff = nextDist - now;
+            var elapsed = now - lastDist;
+            var progress = Math.min(100, Math.max(0, (elapsed / SEVEN_DAYS) * 100));
+
+            // Update progress bar
+            var barFill = document.getElementById('cdBarFill');
+            if (barFill) barFill.style.width = progress + '%';
+
+            var daysEl = document.getElementById('cdDays');
+            var hoursEl = document.getElementById('cdHours');
+            var minsEl = document.getElementById('cdMins');
+            var secsEl = document.getElementById('cdSecs');
+
+            if (diff <= 0) {
+                // Overdue
+                container.classList.add('overdue');
+                var over = Math.abs(diff);
+                var oH = Math.floor(over / 3600000);
+                var oM = Math.floor((over % 3600000) / 60000);
+                if (daysEl) daysEl.textContent = '00';
+                if (hoursEl) hoursEl.textContent = '00';
+                if (minsEl) minsEl.textContent = '00';
+                if (secsEl) secsEl.textContent = '00';
+                var label = document.querySelector('.dash-countdown-label');
+                if (label) label.textContent = 'Distribution Overdue by ' + oH + 'h ' + oM + 'm';
+            } else {
+                container.classList.remove('overdue');
+                var d = Math.floor(diff / 86400000);
+                var h = Math.floor((diff % 86400000) / 3600000);
+                var m = Math.floor((diff % 3600000) / 60000);
+                var s = Math.floor((diff % 60000) / 1000);
+                if (daysEl) daysEl.textContent = d < 10 ? '0' + d : d;
+                if (hoursEl) hoursEl.textContent = h < 10 ? '0' + h : h;
+                if (minsEl) minsEl.textContent = m < 10 ? '0' + m : m;
+                if (secsEl) secsEl.textContent = s < 10 ? '0' + s : s;
+            }
+        }
+
+        tick();
+        setInterval(tick, 1000);
     }
 
     // ── Roadmap Logic ──

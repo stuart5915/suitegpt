@@ -28,6 +28,156 @@
             padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
         }
 
+        /* ── Countdown Timer ── */
+        .dash-countdown {
+            margin-bottom: var(--space-xl);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl) var(--space-xl) var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+        .dash-countdown::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--seafoam-400), hsl(160, 32%, 52%), hsl(43, 65%, 50%), var(--lobster-400));
+        }
+        .dash-countdown-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-sm);
+        }
+        .dash-countdown-time {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: var(--space-md);
+        }
+        .dash-countdown-seg {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 64px;
+        }
+        .dash-countdown-num {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--seafoam-300) 0%, hsl(160, 35%, 62%) 40%, hsl(43, 70%, 62%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .dash-countdown-unit {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .dash-countdown-colon {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--border-default);
+            padding: 0 2px;
+            align-self: flex-start;
+            margin-top: 6px;
+        }
+
+        /* Progress bar */
+        .dash-countdown-bar-wrap {
+            position: relative;
+            margin-bottom: var(--space-sm);
+        }
+        .dash-countdown-bar {
+            height: 10px;
+            background: var(--bg-card);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            position: relative;
+        }
+        .dash-countdown-bar-fill {
+            height: 100%;
+            border-radius: var(--radius-full);
+            background: linear-gradient(90deg, var(--seafoam-400), hsl(160, 32%, 52%), hsl(43, 65%, 50%), var(--lobster-400));
+            width: 0%;
+            transition: width 1s linear;
+            position: relative;
+        }
+        .dash-countdown-bar-fill::after {
+            content: '';
+            position: absolute;
+            right: 0; top: -3px;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--lobster-400);
+            box-shadow: 0 0 12px var(--lobster-400), 0 0 24px hsla(9, 60%, 54%, 0.3);
+            animation: countdownPulse 2s ease-in-out infinite;
+        }
+        @keyframes countdownPulse {
+            0%, 100% { box-shadow: 0 0 8px var(--lobster-400); transform: scale(1); }
+            50% { box-shadow: 0 0 16px var(--lobster-400), 0 0 30px hsla(9, 60%, 54%, 0.3); transform: scale(1.15); }
+        }
+        /* Shimmer effect on the bar */
+        .dash-countdown-bar-fill::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, hsla(0,0%,100%,0.15) 50%, transparent 100%);
+            animation: barShimmer 3s ease-in-out infinite;
+        }
+        @keyframes barShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+        .dash-countdown-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
+
+        /* Overdue state */
+        .dash-countdown.overdue .dash-countdown-num {
+            background: linear-gradient(135deg, var(--lobster-300), hsl(9, 55%, 62%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .dash-countdown.overdue .dash-countdown-bar-fill {
+            background: linear-gradient(90deg, var(--lobster-400), hsl(9, 55%, 58%));
+        }
+        .dash-countdown.overdue .dash-countdown-bar-fill::after {
+            background: var(--lobster-300);
+            box-shadow: 0 0 12px var(--lobster-400);
+            animation: countdownPulse 1s ease-in-out infinite;
+        }
+
+        /* Hidden until loaded */
+        .dash-countdown.hidden { display: none; }
+
+        @media (max-width: 480px) {
+            .dash-countdown-num { font-size: 2.2rem; }
+            .dash-countdown-seg { min-width: 48px; }
+            .dash-countdown-colon { font-size: 1.4rem; }
+        }
+
         /* ── Section 1: APY Hero ── */
         .dash-hero {
             margin-bottom: var(--space-xl);
@@ -983,9 +1133,10 @@
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .dash-hero { animation: dashFadeIn 0.5s var(--ease-smooth) both; }
+        .dash-countdown { animation: dashFadeIn 0.5s var(--ease-smooth) both; }
+        .dash-hero { animation: dashFadeIn 0.5s 0.05s var(--ease-smooth) both; }
         .dash-vaults { animation: dashFadeIn 0.5s 0.1s var(--ease-smooth) both; }
-        .dash-tabs { animation: dashFadeIn 0.5s 0.2s var(--ease-smooth) both; }
+        .dash-tabs { animation: dashFadeIn 0.5s 0.15s var(--ease-smooth) both; }
     </style>
 </head>
 <body>
@@ -1006,6 +1157,41 @@
 </nav>
 
 <div class="dash">
+
+    <!-- ═══ Distribution Countdown ═══ -->
+    <div class="dash-countdown hidden" id="ubiCountdown">
+        <div class="dash-countdown-label">&#129438; Next UBI Distribution &#129438;</div>
+        <div class="dash-countdown-time" id="countdownTime">
+            <div class="dash-countdown-seg">
+                <span class="dash-countdown-num" id="cdDays">--</span>
+                <span class="dash-countdown-unit">Days</span>
+            </div>
+            <span class="dash-countdown-colon">:</span>
+            <div class="dash-countdown-seg">
+                <span class="dash-countdown-num" id="cdHours">--</span>
+                <span class="dash-countdown-unit">Hours</span>
+            </div>
+            <span class="dash-countdown-colon">:</span>
+            <div class="dash-countdown-seg">
+                <span class="dash-countdown-num" id="cdMins">--</span>
+                <span class="dash-countdown-unit">Min</span>
+            </div>
+            <span class="dash-countdown-colon">:</span>
+            <div class="dash-countdown-seg">
+                <span class="dash-countdown-num" id="cdSecs">--</span>
+                <span class="dash-countdown-unit">Sec</span>
+            </div>
+        </div>
+        <div class="dash-countdown-bar-wrap">
+            <div class="dash-countdown-bar">
+                <div class="dash-countdown-bar-fill" id="cdBarFill"></div>
+            </div>
+            <div class="dash-countdown-bar-labels">
+                <span id="cdLastDist">Last: --</span>
+                <span id="cdNextDist">Next: --</span>
+            </div>
+        </div>
+    </div>
 
     <!-- ═══ Section 1: APY Hero ═══ -->
     <section class="dash-hero">
