@@ -212,12 +212,17 @@ function daysSince(dateStr) {
         var weeklyClawnchEl = document.getElementById('weeklyClawnch');
         var weeklyInclawnchEl = document.getElementById('weeklyInclawnch');
 
-        if (apyClawnchEl) {
-            apyClawnchEl.textContent = clawnchApy > 0 ? clawnchApy.toFixed(1) + '%' : '--';
-        }
-        if (apyInclawnchEl) {
-            apyInclawnchEl.textContent = inclawnchApy > 0 ? inclawnchApy.toFixed(1) + '%' : '--';
-        }
+        var clawnchApyStr = clawnchApy > 0 ? clawnchApy.toFixed(1) + '%' : '--';
+        var inclawnchApyStr = inclawnchApy > 0 ? inclawnchApy.toFixed(1) + '%' : '--';
+
+        if (apyClawnchEl) apyClawnchEl.textContent = clawnchApyStr;
+        if (apyInclawnchEl) apyInclawnchEl.textContent = inclawnchApyStr;
+
+        // Also update vault card APY badges
+        var vaultApyC = document.getElementById('vaultApyClawnch');
+        var vaultApyI = document.getElementById('vaultApyInclawnch');
+        if (vaultApyC) vaultApyC.textContent = clawnchApyStr + ' APY';
+        if (vaultApyI) vaultApyI.textContent = inclawnchApyStr + ' APY';
 
         // Weekly earnings per 100k staked
         if (weeklyClawnchEl) {
