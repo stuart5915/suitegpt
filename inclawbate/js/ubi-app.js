@@ -398,12 +398,27 @@ function daysSince(dateStr) {
         }
     }
 
+    function getInputAmount(token) {
+        var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
+        if (!input) return 0;
+        return parseInt(input.value.replace(/,/g, '')) || 0;
+    }
+
+    function setInputAmount(token, amount) {
+        var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
+        if (!input) return;
+        input.value = Math.floor(amount).toLocaleString();
+        updateHint(token);
+        updateSliderFromInput(token);
+        updatePctButtons(token);
+    }
+
     function updateHint(token) {
         var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
         var hint = document.querySelector('.stake-hint[data-token="' + token + '"]');
         var depositBtn = document.querySelector('.stake-deposit-btn[data-token="' + token + '"]');
         if (!input || !hint || !depositBtn) return;
-        var amount = parseInt(input.value) || 0;
+        var amount = getInputAmount(token);
         var price = getPrice(token);
         if (price > 0 && amount > 0) {
             hint.textContent = '~$' + (amount * price).toFixed(2);
@@ -413,13 +428,31 @@ function daysSince(dateStr) {
         depositBtn.disabled = amount <= 0 || !stakeWallet;
     }
 
+    function updateSliderFromInput(token) {
+        var slider = document.querySelector('.stake-slider[data-token="' + token + '"]');
+        if (!slider) return;
+        var bal = walletBalances[token] || 0;
+        if (bal <= 0) { slider.value = 0; return; }
+        var amount = getInputAmount(token);
+        slider.value = Math.min(100, Math.round((amount / bal) * 100));
+    }
+
+    function updatePctButtons(token) {
+        var bal = walletBalances[token] || 0;
+        var amount = getInputAmount(token);
+        var pct = bal > 0 ? Math.round((amount / bal) * 100) : 0;
+        document.querySelectorAll('.stake-pct-row[data-token="' + token + '"] .ubi-stake-pct-btn').forEach(function(btn) {
+            var btnPct = parseInt(btn.getAttribute('data-pct'));
+            btn.classList.toggle('active', pct === btnPct);
+        });
+    }
+
     async function doDeposit(token) {
-        var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
         var depositBtn = document.querySelector('.stake-deposit-btn[data-token="' + token + '"]');
         var status = document.querySelector('.stake-status[data-token="' + token + '"]');
-        if (!input || !depositBtn || !status) return;
+        if (!depositBtn || !status) return;
 
-        var amount = parseInt(input.value) || 0;
+        var amount = getInputAmount(token);
         if (amount <= 0 || !stakeWallet) return;
 
         var config = TOKEN_CONFIG[token];
@@ -519,7 +552,10 @@ function daysSince(dateStr) {
     // Wire up amount inputs
     document.querySelectorAll('.stake-amount').forEach(function(input) {
         input.addEventListener('input', function() {
-            updateHint(input.getAttribute('data-token'));
+            var token = input.getAttribute('data-token');
+            updateHint(token);
+            updateSliderFromInput(token);
+            updatePctButtons(token);
         });
     });
 
@@ -530,17 +566,41 @@ function daysSince(dateStr) {
         });
     });
 
-    // Wire up MAX buttons
+    // Wire up MAX buttons (in balance display)
     document.querySelectorAll('.bal-max').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var token = btn.getAttribute('data-token');
             var bal = Math.floor(walletBalances[token] || 0);
             if (bal <= 0) return;
+            setInputAmount(token, bal);
+        });
+    });
+
+    // Wire up % buttons
+    document.querySelectorAll('.ubi-stake-pct-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var row = btn.closest('.stake-pct-row');
+            if (!row) return;
+            var token = row.getAttribute('data-token');
+            var pct = parseInt(btn.getAttribute('data-pct'));
+            var bal = walletBalances[token] || 0;
+            if (bal <= 0) return;
+            setInputAmount(token, bal * pct / 100);
+        });
+    });
+
+    // Wire up sliders
+    document.querySelectorAll('.stake-slider').forEach(function(slider) {
+        slider.addEventListener('input', function() {
+            var token = slider.getAttribute('data-token');
+            var pct = parseInt(slider.value);
+            var bal = walletBalances[token] || 0;
+            if (bal <= 0) return;
+            var amount = Math.floor(bal * pct / 100);
             var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
-            if (input) {
-                input.value = bal;
-                updateHint(token);
-            }
+            if (input) input.value = amount.toLocaleString();
+            updateHint(token);
+            updatePctButtons(token);
         });
     });
 })();
