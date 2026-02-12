@@ -5,6 +5,9 @@ const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const BASE_CHAIN_ID = '0x2105';
 const TRANSFER_SELECTOR = '0xa9059cbb';
 
+// Roadmap milestones (USD targets)
+const MILESTONES = [100000, 500000, 1000000, 5000000, 10000000, 25000000, 50000000];
+
 function esc(str) {
     const div = document.createElement('div');
     div.textContent = str || '';
@@ -81,6 +84,10 @@ function timeAgo(dateStr) {
             document.getElementById('statApy').textContent = apy + '%';
         }
 
+        // ── Roadmap ──
+        const treasuryUsd = balance * clawnchPrice;
+        updateRoadmap(treasuryUsd);
+
         // Contributors
         if (ubiData.contributors && ubiData.contributors.length > 0) {
             const cList = document.getElementById('contributorsList');
@@ -95,6 +102,51 @@ function timeAgo(dateStr) {
                 '</div>';
             }).join('');
         }
+    } else {
+        // Still update roadmap with 0 if no data
+        updateRoadmap(0);
+    }
+
+    // ── Roadmap Logic ──
+    function updateRoadmap(treasuryUsd) {
+        const maxTarget = MILESTONES[MILESTONES.length - 1];
+
+        // Fill the progress bar
+        const fillEl = document.getElementById('roadmapFill');
+        if (fillEl) {
+            // Use logarithmic scale for better visual representation
+            const pct = treasuryUsd <= 0 ? 0 : Math.min(100, (Math.log10(treasuryUsd) / Math.log10(maxTarget)) * 100);
+            setTimeout(function() { fillEl.style.width = pct + '%'; }, 300);
+        }
+
+        // Place milestone dots on the progress bar
+        const markersEl = document.getElementById('milestoneMarkers');
+        if (markersEl) {
+            markersEl.innerHTML = MILESTONES.map(function(target) {
+                const pos = target <= 0 ? 0 : (Math.log10(target) / Math.log10(maxTarget)) * 100;
+                const reached = treasuryUsd >= target;
+                const isCurrent = !reached && (MILESTONES.indexOf(target) === 0 || treasuryUsd >= MILESTONES[MILESTONES.indexOf(target) - 1]);
+                const cls = reached ? 'reached' : (isCurrent ? 'current' : '');
+                return '<div class="ubi-milestone-dot ' + cls + '" style="left:' + pos + '%"></div>';
+            }).join('');
+        }
+
+        // Update milestone cards
+        var milestoneCards = document.querySelectorAll('.ubi-milestone[data-target]');
+        var foundCurrent = false;
+        milestoneCards.forEach(function(card) {
+            var target = parseInt(card.getAttribute('data-target'));
+            if (treasuryUsd >= target) {
+                card.classList.add('reached');
+                card.classList.remove('current');
+            } else if (!foundCurrent) {
+                card.classList.add('current');
+                card.classList.remove('reached');
+                foundCurrent = true;
+            } else {
+                card.classList.remove('reached', 'current');
+            }
+        });
     }
 
     // ── Fund the Treasury ──
@@ -209,6 +261,8 @@ function timeAgo(dateStr) {
                 document.getElementById('treasuryValue').textContent = fmt(newBalance) + ' CLAWNCH';
                 if (clawnchPrice > 0) {
                     document.getElementById('treasuryUsd').textContent = '~$' + (newBalance * clawnchPrice).toFixed(2) + ' USD';
+                    // Update roadmap with new value
+                    updateRoadmap(newBalance * clawnchPrice);
                 }
             } else {
                 fundStatus.textContent = apiData.error || 'Failed to record deposit';
