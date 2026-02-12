@@ -1,7 +1,8 @@
-// Inclawbate — Admin Airdrop Controller
+// Inclawbate — Admin Airdrop Controller + UBI Distribution
 // Uses Disperse.app contract on Base for batch ERC-20 transfers
 
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const DISPERSE_ADDRESS = '0xD152f549545093347A162Dce210e7293f1452150';
 const BASE_CHAIN_ID = '0x2105';
 const API_BASE = '/api/inclawbate';
@@ -18,6 +19,7 @@ let userAddress = null;
 let allProfiles = [];
 let clawnchPrice = 0;
 let currentFilter = 'no-hires';
+let distData = null; // UBI distribution data
 
 // Helpers
 function pad32(hex) {
@@ -31,6 +33,9 @@ function toWei(amount) {
 }
 function shortAddr(a) {
     return a.slice(0, 6) + '...' + a.slice(-4);
+}
+function fmtNum(n) {
+    return Math.round(Number(n) || 0).toLocaleString();
 }
 
 // ── Wallet ──
@@ -73,7 +78,12 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.textContent = shortAddr(userAddress);
         connectBtn.disabled = true;
         selectPanel.style.display = '';
+
+        // Show UBI distribution panel
+        document.getElementById('ubiDistPanel').style.display = '';
+
         loadProfiles();
+        loadDistribution();
     } catch (err) {
         walletStatus.textContent = err.message || 'Connection failed';
         walletStatus.className = 'airdrop-status error';
@@ -337,30 +347,323 @@ sendBtn.addEventListener('click', async () => {
     }
 });
 
+// ══════════════════════════════════════════════════
+//  UBI DISTRIBUTION
+// ══════════════════════════════════════════════════
+
+async function loadDistribution() {
+    const resp = await fetch(API_BASE + '/ubi?distribution=true');
+    const data = await resp.json();
+    distData = data;
+
+    const dist = data.distribution || {};
+    const stakers = dist.stakers || [];
+    const pendingUnstakes = dist.pending_unstakes || [];
+    const weeklyRate = dist.weekly_rate || 0;
+    const totalWeighted = dist.total_weighted_days || 0;
+
+    // Update stats
+    document.getElementById('distWeeklyRate').textContent = fmtNum(weeklyRate);
+    document.getElementById('distTotalWeighted').textContent = fmtNum(totalWeighted);
+    document.getElementById('distActiveStakers').textContent = stakers.length;
+
+    // APY
+    const clawnchStaked = Number(data.total_balance) || 0;
+    const inclawnchStaked = Number(data.inclawnch_staked) || 0;
+    const totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
+    if (totalWeightedStake > 0 && weeklyRate > 0) {
+        const apy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
+        document.getElementById('distEffectiveApy').textContent = apy + '%';
+    }
+
+    // Set input to current weekly rate
+    document.getElementById('weeklyRateInput').value = weeklyRate || '';
+
+    // Render staker table
+    const tbody = document.getElementById('stakerTableBody');
+    if (stakers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No active stakers</td></tr>';
+    } else {
+        tbody.innerHTML = stakers.map(s => {
+            const name = s.x_name || s.x_handle || shortAddr(s.wallet);
+            const tokenLabel = s.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+            const barWidth = Math.max(4, Math.min(80, s.share_pct * 0.8));
+            return `<tr>
+                <td><strong>${escHtml(name)}</strong><br><span class="mono">${shortAddr(s.wallet)}</span></td>
+                <td>${tokenLabel}</td>
+                <td class="mono">${fmtNum(s.amount)}</td>
+                <td class="mono">${s.staked_days}d</td>
+                <td class="mono">${fmtNum(s.weighted_days)}</td>
+                <td><span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%</td>
+                <td class="mono" style="color: var(--seafoam-300); font-weight:600;">${fmtNum(s.share_amount)}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Render pending unstakes
+    const unstakeTbody = document.getElementById('unstakeTableBody');
+    if (pendingUnstakes.length === 0) {
+        unstakeTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No pending unstakes</td></tr>';
+    } else {
+        // Aggregate by wallet+token
+        const unstakeMap = {};
+        for (const u of pendingUnstakes) {
+            const key = u.wallet_address + '_' + u.token;
+            if (!unstakeMap[key]) {
+                unstakeMap[key] = { ...u, total: 0 };
+            }
+            unstakeMap[key].total += u.clawnch_amount;
+        }
+        const aggregated = Object.values(unstakeMap);
+
+        unstakeTbody.innerHTML = aggregated.map(u => {
+            const name = u.x_name || u.x_handle || shortAddr(u.wallet_address);
+            const tokenLabel = u.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+            const when = new Date(u.unstaked_at).toLocaleDateString();
+            return `<tr>
+                <td><strong>${escHtml(name)}</strong><br><span class="mono">${shortAddr(u.wallet_address)}</span></td>
+                <td>${tokenLabel}</td>
+                <td class="mono">${fmtNum(u.total)}</td>
+                <td class="mono">${when}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Enable buttons
+    document.getElementById('airdropUbiBtn').disabled = stakers.length === 0 || weeklyRate <= 0;
+    document.getElementById('returnUnstakedBtn').disabled = pendingUnstakes.length === 0;
+}
+
+// Set weekly rate
+document.getElementById('setRateBtn').addEventListener('click', async () => {
+    const rateInput = document.getElementById('weeklyRateInput');
+    const rateStatus = document.getElementById('rateStatus');
+    const rate = Number(rateInput.value);
+
+    if (isNaN(rate) || rate < 0) {
+        rateStatus.textContent = 'Enter a valid number';
+        rateStatus.className = 'airdrop-status error';
+        return;
+    }
+
+    rateStatus.textContent = 'Saving...';
+    rateStatus.className = 'airdrop-status';
+
+    try {
+        const resp = await fetch(API_BASE + '/ubi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update-config',
+                wallet_address: userAddress,
+                weekly_rate: rate
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            rateStatus.textContent = 'Weekly rate set to ' + fmtNum(rate) + ' CLAWNCH';
+            rateStatus.className = 'airdrop-status success';
+            loadDistribution();
+        } else {
+            rateStatus.textContent = data.error || 'Failed';
+            rateStatus.className = 'airdrop-status error';
+        }
+    } catch (err) {
+        rateStatus.textContent = err.message || 'Failed';
+        rateStatus.className = 'airdrop-status error';
+    }
+});
+
+// Refresh distribution
+document.getElementById('refreshDistBtn').addEventListener('click', () => {
+    loadDistribution();
+});
+
+// Airdrop UBI via Disperse
+document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
+    if (!distData?.distribution?.stakers?.length) return;
+
+    const stakers = distData.distribution.stakers.filter(s => s.share_amount > 0);
+    if (stakers.length === 0) return;
+
+    const distStatus = document.getElementById('distStatus');
+    const btn = document.getElementById('airdropUbiBtn');
+    btn.disabled = true;
+    distStatus.textContent = 'Preparing UBI airdrop...';
+    distStatus.className = 'airdrop-status';
+
+    try {
+        const recipients = stakers.map(s => s.wallet);
+        const amounts = stakers.map(s => toWei(Math.floor(s.share_amount)));
+        const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
+
+        // Check balance
+        const balanceData = BALANCE_SELECTOR + pad32(userAddress);
+        const balResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
+        });
+        const balance = BigInt(balResult);
+        if (balance < totalWei) {
+            distStatus.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+            distStatus.className = 'airdrop-status error';
+            btn.disabled = false;
+            return;
+        }
+
+        // Check allowance
+        distStatus.textContent = 'Checking allowance...';
+        const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+        const allowResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+        });
+        const allowance = BigInt(allowResult);
+
+        if (allowance < totalWei) {
+            distStatus.textContent = 'Approving CLAWNCH spend...';
+            const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
+            const approveTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+            });
+            distStatus.textContent = 'Waiting for approval...';
+            await waitForReceipt(approveTx);
+        }
+
+        // Disperse
+        distStatus.textContent = `Sending UBI to ${stakers.length} stakers...`;
+        const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+        const disperseTx = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+        });
+
+        distStatus.textContent = 'Confirming...';
+        await waitForReceipt(disperseTx);
+
+        distStatus.textContent = `UBI distributed to ${stakers.length} stakers!`;
+        distStatus.className = 'airdrop-status success';
+    } catch (err) {
+        console.error('UBI airdrop error:', err);
+        distStatus.textContent = err.message || 'Airdrop failed';
+        distStatus.className = 'airdrop-status error';
+        btn.disabled = false;
+    }
+});
+
+// Return unstaked tokens via Disperse
+document.getElementById('returnUnstakedBtn').addEventListener('click', async () => {
+    if (!distData?.distribution?.pending_unstakes?.length) return;
+
+    const distStatus = document.getElementById('distStatus');
+    const btn = document.getElementById('returnUnstakedBtn');
+    btn.disabled = true;
+
+    // Aggregate unstakes by wallet+token
+    const unstakeMap = {};
+    for (const u of distData.distribution.pending_unstakes) {
+        const key = u.wallet_address + '_' + u.token;
+        if (!unstakeMap[key]) {
+            unstakeMap[key] = { wallet: u.wallet_address, token: u.token, total: 0 };
+        }
+        unstakeMap[key].total += u.clawnch_amount;
+    }
+    const aggregated = Object.values(unstakeMap);
+
+    // Separate by token (CLAWNCH and inCLAWNCH need separate Disperse calls)
+    const clawnchReturns = aggregated.filter(a => a.token === 'clawnch');
+    const inclawnchReturns = aggregated.filter(a => a.token === 'inclawnch');
+
+    try {
+        // Return CLAWNCH tokens
+        if (clawnchReturns.length > 0) {
+            distStatus.textContent = 'Returning CLAWNCH to ' + clawnchReturns.length + ' wallets...';
+            distStatus.className = 'airdrop-status';
+            await disperseReturn(CLAWNCH_ADDRESS, clawnchReturns, distStatus);
+        }
+
+        // Return inCLAWNCH tokens
+        if (inclawnchReturns.length > 0) {
+            distStatus.textContent = 'Returning inCLAWNCH to ' + inclawnchReturns.length + ' wallets...';
+            distStatus.className = 'airdrop-status';
+            await disperseReturn(INCLAWNCH_ADDRESS, inclawnchReturns, distStatus);
+        }
+
+        distStatus.textContent = 'All unstaked tokens returned!';
+        distStatus.className = 'airdrop-status success';
+    } catch (err) {
+        console.error('Return unstaked error:', err);
+        distStatus.textContent = err.message || 'Return failed';
+        distStatus.className = 'airdrop-status error';
+        btn.disabled = false;
+    }
+});
+
+async function disperseReturn(tokenAddress, returns, statusEl) {
+    const recipients = returns.map(r => r.wallet);
+    const amounts = returns.map(r => toWei(Math.floor(r.total)));
+    const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
+
+    // Check balance
+    const balanceData = BALANCE_SELECTOR + pad32(userAddress);
+    const balResult = await provider.request({
+        method: 'eth_call',
+        params: [{ to: tokenAddress, data: balanceData }, 'latest']
+    });
+    const balance = BigInt(balResult);
+    if (balance < totalWei) {
+        throw new Error(`Insufficient token balance. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`);
+    }
+
+    // Check allowance
+    const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+    const allowResult = await provider.request({
+        method: 'eth_call',
+        params: [{ to: tokenAddress, data: allowData }, 'latest']
+    });
+    const allowance = BigInt(allowResult);
+
+    if (allowance < totalWei) {
+        statusEl.textContent = 'Approving token spend...';
+        const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
+        const approveTx = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: tokenAddress, data: approveData }]
+        });
+        await waitForReceipt(approveTx);
+    }
+
+    statusEl.textContent = `Sending to ${recipients.length} wallets...`;
+    const calldata = buildDisperseTokenCalldata(tokenAddress, recipients, amounts);
+    const disperseTx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+    });
+
+    statusEl.textContent = 'Confirming...';
+    await waitForReceipt(disperseTx);
+}
+
 // ── ABI encode disperseToken(address, address[], uint256[]) ──
 function buildDisperseTokenCalldata(token, recipients, amounts) {
-    // Function: disperseToken(address token, address[] recipients, uint256[] values)
-    // Selector: 0xc73a2d60
     const n = recipients.length;
 
-    // Head: selector + token + offset_to_recipients + offset_to_amounts
-    // offset_to_recipients: 3 * 32 = 96 = 0x60
-    // offset_to_amounts: 96 + 32 + n*32
     const recipientsOffset = 3 * 32; // 96
     const amountsOffset = recipientsOffset + 32 + n * 32;
 
     let data = DISPERSE_TOKEN_SELECTOR;
-    data += pad32(token);                               // token address
-    data += pad32(toHex(recipientsOffset));              // offset to recipients array
-    data += pad32(toHex(amountsOffset));                 // offset to amounts array
+    data += pad32(token);
+    data += pad32(toHex(recipientsOffset));
+    data += pad32(toHex(amountsOffset));
 
-    // Recipients array: length + elements
+    // Recipients array
     data += pad32(toHex(n));
     for (const addr of recipients) {
         data += pad32(addr);
     }
 
-    // Amounts array: length + elements
+    // Amounts array
     data += pad32(toHex(n));
     for (const amt of amounts) {
         data += pad32(toHex(amt));

@@ -185,6 +185,150 @@
             color: var(--text-secondary);
         }
         .select-all-row input { accent-color: var(--lobster-400); }
+
+        /* ── UBI Distribution Panel ── */
+        .ubi-dist-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-dist-header h2 { margin-bottom: 0; }
+
+        .ubi-dist-config {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+        }
+        .ubi-dist-config label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .ubi-dist-config input {
+            max-width: 140px;
+        }
+
+        .ubi-dist-stats {
+            display: flex;
+            gap: var(--space-2xl);
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-xl);
+            flex-wrap: wrap;
+        }
+
+        .ubi-dist-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-dist-table th {
+            text-align: left;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            padding: 8px var(--space-sm);
+            border-bottom: 1px solid var(--border-default);
+        }
+        .ubi-dist-table td {
+            padding: 8px var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        .ubi-dist-table tr:hover td {
+            background: hsla(0, 0%, 100%, 0.015);
+        }
+        .ubi-dist-table .mono {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+        .ubi-dist-table .share-bar {
+            display: inline-block;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--seafoam-400), var(--lobster-400));
+            min-width: 4px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .ubi-dist-section-title {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .ubi-dist-actions {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-seafoam {
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: linear-gradient(135deg, var(--seafoam-400), hsl(172, 36%, 38%));
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-smooth);
+        }
+        .btn-seafoam:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px hsla(172, 40%, 48%, 0.25);
+        }
+        .btn-seafoam:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-outline-lobster {
+            padding: 10px 24px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--lobster-400);
+            background: transparent;
+            color: var(--lobster-300);
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-smooth);
+        }
+        .btn-outline-lobster:hover {
+            background: hsla(9, 50%, 54%, 0.08);
+            transform: translateY(-2px);
+        }
+        .btn-outline-lobster:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .ubi-dist-stats { gap: var(--space-lg); }
+            .ubi-dist-table { font-size: 0.75rem; }
+            .ubi-dist-table th, .ubi-dist-table td { padding: 6px 4px; }
+            .ubi-dist-config { flex-direction: column; align-items: stretch; }
+        }
     </style>
 </head>
 <body>
@@ -257,6 +401,88 @@
         <div class="airdrop-actions">
             <button class="btn btn-primary" id="sendBtn" disabled>Approve & Send</button>
             <span class="airdrop-status" id="sendStatus"></span>
+        </div>
+    </div>
+
+    <!-- UBI Distribution Panel -->
+    <div class="airdrop-panel" id="ubiDistPanel" style="display:none;">
+        <div class="ubi-dist-header">
+            <h2>UBI Distribution</h2>
+            <button class="btn btn-primary btn-sm" id="refreshDistBtn">Refresh</button>
+        </div>
+
+        <!-- Weekly Rate Config -->
+        <div class="ubi-dist-config">
+            <label>Weekly CLAWNCH Distribution:</label>
+            <input type="number" class="input" id="weeklyRateInput" placeholder="e.g. 100000" min="0" step="1000">
+            <button class="btn btn-primary btn-sm" id="setRateBtn">Set Rate</button>
+            <span class="airdrop-status" id="rateStatus"></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="ubi-dist-stats">
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="distWeeklyRate">0</span>
+                <span class="airdrop-stat-label">Weekly Rate</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="distTotalWeighted">0</span>
+                <span class="airdrop-stat-label">Total Weighted</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="distEffectiveApy">--</span>
+                <span class="airdrop-stat-label">Effective APY</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="distActiveStakers">0</span>
+                <span class="airdrop-stat-label">Active Stakers</span>
+            </div>
+        </div>
+
+        <!-- Staker Shares Table -->
+        <div class="ubi-dist-section-title">Staker Shares</div>
+        <div style="overflow-x: auto;">
+            <table class="ubi-dist-table" id="stakerTable">
+                <thead>
+                    <tr>
+                        <th>Staker</th>
+                        <th>Token</th>
+                        <th>Amount</th>
+                        <th>Days</th>
+                        <th>Weighted</th>
+                        <th>Share</th>
+                        <th>CLAWNCH</th>
+                    </tr>
+                </thead>
+                <tbody id="stakerTableBody">
+                    <tr><td colspan="7" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pending Unstakes -->
+        <div class="ubi-dist-section-title">Pending Unstakes (Return Tokens)</div>
+        <div style="overflow-x: auto;">
+            <table class="ubi-dist-table" id="unstakeTable">
+                <thead>
+                    <tr>
+                        <th>Wallet</th>
+                        <th>Token</th>
+                        <th>Amount</th>
+                        <th>Unstaked At</th>
+                    </tr>
+                </thead>
+                <tbody id="unstakeTableBody">
+                    <tr><td colspan="4" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">None</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Actions -->
+        <div class="ubi-dist-actions">
+            <button class="btn-seafoam" id="airdropUbiBtn" disabled>Airdrop UBI</button>
+            <button class="btn-outline-lobster" id="returnUnstakedBtn" disabled>Return Unstaked</button>
+            <span class="airdrop-status" id="distStatus"></span>
         </div>
     </div>
 </div>

@@ -47,6 +47,13 @@ function timeAgo(dateStr) {
     return days + 'd ago';
 }
 
+function daysSince(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = diff / 86400000;
+    if (days < 1) return 'less than a day';
+    return Math.floor(days) + ' day' + (Math.floor(days) !== 1 ? 's' : '');
+}
+
 (async function() {
     let clawnchPrice = 0;
     let inclawnchPrice = 0;
@@ -91,11 +98,11 @@ function timeAgo(dateStr) {
         document.getElementById('statInclawnchStaked').textContent = fmt(inclawnchStaked);
         document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
-        // Rough APY estimate
+        // APY: (weekly_rate * 52) / total_weighted_stake * 100
         const weeklyRate = Number(ubiData.weekly_rate) || 0;
-        const monthlyRate = weeklyRate * 4.33;
-        if (clawnchStaked > 0 && monthlyRate > 0) {
-            const apy = ((monthlyRate / clawnchStaked) * 12 * 100).toFixed(1);
+        const totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
+        if (totalWeightedStake > 0 && weeklyRate > 0) {
+            const apy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
             document.getElementById('statApy').textContent = apy + '%';
         }
 
@@ -112,7 +119,8 @@ function timeAgo(dateStr) {
                 const token = c.token || 'clawnch';
                 const tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
                 const tokenClass = 'ubi-contrib-token--' + token;
-                return '<div class="ubi-contrib-row">' +
+                const inactive = c.active === false ? ' style="opacity:0.4"' : '';
+                return '<div class="ubi-contrib-row"' + inactive + '>' +
                     '<span class="ubi-contrib-name">' + esc(name) + '</span>' +
                     '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
                     '<span class="ubi-contrib-amount">' + amount + '</span>' +
@@ -207,6 +215,9 @@ function timeAgo(dateStr) {
                 updateHint(input.getAttribute('data-token'));
             });
 
+            // Load user's stakes
+            loadMyStakes();
+
             return stakeWallet;
         } catch (err) {
             document.querySelectorAll('.stake-status').forEach(function(el) {
@@ -214,6 +225,134 @@ function timeAgo(dateStr) {
                 el.className = 'ubi-stake-status stake-status error';
             });
             return null;
+        }
+    }
+
+    // ── Your Stakes ──
+    async function loadMyStakes() {
+        if (!stakeWallet) return;
+
+        const section = document.getElementById('yourStakesSection');
+        const list = document.getElementById('yourStakesList');
+        section.classList.add('visible');
+
+        try {
+            const resp = await fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase());
+            const data = await resp.json();
+            const stakes = data.my_stakes || [];
+
+            const activeStakes = stakes.filter(function(s) { return s.active; });
+            const pendingUnstakes = stakes.filter(function(s) { return !s.active && s.unstaked_at; });
+
+            if (activeStakes.length === 0 && pendingUnstakes.length === 0) {
+                list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning UBI.</div>';
+                return;
+            }
+
+            // Group active stakes by token
+            var grouped = {};
+            activeStakes.forEach(function(s) {
+                var token = s.token || 'clawnch';
+                if (!grouped[token]) grouped[token] = { amount: 0, earliest: s.created_at };
+                grouped[token].amount += s.clawnch_amount;
+                if (new Date(s.created_at) < new Date(grouped[token].earliest)) {
+                    grouped[token].earliest = s.created_at;
+                }
+            });
+
+            var html = '';
+            Object.keys(grouped).forEach(function(token) {
+                var g = grouped[token];
+                var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+                var tokenClass = 'ubi-contrib-token--' + token;
+                html += '<div class="ubi-stake-row">' +
+                    '<div class="ubi-stake-row-info">' +
+                        '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
+                        '<span class="ubi-stake-row-amount">' + fmt(g.amount) + '</span>' +
+                        '<span class="ubi-stake-row-days">staking for ' + daysSince(g.earliest) + '</span>' +
+                    '</div>' +
+                    '<button class="btn-unstake" data-token="' + token + '">Unstake</button>' +
+                '</div>';
+            });
+
+            if (pendingUnstakes.length > 0) {
+                var pendingTotal = {};
+                pendingUnstakes.forEach(function(s) {
+                    var t = s.token || 'clawnch';
+                    if (!pendingTotal[t]) pendingTotal[t] = 0;
+                    pendingTotal[t] += s.clawnch_amount;
+                });
+                var parts = [];
+                Object.keys(pendingTotal).forEach(function(t) {
+                    var label = t === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+                    parts.push(fmt(pendingTotal[t]) + ' ' + label);
+                });
+                html += '<div class="ubi-unstake-pending">Pending return: ' + parts.join(', ') + '. Your tokens will be returned in the next weekly distribution.</div>';
+            }
+
+            list.innerHTML = html;
+
+            // Wire up unstake buttons
+            list.querySelectorAll('.btn-unstake').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    handleUnstake(btn.getAttribute('data-token'));
+                });
+            });
+        } catch (e) {
+            list.innerHTML = '<div class="ubi-no-stakes">Could not load stakes.</div>';
+        }
+    }
+
+    async function handleUnstake(token) {
+        var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+        if (!confirm('Unstake all your ' + tokenLabel + '? Your tokens will be returned in the next weekly distribution.')) {
+            return;
+        }
+
+        var btn = document.querySelector('.btn-unstake[data-token="' + token + '"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Unstaking...';
+        }
+
+        try {
+            var resp = await fetch('/api/inclawbate/ubi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'unstake',
+                    wallet_address: stakeWallet,
+                    token: token
+                })
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.success) {
+                // Update treasury display
+                if (token === 'clawnch') {
+                    var newBal = Math.max(0, (Number(ubiData?.total_balance) || 0) - data.amount);
+                    document.getElementById('treasuryValue').textContent = fmt(newBal) + ' CLAWNCH';
+                    document.getElementById('statClawnchStaked').textContent = fmt(newBal);
+                } else {
+                    var newInc = Math.max(0, (Number(ubiData?.inclawnch_staked) || 0) - data.amount);
+                    document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
+                }
+
+                // Reload stakes
+                loadMyStakes();
+            } else {
+                alert(data.error || 'Unstake failed');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Unstake';
+                }
+            }
+        } catch (err) {
+            alert('Unstake failed: ' + (err.message || 'Unknown error'));
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Unstake';
+            }
         }
     }
 
@@ -311,6 +450,9 @@ function timeAgo(dateStr) {
                     document.getElementById('treasuryUsd').textContent = '~$' + newUsd.toFixed(2) + ' USD';
                     updateRoadmap(newUsd);
                 }
+
+                // Reload user's stakes
+                loadMyStakes();
             } else {
                 status.textContent = apiData.error || 'Failed to record stake';
                 status.className = 'ubi-stake-status stake-status error';
