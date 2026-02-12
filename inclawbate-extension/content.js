@@ -152,9 +152,6 @@
         `;
 
         panel.querySelector('.inclawbate-panel-close').addEventListener('click', closePanel);
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closePanel();
-        });
 
         overlay.appendChild(panel);
         document.body.appendChild(overlay);
@@ -265,8 +262,5 @@
     // Initial injection
     injectButtons();
 
-    // Close panel on Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closePanel();
-    });
+    // Note: no Escape or click-outside dismiss — reply content is valuable
 })();
