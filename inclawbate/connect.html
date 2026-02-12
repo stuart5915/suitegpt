@@ -179,6 +179,20 @@
             };
             localStorage.setItem('inclawbate_profile', JSON.stringify(profile));
 
+            // Also store JWT token if returned
+            if (data.token) {
+                localStorage.setItem('inclawbate_token', data.token);
+            }
+
+            // Directly notify extension (auth-read.js already fired at page load before this)
+            window.postMessage({
+                type: 'inclawbate-auth',
+                apiKey: data.api_key || '',
+                token: data.token || '',
+                xHandle: data.x_handle || '',
+                walletAddress: data.wallet_address || ''
+            }, '*');
+
             // Show success
             const short = address.slice(0, 6) + '...' + address.slice(-4);
             walletAddrEl.textContent = short;
