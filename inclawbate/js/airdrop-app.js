@@ -72,11 +72,21 @@ connectBtn.addEventListener('click', async () => {
     }
 });
 
-// ── Fetch profiles ──
+// ── Fetch profiles (paginated to get all) ──
 async function loadProfiles() {
-    const resp = await fetch(API_BASE + '/humans?limit=100&sort=newest');
-    const data = await resp.json();
-    allProfiles = (data.profiles || []).filter(p => p.wallet_address);
+    allProfiles = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+        const resp = await fetch(API_BASE + `/humans?limit=${limit}&offset=${offset}&sort=newest`);
+        const data = await resp.json();
+        const batch = (data.profiles || []).filter(p => p.wallet_address);
+        allProfiles.push(...batch);
+        hasMore = data.hasMore || false;
+        offset += limit;
+    }
 
     // Exclude connected wallet (admin)
     allProfiles = allProfiles.filter(p =>
@@ -281,7 +291,38 @@ sendBtn.addEventListener('click', async () => {
         sendStatus.textContent = 'Confirming batch transfer...';
         await waitForReceipt(disperseTx);
 
-        sendStatus.textContent = `Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans!`;
+        // Record hires via batch-hire API
+        sendStatus.textContent = 'Recording hires...';
+        const adminSecret = document.getElementById('adminSecret')?.value;
+        if (adminSecret) {
+            try {
+                const hireResp = await fetch(API_BASE + '/batch-hire', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tx_hash: disperseTx,
+                        agent_address: userAddress,
+                        agent_name: 'inclawbate',
+                        recipients: selected.map(p => ({
+                            handle: p.x_handle,
+                            amount: amount
+                        })),
+                        admin_secret: adminSecret
+                    })
+                });
+                const hireResult = await hireResp.json();
+                if (hireResult.success) {
+                    sendStatus.textContent = `Done! Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans. ${hireResult.created} hires recorded.`;
+                } else {
+                    sendStatus.textContent = `CLAWNCH sent! But hire recording failed: ${hireResult.error || 'Unknown error'}`;
+                }
+            } catch (hireErr) {
+                console.error('Batch hire error:', hireErr);
+                sendStatus.textContent = `CLAWNCH sent to ${selected.length} humans! Hire recording failed — check console.`;
+            }
+        } else {
+            sendStatus.textContent = `Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans! (No admin secret — hires not recorded)`;
+        }
         sendStatus.className = 'airdrop-status success';
         sendBtn.textContent = 'Done!';
 
