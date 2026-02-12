@@ -11,7 +11,9 @@ let lastMessageTime = null;
 let currentDirection = 'inbound';
 let currentFilter = 'all';
 let sending = false;
+let pendingFile = null; // { file, name, type, dataUrl }
 const seenMessageIds = new Set();
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 
 function authHeaders() {
     const token = localStorage.getItem('inclawbate_token');
@@ -40,6 +42,17 @@ function timeAgo(dateStr) {
 
 function formatTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function renderAttachment(msg) {
+    if (!msg.file_url) return '';
+    const name = esc(msg.file_name || 'file');
+    const url = esc(msg.file_url);
+    const type = msg.file_type || '';
+    if (type.startsWith('image/')) {
+        return `<div class="chat-msg-attachment"><img src="${url}" alt="${name}" onclick="window.open('${url}','_blank')"></div>`;
+    }
+    return `<div class="chat-msg-attachment"><a href="${url}" target="_blank" rel="noopener">\uD83D\uDCCE ${name}</a></div>`;
 }
 
 // ── Agent Shares (market-driven) ──
@@ -441,15 +454,16 @@ function renderMessages(messages) {
     messages.forEach(msg => {
         seenMessageIds.add(msg.id);
         const el = document.createElement('div');
-        // In outbound direction, the "agent" messages are from YOU (the payer) and "human" messages are from the hired person
         const isYou = currentDirection === 'outbound'
             ? msg.sender_type === 'agent'
             : msg.sender_type === 'human';
         el.className = `chat-msg ${isYou ? 'human' : 'agent'}`;
         const senderLabel = isYou ? 'You' : (currentDirection === 'outbound' ? 'Them' : 'Agent');
+        const contentHtml = msg.content ? `<div class="chat-msg-content">${esc(msg.content)}</div>` : '';
         el.innerHTML = `
             <div class="chat-msg-sender">${senderLabel}</div>
-            <div class="chat-msg-content">${esc(msg.content)}</div>
+            ${contentHtml}
+            ${renderAttachment(msg)}
             <div class="chat-msg-time">${formatTime(msg.created_at)}</div>
         `;
         container.appendChild(el);
@@ -507,9 +521,11 @@ function appendMessages(messages) {
             : msg.sender_type === 'human';
         el.className = `chat-msg ${isYou ? 'human' : 'agent'}`;
         const senderLabel = isYou ? 'You' : (currentDirection === 'outbound' ? 'Them' : 'Agent');
+        const contentHtml = msg.content ? `<div class="chat-msg-content">${esc(msg.content)}</div>` : '';
         el.innerHTML = `
             <div class="chat-msg-sender">${senderLabel}</div>
-            <div class="chat-msg-content">${esc(msg.content)}</div>
+            ${contentHtml}
+            ${renderAttachment(msg)}
             <div class="chat-msg-time">${formatTime(msg.created_at)}</div>
         `;
         container.appendChild(el);
@@ -523,24 +539,59 @@ function appendMessages(messages) {
 
 // ── Send Message ──
 async function sendMessage() {
-    if (sending) return; // Prevent double-send
+    if (sending) return;
     const input = document.getElementById('chatInput');
     const content = input.value.trim();
-    if (!content || !activeConvoId) return;
+    if (!content && !pendingFile) return;
+    if (!activeConvoId) return;
 
     sending = true;
     const btn = document.getElementById('chatSendBtn');
     btn.disabled = true;
 
     try {
+        let fileData = null;
+
+        // Upload file first if attached
+        if (pendingFile) {
+            const inputBar = document.querySelector('.chat-input-bar');
+            inputBar.classList.add('chat-attach-uploading');
+
+            const uploadRes = await fetch(`${API_BASE}/upload`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    file_data: pendingFile.dataUrl,
+                    file_name: pendingFile.name,
+                    file_type: pendingFile.type
+                })
+            });
+
+            inputBar.classList.remove('chat-attach-uploading');
+
+            if (!uploadRes.ok) {
+                const err = await uploadRes.json().catch(() => ({}));
+                throw new Error(err.error || 'File upload failed');
+            }
+
+            fileData = await uploadRes.json();
+        }
+
+        const body = {
+            conversation_id: activeConvoId,
+            sender_type: currentDirection === 'outbound' ? 'agent' : 'human',
+            content: content || ''
+        };
+        if (fileData) {
+            body.file_url = fileData.url;
+            body.file_name = fileData.file_name;
+            body.file_type = fileData.file_type;
+        }
+
         const res = await fetch(`${API_BASE}/messages`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({
-                conversation_id: activeConvoId,
-                sender_type: currentDirection === 'outbound' ? 'agent' : 'human',
-                content
-            })
+            body: JSON.stringify(body)
         });
 
         if (!res.ok) {
@@ -551,6 +602,7 @@ async function sendMessage() {
         const data = await res.json();
         input.value = '';
         input.style.height = 'auto';
+        clearAttachment();
         appendMessages([data.message]);
 
     } catch (err) {
@@ -559,6 +611,21 @@ async function sendMessage() {
         sending = false;
         btn.disabled = false;
     }
+}
+
+function clearAttachment() {
+    pendingFile = null;
+    const preview = document.getElementById('attachPreview');
+    if (preview) preview.classList.add('hidden');
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    updateSendBtn();
+}
+
+function updateSendBtn() {
+    const input = document.getElementById('chatInput');
+    const btn = document.getElementById('chatSendBtn');
+    if (btn) btn.disabled = !(input?.value.trim() || pendingFile);
 }
 
 // ── Events ──
@@ -574,12 +641,47 @@ document.getElementById('chatInput')?.addEventListener('keydown', (e) => {
     }
 });
 
-// Enable/disable send button based on input
+// Enable/disable send button based on input or attachment
 document.getElementById('chatInput')?.addEventListener('input', (e) => {
-    document.getElementById('chatSendBtn').disabled = !e.target.value.trim();
+    updateSendBtn();
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
 });
+
+// Attach file button
+document.getElementById('attachBtn')?.addEventListener('click', () => {
+    document.getElementById('fileInput')?.click();
+});
+
+// File input change
+document.getElementById('fileInput')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+        alert('File too large (max 3MB)');
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        pendingFile = {
+            file,
+            name: file.name,
+            type: file.type,
+            dataUrl: reader.result
+        };
+        const preview = document.getElementById('attachPreview');
+        document.getElementById('attachName').textContent = file.name;
+        preview.classList.remove('hidden');
+        updateSendBtn();
+    };
+    reader.readAsDataURL(file);
+});
+
+// Remove attachment
+document.getElementById('attachRemove')?.addEventListener('click', clearAttachment);
 
 // Mobile back button
 document.getElementById('chatBackBtn')?.addEventListener('click', () => {

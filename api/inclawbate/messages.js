@@ -113,17 +113,22 @@ export default async function handler(req, res) {
     // POST — send a message
     if (req.method === 'POST') {
         try {
-            const { conversation_id, content, sender_type, agent_address } = req.body;
+            const { conversation_id, content, sender_type, agent_address, file_url, file_name, file_type } = req.body;
 
-            if (!conversation_id || !content || !sender_type) {
-                return res.status(400).json({ error: 'Missing conversation_id, content, or sender_type' });
+            if (!conversation_id || !sender_type) {
+                return res.status(400).json({ error: 'Missing conversation_id or sender_type' });
+            }
+
+            // Must have content or file
+            if (!content && !file_url) {
+                return res.status(400).json({ error: 'Message must have content or file attachment' });
             }
 
             if (!['agent', 'human'].includes(sender_type)) {
                 return res.status(400).json({ error: 'sender_type must be agent or human' });
             }
 
-            if (content.length > 10000) {
+            if (content && content.length > 10000) {
                 return res.status(400).json({ error: 'Message too long (max 10,000 characters)' });
             }
 
@@ -191,13 +196,18 @@ export default async function handler(req, res) {
             }
 
             // Insert message
+            const msgRow = {
+                conversation_id,
+                sender_type,
+                content: (content || '').trim()
+            };
+            if (file_url) msgRow.file_url = file_url;
+            if (file_name) msgRow.file_name = file_name;
+            if (file_type) msgRow.file_type = file_type;
+
             const { data: msg, error } = await supabase
                 .from('inclawbate_messages')
-                .insert({
-                    conversation_id,
-                    sender_type,
-                    content: content.trim()
-                })
+                .insert(msgRow)
                 .select()
                 .single();
 
@@ -214,7 +224,7 @@ export default async function handler(req, res) {
                     .single();
 
                 if (human?.telegram_chat_id) {
-                    const preview = escHtml(content.trim().slice(0, 200));
+                    const preview = content ? escHtml(content.trim().slice(0, 200)) : '📎 File attachment';
                     await notifyHuman(human.telegram_chat_id,
                         `💬 <b>New message</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
                     );
@@ -247,7 +257,7 @@ export default async function handler(req, res) {
                             .eq('id', convo.human_id)
                             .single();
                         const senderName = sender?.x_name || sender?.x_handle || 'Someone';
-                        const preview = escHtml(content.trim().slice(0, 200));
+                        const preview = content ? escHtml(content.trim().slice(0, 200)) : '📎 File attachment';
                         await notifyHuman(payer.telegram_chat_id,
                             `💬 <b>Reply from ${escHtml(senderName)}</b>\n\n"${preview}"\n\n👉 inclawbate.com/dashboard`
                         );

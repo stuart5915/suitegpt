@@ -116,12 +116,7 @@ function daysSince(dateStr) {
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
 
     // ── Distribution Countdown Timer ──
-    if (ubiData && ubiData.last_distribution_at) {
-        startCountdown(ubiData.last_distribution_at);
-    } else if (ubiData) {
-        // No distribution yet — show countdown from when treasury was created
-        startCountdown(ubiData.created_at || ubiData.updated_at || new Date().toISOString());
-    }
+    startCountdown();
 
     // ── Protocol Revenue Section ──
     var protocolWeth = 0;
@@ -378,14 +373,41 @@ function daysSince(dateStr) {
         }
     }
 
-    // ── Distribution Countdown ──
-    function startCountdown(lastDistAt) {
+    // ── Distribution Countdown (targets every Sunday 8am local) ──
+    function startCountdown() {
         var container = document.getElementById('ubiCountdown');
         if (!container) return;
 
         var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        var lastDist = new Date(lastDistAt).getTime();
-        var nextDist = lastDist + SEVEN_DAYS;
+
+        function getSunday8am(direction) {
+            // direction: 'next' or 'last'
+            var now = new Date();
+            var day = now.getDay(); // 0 = Sunday
+            var target = new Date(now);
+            target.setHours(8, 0, 0, 0);
+
+            if (direction === 'next') {
+                if (day === 0 && now < target) {
+                    // It's Sunday before 8am — target is today
+                } else {
+                    var daysUntil = (7 - day) % 7 || 7;
+                    target.setDate(target.getDate() + daysUntil);
+                }
+            } else {
+                // last Sunday 8am
+                if (day === 0 && now >= target) {
+                    // It's Sunday after 8am — last was today
+                } else {
+                    var daysSince = day === 0 ? 7 : day;
+                    target.setDate(target.getDate() - daysSince);
+                }
+            }
+            return target;
+        }
+
+        var nextDist = getSunday8am('next').getTime();
+        var lastDist = getSunday8am('last').getTime();
 
         // Show the countdown
         container.classList.remove('hidden');
@@ -393,14 +415,11 @@ function daysSince(dateStr) {
         // Date labels
         var lastLabel = document.getElementById('cdLastDist');
         var nextLabel = document.getElementById('cdNextDist');
-        if (lastLabel) {
-            var ld = new Date(lastDist);
-            lastLabel.textContent = 'Last: ' + ld.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-        if (nextLabel) {
-            var nd = new Date(nextDist);
-            nextLabel.textContent = 'Next: ' + nd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
+        var fmtDate = function(ts) {
+            return new Date(ts).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        };
+        if (lastLabel) lastLabel.textContent = 'Last: ' + fmtDate(lastDist);
+        if (nextLabel) nextLabel.textContent = 'Next: ' + fmtDate(nextDist);
 
         function tick() {
             var now = Date.now();
@@ -418,7 +437,7 @@ function daysSince(dateStr) {
             var secsEl = document.getElementById('cdSecs');
 
             if (diff <= 0) {
-                // Overdue
+                // Overdue — past Sunday 8am
                 container.classList.add('overdue');
                 var over = Math.abs(diff);
                 var oH = Math.floor(over / 3600000);
@@ -428,7 +447,7 @@ function daysSince(dateStr) {
                 if (minsEl) minsEl.textContent = '00';
                 if (secsEl) secsEl.textContent = '00';
                 var label = document.querySelector('.dash-countdown-label');
-                if (label) label.textContent = 'Distribution Overdue by ' + oH + 'h ' + oM + 'm';
+                if (label) label.textContent = '\uD83E\uDD9E Distribution Overdue by ' + oH + 'h ' + oM + 'm \uD83E\uDD9E';
             } else {
                 container.classList.remove('overdue');
                 var d = Math.floor(diff / 86400000);
