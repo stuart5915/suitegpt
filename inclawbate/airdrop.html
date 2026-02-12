@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airdrop — Inclawbate Admin</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .airdrop-container {
+            max-width: 800px;
+            margin: calc(var(--nav-height) + var(--space-2xl)) auto var(--space-2xl);
+            padding: 0 var(--space-xl);
+        }
+        .airdrop-header {
+            margin-bottom: var(--space-2xl);
+        }
+        .airdrop-header h1 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .airdrop-header p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .airdrop-panel {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+        }
+        .airdrop-panel h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+
+        .airdrop-filters {
+            display: flex;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-lg);
+        }
+        .filter-chip {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-chip:hover {
+            border-color: var(--lobster-400);
+            color: var(--text-primary);
+        }
+        .filter-chip.active {
+            background: var(--accent-glow);
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+
+        .airdrop-amount-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+        .airdrop-amount-row label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .airdrop-amount-row input {
+            max-width: 160px;
+        }
+        .airdrop-amount-hint {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+
+        .airdrop-summary {
+            display: flex;
+            gap: var(--space-2xl);
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-xl);
+        }
+        .airdrop-stat {
+            text-align: center;
+        }
+        .airdrop-stat-value {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--lobster-300);
+        }
+        .airdrop-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: var(--font-mono);
+        }
+
+        .recipient-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .recipient-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: 8px var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.82rem;
+        }
+        .recipient-row:last-child { border-bottom: none; }
+        .recipient-row input[type="checkbox"] {
+            accent-color: var(--lobster-400);
+        }
+        .recipient-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .recipient-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            flex: 1;
+        }
+        .recipient-handle {
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+        .recipient-wallet {
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+        }
+
+        .airdrop-actions {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+        }
+        .airdrop-status {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-left: var(--space-md);
+        }
+        .airdrop-status.error { color: var(--red); }
+        .airdrop-status.success { color: var(--seafoam-400); }
+
+        .select-all-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-card-hover);
+            border-bottom: 1px solid var(--border-default);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .select-all-row input { accent-color: var(--lobster-400); }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+    </div>
+</nav>
+
+<div class="airdrop-container">
+    <div class="airdrop-header">
+        <h1>Airdrop CLAWNCH</h1>
+        <p>Send CLAWNCH to humans on the platform. Connect your wallet, select recipients, and send in one transaction.</p>
+    </div>
+
+    <!-- Step 1: Connect wallet -->
+    <div class="airdrop-panel" id="walletPanel">
+        <h2>1. Connect Wallet</h2>
+        <button class="btn btn-primary" id="connectBtn">Connect Wallet</button>
+        <span class="airdrop-status" id="walletStatus"></span>
+    </div>
+
+    <!-- Step 2: Filter & Select -->
+    <div class="airdrop-panel" id="selectPanel" style="display:none;">
+        <h2>2. Select Recipients</h2>
+
+        <div class="airdrop-filters">
+            <button class="filter-chip active" data-filter="no-hires">No hires yet</button>
+            <button class="filter-chip" data-filter="has-wallet">Has wallet</button>
+            <button class="filter-chip" data-filter="all">All with wallet</button>
+        </div>
+
+        <div class="airdrop-amount-row">
+            <label>CLAWNCH per person:</label>
+            <input type="number" class="input" id="amountInput" value="8000" min="1" step="100">
+            <span class="airdrop-amount-hint" id="amountHint"></span>
+        </div>
+
+        <div class="airdrop-summary" id="summary">
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="recipientCount">0</span>
+                <span class="airdrop-stat-label">Recipients</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="totalClawnch">0</span>
+                <span class="airdrop-stat-label">Total CLAWNCH</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="totalUsd">$0</span>
+                <span class="airdrop-stat-label">Est. USD</span>
+            </div>
+        </div>
+
+        <div class="recipient-list" id="recipientList">
+            <div style="padding: var(--space-xl); text-align: center; color: var(--text-dim);">Loading profiles...</div>
+        </div>
+
+        <div class="airdrop-actions">
+            <button class="btn btn-primary" id="sendBtn" disabled>Approve & Send</button>
+            <span class="airdrop-status" id="sendStatus"></span>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/js/airdrop-app.js"></script>
+
+</body>
+</html>
