@@ -116,6 +116,8 @@ async function loadDashboardStats() {
 // Human Cards Grid
 // ══════════════════════════════════════
 
+let maxPaid = 1; // track max CLAWNCH across profiles for allocation bars
+
 function humanCard(p) {
     const name = esc(p.x_name || p.x_handle);
     const handle = esc(p.x_handle);
@@ -131,10 +133,11 @@ function humanCard(p) {
         `<span class="badge badge-primary">${esc(s)}</span>`
     ).join('');
 
-    const availClass = p.availability || 'available';
     const hasWallet = !!p.wallet_address;
     const cardClass = hasWallet ? 'human-card' : 'human-card no-wallet';
     const totalPaid = p.total_paid || 0;
+    const hires = p.hire_count || 0;
+    const barPct = totalPaid > 0 ? Math.max(4, Math.round((totalPaid / maxPaid) * 100)) : 0;
 
     return `<a href="/u/${handle}" class="${cardClass}">
         <div class="human-card-header">
@@ -147,10 +150,10 @@ function humanCard(p) {
         ${tagline ? `<div class="human-card-tagline">${tagline}</div>` : ''}
         ${skillBadges ? `<div class="human-card-skills">${skillBadges}</div>` : ''}
         <div class="human-card-meta">
-            <span class="human-card-availability ${availClass}">${availClass}</span>
-            ${totalPaid > 0 ? `<span class="human-card-earned">${Math.round(totalPaid).toLocaleString()} CLAWNCH</span>` : ''}
-            ${(p.hire_count || 0) > 0 ? `<span class="text-dim">${p.hire_count} hire${p.hire_count > 1 ? 's' : ''}</span>` : ''}
+            ${totalPaid > 0 ? `<span class="human-card-earned">${Math.round(totalPaid).toLocaleString()} CLAWNCH</span>` : '<span class="text-dim">No allocation yet</span>'}
+            ${hires > 0 ? `<span class="text-dim">${hires} hire${hires > 1 ? 's' : ''}</span>` : ''}
         </div>
+        ${totalPaid > 0 ? `<div class="human-card-bar"><div class="human-card-bar-fill" style="width:${barPct}%"></div></div>` : ''}
         ${!hasWallet ? '<div class="no-wallet-hint">No wallet connected</div>' : ''}
     </a>`;
 }
@@ -175,6 +178,11 @@ async function loadProfiles(append = false) {
 
         const profiles = res.profiles || [];
         hasMore = res.hasMore || false;
+
+        // Calculate max CLAWNCH for allocation bars
+        const batchMax = profiles.reduce((max, p) => Math.max(max, p.total_paid || 0), 0);
+        if (!append) maxPaid = batchMax || 1;
+        else maxPaid = Math.max(maxPaid, batchMax);
 
         if (append) {
             grid.insertAdjacentHTML('beforeend', profiles.map(humanCard).join(''));
