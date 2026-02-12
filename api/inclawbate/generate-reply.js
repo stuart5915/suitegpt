@@ -146,7 +146,7 @@ Write a reply:`;
         }
 
         // Increment lifetime reply counter (for leaderboard)
-        await supabase.rpc('increment_inclawbator_replies', { profile_id: profileId });
+        await supabase.rpc('increment_inclawbator_replies', { target_profile_id: profileId });
 
         return res.status(200).json({ reply, credits_remaining: creditsRemaining });
 
