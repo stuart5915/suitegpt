@@ -1,6 +1,41 @@
-// Background service worker — handles API calls and hotkey commands
+// Background service worker — handles API calls, hotkey commands, and badge
 
 const DEFAULT_API_URL = 'https://www.inclawbate.com/api/inclawbate/generate-reply';
+const CREDITS_URL = 'https://inclawbate.com/api/inclawbate/credits';
+
+// ── Badge: poll for unread messages ──
+async function updateBadge() {
+    try {
+        const data = await chrome.storage.sync.get(['apiKey']);
+        if (!data.apiKey) {
+            chrome.action.setBadgeText({ text: '' });
+            return;
+        }
+        const resp = await fetch(`${CREDITS_URL}?key=${encodeURIComponent(data.apiKey)}`);
+        if (!resp.ok) return;
+        const result = await resp.json();
+        const unread = result.unread || 0;
+        chrome.action.setBadgeText({ text: unread > 0 ? String(unread) : '' });
+        chrome.action.setBadgeBackgroundColor({ color: '#e85d4a' });
+    } catch (e) {
+        // Silent — don't break extension on network errors
+    }
+}
+
+// Check on install/startup
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.alarms.create('check-unread', { periodInMinutes: 1 });
+    updateBadge();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+    chrome.alarms.create('check-unread', { periodInMinutes: 1 });
+    updateBadge();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'check-unread') updateBadge();
+});
 
 // Handle hotkey command
 chrome.commands.onCommand.addListener((command) => {
@@ -21,6 +56,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.xHandle) toStore.xHandle = message.xHandle;
         if (message.walletAddress) toStore.walletAddress = message.walletAddress;
         chrome.storage.sync.set(toStore, () => {
+            updateBadge();
             sendResponse({ success: true });
         });
         return true;

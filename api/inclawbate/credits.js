@@ -102,7 +102,28 @@ export default async function handler(req, res) {
                 return res.status(401).json({ error: 'Invalid API key' });
             }
 
-            return res.status(200).json({ credits: data.credits, handle: data.x_handle });
+            // Count unread conversations (last message from agent, human hasn't replied)
+            let unread = 0;
+            try {
+                const { data: convos } = await supabase
+                    .from('inclawbate_conversations')
+                    .select('id')
+                    .eq('human_id', data.id)
+                    .eq('status', 'active');
+
+                if (convos && convos.length > 0) {
+                    const { data: msgs } = await supabase
+                        .from('inclawbate_messages')
+                        .select('conversation_id, sender_type')
+                        .in('conversation_id', convos.map(c => c.id));
+
+                    const lastSender = {};
+                    (msgs || []).forEach(m => { lastSender[m.conversation_id] = m.sender_type; });
+                    unread = Object.values(lastSender).filter(s => s === 'agent').length;
+                }
+            } catch (e) { /* non-critical */ }
+
+            return res.status(200).json({ credits: data.credits, handle: data.x_handle, unread });
         }
 
         // Dashboard flow: JWT auth

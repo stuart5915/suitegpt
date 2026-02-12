@@ -195,12 +195,39 @@ export default async function handler(req, res) {
                     (humans || []).forEach(h => { humanMap[h.id] = h; });
                 }
 
-                const enriched = (convos || []).map(c => ({
-                    ...c,
-                    human_x_handle: humanMap[c.human_id]?.x_handle || null,
-                    human_x_name: humanMap[c.human_id]?.x_name || null,
-                    human_x_avatar_url: humanMap[c.human_id]?.x_avatar_url || null
-                }));
+                // Fetch message summaries for each conversation
+                const convoIds = (convos || []).map(c => c.id);
+                let msgSummary = {};
+                if (convoIds.length > 0) {
+                    const { data: msgs } = await supabase
+                        .from('inclawbate_messages')
+                        .select('conversation_id, sender_type, created_at')
+                        .in('conversation_id', convoIds)
+                        .order('created_at', { ascending: true });
+
+                    (msgs || []).forEach(m => {
+                        if (!msgSummary[m.conversation_id]) {
+                            msgSummary[m.conversation_id] = { count: 0, has_human_reply: false, last_sender: null };
+                        }
+                        const s = msgSummary[m.conversation_id];
+                        s.count++;
+                        if (m.sender_type === 'human') s.has_human_reply = true;
+                        s.last_sender = m.sender_type;
+                    });
+                }
+
+                const enriched = (convos || []).map(c => {
+                    const ms = msgSummary[c.id] || { count: 0, has_human_reply: false, last_sender: null };
+                    return {
+                        ...c,
+                        human_x_handle: humanMap[c.human_id]?.x_handle || null,
+                        human_x_name: humanMap[c.human_id]?.x_name || null,
+                        human_x_avatar_url: humanMap[c.human_id]?.x_avatar_url || null,
+                        message_count: ms.count,
+                        has_human_reply: ms.has_human_reply,
+                        last_sender_type: ms.last_sender
+                    };
+                });
 
                 return res.status(200).json({ conversations: enriched, total: outCount || 0 });
             }
@@ -222,7 +249,35 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to fetch conversations' });
             }
 
-            return res.status(200).json({ conversations: data || [], total: count || 0 });
+            // Add message summaries for inbound too
+            const inboundIds = (data || []).map(c => c.id);
+            let inboundMsgSummary = {};
+            if (inboundIds.length > 0) {
+                const { data: msgs } = await supabase
+                    .from('inclawbate_messages')
+                    .select('conversation_id, sender_type')
+                    .in('conversation_id', inboundIds);
+
+                (msgs || []).forEach(m => {
+                    if (!inboundMsgSummary[m.conversation_id]) {
+                        inboundMsgSummary[m.conversation_id] = { count: 0, has_human_reply: false, last_sender: null };
+                    }
+                    const s = inboundMsgSummary[m.conversation_id];
+                    s.count++;
+                    if (m.sender_type === 'human') s.has_human_reply = true;
+                    s.last_sender = m.sender_type;
+                });
+            }
+
+            const enrichedInbound = (data || []).map(c => {
+                const ms = inboundMsgSummary[c.id] || { count: 0, has_human_reply: false, last_sender: null };
+                return { ...c, message_count: ms.count, has_human_reply: ms.has_human_reply, last_sender_type: ms.last_sender };
+            });
+
+            // Count unread (agent sent, human hasn't replied = last_sender is 'agent')
+            const unread = enrichedInbound.filter(c => c.last_sender_type === 'agent').length;
+
+            return res.status(200).json({ conversations: enrichedInbound, total: count || 0, unread });
 
         } catch (err) {
             // GET error

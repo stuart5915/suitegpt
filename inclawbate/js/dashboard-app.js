@@ -4,10 +4,12 @@ import { getStoredAuth, logout } from './x-auth-client.js';
 
 const API_BASE = '/api/inclawbate';
 let conversations = [];
+let filteredConversations = [];
 let activeConvoId = null;
 let pollTimer = null;
 let lastMessageTime = null;
 let currentDirection = 'inbound';
+let currentFilter = 'all';
 
 function authHeaders() {
     const token = localStorage.getItem('inclawbate_token');
@@ -115,6 +117,35 @@ function init() {
             document.getElementById('dashSidebar').classList.remove('chat-open');
             document.getElementById('dashMain').classList.add('no-chat');
 
+            // Toggle credits panel vs conversation view
+            const creditsPanel = document.getElementById('creditsPanel');
+            const convoList = document.getElementById('convoList');
+            const statsEl = document.querySelector('.dash-stats');
+            const telegramBar = document.getElementById('telegramBar');
+            const telegramConn = document.getElementById('telegramConnected');
+
+            if (dir === 'credits') {
+                convoList.classList.add('hidden');
+                statsEl.classList.add('hidden');
+                telegramBar.classList.add('hidden');
+                telegramConn.classList.add('hidden');
+                creditsPanel.classList.remove('hidden');
+                document.getElementById('dashMain').classList.add('hidden');
+                loadCreditsPanel();
+                return;
+            }
+
+            // Restore conversation view
+            creditsPanel.classList.add('hidden');
+            convoList.classList.remove('hidden');
+            statsEl.classList.remove('hidden');
+            document.getElementById('dashMain').classList.remove('hidden');
+
+            // Reset filter
+            currentFilter = 'all';
+            document.querySelectorAll('.dash-filter').forEach(c => c.classList.remove('active'));
+            document.querySelector('.dash-filter[data-filter="all"]')?.classList.add('active');
+
             // Update empty state text
             const emptyEl = document.getElementById('chatEmpty');
             if (dir === 'outbound') {
@@ -129,7 +160,74 @@ function init() {
         });
     });
 
+    // Wire credits panel buttons
+    document.getElementById('generateApiKey')?.addEventListener('click', async () => {
+        const btn = document.getElementById('generateApiKey');
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+            const res = await fetch(`${API_BASE}/credits`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: 'generate-key' })
+            });
+            const data = await res.json();
+            if (data.api_key) {
+                document.getElementById('dashApiKey').value = data.api_key;
+            }
+        } catch (err) {
+            // Silent
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Generate';
+        }
+    });
+
+    document.getElementById('copyApiKey')?.addEventListener('click', () => {
+        const input = document.getElementById('dashApiKey');
+        if (input.value) {
+            navigator.clipboard.writeText(input.value);
+            const btn = document.getElementById('copyApiKey');
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        }
+    });
+
+    document.getElementById('copyDepositAddr')?.addEventListener('click', () => {
+        const input = document.getElementById('depositAddr');
+        navigator.clipboard.writeText(input.value);
+        const btn = document.getElementById('copyDepositAddr');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+
+    // Outreach filter chips
+    document.querySelectorAll('.dash-filter').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.dash-filter').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentFilter = chip.dataset.filter;
+            applyFilter();
+        });
+    });
+
     loadConversations();
+}
+
+function applyFilter() {
+    if (currentDirection !== 'outbound' || currentFilter === 'all') {
+        filteredConversations = conversations;
+    } else if (currentFilter === 'no-replies') {
+        filteredConversations = conversations.filter(c => c.message_count > 0 && !c.has_human_reply);
+    } else if (currentFilter === 'has-replies') {
+        filteredConversations = conversations.filter(c => c.has_human_reply);
+    } else if (currentFilter === 'no-messages') {
+        filteredConversations = conversations.filter(c => !c.message_count || c.message_count === 0);
+    } else {
+        filteredConversations = conversations;
+    }
+    renderConversationList();
+    updateStats();
 }
 
 // ── Load Conversations ──
@@ -140,8 +238,16 @@ async function loadConversations() {
         if (!res.ok) throw new Error('Failed to load');
         const data = await res.json();
         conversations = data.conversations || [];
-        renderConversationList();
-        updateStats();
+
+        // Show/hide outreach filters
+        const filtersEl = document.getElementById('outreachFilters');
+        if (currentDirection === 'outbound') {
+            filtersEl.classList.remove('hidden');
+        } else {
+            filtersEl.classList.add('hidden');
+        }
+
+        applyFilter();
     } catch (err) {
         // Load failed
     }
@@ -179,10 +285,14 @@ function renderConversationList() {
     const container = document.getElementById('convoList');
     const noConvos = document.getElementById('noConvos');
 
-    if (conversations.length === 0) {
-        noConvos.innerHTML = currentDirection === 'outbound'
-            ? `<p>No outreach yet. Visit a human's profile and click "Hire Me" to start.</p>`
-            : `<p>No conversations yet. When an agent hires you, it'll show up here.</p>`;
+    if (filteredConversations.length === 0) {
+        if (conversations.length === 0) {
+            noConvos.innerHTML = currentDirection === 'outbound'
+                ? `<p>No outreach yet. Visit a human's profile and click "Hire Me" to start.</p>`
+                : `<p>No conversations yet. When an agent hires you, it'll show up here.</p>`;
+        } else {
+            noConvos.innerHTML = `<p>No conversations matching this filter.</p>`;
+        }
         noConvos.classList.remove('hidden');
         container.querySelectorAll('.dash-convo-item').forEach(el => el.remove());
         return;
@@ -193,7 +303,7 @@ function renderConversationList() {
 
     const { shares } = getAgentShares();
 
-    conversations.forEach(c => {
+    filteredConversations.forEach(c => {
         const el = document.createElement('div');
         el.className = `dash-convo-item${c.id === activeConvoId ? ' active' : ''}`;
         el.dataset.id = c.id;
@@ -204,6 +314,11 @@ function renderConversationList() {
             // Show the hired human's info
             const name = c.human_x_name || c.human_x_handle || 'Unknown';
             const initial = name[0].toUpperCase();
+            // Status dot
+            let statusClass = 'no-messages';
+            if (c.message_count > 0 && c.has_human_reply) statusClass = 'replied';
+            else if (c.message_count > 0) statusClass = 'unreplied';
+
             el.innerHTML = `
                 <div class="dash-convo-avatar">${c.human_x_avatar_url
                     ? `<img src="${esc(c.human_x_avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
@@ -216,6 +331,7 @@ function renderConversationList() {
                     <div class="dash-convo-time">${timeAgo(c.last_message_at || c.created_at)}</div>
                     ${amount > 0 ? `<div class="dash-convo-amount">${amount.toLocaleString()} C</div>` : ''}
                 </div>
+                <div class="dash-convo-status ${statusClass}" title="${statusClass === 'replied' ? 'Has replied' : statusClass === 'unreplied' ? 'Awaiting reply' : 'No messages'}"></div>
             `;
         } else {
             // Inbound: show agent info (original behavior)
@@ -462,6 +578,22 @@ document.getElementById('chatBackBtn')?.addEventListener('click', () => {
     activeConvoId = null;
     stopPolling();
 });
+
+// ── Credits Panel ──
+async function loadCreditsPanel() {
+    try {
+        const res = await fetch(`${API_BASE}/credits`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById('creditBalance').textContent = data.credits ?? '--';
+        if (data.api_key) {
+            document.getElementById('dashApiKey').value = data.api_key;
+        }
+    } catch (err) {
+        // Silent
+    }
+}
 
 // Boot
 init();
