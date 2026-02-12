@@ -218,17 +218,35 @@
         if (replyBtn) {
             replyBtn.click();
 
-            // Wait for composer to appear, retry a few times
+            // Wait for composer to appear, then paste text in
             let attempts = 0;
             const tryInsert = () => {
                 const composer = document.querySelector('[data-testid="tweetTextarea_0"]');
-                if (composer) {
-                    composer.focus();
-                    document.execCommand('insertText', false, text);
-                } else if (attempts < 10) {
+                const editable = composer ? composer.querySelector('[contenteditable="true"]') || composer : null;
+                if (editable) {
+                    editable.focus();
+                    // Use clipboard paste — most reliable for X's React editor
+                    const dt = new DataTransfer();
+                    dt.setData('text/plain', text);
+                    const pasteEvent = new ClipboardEvent('paste', {
+                        bubbles: true,
+                        cancelable: true,
+                        clipboardData: dt
+                    });
+                    editable.dispatchEvent(pasteEvent);
+
+                    // Fallback: if paste didn't work, try execCommand
+                    setTimeout(() => {
+                        if (!editable.textContent || editable.textContent.trim().length === 0) {
+                            editable.focus();
+                            document.execCommand('insertText', false, text);
+                        }
+                    }, 100);
+                } else if (attempts < 15) {
                     attempts++;
                     setTimeout(tryInsert, 200);
                 } else {
+                    // Last resort: copy to clipboard and alert
                     navigator.clipboard.writeText(text);
                 }
             };
