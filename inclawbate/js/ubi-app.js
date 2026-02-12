@@ -541,10 +541,41 @@ function daysSince(dateStr) {
         depositBtn.disabled = false;
     }
 
-    // Wire up connect buttons (both trigger shared wallet connection)
+    function disconnectWallet() {
+        stakeWallet = null;
+        walletBalances = { clawnch: 0, inclawnch: 0 };
+
+        // Reset connect buttons
+        document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
+            btn.textContent = 'Connect Wallet';
+            btn.classList.remove('connected');
+        });
+        // Hide forms
+        document.querySelectorAll('.stake-form').forEach(function(form) {
+            form.style.display = 'none';
+        });
+        // Hide balances
+        var clawnchEl = document.getElementById('balanceClawnch');
+        var inclawnchEl = document.getElementById('balanceInclawnch');
+        if (clawnchEl) clawnchEl.style.display = 'none';
+        if (inclawnchEl) inclawnchEl.style.display = 'none';
+        // Hide your stakes
+        var stakesSection = document.getElementById('yourStakesSection');
+        if (stakesSection) stakesSection.classList.remove('visible');
+        // Clear statuses
+        document.querySelectorAll('.stake-status').forEach(function(el) {
+            el.textContent = '';
+            el.className = 'ubi-stake-status stake-status';
+        });
+    }
+
+    // Wire up connect buttons (click to connect, click again to disconnect)
     document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (stakeWallet) return;
+            if (stakeWallet) {
+                disconnectWallet();
+                return;
+            }
             connectWallet();
         });
     });
