@@ -183,6 +183,55 @@ function daysSince(dateStr) {
                 weeklyInclawnchEl.textContent = '';
             }
         }
+
+        // ── UBI Income Banner ──
+        var annualClawnch = weeklyRate * 52;
+        var annualUsd = annualClawnch * clawnchPrice;
+        var totalStakers = Number(ubiData?.total_stakers) || 0;
+
+        var incomeValEl = document.getElementById('ubiIncomeValue');
+        var incomeSubEl = document.getElementById('ubiIncomeSub');
+        var incomeWeeklyEl = document.getElementById('ubiIncomeWeekly');
+        var incomePerStakerEl = document.getElementById('ubiIncomePerStaker');
+        var incomeStakersEl = document.getElementById('ubiIncomeStakers');
+
+        if (incomeValEl) {
+            if (weeklyRate > 0 && clawnchPrice > 0) {
+                incomeValEl.textContent = '$' + fmtUsd(annualUsd) + ' / year';
+            } else if (weeklyRate > 0) {
+                incomeValEl.textContent = fmt(annualClawnch) + ' CLAWNCH / year';
+            } else {
+                incomeValEl.textContent = 'Coming Soon';
+            }
+        }
+        if (incomeSubEl) {
+            if (weeklyRate > 0) {
+                incomeSubEl.innerHTML = '<strong>' + fmt(annualClawnch) + ' CLAWNCH</strong> distributed annually to all stakers';
+            } else {
+                incomeSubEl.textContent = 'Set weekly rate from admin to activate UBI distributions';
+            }
+        }
+        if (incomeWeeklyEl) {
+            incomeWeeklyEl.textContent = weeklyRate > 0 ? fmt(weeklyRate) : '--';
+        }
+        if (incomePerStakerEl) {
+            if (totalStakers > 0 && annualUsd > 0) {
+                incomePerStakerEl.textContent = '~$' + fmtUsd(annualUsd / totalStakers);
+            } else if (totalStakers > 0 && annualClawnch > 0) {
+                incomePerStakerEl.textContent = '~' + fmt(annualClawnch / totalStakers) + ' CLAWNCH';
+            } else {
+                incomePerStakerEl.textContent = '--';
+            }
+        }
+        if (incomeStakersEl) {
+            incomeStakersEl.textContent = totalStakers;
+        }
+    }
+
+    function fmtUsd(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toFixed(0);
     }
 
     // ── Roadmap Logic ──
