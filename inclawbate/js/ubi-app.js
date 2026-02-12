@@ -60,20 +60,48 @@ function daysSince(dateStr) {
     let inclawnchPrice = 0;
     let ubiData = null;
 
-    // Fetch UBI data and prices in parallel
-    const [ubiRes, clawnchPriceRes, inclawnchPriceRes] = await Promise.all([
+    // Best price from DexScreener pairs: filter for our token as baseToken, pick highest liquidity
+    function bestPrice(dexRes, tokenAddr) {
+        if (!dexRes || !dexRes.pairs) return 0;
+        var candidates = dexRes.pairs.filter(function(p) {
+            return p.baseToken && p.baseToken.address &&
+                p.baseToken.address.toLowerCase() === tokenAddr.toLowerCase() &&
+                parseFloat(p.priceUsd) > 0;
+        });
+        if (candidates.length === 0) return 0;
+        // Sort by liquidity descending
+        candidates.sort(function(a, b) {
+            return (parseFloat(b.liquidity?.usd) || 0) - (parseFloat(a.liquidity?.usd) || 0);
+        });
+        return parseFloat(candidates[0].priceUsd) || 0;
+    }
+
+    // Fetch UBI data and prices in parallel (DexScreener + CoinGecko fallback)
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes] = await Promise.all([
         fetch('/api/inclawbate/ubi').then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS)
+            .then(r => r.json()).catch(() => null),
+        fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' +
+            CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null)
     ]);
 
-    if (clawnchPriceRes && clawnchPriceRes.pairs && clawnchPriceRes.pairs[0]) {
-        clawnchPrice = parseFloat(clawnchPriceRes.pairs[0].priceUsd) || 0;
-    }
-    if (inclawnchPriceRes && inclawnchPriceRes.pairs && inclawnchPriceRes.pairs[0]) {
-        inclawnchPrice = parseFloat(inclawnchPriceRes.pairs[0].priceUsd) || 0;
+    // DexScreener (primary)
+    clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);
+    inclawnchPrice = bestPrice(inclawnchDexRes, INCLAWNCH_ADDRESS);
+
+    // CoinGecko fallback
+    if (geckoRes) {
+        var clKey = CLAWNCH_ADDRESS.toLowerCase();
+        var iKey = INCLAWNCH_ADDRESS.toLowerCase();
+        if (!clawnchPrice && geckoRes[clKey] && geckoRes[clKey].usd) {
+            clawnchPrice = geckoRes[clKey].usd;
+        }
+        if (!inclawnchPrice && geckoRes[iKey] && geckoRes[iKey].usd) {
+            inclawnchPrice = geckoRes[iKey].usd;
+        }
     }
 
     ubiData = ubiRes;
@@ -89,9 +117,16 @@ function daysSince(dateStr) {
         // USD value (both tokens combined)
         const totalUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
         if (clawnchPrice > 0 || inclawnchPrice > 0) {
-            document.getElementById('treasuryUsd').textContent = '~$' + totalUsd.toFixed(2) + ' USD';
+            document.getElementById('treasuryUsd').textContent = '~$' + fmtUsd(totalUsd) + ' USD';
         } else {
             document.getElementById('treasuryUsd').textContent = '';
+        }
+
+        // Show fetched CLAWNCH price for transparency
+        var priceEl = document.getElementById('treasuryPrice');
+        if (priceEl && clawnchPrice > 0) {
+            var src = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS) ? 'DexScreener' : 'CoinGecko';
+            priceEl.textContent = 'CLAWNCH: $' + clawnchPrice.toFixed(7) + ' (' + src + ')';
         }
 
         // Stats
@@ -189,6 +224,10 @@ function daysSince(dateStr) {
         var annualUsd = annualClawnch * clawnchPrice;
         var totalStakers = Number(ubiData?.total_stakers) || 0;
 
+        // Pool value = total staked value in USD (CLAWNCH + inCLAWNCH at market prices)
+        var poolClawnch = clawnchStaked + (inclawnchStaked * 2); // weighted CLAWNCH equivalent
+        var poolUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
+
         var incomeValEl = document.getElementById('ubiIncomeValue');
         var incomeSubEl = document.getElementById('ubiIncomeSub');
         var incomeWeeklyEl = document.getElementById('ubiIncomeWeekly');
@@ -200,6 +239,10 @@ function daysSince(dateStr) {
                 incomeValEl.textContent = '$' + fmtUsd(annualUsd) + ' / year';
             } else if (weeklyRate > 0) {
                 incomeValEl.textContent = fmt(annualClawnch) + ' CLAWNCH / year';
+            } else if (poolUsd > 0) {
+                incomeValEl.textContent = '$' + fmtUsd(poolUsd) + ' Pool';
+            } else if (poolClawnch > 0) {
+                incomeValEl.textContent = fmt(poolClawnch) + ' CLAWNCH Pool';
             } else {
                 incomeValEl.textContent = 'Coming Soon';
             }
@@ -207,8 +250,10 @@ function daysSince(dateStr) {
         if (incomeSubEl) {
             if (weeklyRate > 0) {
                 incomeSubEl.innerHTML = '<strong>' + fmt(annualClawnch) + ' CLAWNCH</strong> distributed annually to all stakers';
+            } else if (poolClawnch > 0) {
+                incomeSubEl.textContent = fmt(poolClawnch) + ' weighted CLAWNCH staked — set weekly rate from admin to activate distributions';
             } else {
-                incomeSubEl.textContent = 'Set weekly rate from admin to activate UBI distributions';
+                incomeSubEl.textContent = 'Stake CLAWNCH or inCLAWNCH to grow the UBI pool';
             }
         }
         if (incomeWeeklyEl) {
@@ -219,6 +264,8 @@ function daysSince(dateStr) {
                 incomePerStakerEl.textContent = '~$' + fmtUsd(annualUsd / totalStakers);
             } else if (totalStakers > 0 && annualClawnch > 0) {
                 incomePerStakerEl.textContent = '~' + fmt(annualClawnch / totalStakers) + ' CLAWNCH';
+            } else if (totalStakers > 0 && poolUsd > 0) {
+                incomePerStakerEl.textContent = '~$' + fmtUsd(poolUsd / totalStakers);
             } else {
                 incomePerStakerEl.textContent = '--';
             }
@@ -230,8 +277,10 @@ function daysSince(dateStr) {
 
     function fmtUsd(n) {
         if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 10000) return (n / 1000).toFixed(0) + 'K';
         if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-        return n.toFixed(0);
+        if (n >= 1) return n.toFixed(2);
+        return n.toFixed(2);
     }
 
     // ── Roadmap Logic ──

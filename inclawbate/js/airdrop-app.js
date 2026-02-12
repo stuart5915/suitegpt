@@ -116,13 +116,35 @@ async function loadProfiles() {
 }
 
 // ── Price ──
+function bestDexPrice(dexData, tokenAddr) {
+    if (!dexData || !dexData.pairs) return 0;
+    var candidates = dexData.pairs.filter(function(p) {
+        return p.baseToken && p.baseToken.address &&
+            p.baseToken.address.toLowerCase() === tokenAddr.toLowerCase() &&
+            parseFloat(p.priceUsd) > 0;
+    });
+    if (candidates.length === 0) return 0;
+    candidates.sort(function(a, b) {
+        return (parseFloat(b.liquidity?.usd) || 0) - (parseFloat(a.liquidity?.usd) || 0);
+    });
+    return parseFloat(candidates[0].priceUsd) || 0;
+}
+
 async function fetchPrice() {
     try {
         const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
         const data = await resp.json();
-        const pair = data.pairs?.[0];
-        if (pair) clawnchPrice = parseFloat(pair.priceUsd) || 0;
-    } catch (e) { /* no price */ }
+        clawnchPrice = bestDexPrice(data, CLAWNCH_ADDRESS);
+    } catch (e) { /* try fallback */ }
+    // CoinGecko fallback
+    if (!clawnchPrice) {
+        try {
+            const gResp = await fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' + CLAWNCH_ADDRESS + '&vs_currencies=usd');
+            const gData = await gResp.json();
+            var key = CLAWNCH_ADDRESS.toLowerCase();
+            if (gData[key] && gData[key].usd) clawnchPrice = gData[key].usd;
+        } catch (e) { /* no price */ }
+    }
     updateSummary();
 }
 
@@ -365,16 +387,25 @@ async function loadDistribution() {
     const data = await ubiResp.json();
     distData = data;
 
-    // Parse prices
+    // Parse prices (use bestDexPrice for robust pair selection)
     let inclawnchPrice = 0;
     try {
         const cpData = await clawnchPriceResp?.json();
-        if (cpData?.pairs?.[0]) clawnchPrice = parseFloat(cpData.pairs[0].priceUsd) || 0;
+        clawnchPrice = bestDexPrice(cpData, CLAWNCH_ADDRESS);
     } catch (e) {}
     try {
         const ipData = await inclawnchPriceResp?.json();
-        if (ipData?.pairs?.[0]) inclawnchPrice = parseFloat(ipData.pairs[0].priceUsd) || 0;
+        inclawnchPrice = bestDexPrice(ipData, INCLAWNCH_ADDRESS);
     } catch (e) {}
+    // CoinGecko fallback
+    if (!clawnchPrice || !inclawnchPrice) {
+        try {
+            const gResp = await fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' + CLAWNCH_ADDRESS + ',' + INCLAWNCH_ADDRESS + '&vs_currencies=usd');
+            const gData = await gResp.json();
+            if (!clawnchPrice && gData[CLAWNCH_ADDRESS.toLowerCase()]?.usd) clawnchPrice = gData[CLAWNCH_ADDRESS.toLowerCase()].usd;
+            if (!inclawnchPrice && gData[INCLAWNCH_ADDRESS.toLowerCase()]?.usd) inclawnchPrice = gData[INCLAWNCH_ADDRESS.toLowerCase()].usd;
+        } catch (e) {}
+    }
 
     // Parse balances
     const walletClawnch = Number(BigInt(clawnchBalResp || '0x0')) / 1e18;
