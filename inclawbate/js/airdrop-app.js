@@ -5,6 +5,7 @@ const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
 const DISPERSE_ADDRESS = '0xD152f549545093347A162Dce210e7293f1452150';
 const BASE_CHAIN_ID = '0x2105';
 const API_BASE = '/api/inclawbate';
+const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
 // ABI function selectors
 const APPROVE_SELECTOR = '0x095ea7b3';                 // approve(address,uint256)
@@ -58,6 +59,13 @@ connectBtn.addEventListener('click', async () => {
                     params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
                 });
             }
+        }
+
+        if (userAddress.toLowerCase() !== ADMIN_WALLET) {
+            walletStatus.textContent = 'Unauthorized wallet. Admin only.';
+            walletStatus.className = 'airdrop-status error';
+            userAddress = null;
+            return;
         }
 
         walletStatus.textContent = 'Connected: ' + shortAddr(userAddress);
@@ -293,35 +301,29 @@ sendBtn.addEventListener('click', async () => {
 
         // Record hires via batch-hire API
         sendStatus.textContent = 'Recording hires...';
-        const adminSecret = document.getElementById('adminSecret')?.value;
-        if (adminSecret) {
-            try {
-                const hireResp = await fetch(API_BASE + '/batch-hire', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tx_hash: disperseTx,
-                        agent_address: userAddress,
-                        agent_name: 'inclawbate',
-                        recipients: selected.map(p => ({
-                            handle: p.x_handle,
-                            amount: amount
-                        })),
-                        admin_secret: adminSecret
-                    })
-                });
-                const hireResult = await hireResp.json();
-                if (hireResult.success) {
-                    sendStatus.textContent = `Done! Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans. ${hireResult.created} hires recorded.`;
-                } else {
-                    sendStatus.textContent = `CLAWNCH sent! But hire recording failed: ${hireResult.error || 'Unknown error'}`;
-                }
-            } catch (hireErr) {
-                console.error('Batch hire error:', hireErr);
-                sendStatus.textContent = `CLAWNCH sent to ${selected.length} humans! Hire recording failed — check console.`;
+        try {
+            const hireResp = await fetch(API_BASE + '/batch-hire', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tx_hash: disperseTx,
+                    agent_address: userAddress,
+                    agent_name: 'inclawbate',
+                    recipients: selected.map(p => ({
+                        handle: p.x_handle,
+                        amount: amount
+                    }))
+                })
+            });
+            const hireResult = await hireResp.json();
+            if (hireResult.success) {
+                sendStatus.textContent = `Done! Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans. ${hireResult.created} hires recorded.`;
+            } else {
+                sendStatus.textContent = `CLAWNCH sent! But hire recording failed: ${hireResult.error || 'Unknown error'}`;
             }
-        } else {
-            sendStatus.textContent = `Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans! (No admin secret — hires not recorded)`;
+        } catch (hireErr) {
+            console.error('Batch hire error:', hireErr);
+            sendStatus.textContent = `CLAWNCH sent to ${selected.length} humans! Hire recording failed — check console.`;
         }
         sendStatus.className = 'airdrop-status success';
         sendBtn.textContent = 'Done!';

@@ -25,11 +25,11 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { tx_hash, agent_address, agent_name, recipients, admin_secret } = req.body;
+    const { tx_hash, agent_address, agent_name, recipients } = req.body;
 
-    // Admin auth
-    const expectedSecret = process.env.INCLAWBATE_ADMIN_SECRET;
-    if (!expectedSecret || admin_secret !== expectedSecret) {
+    // Admin auth — only the protocol wallet can create batch hires
+    const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+    if (!agent_address || agent_address.toLowerCase() !== ADMIN_WALLET) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
