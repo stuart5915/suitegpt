@@ -69,14 +69,16 @@ function timeAgo(dateStr) {
         document.getElementById('statDistributed').textContent = fmt(ubiData.total_distributed);
 
         const weeklyRate = Number(ubiData.weekly_rate) || 0;
-        document.getElementById('statWeekly').textContent = weeklyRate > 0 ? fmt(weeklyRate) : '--';
+        const monthlyRate = weeklyRate * 4.33;
+        document.getElementById('statMonthly').textContent = monthlyRate > 0 ? fmt(monthlyRate) : '--';
 
         const eligible = ubiData.total_eligible || 0;
         document.getElementById('statEligible').textContent = fmt(eligible);
 
-        if (eligible > 0 && weeklyRate > 0) {
-            const perHuman = Math.round(weeklyRate / eligible);
-            document.getElementById('statPerHuman').textContent = fmt(perHuman);
+        // Rough APY estimate: (monthly yield / treasury) * 12 * 100
+        if (balance > 0 && monthlyRate > 0) {
+            const apy = ((monthlyRate / balance) * 12 * 100).toFixed(1);
+            document.getElementById('statApy').textContent = apy + '%';
         }
 
         // Contributors

@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UBI — Inclawbate</title>
-    <meta name="description" content="Community-funded Universal Basic Income for verified humans on Inclawbate. Deposit $CLAWNCH to the treasury and help distribute value to every human on the platform.">
+    <meta name="description" content="Deposit $CLAWNCH, earn passive income for life. Community-funded UBI treasury backed by CLAWNCH/ETH LP yield.">
     <meta property="og:title" content="UBI — Inclawbate">
-    <meta property="og:description" content="Community-funded Universal Basic Income for verified humans. Deposit $CLAWNCH to the treasury.">
+    <meta property="og:description" content="Deposit $CLAWNCH, earn passive income for life. Backed by CLAWNCH/ETH LP yield.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/ubi">
     <meta property="og:image" content="https://inclawbate.com/api/inclawbate/og?tagline=Universal+Basic+Income+for+Humans">
@@ -261,8 +261,8 @@
             line-height: 1.5;
         }
 
-        /* ── Verify Identity ── */
-        .ubi-verify {
+        /* ── Tiers ── */
+        .ubi-tiers {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
@@ -270,47 +270,68 @@
             margin-bottom: var(--space-xl);
             animation: ubiFadeUp 0.6s 0.44s var(--ease-smooth) both;
         }
-        .ubi-verify h2 {
+        .ubi-tiers h2 {
             font-family: var(--font-display);
             font-size: 1.2rem;
             font-weight: 800;
             margin-bottom: var(--space-sm);
         }
-        .ubi-verify > p {
+        .ubi-tiers > p {
             color: var(--text-secondary);
             font-size: 0.88rem;
             line-height: 1.65;
             margin-bottom: var(--space-lg);
         }
-        .ubi-verify-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .ubi-tier-grid {
+            display: flex;
+            flex-direction: column;
             gap: var(--space-md);
         }
-        .ubi-verify-card {
+        .ubi-tier {
             padding: var(--space-lg);
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg);
-            transition: border-color 0.2s;
+            display: flex;
+            gap: var(--space-lg);
+            align-items: flex-start;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
-        .ubi-verify-card:hover {
-            border-color: var(--border-bright);
+        .ubi-tier:hover { border-color: var(--border-bright); }
+        .ubi-tier-badge {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
         }
-        .ubi-verify-card-header {
+        .ubi-tier--incubated .ubi-tier-badge {
+            background: linear-gradient(135deg, hsla(172, 40%, 48%, 0.15), hsla(172, 30%, 40%, 0.08));
+        }
+        .ubi-tier--staker .ubi-tier-badge {
+            background: linear-gradient(135deg, hsla(32, 40%, 55%, 0.15), hsla(32, 30%, 45%, 0.08));
+        }
+        .ubi-tier--sustainer .ubi-tier-badge {
+            background: linear-gradient(135deg, hsla(9, 50%, 54%, 0.15), hsla(9, 40%, 44%, 0.08));
+        }
+        .ubi-tier--patron .ubi-tier-badge {
+            background: linear-gradient(135deg, hsla(43, 70%, 55%, 0.18), hsla(43, 60%, 45%, 0.08));
+        }
+        .ubi-tier-body { flex: 1; min-width: 0; }
+        .ubi-tier-header {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            margin-bottom: var(--space-sm);
+            margin-bottom: 6px;
         }
-        .ubi-verify-card-icon {
-            font-size: 1.3rem;
+        .ubi-tier-name {
+            font-weight: 800;
+            font-size: 0.95rem;
         }
-        .ubi-verify-card-name {
-            font-weight: 700;
-            font-size: 0.92rem;
-        }
-        .ubi-verify-card-badge {
+        .ubi-tier-tag {
             font-family: var(--font-mono);
             font-size: 0.6rem;
             font-weight: 700;
@@ -318,20 +339,94 @@
             letter-spacing: 0.06em;
             padding: 2px 8px;
             border-radius: var(--radius-full);
-            margin-left: auto;
         }
-        .ubi-verify-card-badge.live {
+        .ubi-tier--incubated .ubi-tier-tag {
             background: hsla(172, 32%, 48%, 0.12);
             color: var(--seafoam-300);
         }
-        .ubi-verify-card-badge.soon {
+        .ubi-tier--staker .ubi-tier-tag {
             background: hsla(32, 32%, 66%, 0.12);
             color: var(--sand-300);
         }
-        .ubi-verify-card p {
-            font-size: 0.8rem;
+        .ubi-tier--sustainer .ubi-tier-tag {
+            background: hsla(9, 52%, 56%, 0.12);
+            color: var(--lobster-300);
+        }
+        .ubi-tier--patron .ubi-tier-tag {
+            background: hsla(43, 70%, 55%, 0.12);
+            color: hsl(43, 70%, 65%);
+        }
+        .ubi-tier-desc {
+            font-size: 0.82rem;
             color: var(--text-secondary);
-            line-height: 1.55;
+            line-height: 1.6;
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-tier-details {
+            display: flex;
+            gap: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .ubi-tier-detail {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+        }
+        .ubi-tier-detail-label {
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .ubi-tier-detail-val {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* ── Yield Source ── */
+        .ubi-yield {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            animation: ubiFadeUp 0.6s 0.5s var(--ease-smooth) both;
+        }
+        .ubi-yield h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-yield > p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.65;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-yield-sources {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+        .ubi-yield-source {
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+        .ubi-yield-source-icon {
+            font-size: 1.6rem;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+        .ubi-yield-source-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .ubi-yield-source-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         /* ── Contributors ── */
@@ -397,7 +492,8 @@
             .ubi-stat:nth-child(1),
             .ubi-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
             .ubi-flow { grid-template-columns: 1fr; }
-            .ubi-verify-options { grid-template-columns: 1fr; }
+            .ubi-yield-sources { grid-template-columns: 1fr; }
+            .ubi-tier { flex-direction: column; gap: var(--space-md); }
             .ubi-fund-form { flex-wrap: wrap; }
             .ubi-fund-form input { max-width: none; flex: 1 1 120px; }
         }
@@ -421,9 +517,9 @@
 <div class="ubi-container">
     <!-- Hero -->
     <section class="ubi-hero">
-        <div class="ubi-hero-badge">Community Funded</div>
-        <h1>Universal Basic Income<br><span>for Verified Humans</span></h1>
-        <p>A community-funded treasury that distributes $CLAWNCH to every verified human on the platform. Anyone can deposit. Everyone gets paid.</p>
+        <div class="ubi-hero-badge">LP-Backed Yield</div>
+        <h1>Deposit CLAWNCH.<br><span>Earn Income for Life.</span></h1>
+        <p>A community treasury backed by CLAWNCH/ETH liquidity. Deposit once, receive monthly distributions forever. No fees. No middlemen. Just yield.</p>
     </section>
 
     <!-- Treasury -->
@@ -439,16 +535,128 @@
                 <span class="ubi-stat-label">Total Distributed</span>
             </div>
             <div class="ubi-stat">
-                <span class="ubi-stat-val" id="statWeekly">0</span>
-                <span class="ubi-stat-label">Weekly Rate</span>
+                <span class="ubi-stat-val" id="statMonthly">--</span>
+                <span class="ubi-stat-label">Monthly Rate</span>
             </div>
             <div class="ubi-stat">
                 <span class="ubi-stat-val" id="statEligible">0</span>
-                <span class="ubi-stat-label">Eligible Humans</span>
+                <span class="ubi-stat-label">Depositors</span>
             </div>
             <div class="ubi-stat">
-                <span class="ubi-stat-val" id="statPerHuman">--</span>
-                <span class="ubi-stat-label">Per Human / Wk</span>
+                <span class="ubi-stat-val" id="statApy">--</span>
+                <span class="ubi-stat-label">Est. APY</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiers -->
+    <div class="ubi-tiers">
+        <h2>UBI Tiers</h2>
+        <p>Your monthly distribution depends on your commitment. Deposit more, earn more — or apply to be incubated if you're just getting started.</p>
+
+        <div class="ubi-tier-grid">
+            <!-- Incubated -->
+            <div class="ubi-tier ubi-tier--incubated">
+                <div class="ubi-tier-badge">&#129438;</div>
+                <div class="ubi-tier-body">
+                    <div class="ubi-tier-header">
+                        <span class="ubi-tier-name">Incubated Human</span>
+                        <span class="ubi-tier-tag">Free Entry</span>
+                    </div>
+                    <div class="ubi-tier-desc">Can't afford to deposit? Apply to be literally <em>inclawbated</em>. Write a short pitch on who you are and why you need UBI. Post monthly updates on how you're using it. The community funds your growth.</div>
+                    <div class="ubi-tier-details">
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Deposit </span>
+                            <span class="ubi-tier-detail-val">$0</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Earn </span>
+                            <span class="ubi-tier-detail-val">Small monthly CLAWNCH</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Requires </span>
+                            <span class="ubi-tier-detail-val">Application + monthly updates</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staker -->
+            <div class="ubi-tier ubi-tier--staker">
+                <div class="ubi-tier-badge">&#9876;&#65039;</div>
+                <div class="ubi-tier-body">
+                    <div class="ubi-tier-header">
+                        <span class="ubi-tier-name">Staker</span>
+                        <span class="ubi-tier-tag">$100 – $1K</span>
+                    </div>
+                    <div class="ubi-tier-desc">Deposit $100–$1,000 worth of $CLAWNCH into the treasury. Your deposit enters the CLAWNCH/ETH LP and generates yield. You receive monthly distributions proportional to your stake — indefinitely.</div>
+                    <div class="ubi-tier-details">
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Deposit </span>
+                            <span class="ubi-tier-detail-val">$100 – $1,000 in CLAWNCH</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Earn </span>
+                            <span class="ubi-tier-detail-val">Monthly CLAWNCH from LP yield</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Lock </span>
+                            <span class="ubi-tier-detail-val">3 month minimum</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sustainer -->
+            <div class="ubi-tier ubi-tier--sustainer">
+                <div class="ubi-tier-badge">&#128293;</div>
+                <div class="ubi-tier-body">
+                    <div class="ubi-tier-header">
+                        <span class="ubi-tier-name">Sustainer</span>
+                        <span class="ubi-tier-tag">$1K – $5K</span>
+                    </div>
+                    <div class="ubi-tier-desc">Serious commitment. Deposit $1,000–$5,000 worth of $CLAWNCH. Larger share of LP yield, higher monthly distributions. Your capital works for you and for humans being incubated.</div>
+                    <div class="ubi-tier-details">
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Deposit </span>
+                            <span class="ubi-tier-detail-val">$1,000 – $5,000 in CLAWNCH</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Earn </span>
+                            <span class="ubi-tier-detail-val">Higher monthly CLAWNCH forever</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Lock </span>
+                            <span class="ubi-tier-detail-val">6 month minimum</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patron -->
+            <div class="ubi-tier ubi-tier--patron">
+                <div class="ubi-tier-badge">&#128081;</div>
+                <div class="ubi-tier-body">
+                    <div class="ubi-tier-header">
+                        <span class="ubi-tier-name">Patron</span>
+                        <span class="ubi-tier-tag">$5K+</span>
+                    </div>
+                    <div class="ubi-tier-desc">Maximum tier. Deposit $5,000+ worth of $CLAWNCH. Highest distribution rate from LP yield, forever. Your name appears on the UBI page. You help decide which humans get incubated.</div>
+                    <div class="ubi-tier-details">
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Deposit </span>
+                            <span class="ubi-tier-detail-val">$5,000+ in CLAWNCH</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Earn </span>
+                            <span class="ubi-tier-detail-val">Max monthly CLAWNCH forever</span>
+                        </div>
+                        <div class="ubi-tier-detail">
+                            <span class="ubi-tier-detail-label">Perks </span>
+                            <span class="ubi-tier-detail-val">Named on page + governance</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -459,7 +667,7 @@
             <span class="ubi-fund-title">Fund the Treasury</span>
             <button class="ubi-fund-connect" id="ubiConnectBtn">Connect Wallet</button>
         </div>
-        <p class="ubi-fund-desc">Deposit $CLAWNCH to grow the UBI treasury. Your contribution goes directly to verified humans on the platform — distributed proportionally every week.</p>
+        <p class="ubi-fund-desc">Deposit $CLAWNCH into the UBI treasury. Your deposit enters the CLAWNCH/ETH liquidity pool and generates yield. No fees taken — 100% of yield flows back to depositors and incubated humans.</p>
         <div class="ubi-fund-form" id="ubiFundForm" style="display:none;">
             <input type="number" class="input" id="ubiAmountInput" placeholder="CLAWNCH amount" min="1" step="1000" value="50000">
             <span class="ubi-fund-hint" id="ubiHint"></span>
@@ -474,58 +682,36 @@
         <div class="ubi-flow">
             <div class="ubi-flow-step">
                 <span class="ubi-flow-icon">&#128176;</span>
-                <div class="ubi-flow-label">Anyone Funds</div>
-                <div class="ubi-flow-desc">Deposit $CLAWNCH to the UBI treasury. Community members, agents, and protocols can all contribute.</div>
+                <div class="ubi-flow-label">Deposit</div>
+                <div class="ubi-flow-desc">Send $CLAWNCH to the UBI treasury. Pick a tier based on how much you want to commit. Zero fees.</div>
             </div>
             <div class="ubi-flow-step">
-                <span class="ubi-flow-icon">&#9989;</span>
-                <div class="ubi-flow-label">Humans Verify</div>
-                <div class="ubi-flow-desc">Prove you're a real human through identity verification. No bots, no duplicates — one person, one share.</div>
+                <span class="ubi-flow-icon">&#128200;</span>
+                <div class="ubi-flow-label">LP Yield</div>
+                <div class="ubi-flow-desc">Treasury deploys into CLAWNCH/ETH liquidity. LP fees + ETH appreciation generate sustainable yield over time.</div>
             </div>
             <div class="ubi-flow-step">
-                <span class="ubi-flow-icon">&#128300;</span>
-                <div class="ubi-flow-label">Weekly Distribution</div>
-                <div class="ubi-flow-desc">Every week, the treasury distributes $CLAWNCH equally to all verified humans on the platform.</div>
+                <span class="ubi-flow-icon">&#128184;</span>
+                <div class="ubi-flow-label">Monthly Income</div>
+                <div class="ubi-flow-desc">Yield is distributed monthly to all depositors proportional to their stake. Deposit once, earn for life.</div>
             </div>
         </div>
     </div>
 
-    <!-- Verify Identity -->
-    <div class="ubi-verify">
-        <h2>Verify Your Humanity</h2>
-        <p>To receive UBI distributions, you need to verify that you're a unique human. We're integrating with leading proof-of-personhood protocols to make this trustless and private.</p>
-        <div class="ubi-verify-options">
-            <div class="ubi-verify-card">
-                <div class="ubi-verify-card-header">
-                    <span class="ubi-verify-card-icon">&#127760;</span>
-                    <span class="ubi-verify-card-name">World ID</span>
-                    <span class="ubi-verify-card-badge soon">Exploring</span>
-                </div>
-                <p>Biometric verification through Worldcoin's orb network. Proves unique personhood without revealing identity. The gold standard for sybil resistance.</p>
+    <!-- Yield Source -->
+    <div class="ubi-yield">
+        <h2>Where the Yield Comes From</h2>
+        <p>No ponzinomics. No fees. The UBI treasury is backed by real, sustainable yield from onchain liquidity.</p>
+        <div class="ubi-yield-sources">
+            <div class="ubi-yield-source">
+                <span class="ubi-yield-source-icon">&#128167;</span>
+                <div class="ubi-yield-source-name">CLAWNCH/ETH LP Fees</div>
+                <div class="ubi-yield-source-desc">Treasury CLAWNCH is paired with ETH in a liquidity pool on Base. Every swap generates trading fees that flow back to the treasury.</div>
             </div>
-            <div class="ubi-verify-card">
-                <div class="ubi-verify-card-header">
-                    <span class="ubi-verify-card-icon">&#128274;</span>
-                    <span class="ubi-verify-card-name">Gitcoin Passport</span>
-                    <span class="ubi-verify-card-badge soon">Exploring</span>
-                </div>
-                <p>Aggregated identity score from multiple web2 + web3 credentials. Non-biometric option that builds trust through your existing digital footprint.</p>
-            </div>
-            <div class="ubi-verify-card">
-                <div class="ubi-verify-card-header">
-                    <span class="ubi-verify-card-icon">&#129330;</span>
-                    <span class="ubi-verify-card-name">Humanity Protocol</span>
-                    <span class="ubi-verify-card-badge soon">Exploring</span>
-                </div>
-                <p>Palm-scan based proof of personhood with zero-knowledge proofs. Verify once, use everywhere — privacy-preserving human verification.</p>
-            </div>
-            <div class="ubi-verify-card">
-                <div class="ubi-verify-card-header">
-                    <span class="ubi-verify-card-icon">&#129438;</span>
-                    <span class="ubi-verify-card-name">Inclawbate Native</span>
-                    <span class="ubi-verify-card-badge live">Live</span>
-                </div>
-                <p>X account + connected wallet serves as a baseline identity layer. Active platform participation increases your trust score over time.</p>
+            <div class="ubi-yield-source">
+                <span class="ubi-yield-source-icon">&#9962;&#65039;</span>
+                <div class="ubi-yield-source-name">ETH Store of Value</div>
+                <div class="ubi-yield-source-desc">The ETH side of the LP appreciates over time. As ETH grows in value, so does the treasury — creating compounding returns for all depositors.</div>
             </div>
         </div>
     </div>
