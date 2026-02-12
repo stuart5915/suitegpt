@@ -111,7 +111,7 @@ filterChips.forEach(chip => {
 
 function getFiltered() {
     if (currentFilter === 'no-hires') {
-        return allProfiles.filter(p => (p.hire_count || 0) === 0);
+        return allProfiles.filter(p => (p.hire_count || 0) === 0 && (p.total_paid || 0) === 0);
     }
     return allProfiles; // 'has-wallet' and 'all' both show all with wallet
 }
