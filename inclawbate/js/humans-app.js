@@ -20,6 +20,102 @@ function esc(str) {
     return div.innerHTML;
 }
 
+// ══════════════════════════════════════
+// Dashboard Stats
+// ══════════════════════════════════════
+
+function animateCounter(el, target, duration = 1200) {
+    const start = performance.now();
+    const isLarge = target >= 1000;
+    el.classList.add('counting');
+
+    function tick(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = Math.round(eased * target);
+        el.textContent = isLarge ? current.toLocaleString() : current;
+        if (progress < 1) {
+            requestAnimationFrame(tick);
+        } else {
+            el.textContent = target.toLocaleString();
+            setTimeout(() => el.classList.remove('counting'), 300);
+        }
+    }
+    requestAnimationFrame(tick);
+}
+
+async function loadDashboardStats() {
+    try {
+        const resp = await fetch('/api/inclawbate/stats');
+        const stats = await resp.json();
+
+        // Animated counters
+        const fields = ['total_humans', 'wallets_connected', 'total_clawnch', 'total_hires'];
+        fields.forEach(key => {
+            const el = document.querySelector(`[data-target="${key}"]`);
+            if (el && stats[key] !== undefined) {
+                setTimeout(() => animateCounter(el, stats[key]), 400);
+            }
+        });
+
+        // Top Skills cloud
+        const cloud = document.getElementById('skillsCloud');
+        if (cloud && stats.top_skills?.length) {
+            cloud.innerHTML = stats.top_skills.map((s, i) =>
+                `<span class="dash-skill-tag" style="--i: ${i}">${esc(s.skill)}<span class="dash-skill-count">${s.count}</span></span>`
+            ).join('');
+        } else if (cloud) {
+            cloud.innerHTML = '<span class="dash-panel-empty">No skills listed yet</span>';
+        }
+
+        // Top Earners
+        const earners = document.getElementById('earnersList');
+        if (earners && stats.top_earners?.length) {
+            earners.innerHTML = stats.top_earners.map((e, i) => {
+                const avatar = e.x_avatar_url
+                    ? `<img class="dash-earner-avatar" src="${esc(e.x_avatar_url)}" onerror="this.style.display='none'">`
+                    : '';
+                return `<div class="dash-earner-row" style="--i: ${i}">
+                    <span class="dash-earner-rank">${i + 1}</span>
+                    ${avatar}
+                    <span class="dash-earner-name">${esc(e.x_name || e.x_handle)}</span>
+                    <span class="dash-earner-amount">${e.total_earned.toLocaleString()}</span>
+                </div>`;
+            }).join('');
+        } else if (earners) {
+            earners.innerHTML = '<span class="dash-panel-empty">No hires yet</span>';
+        }
+
+        // Recent Signups
+        const recent = document.getElementById('recentList');
+        if (recent && stats.recent_signups?.length) {
+            recent.innerHTML = stats.recent_signups.map((r, i) => {
+                const initial = (r.x_name || r.x_handle || '?')[0].toUpperCase();
+                const avatar = r.x_avatar_url
+                    ? `<img class="dash-recent-avatar" src="${esc(r.x_avatar_url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                    : '';
+                const fallback = `<div class="dash-recent-avatar-fallback" ${r.x_avatar_url ? 'style="display:none"' : ''}>${initial}</div>`;
+                const walletClass = r.has_wallet ? 'connected' : 'disconnected';
+                return `<div class="dash-recent-row" style="--i: ${i}">
+                    ${avatar}${fallback}
+                    <span class="dash-recent-name">@${esc(r.x_handle)}</span>
+                    <span class="dash-recent-wallet-dot ${walletClass}" title="${r.has_wallet ? 'Wallet connected' : 'No wallet'}"></span>
+                </div>`;
+            }).join('');
+        } else if (recent) {
+            recent.innerHTML = '<span class="dash-panel-empty">No signups yet</span>';
+        }
+
+    } catch (err) {
+        // Stats failed silently — not critical
+        console.warn('Failed to load dashboard stats:', err);
+    }
+}
+
+// ══════════════════════════════════════
+// Human Cards Grid
+// ══════════════════════════════════════
+
 function humanCard(p) {
     const name = esc(p.x_name || p.x_handle);
     const handle = esc(p.x_handle);
@@ -99,7 +195,6 @@ async function loadProfiles(append = false) {
         if (!append) {
             grid.innerHTML = '<div class="humans-empty"><p>Failed to load profiles. Try refreshing.</p></div>';
         }
-        // Load failed
     } finally {
         loading = false;
     }
@@ -129,5 +224,6 @@ sortSelect?.addEventListener('change', () => {
 
 loadMoreBtn?.addEventListener('click', () => loadProfiles(true));
 
-// Boot
+// Boot — load stats and profiles in parallel
+loadDashboardStats();
 loadProfiles();
