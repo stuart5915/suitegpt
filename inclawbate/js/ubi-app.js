@@ -1,9 +1,15 @@
-// Inclawbate — UBI Treasury Page
+// Inclawbate — UBI Treasury Page (Dual Staking: CLAWNCH 1x / inCLAWNCH 2x)
 
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const BASE_CHAIN_ID = '0x2105';
 const TRANSFER_SELECTOR = '0xa9059cbb';
+
+const TOKEN_CONFIG = {
+    clawnch: { address: CLAWNCH_ADDRESS, label: 'CLAWNCH' },
+    inclawnch: { address: INCLAWNCH_ADDRESS, label: 'inCLAWNCH' }
+};
 
 // Roadmap milestones (USD targets)
 const MILESTONES = [100000, 500000, 1000000, 5000000, 10000000, 25000000, 50000000];
@@ -43,50 +49,58 @@ function timeAgo(dateStr) {
 
 (async function() {
     let clawnchPrice = 0;
+    let inclawnchPrice = 0;
     let ubiData = null;
 
-    // Fetch UBI data and CLAWNCH price in parallel
-    const [ubiRes, priceRes] = await Promise.all([
+    // Fetch UBI data and prices in parallel
+    const [ubiRes, clawnchPriceRes, inclawnchPriceRes] = await Promise.all([
         fetch('/api/inclawbate/ubi').then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
+            .then(r => r.json()).catch(() => null),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null)
     ]);
 
-    if (priceRes && priceRes.pairs && priceRes.pairs[0]) {
-        clawnchPrice = parseFloat(priceRes.pairs[0].priceUsd) || 0;
+    if (clawnchPriceRes && clawnchPriceRes.pairs && clawnchPriceRes.pairs[0]) {
+        clawnchPrice = parseFloat(clawnchPriceRes.pairs[0].priceUsd) || 0;
+    }
+    if (inclawnchPriceRes && inclawnchPriceRes.pairs && inclawnchPriceRes.pairs[0]) {
+        inclawnchPrice = parseFloat(inclawnchPriceRes.pairs[0].priceUsd) || 0;
     }
 
     ubiData = ubiRes;
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
 
     if (ubiData) {
-        const balance = Number(ubiData.total_balance) || 0;
-        document.getElementById('treasuryValue').textContent = fmt(balance) + ' CLAWNCH';
+        const clawnchStaked = Number(ubiData.total_balance) || 0;
+        const inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
 
-        if (clawnchPrice > 0) {
-            document.getElementById('treasuryUsd').textContent = '~$' + (balance * clawnchPrice).toFixed(2) + ' USD';
+        // Treasury main display: total value in CLAWNCH equivalent
+        document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH';
+
+        // USD value (both tokens combined)
+        const totalUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
+        if (clawnchPrice > 0 || inclawnchPrice > 0) {
+            document.getElementById('treasuryUsd').textContent = '~$' + totalUsd.toFixed(2) + ' USD';
         } else {
             document.getElementById('treasuryUsd').textContent = '';
         }
 
-        document.getElementById('statDistributed').textContent = fmt(ubiData.total_distributed);
+        // Stats
+        document.getElementById('statClawnchStaked').textContent = fmt(clawnchStaked);
+        document.getElementById('statInclawnchStaked').textContent = fmt(inclawnchStaked);
+        document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
+        // Rough APY estimate
         const weeklyRate = Number(ubiData.weekly_rate) || 0;
         const monthlyRate = weeklyRate * 4.33;
-        document.getElementById('statMonthly').textContent = monthlyRate > 0 ? fmt(monthlyRate) : '--';
-
-        const eligible = ubiData.total_eligible || 0;
-        document.getElementById('statEligible').textContent = fmt(eligible);
-
-        // Rough APY estimate: (monthly yield / treasury) * 12 * 100
-        if (balance > 0 && monthlyRate > 0) {
-            const apy = ((monthlyRate / balance) * 12 * 100).toFixed(1);
+        if (clawnchStaked > 0 && monthlyRate > 0) {
+            const apy = ((monthlyRate / clawnchStaked) * 12 * 100).toFixed(1);
             document.getElementById('statApy').textContent = apy + '%';
         }
 
-        // ── Roadmap ──
-        const treasuryUsd = balance * clawnchPrice;
-        updateRoadmap(treasuryUsd);
+        // Roadmap
+        updateRoadmap(totalUsd);
 
         // Contributors
         if (ubiData.contributors && ubiData.contributors.length > 0) {
@@ -95,15 +109,18 @@ function timeAgo(dateStr) {
                 const name = c.x_name || c.x_handle || shortAddr(c.wallet_address);
                 const amount = fmt(c.clawnch_amount);
                 const ago = timeAgo(c.created_at);
+                const token = c.token || 'clawnch';
+                const tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+                const tokenClass = 'ubi-contrib-token--' + token;
                 return '<div class="ubi-contrib-row">' +
                     '<span class="ubi-contrib-name">' + esc(name) + '</span>' +
-                    '<span class="ubi-contrib-amount">' + amount + ' CLAWNCH</span>' +
+                    '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
+                    '<span class="ubi-contrib-amount">' + amount + '</span>' +
                     '<span class="ubi-contrib-time">' + ago + '</span>' +
                 '</div>';
             }).join('');
         }
     } else {
-        // Still update roadmap with 0 if no data
         updateRoadmap(0);
     }
 
@@ -111,15 +128,12 @@ function timeAgo(dateStr) {
     function updateRoadmap(treasuryUsd) {
         const maxTarget = MILESTONES[MILESTONES.length - 1];
 
-        // Fill the progress bar
         const fillEl = document.getElementById('roadmapFill');
         if (fillEl) {
-            // Use logarithmic scale for better visual representation
             const pct = treasuryUsd <= 0 ? 0 : Math.min(100, (Math.log10(treasuryUsd) / Math.log10(maxTarget)) * 100);
             setTimeout(function() { fillEl.style.width = pct + '%'; }, 300);
         }
 
-        // Place milestone dots on the progress bar
         const markersEl = document.getElementById('milestoneMarkers');
         if (markersEl) {
             markersEl.innerHTML = MILESTONES.map(function(target) {
@@ -131,7 +145,6 @@ function timeAgo(dateStr) {
             }).join('');
         }
 
-        // Update milestone cards
         var milestoneCards = document.querySelectorAll('.ubi-milestone[data-target]');
         var foundCurrent = false;
         milestoneCards.forEach(function(card) {
@@ -149,37 +162,26 @@ function timeAgo(dateStr) {
         });
     }
 
-    // ── Fund the Treasury ──
-    let fundWallet = null;
-    const connectBtn = document.getElementById('ubiConnectBtn');
-    const fundForm = document.getElementById('ubiFundForm');
-    const amountInput = document.getElementById('ubiAmountInput');
-    const depositBtn = document.getElementById('ubiDepositBtn');
-    const fundStatus = document.getElementById('ubiFundStatus');
-    const hint = document.getElementById('ubiHint');
+    // ── Dual Staking ──
+    let stakeWallet = null;
 
-    function updateHint() {
-        const amount = parseInt(amountInput.value) || 0;
-        if (clawnchPrice > 0 && amount > 0) {
-            hint.textContent = '~$' + (amount * clawnchPrice).toFixed(2);
-        } else {
-            hint.textContent = '';
-        }
-        depositBtn.disabled = amount <= 0 || !fundWallet;
+    function getPrice(token) {
+        return token === 'inclawnch' ? inclawnchPrice : clawnchPrice;
     }
 
-    amountInput.addEventListener('input', updateHint);
-
-    connectBtn.addEventListener('click', async function() {
-        if (fundWallet) return;
+    // Shared wallet connection — connects once, activates both cards
+    async function connectWallet() {
+        if (stakeWallet) return stakeWallet;
         if (!window.ethereum) {
-            fundStatus.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
-            fundStatus.className = 'ubi-fund-status error';
-            return;
+            document.querySelectorAll('.stake-status').forEach(function(el) {
+                el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
+                el.className = 'ubi-stake-status stake-status error';
+            });
+            return null;
         }
         try {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            fundWallet = accounts[0];
+            stakeWallet = accounts[0];
 
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
@@ -192,42 +194,76 @@ function timeAgo(dateStr) {
                 }
             }
 
-            connectBtn.textContent = shortAddr(fundWallet);
-            connectBtn.classList.add('connected');
-            fundForm.style.display = '';
-            updateHint();
+            // Activate both cards
+            document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
+                btn.textContent = shortAddr(stakeWallet);
+                btn.classList.add('connected');
+            });
+            document.querySelectorAll('.stake-form').forEach(function(form) {
+                form.style.display = '';
+            });
+            // Update hints for both
+            document.querySelectorAll('.stake-amount').forEach(function(input) {
+                updateHint(input.getAttribute('data-token'));
+            });
+
+            return stakeWallet;
         } catch (err) {
-            fundStatus.textContent = err.message || 'Connection failed';
-            fundStatus.className = 'ubi-fund-status error';
+            document.querySelectorAll('.stake-status').forEach(function(el) {
+                el.textContent = err.message || 'Connection failed';
+                el.className = 'ubi-stake-status stake-status error';
+            });
+            return null;
         }
-    });
+    }
 
-    depositBtn.addEventListener('click', async function() {
-        const amount = parseInt(amountInput.value) || 0;
-        if (amount <= 0 || !fundWallet) return;
+    function updateHint(token) {
+        var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
+        var hint = document.querySelector('.stake-hint[data-token="' + token + '"]');
+        var depositBtn = document.querySelector('.stake-deposit-btn[data-token="' + token + '"]');
+        if (!input || !hint || !depositBtn) return;
+        var amount = parseInt(input.value) || 0;
+        var price = getPrice(token);
+        if (price > 0 && amount > 0) {
+            hint.textContent = '~$' + (amount * price).toFixed(2);
+        } else {
+            hint.textContent = '';
+        }
+        depositBtn.disabled = amount <= 0 || !stakeWallet;
+    }
 
+    async function doDeposit(token) {
+        var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
+        var depositBtn = document.querySelector('.stake-deposit-btn[data-token="' + token + '"]');
+        var status = document.querySelector('.stake-status[data-token="' + token + '"]');
+        if (!input || !depositBtn || !status) return;
+
+        var amount = parseInt(input.value) || 0;
+        if (amount <= 0 || !stakeWallet) return;
+
+        var config = TOKEN_CONFIG[token];
         depositBtn.disabled = true;
-        fundStatus.textContent = 'Sending CLAWNCH to UBI treasury...';
-        fundStatus.className = 'ubi-fund-status';
+        status.textContent = 'Sending ' + config.label + ' to UBI treasury...';
+        status.className = 'ubi-stake-status stake-status';
 
         try {
-            const amountWei = toWei(amount);
-            const data = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
+            var amountWei = toWei(amount);
+            var data = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
 
-            const txHash = await window.ethereum.request({
+            var txHash = await window.ethereum.request({
                 method: 'eth_sendTransaction',
                 params: [{
-                    from: fundWallet,
-                    to: CLAWNCH_ADDRESS,
+                    from: stakeWallet,
+                    to: config.address,
                     data: data
                 }]
             });
 
-            fundStatus.textContent = 'Confirming transaction...';
+            status.textContent = 'Confirming transaction...';
 
-            let receipt = null;
-            for (let i = 0; i < 60; i++) {
-                await new Promise(r => setTimeout(r, 2000));
+            var receipt = null;
+            for (var i = 0; i < 60; i++) {
+                await new Promise(function(r) { setTimeout(r, 2000); });
                 receipt = await window.ethereum.request({
                     method: 'eth_getTransactionReceipt',
                     params: [txHash]
@@ -239,40 +275,73 @@ function timeAgo(dateStr) {
                 throw new Error('Transaction failed or timed out');
             }
 
-            fundStatus.textContent = 'Recording contribution...';
+            status.textContent = 'Recording stake...';
 
-            const apiRes = await fetch('/api/inclawbate/ubi', {
+            var apiRes = await fetch('/api/inclawbate/ubi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'fund',
                     tx_hash: txHash,
-                    wallet_address: fundWallet
+                    wallet_address: stakeWallet,
+                    token: token
                 })
             });
-            const apiData = await apiRes.json();
+            var apiData = await apiRes.json();
 
             if (apiRes.ok && apiData.success) {
-                fundStatus.textContent = 'Deposited ' + apiData.amount.toLocaleString() + ' CLAWNCH to the UBI treasury!';
-                fundStatus.className = 'ubi-fund-status success';
+                status.textContent = 'Staked ' + apiData.amount.toLocaleString() + ' ' + config.label + ' in the UBI treasury!';
+                status.className = 'ubi-stake-status stake-status success';
 
                 // Update treasury display
-                const newBalance = (Number(ubiData?.total_balance) || 0) + apiData.amount;
-                document.getElementById('treasuryValue').textContent = fmt(newBalance) + ' CLAWNCH';
-                if (clawnchPrice > 0) {
-                    document.getElementById('treasuryUsd').textContent = '~$' + (newBalance * clawnchPrice).toFixed(2) + ' USD';
-                    // Update roadmap with new value
-                    updateRoadmap(newBalance * clawnchPrice);
+                if (token === 'clawnch') {
+                    var newBal = (Number(ubiData?.total_balance) || 0) + apiData.amount;
+                    document.getElementById('treasuryValue').textContent = fmt(newBal) + ' CLAWNCH';
+                    document.getElementById('statClawnchStaked').textContent = fmt(newBal);
+                } else {
+                    var newInc = (Number(ubiData?.inclawnch_staked) || 0) + apiData.amount;
+                    document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
+                }
+
+                // Recalculate USD + roadmap
+                var clawnchBal = Number(document.getElementById('statClawnchStaked').textContent.replace(/,/g, '')) || 0;
+                var inclawnchBal = Number(document.getElementById('statInclawnchStaked').textContent.replace(/,/g, '')) || 0;
+                var newUsd = (clawnchBal * clawnchPrice) + (inclawnchBal * inclawnchPrice);
+                if (clawnchPrice > 0 || inclawnchPrice > 0) {
+                    document.getElementById('treasuryUsd').textContent = '~$' + newUsd.toFixed(2) + ' USD';
+                    updateRoadmap(newUsd);
                 }
             } else {
-                fundStatus.textContent = apiData.error || 'Failed to record deposit';
-                fundStatus.className = 'ubi-fund-status error';
+                status.textContent = apiData.error || 'Failed to record stake';
+                status.className = 'ubi-stake-status stake-status error';
             }
         } catch (err) {
-            fundStatus.textContent = err.message || 'Deposit failed';
-            fundStatus.className = 'ubi-fund-status error';
+            status.textContent = err.message || 'Stake failed';
+            status.className = 'ubi-stake-status stake-status error';
         }
 
         depositBtn.disabled = false;
+    }
+
+    // Wire up connect buttons (both trigger shared wallet connection)
+    document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (stakeWallet) return;
+            connectWallet();
+        });
+    });
+
+    // Wire up amount inputs
+    document.querySelectorAll('.stake-amount').forEach(function(input) {
+        input.addEventListener('input', function() {
+            updateHint(input.getAttribute('data-token'));
+        });
+    });
+
+    // Wire up deposit buttons
+    document.querySelectorAll('.stake-deposit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            doDeposit(btn.getAttribute('data-token'));
+        });
     });
 })();
