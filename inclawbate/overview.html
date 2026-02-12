@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overview — Inclawbate</title>
+    <meta name="description" content="Platform metrics and admin overview for Inclawbate.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .ov-container {
+            max-width: 960px;
+            margin: calc(var(--nav-height) + var(--space-2xl)) auto var(--space-4xl);
+            padding: 0 var(--space-xl);
+        }
+
+        /* ── Header ── */
+        .ov-header {
+            text-align: center;
+            margin-bottom: var(--space-3xl);
+        }
+        .ov-header h1 {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-xs);
+            animation: ov-fadeUp 0.6s var(--ease-smooth) both;
+        }
+        .ov-header p {
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+            animation: ov-fadeUp 0.6s 0.1s var(--ease-smooth) both;
+        }
+
+        /* ── KPI Grid ── */
+        .ov-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-2xl);
+        }
+        .ov-kpi {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl) var(--space-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: ov-fadeUp 0.5s var(--ease-smooth) both;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .ov-kpi:nth-child(1) { animation-delay: 0.15s; }
+        .ov-kpi:nth-child(2) { animation-delay: 0.22s; }
+        .ov-kpi:nth-child(3) { animation-delay: 0.29s; }
+        .ov-kpi:nth-child(4) { animation-delay: 0.36s; }
+        .ov-kpi:hover {
+            border-color: var(--border-bright);
+        }
+        .ov-kpi::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            border-radius: 0 0 4px 4px;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .ov-kpi:hover::before { opacity: 1; }
+        .ov-kpi--coral::before { background: var(--accent-gradient); }
+        .ov-kpi--teal::before { background: linear-gradient(90deg, var(--seafoam-400), var(--seafoam-300)); }
+        .ov-kpi--sand::before { background: linear-gradient(90deg, var(--sand-400), var(--sand-300)); }
+        .ov-kpi--blue::before { background: linear-gradient(90deg, var(--blue-400), hsl(210, 35%, 65%)); }
+        .ov-kpi:hover.ov-kpi--coral { box-shadow: 0 4px 30px hsla(9, 60%, 54%, 0.08); }
+        .ov-kpi:hover.ov-kpi--teal { box-shadow: 0 4px 30px hsla(172, 40%, 48%, 0.08); }
+        .ov-kpi:hover.ov-kpi--sand { box-shadow: 0 4px 30px hsla(32, 40%, 50%, 0.08); }
+        .ov-kpi:hover.ov-kpi--blue { box-shadow: 0 4px 30px hsla(210, 40%, 54%, 0.08); }
+
+        .ov-kpi-icon {
+            font-size: 1.6rem;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+        .ov-kpi-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            display: block;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .ov-kpi--coral .ov-kpi-value { color: var(--lobster-300); }
+        .ov-kpi--teal .ov-kpi-value { color: var(--seafoam-300); }
+        .ov-kpi--sand .ov-kpi-value { color: var(--sand-300); }
+        .ov-kpi--blue .ov-kpi-value { color: var(--blue-400); }
+
+        .ov-kpi-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+        }
+
+        /* ── Two-Column Layout ── */
+        .ov-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-xl);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .ov-panel {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            animation: ov-fadeUp 0.5s 0.4s var(--ease-smooth) both;
+        }
+        .ov-panel:nth-child(2) { animation-delay: 0.48s; }
+        .ov-panel-title {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        .ov-panel-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Top Skills ── */
+        .ov-skills .ov-panel-title::before { background: var(--lobster-400); }
+        .ov-skill-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: 8px 0;
+        }
+        .ov-skill-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            width: 120px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ov-skill-bar-track {
+            flex: 1;
+            height: 6px;
+            background: hsla(0, 0%, 100%, 0.04);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .ov-skill-bar {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent-gradient);
+            width: 0;
+            transition: width 1s var(--ease-smooth);
+        }
+        .ov-skill-count {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            width: 28px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* ── Recent Signups ── */
+        .ov-signups .ov-panel-title::before { background: var(--seafoam-400); }
+        .ov-signup-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: 7px 0;
+            border-bottom: 1px solid hsla(0, 0%, 100%, 0.03);
+        }
+        .ov-signup-row:last-child { border-bottom: none; }
+        .ov-signup-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--bg-card);
+        }
+        .ov-signup-info { flex: 1; min-width: 0; }
+        .ov-signup-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ov-signup-handle {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+        .ov-signup-time {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        /* ── Top Earners ── */
+        .ov-earners {
+            animation-delay: 0.55s;
+        }
+        .ov-earners .ov-panel-title::before { background: var(--sand-400); }
+        .ov-earner-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: 8px 0;
+            border-bottom: 1px solid hsla(0, 0%, 100%, 0.03);
+        }
+        .ov-earner-row:last-child { border-bottom: none; }
+        .ov-earner-rank {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            width: 24px;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+        .ov-earner-rank.gold { color: hsl(43, 80%, 65%); }
+        .ov-earner-rank.silver { color: hsl(210, 10%, 70%); }
+        .ov-earner-rank.bronze { color: hsl(25, 60%, 60%); }
+        .ov-earner-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--bg-card);
+        }
+        .ov-earner-info { flex: 1; min-width: 0; }
+        .ov-earner-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ov-earner-amount {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--sand-300);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* ── Rewards Pool Mini ── */
+        .ov-rewards {
+            animation-delay: 0.55s;
+        }
+        .ov-rewards .ov-panel-title::before { background: var(--blue-400); }
+        .ov-rewards-pool {
+            font-family: var(--font-mono);
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--lobster-300), var(--seafoam-300));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-xs);
+        }
+        .ov-rewards-sub {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-md);
+        }
+        .ov-rewards-stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-sm);
+        }
+        .ov-rewards-stat {
+            text-align: center;
+            padding: var(--space-sm);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+        }
+        .ov-rewards-stat-val {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+        .ov-rewards-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+
+        /* ── Animations ── */
+        @keyframes ov-fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Loading ── */
+        .ov-loading {
+            text-align: center;
+            padding: var(--space-3xl) 0;
+        }
+
+        @media (max-width: 768px) {
+            .ov-header h1 { font-size: 1.8rem; }
+            .ov-kpis { grid-template-columns: repeat(2, 1fr); }
+            .ov-kpi-value { font-size: 1.5rem; }
+            .ov-cols { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .ov-kpis { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+            .ov-kpi { padding: var(--space-lg) var(--space-md); }
+            .ov-kpi-value { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/leaderboard" class="nav-link">Leaderboard</a>
+        <a href="/overview" class="nav-link active">Overview</a>
+        <a href="/dashboard" class="nav-link">Inbox</a>
+    </div>
+</nav>
+
+<div class="ov-container">
+    <div class="ov-header">
+        <h1>Platform Overview</h1>
+        <p id="lastUpdated">Loading metrics...</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="ov-kpis" id="kpiGrid">
+        <div class="ov-kpi ov-kpi--coral">
+            <span class="ov-kpi-icon">&#129438;</span>
+            <span class="ov-kpi-value" id="kpiHumans">--</span>
+            <span class="ov-kpi-label">Total Humans</span>
+        </div>
+        <div class="ov-kpi ov-kpi--teal">
+            <span class="ov-kpi-icon">&#128279;</span>
+            <span class="ov-kpi-value" id="kpiWallets">--</span>
+            <span class="ov-kpi-label">Wallets Connected</span>
+        </div>
+        <div class="ov-kpi ov-kpi--sand">
+            <span class="ov-kpi-icon">&#128176;</span>
+            <span class="ov-kpi-value" id="kpiClawnch">--</span>
+            <span class="ov-kpi-label">CLAWNCH Distributed</span>
+        </div>
+        <div class="ov-kpi ov-kpi--blue">
+            <span class="ov-kpi-icon">&#129309;</span>
+            <span class="ov-kpi-value" id="kpiHires">--</span>
+            <span class="ov-kpi-label">Total Hires</span>
+        </div>
+    </div>
+
+    <!-- Two Columns: Skills + Recent Signups -->
+    <div class="ov-cols">
+        <div class="ov-panel ov-skills">
+            <div class="ov-panel-title">Top Skills</div>
+            <div id="skillsList">
+                <div class="ov-loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+        <div class="ov-panel ov-signups">
+            <div class="ov-panel-title">Recent Signups</div>
+            <div id="signupsList">
+                <div class="ov-loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Columns: Top Earners + Rewards Pool -->
+    <div class="ov-cols">
+        <div class="ov-panel ov-earners">
+            <div class="ov-panel-title">Top Earners</div>
+            <div id="earnersList">
+                <div class="ov-loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+        <div class="ov-panel ov-rewards">
+            <div class="ov-panel-title">Weekly Reward Pool</div>
+            <div id="rewardsInfo">
+                <div class="ov-loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
+        <div class="footer-links">
+            <a href="/humans" class="footer-link">Browse</a>
+            <a href="/leaderboard" class="footer-link">Leaderboard</a>
+            <a href="/docs" class="footer-link">Docs</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/nav-auth.js"></script>
+<script src="/js/overview-app.js"></script>
+
+</body>
+</html>

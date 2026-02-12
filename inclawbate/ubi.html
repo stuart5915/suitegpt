@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBI — Inclawbate</title>
+    <meta name="description" content="Community-funded Universal Basic Income for verified humans on Inclawbate. Deposit $CLAWNCH to the treasury and help distribute value to every human on the platform.">
+    <meta property="og:title" content="UBI — Inclawbate">
+    <meta property="og:description" content="Community-funded Universal Basic Income for verified humans. Deposit $CLAWNCH to the treasury.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/ubi">
+    <meta property="og:image" content="https://inclawbate.com/api/inclawbate/og?tagline=Universal+Basic+Income+for+Humans">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .ubi-container {
+            max-width: 780px;
+            margin: calc(var(--nav-height) + var(--space-xl)) auto var(--space-4xl);
+            padding: 0 var(--space-xl);
+        }
+
+        /* ── Hero ── */
+        .ubi-hero {
+            text-align: center;
+            padding: var(--space-2xl) 0 var(--space-3xl);
+        }
+        .ubi-hero-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--seafoam-300);
+            background: hsla(172, 32%, 48%, 0.1);
+            border: 1px solid hsla(172, 32%, 48%, 0.2);
+            border-radius: var(--radius-full);
+            padding: 5px 16px;
+            margin-bottom: var(--space-lg);
+            animation: ubiFadeUp 0.5s var(--ease-smooth) both;
+        }
+        .ubi-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.6rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: var(--space-md);
+            animation: ubiFadeUp 0.6s 0.08s var(--ease-smooth) both;
+        }
+        .ubi-hero h1 span {
+            background: linear-gradient(135deg, var(--seafoam-300), var(--lobster-300));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .ubi-hero p {
+            color: var(--text-secondary);
+            font-size: 1.02rem;
+            line-height: 1.65;
+            max-width: 520px;
+            margin: 0 auto;
+            animation: ubiFadeUp 0.6s 0.16s var(--ease-smooth) both;
+        }
+
+        /* ── Treasury Card ── */
+        .ubi-treasury {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            overflow: hidden;
+            margin-bottom: var(--space-xl);
+            position: relative;
+            animation: ubiFadeUp 0.6s 0.24s var(--ease-smooth) both;
+        }
+        .ubi-treasury::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(160deg,
+                hsla(172, 40%, 48%, 0.05) 0%,
+                hsla(9, 50%, 50%, 0.03) 50%,
+                transparent 100%);
+            pointer-events: none;
+        }
+        .ubi-treasury-main {
+            padding: var(--space-2xl) var(--space-xl);
+            text-align: center;
+            position: relative;
+        }
+        .ubi-treasury-label {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--seafoam-400);
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-treasury-value {
+            font-family: var(--font-mono);
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--seafoam-300), var(--lobster-300));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-xs);
+        }
+        .ubi-treasury-usd {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
+        }
+
+        .ubi-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-top: 1px solid var(--border-subtle);
+            position: relative;
+        }
+        .ubi-stat {
+            padding: var(--space-md) var(--space-sm);
+            text-align: center;
+            border-right: 1px solid var(--border-subtle);
+        }
+        .ubi-stat:last-child { border-right: none; }
+        .ubi-stat-val {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+        .ubi-stat-label {
+            font-size: 0.62rem;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-top: 2px;
+            display: block;
+        }
+
+        /* ── Fund Section ── */
+        .ubi-fund {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            animation: ubiFadeUp 0.6s 0.32s var(--ease-smooth) both;
+        }
+        .ubi-fund-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+        .ubi-fund-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+        .ubi-fund-connect {
+            padding: 7px 16px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ubi-fund-connect:hover {
+            border-color: var(--seafoam-400);
+            color: var(--seafoam-300);
+        }
+        .ubi-fund-connect.connected {
+            border-color: var(--seafoam-400);
+            color: var(--seafoam-300);
+            cursor: default;
+        }
+        .ubi-fund-desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+            line-height: 1.6;
+        }
+        .ubi-fund-form {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-fund-form input {
+            flex: 1;
+            max-width: 200px;
+        }
+        .ubi-fund-hint {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .ubi-fund-status {
+            font-size: 0.82rem;
+            margin-top: var(--space-sm);
+            min-height: 1.2em;
+        }
+        .ubi-fund-status.error { color: var(--red); }
+        .ubi-fund-status.success { color: var(--seafoam-400); }
+
+        /* ── How It Works ── */
+        .ubi-how {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            animation: ubiFadeUp 0.6s 0.38s var(--ease-smooth) both;
+        }
+        .ubi-how h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-flow {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+        }
+        .ubi-flow-step {
+            text-align: center;
+            padding: var(--space-lg) var(--space-md);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+        }
+        .ubi-flow-icon {
+            font-size: 1.8rem;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+        .ubi-flow-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .ubi-flow-desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ── Verify Identity ── */
+        .ubi-verify {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            animation: ubiFadeUp 0.6s 0.44s var(--ease-smooth) both;
+        }
+        .ubi-verify h2 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-verify > p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.65;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-verify-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+        .ubi-verify-card {
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            transition: border-color 0.2s;
+        }
+        .ubi-verify-card:hover {
+            border-color: var(--border-bright);
+        }
+        .ubi-verify-card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-verify-card-icon {
+            font-size: 1.3rem;
+        }
+        .ubi-verify-card-name {
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .ubi-verify-card-badge {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            margin-left: auto;
+        }
+        .ubi-verify-card-badge.live {
+            background: hsla(172, 32%, 48%, 0.12);
+            color: var(--seafoam-300);
+        }
+        .ubi-verify-card-badge.soon {
+            background: hsla(32, 32%, 66%, 0.12);
+            color: var(--sand-300);
+        }
+        .ubi-verify-card p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        /* ── Contributors ── */
+        .ubi-contributors {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            animation: ubiFadeUp 0.6s 0.5s var(--ease-smooth) both;
+        }
+        .ubi-contributors h2 {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+        .ubi-contrib-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 7px 0;
+            font-size: 0.82rem;
+            border-bottom: 1px solid hsla(0, 0%, 100%, 0.04);
+        }
+        .ubi-contrib-row:last-child { border-bottom: none; }
+        .ubi-contrib-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            flex: 1;
+        }
+        .ubi-contrib-amount {
+            font-family: var(--font-mono);
+            color: var(--seafoam-300);
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+        .ubi-contrib-time {
+            font-family: var(--font-mono);
+            color: var(--text-dim);
+            font-size: 0.7rem;
+        }
+        .ubi-contrib-empty {
+            text-align: center;
+            padding: var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        @keyframes ubiFadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .ubi-hero h1 { font-size: 2rem; }
+            .ubi-treasury-value { font-size: 2rem; }
+            .ubi-stats { grid-template-columns: repeat(2, 1fr); }
+            .ubi-stat:nth-child(2) { border-right: none; }
+            .ubi-stat:nth-child(1),
+            .ubi-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
+            .ubi-flow { grid-template-columns: 1fr; }
+            .ubi-verify-options { grid-template-columns: 1fr; }
+            .ubi-fund-form { flex-wrap: wrap; }
+            .ubi-fund-form input { max-width: none; flex: 1 1 120px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/leaderboard" class="nav-link">Leaderboard</a>
+        <a href="/ubi" class="nav-link active">UBI</a>
+        <a href="/dashboard" class="nav-link">Inbox</a>
+    </div>
+</nav>
+
+<div class="ubi-container">
+    <!-- Hero -->
+    <section class="ubi-hero">
+        <div class="ubi-hero-badge">Community Funded</div>
+        <h1>Universal Basic Income<br><span>for Verified Humans</span></h1>
+        <p>A community-funded treasury that distributes $CLAWNCH to every verified human on the platform. Anyone can deposit. Everyone gets paid.</p>
+    </section>
+
+    <!-- Treasury -->
+    <div class="ubi-treasury">
+        <div class="ubi-treasury-main">
+            <div class="ubi-treasury-label">UBI Treasury</div>
+            <div class="ubi-treasury-value" id="treasuryValue">0 CLAWNCH</div>
+            <div class="ubi-treasury-usd" id="treasuryUsd">Loading...</div>
+        </div>
+        <div class="ubi-stats">
+            <div class="ubi-stat">
+                <span class="ubi-stat-val" id="statDistributed">0</span>
+                <span class="ubi-stat-label">Total Distributed</span>
+            </div>
+            <div class="ubi-stat">
+                <span class="ubi-stat-val" id="statWeekly">0</span>
+                <span class="ubi-stat-label">Weekly Rate</span>
+            </div>
+            <div class="ubi-stat">
+                <span class="ubi-stat-val" id="statEligible">0</span>
+                <span class="ubi-stat-label">Eligible Humans</span>
+            </div>
+            <div class="ubi-stat">
+                <span class="ubi-stat-val" id="statPerHuman">--</span>
+                <span class="ubi-stat-label">Per Human / Wk</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fund the Treasury -->
+    <div class="ubi-fund">
+        <div class="ubi-fund-header">
+            <span class="ubi-fund-title">Fund the Treasury</span>
+            <button class="ubi-fund-connect" id="ubiConnectBtn">Connect Wallet</button>
+        </div>
+        <p class="ubi-fund-desc">Deposit $CLAWNCH to grow the UBI treasury. Your contribution goes directly to verified humans on the platform — distributed proportionally every week.</p>
+        <div class="ubi-fund-form" id="ubiFundForm" style="display:none;">
+            <input type="number" class="input" id="ubiAmountInput" placeholder="CLAWNCH amount" min="1" step="1000" value="50000">
+            <span class="ubi-fund-hint" id="ubiHint"></span>
+            <button class="btn btn-primary btn-sm" id="ubiDepositBtn" disabled>Deposit</button>
+        </div>
+        <div class="ubi-fund-status" id="ubiFundStatus"></div>
+    </div>
+
+    <!-- How it Works -->
+    <div class="ubi-how">
+        <h2>How It Works</h2>
+        <div class="ubi-flow">
+            <div class="ubi-flow-step">
+                <span class="ubi-flow-icon">&#128176;</span>
+                <div class="ubi-flow-label">Anyone Funds</div>
+                <div class="ubi-flow-desc">Deposit $CLAWNCH to the UBI treasury. Community members, agents, and protocols can all contribute.</div>
+            </div>
+            <div class="ubi-flow-step">
+                <span class="ubi-flow-icon">&#9989;</span>
+                <div class="ubi-flow-label">Humans Verify</div>
+                <div class="ubi-flow-desc">Prove you're a real human through identity verification. No bots, no duplicates — one person, one share.</div>
+            </div>
+            <div class="ubi-flow-step">
+                <span class="ubi-flow-icon">&#128300;</span>
+                <div class="ubi-flow-label">Weekly Distribution</div>
+                <div class="ubi-flow-desc">Every week, the treasury distributes $CLAWNCH equally to all verified humans on the platform.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verify Identity -->
+    <div class="ubi-verify">
+        <h2>Verify Your Humanity</h2>
+        <p>To receive UBI distributions, you need to verify that you're a unique human. We're integrating with leading proof-of-personhood protocols to make this trustless and private.</p>
+        <div class="ubi-verify-options">
+            <div class="ubi-verify-card">
+                <div class="ubi-verify-card-header">
+                    <span class="ubi-verify-card-icon">&#127760;</span>
+                    <span class="ubi-verify-card-name">World ID</span>
+                    <span class="ubi-verify-card-badge soon">Exploring</span>
+                </div>
+                <p>Biometric verification through Worldcoin's orb network. Proves unique personhood without revealing identity. The gold standard for sybil resistance.</p>
+            </div>
+            <div class="ubi-verify-card">
+                <div class="ubi-verify-card-header">
+                    <span class="ubi-verify-card-icon">&#128274;</span>
+                    <span class="ubi-verify-card-name">Gitcoin Passport</span>
+                    <span class="ubi-verify-card-badge soon">Exploring</span>
+                </div>
+                <p>Aggregated identity score from multiple web2 + web3 credentials. Non-biometric option that builds trust through your existing digital footprint.</p>
+            </div>
+            <div class="ubi-verify-card">
+                <div class="ubi-verify-card-header">
+                    <span class="ubi-verify-card-icon">&#129330;</span>
+                    <span class="ubi-verify-card-name">Humanity Protocol</span>
+                    <span class="ubi-verify-card-badge soon">Exploring</span>
+                </div>
+                <p>Palm-scan based proof of personhood with zero-knowledge proofs. Verify once, use everywhere — privacy-preserving human verification.</p>
+            </div>
+            <div class="ubi-verify-card">
+                <div class="ubi-verify-card-header">
+                    <span class="ubi-verify-card-icon">&#129438;</span>
+                    <span class="ubi-verify-card-name">Inclawbate Native</span>
+                    <span class="ubi-verify-card-badge live">Live</span>
+                </div>
+                <p>X account + connected wallet serves as a baseline identity layer. Active platform participation increases your trust score over time.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contributors -->
+    <div class="ubi-contributors" id="contributorsSection">
+        <h2>Treasury Contributors</h2>
+        <div id="contributorsList">
+            <div class="ubi-contrib-empty">Be the first to fund the UBI treasury.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; Human APIs for AI Agents</p>
+        <div class="footer-links">
+            <a href="/humans" class="footer-link">Browse</a>
+            <a href="/leaderboard" class="footer-link">Leaderboard</a>
+            <a href="/ubi" class="footer-link">UBI</a>
+            <a href="/docs" class="footer-link">Docs</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/nav-auth.js"></script>
+<script src="/js/ubi-app.js"></script>
+
+</body>
+</html>

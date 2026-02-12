@@ -1,7 +1,6 @@
-// Inclawbate — Weekly Rewards Config + Pool Funding
-// GET  — public, returns reward config + recent contributors
-// POST {action:"update-config", ...} — admin wallet only, updates config
-// POST {action:"pool-deposit", tx_hash, wallet_address} — anyone, fund the pool
+// Inclawbate — UBI Treasury Fund
+// GET  — public, returns treasury stats + recent contributors
+// POST {action:"fund", tx_hash, wallet_address} — anyone, deposit to UBI treasury
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,7 +9,6 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -20,7 +18,6 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// RPC with fallback
 const BASE_RPCS = [
     'https://mainnet.base.org',
     'https://base.llamarpc.com',
@@ -83,72 +80,49 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     if (req.method === 'GET') {
-        // Get config
-        const { data: config } = await supabase
-            .from('inclawbate_rewards')
+        // Get treasury config
+        const { data: treasury } = await supabase
+            .from('inclawbate_ubi_treasury')
             .select('*')
             .eq('id', 1)
             .single();
 
-        // Get recent contributors for this week
+        // Get total humans with wallets (eligible pool)
+        const { count: totalHumans } = await supabase
+            .from('human_profiles')
+            .select('id', { count: 'exact', head: true })
+            .not('wallet_address', 'is', null);
+
+        // Recent contributors
         let contributors = [];
         try {
             const { data: contribs } = await supabase
-                .from('inclawbate_pool_contributions')
+                .from('inclawbate_ubi_contributions')
                 .select('wallet_address, x_handle, x_name, clawnch_amount, created_at')
                 .order('created_at', { ascending: false })
                 .limit(20);
             contributors = contribs || [];
         } catch (e) { /* table may not exist yet */ }
 
-        const result = config || {
-            current_pool: 1000000,
-            next_pool: 1000000,
-            last_distributed: 0,
+        const result = treasury || {
+            total_balance: 0,
             total_distributed: 0,
-            week_ends_at: null,
-            top_n: 10
+            distribution_count: 0,
+            verified_humans: 0,
+            weekly_rate: 0,
+            last_distribution_at: null
         };
 
+        result.total_eligible = totalHumans || 0;
         result.contributors = contributors;
+
         return res.status(200).json(result);
     }
 
     if (req.method === 'POST') {
         const { action } = req.body;
 
-        // Admin config update
-        if (action === 'update-config') {
-            const { wallet_address, current_pool, next_pool, last_distributed, total_distributed, week_ends_at, top_n } = req.body;
-
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
-                return res.status(403).json({ error: 'Unauthorized' });
-            }
-
-            const updates = { updated_at: new Date().toISOString() };
-            if (current_pool !== undefined) updates.current_pool = current_pool;
-            if (next_pool !== undefined) updates.next_pool = next_pool;
-            if (last_distributed !== undefined) updates.last_distributed = last_distributed;
-            if (total_distributed !== undefined) updates.total_distributed = total_distributed;
-            if (week_ends_at !== undefined) updates.week_ends_at = week_ends_at;
-            if (top_n !== undefined) updates.top_n = top_n;
-
-            const { data, error } = await supabase
-                .from('inclawbate_rewards')
-                .update(updates)
-                .eq('id', 1)
-                .select('*')
-                .single();
-
-            if (error) {
-                return res.status(500).json({ error: 'Failed to update', detail: error.message });
-            }
-
-            return res.status(200).json(data);
-        }
-
-        // Community pool deposit
-        if (action === 'pool-deposit') {
+        if (action === 'fund') {
             const { tx_hash, wallet_address } = req.body;
 
             if (!tx_hash || typeof tx_hash !== 'string' || !/^0x[a-fA-F0-9]{64}$/.test(tx_hash)) {
@@ -161,7 +135,7 @@ export default async function handler(req, res) {
 
             // Check duplicate
             const { data: existing } = await supabase
-                .from('inclawbate_pool_contributions')
+                .from('inclawbate_ubi_contributions')
                 .select('id')
                 .eq('tx_hash', tx_hash.toLowerCase())
                 .single();
@@ -176,7 +150,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: verification.reason });
             }
 
-            // Look up contributor's profile for display name
+            // Look up contributor profile
             let xHandle = null;
             let xName = null;
             const { data: profile } = await supabase
@@ -189,23 +163,15 @@ export default async function handler(req, res) {
                 xName = profile.x_name;
             }
 
-            // Get current week end
-            const { data: config } = await supabase
-                .from('inclawbate_rewards')
-                .select('week_ends_at')
-                .eq('id', 1)
-                .single();
-
             // Record contribution
             const { error: insertErr } = await supabase
-                .from('inclawbate_pool_contributions')
+                .from('inclawbate_ubi_contributions')
                 .insert({
                     wallet_address: wallet_address.toLowerCase(),
                     x_handle: xHandle,
                     x_name: xName,
                     tx_hash: tx_hash.toLowerCase(),
-                    clawnch_amount: verification.amount,
-                    week_ends_at: config?.week_ends_at || null
+                    clawnch_amount: verification.amount
                 });
 
             if (insertErr) {
@@ -215,16 +181,19 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to record contribution' });
             }
 
-            // Increment current_pool
+            // Increment treasury balance
             const { data: curr } = await supabase
-                .from('inclawbate_rewards')
-                .select('current_pool')
+                .from('inclawbate_ubi_treasury')
+                .select('total_balance')
                 .eq('id', 1)
                 .single();
             if (curr) {
                 await supabase
-                    .from('inclawbate_rewards')
-                    .update({ current_pool: Number(curr.current_pool) + verification.amount })
+                    .from('inclawbate_ubi_treasury')
+                    .update({
+                        total_balance: Number(curr.total_balance) + verification.amount,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', 1);
             }
 
@@ -233,31 +202,6 @@ export default async function handler(req, res) {
                 amount: verification.amount,
                 contributor: xHandle || wallet_address.slice(0, 10) + '...'
             });
-        }
-
-        // Backwards compat: no action = admin config update
-        if (!action) {
-            const { wallet_address, current_pool, next_pool, last_distributed, total_distributed, week_ends_at, top_n } = req.body;
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
-                return res.status(403).json({ error: 'Unauthorized' });
-            }
-            const updates = { updated_at: new Date().toISOString() };
-            if (current_pool !== undefined) updates.current_pool = current_pool;
-            if (next_pool !== undefined) updates.next_pool = next_pool;
-            if (last_distributed !== undefined) updates.last_distributed = last_distributed;
-            if (total_distributed !== undefined) updates.total_distributed = total_distributed;
-            if (week_ends_at !== undefined) updates.week_ends_at = week_ends_at;
-            if (top_n !== undefined) updates.top_n = top_n;
-
-            const { data, error } = await supabase
-                .from('inclawbate_rewards')
-                .update(updates)
-                .eq('id', 1)
-                .select('*')
-                .single();
-
-            if (error) return res.status(500).json({ error: 'Failed to update' });
-            return res.status(200).json(data);
         }
 
         return res.status(400).json({ error: 'Unknown action' });

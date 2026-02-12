@@ -334,6 +334,111 @@
         }
         .lb-step a:hover { text-decoration: underline; }
 
+        /* ── Fund the Pool ── */
+        .fund-pool {
+            border-top: 1px solid var(--border-subtle);
+            padding: var(--space-xl);
+            position: relative;
+        }
+        .fund-pool-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+        .fund-pool-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--seafoam-300);
+        }
+        .fund-pool-connect {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .fund-pool-connect:hover {
+            border-color: var(--seafoam-400);
+            color: var(--seafoam-300);
+        }
+        .fund-pool-connect.connected {
+            border-color: var(--seafoam-400);
+            color: var(--seafoam-300);
+            cursor: default;
+        }
+        .fund-pool-form {
+            display: flex;
+            gap: var(--space-md);
+            align-items: center;
+            margin-bottom: var(--space-md);
+        }
+        .fund-pool-form input {
+            flex: 1;
+            max-width: 180px;
+        }
+        .fund-pool-form .btn {
+            white-space: nowrap;
+        }
+        .fund-pool-hint {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .fund-pool-status {
+            font-size: 0.82rem;
+            margin-top: var(--space-sm);
+            min-height: 1.2em;
+        }
+        .fund-pool-status.error { color: var(--red); }
+        .fund-pool-status.success { color: var(--seafoam-400); }
+
+        /* Contributors */
+        .contributors {
+            margin-top: var(--space-lg);
+        }
+        .contributors-title {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-sm);
+        }
+        .contributor-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 6px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid hsla(0, 0%, 100%, 0.04);
+        }
+        .contributor-row:last-child { border-bottom: none; }
+        .contributor-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            flex: 1;
+        }
+        .contributor-amount {
+            font-family: var(--font-mono);
+            color: var(--seafoam-300);
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+        .contributor-time {
+            font-family: var(--font-mono);
+            color: var(--text-dim);
+            font-size: 0.7rem;
+        }
+
         @media (max-width: 768px) {
             .lb-hero h1 { font-size: 1.8rem; }
             .lb-row { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
@@ -344,6 +449,8 @@
             .rewards-stat:nth-child(2) { border-right: none; }
             .rewards-stat:nth-child(1),
             .rewards-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
+            .fund-pool-form { flex-wrap: wrap; }
+            .fund-pool-form input { max-width: none; flex: 1 1 100px; }
         }
     </style>
 </head>
@@ -357,6 +464,7 @@
     <div class="nav-links">
         <a href="/humans" class="nav-link">Humans</a>
         <a href="/leaderboard" class="nav-link active">Leaderboard</a>
+        <a href="/ubi" class="nav-link">UBI</a>
         <a href="/dashboard" class="nav-link">Inbox</a>
         <a href="/docs" class="nav-link">Docs</a>
         <a href="/launch" class="btn btn-x btn-sm"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Connect X</a>
@@ -403,6 +511,29 @@
             <div class="rewards-stat">
                 <span class="rewards-stat-val" id="statTotal">0</span>
                 <span class="rewards-stat-label">Total Given</span>
+            </div>
+        </div>
+
+        <!-- Fund the Pool -->
+        <div class="fund-pool" id="fundPoolSection">
+            <div class="fund-pool-header">
+                <span class="fund-pool-title">Fund the Pool</span>
+                <button class="fund-pool-connect" id="fundConnectBtn">Connect Wallet</button>
+            </div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:var(--space-md);">
+                Send $CLAWNCH to grow this week's reward pool. Your contribution goes directly to the top humans.
+            </p>
+            <div class="fund-pool-form" id="fundForm" style="display:none;">
+                <input type="number" class="input" id="fundAmountInput" placeholder="CLAWNCH amount" min="1" step="1000" value="10000">
+                <span class="fund-pool-hint" id="fundHint"></span>
+                <button class="btn btn-primary btn-sm" id="fundDepositBtn" disabled>Deposit</button>
+            </div>
+            <div class="fund-pool-status" id="fundStatus"></div>
+
+            <!-- Contributors list -->
+            <div class="contributors" id="contributorsSection" style="display:none;">
+                <div class="contributors-title">Recent Contributors</div>
+                <div id="contributorsList"></div>
             </div>
         </div>
     </div>

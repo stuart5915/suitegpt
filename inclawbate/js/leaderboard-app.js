@@ -1,4 +1,43 @@
-// Leaderboard + Weekly Rewards
+// Leaderboard + Weekly Rewards + Fund the Pool
+
+const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const BASE_CHAIN_ID = '0x2105';
+const TRANSFER_SELECTOR = '0xa9059cbb'; // transfer(address,uint256)
+
+function esc(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+
+function shortAddr(a) {
+    return a.slice(0, 6) + '...' + a.slice(-4);
+}
+
+function pad32(hex) {
+    return hex.replace('0x', '').padStart(64, '0');
+}
+
+function toHex(n) {
+    return '0x' + BigInt(n).toString(16);
+}
+
+function toWei(amount) {
+    return BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
+}
+
+function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ago';
+}
+
 (async function() {
     const list = document.getElementById('leaderboardList');
 
@@ -54,7 +93,163 @@
             }
             tick();
         }
+
+        // ── Contributors ──
+        if (rewardsRes.contributors && rewardsRes.contributors.length > 0) {
+            const section = document.getElementById('contributorsSection');
+            section.style.display = '';
+            const cList = document.getElementById('contributorsList');
+            cList.innerHTML = rewardsRes.contributors.map(function(c) {
+                const name = c.x_name || c.x_handle || shortAddr(c.wallet_address);
+                const amount = Math.round(Number(c.clawnch_amount) || 0).toLocaleString();
+                const ago = timeAgo(c.created_at);
+                return '<div class="contributor-row">' +
+                    '<span class="contributor-name">' + esc(name) + '</span>' +
+                    '<span class="contributor-amount">' + amount + ' CLAWNCH</span>' +
+                    '<span class="contributor-time">' + ago + '</span>' +
+                '</div>';
+            }).join('');
+        }
     }
+
+    // ── Fund the Pool ──
+    let fundWallet = null;
+    let clawnchPrice = 0;
+    const fundConnectBtn = document.getElementById('fundConnectBtn');
+    const fundForm = document.getElementById('fundForm');
+    const fundAmountInput = document.getElementById('fundAmountInput');
+    const fundDepositBtn = document.getElementById('fundDepositBtn');
+    const fundStatus = document.getElementById('fundStatus');
+    const fundHint = document.getElementById('fundHint');
+
+    // Fetch CLAWNCH price
+    try {
+        const priceRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
+        const priceData = await priceRes.json();
+        const pair = priceData.pairs && priceData.pairs[0];
+        if (pair) clawnchPrice = parseFloat(pair.priceUsd) || 0;
+    } catch (e) { /* no price */ }
+
+    function updateFundHint() {
+        const amount = parseInt(fundAmountInput.value) || 0;
+        if (clawnchPrice > 0 && amount > 0) {
+            fundHint.textContent = '~$' + (amount * clawnchPrice).toFixed(2);
+        } else {
+            fundHint.textContent = '';
+        }
+        fundDepositBtn.disabled = amount <= 0 || !fundWallet;
+    }
+
+    fundAmountInput.addEventListener('input', updateFundHint);
+
+    fundConnectBtn.addEventListener('click', async function() {
+        if (fundWallet) return;
+        if (!window.ethereum) {
+            fundStatus.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
+            fundStatus.className = 'fund-pool-status error';
+            return;
+        }
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            fundWallet = accounts[0];
+
+            // Switch to Base
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                    });
+                }
+            }
+
+            fundConnectBtn.textContent = shortAddr(fundWallet);
+            fundConnectBtn.classList.add('connected');
+            fundForm.style.display = '';
+            updateFundHint();
+        } catch (err) {
+            fundStatus.textContent = err.message || 'Connection failed';
+            fundStatus.className = 'fund-pool-status error';
+        }
+    });
+
+    fundDepositBtn.addEventListener('click', async function() {
+        const amount = parseInt(fundAmountInput.value) || 0;
+        if (amount <= 0 || !fundWallet) return;
+
+        fundDepositBtn.disabled = true;
+        fundStatus.textContent = 'Sending CLAWNCH...';
+        fundStatus.className = 'fund-pool-status';
+
+        try {
+            const amountWei = toWei(amount);
+            const data = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
+
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: fundWallet,
+                    to: CLAWNCH_ADDRESS,
+                    data: data
+                }]
+            });
+
+            fundStatus.textContent = 'Confirming transaction...';
+
+            // Wait for receipt
+            let receipt = null;
+            for (let i = 0; i < 60; i++) {
+                await new Promise(r => setTimeout(r, 2000));
+                receipt = await window.ethereum.request({
+                    method: 'eth_getTransactionReceipt',
+                    params: [txHash]
+                });
+                if (receipt) break;
+            }
+
+            if (!receipt || receipt.status !== '0x1') {
+                throw new Error('Transaction failed or timed out');
+            }
+
+            fundStatus.textContent = 'Recording contribution...';
+
+            // Call API to record
+            const apiRes = await fetch('/api/inclawbate/rewards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'pool-deposit',
+                    tx_hash: txHash,
+                    wallet_address: fundWallet
+                })
+            });
+            const apiData = await apiRes.json();
+
+            if (apiRes.ok && apiData.success) {
+                fundStatus.textContent = 'Deposited ' + apiData.amount.toLocaleString() + ' CLAWNCH to the pool!';
+                fundStatus.className = 'fund-pool-status success';
+
+                // Update pool display
+                const poolEl = document.getElementById('rewardsPool');
+                const thisWeekEl = document.getElementById('statThisWeek');
+                if (poolEl && thisWeekEl) {
+                    const newPool = Math.round(Number(apiData.amount) + (Number(rewardsRes.current_pool) || 0));
+                    poolEl.textContent = newPool.toLocaleString() + ' CLAWNCH';
+                    thisWeekEl.textContent = newPool.toLocaleString();
+                }
+            } else {
+                fundStatus.textContent = apiData.error || 'Failed to record deposit';
+                fundStatus.className = 'fund-pool-status error';
+            }
+        } catch (err) {
+            fundStatus.textContent = err.message || 'Deposit failed';
+            fundStatus.className = 'fund-pool-status error';
+        }
+
+        fundDepositBtn.disabled = false;
+    });
 
     // ── Leaderboard ──
     if (!lbRes || !lbRes.leaderboard || lbRes.leaderboard.length === 0) {
@@ -80,9 +275,3 @@
         '</a>';
     }).join('');
 })();
-
-function esc(str) {
-    var div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
-}
