@@ -214,50 +214,87 @@
 
     // Insert reply text into X's reply composer
     function insertReply(article, text) {
-        // Copy to clipboard first
-        navigator.clipboard.writeText(text);
+        // Always copy to clipboard as safety net
+        navigator.clipboard.writeText(text).catch(() => {});
 
         const replyBtn = article.querySelector('[data-testid="reply"]');
-        if (replyBtn) {
-            replyBtn.click();
-
-            // Wait for composer to appear, then try to insert text
-            let attempts = 0;
-            const tryInsert = () => {
-                const composer = document.querySelector('[data-testid="tweetTextarea_0"]');
-                const editable = composer ? composer.querySelector('[contenteditable="true"]') || composer : null;
-                if (editable) {
-                    editable.focus();
-                    // Try execCommand insertText
-                    const inserted = document.execCommand('insertText', false, text);
-                    // If it didn't work, show paste hint
-                    setTimeout(() => {
-                        if (!editable.textContent || editable.textContent.trim().length === 0) {
-                            showPasteHint();
-                        }
-                    }, 150);
-                } else if (attempts < 15) {
-                    attempts++;
-                    setTimeout(tryInsert, 200);
-                } else {
-                    showPasteHint();
-                }
-            };
-            setTimeout(tryInsert, 300);
-        } else {
+        if (!replyBtn) {
             showPasteHint();
+            return;
         }
+
+        replyBtn.click();
+
+        // Wait for composer, then try multiple insert methods
+        let attempts = 0;
+        const tryInsert = () => {
+            // Look for the contenteditable inside the reply modal
+            const modal = document.querySelector('[data-testid="tweetTextarea_0"]');
+            if (!modal) {
+                if (attempts++ < 20) return setTimeout(tryInsert, 200);
+                showPasteHint();
+                return;
+            }
+
+            const editable = modal.querySelector('[contenteditable="true"]') || modal;
+
+            // Method 1: Focus + set selection + execCommand
+            editable.focus();
+            const sel = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(editable);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            let success = document.execCommand('insertText', false, text);
+
+            // Check if it worked
+            setTimeout(() => {
+                const content = editable.textContent || '';
+                if (content.trim().length > 0) return; // worked!
+
+                // Method 2: Direct DOM manipulation + React event simulation
+                editable.focus();
+                const textNode = document.createTextNode(text);
+                // Clear placeholder content
+                const placeholder = editable.querySelector('[data-text="true"]');
+                if (placeholder) placeholder.remove();
+                // Find or create the text container
+                let block = editable.querySelector('[data-block="true"]') ||
+                             editable.querySelector('span[data-text]')?.parentElement ||
+                             editable;
+                if (block.querySelector('br')) block.querySelector('br').remove();
+                block.appendChild(textNode);
+
+                // Notify React about the change
+                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                    window.HTMLElement.prototype, 'textContent'
+                );
+                editable.dispatchEvent(new Event('input', { bubbles: true }));
+                editable.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Check again
+                setTimeout(() => {
+                    const final = editable.textContent || '';
+                    if (final.trim().length === 0) {
+                        showPasteHint();
+                    }
+                }, 200);
+            }, 200);
+        };
+        setTimeout(tryInsert, 400);
     }
 
-    // Show a brief toast telling user to Ctrl+V
+    // Show paste hint toast
     function showPasteHint() {
         let hint = document.querySelector('.inclawbate-paste-hint');
         if (hint) hint.remove();
         hint = document.createElement('div');
         hint.className = 'inclawbate-paste-hint';
-        hint.textContent = 'Copied! Press Ctrl+V to paste your reply';
+        hint.innerHTML = 'Reply copied to clipboard<br><strong>Ctrl+V</strong> to paste, then click Reply';
         document.body.appendChild(hint);
-        setTimeout(() => hint.remove(), 4000);
+        setTimeout(() => hint.remove(), 5000);
     }
 
     function closePanel() {
