@@ -352,9 +352,40 @@ sendBtn.addEventListener('click', async () => {
 // ══════════════════════════════════════════════════
 
 async function loadDistribution() {
-    const resp = await fetch(API_BASE + '/ubi?distribution=true');
-    const data = await resp.json();
+    // Fetch distribution data, prices, and wallet balances in parallel
+    const balCalldata = BALANCE_SELECTOR + pad32(userAddress);
+    const [ubiResp, clawnchPriceResp, inclawnchPriceResp, clawnchBalResp, inclawnchBalResp] = await Promise.all([
+        fetch(API_BASE + '/ubi?distribution=true'),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS).catch(() => null),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).catch(() => null),
+        provider.request({ method: 'eth_call', params: [{ to: CLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0'),
+        provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0')
+    ]);
+
+    const data = await ubiResp.json();
     distData = data;
+
+    // Parse prices
+    let inclawnchPrice = 0;
+    try {
+        const cpData = await clawnchPriceResp?.json();
+        if (cpData?.pairs?.[0]) clawnchPrice = parseFloat(cpData.pairs[0].priceUsd) || 0;
+    } catch (e) {}
+    try {
+        const ipData = await inclawnchPriceResp?.json();
+        if (ipData?.pairs?.[0]) inclawnchPrice = parseFloat(ipData.pairs[0].priceUsd) || 0;
+    } catch (e) {}
+
+    // Parse balances
+    const walletClawnch = Number(BigInt(clawnchBalResp || '0x0')) / 1e18;
+    const walletInclawnch = Number(BigInt(inclawnchBalResp || '0x0')) / 1e18;
+    const walletUsd = (walletClawnch * clawnchPrice) + (walletInclawnch * inclawnchPrice);
+
+    // Update wallet stats
+    document.getElementById('distWalletClawnch').textContent = fmtNum(walletClawnch);
+    document.getElementById('distWalletInclawnch').textContent = fmtNum(walletInclawnch);
+    document.getElementById('distClawnchPrice').textContent = clawnchPrice > 0 ? '$' + clawnchPrice.toFixed(6) : '--';
+    document.getElementById('distWalletUsd').textContent = walletUsd > 0 ? '$' + walletUsd.toFixed(2) : '--';
 
     const dist = data.distribution || {};
     const stakers = dist.stakers || [];
