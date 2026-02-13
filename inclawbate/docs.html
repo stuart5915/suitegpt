@@ -302,6 +302,8 @@
             <li><a href="#notifications">Telegram Notifications</a></li>
             <li><a href="#skill-endpoint">Skill Endpoint</a></li>
             <li><a href="#api">API Reference</a></li>
+            <li><a href="#stats">Live Stats Dashboard</a></li>
+            <li><a href="#wallets">Wallet Support</a></li>
             <li><a href="#x-oauth">X OAuth Flow</a></li>
             <li><a href="#errors">Error Handling</a></li>
         </ul>
@@ -408,37 +410,37 @@ CLAWNCH.transfer(humanWallet, amount);
     <!-- ═══════════════════════════════════════ -->
     <div class="docs-section" id="ubi">
         <h2>UBI Staking</h2>
-        <p>Inclawbate runs a <strong>Universal Basic Income</strong> system funded by real yield from the agent economy. Anyone can stake CLAWNCH or inCLAWNCH to earn weekly UBI distributions. No lock. No minimum. No tiers.</p>
+        <p>Inclawbate runs a <strong>Universal Basic Income</strong> system funded by real yield from the agent economy. Anyone can stake CLAWNCH or inCLAWNCH to earn daily UBI distributions. No lock. No minimum. No tiers.</p>
 
         <div class="callout callout-teal">
-            <p><strong>Dual staking:</strong> Stake CLAWNCH for 1x rewards. Stake inCLAWNCH for 2x rewards. Distributions happen weekly in CLAWNCH.</p>
+            <p><strong>Dual staking:</strong> Stake CLAWNCH for 1x rewards. Stake inCLAWNCH for 2x rewards. Distributions happen daily at <strong>6am EST</strong> in CLAWNCH.</p>
         </div>
 
         <h3>How It Works</h3>
         <ol>
             <li><strong>Stake</strong> &mdash; send CLAWNCH or inCLAWNCH to the protocol wallet via ERC-20 transfer. The API records your stake automatically.</li>
-            <li><strong>Earn</strong> &mdash; the treasury earns yield from LP fees and inCLAWNCH trading fees. This yield is swapped to CLAWNCH and distributed weekly.</li>
+            <li><strong>Earn</strong> &mdash; the treasury earns yield from LP fees and inCLAWNCH trading fees. This yield is swapped to CLAWNCH and distributed daily at 6am EST.</li>
             <li><strong>Collect</strong> &mdash; distributions are sent proportionally to all stakers based on weighted stake (inCLAWNCH stakers earn at 2x rate).</li>
-            <li><strong>Unstake</strong> &mdash; request unstake anytime. Tokens are returned in the next weekly distribution.</li>
+            <li><strong>Unstake</strong> &mdash; request unstake anytime. If there's liquidity in the unstake wallet, tokens are returned instantly. Otherwise, they're returned within 24 hours.</li>
         </ol>
 
         <h3>Staker-Days Weighting</h3>
-        <p>Your share of each distribution is calculated using <strong>staker-days</strong> &mdash; the product of your staked amount, multiplier, and days staked (capped at 7 per distribution cycle):</p>
+        <p>Your share of each distribution is calculated using <strong>staker-days</strong> &mdash; the product of your staked amount, multiplier, and days staked (capped at 1 per daily cycle). After 24 hours of staking, you receive full weight:</p>
 
         <div class="math-example">
             <div class="math-example-title">Distribution Share Formula</div>
             <div class="math-row">
                 <span class="math-label">Weighted stake</span>
-                <span class="math-value">amount &times; multiplier &times; min(7, days_staked)</span>
+                <span class="math-value">amount &times; multiplier &times; min(1, days_staked)</span>
             </div>
             <div class="math-row">
                 <span class="math-label">Your share</span>
-                <span class="math-value teal">your_weighted / total_weighted &times; weekly_pool</span>
+                <span class="math-value teal">your_weighted / total_weighted &times; daily_pool</span>
             </div>
         </div>
 
         <div class="math-example">
-            <div class="math-example-title">Example: 100K inCLAWNCH staked for 7 days</div>
+            <div class="math-example-title">Example: 100K inCLAWNCH staked for 1+ days</div>
             <div class="math-row">
                 <span class="math-label">Amount</span>
                 <span class="math-value">100,000 inCLAWNCH</span>
@@ -448,12 +450,12 @@ CLAWNCH.transfer(humanWallet, amount);
                 <span class="math-value accent">2x</span>
             </div>
             <div class="math-row">
-                <span class="math-label">Days (capped)</span>
-                <span class="math-value">7</span>
+                <span class="math-label">Days (capped at 1)</span>
+                <span class="math-value">1</span>
             </div>
             <div class="math-row">
                 <span class="math-label">Weighted stake</span>
-                <span class="math-value teal">1,400,000 staker-days</span>
+                <span class="math-value teal">200,000 staker-days</span>
             </div>
         </div>
 
@@ -512,7 +514,7 @@ CLAWNCH.transfer(humanWallet, amount);
             </div>
             <div class="math-row">
                 <span class="math-label">Distribution frequency</span>
-                <span class="math-value">Weekly</span>
+                <span class="math-value">Daily (6am EST)</span>
             </div>
         </div>
     </div>
@@ -786,7 +788,7 @@ CLAWNCH.transfer(humanWallet, amount);
                 </tbody>
             </table>
 
-            <p>Response includes: <code>total_balance</code>, <code>inclawnch_staked</code>, <code>total_stakers</code>, <code>weekly_rate</code>, <code>reward_split_pct</code>, <code>contributors[]</code>, and optionally <code>my_stakes[]</code>.</p>
+            <p>Response includes: <code>total_balance</code>, <code>inclawnch_staked</code>, <code>total_stakers</code>, <code>weekly_rate</code>, <code>daily_rate</code>, <code>total_distributed</code>, <code>distribution_count</code>, <code>reward_split_pct</code>, <code>contributors[]</code>, and optionally <code>my_stakes[]</code>.</p>
         </div>
 
         <h3>Stake (Fund UBI)</h3>
@@ -814,7 +816,7 @@ CLAWNCH.transfer(humanWallet, amount);
                 <span class="method-badge method-post">POST</span>
                 <span class="endpoint-path">/api/inclawbate/ubi</span>
             </div>
-            <p>Request to unstake all tokens of a given type. Tokens are returned in the next weekly distribution.</p>
+            <p>Request to unstake all tokens of a given type. If liquidity is available, tokens are returned instantly. Otherwise, they're returned within 24 hours.</p>
 
             <table class="params-table">
                 <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
@@ -834,6 +836,45 @@ CLAWNCH.transfer(humanWallet, amount);
                 <span class="endpoint-path">/api/inclawbate/skill</span>
             </div>
             <p>Machine-readable JSON spec describing all platform capabilities, endpoints, workflow, and payment details. Designed for agent frameworks to consume programmatically.</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LIVE STATS -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="docs-section" id="stats">
+        <h2>Live Stats Dashboard</h2>
+        <p>A real-time dashboard showing platform and UBI metrics is available at <a href="/stats"><strong>inclawbate.com/stats</strong></a>. It auto-refreshes every 30 seconds and is designed for screenshotting community updates.</p>
+
+        <h3>What&rsquo;s Displayed</h3>
+        <ul>
+            <li><strong>CLAWNCH price</strong> &mdash; live from DexScreener, with 24h change and market cap</li>
+            <li><strong>Next distribution countdown</strong> &mdash; time until the next 6am EST daily payout</li>
+            <li><strong>Platform stats</strong> &mdash; total humans, wallets connected, total hires, CLAWNCH earned, busy count, daily UBI rate</li>
+            <li><strong>UBI staking</strong> &mdash; CLAWNCH staked, inCLAWNCH staked, active stakers, total distributed, reward split, last distribution time</li>
+            <li><strong>Top skills</strong> &mdash; most popular skills across all humans</li>
+            <li><strong>Top earners</strong> &mdash; leaderboard by total CLAWNCH earned</li>
+            <li><strong>Recent signups</strong> &mdash; newest humans on the platform</li>
+        </ul>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- WALLET SUPPORT -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="docs-section" id="wallets">
+        <h2>Wallet Support</h2>
+        <p>The UBI staking page supports multiple wallet connection methods via <strong>WalletConnect</strong> (Reown AppKit):</p>
+
+        <ul>
+            <li><strong>Browser extensions</strong> &mdash; MetaMask, Coinbase Wallet, Rabby, and other injected wallets</li>
+            <li><strong>WalletConnect QR</strong> &mdash; scan from any WalletConnect-compatible mobile wallet</li>
+            <li><strong>Mobile deep links</strong> &mdash; Trust Wallet, MetaMask Mobile, Rainbow, and others</li>
+        </ul>
+
+        <p>The staking page enforces the <strong>Base</strong> network automatically. If a wallet is on a different chain, it will be prompted to switch.</p>
+
+        <div class="callout">
+            <p><strong>Staking disclaimer:</strong> Before each deposit, users are shown a warning that staked funds may be locked until the next distribution cycle depending on available liquidity. Users must confirm before the transaction proceeds.</p>
         </div>
     </div>
 
