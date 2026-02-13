@@ -1929,6 +1929,31 @@
             align-items: baseline;
             gap: var(--space-sm);
             margin-bottom: var(--space-md);
+            cursor: pointer;
+            user-select: none;
+        }
+        .ubi-step-chevron {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.3s var(--ease-smooth);
+            align-self: center;
+        }
+        .ubi-step--collapsed .ubi-step-chevron {
+            transform: rotate(-90deg);
+        }
+        .ubi-step-body {
+            overflow: hidden;
+            transition: max-height 0.35s var(--ease-smooth), opacity 0.25s ease;
+            max-height: 2000px;
+            opacity: 1;
+        }
+        .ubi-step--collapsed .ubi-step-body {
+            max-height: 0;
+            opacity: 0;
+        }
+        .ubi-step--collapsed .ubi-step-header {
+            margin-bottom: 0;
         }
         .ubi-step-num {
             font-family: var(--font-mono);
@@ -2107,10 +2132,13 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">1</span>
             <span class="ubi-step-title">Connect</span>
+            <span class="ubi-step-chevron">&#9662;</span>
         </div>
-        <p class="ubi-step-sub">Connect your wallet to get started.</p>
-        <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
-        <button class="dash-hero-fund" id="fundRewardsBtn" style="display:none">Fund Rewards</button>
+        <div class="ubi-step-body">
+            <p class="ubi-step-sub">Connect your wallet to get started.</p>
+            <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
+            <button class="dash-hero-fund" id="fundRewardsBtn" style="display:none">Fund Rewards</button>
+        </div>
     </div>
 
     <!-- ═══ Step 2: Stake ═══ -->
@@ -2118,7 +2146,9 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">2</span>
             <span class="ubi-step-title">Stake</span>
+            <span class="ubi-step-chevron">&#9662;</span>
         </div>
+        <div class="ubi-step-body">
         <p class="ubi-step-sub">Choose a vault and stake your tokens.</p>
 
     <section class="dash-vaults" id="stake">
@@ -2201,6 +2231,7 @@
             </div>
         </div>
     </section>
+        </div><!-- /ubi-step-body -->
     </div><!-- /ubiStep2 -->
 
     <!-- ═══ Step 3: Redirect Your Energy ═══ -->
@@ -2208,16 +2239,19 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">3</span>
             <span class="ubi-step-title">Redirect Your Energy</span>
+            <span class="ubi-step-chevron">&#9662;</span>
         </div>
-        <p class="ubi-step-sub">Your UBI is reclaimed time. Choose where it flows.</p>
-        <div id="redirectStepContent">
-            <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
-                <span class="ubi-pill active">&#x1F33F; Keep</span>
-                <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
-                <span class="ubi-pill">&#x1F331; Reinvest</span>
-                <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
+        <div class="ubi-step-body">
+            <p class="ubi-step-sub">Your UBI is reclaimed time. Choose where it flows.</p>
+            <div id="redirectStepContent">
+                <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
+                    <span class="ubi-pill active">&#x1F33F; Keep</span>
+                    <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
+                    <span class="ubi-pill">&#x1F331; Reinvest</span>
+                    <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
+                </div>
+                <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
             </div>
-            <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
         </div>
     </div>
 
@@ -2336,6 +2370,16 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
         document.querySelectorAll('.dash-tab-panel').forEach(function(p) { p.classList.remove('active'); });
         btn.classList.add('active');
         document.getElementById('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+    });
+});
+
+// Step collapse/expand
+document.querySelectorAll('.ubi-step-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+        var step = header.closest('.ubi-step');
+        if (step && !step.classList.contains('ubi-step--dimmed')) {
+            step.classList.toggle('ubi-step--collapsed');
+        }
     });
 });
 </script>
