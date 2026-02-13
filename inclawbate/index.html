@@ -534,15 +534,15 @@
 
         <div class="hero-stats">
             <div class="hero-stat">
-                <div class="hero-stat-value">42.0%</div>
+                <div class="hero-stat-value" id="heroApy">--%</div>
                 <div class="hero-stat-label">Current APY</div>
             </div>
             <div class="hero-stat">
-                <div class="hero-stat-value">$128K</div>
+                <div class="hero-stat-value" id="heroTvl">--</div>
                 <div class="hero-stat-label">Total Staked</div>
             </div>
             <div class="hero-stat">
-                <div class="hero-stat-value">314</div>
+                <div class="hero-stat-value" id="heroStakers">--</div>
                 <div class="hero-stat-label">Stakers</div>
             </div>
         </div>
@@ -619,19 +619,19 @@
         <h2>The Numbers</h2>
         <div class="numbers-grid">
             <div class="number-card">
-                <div class="number-value number-value-coral">$2,400</div>
+                <div class="number-value number-value-coral" id="numWeekly">--</div>
                 <div class="number-label">Weekly Distribution</div>
             </div>
             <div class="number-card">
-                <div class="number-value number-value-seafoam">42.0%</div>
+                <div class="number-value number-value-seafoam" id="numApy">--%</div>
                 <div class="number-label">Current APY</div>
             </div>
             <div class="number-card">
-                <div class="number-value number-value-gold">$128K</div>
+                <div class="number-value number-value-gold" id="numTvl">--</div>
                 <div class="number-label">Total Value Locked</div>
             </div>
             <div class="number-card">
-                <div class="number-value number-value-coral">314</div>
+                <div class="number-value number-value-coral" id="numStakers">--</div>
                 <div class="number-label">Stakers</div>
             </div>
         </div>
@@ -690,6 +690,83 @@
         });
     }, { threshold: 0.15 });
     sections.forEach(function(s) { observer.observe(s); });
+})();
+
+// Live UBI stats from the same sources as /ubi page
+(function() {
+    var CLAWNCH = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+    var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
+
+    function fmtNum(n) { return Math.round(Number(n) || 0).toLocaleString(); }
+    function fmtUsd(n) {
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+        return n.toFixed(0);
+    }
+
+    function bestPrice(dexRes, addr) {
+        if (!dexRes || !dexRes.pairs) return 0;
+        var c = dexRes.pairs.filter(function(p) {
+            return p.baseToken && p.baseToken.address &&
+                p.baseToken.address.toLowerCase() === addr.toLowerCase() &&
+                parseFloat(p.priceUsd) > 0;
+        });
+        if (!c.length) return 0;
+        c.sort(function(a, b) { return (parseFloat(b.liquidity?.usd) || 0) - (parseFloat(a.liquidity?.usd) || 0); });
+        return parseFloat(c[0].priceUsd) || 0;
+    }
+
+    function setText(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
+    Promise.all([
+        fetch('/api/inclawbate/ubi').then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; })
+    ]).then(function(results) {
+        var ubi = results[0];
+        var clDex = results[1];
+        var inDex = results[2];
+        if (!ubi) return;
+
+        var clPrice = bestPrice(clDex, CLAWNCH);
+        var inPrice = bestPrice(inDex, INCLAWNCH);
+
+        var clStaked = Number(ubi.total_balance) || 0;
+        var inStaked = Number(ubi.inclawnch_staked) || 0;
+        var stakers = Number(ubi.total_stakers) || 0;
+        var weeklyRate = Number(ubi.weekly_rate) || 0;
+        var totalWeighted = clStaked + (inStaked * 2);
+
+        // APY
+        var apy = totalWeighted > 0 && weeklyRate > 0
+            ? ((weeklyRate * 52) / totalWeighted * 100).toFixed(1) + '%'
+            : '--%';
+        setText('heroApy', apy);
+        setText('numApy', apy);
+
+        // TVL
+        var clUsd = clStaked * clPrice;
+        var inUsd = inStaked * inPrice;
+        var tvl = clUsd + inUsd;
+        var tvlStr = tvl > 0 ? '$' + fmtUsd(tvl) : fmtNum(clStaked + inStaked) + ' tokens';
+        setText('heroTvl', tvlStr);
+        setText('numTvl', tvlStr);
+
+        // Stakers
+        setText('heroStakers', fmtNum(stakers));
+        setText('numStakers', fmtNum(stakers));
+
+        // Weekly distribution
+        if (weeklyRate > 0 && clPrice > 0) {
+            var weeklyUsd = weeklyRate * clPrice;
+            setText('numWeekly', '$' + fmtUsd(weeklyUsd));
+        } else if (weeklyRate > 0) {
+            setText('numWeekly', fmtNum(weeklyRate) + ' CLAWNCH');
+        }
+    });
 })();
 </script>
 </body>
