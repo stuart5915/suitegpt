@@ -413,6 +413,13 @@ export default async function handler(req, res) {
                     }
                 } catch (chainErr) {
                     console.error('Unstake on-chain error:', chainErr.message);
+                    const tokenLabel = tokenType === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+                    notifyAdmin(
+                        `⚠️ <b>Unstake Chain Error</b>\n\n` +
+                        `Wallet: <code>${wallet_address}</code>\n` +
+                        `Amount: ${Math.floor(totalUnstaked).toLocaleString()} ${tokenLabel}\n` +
+                        `Error: ${chainErr.message?.slice(0, 200)}`
+                    );
                     // Fall through to withdrawal request
                 }
             }

@@ -18,6 +18,60 @@ const MILESTONES = [100000, 500000, 1000000, 5000000, 10000000, 25000000, 500000
 
 var _posCountdownInterval = null;
 
+// ── App Modal (replaces native confirm/alert) ──
+function ubiModal(opts) {
+    // opts: { icon, title, msg, confirmLabel, cancelLabel, confirmClass, onConfirm }
+    return new Promise(function(resolve) {
+        var overlay = document.getElementById('ubiModalOverlay');
+        var iconEl = document.getElementById('ubiModalIcon');
+        var titleEl = document.getElementById('ubiModalTitle');
+        var msgEl = document.getElementById('ubiModalMsg');
+        var actionsEl = document.getElementById('ubiModalActions');
+
+        iconEl.textContent = opts.icon || '';
+        titleEl.textContent = opts.title || '';
+        msgEl.textContent = opts.msg || '';
+        actionsEl.innerHTML = '';
+
+        function close(result) {
+            overlay.classList.remove('visible');
+            resolve(result);
+        }
+
+        if (opts.cancelLabel !== false) {
+            var cancelBtn = document.createElement('button');
+            cancelBtn.className = 'ubi-modal-btn';
+            cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+            cancelBtn.onclick = function() { close(false); };
+            actionsEl.appendChild(cancelBtn);
+        }
+
+        var confirmBtn = document.createElement('button');
+        confirmBtn.className = 'ubi-modal-btn ' + (opts.confirmClass || 'ubi-modal-btn--confirm');
+        confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+        confirmBtn.onclick = function() { close(true); };
+        actionsEl.appendChild(confirmBtn);
+
+        overlay.onclick = function(e) { if (e.target === overlay) close(false); };
+        overlay.classList.add('visible');
+    });
+}
+
+function ubiToast(msg, type) {
+    var container = document.getElementById('ubiToastContainer');
+    if (!container) return;
+    var toast = document.createElement('div');
+    toast.className = 'ubi-toast' + (type ? ' ubi-toast--' + type : '');
+    var icon = type === 'error' ? '\u26A0\uFE0F' : type === 'success' ? '\u2705' : '\u2139\uFE0F';
+    toast.innerHTML = '<span class="ubi-toast-icon">' + icon + '</span><span>' + msg + '</span>';
+    container.appendChild(toast);
+    requestAnimationFrame(function() { toast.classList.add('visible'); });
+    setTimeout(function() {
+        toast.classList.add('hiding');
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 4000);
+}
+
 function esc(str) {
     const div = document.createElement('div');
     div.textContent = str || '';
@@ -832,11 +886,19 @@ function daysSince(dateStr) {
         var available = token === 'inclawnch' ? unstakeAvailable.inclawnch : unstakeAvailable.clawnch;
         var isInstant = available >= userAmount;
 
+        var confirmTitle = isInstant ? 'Unstake ' + tokenLabel : 'Request Withdrawal';
         var confirmMsg = isInstant
             ? 'Unstake all your ' + tokenLabel + '? Tokens will be sent to your wallet instantly.'
             : 'Unstake all your ' + tokenLabel + '? The withdrawal wallet needs to be topped up — your request will be queued and processed shortly.';
 
-        if (!confirm(confirmMsg)) return;
+        var confirmed = await ubiModal({
+            icon: isInstant ? '\uD83E\uDD9E' : '\u23F3',
+            title: confirmTitle,
+            msg: confirmMsg,
+            confirmLabel: isInstant ? 'Unstake' : 'Request',
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
 
         var btn = document.querySelector('.btn-unstake[data-token="' + token + '"]');
         var statusEl = document.querySelector('.stake-status[data-token="' + token + '"]');
@@ -894,7 +956,7 @@ function daysSince(dateStr) {
                     statusEl.textContent = errMsg;
                     statusEl.className = 'ubi-stake-status stake-status error';
                 } else {
-                    alert(errMsg);
+                    ubiToast(errMsg, 'error');
                 }
                 if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
             }
@@ -904,7 +966,7 @@ function daysSince(dateStr) {
                 statusEl.textContent = errText;
                 statusEl.className = 'ubi-stake-status stake-status error';
             } else {
-                alert(errText);
+                ubiToast(errText, 'error');
             }
             if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
         }

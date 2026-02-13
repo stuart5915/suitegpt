@@ -1401,6 +1401,117 @@
         .dash-hero { animation: dashFadeIn 0.5s 0.05s var(--ease-smooth) both; }
         .dash-vaults { animation: dashFadeIn 0.5s 0.1s var(--ease-smooth) both; }
         .dash-tabs { animation: dashFadeIn 0.5s 0.15s var(--ease-smooth) both; }
+
+        /* ── App Modal ── */
+        .ubi-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .ubi-modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .ubi-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            max-width: 420px;
+            width: 90%;
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.2s var(--ease-smooth);
+        }
+        .ubi-modal-overlay.visible .ubi-modal {
+            transform: scale(1) translateY(0);
+        }
+        .ubi-modal-icon {
+            font-size: 2rem;
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-modal-title {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .ubi-modal-msg {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-modal-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: flex-end;
+        }
+        .ubi-modal-btn {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 8px 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .ubi-modal-btn:hover { background: hsla(0,0%,100%,0.04); color: var(--text-primary); }
+        .ubi-modal-btn--confirm {
+            background: linear-gradient(135deg, var(--seafoam-300), hsl(160, 35%, 50%));
+            color: #0a0a0f;
+            border-color: transparent;
+        }
+        .ubi-modal-btn--confirm:hover { filter: brightness(1.1); }
+        .ubi-modal-btn--danger {
+            background: linear-gradient(135deg, hsl(12, 75%, 55%), hsl(0, 70%, 50%));
+            color: #fff;
+            border-color: transparent;
+        }
+        .ubi-modal-btn--danger:hover { filter: brightness(1.1); }
+
+        /* ── App Toast ── */
+        .ubi-toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            pointer-events: none;
+        }
+        .ubi-toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 12px 20px;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            pointer-events: auto;
+            transform: translateX(120%);
+            transition: transform 0.3s var(--ease-smooth), opacity 0.3s ease;
+            max-width: 360px;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        .ubi-toast.visible { transform: translateX(0); }
+        .ubi-toast.hiding { opacity: 0; transform: translateX(40px); }
+        .ubi-toast--error { border-color: hsla(12, 75%, 55%, 0.4); }
+        .ubi-toast--success { border-color: hsla(172, 50%, 45%, 0.4); }
+        .ubi-toast-icon { font-size: 1.1rem; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -1787,6 +1898,17 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
     });
 });
 </script>
+
+<!-- App Modal -->
+<div class="ubi-modal-overlay" id="ubiModalOverlay">
+    <div class="ubi-modal">
+        <div class="ubi-modal-icon" id="ubiModalIcon"></div>
+        <div class="ubi-modal-title" id="ubiModalTitle"></div>
+        <div class="ubi-modal-msg" id="ubiModalMsg"></div>
+        <div class="ubi-modal-actions" id="ubiModalActions"></div>
+    </div>
+</div>
+<div class="ubi-toast-container" id="ubiToastContainer"></div>
 
 <script src="/js/nav-auth.js"></script>
 <script src="/js/ubi-app.js"></script>
