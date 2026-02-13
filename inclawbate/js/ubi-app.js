@@ -604,7 +604,7 @@ function daysSince(dateStr) {
 
             // Activate both cards
             document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
-                btn.textContent = shortAddr(stakeWallet);
+                btn.textContent = shortAddr(stakeWallet) + ' · Disconnect';
                 btn.classList.add('connected');
             });
             document.querySelectorAll('.stake-form').forEach(function(form) {
