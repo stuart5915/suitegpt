@@ -4,7 +4,7 @@
 // GET  ?distribution=true — admin: full staker breakdown with weighted shares
 // POST {action:"fund", tx_hash, wallet_address, token?} — deposit to UBI treasury
 // POST {action:"unstake", wallet_address, token} — mark stakes inactive
-// POST {action:"update-config", wallet_address, weekly_rate} — admin: set weekly rate
+// POST {action:"update-config", wallet_address, daily_rate|weekly_rate} — admin: set distribution rate
 
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
@@ -113,7 +113,7 @@ async function calculateStakerDays(weeklyRate) {
         const wallet = stake.wallet_address;
         const token = stake.token || 'clawnch';
         const multiplier = token === 'inclawnch' ? 2 : 1;
-        const days = Math.min(7, (now - new Date(stake.created_at).getTime()) / 86400000);
+        const days = Math.min(1, (now - new Date(stake.created_at).getTime()) / 86400000);
         const weight = stake.clawnch_amount * multiplier * days;
 
         const key = wallet + '_' + token;
@@ -227,6 +227,8 @@ export default async function handler(req, res) {
         result.inclawnch_staked = realInclawnchStaked;
         result.total_stakers = totalStakers;
         result.contributors = contributors;
+        // Compute daily_rate from weekly_rate for daily distribution schedule
+        result.daily_rate = (Number(result.weekly_rate) || 0) / 7;
 
         // If wallet query param, return user's active stakes
         const walletParam = req.query.wallet;
@@ -548,14 +550,20 @@ export default async function handler(req, res) {
 
         // ── Update Config (admin only) ──
         if (action === 'update-config') {
-            const { wallet_address, weekly_rate, reward_split_pct } = req.body;
+            const { wallet_address, weekly_rate, daily_rate, reward_split_pct } = req.body;
             if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
             const updateObj = { updated_at: new Date().toISOString() };
 
-            if (weekly_rate !== undefined) {
+            if (daily_rate !== undefined) {
+                // Accept daily_rate and store as weekly_rate * 7
+                if (isNaN(Number(daily_rate)) || Number(daily_rate) < 0) {
+                    return res.status(400).json({ error: 'Valid daily_rate required' });
+                }
+                updateObj.weekly_rate = Number(daily_rate) * 7;
+            } else if (weekly_rate !== undefined) {
                 if (isNaN(Number(weekly_rate)) || Number(weekly_rate) < 0) {
                     return res.status(400).json({ error: 'Valid weekly_rate required' });
                 }
@@ -586,6 +594,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 weekly_rate: updateObj.weekly_rate,
+                daily_rate: updateObj.weekly_rate ? updateObj.weekly_rate / 7 : undefined,
                 reward_split_pct: updateObj.reward_split_pct
             });
         }

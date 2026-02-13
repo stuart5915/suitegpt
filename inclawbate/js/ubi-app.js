@@ -254,18 +254,19 @@ function daysSince(dateStr) {
         var clawnchStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
         var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
         var weeklyRate = Number(ubiData?.weekly_rate) || 0;
+        var dailyRate = weeklyRate / 7;
         var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
 
-        // Weekly rate is displayed by the countdown tick (accumulating)
+        // Daily rate is displayed by the countdown tick (accumulating)
 
         // Per-card APYs
-        // 1x CLAWNCH APY: (weekly_rate * 52 * 1) / total_weighted_stake * 100
-        // 2x inCLAWNCH APY: (weekly_rate * 52 * 2) / total_weighted_stake * 100
+        // 1x CLAWNCH APY: (dailyRate * 365 * 1) / total_weighted_stake * 100
+        // 2x inCLAWNCH APY: (dailyRate * 365 * 2) / total_weighted_stake * 100
         var clawnchApy = 0;
         var inclawnchApy = 0;
-        if (totalWeightedStake > 0 && weeklyRate > 0) {
-            clawnchApy = (weeklyRate * 52 * 1) / totalWeightedStake * 100;
-            inclawnchApy = (weeklyRate * 52 * 2) / totalWeightedStake * 100;
+        if (totalWeightedStake > 0 && dailyRate > 0) {
+            clawnchApy = (dailyRate * 365 * 1) / totalWeightedStake * 100;
+            inclawnchApy = (dailyRate * 365 * 2) / totalWeightedStake * 100;
         }
 
         var apyClawnchEl = document.getElementById('apyValClawnch');
@@ -285,26 +286,26 @@ function daysSince(dateStr) {
         if (vaultApyC) vaultApyC.textContent = clawnchApyStr + ' APY';
         if (vaultApyI) vaultApyI.textContent = inclawnchApyStr + ' APY';
 
-        // Weekly earnings per 100k staked
+        // Daily earnings per 100k staked
         if (weeklyClawnchEl) {
-            if (totalWeightedStake > 0 && weeklyRate > 0) {
-                var per100k = (100000 / totalWeightedStake) * weeklyRate;
-                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' CLAWNCH/week</span> per 100k staked';
+            if (totalWeightedStake > 0 && dailyRate > 0) {
+                var per100k = (100000 / totalWeightedStake) * dailyRate;
+                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' CLAWNCH/day</span> per 100k staked';
             } else {
                 weeklyClawnchEl.textContent = '';
             }
         }
         if (weeklyInclawnchEl) {
-            if (totalWeightedStake > 0 && weeklyRate > 0) {
-                var per100k2x = (200000 / totalWeightedStake) * weeklyRate;
-                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' CLAWNCH/week</span> per 100k staked';
+            if (totalWeightedStake > 0 && dailyRate > 0) {
+                var per100k2x = (200000 / totalWeightedStake) * dailyRate;
+                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' CLAWNCH/day</span> per 100k staked';
             } else {
                 weeklyInclawnchEl.textContent = '';
             }
         }
 
         // ── UBI Income Banner ──
-        var annualClawnch = weeklyRate * 52;
+        var annualClawnch = dailyRate * 365;
         var annualUsd = annualClawnch * clawnchPrice;
         var totalStakers = Number(ubiData?.total_stakers) || 0;
 
@@ -335,13 +336,13 @@ function daysSince(dateStr) {
             if (weeklyRate > 0) {
                 incomeSubEl.innerHTML = '<strong>' + fmt(annualClawnch) + ' CLAWNCH</strong> distributed annually to all stakers';
             } else if (poolClawnch > 0) {
-                incomeSubEl.textContent = fmt(poolClawnch) + ' weighted CLAWNCH staked — set weekly rate from admin to activate distributions';
+                incomeSubEl.textContent = fmt(poolClawnch) + ' weighted CLAWNCH staked — set daily rate from admin to activate distributions';
             } else {
                 incomeSubEl.textContent = 'Stake CLAWNCH or inCLAWNCH to grow the UBI pool';
             }
         }
         if (incomeWeeklyEl) {
-            incomeWeeklyEl.textContent = weeklyRate > 0 ? fmt(weeklyRate) : '--';
+            incomeWeeklyEl.textContent = dailyRate > 0 ? fmt(dailyRate) : '--';
         }
         if (incomePerStakerEl) {
             if (totalStakers > 0 && annualUsd > 0) {
@@ -439,41 +440,36 @@ function daysSince(dateStr) {
         }
     }
 
-    // ── Distribution Countdown (targets every Sunday 8am local) ──
+    // ── Distribution Countdown (targets every day at 8am local) ──
     function startCountdown() {
         var container = document.getElementById('ubiCountdown');
         if (!container) return;
 
-        var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        var ONE_DAY = 24 * 60 * 60 * 1000;
 
-        function getSunday8am(direction) {
+        function getDaily8am(direction) {
             // direction: 'next' or 'last'
             var now = new Date();
-            var day = now.getDay(); // 0 = Sunday
             var target = new Date(now);
             target.setHours(8, 0, 0, 0);
 
             if (direction === 'next') {
-                if (day === 0 && now < target) {
-                    // It's Sunday before 8am — target is today
-                } else {
-                    var daysUntil = (7 - day) % 7 || 7;
-                    target.setDate(target.getDate() + daysUntil);
+                if (now >= target) {
+                    // Already past 8am today — next is tomorrow
+                    target.setDate(target.getDate() + 1);
                 }
             } else {
-                // last Sunday 8am
-                if (day === 0 && now >= target) {
-                    // It's Sunday after 8am — last was today
-                } else {
-                    var daysSince = day === 0 ? 7 : day;
-                    target.setDate(target.getDate() - daysSince);
+                // last 8am
+                if (now < target) {
+                    // Before 8am today — last was yesterday
+                    target.setDate(target.getDate() - 1);
                 }
             }
             return target;
         }
 
-        var nextDist = getSunday8am('next').getTime();
-        var lastDist = getSunday8am('last').getTime();
+        var nextDist = getDaily8am('next').getTime();
+        var lastDist = getDaily8am('last').getTime();
 
         // Show the countdown
         container.classList.remove('hidden');
@@ -491,18 +487,19 @@ function daysSince(dateStr) {
             var now = Date.now();
             var diff = nextDist - now;
             var elapsed = now - lastDist;
-            var progress = Math.min(100, Math.max(0, (elapsed / SEVEN_DAYS) * 100));
+            var progress = Math.min(100, Math.max(0, (elapsed / ONE_DAY) * 100));
 
             // Update progress bar
             var barFill = document.getElementById('cdBarFill');
             if (barFill) barFill.style.width = progress + '%';
 
-            // Accumulating weekly distribution number
+            // Accumulating daily distribution number
             var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
             var weeklyRate = Number(ubiData?.weekly_rate) || 0;
-            if (cdWeeklyEl && weeklyRate > 0) {
-                var accumPct = Math.min(1, elapsed / SEVEN_DAYS);
-                var accumulated = Math.round(weeklyRate * accumPct);
+            var dailyRateTick = weeklyRate / 7;
+            if (cdWeeklyEl && dailyRateTick > 0) {
+                var accumPct = Math.min(1, elapsed / ONE_DAY);
+                var accumulated = Math.round(dailyRateTick * accumPct);
                 cdWeeklyEl.textContent = fmt(accumulated);
             }
 
@@ -512,7 +509,7 @@ function daysSince(dateStr) {
             var secsEl = document.getElementById('cdSecs');
 
             if (diff <= 0) {
-                // Overdue — past Sunday 8am
+                // Overdue — past 8am today
                 container.classList.add('overdue');
                 var over = Math.abs(diff);
                 var oH = Math.floor(over / 3600000);
@@ -735,7 +732,7 @@ function daysSince(dateStr) {
                 }
             });
 
-            // Calculate user's estimated weekly UBI
+            // Calculate user's estimated daily UBI
             var userClawnch = grouped.clawnch ? grouped.clawnch.amount : 0;
             var userInclawnch = grouped.inclawnch ? grouped.inclawnch.amount : 0;
             var userWeighted = userClawnch + (userInclawnch * 2);
@@ -743,27 +740,28 @@ function daysSince(dateStr) {
             var totalInclawnchStaked = Number(ubiData?.inclawnch_staked) || 0;
             var totalWeightedAll = totalClawnchStaked + (totalInclawnchStaked * 2);
             var weeklyRateVal = Number(ubiData?.weekly_rate) || 0;
+            var dailyRateVal = weeklyRateVal / 7;
 
             var html = '';
 
             // Show personalized countdown + earnings widget
-            if (userWeighted > 0 && totalWeightedAll > 0 && weeklyRateVal > 0) {
+            if (userWeighted > 0 && totalWeightedAll > 0 && dailyRateVal > 0) {
                 var sharePct = (userWeighted / totalWeightedAll) * 100;
-                var weeklyAllocation = (userWeighted / totalWeightedAll) * weeklyRateVal;
-                var weeklyUsdVal = weeklyAllocation * clawnchPrice;
-                var yearlyAllocation = weeklyAllocation * 52;
+                var dailyAllocation = (userWeighted / totalWeightedAll) * dailyRateVal;
+                var dailyUsdVal = dailyAllocation * clawnchPrice;
+                var yearlyAllocation = dailyAllocation * 365;
                 var yearlyUsdVal = yearlyAllocation * clawnchPrice;
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(weeklyAllocation)) + ' CLAWNCH &rarr; your wallet</div>';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH &rarr; your wallet</div>';
                 html += '<div class="ubi-pc-timer-row">';
                 html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
                 html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
                 html += '</div>';
                 html += '<div class="ubi-pc-footer">';
-                if (clawnchPrice > 0 && weeklyUsdVal >= 0.01) {
-                    html += '<span class="ubi-pc-usd">~$' + fmtUsd(weeklyUsdVal) + '/week &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
+                if (clawnchPrice > 0 && dailyUsdVal >= 0.01) {
+                    html += '<span class="ubi-pc-usd">~$' + fmtUsd(dailyUsdVal) + '/day &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
                 }
                 html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
                 html += '</div>';
@@ -826,31 +824,28 @@ function daysSince(dateStr) {
             if (_posCountdownInterval) clearInterval(_posCountdownInterval);
             var pcWidget = document.getElementById('posCountdownWidget');
             if (pcWidget) {
-                var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+                var ONE_DAY_PC = 24 * 60 * 60 * 1000;
 
-                function getPcSunday8am(dir) {
+                function getPcDaily8am(dir) {
                     var now = new Date();
-                    var day = now.getDay();
                     var t = new Date(now);
                     t.setHours(8, 0, 0, 0);
                     if (dir === 'next') {
-                        if (day === 0 && now < t) { /* today */ }
-                        else { t.setDate(t.getDate() + ((7 - day) % 7 || 7)); }
+                        if (now >= t) t.setDate(t.getDate() + 1);
                     } else {
-                        if (day === 0 && now >= t) { /* today */ }
-                        else { t.setDate(t.getDate() - (day === 0 ? 7 : day)); }
+                        if (now < t) t.setDate(t.getDate() - 1);
                     }
                     return t;
                 }
 
-                var pcNext = getPcSunday8am('next').getTime();
-                var pcLast = getPcSunday8am('last').getTime();
+                var pcNext = getPcDaily8am('next').getTime();
+                var pcLast = getPcDaily8am('last').getTime();
 
                 function pcTick() {
                     var now = Date.now();
                     var diff = pcNext - now;
                     var elapsed = now - pcLast;
-                    var progress = Math.min(100, Math.max(0, (elapsed / SEVEN_DAYS) * 100));
+                    var progress = Math.min(100, Math.max(0, (elapsed / ONE_DAY_PC) * 100));
 
                     var barFill = document.getElementById('posCountdownBarFill');
                     var timeEl = document.getElementById('posCountdownTime');
@@ -869,10 +864,9 @@ function daysSince(dateStr) {
                         if (timeEl) timeEl.textContent = 'Incoming\u2026';
                     } else {
                         pcWidget.classList.remove('ubi-pc-overdue');
-                        var d = Math.floor(diff / 86400000);
-                        var h = Math.floor((diff % 86400000) / 3600000);
+                        var h = Math.floor(diff / 3600000);
                         var m = Math.floor((diff % 3600000) / 60000);
-                        if (timeEl) timeEl.textContent = '$CLAWNCH sending in ' + d + 'd ' + h + 'h ' + m + 'm';
+                        if (timeEl) timeEl.textContent = '$CLAWNCH sending in ' + h + 'h ' + m + 'm';
                     }
                 }
 
@@ -1067,6 +1061,18 @@ function daysSince(dateStr) {
         if (amount <= 0 || !stakeWallet) return;
 
         var config = TOKEN_CONFIG[token];
+
+        // Staking disclaimer
+        var confirmed = await ubiModal({
+            icon: '\u26A0\uFE0F',
+            title: 'Staking Disclaimer',
+            msg: 'By staking your ' + config.label + ', you acknowledge that your funds may be locked until the next distribution cycle, depending on available liquidity and other factors.',
+            confirmLabel: 'I Understand \u2014 Stake',
+            cancelLabel: 'Cancel',
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
+
         depositBtn.disabled = true;
         status.textContent = 'Sending ' + config.label + ' to UBI treasury...';
         status.className = 'ubi-stake-status stake-status';
@@ -1176,7 +1182,7 @@ function daysSince(dateStr) {
                 var cancelBtn = document.getElementById('ubiModalCancel');
 
                 titleEl.textContent = 'Fund Reward Pool';
-                msgEl.innerHTML = '<p style="margin-bottom:12px">Deposit CLAWNCH to the weekly reward pool. These tokens get distributed to all stakers on Sunday.</p>' +
+                msgEl.innerHTML = '<p style="margin-bottom:12px">Deposit CLAWNCH to the reward pool. These tokens get distributed to all stakers daily at 8am.</p>' +
                     '<input type="text" inputmode="numeric" id="fundAmountInput" placeholder="CLAWNCH amount" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-elevated);color:var(--text-primary);font-size:1rem;font-family:var(--font-display);box-sizing:border-box;">';
                 confirmBtn.textContent = 'Send';
                 confirmBtn.className = 'ubi-modal-btn ubi-modal-btn--confirm';
@@ -1259,7 +1265,7 @@ function daysSince(dateStr) {
                     await ubiModal({
                         icon: '\uD83C\uDF89',
                         title: 'Pool Funded!',
-                        msg: amount.toLocaleString() + ' CLAWNCH deposited to the weekly reward pool. All stakers benefit from your contribution!',
+                        msg: amount.toLocaleString() + ' CLAWNCH deposited to the reward pool. All stakers benefit from your contribution!',
                         confirmLabel: 'Nice',
                         confirmClass: 'ubi-modal-btn--confirm'
                     });
