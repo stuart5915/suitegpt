@@ -47,12 +47,17 @@ export default async function handler(req, res) {
             // Look up human
             const { data: human, error: humanErr } = await supabase
                 .from('human_profiles')
-                .select('id, x_handle, wallet_address')
+                .select('id, x_handle, wallet_address, airdrop_banned')
                 .eq('x_handle', handle.toLowerCase())
                 .single();
 
             if (humanErr || !human) {
                 results.errors.push({ handle, error: 'Profile not found' });
+                continue;
+            }
+
+            if (human.airdrop_banned) {
+                results.errors.push({ handle, error: 'Account banned from airdrops' });
                 continue;
             }
 

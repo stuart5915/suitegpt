@@ -19,6 +19,7 @@ let userAddress = null;
 let allProfiles = [];
 let clawnchPrice = 0;
 let currentFilter = 'no-hires';
+let showBanned = false;
 let distData = null; // UBI distribution data
 
 // Helpers
@@ -98,7 +99,8 @@ async function loadProfiles() {
     let hasMore = true;
 
     while (hasMore) {
-        const resp = await fetch(API_BASE + `/humans?limit=${limit}&offset=${offset}&sort=newest`);
+        const bannedParam = showBanned ? '&include_banned=true' : '';
+        const resp = await fetch(API_BASE + `/humans?limit=${limit}&offset=${offset}&sort=newest${bannedParam}`);
         const data = await resp.json();
         const batch = (data.profiles || []).filter(p => p.wallet_address);
         allProfiles.push(...batch);
@@ -172,6 +174,30 @@ function applyFilter() {
     updateSummary();
 }
 
+// ── Ban/unban ──
+async function toggleBan(xHandle, ban) {
+    try {
+        const resp = await fetch(API_BASE + '/humans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'ban',
+                wallet_address: userAddress,
+                x_handle: xHandle,
+                banned: ban
+            })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            loadProfiles();
+        } else {
+            alert('Ban failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Ban failed: ' + err.message);
+    }
+}
+
 // ── Render recipient list ──
 function renderList(profiles) {
     const list = document.getElementById('recipientList');
@@ -180,9 +206,14 @@ function renderList(profiles) {
         return;
     }
 
-    const selectAll = `<div class="select-all-row">
-        <input type="checkbox" id="selectAll" checked>
-        <label for="selectAll">Select all (${profiles.length})</label>
+    const bannedToggle = `<div class="select-all-row" style="justify-content: space-between;">
+        <div>
+            <input type="checkbox" id="selectAll" checked>
+            <label for="selectAll">Select all (${profiles.length})</label>
+        </div>
+        <label style="cursor:pointer; font-size:0.85em; color: var(--text-dim);">
+            <input type="checkbox" id="showBannedToggle" ${showBanned ? 'checked' : ''}> Show Banned
+        </label>
     </div>`;
 
     const rows = profiles.map((p, i) => {
@@ -190,16 +221,22 @@ function renderList(profiles) {
         const avatar = p.x_avatar_url
             ? `<img class="recipient-avatar" src="${p.x_avatar_url}" onerror="this.style.display='none'">`
             : '';
-        return `<div class="recipient-row">
-            <input type="checkbox" class="recipient-check" data-index="${i}" checked>
+        const isBanned = p.airdrop_banned;
+        const banBtn = isBanned
+            ? `<button class="ban-btn unbanned" data-handle="${escHtml(p.x_handle)}" data-ban="false" title="Unban">Unban</button>`
+            : `<button class="ban-btn" data-handle="${escHtml(p.x_handle)}" data-ban="true" title="Ban from airdrops">Ban</button>`;
+        const bannedStyle = isBanned ? ' style="opacity:0.5;"' : '';
+        return `<div class="recipient-row"${bannedStyle}>
+            <input type="checkbox" class="recipient-check" data-index="${i}" ${isBanned ? '' : 'checked'}>
             ${avatar}
             <span class="recipient-name">${escHtml(name)}</span>
             <span class="recipient-handle">@${escHtml(p.x_handle)}</span>
             <span class="recipient-wallet">${shortAddr(p.wallet_address)}</span>
+            ${banBtn}
         </div>`;
     }).join('');
 
-    list.innerHTML = selectAll + rows;
+    list.innerHTML = bannedToggle + rows;
 
     // Select all toggle
     document.getElementById('selectAll').addEventListener('change', (e) => {
@@ -212,6 +249,25 @@ function renderList(profiles) {
     // Individual toggles
     list.querySelectorAll('.recipient-check').forEach(cb => {
         cb.addEventListener('change', updateSummary);
+    });
+
+    // Show banned toggle
+    document.getElementById('showBannedToggle').addEventListener('change', (e) => {
+        showBanned = e.target.checked;
+        loadProfiles();
+    });
+
+    // Ban/unban buttons
+    list.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const handle = btn.dataset.handle;
+            const ban = btn.dataset.ban === 'true';
+            const action = ban ? 'ban' : 'unban';
+            if (confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} @${handle} from airdrops?`)) {
+                toggleBan(handle, ban);
+            }
+        });
     });
 }
 

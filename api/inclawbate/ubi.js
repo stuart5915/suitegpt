@@ -106,10 +106,23 @@ async function calculateStakerDays(weeklyRate) {
         return { stakers: [], total_weighted_days: 0 };
     }
 
+    // Exclude banned wallets
+    const { data: bannedRows } = await supabase
+        .from('human_profiles')
+        .select('wallet_address')
+        .eq('airdrop_banned', true)
+        .not('wallet_address', 'is', null);
+    const bannedWallets = new Set((bannedRows || []).map(r => r.wallet_address.toLowerCase()));
+    const filteredStakes = activeStakes.filter(s => !bannedWallets.has(s.wallet_address.toLowerCase()));
+
+    if (filteredStakes.length === 0) {
+        return { stakers: [], total_weighted_days: 0 };
+    }
+
     const now = Date.now();
     const walletMap = {};
 
-    for (const stake of activeStakes) {
+    for (const stake of filteredStakes) {
         const wallet = stake.wallet_address;
         const token = stake.token || 'clawnch';
         const multiplier = token === 'inclawnch' ? 2 : 1;

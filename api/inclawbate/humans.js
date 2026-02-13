@@ -16,7 +16,9 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned';
+
+const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
     // GET — list or fetch single profile
     if (req.method === 'GET') {
         try {
-            const { handle, search, skill, availability, sort, offset, limit } = req.query;
+            const { handle, search, skill, availability, sort, offset, limit, include_banned } = req.query;
 
             // Single profile by handle
             if (handle) {
@@ -81,6 +83,11 @@ export default async function handler(req, res) {
             let query = supabase
                 .from('human_profiles')
                 .select(PUBLIC_FIELDS, { count: 'exact' });
+
+            // Filter out banned accounts unless admin requests them
+            if (include_banned !== 'true') {
+                query = query.eq('airdrop_banned', false);
+            }
 
             // Search by name or handle — sanitize to prevent filter injection
             if (search) {
@@ -180,8 +187,32 @@ export default async function handler(req, res) {
         }
     }
 
-    // POST — update own profile
+    // POST — update own profile or admin actions
     if (req.method === 'POST') {
+        // Admin ban/unban action
+        if (req.body?.action === 'ban') {
+            const { wallet_address, x_handle, banned } = req.body;
+            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            if (!x_handle) {
+                return res.status(400).json({ error: 'x_handle required' });
+            }
+
+            const { data, error } = await supabase
+                .from('human_profiles')
+                .update({ airdrop_banned: banned !== false })
+                .eq('x_handle', x_handle.toLowerCase())
+                .select('x_handle, airdrop_banned')
+                .single();
+
+            if (error || !data) {
+                return res.status(404).json({ error: 'Profile not found' });
+            }
+
+            return res.status(200).json({ success: true, x_handle: data.x_handle, airdrop_banned: data.airdrop_banned });
+        }
+
         try {
             const user = authenticateRequest(req);
             if (!user) {
