@@ -793,6 +793,7 @@ function daysSince(dateStr) {
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
         rh += '</div>';
 
+        rh += '<p class="ubi-split-blurb" id="splitBlurb"></p>';
         rh += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
         rh += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
 
@@ -803,10 +804,20 @@ function daysSince(dateStr) {
         var splitKingdom = document.getElementById('splitKingdom');
         var splitReinvest = document.getElementById('splitReinvest');
         if (splitKeep && splitKingdom && splitReinvest) {
+            function updateSplitBlurb() {
+                var k = Number(splitKeep.value), g = Number(splitKingdom.value), r = Number(splitReinvest.value);
+                var parts = [];
+                if (k > 0) parts.push(k + '% for myself');
+                if (g > 0) parts.push(g + '% to the Kingdom');
+                if (r > 0) parts.push(r + '% back into the pool');
+                var blurb = document.getElementById('splitBlurb');
+                if (blurb) blurb.textContent = parts.length ? 'I\'m giving ' + parts.join(', ') + '.' : '';
+            }
             function updateSplitDisplay() {
                 document.getElementById('splitKeepVal').textContent = splitKeep.value + '%';
                 document.getElementById('splitKingdomVal').textContent = splitKingdom.value + '%';
                 document.getElementById('splitReinvestVal').textContent = splitReinvest.value + '%';
+                updateSplitBlurb();
             }
             function balanceSliders(changed, others) {
                 var val = Number(changed.value);
@@ -826,6 +837,7 @@ function daysSince(dateStr) {
             splitKeep.addEventListener('input', function() { balanceSliders(splitKeep, [splitKingdom, splitReinvest]); });
             splitKingdom.addEventListener('input', function() { balanceSliders(splitKingdom, [splitKeep, splitReinvest]); });
             splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
+            updateSplitBlurb();
         }
 
         // Wire up save button
