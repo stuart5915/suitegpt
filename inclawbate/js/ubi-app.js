@@ -834,12 +834,11 @@ function daysSince(dateStr) {
                 html += '</div>';
                 html += '</div>';
 
-                // Whale widget — manage standalone teaser + inline full widget
-                var whaleTeaser = document.getElementById('whaleTeaser');
+                // Update standalone whale widget cap % label
+                var capLabel = document.getElementById('whaleCapPctLabel');
+                if (capLabel) capLabel.textContent = walletCapPct;
 
                 if (isCapped) {
-                    // Hide standalone teaser — whale gets the full widget here
-                    if (whaleTeaser) whaleTeaser.style.display = 'none';
 
                     var excessDaily = uncappedAllocation - capAmount;
                     var excessUsd = excessDaily * clawnchPrice;
@@ -894,22 +893,6 @@ function daysSince(dateStr) {
                     html += '<button class="ubi-whale-save-btn" id="whaleRedirectSaveBtn">Save Preference</button>';
                     html += '<span class="ubi-whale-save-status" id="whaleRedirectStatus"></span>';
                     html += '</div>';
-                } else {
-                    // Not capped — update standalone teaser with personalized threshold
-                    if (whaleTeaser) {
-                        whaleTeaser.style.display = '';
-                        var descEl = document.getElementById('whaleTeaserDesc');
-                        if (descEl) {
-                            var whaleThresholdWeighted = totalWeightedAll * (walletCapPct / 100);
-                            var neededExtra = Math.max(0, whaleThresholdWeighted - userWeighted);
-                            var thresholdUsd = clawnchPrice > 0 ? neededExtra * clawnchPrice : 0;
-                            if (thresholdUsd > 0) {
-                                descEl.textContent = 'Stake ~$' + fmtUsd(thresholdUsd) + ' more in CLAWNCH or inCLAWNCH to unlock';
-                            } else {
-                                descEl.textContent = 'Stake ' + fmt(Math.ceil(neededExtra)) + ' more weighted CLAWNCH to unlock';
-                            }
-                        }
-                    }
                 }
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
