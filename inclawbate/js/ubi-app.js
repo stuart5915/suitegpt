@@ -709,13 +709,11 @@ function daysSince(dateStr) {
     function onWalletConnected(address) {
         stakeWallet = address;
 
-        // Step flow: mark Step 1 done, activate Steps 2 & 3
+        // Step flow: mark Step 1 done, activate Step 2
         var step1 = document.getElementById('ubiStep1');
         var step2 = document.getElementById('ubiStep2');
-        var step3 = document.getElementById('ubiStep3');
         if (step1) step1.classList.add('ubi-step--done');
         if (step2) step2.classList.remove('ubi-step--dimmed');
-        if (step3) step3.classList.remove('ubi-step--dimmed');
 
         // Activate both cards
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
@@ -1540,15 +1538,13 @@ function daysSince(dateStr) {
         walletBalances = { clawnch: 0, inclawnch: 0 };
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
-        // Step flow: undo Step 1 done, re-dim Steps 2 & 3
+        // Step flow: undo Step 1 done, re-dim Step 2
         var step1 = document.getElementById('ubiStep1');
         var step2 = document.getElementById('ubiStep2');
-        var step3 = document.getElementById('ubiStep3');
         if (step1) step1.classList.remove('ubi-step--done');
         if (step2) step2.classList.add('ubi-step--dimmed');
-        if (step3) step3.classList.add('ubi-step--dimmed');
 
-        // Restore Step 3 static content
+        // Restore redirect static content
         var redirectContent = document.getElementById('redirectStepContent');
         if (redirectContent) {
             redirectContent.innerHTML =
