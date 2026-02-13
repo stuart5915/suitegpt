@@ -892,7 +892,7 @@ function daysSince(dateStr) {
         var confirmTitle = isInstant ? 'Unstake ' + tokenLabel : 'Request Withdrawal';
         var confirmMsg = isInstant
             ? 'Unstake all your ' + tokenLabel + '? Tokens will be sent to your wallet instantly.'
-            : 'Unstake all your ' + tokenLabel + '? The withdrawal wallet needs to be topped up — your request will be queued and processed shortly.';
+            : 'Unstake all your ' + tokenLabel + '? Your withdrawal exceeds what\u2019s available for instant transfer. Your tokens will be returned to your wallet \u2014 usually within an hour, but it may take up to 24 hours.';
 
         var confirmed = await ubiModal({
             icon: isInstant ? '\uD83E\uDD9E' : '\u23F3',
