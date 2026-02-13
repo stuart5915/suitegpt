@@ -3,6 +3,7 @@
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
 const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+var DEPOSIT_WALLET = PROTOCOL_WALLET; // overridden by API response
 const BASE_CHAIN_ID = '0x2105';
 const TRANSFER_SELECTOR = '0xa9059cbb';
 const BALANCE_SELECTOR = '0x70a08231'; // balanceOf(address)
@@ -178,6 +179,11 @@ function daysSince(dateStr) {
 
     ubiData = ubiRes;
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
+
+    // Use deposit address from API (unstake wallet) for new stakes
+    if (ubiData && ubiData.deposit_address) {
+        DEPOSIT_WALLET = ubiData.deposit_address.toLowerCase();
+    }
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -1248,7 +1254,7 @@ function daysSince(dateStr) {
                 return;
             }
             var amountWei = toWei(amount);
-            var data = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
+            var data = TRANSFER_SELECTOR + pad32(DEPOSIT_WALLET) + pad32(toHex(amountWei));
 
             var txHash = await provider.request({
                 method: 'eth_sendTransaction',

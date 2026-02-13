@@ -888,36 +888,45 @@ document.getElementById('returnUnstakedBtn').addEventListener('click', async () 
     const inclawnchReturns = aggregated.filter(a => a.token === 'inclawnch');
 
     try {
-        let lastTxHash = null;
-
-        // Return CLAWNCH tokens
+        // Return CLAWNCH tokens and mark as returned immediately
         if (clawnchReturns.length > 0) {
             distStatus.textContent = 'Returning CLAWNCH to ' + clawnchReturns.length + ' wallets...';
             distStatus.className = 'airdrop-status';
-            lastTxHash = await disperseReturn(CLAWNCH_ADDRESS, clawnchReturns, distStatus);
+            const clawnchTx = await disperseReturn(CLAWNCH_ADDRESS, clawnchReturns, distStatus);
+            // Mark CLAWNCH returns as completed right away (prevents double-send if next step fails)
+            try {
+                await fetch(API_BASE + '/ubi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'mark-returned',
+                        wallet_address: userAddress,
+                        returns: clawnchReturns.map(a => ({ wallet: a.wallet, token: a.token })),
+                        tx_hash: clawnchTx
+                    })
+                });
+            } catch (e) { console.error('mark-returned CLAWNCH error:', e); }
         }
 
-        // Return inCLAWNCH tokens
+        // Return inCLAWNCH tokens and mark as returned immediately
         if (inclawnchReturns.length > 0) {
             distStatus.textContent = 'Returning inCLAWNCH to ' + inclawnchReturns.length + ' wallets...';
             distStatus.className = 'airdrop-status';
-            lastTxHash = await disperseReturn(INCLAWNCH_ADDRESS, inclawnchReturns, distStatus);
+            const inclawnchTx = await disperseReturn(INCLAWNCH_ADDRESS, inclawnchReturns, distStatus);
+            // Mark inCLAWNCH returns as completed right away
+            try {
+                await fetch(API_BASE + '/ubi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'mark-returned',
+                        wallet_address: userAddress,
+                        returns: inclawnchReturns.map(a => ({ wallet: a.wallet, token: a.token })),
+                        tx_hash: inclawnchTx
+                    })
+                });
+            } catch (e) { console.error('mark-returned inCLAWNCH error:', e); }
         }
-
-        // Mark unstakes as returned in DB
-        distStatus.textContent = 'Recording returns...';
-        try {
-            await fetch(API_BASE + '/ubi', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'mark-returned',
-                    wallet_address: userAddress,
-                    returns: aggregated.map(a => ({ wallet: a.wallet, token: a.token })),
-                    tx_hash: lastTxHash
-                })
-            });
-        } catch (e) { /* non-critical */ }
 
         distStatus.textContent = 'All unstaked tokens returned!';
         distStatus.className = 'airdrop-status success';
@@ -926,7 +935,7 @@ document.getElementById('returnUnstakedBtn').addEventListener('click', async () 
         loadDistribution();
     } catch (err) {
         console.error('Return unstaked error:', err);
-        distStatus.textContent = err.message || 'Return failed';
+        distStatus.textContent = err.message || 'Return failed — already-sent returns were recorded. Refresh and retry remaining.';
         distStatus.className = 'airdrop-status error';
         btn.disabled = false;
     }

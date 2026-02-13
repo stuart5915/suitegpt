@@ -31,6 +31,8 @@ const ALLOWED_ORIGINS = [
 const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
 const INCLAWNCH_ADDRESS = '0xb0b6e0e9da530f68d713cc03a813b506205ac808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const UNSTAKE_WALLET = '0xa4d6f012003fe6ad2774a874c8c98ee69d17f286';
+const DEPOSIT_WALLET = UNSTAKE_WALLET; // new stakes go to unstake wallet so it self-funds
 const ADMIN_WALLET = PROTOCOL_WALLET;
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
@@ -84,8 +86,8 @@ async function verifyTokenTransfer(txHash, tokenAddress) {
     const from = '0x' + transferLog.topics[1].slice(26).toLowerCase();
     const amount = Number(BigInt(transferLog.data)) / 1e18;
 
-    if (to !== PROTOCOL_WALLET) {
-        return { valid: false, reason: 'Transfer was not sent to the protocol wallet' };
+    if (to !== DEPOSIT_WALLET && to !== PROTOCOL_WALLET) {
+        return { valid: false, reason: 'Transfer was not sent to the deposit wallet' };
     }
 
     if (amount <= 0) {
@@ -255,6 +257,8 @@ export default async function handler(req, res) {
         result.contributors = contributors;
         // Compute daily_rate from weekly_rate for daily distribution schedule
         result.daily_rate = (Number(result.weekly_rate) || 0) / 7;
+        // Deposit address — stakes go to the unstake wallet so it self-funds withdrawals
+        result.deposit_address = DEPOSIT_WALLET;
 
         // If wallet query param, return user's active stakes + auto_stake preference
         const walletParam = req.query.wallet;
