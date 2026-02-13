@@ -834,7 +834,7 @@ function daysSince(dateStr) {
                         var d = Math.floor(diff / 86400000);
                         var h = Math.floor((diff % 86400000) / 3600000);
                         var m = Math.floor((diff % 3600000) / 60000);
-                        if (timeEl) timeEl.textContent = d + 'd ' + h + 'h ' + m + 'm';
+                        if (timeEl) timeEl.textContent = '$CLAWNCH sending in ' + d + 'd ' + h + 'h ' + m + 'm';
                     }
                 }
 
