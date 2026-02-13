@@ -96,6 +96,8 @@ export default async function handler(req, res) {
         let totalWeight = 0;
         let weightedPhilanthropy = 0;
         let voterCount = 0;
+        let totalClawnch = 0;
+        let totalInclawnch = 0;
 
         for (const vote of (votes || [])) {
             const bal = balanceMap[vote.wallet_address];
@@ -103,6 +105,8 @@ export default async function handler(req, res) {
             if (weight <= 0) continue; // sold tokens = zero weight
             totalWeight += weight;
             weightedPhilanthropy += weight * vote.philanthropy_pct;
+            totalClawnch += bal.clawnch;
+            totalInclawnch += bal.inclawnch;
             voterCount++;
         }
 
@@ -112,7 +116,9 @@ export default async function handler(req, res) {
             weighted_philanthropy_pct: Math.round(weightedPct * 100) / 100,
             weighted_reinvest_pct: Math.round((100 - weightedPct) * 100) / 100,
             voter_count: voterCount,
-            total_weighted_voting: Math.round(totalWeight)
+            total_weighted_voting: Math.round(totalWeight),
+            total_clawnch_voting: Math.round(totalClawnch),
+            total_inclawnch_voting: Math.round(totalInclawnch)
         };
 
         // If wallet param, include user's vote + live balance

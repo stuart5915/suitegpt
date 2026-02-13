@@ -80,8 +80,17 @@
         // Stats
         var voterEl = document.getElementById('statVoters');
         var powerEl = document.getElementById('statVotingPower');
+        var powerSubEl = document.getElementById('statVotingPowerSub');
         if (voterEl) voterEl.textContent = voters;
         if (powerEl) powerEl.textContent = fmt(totalVoting);
+        if (powerSubEl) {
+            var cl = data.total_clawnch_voting || 0;
+            var incl = data.total_inclawnch_voting || 0;
+            var parts = [];
+            if (cl > 0) parts.push(fmt(cl) + ' CLAWNCH');
+            if (incl > 0) parts.push(fmt(incl) + ' inCLAWNCH');
+            powerSubEl.textContent = parts.length > 0 ? '[' + parts.join(' + ') + ']' : '';
+        }
     }
 
     // ── Slider + Preset Logic ──
@@ -191,6 +200,16 @@
 
         var stakeEl = document.getElementById('philMyStake');
         if (stakeEl) stakeEl.textContent = fmt(myPower);
+
+        var mySubEl = document.getElementById('philMyStakeSub');
+        if (mySubEl) {
+            var myCl = data.my_clawnch || 0;
+            var myIncl = data.my_inclawnch || 0;
+            var parts = [];
+            if (myCl > 0) parts.push(fmt(myCl) + ' CLAWNCH');
+            if (myIncl > 0) parts.push(fmt(myIncl) + ' inCLAWNCH');
+            mySubEl.textContent = parts.length > 0 ? '[' + parts.join(' + ') + ']' : '';
+        }
 
         // Restore existing vote
         if (data.my_vote !== null && data.my_vote !== undefined) {
