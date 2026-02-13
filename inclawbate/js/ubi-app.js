@@ -926,6 +926,68 @@ function daysSince(dateStr) {
     }
 
     // ── Unstake wallet available balance ──
+    // ── Pending stake recovery (localStorage) ──
+    var PENDING_KEY = 'inclawbate_pending_stakes';
+
+    function savePendingStake(txHash, wallet, token) {
+        try {
+            var pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+            // Avoid duplicates
+            if (!pending.find(function(p) { return p.tx === txHash; })) {
+                pending.push({ tx: txHash, wallet: wallet, token: token, ts: Date.now() });
+                localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+            }
+        } catch (e) { /* localStorage unavailable */ }
+    }
+
+    function clearPendingStake(txHash) {
+        try {
+            var pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+            pending = pending.filter(function(p) { return p.tx !== txHash; });
+            localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+        } catch (e) {}
+    }
+
+    async function recordStakeWithRetry(txHash, wallet, token, retries) {
+        retries = retries || 3;
+        for (var attempt = 0; attempt < retries; attempt++) {
+            try {
+                var res = await fetch('/api/inclawbate/ubi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'fund', tx_hash: txHash, wallet_address: wallet, token: token })
+                });
+                var data = await res.json();
+                if (res.ok && data.success) return data;
+                // 409 = duplicate, already recorded — treat as success
+                if (res.status === 409) return { success: true, amount: 0, duplicate: true };
+                // Other error — retry
+            } catch (e) { /* network error — retry */ }
+            if (attempt < retries - 1) {
+                await new Promise(function(r) { setTimeout(r, 2000 * (attempt + 1)); });
+            }
+        }
+        return null;
+    }
+
+    async function recoverPendingStakes() {
+        try {
+            var pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+            if (pending.length === 0) return;
+            // Only try stakes less than 24h old
+            var cutoff = Date.now() - (24 * 60 * 60 * 1000);
+            for (var i = 0; i < pending.length; i++) {
+                var p = pending[i];
+                if (p.ts < cutoff) { clearPendingStake(p.tx); continue; }
+                var result = await recordStakeWithRetry(p.tx, p.wallet, p.token, 2);
+                if (result) clearPendingStake(p.tx);
+            }
+        } catch (e) {}
+    }
+
+    // Run recovery on page load
+    recoverPendingStakes();
+
     var unstakeAvailable = { clawnch: 0, inclawnch: 0 };
 
     async function fetchUnstakeBalance() {
@@ -1164,21 +1226,15 @@ function daysSince(dateStr) {
                 throw new Error('Transaction failed or timed out');
             }
 
+            // Save to localStorage immediately so we can recover if API call fails
+            savePendingStake(txHash, stakeWallet, token);
+
             status.textContent = 'Recording stake...';
 
-            var apiRes = await fetch('/api/inclawbate/ubi', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'fund',
-                    tx_hash: txHash,
-                    wallet_address: stakeWallet,
-                    token: token
-                })
-            });
-            var apiData = await apiRes.json();
+            var apiData = await recordStakeWithRetry(txHash, stakeWallet, token);
 
-            if (apiRes.ok && apiData.success) {
+            if (apiData && apiData.success) {
+                clearPendingStake(txHash);
                 status.textContent = 'Staked ' + apiData.amount.toLocaleString() + ' ' + config.label + ' in the UBI treasury!';
                 status.className = 'ubi-stake-status stake-status success';
 
@@ -1205,12 +1261,23 @@ function daysSince(dateStr) {
                 loadMyStakes();
                 fetchBalances();
                 updateAllApys();
+            } else if (apiData && apiData.duplicate) {
+                status.textContent = 'Stake already recorded!';
+                status.className = 'ubi-stake-status stake-status success';
+                loadMyStakes();
+                fetchBalances();
+                updateAllApys();
             } else {
-                status.textContent = apiData.error || 'Failed to record stake';
+                status.textContent = 'Transaction confirmed on-chain but recording failed. It will be recovered automatically on next page load.';
                 status.className = 'ubi-stake-status stake-status error';
             }
         } catch (err) {
-            status.textContent = err.message || 'Stake failed';
+            // If we have a txHash, the on-chain tx may have succeeded
+            if (typeof txHash === 'string' && txHash.length > 0) {
+                status.textContent = 'Transaction may have succeeded. Refresh the page — your stake will be recovered automatically.';
+            } else {
+                status.textContent = err.message || 'Stake failed';
+            }
             status.className = 'ubi-stake-status stake-status error';
         }
 
