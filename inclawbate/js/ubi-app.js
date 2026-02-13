@@ -750,13 +750,20 @@ function daysSince(dateStr) {
                 var g = grouped[token];
                 var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
                 var tokenClass = 'ubi-contrib-token--' + token;
+                var avail = token === 'inclawnch' ? unstakeAvailable.inclawnch : unstakeAvailable.clawnch;
+                var availNote = avail >= g.amount
+                    ? '<span class="ubi-unstake-avail ubi-unstake-avail--ok">' + fmt(Math.floor(avail)) + ' available</span>'
+                    : '<span class="ubi-unstake-avail ubi-unstake-avail--low">' + fmt(Math.floor(avail)) + ' / ' + fmt(g.amount) + ' available</span>';
                 html += '<div class="ubi-stake-row">' +
                     '<div class="ubi-stake-row-info">' +
                         '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
                         '<span class="ubi-stake-row-amount">' + fmt(g.amount) + '</span>' +
                         '<span class="ubi-stake-row-days">staking for ' + daysSince(g.earliest) + '</span>' +
                     '</div>' +
-                    '<button class="btn-unstake" data-token="' + token + '">Unstake</button>' +
+                    '<div class="ubi-stake-row-actions">' +
+                        availNote +
+                        '<button class="btn-unstake" data-token="' + token + '">Unstake</button>' +
+                    '</div>' +
                 '</div>';
             });
 
