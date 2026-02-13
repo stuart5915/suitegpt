@@ -310,6 +310,13 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
         }
 
+        // Countdown KPI: total UBI distributed
+        var cdTotalDistEl = document.getElementById('cdTotalDistributed');
+        if (cdTotalDistEl) {
+            var td = Number(ubiData?.total_distributed) || 0;
+            cdTotalDistEl.textContent = td > 0 ? fmt(td) : '--';
+        }
+
         // Daily earnings per 100k staked
         if (weeklyClawnchEl) {
             if (totalWeightedStake > 0 && dailyRate > 0) {
