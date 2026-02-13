@@ -847,81 +847,69 @@ function daysSince(dateStr) {
                 var savedOrgId = data.redirect_org_id || null;
                 var orgs = ubiData?.philanthropy_orgs || [];
 
-                html += '<div class="ubi-giveback-widget" id="giveBackWidget">';
-                html += '<div class="ubi-giveback-header">';
-                html += '<span class="ubi-giveback-icon">\u2764\uFE0F</span>';
-                html += '<span class="ubi-giveback-title">Redirect Your Energy</span>';
-                html += '</div>';
-                html += '<p class="ubi-giveback-explainer">Your UBI represents reclaimed time, focus, and energy. Choose where it flows.</p>';
-
-                html += '<div class="ubi-giveback-options">';
-
-                // Keep option
-                html += '<label class="ubi-giveback-option' + (!savedRedirect ? ' active' : '') + '">';
-                html += '<input type="radio" name="giveBackChoice" value=""' + (!savedRedirect ? ' checked' : '') + '>';
-                html += '<span class="ubi-giveback-option-icon">\uD83C\uDF3F</span>';
-                html += '<span class="ubi-giveback-option-title">Keep</span>';
-                html += '<span class="ubi-giveback-option-subtitle">Grow your own garden.</span>';
-                html += '<span class="ubi-giveback-option-desc">Receive your daily UBI. Rebuild the time that was stolen from you. No shame in this \u2014 you can\'t pour from an empty cup.</span>';
-                html += '</label>';
-
-                // The Kingdom — org cards from API
-                var anyKingdomSelected = savedRedirect === 'philanthropy';
                 var firstOrgId = orgs.length > 0 ? orgs[0].id : '';
-                html += '<label class="ubi-giveback-option ubi-giveback-option--kingdom' + (anyKingdomSelected ? ' active' : '') + '">';
-                html += '<input type="radio" name="giveBackChoice" value="philanthropy" data-org-id="' + firstOrgId + '"' + (anyKingdomSelected ? ' checked' : '') + '>';
-                html += '<span class="ubi-giveback-option-icon">\u271D\uFE0F</span>';
-                html += '<span class="ubi-giveback-option-title">The Kingdom</span>';
-                html += '<span class="ubi-giveback-option-subtitle">Fund what matters eternally.</span>';
-                html += '<span class="ubi-giveback-option-desc">Your rewards go to verified ministry partners \u2014 church planting, homeless outreach, community ministry, and organizations ushering the gospel. The agents earn. The humans give. The Kingdom grows.</span>';
-                if (orgs.length > 0) {
-                    html += '<span class="ubi-giveback-ministries">';
-                    for (var oi = 0; oi < orgs.length; oi++) {
-                        var org = orgs[oi];
-                        var orgUrl = org.website_url || '';
-                        html += '<span class="ubi-giveback-ministry">';
-                        if (orgUrl) {
-                            html += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener">' + esc(org.name) + '</a>';
-                        } else {
-                            html += esc(org.name);
-                        }
-                        if (org.description) html += ' \u2014 <em>' + esc(org.description) + '</em>';
-                        html += '</span>';
-                    }
-                    html += '</span>';
-                }
-                html += '</label>';
-
-                // Reinvest option
-                html += '<label class="ubi-giveback-option' + (savedRedirect === 'reinvest' ? ' active' : '') + '">';
-                html += '<input type="radio" name="giveBackChoice" value="reinvest"' + (savedRedirect === 'reinvest' ? ' checked' : '') + '>';
-                html += '<span class="ubi-giveback-option-icon">\uD83C\uDF31</span>';
-                html += '<span class="ubi-giveback-option-title">Reinvest</span>';
-                html += '<span class="ubi-giveback-option-subtitle">Compound the commons.</span>';
-                html += '<span class="ubi-giveback-option-desc">Return your rewards to the UBI pool. Your sacrifice increases the yield for every other human staker. Decrease yourself so others increase.</span>';
-                html += '</label>';
-
-                // Split option
                 var savedKeep = data.split_keep_pct ?? 34;
                 var savedKingdom = data.split_kingdom_pct ?? 33;
                 var savedReinvest = data.split_reinvest_pct ?? 33;
-                html += '<label class="ubi-giveback-option ubi-giveback-option--split' + (savedRedirect === 'split' ? ' active' : '') + '">';
-                html += '<input type="radio" name="giveBackChoice" value="split"' + (savedRedirect === 'split' ? ' checked' : '') + '>';
-                html += '<span class="ubi-giveback-option-icon">\uD83E\uDD32</span>';
-                html += '<span class="ubi-giveback-option-title">Split</span>';
-                html += '<span class="ubi-giveback-option-subtitle">Balance all three.</span>';
-                html += '<span class="ubi-giveback-option-desc">Custom split \u2014 choose a percentage for yourself, The Kingdom, and the pool. Design your own energy distribution.</span>';
+
+                html += '<div class="ubi-redirect-widget" id="giveBackWidget">';
+                html += '<div class="ubi-redirect-header">';
+                html += '<span class="ubi-redirect-title">\u2764\uFE0F Redirect Your Energy</span>';
+                html += '<span class="ubi-redirect-sub">Your UBI is reclaimed time. Choose where it flows.</span>';
+                html += '</div>';
+
+                // Compact pill row
+                html += '<div class="ubi-redirect-pills">';
+                html += '<button class="ubi-pill' + (!savedRedirect ? ' active' : '') + '" data-value="" data-org-id="">\uD83C\uDF3F Keep</button>';
+                html += '<button class="ubi-pill ubi-pill--kingdom' + (savedRedirect === 'philanthropy' ? ' active' : '') + '" data-value="philanthropy" data-org-id="' + firstOrgId + '">\u271D\uFE0F Kingdom</button>';
+                html += '<button class="ubi-pill' + (savedRedirect === 'reinvest' ? ' active' : '') + '" data-value="reinvest" data-org-id="">\uD83C\uDF31 Reinvest</button>';
+                html += '<button class="ubi-pill ubi-pill--split' + (savedRedirect === 'split' ? ' active' : '') + '" data-value="split" data-org-id="">\uD83E\uDD32 Split</button>';
+                html += '</div>';
+
+                // Expandable detail panels (only active one shows)
+                html += '<div class="ubi-redirect-detail" id="redirectDetail">';
+
+                // Keep detail
+                html += '<div class="ubi-rd-panel" data-panel=""' + (!savedRedirect ? '' : ' style="display:none"') + '>';
+                html += '<p>Grow your own garden. No shame \u2014 you can\'t pour from an empty cup.</p>';
+                html += '</div>';
+
+                // Kingdom detail
+                html += '<div class="ubi-rd-panel" data-panel="philanthropy"' + (savedRedirect === 'philanthropy' ? '' : ' style="display:none"') + '>';
+                html += '<p>Fund what matters eternally. The agents earn. The humans give. The Kingdom grows.</p>';
+                if (orgs.length > 0) {
+                    html += '<div class="ubi-rd-ministries">';
+                    for (var oi = 0; oi < orgs.length; oi++) {
+                        var org = orgs[oi];
+                        var orgUrl = org.website_url || '';
+                        if (orgUrl) {
+                            html += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener" class="ubi-rd-ministry-link">' + esc(org.name) + ' \u2197</a>';
+                        } else {
+                            html += '<span class="ubi-rd-ministry-link">' + esc(org.name) + '</span>';
+                        }
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                // Reinvest detail
+                html += '<div class="ubi-rd-panel" data-panel="reinvest"' + (savedRedirect === 'reinvest' ? '' : ' style="display:none"') + '>';
+                html += '<p>Compound the commons. Decrease yourself so others increase.</p>';
+                html += '</div>';
+
+                // Split detail
+                html += '<div class="ubi-rd-panel" data-panel="split"' + (savedRedirect === 'split' ? '' : ' style="display:none"') + '>';
                 html += '<div class="ubi-split-sliders" id="splitSliders">';
                 html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
                 html += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
-                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Reinvest</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
-                html += '<div class="ubi-split-total" id="splitTotal">Total: ' + (savedKeep + savedKingdom + savedReinvest) + '%</div>';
+                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
                 html += '</div>';
-                html += '</label>';
+                html += '</div>';
 
-                html += '</div>';
-                html += '<button class="ubi-giveback-save-btn" id="giveBackSaveBtn">Save Preference</button>';
-                html += '<span class="ubi-giveback-save-status" id="giveBackStatus"></span>';
+                html += '</div>'; // end detail
+
+                html += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
+                html += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
                 html += '</div>';
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
@@ -1024,37 +1012,33 @@ function daysSince(dateStr) {
                 });
             }
 
-            // Wire up Give Back option cards + save button
+            // Wire up Redirect Your Energy pills + panels + save
             var gbWidget = document.getElementById('giveBackWidget');
             if (gbWidget) {
-                gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(opt) {
-                    opt.addEventListener('click', function(e) {
-                        // Don't toggle when interacting with sliders
-                        if (e.target.classList.contains('ubi-split-range')) return;
-                        gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(o) { o.classList.remove('active'); });
-                        opt.classList.add('active');
-                        opt.querySelector('input[name="giveBackChoice"]').checked = true;
+                var _activeValue = data.whale_redirect_target || '';
+
+                // Pill click → toggle active pill + show matching panel
+                gbWidget.querySelectorAll('.ubi-pill').forEach(function(pill) {
+                    pill.addEventListener('click', function() {
+                        gbWidget.querySelectorAll('.ubi-pill').forEach(function(p) { p.classList.remove('active'); });
+                        pill.classList.add('active');
+                        _activeValue = pill.getAttribute('data-value') || '';
+                        // Show matching panel, hide others
+                        gbWidget.querySelectorAll('.ubi-rd-panel').forEach(function(panel) {
+                            panel.style.display = panel.getAttribute('data-panel') === _activeValue ? '' : 'none';
+                        });
                     });
                 });
 
-                // Wire up split sliders — adjust others to keep total at 100
+                // Wire up split sliders
                 var splitKeep = document.getElementById('splitKeep');
                 var splitKingdom = document.getElementById('splitKingdom');
                 var splitReinvest = document.getElementById('splitReinvest');
                 if (splitKeep && splitKingdom && splitReinvest) {
                     function updateSplitDisplay() {
-                        var k = Number(splitKeep.value);
-                        var g = Number(splitKingdom.value);
-                        var r = Number(splitReinvest.value);
-                        document.getElementById('splitKeepVal').textContent = k + '%';
-                        document.getElementById('splitKingdomVal').textContent = g + '%';
-                        document.getElementById('splitReinvestVal').textContent = r + '%';
-                        var total = k + g + r;
-                        var totalEl = document.getElementById('splitTotal');
-                        if (totalEl) {
-                            totalEl.textContent = 'Total: ' + total + '%';
-                            totalEl.style.color = total === 100 ? 'hsl(140, 50%, 60%)' : 'hsl(0, 70%, 60%)';
-                        }
+                        document.getElementById('splitKeepVal').textContent = splitKeep.value + '%';
+                        document.getElementById('splitKingdomVal').textContent = splitKingdom.value + '%';
+                        document.getElementById('splitReinvestVal').textContent = splitReinvest.value + '%';
                     }
                     function balanceSliders(changed, others) {
                         var val = Number(changed.value);
@@ -1066,10 +1050,8 @@ function daysSince(dateStr) {
                             others[0].value = Math.round(remaining / 2);
                             others[1].value = remaining - Math.round(remaining / 2);
                         } else {
-                            var r1 = Math.round((o1 / sum) * remaining);
-                            var r2 = remaining - r1;
-                            others[0].value = Math.max(0, r1);
-                            others[1].value = Math.max(0, r2);
+                            others[0].value = Math.max(0, Math.round((o1 / sum) * remaining));
+                            others[1].value = remaining - Number(others[0].value);
                         }
                         updateSplitDisplay();
                     }
@@ -1078,12 +1060,13 @@ function daysSince(dateStr) {
                     splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
                 }
 
+                // Save button
                 var saveBtn = document.getElementById('giveBackSaveBtn');
                 if (saveBtn) {
                     saveBtn.addEventListener('click', async function() {
-                        var selected = gbWidget.querySelector('input[name="giveBackChoice"]:checked');
-                        var value = selected ? (selected.value || null) : null;
-                        var orgId = selected ? (selected.getAttribute('data-org-id') || null) : null;
+                        var activePill = gbWidget.querySelector('.ubi-pill.active');
+                        var value = activePill ? (activePill.getAttribute('data-value') || null) : null;
+                        var orgId = activePill ? (activePill.getAttribute('data-org-id') || null) : null;
                         var statusEl = document.getElementById('giveBackStatus');
                         saveBtn.disabled = true;
                         if (statusEl) statusEl.textContent = 'Saving...';
@@ -1095,21 +1078,18 @@ function daysSince(dateStr) {
                             org_id: orgId
                         };
 
-                        // Include split percentages if Split is selected
                         if (value === 'split') {
                             var k = Number(document.getElementById('splitKeep').value) || 0;
                             var g = Number(document.getElementById('splitKingdom').value) || 0;
                             var r = Number(document.getElementById('splitReinvest').value) || 0;
                             if (k + g + r !== 100) {
-                                if (statusEl) statusEl.textContent = 'Must total 100%';
-                                ubiToast('Split percentages must add up to 100%', 'error');
+                                ubiToast('Split must total 100%', 'error');
                                 saveBtn.disabled = false;
                                 return;
                             }
                             body.split_keep_pct = k;
                             body.split_kingdom_pct = g;
                             body.split_reinvest_pct = r;
-                            // Use first org for kingdom portion
                             var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
                             if (firstOrg) body.org_id = firstOrg.id;
                         }
@@ -1122,15 +1102,13 @@ function daysSince(dateStr) {
                             });
                             var rData = await resp.json();
                             if (resp.ok && rData.success) {
-                                if (statusEl) statusEl.textContent = 'Saved!';
-                                ubiToast('Preference saved', 'success');
+                                if (statusEl) statusEl.textContent = '';
+                                ubiToast('Saved', 'success');
                             } else {
-                                if (statusEl) statusEl.textContent = rData.error || 'Failed';
                                 ubiToast(rData.error || 'Failed to save', 'error');
                             }
                         } catch (e) {
-                            if (statusEl) statusEl.textContent = 'Failed';
-                            ubiToast('Failed to save preference', 'error');
+                            ubiToast('Failed to save', 'error');
                         }
                         saveBtn.disabled = false;
                     });
