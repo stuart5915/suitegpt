@@ -725,9 +725,6 @@ function daysSince(dateStr) {
         document.querySelectorAll('.stake-form').forEach(function(form) {
             form.style.display = '';
         });
-        // Show fund rewards button
-        var fundBtn = document.getElementById('fundRewardsBtn');
-        if (fundBtn) fundBtn.style.display = 'inline-block';
         // Update hints for both
         document.querySelectorAll('.stake-amount').forEach(function(input) {
             updateHint(input.getAttribute('data-token'));
@@ -1537,129 +1534,6 @@ function daysSince(dateStr) {
         depositBtn.disabled = false;
     }
 
-    // ── Fund Rewards Pool ──
-    var fundRewardsBtn = document.getElementById('fundRewardsBtn');
-    if (fundRewardsBtn) {
-        fundRewardsBtn.addEventListener('click', async function() {
-            if (!stakeWallet) return;
-
-            // Ask for amount via modal
-            var amountStr = await new Promise(function(resolve) {
-                var overlay = document.getElementById('ubiModalOverlay');
-                var modal = document.getElementById('ubiModal');
-                var titleEl = document.getElementById('ubiModalTitle');
-                var msgEl = document.getElementById('ubiModalMsg');
-                var confirmBtn = document.getElementById('ubiModalConfirm');
-                var cancelBtn = document.getElementById('ubiModalCancel');
-
-                titleEl.textContent = 'Fund Reward Pool';
-                msgEl.innerHTML = '<p style="margin-bottom:12px">Deposit CLAWNCH to the reward pool. These tokens get distributed to all stakers daily at 6am EST.</p>' +
-                    '<input type="text" inputmode="numeric" id="fundAmountInput" placeholder="CLAWNCH amount" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-elevated);color:var(--text-primary);font-size:1rem;font-family:var(--font-display);box-sizing:border-box;">';
-                confirmBtn.textContent = 'Send';
-                confirmBtn.className = 'ubi-modal-btn ubi-modal-btn--confirm';
-                cancelBtn.textContent = 'Cancel';
-
-                overlay.classList.add('active');
-                modal.classList.add('active');
-
-                setTimeout(function() {
-                    var inp = document.getElementById('fundAmountInput');
-                    if (inp) inp.focus();
-                }, 100);
-
-                function cleanup() {
-                    overlay.classList.remove('active');
-                    modal.classList.remove('active');
-                    confirmBtn.onclick = null;
-                    cancelBtn.onclick = null;
-                    overlay.onclick = null;
-                }
-                confirmBtn.onclick = function() {
-                    var val = (document.getElementById('fundAmountInput') || {}).value;
-                    cleanup();
-                    resolve(val || '');
-                };
-                cancelBtn.onclick = function() { cleanup(); resolve(''); };
-                overlay.onclick = function(e) { if (e.target === overlay) { cleanup(); resolve(''); } };
-            });
-
-            var amount = parseFloat((amountStr || '').replace(/,/g, ''));
-            if (!amount || amount <= 0) return;
-
-            fundRewardsBtn.disabled = true;
-            fundRewardsBtn.textContent = 'Sending...';
-
-            try {
-                var provider = getProvider();
-                if (!provider) return;
-                var amountWei = toWei(amount);
-                var txData = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
-
-                var txHash = await provider.request({
-                    method: 'eth_sendTransaction',
-                    params: [{
-                        from: stakeWallet,
-                        to: CLAWNCH_ADDRESS,
-                        data: txData
-                    }]
-                });
-
-                fundRewardsBtn.textContent = 'Confirming...';
-
-                var receipt = null;
-                for (var i = 0; i < 60; i++) {
-                    await new Promise(function(r) { setTimeout(r, 2000); });
-                    receipt = await provider.request({
-                        method: 'eth_getTransactionReceipt',
-                        params: [txHash]
-                    });
-                    if (receipt) break;
-                }
-
-                if (!receipt || receipt.status !== '0x1') {
-                    throw new Error('Transaction failed or timed out');
-                }
-
-                // Record with rewards API
-                var apiRes = await fetch('/api/inclawbate/rewards', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'pool-deposit',
-                        tx_hash: txHash,
-                        wallet_address: stakeWallet
-                    })
-                });
-                var apiData = await apiRes.json();
-
-                if (apiRes.ok) {
-                    await ubiModal({
-                        icon: '\uD83C\uDF89',
-                        title: 'Pool Funded!',
-                        msg: amount.toLocaleString() + ' CLAWNCH deposited to the reward pool. All stakers benefit from your contribution!',
-                        confirmLabel: 'Nice',
-                        confirmClass: 'ubi-modal-btn--confirm'
-                    });
-                } else {
-                    throw new Error(apiData.error || 'Failed to record deposit');
-                }
-            } catch (err) {
-                if (err.code !== 4001) {
-                    await ubiModal({
-                        icon: '\u274C',
-                        title: 'Deposit Failed',
-                        msg: err.message || 'Something went wrong',
-                        confirmLabel: 'OK',
-                        confirmClass: 'ubi-modal-btn--confirm'
-                    });
-                }
-            }
-
-            fundRewardsBtn.disabled = false;
-            fundRewardsBtn.textContent = 'Fund Rewards';
-        });
-    }
-
     function disconnectWallet() {
         if (!stakeWallet) return; // already disconnected
         stakeWallet = null;
@@ -1696,8 +1570,6 @@ function daysSince(dateStr) {
         document.querySelectorAll('.stake-form').forEach(function(form) {
             form.style.display = 'none';
         });
-        var fundBtn = document.getElementById('fundRewardsBtn');
-        if (fundBtn) fundBtn.style.display = 'none';
         // Hide balances
         var clawnchEl = document.getElementById('balanceClawnch');
         var inclawnchEl = document.getElementById('balanceInclawnch');

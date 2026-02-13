@@ -309,23 +309,6 @@
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
         }
-        .dash-hero-fund {
-            margin-top: var(--space-sm);
-            margin-left: var(--space-sm);
-            padding: 10px 24px;
-            font-family: var(--font-display);
-            font-size: 0.85rem;
-            font-weight: 700;
-            border: 1px solid var(--seafoam-300);
-            border-radius: var(--radius-full);
-            background: transparent;
-            color: var(--seafoam-300);
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s, background 0.2s;
-            display: none;
-        }
-        .dash-hero-fund:hover { background: hsla(172,50%,50%,0.1); transform: scale(1.03); }
-
         /* Stat cards row */
         .dash-stats-row {
             display: grid;
@@ -1929,31 +1912,6 @@
             align-items: baseline;
             gap: var(--space-sm);
             margin-bottom: var(--space-md);
-            cursor: pointer;
-            user-select: none;
-        }
-        .ubi-step-chevron {
-            margin-left: auto;
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            transition: transform 0.3s var(--ease-smooth);
-            align-self: center;
-        }
-        .ubi-step--collapsed .ubi-step-chevron {
-            transform: rotate(-90deg);
-        }
-        .ubi-step-body {
-            overflow: hidden;
-            transition: max-height 0.35s var(--ease-smooth), opacity 0.25s ease;
-            max-height: 2000px;
-            opacity: 1;
-        }
-        .ubi-step--collapsed .ubi-step-body {
-            max-height: 0;
-            opacity: 0;
-        }
-        .ubi-step--collapsed .ubi-step-header {
-            margin-bottom: 0;
         }
         .ubi-step-num {
             font-family: var(--font-mono);
@@ -1987,6 +1945,24 @@
             background: hsl(140, 50%, 45%);
             border-color: hsl(140, 50%, 45%);
             color: #fff;
+        }
+        .ubi-step1-layout {
+            display: flex;
+            gap: var(--space-lg);
+            align-items: flex-start;
+        }
+        .ubi-step1-left {
+            flex-shrink: 0;
+        }
+        .ubi-step1-right {
+            flex: 1;
+            min-width: 0;
+        }
+        .ubi-step1-right .ubi-your-stakes {
+            display: block;
+        }
+        @media (max-width: 640px) {
+            .ubi-step1-layout { flex-direction: column; }
         }
         .ubi-step .dash-vaults { margin-bottom: 0; }
         .ubi-step #redirectStepContent .ubi-redirect-widget {
@@ -2132,12 +2108,33 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">1</span>
             <span class="ubi-step-title">Connect</span>
-            <span class="ubi-step-chevron">&#9662;</span>
         </div>
-        <div class="ubi-step-body">
-            <p class="ubi-step-sub">Connect your wallet to get started.</p>
-            <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
-            <button class="dash-hero-fund" id="fundRewardsBtn" style="display:none">Fund Rewards</button>
+        <div class="ubi-step1-layout">
+            <div class="ubi-step1-left">
+                <p class="ubi-step-sub">Connect your wallet to get started.</p>
+                <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
+            </div>
+            <div class="ubi-step1-right">
+                <div class="ubi-your-stakes" id="yourStakesSection">
+                    <div class="ubi-withdraw-liquidity" id="withdrawLiquidity">
+                        <span class="ubi-wl-label">Withdrawal Liquidity</span>
+                        <div class="ubi-wl-row">
+                            <span class="ubi-wl-token">$CLAWNCH</span>
+                            <span class="ubi-wl-amount" id="wlClawnch">—</span>
+                        </div>
+                        <div class="ubi-wl-row">
+                            <span class="ubi-wl-token">$inCLAWNCH</span>
+                            <span class="ubi-wl-amount" id="wlInclawnch">—</span>
+                        </div>
+                    </div>
+                    <div class="dash-position-card">
+                        <div class="dash-position-title">Your Position</div>
+                        <div id="yourStakesList">
+                            <div class="ubi-no-stakes">Connect your wallet to see your stakes.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2146,9 +2143,7 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">2</span>
             <span class="ubi-step-title">Stake</span>
-            <span class="ubi-step-chevron">&#9662;</span>
         </div>
-        <div class="ubi-step-body">
         <p class="ubi-step-sub">Choose a vault and stake your tokens.</p>
 
     <section class="dash-vaults" id="stake">
@@ -2210,28 +2205,7 @@
             </div>
         </div>
 
-        <!-- Your Position -->
-        <div class="ubi-your-stakes" id="yourStakesSection">
-            <div class="ubi-withdraw-liquidity" id="withdrawLiquidity">
-                <span class="ubi-wl-label">Withdrawal Liquidity</span>
-                <div class="ubi-wl-row">
-                    <span class="ubi-wl-token">$CLAWNCH</span>
-                    <span class="ubi-wl-amount" id="wlClawnch">—</span>
-                </div>
-                <div class="ubi-wl-row">
-                    <span class="ubi-wl-token">$inCLAWNCH</span>
-                    <span class="ubi-wl-amount" id="wlInclawnch">—</span>
-                </div>
-            </div>
-            <div class="dash-position-card">
-                <div class="dash-position-title">Your Position</div>
-                <div id="yourStakesList">
-                    <div class="ubi-no-stakes">Connect your wallet to see your stakes.</div>
-                </div>
-            </div>
-        </div>
     </section>
-        </div><!-- /ubi-step-body -->
     </div><!-- /ubiStep2 -->
 
     <!-- ═══ Step 3: Redirect Your Energy ═══ -->
@@ -2239,19 +2213,16 @@
         <div class="ubi-step-header">
             <span class="ubi-step-num">3</span>
             <span class="ubi-step-title">Redirect Your Energy</span>
-            <span class="ubi-step-chevron">&#9662;</span>
         </div>
-        <div class="ubi-step-body">
-            <p class="ubi-step-sub">Your UBI is reclaimed time. Choose where it flows.</p>
-            <div id="redirectStepContent">
-                <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
-                    <span class="ubi-pill active">&#x1F33F; Keep</span>
-                    <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
-                    <span class="ubi-pill">&#x1F331; Reinvest</span>
-                    <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
-                </div>
-                <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
+        <p class="ubi-step-sub">Your UBI is reclaimed time. Choose where it flows.</p>
+        <div id="redirectStepContent">
+            <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
+                <span class="ubi-pill active">&#x1F33F; Keep</span>
+                <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
+                <span class="ubi-pill">&#x1F331; Reinvest</span>
+                <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
             </div>
+            <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
         </div>
     </div>
 
@@ -2373,15 +2344,6 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
     });
 });
 
-// Step collapse/expand
-document.querySelectorAll('.ubi-step-header').forEach(function(header) {
-    header.addEventListener('click', function() {
-        var step = header.closest('.ubi-step');
-        if (step && !step.classList.contains('ubi-step--dimmed')) {
-            step.classList.toggle('ubi-step--collapsed');
-        }
-    });
-});
 </script>
 
 <!-- App Modal -->
