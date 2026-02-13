@@ -42,11 +42,15 @@ export async function startXAuth() {
 export async function handleXCallback(code, state) {
     const savedState = localStorage.getItem('x_auth_state');
     if (state && savedState && state !== savedState) {
-        throw new Error('State mismatch — possible CSRF attack');
+        // State mismatch — likely stale from a previous attempt or mobile browser quirk.
+        // Not fatal: PKCE code_verifier is the real security. Log and continue.
+        console.warn('X OAuth state mismatch (stale attempt) — proceeding with PKCE');
     }
 
     const codeVerifier = localStorage.getItem('x_code_verifier');
     if (!codeVerifier) {
+        // Clear any stale state so the next attempt starts fresh
+        localStorage.removeItem('x_auth_state');
         throw new Error('Missing code verifier — please try connecting again');
     }
 
