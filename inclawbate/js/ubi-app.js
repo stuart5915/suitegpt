@@ -178,6 +178,10 @@ function daysSince(dateStr) {
     }
 
     ubiData = ubiRes;
+    // Expose philanthropy orgs for the standalone Give Back widget
+    if (ubiData && ubiData.philanthropy_orgs) {
+        window._ubiOrgsLoaded = ubiData.philanthropy_orgs;
+    }
     const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
 
     // Use deposit address from API (unstake wallet) for new stakes
@@ -803,20 +807,9 @@ function daysSince(dateStr) {
                 var sharePct = (userWeighted / totalWeightedAll) * 100;
                 var dailyAllocation = (userWeighted / totalWeightedAll) * dailyRateVal;
 
-                // Apply whale cap client-side for display
-                var walletCapPct = Number(ubiData?.wallet_cap_pct) || 10;
-                var capAmount = dailyRateVal * (walletCapPct / 100);
-                var isCapped = dailyAllocation > capAmount && walletCapPct < 100;
-                var uncappedAllocation = dailyAllocation;
-                if (isCapped) {
-                    dailyAllocation = capAmount;
-                }
-
                 var dailyUsdVal = dailyAllocation * clawnchPrice;
                 var yearlyAllocation = dailyAllocation * 365;
                 var yearlyUsdVal = yearlyAllocation * clawnchPrice;
-
-                var displaySharePct = isCapped ? walletCapPct : sharePct;
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
@@ -830,70 +823,56 @@ function daysSince(dateStr) {
                 if (clawnchPrice > 0 && dailyUsdVal >= 0.01) {
                     html += '<span class="ubi-pc-usd">~$' + fmtUsd(dailyUsdVal) + '/day &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
                 }
-                html += '<span class="ubi-pc-share">' + displaySharePct.toFixed(2) + '% of pool' + (isCapped ? ' (capped)' : '') + '</span>';
+                html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
                 html += '</div>';
                 html += '</div>';
 
-                // Update standalone whale widget cap % label
-                var capLabel = document.getElementById('whaleCapPctLabel');
-                if (capLabel) capLabel.textContent = walletCapPct;
+                // Give Back section — any staker can redirect rewards to philanthropy
+                var savedRedirect = data.whale_redirect_target || null;
+                var savedOrgId = data.redirect_org_id || null;
+                var orgs = ubiData?.philanthropy_orgs || [];
 
-                if (isCapped) {
+                html += '<div class="ubi-giveback-widget" id="giveBackWidget">';
+                html += '<div class="ubi-giveback-header">';
+                html += '<span class="ubi-giveback-icon">\u2764\uFE0F</span>';
+                html += '<span class="ubi-giveback-title">Give Back</span>';
+                html += '</div>';
+                html += '<p class="ubi-giveback-explainer">Choose where your daily UBI rewards go. You can keep them, redirect to a community cause, or reinvest into the pool.</p>';
 
-                    var excessDaily = uncappedAllocation - capAmount;
-                    var excessUsd = excessDaily * clawnchPrice;
-                    var savedRedirect = data.whale_redirect_target || null;
+                html += '<div class="ubi-giveback-options">';
 
-                    html += '<div class="ubi-whale-widget" id="whaleWidget">';
-                    html += '<div class="ubi-whale-header">';
-                    html += '<span class="ubi-whale-emoji">\uD83D\uDC33</span>';
-                    html += '<span class="ubi-whale-title">Whale Cap Active (' + walletCapPct + '% max)</span>';
-                    html += '</div>';
+                // Keep option
+                html += '<label class="ubi-giveback-option' + (!savedRedirect ? ' active' : '') + '">';
+                html += '<input type="radio" name="giveBackChoice" value=""' + (!savedRedirect ? ' checked' : '') + '>';
+                html += '<span class="ubi-giveback-option-icon">\uD83D\uDCB0</span>';
+                html += '<span class="ubi-giveback-option-title">Keep Rewards</span>';
+                html += '<span class="ubi-giveback-option-desc">Receive your daily UBI (default)</span>';
+                html += '</label>';
 
-                    html += '<div class="ubi-whale-stats">';
-                    html += '<div class="ubi-whale-stat">';
-                    html += '<span class="ubi-whale-stat-label">Uncapped Share</span>';
-                    html += '<span class="ubi-whale-stat-value">' + fmt(Math.round(uncappedAllocation)) + ' CLAWNCH/day (' + sharePct.toFixed(1) + '%)</span>';
-                    html += '</div>';
-                    html += '<div class="ubi-whale-stat">';
-                    html += '<span class="ubi-whale-stat-label">Your Capped Share</span>';
-                    html += '<span class="ubi-whale-stat-value ubi-whale-stat-value--capped">' + fmt(Math.round(capAmount)) + ' CLAWNCH/day (' + walletCapPct + '%)</span>';
-                    html += '</div>';
-                    html += '<div class="ubi-whale-stat">';
-                    html += '<span class="ubi-whale-stat-label">Excess Redistributed</span>';
-                    html += '<span class="ubi-whale-stat-value ubi-whale-stat-value--excess">' + fmt(Math.round(excessDaily)) + ' CLAWNCH/day' + (clawnchPrice > 0 ? ' (~$' + fmtUsd(excessUsd) + ')' : '') + '</span>';
-                    html += '</div>';
-                    html += '</div>';
-
-                    html += '<div class="ubi-whale-redirect-label">Where should your excess go?</div>';
-                    html += '<div class="ubi-whale-options">';
-
-                    html += '<label class="ubi-whale-option' + (!savedRedirect ? ' active' : '') + '">';
-                    html += '<input type="radio" name="whaleRedirect" value=""' + (!savedRedirect ? ' checked' : '') + '>';
-                    html += '<span class="ubi-whale-option-icon">\uD83D\uDD04</span>';
-                    html += '<span class="ubi-whale-option-title">Redistribute</span>';
-                    html += '<span class="ubi-whale-option-desc">Spread to smaller stakers (default)</span>';
+                // Org cards from API
+                for (var oi = 0; oi < orgs.length; oi++) {
+                    var org = orgs[oi];
+                    var isSelected = savedRedirect === 'philanthropy' && savedOrgId === org.id;
+                    html += '<label class="ubi-giveback-option' + (isSelected ? ' active' : '') + '" data-org-id="' + org.id + '">';
+                    html += '<input type="radio" name="giveBackChoice" value="philanthropy" data-org-id="' + org.id + '"' + (isSelected ? ' checked' : '') + '>';
+                    html += '<span class="ubi-giveback-option-icon">\uD83D\uDC9A</span>';
+                    html += '<span class="ubi-giveback-option-title">' + esc(org.name) + '</span>';
+                    html += '<span class="ubi-giveback-option-desc">' + esc(org.description || '') + '</span>';
                     html += '</label>';
-
-                    html += '<label class="ubi-whale-option' + (savedRedirect === 'philanthropy' ? ' active' : '') + '">';
-                    html += '<input type="radio" name="whaleRedirect" value="philanthropy"' + (savedRedirect === 'philanthropy' ? ' checked' : '') + '>';
-                    html += '<span class="ubi-whale-option-icon">\uD83D\uDC9C</span>';
-                    html += '<span class="ubi-whale-option-title">Philanthropy</span>';
-                    html += '<span class="ubi-whale-option-desc">Direct excess to community causes</span>';
-                    html += '</label>';
-
-                    html += '<label class="ubi-whale-option' + (savedRedirect === 'reinvest' ? ' active' : '') + '">';
-                    html += '<input type="radio" name="whaleRedirect" value="reinvest"' + (savedRedirect === 'reinvest' ? ' checked' : '') + '>';
-                    html += '<span class="ubi-whale-option-icon">\uD83C\uDF31</span>';
-                    html += '<span class="ubi-whale-option-title">Reinvest</span>';
-                    html += '<span class="ubi-whale-option-desc">Return excess to the UBI pool</span>';
-                    html += '</label>';
-
-                    html += '</div>';
-                    html += '<button class="ubi-whale-save-btn" id="whaleRedirectSaveBtn">Save Preference</button>';
-                    html += '<span class="ubi-whale-save-status" id="whaleRedirectStatus"></span>';
-                    html += '</div>';
                 }
+
+                // Reinvest option
+                html += '<label class="ubi-giveback-option' + (savedRedirect === 'reinvest' ? ' active' : '') + '">';
+                html += '<input type="radio" name="giveBackChoice" value="reinvest"' + (savedRedirect === 'reinvest' ? ' checked' : '') + '>';
+                html += '<span class="ubi-giveback-option-icon">\uD83C\uDF31</span>';
+                html += '<span class="ubi-giveback-option-title">Reinvest</span>';
+                html += '<span class="ubi-giveback-option-desc">Return rewards to the UBI pool</span>';
+                html += '</label>';
+
+                html += '</div>';
+                html += '<button class="ubi-giveback-save-btn" id="giveBackSaveBtn">Save Preference</button>';
+                html += '<span class="ubi-giveback-save-status" id="giveBackStatus"></span>';
+                html += '</div>';
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
                 html += '<div class="ubi-pending-allocation">';
@@ -995,24 +974,24 @@ function daysSince(dateStr) {
                 });
             }
 
-            // Wire up whale redirect option cards + save button
-            var whaleWidget = document.getElementById('whaleWidget');
-            if (whaleWidget) {
-                // Make option cards toggle active class
-                whaleWidget.querySelectorAll('.ubi-whale-option').forEach(function(opt) {
+            // Wire up Give Back option cards + save button
+            var gbWidget = document.getElementById('giveBackWidget');
+            if (gbWidget) {
+                gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(opt) {
                     opt.addEventListener('click', function() {
-                        whaleWidget.querySelectorAll('.ubi-whale-option').forEach(function(o) { o.classList.remove('active'); });
+                        gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(o) { o.classList.remove('active'); });
                         opt.classList.add('active');
                         opt.querySelector('input').checked = true;
                     });
                 });
 
-                var saveBtn = document.getElementById('whaleRedirectSaveBtn');
+                var saveBtn = document.getElementById('giveBackSaveBtn');
                 if (saveBtn) {
                     saveBtn.addEventListener('click', async function() {
-                        var selected = whaleWidget.querySelector('input[name="whaleRedirect"]:checked');
+                        var selected = gbWidget.querySelector('input[name="giveBackChoice"]:checked');
                         var value = selected ? (selected.value || null) : null;
-                        var statusEl = document.getElementById('whaleRedirectStatus');
+                        var orgId = selected ? (selected.getAttribute('data-org-id') || null) : null;
+                        var statusEl = document.getElementById('giveBackStatus');
                         saveBtn.disabled = true;
                         if (statusEl) statusEl.textContent = 'Saving...';
 
@@ -1023,13 +1002,14 @@ function daysSince(dateStr) {
                                 body: JSON.stringify({
                                     action: 'update-whale-redirect',
                                     wallet_address: stakeWallet,
-                                    redirect_target: value
+                                    redirect_target: value,
+                                    org_id: orgId
                                 })
                             });
                             var rData = await resp.json();
                             if (resp.ok && rData.success) {
                                 if (statusEl) statusEl.textContent = 'Saved!';
-                                ubiToast('Redirect preference saved', 'success');
+                                ubiToast('Give Back preference saved', 'success');
                             } else {
                                 if (statusEl) statusEl.textContent = rData.error || 'Failed';
                                 ubiToast(rData.error || 'Failed to save', 'error');

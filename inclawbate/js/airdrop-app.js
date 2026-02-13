@@ -569,7 +569,10 @@ async function loadDistribution() {
     // Set inputs to current config
     document.getElementById('dailyRateInput').value = Math.round(dailyRate) || '';
     document.getElementById('splitPctInput').value = Number(data.reward_split_pct) || 80;
-    document.getElementById('walletCapInput').value = Number(data.wallet_cap_pct) || 10;
+
+    // Build org name lookup from philanthropy_orgs
+    const orgMap = {};
+    (data.philanthropy_orgs || []).forEach(o => { orgMap[o.id] = o.name; });
 
     // Render staker table
     const tbody = document.getElementById('stakerTableBody');
@@ -581,12 +584,16 @@ async function loadDistribution() {
             const tokenLabel = s.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
             const barWidth = Math.max(4, Math.min(80, s.share_pct * 0.8));
             const autoBadge = s.auto_stake ? '<span class="ubi-autostake-badge">auto</span>' : '';
-            const cappedBadge = s.is_capped ? '<span class="ubi-capped-badge">capped</span>' : '';
-            const shareDisplay = s.is_capped
-                ? `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}% <span style="color:var(--text-dim);font-size:0.7em;">(was ${s.raw_share_pct}%)</span>`
-                : `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%`;
+            let givesBackBadge = '';
+            if (s.redirect_target === 'philanthropy') {
+                const orgName = s.redirect_org_id && orgMap[s.redirect_org_id] ? orgMap[s.redirect_org_id] : 'philanthropy';
+                givesBackBadge = `<span class="ubi-givesback-badge" title="Gives back to ${escHtml(orgName)}">gives back &rarr; ${escHtml(orgName)}</span>`;
+            } else if (s.redirect_target === 'reinvest') {
+                givesBackBadge = '<span class="ubi-givesback-badge">reinvests</span>';
+            }
+            const shareDisplay = `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%`;
             return `<tr>
-                <td><strong>${escHtml(name)}</strong>${autoBadge}${cappedBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
+                <td><strong>${escHtml(name)}</strong>${autoBadge}${givesBackBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
                 <td>${tokenLabel}</td>
                 <td class="mono">${fmtNum(s.amount)}</td>
                 <td class="mono">${s.staked_days}d</td>
@@ -597,25 +604,48 @@ async function loadDistribution() {
         }).join('');
     }
 
-    // Show auto-stake vs manual split summary
+    // Show auto-stake vs manual vs philanthropy split summary
     const splitSummary = document.getElementById('distSplitSummary');
     if (splitSummary && stakers.length > 0) {
-        const manualStakers = stakers.filter(s => !s.auto_stake && s.share_amount > 0);
+        const manualStakers = stakers.filter(s => !s.auto_stake && !s.redirect_target && s.share_amount > 0);
         const autoStakers = stakers.filter(s => s.auto_stake && s.share_amount > 0);
+        const philStakers = stakers.filter(s => s.redirect_target === 'philanthropy' && s.share_amount > 0);
+        const reinvestStakers = stakers.filter(s => s.redirect_target === 'reinvest' && s.share_amount > 0);
         const manualTotal = manualStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        const philTotal = philStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        const reinvestTotal = reinvestStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
 
-        if (autoStakers.length > 0) {
+        const hasExtra = autoStakers.length > 0 || philStakers.length > 0 || reinvestStakers.length > 0;
+        if (hasExtra) {
             splitSummary.style.display = '';
-            splitSummary.innerHTML = `
+            let summaryHtml = `
                 <div class="split-group">
                     <span class="split-group-count">${manualStakers.length}</span> manual
                     <span class="split-group-amount">${fmtNum(manualTotal)} CLAWNCH via Disperse</span>
-                </div>
+                </div>`;
+            if (autoStakers.length > 0) {
+                summaryHtml += `
                 <div class="split-group">
                     <span class="split-group-count">${autoStakers.length}</span> auto-stake
                     <span class="split-group-amount">${fmtNum(autoTotal)} CLAWNCH compounded</span>
                 </div>`;
+            }
+            if (philStakers.length > 0) {
+                summaryHtml += `
+                <div class="split-group">
+                    <span class="split-group-count">${philStakers.length}</span> giving back
+                    <span class="split-group-amount">${fmtNum(philTotal)} CLAWNCH to philanthropy</span>
+                </div>`;
+            }
+            if (reinvestStakers.length > 0) {
+                summaryHtml += `
+                <div class="split-group">
+                    <span class="split-group-count">${reinvestStakers.length}</span> reinvesting
+                    <span class="split-group-amount">${fmtNum(reinvestTotal)} CLAWNCH back to pool</span>
+                </div>`;
+            }
+            splitSummary.innerHTML = summaryHtml;
         } else {
             splitSummary.style.display = 'none';
         }
@@ -735,45 +765,7 @@ document.getElementById('setSplitBtn').addEventListener('click', async () => {
     }
 });
 
-// Set wallet cap percentage
-document.getElementById('setCapBtn').addEventListener('click', async () => {
-    const capInput = document.getElementById('walletCapInput');
-    const capStatus = document.getElementById('capStatus');
-    const cap = Number(capInput.value);
-
-    if (isNaN(cap) || cap < 1 || cap > 100) {
-        capStatus.textContent = 'Enter 1-100';
-        capStatus.className = 'airdrop-status error';
-        return;
-    }
-
-    capStatus.textContent = 'Saving...';
-    capStatus.className = 'airdrop-status';
-
-    try {
-        const resp = await fetch(API_BASE + '/ubi', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'update-config',
-                wallet_address: userAddress,
-                wallet_cap_pct: cap
-            })
-        });
-        const data = await resp.json();
-        if (resp.ok && data.success) {
-            capStatus.textContent = 'Per-wallet cap set to ' + cap + '%';
-            capStatus.className = 'airdrop-status success';
-            loadDistribution();
-        } else {
-            capStatus.textContent = data.error || 'Failed';
-            capStatus.className = 'airdrop-status error';
-        }
-    } catch (err) {
-        capStatus.textContent = err.message || 'Failed';
-        capStatus.className = 'airdrop-status error';
-    }
-});
+// Per-wallet cap removed — cap is set to 100% (disabled)
 
 // Refresh distribution
 document.getElementById('refreshDistBtn').addEventListener('click', () => {
