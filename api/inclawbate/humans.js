@@ -33,7 +33,19 @@ export default async function handler(req, res) {
     // GET — list or fetch single profile
     if (req.method === 'GET') {
         try {
-            const { handle, search, skill, availability, sort, offset, limit, include_banned } = req.query;
+            const { handle, search, skill, availability, sort, offset, limit, include_banned, philanthropy } = req.query;
+
+            // Philanthropy recipients only
+            if (philanthropy === 'true') {
+                const { data, error } = await supabase
+                    .from('human_profiles')
+                    .select('id,x_handle,x_name,x_avatar_url,wallet_address,philanthropy_note,is_philanthropy_recipient')
+                    .eq('is_philanthropy_recipient', true)
+                    .not('wallet_address', 'is', null);
+
+                if (error) return res.status(500).json({ error: 'Failed to fetch philanthropy recipients' });
+                return res.status(200).json({ profiles: data || [] });
+            }
 
             // Single profile by handle
             if (handle) {
@@ -211,6 +223,33 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, x_handle: data.x_handle, airdrop_banned: data.airdrop_banned });
+        }
+
+        // Admin set/unset philanthropy recipient
+        if (req.body?.action === 'set-philanthropy') {
+            const { wallet_address, x_handle, is_recipient, note } = req.body;
+            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            if (!x_handle) {
+                return res.status(400).json({ error: 'x_handle required' });
+            }
+
+            const updates = { is_philanthropy_recipient: is_recipient !== false };
+            if (note !== undefined) updates.philanthropy_note = note ? String(note).slice(0, 500) : null;
+
+            const { data, error } = await supabase
+                .from('human_profiles')
+                .update(updates)
+                .eq('x_handle', x_handle.toLowerCase())
+                .select('x_handle, is_philanthropy_recipient, philanthropy_note')
+                .single();
+
+            if (error || !data) {
+                return res.status(404).json({ error: 'Profile not found' });
+            }
+
+            return res.status(200).json({ success: true, ...data });
         }
 
         try {

@@ -369,11 +369,76 @@
             transform: none;
         }
 
+        /* ── Philanthropy Panel ── */
+        .phil-add-form {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: flex-end;
+            margin-bottom: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            flex-wrap: wrap;
+        }
+        .phil-add-form .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .phil-add-form label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .phil-add-form input {
+            font-size: 0.85rem;
+        }
+        .phil-recipient-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: 10px var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.82rem;
+        }
+        .phil-recipient-row:last-child { border-bottom: none; }
+        .phil-recipient-row input[type="checkbox"] { accent-color: var(--lobster-400); }
+        .phil-recipient-note {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .phil-amount-input {
+            width: 100px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            text-align: right;
+        }
+        .phil-remove-btn {
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--red, #e53e3e);
+            background: transparent;
+            color: var(--red, #e53e3e);
+            cursor: pointer;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+        .phil-remove-btn:hover { opacity: 1; background: rgba(229,62,62,0.1); }
+
         @media (max-width: 768px) {
             .ubi-dist-stats { gap: var(--space-lg); }
             .ubi-dist-table { font-size: 0.75rem; }
             .ubi-dist-table th, .ubi-dist-table td { padding: 6px 4px; }
             .ubi-dist-config { flex-direction: column; align-items: stretch; }
+            .phil-add-form { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -582,6 +647,55 @@
             <button class="btn-outline-lobster" id="returnUnstakedBtn" disabled>Return Unstaked (Disperse)</button>
             <button class="btn-outline-lobster" id="retryUnstakeBtn" disabled>Retry via Unstake Wallet</button>
             <span class="airdrop-status" id="distStatus"></span>
+        </div>
+    </div>
+
+    <!-- Philanthropy Recipients Panel -->
+    <div class="airdrop-panel" id="philPanel" style="display:none;">
+        <div class="ubi-dist-header">
+            <h2>Philanthropy Recipients</h2>
+            <button class="btn btn-primary btn-sm" id="refreshPhilBtn">Refresh</button>
+        </div>
+
+        <!-- Add Recipient Form -->
+        <div class="phil-add-form">
+            <div class="field">
+                <label>X Handle</label>
+                <input type="text" class="input" id="philHandleInput" placeholder="@handle" style="width: 160px;">
+            </div>
+            <div class="field" style="flex:1; min-width: 180px;">
+                <label>Note (why)</label>
+                <input type="text" class="input" id="philNoteInput" placeholder="e.g. Local pastor, needs food support">
+            </div>
+            <button class="btn btn-primary btn-sm" id="addPhilBtn">Add</button>
+            <span class="airdrop-status" id="philAddStatus"></span>
+        </div>
+
+        <!-- Summary -->
+        <div class="airdrop-summary" id="philSummary">
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="philRecipientCount">0</span>
+                <span class="airdrop-stat-label">Recipients</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="philTotalClawnch">0</span>
+                <span class="airdrop-stat-label">Total CLAWNCH</span>
+            </div>
+            <div class="airdrop-stat">
+                <span class="airdrop-stat-value" id="philTotalUsd">$0</span>
+                <span class="airdrop-stat-label">Est. USD</span>
+            </div>
+        </div>
+
+        <!-- Recipient List -->
+        <div class="recipient-list" id="philRecipientList">
+            <div style="padding: var(--space-xl); text-align: center; color: var(--text-dim);">No philanthropy recipients yet</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ubi-dist-actions">
+            <button class="btn-seafoam" id="sendPhilBtn" disabled>Send to Selected</button>
+            <span class="airdrop-status" id="philSendStatus"></span>
         </div>
     </div>
 </div>

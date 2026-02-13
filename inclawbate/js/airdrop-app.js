@@ -80,11 +80,13 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.disabled = true;
         selectPanel.style.display = '';
 
-        // Show UBI distribution panel
+        // Show UBI distribution panel and philanthropy panel
         document.getElementById('ubiDistPanel').style.display = '';
+        document.getElementById('philPanel').style.display = '';
 
         loadProfiles();
         loadDistribution();
+        loadPhilanthropy();
     } catch (err) {
         walletStatus.textContent = err.message || 'Connection failed';
         walletStatus.className = 'airdrop-status error';
@@ -951,3 +953,270 @@ async function waitForReceipt(txHash, maxWait = 60) {
     }
     throw new Error('Transaction timed out');
 }
+
+// ══════════════════════════════════════════════════
+//  PHILANTHROPY RECIPIENTS
+// ══════════════════════════════════════════════════
+
+let philRecipients = [];
+
+async function loadPhilanthropy() {
+    try {
+        const resp = await fetch(API_BASE + '/humans?philanthropy=true');
+        const data = await resp.json();
+        philRecipients = data.profiles || [];
+        renderPhilanthropy();
+    } catch (err) {
+        console.error('Failed to load philanthropy recipients:', err);
+    }
+}
+
+function renderPhilanthropy() {
+    const list = document.getElementById('philRecipientList');
+    if (philRecipients.length === 0) {
+        list.innerHTML = '<div style="padding: var(--space-xl); text-align: center; color: var(--text-dim);">No philanthropy recipients yet. Add one above.</div>';
+        updatePhilSummary();
+        return;
+    }
+
+    const selectAll = `<div class="select-all-row">
+        <input type="checkbox" id="philSelectAll" checked>
+        <label for="philSelectAll">Select all (${philRecipients.length})</label>
+    </div>`;
+
+    const rows = philRecipients.map((p, i) => {
+        const name = p.x_name || p.x_handle;
+        const avatar = p.x_avatar_url
+            ? `<img class="recipient-avatar" src="${p.x_avatar_url}" onerror="this.style.display='none'">`
+            : '';
+        const note = p.philanthropy_note || '';
+        return `<div class="phil-recipient-row">
+            <input type="checkbox" class="phil-check" data-index="${i}" checked>
+            ${avatar}
+            <span class="recipient-name">${escHtml(name)}</span>
+            <span class="recipient-handle">@${escHtml(p.x_handle)}</span>
+            <span class="phil-recipient-note" title="${escHtml(note)}">${escHtml(note)}</span>
+            <span class="recipient-wallet">${shortAddr(p.wallet_address)}</span>
+            <input type="number" class="input phil-amount-input" data-index="${i}" value="50000" min="0" step="1000" placeholder="Amount">
+            <button class="phil-remove-btn" data-handle="${escHtml(p.x_handle)}" title="Remove from philanthropy">Remove</button>
+        </div>`;
+    }).join('');
+
+    list.innerHTML = selectAll + rows;
+
+    // Select all
+    document.getElementById('philSelectAll').addEventListener('change', (e) => {
+        list.querySelectorAll('.phil-check').forEach(cb => { cb.checked = e.target.checked; });
+        updatePhilSummary();
+    });
+
+    // Individual toggles + amount changes
+    list.querySelectorAll('.phil-check').forEach(cb => {
+        cb.addEventListener('change', updatePhilSummary);
+    });
+    list.querySelectorAll('.phil-amount-input').forEach(inp => {
+        inp.addEventListener('input', updatePhilSummary);
+    });
+
+    // Remove buttons
+    list.querySelectorAll('.phil-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const handle = btn.dataset.handle;
+            if (confirm(`Remove @${handle} from philanthropy recipients?`)) {
+                removePhilanthropyRecipient(handle);
+            }
+        });
+    });
+
+    updatePhilSummary();
+}
+
+function getSelectedPhilRecipients() {
+    const selected = [];
+    document.querySelectorAll('.phil-check').forEach(cb => {
+        if (cb.checked) {
+            const idx = parseInt(cb.dataset.index);
+            const amountInput = document.querySelector(`.phil-amount-input[data-index="${idx}"]`);
+            const amount = parseInt(amountInput?.value) || 0;
+            if (amount > 0) {
+                selected.push({ ...philRecipients[idx], amount });
+            }
+        }
+    });
+    return selected;
+}
+
+function updatePhilSummary() {
+    const selected = getSelectedPhilRecipients();
+    const totalClawnch = selected.reduce((sum, r) => sum + r.amount, 0);
+    const usd = clawnchPrice > 0 ? (totalClawnch * clawnchPrice).toFixed(2) : '?';
+
+    document.getElementById('philRecipientCount').textContent = selected.length;
+    document.getElementById('philTotalClawnch').textContent = totalClawnch.toLocaleString();
+    document.getElementById('philTotalUsd').textContent = '$' + usd;
+
+    document.getElementById('sendPhilBtn').disabled = selected.length === 0;
+}
+
+// Add recipient
+document.getElementById('addPhilBtn').addEventListener('click', async () => {
+    const handleInput = document.getElementById('philHandleInput');
+    const noteInput = document.getElementById('philNoteInput');
+    const status = document.getElementById('philAddStatus');
+    const handle = handleInput.value.replace('@', '').trim().toLowerCase();
+
+    if (!handle) {
+        status.textContent = 'Enter a handle';
+        status.className = 'airdrop-status error';
+        return;
+    }
+
+    status.textContent = 'Adding...';
+    status.className = 'airdrop-status';
+
+    try {
+        const resp = await fetch(API_BASE + '/humans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'set-philanthropy',
+                wallet_address: userAddress,
+                x_handle: handle,
+                is_recipient: true,
+                note: noteInput.value.trim() || null
+            })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            status.textContent = `@${handle} added`;
+            status.className = 'airdrop-status success';
+            handleInput.value = '';
+            noteInput.value = '';
+            loadPhilanthropy();
+        } else {
+            status.textContent = data.error || 'Failed';
+            status.className = 'airdrop-status error';
+        }
+    } catch (err) {
+        status.textContent = err.message || 'Failed';
+        status.className = 'airdrop-status error';
+    }
+});
+
+async function removePhilanthropyRecipient(handle) {
+    try {
+        const resp = await fetch(API_BASE + '/humans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'set-philanthropy',
+                wallet_address: userAddress,
+                x_handle: handle,
+                is_recipient: false
+            })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            loadPhilanthropy();
+        } else {
+            alert('Remove failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Remove failed: ' + err.message);
+    }
+}
+
+// Refresh
+document.getElementById('refreshPhilBtn').addEventListener('click', () => {
+    loadPhilanthropy();
+});
+
+// Send philanthropy via Disperse
+document.getElementById('sendPhilBtn').addEventListener('click', async () => {
+    const selected = getSelectedPhilRecipients();
+    if (selected.length === 0) return;
+
+    const btn = document.getElementById('sendPhilBtn');
+    const status = document.getElementById('philSendStatus');
+    btn.disabled = true;
+    status.textContent = 'Preparing...';
+    status.className = 'airdrop-status';
+
+    try {
+        const recipients = selected.map(r => r.wallet_address);
+        const amounts = selected.map(r => toWei(r.amount));
+        const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
+
+        // Check balance
+        const balanceData = BALANCE_SELECTOR + pad32(userAddress);
+        const balResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
+        });
+        const balance = BigInt(balResult);
+        if (balance < totalWei) {
+            status.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+            status.className = 'airdrop-status error';
+            btn.disabled = false;
+            return;
+        }
+
+        // Check allowance
+        status.textContent = 'Checking allowance...';
+        const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+        const allowResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+        });
+        const allowance = BigInt(allowResult);
+
+        if (allowance < totalWei) {
+            status.textContent = 'Approving CLAWNCH spend...';
+            const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
+            const approveTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+            });
+            status.textContent = 'Waiting for approval...';
+            await waitForReceipt(approveTx);
+        }
+
+        // Disperse
+        status.textContent = `Sending to ${selected.length} recipients...`;
+        const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+        const disperseTx = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+        });
+
+        status.textContent = 'Confirming...';
+        await waitForReceipt(disperseTx);
+
+        // Record via batch-hire so it shows on human cards
+        status.textContent = 'Recording...';
+        try {
+            await fetch(API_BASE + '/batch-hire', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tx_hash: disperseTx,
+                    agent_address: userAddress,
+                    agent_name: 'philanthropy',
+                    recipients: selected.map(r => ({
+                        handle: r.x_handle,
+                        amount: r.amount
+                    }))
+                })
+            });
+        } catch (e) { /* non-critical */ }
+
+        const totalSent = selected.reduce((s, r) => s + r.amount, 0);
+        status.textContent = `Sent ${totalSent.toLocaleString()} CLAWNCH to ${selected.length} recipients!`;
+        status.className = 'airdrop-status success';
+    } catch (err) {
+        console.error('Philanthropy send error:', err);
+        status.textContent = err.message || 'Send failed';
+        status.className = 'airdrop-status error';
+        btn.disabled = false;
+    }
+});
