@@ -797,6 +797,23 @@ function daysSince(dateStr) {
         rh += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
         rh += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
 
+        // Kingdom info section
+        rh += '<div class="ubi-kingdom-info">';
+        rh += '<div class="ubi-kingdom-header">';
+        rh += '<span class="ubi-kingdom-cross">\u271D\uFE0F</span>';
+        rh += '<span class="ubi-kingdom-title">The Kingdom</span>';
+        rh += '</div>';
+        rh += '<p class="ubi-kingdom-desc">When you allocate to the Kingdom, your UBI goes toward real-world ministry \u2014 reaching people, building community, changing lives. The agents earn. The humans give. The Kingdom grows.</p>';
+        rh += '<a href="https://e3ministry.ca/" target="_blank" rel="noopener" class="ubi-kingdom-org">';
+        rh += '<div class="ubi-kingdom-org-top">';
+        rh += '<span class="ubi-kingdom-org-name">E3 Ministry Canada</span>';
+        rh += '<span class="ubi-kingdom-org-arrow">\u2197</span>';
+        rh += '</div>';
+        rh += '<p class="ubi-kingdom-org-mission">Equip \u00B7 Evangelize \u00B7 Establish</p>';
+        rh += '<p class="ubi-kingdom-org-desc">Since 1987, E3 has been planting churches and training believers across the globe. Short-term mission trips, gospel training, and partnerships with local leaders \u2014 making the local church accessible to everyone, everywhere.</p>';
+        rh += '</a>';
+        rh += '</div>';
+
         container.innerHTML = rh;
 
         // Wire up split sliders
