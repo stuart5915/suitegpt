@@ -609,15 +609,19 @@ export default async function handler(req, res) {
 
             const { data: curr } = await supabase
                 .from('inclawbate_ubi_treasury')
-                .select('distribution_count')
+                .select('distribution_count, total_distributed, weekly_rate')
                 .eq('id', 1)
                 .single();
+
+            const dailyAmount = Math.round((Number(curr?.weekly_rate) || 0) / 7);
+            const newTotal = (Number(curr?.total_distributed) || 0) + dailyAmount;
 
             const { error: updateErr } = await supabase
                 .from('inclawbate_ubi_treasury')
                 .update({
                     last_distribution_at: new Date().toISOString(),
                     distribution_count: (Number(curr?.distribution_count) || 0) + 1,
+                    total_distributed: newTotal,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', 1);
@@ -628,7 +632,8 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
-                distribution_count: (Number(curr?.distribution_count) || 0) + 1
+                distribution_count: (Number(curr?.distribution_count) || 0) + 1,
+                total_distributed: newTotal
             });
         }
 

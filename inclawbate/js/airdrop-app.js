@@ -485,6 +485,14 @@ async function loadDistribution() {
     document.getElementById('distTotalWeighted').textContent = fmtNum(totalWeighted);
     document.getElementById('distActiveStakers').textContent = stakers.length;
 
+    // Total distributed banner
+    const totalDistributed = Number(data.total_distributed) || 0;
+    document.getElementById('distTotalDistributed').textContent = fmtNum(totalDistributed);
+    document.getElementById('distDistCount').textContent = data.distribution_count || 0;
+    if (clawnchPrice > 0 && totalDistributed > 0) {
+        document.getElementById('distTotalDistUsd').textContent = '$' + (totalDistributed * clawnchPrice).toFixed(2);
+    }
+
     // Distribution countdown timer
     updateDistTimer(data.last_distribution_at, data.distribution_count);
 
