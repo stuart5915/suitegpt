@@ -286,6 +286,22 @@ function daysSince(dateStr) {
         if (vaultApyC) vaultApyC.textContent = clawnchApyStr + ' APY';
         if (vaultApyI) vaultApyI.textContent = inclawnchApyStr + ' APY';
 
+        // Countdown KPIs: total staked value + blended APY
+        var cdTotalStakedUsdEl = document.getElementById('cdTotalStakedUsd');
+        var cdBlendedApyEl = document.getElementById('cdBlendedApy');
+        if (cdTotalStakedUsdEl) {
+            var stakedUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
+            cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
+        }
+        if (cdBlendedApyEl) {
+            // Blended APY = total annual yield / total weighted stake * 100
+            var blendedApy = 0;
+            if (totalWeightedStake > 0 && dailyRate > 0) {
+                blendedApy = (dailyRate * 365) / totalWeightedStake * 100;
+            }
+            cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
+        }
+
         // Daily earnings per 100k staked
         if (weeklyClawnchEl) {
             if (totalWeightedStake > 0 && dailyRate > 0) {
