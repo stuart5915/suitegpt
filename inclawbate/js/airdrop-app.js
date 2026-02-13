@@ -84,6 +84,9 @@ connectBtn.addEventListener('click', async () => {
         document.getElementById('ubiDistPanel').style.display = '';
         document.getElementById('philPanel').style.display = '';
 
+        // Enable bulk welcome button
+        document.getElementById('bulkWelcomeBtn').disabled = false;
+
         loadProfiles();
         loadDistribution();
         loadPhilanthropy();
@@ -1295,4 +1298,54 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
         status.className = 'airdrop-status error';
         btn.disabled = false;
     }
+});
+
+// ══════════════════════════════════════════════════
+//  BULK WELCOME MESSAGE
+// ══════════════════════════════════════════════════
+
+document.getElementById('bulkWelcomeBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('bulkWelcomeBtn');
+    const status = document.getElementById('bulkWelcomeStatus');
+    const message = (document.getElementById('startingMessage')?.value || '').trim();
+
+    if (!message) {
+        status.textContent = 'Write a message in the textarea above first';
+        status.className = 'airdrop-status error';
+        return;
+    }
+
+    if (!confirm('Send this welcome message to ALL humans who haven\'t been messaged yet?')) {
+        return;
+    }
+
+    btn.disabled = true;
+    status.textContent = 'Sending welcome messages...';
+    status.className = 'airdrop-status';
+
+    try {
+        const resp = await fetch(API_BASE + '/bulk-welcome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet_address: userAddress,
+                message: message
+            })
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            status.textContent = `Done! Sent welcome to ${data.sent} humans` + (data.errors ? ` (${data.errors.length} errors)` : '');
+            status.className = 'airdrop-status success';
+        } else {
+            status.textContent = data.error || 'Failed';
+            status.className = 'airdrop-status error';
+        }
+    } catch (err) {
+        console.error('Bulk welcome error:', err);
+        status.textContent = err.message || 'Failed';
+        status.className = 'airdrop-status error';
+    }
+
+    btn.disabled = false;
 });
