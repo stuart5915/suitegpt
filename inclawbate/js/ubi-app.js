@@ -314,7 +314,12 @@ function daysSince(dateStr) {
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
         if (cdTotalDistEl) {
             var td = Number(ubiData?.total_distributed) || 0;
-            cdTotalDistEl.textContent = td > 0 ? fmt(td) : '--';
+            if (td > 0) {
+                var distUsd = clawnchPrice > 0 ? ' ($' + (td * clawnchPrice).toFixed(2) + ')' : '';
+                cdTotalDistEl.innerHTML = fmt(td) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;">' + distUsd + '</span>';
+            } else {
+                cdTotalDistEl.textContent = '--';
+            }
         }
 
         // Daily earnings per 100k staked
