@@ -1601,8 +1601,10 @@
         }
         .dash-countdown { animation: dashFadeIn 0.5s var(--ease-smooth) both; }
         .dash-hero { animation: dashFadeIn 0.5s 0.05s var(--ease-smooth) both; }
-        .dash-vaults { animation: dashFadeIn 0.5s 0.1s var(--ease-smooth) both; }
-        .dash-tabs { animation: dashFadeIn 0.5s 0.15s var(--ease-smooth) both; }
+        #ubiStep1 { animation: dashFadeIn 0.5s 0.1s var(--ease-smooth) both; }
+        #ubiStep2 { animation: dashFadeIn 0.5s 0.15s var(--ease-smooth) both; }
+        #ubiStep3 { animation: dashFadeIn 0.5s 0.2s var(--ease-smooth) both; }
+        .dash-tabs { animation: dashFadeIn 0.5s 0.25s var(--ease-smooth) both; }
 
         /* ── App Modal ── */
         .ubi-modal-overlay {
@@ -1912,6 +1914,59 @@
             .ubi-redirect-pills { gap: 4px; }
             .ubi-pill { padding: 5px 10px; font-size: 0.68rem; }
         }
+
+        /* ── Guided Step Flow ── */
+        .ubi-step {
+            margin-bottom: var(--space-lg);
+            padding: var(--space-lg);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            position: relative;
+            transition: opacity 0.4s var(--ease-smooth);
+        }
+        .ubi-step-header {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .ubi-step-num {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--seafoam-400);
+            width: 22px; height: 22px;
+            border: 1.5px solid var(--seafoam-400);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.3s, border-color 0.3s, color 0.3s;
+        }
+        .ubi-step-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ubi-step-sub {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+        .ubi-step--dimmed {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .ubi-step--done .ubi-step-num {
+            background: hsl(140, 50%, 45%);
+            border-color: hsl(140, 50%, 45%);
+            color: #fff;
+        }
+        .ubi-step .dash-vaults { margin-bottom: 0; }
+        .ubi-step #redirectStepContent .ubi-redirect-widget {
+            margin: 0; padding: 0; border: none; background: none;
+        }
     </style>
 </head>
 <body>
@@ -2001,8 +2056,6 @@
         <div class="dash-hero-top">
             <h1>CLAWNCH <span>UBI</span></h1>
             <p>Real yield from the agent economy. No lock. No tiers. Just stake.</p>
-            <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
-            <button class="dash-hero-fund" id="fundRewardsBtn">Fund Rewards</button>
         </div>
 
         <div class="dash-stats-row dash-stats-row--trio">
@@ -2049,7 +2102,25 @@
     <!-- unstakeAvailBanner removed: internal info, not user-facing -->
     <div id="unstakeAvailBanner" style="display:none"></div>
 
-    <!-- ═══ Section 2: Vault Cards ═══ -->
+    <!-- ═══ Step 1: Connect ═══ -->
+    <div class="ubi-step" id="ubiStep1">
+        <div class="ubi-step-header">
+            <span class="ubi-step-num">1</span>
+            <span class="ubi-step-title">Connect</span>
+        </div>
+        <p class="ubi-step-sub">Connect your wallet to get started.</p>
+        <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
+        <button class="dash-hero-fund" id="fundRewardsBtn" style="display:none">Fund Rewards</button>
+    </div>
+
+    <!-- ═══ Step 2: Stake ═══ -->
+    <div class="ubi-step ubi-step--dimmed" id="ubiStep2">
+        <div class="ubi-step-header">
+            <span class="ubi-step-num">2</span>
+            <span class="ubi-step-title">Stake</span>
+        </div>
+        <p class="ubi-step-sub">Choose a vault and stake your tokens.</p>
+
     <section class="dash-vaults" id="stake">
         <div class="dash-vault-grid">
             <!-- CLAWNCH Vault -->
@@ -2130,20 +2201,24 @@
             </div>
         </div>
     </section>
+    </div><!-- /ubiStep2 -->
 
-    <!-- ═══ Redirect Your Energy (visible to all) ═══ -->
-    <div class="ubi-redirect-widget" id="giveBackStandalone">
-        <div class="ubi-redirect-header">
-            <span class="ubi-redirect-title">&#x2764;&#xFE0F; Redirect Your Energy</span>
-            <span class="ubi-redirect-sub">Your UBI is reclaimed time. Choose where it flows.</span>
+    <!-- ═══ Step 3: Redirect Your Energy ═══ -->
+    <div class="ubi-step ubi-step--dimmed" id="ubiStep3">
+        <div class="ubi-step-header">
+            <span class="ubi-step-num">3</span>
+            <span class="ubi-step-title">Redirect Your Energy</span>
         </div>
-        <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
-            <span class="ubi-pill active">&#x1F33F; Keep</span>
-            <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
-            <span class="ubi-pill">&#x1F331; Reinvest</span>
-            <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
+        <p class="ubi-step-sub">Your UBI is reclaimed time. Choose where it flows.</p>
+        <div id="redirectStepContent">
+            <div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">
+                <span class="ubi-pill active">&#x1F33F; Keep</span>
+                <span class="ubi-pill ubi-pill--kingdom">&#x271D;&#xFE0F; Kingdom</span>
+                <span class="ubi-pill">&#x1F331; Reinvest</span>
+                <span class="ubi-pill ubi-pill--split">&#x1F932; Split</span>
+            </div>
+            <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
         </div>
-        <p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>
     </div>
 
     <!-- ═══ Section 3: Tabbed Info ═══ -->

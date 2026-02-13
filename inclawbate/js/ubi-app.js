@@ -709,9 +709,17 @@ function daysSince(dateStr) {
     function onWalletConnected(address) {
         stakeWallet = address;
 
+        // Step flow: mark Step 1 done, activate Steps 2 & 3
+        var step1 = document.getElementById('ubiStep1');
+        var step2 = document.getElementById('ubiStep2');
+        var step3 = document.getElementById('ubiStep3');
+        if (step1) step1.classList.add('ubi-step--done');
+        if (step2) step2.classList.remove('ubi-step--dimmed');
+        if (step3) step3.classList.remove('ubi-step--dimmed');
+
         // Activate both cards
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
-            btn.textContent = shortAddr(stakeWallet) + ' · Disconnect';
+            btn.textContent = '\u2713 ' + shortAddr(stakeWallet);
             btn.classList.add('connected');
         });
         document.querySelectorAll('.stake-form').forEach(function(form) {
@@ -772,6 +780,170 @@ function daysSince(dateStr) {
         }
     }
 
+    // ── Render Redirect Widget into Step 3 ──
+    function renderRedirectWidget(data) {
+        var container = document.getElementById('redirectStepContent');
+        if (!container) return;
+
+        var savedRedirect = data.whale_redirect_target || null;
+        var savedOrgId = data.redirect_org_id || null;
+        var orgs = ubiData?.philanthropy_orgs || [];
+        var firstOrgId = orgs.length > 0 ? orgs[0].id : '';
+        var savedKeep = data.split_keep_pct ?? 34;
+        var savedKingdom = data.split_kingdom_pct ?? 33;
+        var savedReinvest = data.split_reinvest_pct ?? 33;
+
+        var rh = '';
+
+        // Compact pill row
+        rh += '<div class="ubi-redirect-pills">';
+        rh += '<button class="ubi-pill' + (!savedRedirect ? ' active' : '') + '" data-value="" data-org-id="">\uD83C\uDF3F Keep</button>';
+        rh += '<button class="ubi-pill ubi-pill--kingdom' + (savedRedirect === 'philanthropy' ? ' active' : '') + '" data-value="philanthropy" data-org-id="' + firstOrgId + '">\u271D\uFE0F Kingdom</button>';
+        rh += '<button class="ubi-pill' + (savedRedirect === 'reinvest' ? ' active' : '') + '" data-value="reinvest" data-org-id="">\uD83C\uDF31 Reinvest</button>';
+        rh += '<button class="ubi-pill ubi-pill--split' + (savedRedirect === 'split' ? ' active' : '') + '" data-value="split" data-org-id="">\uD83E\uDD32 Split</button>';
+        rh += '</div>';
+
+        // Expandable detail panels
+        rh += '<div class="ubi-redirect-detail" id="redirectDetail">';
+
+        rh += '<div class="ubi-rd-panel" data-panel=""' + (!savedRedirect ? '' : ' style="display:none"') + '>';
+        rh += '<p>Grow your own garden. No shame \u2014 you can\'t pour from an empty cup.</p>';
+        rh += '</div>';
+
+        rh += '<div class="ubi-rd-panel" data-panel="philanthropy"' + (savedRedirect === 'philanthropy' ? '' : ' style="display:none"') + '>';
+        rh += '<p>Fund what matters eternally. The agents earn. The humans give. The Kingdom grows.</p>';
+        if (orgs.length > 0) {
+            rh += '<div class="ubi-rd-ministries">';
+            for (var oi = 0; oi < orgs.length; oi++) {
+                var org = orgs[oi];
+                var orgUrl = org.website_url || '';
+                if (orgUrl) {
+                    rh += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener" class="ubi-rd-ministry-link">' + esc(org.name) + ' \u2197</a>';
+                } else {
+                    rh += '<span class="ubi-rd-ministry-link">' + esc(org.name) + '</span>';
+                }
+            }
+            rh += '</div>';
+        }
+        rh += '</div>';
+
+        rh += '<div class="ubi-rd-panel" data-panel="reinvest"' + (savedRedirect === 'reinvest' ? '' : ' style="display:none"') + '>';
+        rh += '<p>Compound the commons. Decrease yourself so others increase.</p>';
+        rh += '</div>';
+
+        rh += '<div class="ubi-rd-panel" data-panel="split"' + (savedRedirect === 'split' ? '' : ' style="display:none"') + '>';
+        rh += '<div class="ubi-split-sliders" id="splitSliders">';
+        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
+        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
+        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
+        rh += '</div>';
+        rh += '</div>';
+
+        rh += '</div>'; // end detail
+
+        rh += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
+        rh += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
+
+        container.innerHTML = rh;
+
+        // Wire up pill clicks
+        var _activeValue = data.whale_redirect_target || '';
+        container.querySelectorAll('.ubi-pill').forEach(function(pill) {
+            pill.addEventListener('click', function() {
+                container.querySelectorAll('.ubi-pill').forEach(function(p) { p.classList.remove('active'); });
+                pill.classList.add('active');
+                _activeValue = pill.getAttribute('data-value') || '';
+                container.querySelectorAll('.ubi-rd-panel').forEach(function(panel) {
+                    panel.style.display = panel.getAttribute('data-panel') === _activeValue ? '' : 'none';
+                });
+            });
+        });
+
+        // Wire up split sliders
+        var splitKeep = document.getElementById('splitKeep');
+        var splitKingdom = document.getElementById('splitKingdom');
+        var splitReinvest = document.getElementById('splitReinvest');
+        if (splitKeep && splitKingdom && splitReinvest) {
+            function updateSplitDisplay() {
+                document.getElementById('splitKeepVal').textContent = splitKeep.value + '%';
+                document.getElementById('splitKingdomVal').textContent = splitKingdom.value + '%';
+                document.getElementById('splitReinvestVal').textContent = splitReinvest.value + '%';
+            }
+            function balanceSliders(changed, others) {
+                var val = Number(changed.value);
+                var remaining = 100 - val;
+                var o1 = Number(others[0].value);
+                var o2 = Number(others[1].value);
+                var sum = o1 + o2;
+                if (sum === 0) {
+                    others[0].value = Math.round(remaining / 2);
+                    others[1].value = remaining - Math.round(remaining / 2);
+                } else {
+                    others[0].value = Math.max(0, Math.round((o1 / sum) * remaining));
+                    others[1].value = remaining - Number(others[0].value);
+                }
+                updateSplitDisplay();
+            }
+            splitKeep.addEventListener('input', function() { balanceSliders(splitKeep, [splitKingdom, splitReinvest]); });
+            splitKingdom.addEventListener('input', function() { balanceSliders(splitKingdom, [splitKeep, splitReinvest]); });
+            splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
+        }
+
+        // Wire up save button
+        var saveBtn = document.getElementById('giveBackSaveBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async function() {
+                var activePill = container.querySelector('.ubi-pill.active');
+                var value = activePill ? (activePill.getAttribute('data-value') || null) : null;
+                var orgId = activePill ? (activePill.getAttribute('data-org-id') || null) : null;
+                var statusEl = document.getElementById('giveBackStatus');
+                saveBtn.disabled = true;
+                if (statusEl) statusEl.textContent = 'Saving...';
+
+                var body = {
+                    action: 'update-whale-redirect',
+                    wallet_address: stakeWallet,
+                    redirect_target: value,
+                    org_id: orgId
+                };
+
+                if (value === 'split') {
+                    var k = Number(document.getElementById('splitKeep').value) || 0;
+                    var g = Number(document.getElementById('splitKingdom').value) || 0;
+                    var r = Number(document.getElementById('splitReinvest').value) || 0;
+                    if (k + g + r !== 100) {
+                        ubiToast('Split must total 100%', 'error');
+                        saveBtn.disabled = false;
+                        return;
+                    }
+                    body.split_keep_pct = k;
+                    body.split_kingdom_pct = g;
+                    body.split_reinvest_pct = r;
+                    var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
+                    if (firstOrg) body.org_id = firstOrg.id;
+                }
+
+                try {
+                    var resp = await fetch('/api/inclawbate/ubi', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    var rData = await resp.json();
+                    if (resp.ok && rData.success) {
+                        if (statusEl) statusEl.textContent = '';
+                        ubiToast('Saved', 'success');
+                    } else {
+                        ubiToast(rData.error || 'Failed to save', 'error');
+                    }
+                } catch (e) {
+                    ubiToast('Failed to save', 'error');
+                }
+                saveBtn.disabled = false;
+            });
+        }
+    }
+
     // ── Your Stakes ──
     async function loadMyStakes() {
         if (!stakeWallet) return;
@@ -791,6 +963,8 @@ function daysSince(dateStr) {
 
             if (activeStakes.length === 0 && pendingUnstakes.length === 0) {
                 list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning UBI.</div>';
+                // Still render redirect widget in Step 3 even with no stakes
+                renderRedirectWidget(data);
                 return;
             }
 
@@ -842,75 +1016,6 @@ function daysSince(dateStr) {
                 html += '</div>';
                 html += '</div>';
 
-                // Give Back section — any staker can redirect rewards to philanthropy
-                var savedRedirect = data.whale_redirect_target || null;
-                var savedOrgId = data.redirect_org_id || null;
-                var orgs = ubiData?.philanthropy_orgs || [];
-
-                var firstOrgId = orgs.length > 0 ? orgs[0].id : '';
-                var savedKeep = data.split_keep_pct ?? 34;
-                var savedKingdom = data.split_kingdom_pct ?? 33;
-                var savedReinvest = data.split_reinvest_pct ?? 33;
-
-                html += '<div class="ubi-redirect-widget" id="giveBackWidget">';
-                html += '<div class="ubi-redirect-header">';
-                html += '<span class="ubi-redirect-title">\u2764\uFE0F Redirect Your Energy</span>';
-                html += '<span class="ubi-redirect-sub">Your UBI is reclaimed time. Choose where it flows.</span>';
-                html += '</div>';
-
-                // Compact pill row
-                html += '<div class="ubi-redirect-pills">';
-                html += '<button class="ubi-pill' + (!savedRedirect ? ' active' : '') + '" data-value="" data-org-id="">\uD83C\uDF3F Keep</button>';
-                html += '<button class="ubi-pill ubi-pill--kingdom' + (savedRedirect === 'philanthropy' ? ' active' : '') + '" data-value="philanthropy" data-org-id="' + firstOrgId + '">\u271D\uFE0F Kingdom</button>';
-                html += '<button class="ubi-pill' + (savedRedirect === 'reinvest' ? ' active' : '') + '" data-value="reinvest" data-org-id="">\uD83C\uDF31 Reinvest</button>';
-                html += '<button class="ubi-pill ubi-pill--split' + (savedRedirect === 'split' ? ' active' : '') + '" data-value="split" data-org-id="">\uD83E\uDD32 Split</button>';
-                html += '</div>';
-
-                // Expandable detail panels (only active one shows)
-                html += '<div class="ubi-redirect-detail" id="redirectDetail">';
-
-                // Keep detail
-                html += '<div class="ubi-rd-panel" data-panel=""' + (!savedRedirect ? '' : ' style="display:none"') + '>';
-                html += '<p>Grow your own garden. No shame \u2014 you can\'t pour from an empty cup.</p>';
-                html += '</div>';
-
-                // Kingdom detail
-                html += '<div class="ubi-rd-panel" data-panel="philanthropy"' + (savedRedirect === 'philanthropy' ? '' : ' style="display:none"') + '>';
-                html += '<p>Fund what matters eternally. The agents earn. The humans give. The Kingdom grows.</p>';
-                if (orgs.length > 0) {
-                    html += '<div class="ubi-rd-ministries">';
-                    for (var oi = 0; oi < orgs.length; oi++) {
-                        var org = orgs[oi];
-                        var orgUrl = org.website_url || '';
-                        if (orgUrl) {
-                            html += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener" class="ubi-rd-ministry-link">' + esc(org.name) + ' \u2197</a>';
-                        } else {
-                            html += '<span class="ubi-rd-ministry-link">' + esc(org.name) + '</span>';
-                        }
-                    }
-                    html += '</div>';
-                }
-                html += '</div>';
-
-                // Reinvest detail
-                html += '<div class="ubi-rd-panel" data-panel="reinvest"' + (savedRedirect === 'reinvest' ? '' : ' style="display:none"') + '>';
-                html += '<p>Compound the commons. Decrease yourself so others increase.</p>';
-                html += '</div>';
-
-                // Split detail
-                html += '<div class="ubi-rd-panel" data-panel="split"' + (savedRedirect === 'split' ? '' : ' style="display:none"') + '>';
-                html += '<div class="ubi-split-sliders" id="splitSliders">';
-                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
-                html += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
-                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
-                html += '</div>';
-                html += '</div>';
-
-                html += '</div>'; // end detail
-
-                html += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
-                html += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
-                html += '</div>';
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
                 html += '<div class="ubi-pending-allocation">';
@@ -1012,108 +1117,8 @@ function daysSince(dateStr) {
                 });
             }
 
-            // Wire up Redirect Your Energy pills + panels + save
-            var gbWidget = document.getElementById('giveBackWidget');
-            if (gbWidget) {
-                var _activeValue = data.whale_redirect_target || '';
-
-                // Pill click → toggle active pill + show matching panel
-                gbWidget.querySelectorAll('.ubi-pill').forEach(function(pill) {
-                    pill.addEventListener('click', function() {
-                        gbWidget.querySelectorAll('.ubi-pill').forEach(function(p) { p.classList.remove('active'); });
-                        pill.classList.add('active');
-                        _activeValue = pill.getAttribute('data-value') || '';
-                        // Show matching panel, hide others
-                        gbWidget.querySelectorAll('.ubi-rd-panel').forEach(function(panel) {
-                            panel.style.display = panel.getAttribute('data-panel') === _activeValue ? '' : 'none';
-                        });
-                    });
-                });
-
-                // Wire up split sliders
-                var splitKeep = document.getElementById('splitKeep');
-                var splitKingdom = document.getElementById('splitKingdom');
-                var splitReinvest = document.getElementById('splitReinvest');
-                if (splitKeep && splitKingdom && splitReinvest) {
-                    function updateSplitDisplay() {
-                        document.getElementById('splitKeepVal').textContent = splitKeep.value + '%';
-                        document.getElementById('splitKingdomVal').textContent = splitKingdom.value + '%';
-                        document.getElementById('splitReinvestVal').textContent = splitReinvest.value + '%';
-                    }
-                    function balanceSliders(changed, others) {
-                        var val = Number(changed.value);
-                        var remaining = 100 - val;
-                        var o1 = Number(others[0].value);
-                        var o2 = Number(others[1].value);
-                        var sum = o1 + o2;
-                        if (sum === 0) {
-                            others[0].value = Math.round(remaining / 2);
-                            others[1].value = remaining - Math.round(remaining / 2);
-                        } else {
-                            others[0].value = Math.max(0, Math.round((o1 / sum) * remaining));
-                            others[1].value = remaining - Number(others[0].value);
-                        }
-                        updateSplitDisplay();
-                    }
-                    splitKeep.addEventListener('input', function() { balanceSliders(splitKeep, [splitKingdom, splitReinvest]); });
-                    splitKingdom.addEventListener('input', function() { balanceSliders(splitKingdom, [splitKeep, splitReinvest]); });
-                    splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
-                }
-
-                // Save button
-                var saveBtn = document.getElementById('giveBackSaveBtn');
-                if (saveBtn) {
-                    saveBtn.addEventListener('click', async function() {
-                        var activePill = gbWidget.querySelector('.ubi-pill.active');
-                        var value = activePill ? (activePill.getAttribute('data-value') || null) : null;
-                        var orgId = activePill ? (activePill.getAttribute('data-org-id') || null) : null;
-                        var statusEl = document.getElementById('giveBackStatus');
-                        saveBtn.disabled = true;
-                        if (statusEl) statusEl.textContent = 'Saving...';
-
-                        var body = {
-                            action: 'update-whale-redirect',
-                            wallet_address: stakeWallet,
-                            redirect_target: value,
-                            org_id: orgId
-                        };
-
-                        if (value === 'split') {
-                            var k = Number(document.getElementById('splitKeep').value) || 0;
-                            var g = Number(document.getElementById('splitKingdom').value) || 0;
-                            var r = Number(document.getElementById('splitReinvest').value) || 0;
-                            if (k + g + r !== 100) {
-                                ubiToast('Split must total 100%', 'error');
-                                saveBtn.disabled = false;
-                                return;
-                            }
-                            body.split_keep_pct = k;
-                            body.split_kingdom_pct = g;
-                            body.split_reinvest_pct = r;
-                            var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
-                            if (firstOrg) body.org_id = firstOrg.id;
-                        }
-
-                        try {
-                            var resp = await fetch('/api/inclawbate/ubi', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(body)
-                            });
-                            var rData = await resp.json();
-                            if (resp.ok && rData.success) {
-                                if (statusEl) statusEl.textContent = '';
-                                ubiToast('Saved', 'success');
-                            } else {
-                                ubiToast(rData.error || 'Failed to save', 'error');
-                            }
-                        } catch (e) {
-                            ubiToast('Failed to save', 'error');
-                        }
-                        saveBtn.disabled = false;
-                    });
-                }
-            }
+            // Render Redirect Your Energy widget into Step 3
+            renderRedirectWidget(data);
 
             // Start personalized countdown timer
             if (_posCountdownInterval) clearInterval(_posCountdownInterval);
@@ -1660,6 +1665,27 @@ function daysSince(dateStr) {
         stakeWallet = null;
         walletBalances = { clawnch: 0, inclawnch: 0 };
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
+
+        // Step flow: undo Step 1 done, re-dim Steps 2 & 3
+        var step1 = document.getElementById('ubiStep1');
+        var step2 = document.getElementById('ubiStep2');
+        var step3 = document.getElementById('ubiStep3');
+        if (step1) step1.classList.remove('ubi-step--done');
+        if (step2) step2.classList.add('ubi-step--dimmed');
+        if (step3) step3.classList.add('ubi-step--dimmed');
+
+        // Restore Step 3 static content
+        var redirectContent = document.getElementById('redirectStepContent');
+        if (redirectContent) {
+            redirectContent.innerHTML =
+                '<div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">' +
+                    '<span class="ubi-pill active">\uD83C\uDF3F Keep</span>' +
+                    '<span class="ubi-pill ubi-pill--kingdom">\u271D\uFE0F Kingdom</span>' +
+                    '<span class="ubi-pill">\uD83C\uDF31 Reinvest</span>' +
+                    '<span class="ubi-pill ubi-pill--split">\uD83E\uDD32 Split</span>' +
+                '</div>' +
+                '<p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>';
+        }
 
         // Reset connect buttons
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
