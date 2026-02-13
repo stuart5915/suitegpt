@@ -464,10 +464,10 @@ function daysSince(dateStr) {
         var ONE_DAY = 24 * 60 * 60 * 1000;
 
         function getDaily8am(direction) {
-            // direction: 'next' or 'last' — targets 8am UTC
+            // direction: 'next' or 'last' — targets 6am EST (11am UTC)
             var now = new Date();
             var target = new Date(now);
-            target.setUTCHours(8, 0, 0, 0);
+            target.setUTCHours(11, 0, 0, 0);
 
             if (direction === 'next') {
                 if (now >= target) {
@@ -845,7 +845,7 @@ function daysSince(dateStr) {
                 function getPcDaily8am(dir) {
                     var now = new Date();
                     var t = new Date(now);
-                    t.setUTCHours(8, 0, 0, 0);
+                    t.setUTCHours(11, 0, 0, 0);
                     if (dir === 'next') {
                         if (now >= t) t.setUTCDate(t.getUTCDate() + 1);
                     } else {
@@ -1198,7 +1198,7 @@ function daysSince(dateStr) {
                 var cancelBtn = document.getElementById('ubiModalCancel');
 
                 titleEl.textContent = 'Fund Reward Pool';
-                msgEl.innerHTML = '<p style="margin-bottom:12px">Deposit CLAWNCH to the reward pool. These tokens get distributed to all stakers daily at 8am.</p>' +
+                msgEl.innerHTML = '<p style="margin-bottom:12px">Deposit CLAWNCH to the reward pool. These tokens get distributed to all stakers daily at 6am EST.</p>' +
                     '<input type="text" inputmode="numeric" id="fundAmountInput" placeholder="CLAWNCH amount" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-subtle);background:var(--bg-elevated);color:var(--text-primary);font-size:1rem;font-family:var(--font-display);box-sizing:border-box;">';
                 confirmBtn.textContent = 'Send';
                 confirmBtn.className = 'ubi-modal-btn ubi-modal-btn--confirm';
