@@ -219,6 +219,14 @@ function daysSince(dateStr) {
         document.getElementById('statInclawnchStaked').textContent = fmt(inclawnchStaked);
         document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
+        var totalDistributed = Number(ubiData.total_distributed) || 0;
+        var distEl = document.getElementById('statTotalDistributed');
+        if (distEl) distEl.textContent = fmt(totalDistributed);
+        var distUsdEl = document.getElementById('statTotalDistUsd');
+        if (distUsdEl && clawnchPrice > 0 && totalDistributed > 0) {
+            distUsdEl.textContent = '~$' + (totalDistributed * clawnchPrice).toFixed(2);
+        }
+
         // APY calculation + card APYs
         updateAllApys();
 
