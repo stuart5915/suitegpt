@@ -642,7 +642,43 @@ function daysSince(dateStr) {
                 }
             });
 
+            // Calculate user's estimated weekly UBI
+            var userClawnch = grouped.clawnch ? grouped.clawnch.amount : 0;
+            var userInclawnch = grouped.inclawnch ? grouped.inclawnch.amount : 0;
+            var userWeighted = userClawnch + (userInclawnch * 2);
+            var totalClawnchStaked = Number(ubiData?.total_balance) || 0;
+            var totalInclawnchStaked = Number(ubiData?.inclawnch_staked) || 0;
+            var totalWeightedAll = totalClawnchStaked + (totalInclawnchStaked * 2);
+            var weeklyRateVal = Number(ubiData?.weekly_rate) || 0;
+
             var html = '';
+
+            // Show pending allocation banner if user has active stakes and there's a weekly rate
+            if (userWeighted > 0 && totalWeightedAll > 0 && weeklyRateVal > 0) {
+                var sharePct = (userWeighted / totalWeightedAll) * 100;
+                var weeklyAllocation = (userWeighted / totalWeightedAll) * weeklyRateVal;
+                var weeklyUsdVal = weeklyAllocation * clawnchPrice;
+                var yearlyAllocation = weeklyAllocation * 52;
+                var yearlyUsdVal = yearlyAllocation * clawnchPrice;
+
+                html += '<div class="ubi-pending-allocation">';
+                html += '<div class="ubi-pending-label">Your Estimated Weekly UBI</div>';
+                html += '<div class="ubi-pending-value">~' + fmt(Math.round(weeklyAllocation)) + ' CLAWNCH</div>';
+                if (clawnchPrice > 0 && weeklyUsdVal >= 0.01) {
+                    html += '<div class="ubi-pending-usd">~$' + fmtUsd(weeklyUsdVal) + '/week &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</div>';
+                }
+                html += '<div class="ubi-pending-detail">Based on your ' + fmt(userWeighted) + ' weighted stake out of ' + fmt(totalWeightedAll) + ' total. Distributed every Sunday at 8am.</div>';
+                html += '<span class="ubi-pending-share">' + sharePct.toFixed(2) + '% of pool</span>';
+                html += '</div>';
+            } else if (userWeighted > 0 && totalWeightedAll > 0) {
+                var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
+                html += '<div class="ubi-pending-allocation">';
+                html += '<div class="ubi-pending-label">Your Pool Share</div>';
+                html += '<div class="ubi-pending-value">' + sharePctOnly.toFixed(2) + '%</div>';
+                html += '<div class="ubi-pending-detail">' + fmt(userWeighted) + ' weighted stake out of ' + fmt(totalWeightedAll) + ' total. Weekly rate not yet set.</div>';
+                html += '</div>';
+            }
+
             Object.keys(grouped).forEach(function(token) {
                 var g = grouped[token];
                 var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
