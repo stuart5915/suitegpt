@@ -624,7 +624,7 @@ function daysSince(dateStr) {
             const stakes = data.my_stakes || [];
 
             const activeStakes = stakes.filter(function(s) { return s.active; });
-            const pendingUnstakes = stakes.filter(function(s) { return !s.active && s.unstaked_at; });
+            const pendingUnstakes = stakes.filter(function(s) { return !s.active && s.unstaked_at && s.withdrawal_status !== 'completed'; });
 
             if (activeStakes.length === 0 && pendingUnstakes.length === 0) {
                 list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning UBI.</div>';

@@ -205,7 +205,7 @@ export default async function handler(req, res) {
         if (walletParam) {
             const { data: myStakes } = await supabase
                 .from('inclawbate_ubi_contributions')
-                .select('id, wallet_address, clawnch_amount, token, created_at, active, unstaked_at')
+                .select('id, wallet_address, clawnch_amount, token, created_at, active, unstaked_at, withdrawal_status')
                 .eq('wallet_address', walletParam.toLowerCase())
                 .order('created_at', { ascending: false });
             result.my_stakes = myStakes || [];
