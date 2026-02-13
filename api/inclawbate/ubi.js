@@ -579,6 +579,11 @@ export default async function handler(req, res) {
                 updateObj.reward_split_pct = pct;
             }
 
+            if (req.body.total_distributed !== undefined) {
+                const td = Number(req.body.total_distributed);
+                if (!isNaN(td) && td >= 0) updateObj.total_distributed = td;
+            }
+
             if (Object.keys(updateObj).length <= 1) {
                 return res.status(400).json({ error: 'Provide weekly_rate or reward_split_pct' });
             }
