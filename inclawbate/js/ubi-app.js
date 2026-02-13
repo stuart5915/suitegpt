@@ -113,6 +113,14 @@ function daysSince(dateStr) {
 }
 
 (async function() {
+    // Provider helper — uses WalletKit (AppKit) when available, falls back to injected wallet
+    function getProvider() {
+        if (window.WalletKit && window.WalletKit.isConnected()) {
+            return window.WalletKit.getProvider();
+        }
+        return window.ethereum || null;
+    }
+
     let clawnchPrice = 0;
     let inclawnchPrice = 0;
     let ubiData = null;
@@ -577,61 +585,82 @@ function daysSince(dateStr) {
         return token === 'inclawnch' ? inclawnchPrice : clawnchPrice;
     }
 
-    // Shared wallet connection — connects once, activates both cards
+    // Shared wallet connection — uses AppKit modal if available, else injected wallet
     async function connectWallet() {
         if (stakeWallet) return stakeWallet;
-        if (!window.ethereum) {
-            document.querySelectorAll('.stake-status').forEach(function(el) {
-                el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
-                el.className = 'ubi-stake-status stake-status error';
-            });
-            return null;
-        }
-        try {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            stakeWallet = accounts[0];
 
+        // Path A: WalletKit (AppKit) — opens modal with WalletConnect QR, MetaMask, etc.
+        if (window.WalletKit) {
             try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
-            } catch (switchErr) {
-                if (switchErr.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
-                    });
-                }
+                await window.WalletKit.open();
+                // Connection completes asynchronously via WalletKit.onConnect callback
+                return null;
+            } catch (err) {
+                // Fall through to injected wallet
             }
-
-            // Activate both cards
-            document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
-                btn.textContent = shortAddr(stakeWallet) + ' · Disconnect';
-                btn.classList.add('connected');
-            });
-            document.querySelectorAll('.stake-form').forEach(function(form) {
-                form.style.display = '';
-            });
-            // Show fund rewards button
-            var fundBtn = document.getElementById('fundRewardsBtn');
-            if (fundBtn) fundBtn.style.display = 'inline-block';
-            // Update hints for both
-            document.querySelectorAll('.stake-amount').forEach(function(input) {
-                updateHint(input.getAttribute('data-token'));
-            });
-
-            // Fetch and show wallet balances
-            fetchBalances();
-
-            // Load user's stakes
-            loadMyStakes();
-
-            return stakeWallet;
-        } catch (err) {
-            document.querySelectorAll('.stake-status').forEach(function(el) {
-                el.textContent = err.message || 'Connection failed';
-                el.className = 'ubi-stake-status stake-status error';
-            });
-            return null;
         }
+
+        // Path B: Injected wallet (MetaMask extension, Coinbase Wallet, etc.)
+        if (window.ethereum) {
+            try {
+                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                var addr = accounts[0];
+
+                try {
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+                } catch (switchErr) {
+                    if (switchErr.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                        });
+                    }
+                }
+
+                onWalletConnected(addr);
+                return addr;
+            } catch (err) {
+                document.querySelectorAll('.stake-status').forEach(function(el) {
+                    el.textContent = err.message || 'Connection failed';
+                    el.className = 'ubi-stake-status stake-status error';
+                });
+                return null;
+            }
+        }
+
+        // No wallet available at all
+        document.querySelectorAll('.stake-status').forEach(function(el) {
+            el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
+            el.className = 'ubi-stake-status stake-status error';
+        });
+        return null;
+    }
+
+    // Called when wallet successfully connects (via WalletKit callback or auto-reconnect)
+    function onWalletConnected(address) {
+        stakeWallet = address;
+
+        // Activate both cards
+        document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
+            btn.textContent = shortAddr(stakeWallet) + ' · Disconnect';
+            btn.classList.add('connected');
+        });
+        document.querySelectorAll('.stake-form').forEach(function(form) {
+            form.style.display = '';
+        });
+        // Show fund rewards button
+        var fundBtn = document.getElementById('fundRewardsBtn');
+        if (fundBtn) fundBtn.style.display = 'inline-block';
+        // Update hints for both
+        document.querySelectorAll('.stake-amount').forEach(function(input) {
+            updateHint(input.getAttribute('data-token'));
+        });
+
+        // Fetch and show wallet balances
+        fetchBalances();
+
+        // Load user's stakes
+        loadMyStakes();
     }
 
     // ── Wallet Balances ──
@@ -639,15 +668,17 @@ function daysSince(dateStr) {
 
     async function fetchBalances() {
         if (!stakeWallet) return;
+        var provider = getProvider();
+        if (!provider) return;
         var callData = BALANCE_SELECTOR + pad32(stakeWallet);
 
         try {
             var [clawnchResult, inclawnchResult] = await Promise.all([
-                window.ethereum.request({
+                provider.request({
                     method: 'eth_call',
                     params: [{ to: CLAWNCH_ADDRESS, data: callData }, 'latest']
                 }),
-                window.ethereum.request({
+                provider.request({
                     method: 'eth_call',
                     params: [{ to: INCLAWNCH_ADDRESS, data: callData }, 'latest']
                 })
@@ -1041,10 +1072,17 @@ function daysSince(dateStr) {
         status.className = 'ubi-stake-status stake-status';
 
         try {
+            var provider = getProvider();
+            if (!provider) {
+                status.textContent = 'No wallet connected';
+                status.className = 'ubi-stake-status stake-status error';
+                depositBtn.disabled = false;
+                return;
+            }
             var amountWei = toWei(amount);
             var data = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
 
-            var txHash = await window.ethereum.request({
+            var txHash = await provider.request({
                 method: 'eth_sendTransaction',
                 params: [{
                     from: stakeWallet,
@@ -1058,7 +1096,7 @@ function daysSince(dateStr) {
             var receipt = null;
             for (var i = 0; i < 60; i++) {
                 await new Promise(function(r) { setTimeout(r, 2000); });
-                receipt = await window.ethereum.request({
+                receipt = await provider.request({
                     method: 'eth_getTransactionReceipt',
                     params: [txHash]
                 });
@@ -1175,10 +1213,12 @@ function daysSince(dateStr) {
             fundRewardsBtn.textContent = 'Sending...';
 
             try {
+                var provider = getProvider();
+                if (!provider) return;
                 var amountWei = toWei(amount);
                 var txData = TRANSFER_SELECTOR + pad32(PROTOCOL_WALLET) + pad32(toHex(amountWei));
 
-                var txHash = await window.ethereum.request({
+                var txHash = await provider.request({
                     method: 'eth_sendTransaction',
                     params: [{
                         from: stakeWallet,
@@ -1192,7 +1232,7 @@ function daysSince(dateStr) {
                 var receipt = null;
                 for (var i = 0; i < 60; i++) {
                     await new Promise(function(r) { setTimeout(r, 2000); });
-                    receipt = await window.ethereum.request({
+                    receipt = await provider.request({
                         method: 'eth_getTransactionReceipt',
                         params: [txHash]
                     });
@@ -1244,8 +1284,10 @@ function daysSince(dateStr) {
     }
 
     function disconnectWallet() {
+        if (!stakeWallet) return; // already disconnected
         stakeWallet = null;
         walletBalances = { clawnch: 0, inclawnch: 0 };
+        if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
         // Reset connect buttons
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
@@ -1338,4 +1380,19 @@ function daysSince(dateStr) {
             updatePctButtons(token);
         });
     });
+
+    // ── WalletKit Integration (when wallet-bundle.js is loaded) ──
+    if (window.WalletKit) {
+        window.WalletKit.onConnect(function(address) {
+            onWalletConnected(address);
+        });
+        window.WalletKit.onDisconnect(function() {
+            disconnectWallet();
+        });
+        // Auto-reconnect from previous session
+        if (window.WalletKit.isConnected()) {
+            onWalletConnected(window.WalletKit.getAddress());
+        }
+    }
+    // If WalletKit isn't loaded, connectWallet() falls back to window.ethereum
 })();
