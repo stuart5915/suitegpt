@@ -94,7 +94,12 @@ export default async function handler(req, res) {
         const tokenData = await tokenRes.json();
 
         if (!tokenRes.ok || !tokenData.access_token) {
-            return res.status(400).json({ error: 'Failed to exchange code for token' });
+            console.error('X token exchange failed:', tokenRes.status, JSON.stringify(tokenData));
+            const hint = tokenData.error_description || tokenData.error || '';
+            const msg = hint.includes('expired') || hint.includes('invalid')
+                ? 'Authorization expired — please try connecting again'
+                : 'Failed to exchange code for token';
+            return res.status(400).json({ error: msg, detail: hint });
         }
 
         // Fetch X user data

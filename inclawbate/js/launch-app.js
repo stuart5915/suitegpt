@@ -94,6 +94,9 @@ async function init() {
             const dest = getPostLoginRedirect();
             afterAuth(result.profile, result.token, dest);
         } catch (err) {
+            // Clear stale PKCE data so next attempt starts completely fresh
+            localStorage.removeItem('x_code_verifier');
+            localStorage.removeItem('x_auth_state');
             connectGate.querySelector('h2').textContent = 'Connection Failed';
             connectGate.querySelector('p').textContent = err.message;
             connectBtn.classList.remove('hidden');
