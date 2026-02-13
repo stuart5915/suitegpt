@@ -129,8 +129,8 @@ function daysSince(dateStr) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
         const inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
 
-        // Treasury main display: total value in CLAWNCH equivalent
-        document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH';
+        // Treasury main display: both token amounts
+        document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH + ' + fmt(inclawnchStaked) + ' inCLAWNCH';
 
         // USD value (both tokens combined)
         const totalUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
@@ -710,12 +710,15 @@ function daysSince(dateStr) {
                 // Update treasury display
                 if (token === 'clawnch') {
                     var newBal = Math.max(0, (Number(ubiData?.total_balance) || 0) - data.amount);
-                    document.getElementById('treasuryValue').textContent = fmt(newBal) + ' CLAWNCH';
                     document.getElementById('statClawnchStaked').textContent = fmt(newBal);
                 } else {
                     var newInc = Math.max(0, (Number(ubiData?.inclawnch_staked) || 0) - data.amount);
                     document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
                 }
+                // Update combined TVL subtitle
+                var cStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+                var iStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+                document.getElementById('treasuryValue').textContent = fmt(cStaked) + ' CLAWNCH + ' + fmt(iStaked) + ' inCLAWNCH';
 
                 // Reload stakes + APY
                 loadMyStakes();
@@ -848,16 +851,16 @@ function daysSince(dateStr) {
                 // Update treasury display
                 if (token === 'clawnch') {
                     var newBal = (Number(ubiData?.total_balance) || 0) + apiData.amount;
-                    document.getElementById('treasuryValue').textContent = fmt(newBal) + ' CLAWNCH';
                     document.getElementById('statClawnchStaked').textContent = fmt(newBal);
                 } else {
                     var newInc = (Number(ubiData?.inclawnch_staked) || 0) + apiData.amount;
                     document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
                 }
 
-                // Recalculate USD + roadmap
+                // Recalculate USD + roadmap + TVL subtitle
                 var clawnchBal = Number(document.getElementById('statClawnchStaked').textContent.replace(/,/g, '')) || 0;
                 var inclawnchBal = Number(document.getElementById('statInclawnchStaked').textContent.replace(/,/g, '')) || 0;
+                document.getElementById('treasuryValue').textContent = fmt(clawnchBal) + ' CLAWNCH + ' + fmt(inclawnchBal) + ' inCLAWNCH';
                 var newUsd = (clawnchBal * clawnchPrice) + (inclawnchBal * inclawnchPrice);
                 if (clawnchPrice > 0 || inclawnchPrice > 0) {
                     document.getElementById('treasuryUsd').textContent = '~$' + newUsd.toFixed(2) + ' USD';
