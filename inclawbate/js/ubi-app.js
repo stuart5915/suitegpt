@@ -16,6 +16,8 @@ const TOKEN_CONFIG = {
 // Roadmap milestones (USD targets)
 const MILESTONES = [100000, 500000, 1000000, 5000000, 10000000, 25000000, 50000000];
 
+var _posCountdownInterval = null;
+
 function esc(str) {
     const div = document.createElement('div');
     div.textContent = str || '';
@@ -653,7 +655,7 @@ function daysSince(dateStr) {
 
             var html = '';
 
-            // Show pending allocation banner if user has active stakes and there's a weekly rate
+            // Show personalized countdown + earnings widget
             if (userWeighted > 0 && totalWeightedAll > 0 && weeklyRateVal > 0) {
                 var sharePct = (userWeighted / totalWeightedAll) * 100;
                 var weeklyAllocation = (userWeighted / totalWeightedAll) * weeklyRateVal;
@@ -661,14 +663,19 @@ function daysSince(dateStr) {
                 var yearlyAllocation = weeklyAllocation * 52;
                 var yearlyUsdVal = yearlyAllocation * clawnchPrice;
 
-                html += '<div class="ubi-pending-allocation">';
-                html += '<div class="ubi-pending-label">Your Estimated Weekly UBI</div>';
-                html += '<div class="ubi-pending-value">~' + fmt(Math.round(weeklyAllocation)) + ' CLAWNCH</div>';
+                html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
+                html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(weeklyAllocation)) + ' CLAWNCH &rarr; your wallet</div>';
+                html += '<div class="ubi-pc-timer-row">';
+                html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
+                html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
+                html += '</div>';
+                html += '<div class="ubi-pc-footer">';
                 if (clawnchPrice > 0 && weeklyUsdVal >= 0.01) {
-                    html += '<div class="ubi-pending-usd">~$' + fmtUsd(weeklyUsdVal) + '/week &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</div>';
+                    html += '<span class="ubi-pc-usd">~$' + fmtUsd(weeklyUsdVal) + '/week &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
                 }
-                html += '<div class="ubi-pending-detail">Based on your ' + fmt(userWeighted) + ' weighted stake out of ' + fmt(totalWeightedAll) + ' total. Distributed every Sunday at 8am.</div>';
-                html += '<span class="ubi-pending-share">' + sharePct.toFixed(2) + '% of pool</span>';
+                html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
+                html += '</div>';
                 html += '</div>';
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
@@ -716,6 +723,64 @@ function daysSince(dateStr) {
                     handleUnstake(btn.getAttribute('data-token'));
                 });
             });
+
+            // Start personalized countdown timer
+            if (_posCountdownInterval) clearInterval(_posCountdownInterval);
+            var pcWidget = document.getElementById('posCountdownWidget');
+            if (pcWidget) {
+                var SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+                function getPcSunday8am(dir) {
+                    var now = new Date();
+                    var day = now.getDay();
+                    var t = new Date(now);
+                    t.setHours(8, 0, 0, 0);
+                    if (dir === 'next') {
+                        if (day === 0 && now < t) { /* today */ }
+                        else { t.setDate(t.getDate() + ((7 - day) % 7 || 7)); }
+                    } else {
+                        if (day === 0 && now >= t) { /* today */ }
+                        else { t.setDate(t.getDate() - (day === 0 ? 7 : day)); }
+                    }
+                    return t;
+                }
+
+                var pcNext = getPcSunday8am('next').getTime();
+                var pcLast = getPcSunday8am('last').getTime();
+
+                function pcTick() {
+                    var now = Date.now();
+                    var diff = pcNext - now;
+                    var elapsed = now - pcLast;
+                    var progress = Math.min(100, Math.max(0, (elapsed / SEVEN_DAYS) * 100));
+
+                    var barFill = document.getElementById('posCountdownBarFill');
+                    var timeEl = document.getElementById('posCountdownTime');
+                    var labelEl = document.getElementById('posCountdownLabel');
+                    var amountEl = document.getElementById('posCountdownAmount');
+
+                    if (barFill) barFill.style.width = progress + '%';
+
+                    if (diff <= 0) {
+                        // Overdue
+                        if (!pcWidget.classList.contains('ubi-pc-overdue')) {
+                            pcWidget.classList.add('ubi-pc-overdue');
+                            if (labelEl) labelEl.textContent = 'DISTRIBUTION READY';
+                            if (amountEl) amountEl.innerHTML = amountEl.innerHTML.replace('\u2192 your wallet', '\u2192 your wallet soon!');
+                        }
+                        if (timeEl) timeEl.textContent = 'Incoming\u2026';
+                    } else {
+                        pcWidget.classList.remove('ubi-pc-overdue');
+                        var d = Math.floor(diff / 86400000);
+                        var h = Math.floor((diff % 86400000) / 3600000);
+                        var m = Math.floor((diff % 3600000) / 60000);
+                        if (timeEl) timeEl.textContent = d + 'd ' + h + 'h ' + m + 'm';
+                    }
+                }
+
+                pcTick();
+                _posCountdownInterval = setInterval(pcTick, 1000);
+            }
         } catch (e) {
             list.innerHTML = '<div class="ubi-no-stakes">Could not load stakes.</div>';
         }
