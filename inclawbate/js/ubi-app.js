@@ -705,7 +705,7 @@ function daysSince(dateStr) {
                     var label = t === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
                     parts.push(fmt(pendingTotal[t]) + ' ' + label);
                 });
-                html += '<div class="ubi-unstake-pending">Pending return: ' + parts.join(', ') + '. Your tokens will be returned in the next weekly distribution.</div>';
+                html += '<div class="ubi-unstake-pending">Withdrawal requested: ' + parts.join(', ') + '. Your tokens will be sent to your wallet shortly.</div>';
             }
 
             list.innerHTML = html;
@@ -721,20 +721,66 @@ function daysSince(dateStr) {
         }
     }
 
+    // ── Unstake wallet available balance ──
+    var unstakeAvailable = { clawnch: 0, inclawnch: 0 };
+
+    async function fetchUnstakeBalance() {
+        try {
+            var resp = await fetch('/api/inclawbate/ubi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'unstake-balance' })
+            });
+            var data = await resp.json();
+            unstakeAvailable.clawnch = Number(data.clawnch) || 0;
+            unstakeAvailable.inclawnch = Number(data.inclawnch) || 0;
+
+            // Update the UI banner
+            var banner = document.getElementById('unstakeAvailBanner');
+            if (banner) {
+                var clStr = fmt(Math.floor(unstakeAvailable.clawnch));
+                var inStr = fmt(Math.floor(unstakeAvailable.inclawnch));
+                banner.innerHTML = 'Available for withdrawal: <strong>' + clStr + ' CLAWNCH</strong> · <strong>' + inStr + ' inCLAWNCH</strong>';
+                banner.style.display = '';
+            }
+        } catch (e) { /* silent */ }
+    }
+
+    // Fetch unstake balance on page load
+    fetchUnstakeBalance();
+
     async function handleUnstake(token) {
         var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
-        if (!confirm('Unstake all your ' + tokenLabel + '? Your tokens will be sent back to your wallet immediately.')) {
-            return;
-        }
+
+        // Check if enough available
+        var userAmount = 0;
+        var grouped = {};
+        var section = document.getElementById('yourStakesList');
+        // Re-read from stakes data
+        try {
+            var resp0 = await fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase());
+            var data0 = await resp0.json();
+            var activeForToken = (data0.my_stakes || []).filter(function(s) { return s.active && (s.token || 'clawnch') === token; });
+            userAmount = activeForToken.reduce(function(sum, s) { return sum + s.clawnch_amount; }, 0);
+        } catch(e) {}
+
+        var available = token === 'inclawnch' ? unstakeAvailable.inclawnch : unstakeAvailable.clawnch;
+        var isInstant = available >= userAmount;
+
+        var confirmMsg = isInstant
+            ? 'Unstake all your ' + tokenLabel + '? Tokens will be sent to your wallet instantly.'
+            : 'Unstake all your ' + tokenLabel + '? The withdrawal wallet needs to be topped up — your request will be queued and processed shortly.';
+
+        if (!confirm(confirmMsg)) return;
 
         var btn = document.querySelector('.btn-unstake[data-token="' + token + '"]');
         var statusEl = document.querySelector('.stake-status[data-token="' + token + '"]');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Sending tokens...';
+            btn.textContent = isInstant ? 'Sending tokens...' : 'Requesting...';
         }
         if (statusEl) {
-            statusEl.textContent = 'Sending ' + tokenLabel + ' back to your wallet...';
+            statusEl.textContent = isInstant ? 'Sending ' + tokenLabel + ' back to your wallet...' : 'Submitting withdrawal request...';
             statusEl.className = 'ubi-stake-status stake-status';
         }
 
@@ -759,19 +805,22 @@ function daysSince(dateStr) {
                     var newInc = Math.max(0, (Number(ubiData?.inclawnch_staked) || 0) - data.amount);
                     document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
                 }
-                // Update combined TVL subtitle
                 var cStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
                 var iStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
                 document.getElementById('treasuryValue').textContent = fmt(cStaked) + ' CLAWNCH + ' + fmt(iStaked) + ' inCLAWNCH';
 
                 if (statusEl) {
-                    var txLink = data.tx_hash ? ' <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>' : '';
-                    statusEl.innerHTML = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet.' + txLink;
-                    statusEl.className = 'ubi-stake-status stake-status success';
+                    if (data.instant && data.tx_hash) {
+                        statusEl.innerHTML = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet. <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+                        statusEl.className = 'ubi-stake-status stake-status success';
+                    } else {
+                        statusEl.innerHTML = 'Withdrawal requested for ' + fmt(data.amount) + ' ' + tokenLabel + '. Your tokens will be sent shortly once the withdrawal wallet is funded.';
+                        statusEl.className = 'ubi-stake-status stake-status success';
+                    }
                 }
 
-                // Reload stakes, balances, APY
                 fetchBalances();
+                fetchUnstakeBalance();
                 loadMyStakes();
                 updateAllApys();
             } else {
@@ -782,10 +831,7 @@ function daysSince(dateStr) {
                 } else {
                     alert(errMsg);
                 }
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = 'Unstake';
-                }
+                if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
             }
         } catch (err) {
             var errText = 'Unstake failed: ' + (err.message || 'Unknown error');
@@ -795,10 +841,7 @@ function daysSince(dateStr) {
             } else {
                 alert(errText);
             }
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'Unstake';
-            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
         }
     }
 

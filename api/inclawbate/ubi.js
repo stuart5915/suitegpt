@@ -325,7 +325,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // ── Unstake (instant on-chain return) ──
+        // ── Unstake (instant via unstake wallet, or request if insufficient) ──
         if (action === 'unstake') {
             const { wallet_address, token } = req.body;
             if (!wallet_address) {
@@ -352,63 +352,75 @@ export default async function handler(req, res) {
             const totalUnstaked = activeStakes.reduce((sum, s) => sum + s.clawnch_amount, 0);
             const ids = activeStakes.map(s => s.id);
 
-            // Send tokens back on-chain
-            const privateKey = process.env.PROTOCOL_PRIVATE_KEY;
-            if (!privateKey) {
-                return res.status(500).json({ error: 'Unstaking temporarily unavailable. Contact admin.' });
+            // Try instant return via unstake wallet
+            const unstakeKey = process.env.UNSTAKE_WALLET_PRIVATE_KEY;
+            let txHash = null;
+            let instant = false;
+
+            if (unstakeKey) {
+                try {
+                    const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                    const unstakeWallet = new ethers.Wallet(unstakeKey, provider);
+
+                    const erc20 = new ethers.Contract(tokenAddress, [
+                        'function transfer(address to, uint256 amount) returns (bool)',
+                        'function balanceOf(address) view returns (uint256)'
+                    ], unstakeWallet);
+
+                    const amountWei = ethers.parseUnits(Math.floor(totalUnstaked).toString(), 18);
+                    const balance = await erc20.balanceOf(unstakeWallet.address);
+
+                    if (balance >= amountWei) {
+                        // Enough balance — send instantly
+                        const tx = await erc20.transfer(wallet_address, amountWei);
+                        const receipt = await tx.wait();
+
+                        if (receipt && receipt.status === 1) {
+                            txHash = receipt.hash;
+                            instant = true;
+                        }
+                    }
+                } catch (chainErr) {
+                    console.error('Unstake on-chain error:', chainErr.message);
+                    // Fall through to withdrawal request
+                }
             }
 
-            let txHash;
-            try {
-                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
-                const wallet = new ethers.Wallet(privateKey, provider);
+            // Mark stakes as inactive — try with withdrawal columns, fall back without
+            let updateErr;
+            const fullUpdate = {
+                active: false,
+                unstaked_at: new Date().toISOString(),
+                withdrawal_status: instant ? 'completed' : 'requested',
+                withdrawal_tx: txHash
+            };
+            const minUpdate = {
+                active: false,
+                unstaked_at: new Date().toISOString()
+            };
 
-                // Verify the wallet matches our protocol wallet
-                if (wallet.address.toLowerCase() !== PROTOCOL_WALLET) {
-                    return res.status(500).json({ error: 'Wallet configuration error' });
-                }
-
-                const erc20 = new ethers.Contract(tokenAddress, [
-                    'function transfer(address to, uint256 amount) returns (bool)',
-                    'function balanceOf(address) view returns (uint256)'
-                ], wallet);
-
-                // Convert to wei (18 decimals)
-                const amountWei = ethers.parseUnits(Math.floor(totalUnstaked).toString(), 18);
-
-                // Check protocol wallet has enough balance
-                const balance = await erc20.balanceOf(PROTOCOL_WALLET);
-                if (balance < amountWei) {
-                    return res.status(400).json({
-                        error: 'Insufficient protocol balance. Contact admin for manual return.'
-                    });
-                }
-
-                // Send the tokens back
-                const tx = await erc20.transfer(wallet_address, amountWei);
-                const receipt = await tx.wait();
-
-                if (!receipt || receipt.status !== 1) {
-                    return res.status(500).json({ error: 'On-chain transfer failed' });
-                }
-
-                txHash = receipt.hash;
-            } catch (chainErr) {
-                console.error('Unstake on-chain error:', chainErr.message);
-                return res.status(500).json({
-                    error: 'Failed to send tokens on-chain: ' + (chainErr.reason || chainErr.message || 'Unknown error')
-                });
-            }
-
-            // On-chain transfer succeeded — now update DB
-            const { error: updateErr } = await supabase
+            const result1 = await supabase
                 .from('inclawbate_ubi_contributions')
-                .update({ active: false, unstaked_at: new Date().toISOString() })
+                .update(fullUpdate)
                 .in('id', ids);
 
+            if (result1.error) {
+                // Columns might not exist — retry without them
+                const result2 = await supabase
+                    .from('inclawbate_ubi_contributions')
+                    .update(minUpdate)
+                    .in('id', ids);
+                updateErr = result2.error;
+            } else {
+                updateErr = null;
+            }
+
             if (updateErr) {
-                // Tokens were sent but DB update failed — log for manual fix
-                console.error('DB update failed after successful unstake tx:', txHash, 'ids:', ids);
+                if (instant) {
+                    console.error('DB update failed after successful unstake tx:', txHash, 'ids:', ids);
+                } else {
+                    return res.status(500).json({ error: 'Failed to process unstake' });
+                }
             }
 
             // Decrement treasury balance
@@ -429,10 +441,39 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 success: true,
+                instant: instant,
                 amount: totalUnstaked,
                 token: tokenType,
                 tx_hash: txHash
             });
+        }
+
+        // ── Check unstake wallet balance (public) ──
+        if (action === 'unstake-balance') {
+            const unstakeKey = process.env.UNSTAKE_WALLET_PRIVATE_KEY;
+            if (!unstakeKey) {
+                return res.status(200).json({ clawnch: 0, inclawnch: 0, address: null });
+            }
+            try {
+                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                const unstakeWallet = new ethers.Wallet(unstakeKey, provider);
+                const abi = ['function balanceOf(address) view returns (uint256)'];
+                const clawnchContract = new ethers.Contract(CLAWNCH_ADDRESS, abi, provider);
+                const inclawnchContract = new ethers.Contract(INCLAWNCH_ADDRESS, abi, provider);
+
+                const [clBal, inBal] = await Promise.all([
+                    clawnchContract.balanceOf(unstakeWallet.address),
+                    inclawnchContract.balanceOf(unstakeWallet.address)
+                ]);
+
+                return res.status(200).json({
+                    clawnch: Number(clBal) / 1e18,
+                    inclawnch: Number(inBal) / 1e18,
+                    address: unstakeWallet.address
+                });
+            } catch (e) {
+                return res.status(200).json({ clawnch: 0, inclawnch: 0, address: null });
+            }
         }
 
         // ── Update Config (admin only) ──
