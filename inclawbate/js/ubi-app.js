@@ -248,11 +248,7 @@ function daysSince(dateStr) {
         var weeklyRate = Number(ubiData?.weekly_rate) || 0;
         var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
 
-        // Weekly distribution hero number
-        var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
-        if (cdWeeklyEl) {
-            cdWeeklyEl.textContent = weeklyRate > 0 ? fmt(Math.round(weeklyRate)) : '--';
-        }
+        // Weekly rate is displayed by the countdown tick (accumulating)
 
         // Per-card APYs
         // 1x CLAWNCH APY: (weekly_rate * 52 * 1) / total_weighted_stake * 100
@@ -492,6 +488,15 @@ function daysSince(dateStr) {
             // Update progress bar
             var barFill = document.getElementById('cdBarFill');
             if (barFill) barFill.style.width = progress + '%';
+
+            // Accumulating weekly distribution number
+            var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
+            var weeklyRate = Number(ubiData?.weekly_rate) || 0;
+            if (cdWeeklyEl && weeklyRate > 0) {
+                var accumPct = Math.min(1, elapsed / SEVEN_DAYS);
+                var accumulated = Math.round(weeklyRate * accumPct);
+                cdWeeklyEl.textContent = fmt(accumulated);
+            }
 
             var daysEl = document.getElementById('cdDays');
             var hoursEl = document.getElementById('cdHours');
