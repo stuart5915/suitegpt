@@ -142,8 +142,9 @@ async function calculateStakerDays(weeklyRate) {
 
     for (const s of stakers) {
         s.share_pct = totalWeightedDays > 0 ? (s.weighted_days / totalWeightedDays) * 100 : 0;
-        s.share_amount = totalWeightedDays > 0 && weeklyRate > 0
-            ? (s.weighted_days / totalWeightedDays) * weeklyRate
+        var dailyRate = weeklyRate / 7;
+        s.share_amount = totalWeightedDays > 0 && dailyRate > 0
+            ? (s.weighted_days / totalWeightedDays) * dailyRate
             : 0;
         // Round for display
         s.staked_days = Math.round(s.staked_days * 10) / 10;
