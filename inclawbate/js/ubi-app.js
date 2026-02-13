@@ -780,79 +780,23 @@ function daysSince(dateStr) {
         var container = document.getElementById('redirectStepContent');
         if (!container) return;
 
-        var savedRedirect = data.whale_redirect_target || null;
-        var savedOrgId = data.redirect_org_id || null;
-        var orgs = ubiData?.philanthropy_orgs || [];
-        var firstOrgId = orgs.length > 0 ? orgs[0].id : '';
         var savedKeep = data.split_keep_pct ?? 34;
         var savedKingdom = data.split_kingdom_pct ?? 33;
         var savedReinvest = data.split_reinvest_pct ?? 33;
 
         var rh = '';
 
-        // Compact pill row
-        rh += '<div class="ubi-redirect-pills">';
-        rh += '<button class="ubi-pill' + (!savedRedirect ? ' active' : '') + '" data-value="" data-org-id="">\uD83C\uDF3F Keep</button>';
-        rh += '<button class="ubi-pill ubi-pill--kingdom' + (savedRedirect === 'philanthropy' ? ' active' : '') + '" data-value="philanthropy" data-org-id="' + firstOrgId + '">\u271D\uFE0F Kingdom</button>';
-        rh += '<button class="ubi-pill' + (savedRedirect === 'reinvest' ? ' active' : '') + '" data-value="reinvest" data-org-id="">\uD83C\uDF31 Reinvest</button>';
-        rh += '<button class="ubi-pill ubi-pill--split' + (savedRedirect === 'split' ? ' active' : '') + '" data-value="split" data-org-id="">\uD83E\uDD32 Split</button>';
-        rh += '</div>';
-
-        // Expandable detail panels
-        rh += '<div class="ubi-redirect-detail" id="redirectDetail">';
-
-        rh += '<div class="ubi-rd-panel" data-panel=""' + (!savedRedirect ? '' : ' style="display:none"') + '>';
-        rh += '<p>Grow your own garden. No shame \u2014 you can\'t pour from an empty cup.</p>';
-        rh += '</div>';
-
-        rh += '<div class="ubi-rd-panel" data-panel="philanthropy"' + (savedRedirect === 'philanthropy' ? '' : ' style="display:none"') + '>';
-        rh += '<p>Fund what matters eternally. The agents earn. The humans give. The Kingdom grows.</p>';
-        if (orgs.length > 0) {
-            rh += '<div class="ubi-rd-ministries">';
-            for (var oi = 0; oi < orgs.length; oi++) {
-                var org = orgs[oi];
-                var orgUrl = org.website_url || '';
-                if (orgUrl) {
-                    rh += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener" class="ubi-rd-ministry-link">' + esc(org.name) + ' \u2197</a>';
-                } else {
-                    rh += '<span class="ubi-rd-ministry-link">' + esc(org.name) + '</span>';
-                }
-            }
-            rh += '</div>';
-        }
-        rh += '</div>';
-
-        rh += '<div class="ubi-rd-panel" data-panel="reinvest"' + (savedRedirect === 'reinvest' ? '' : ' style="display:none"') + '>';
-        rh += '<p>Compound the commons. Decrease yourself so others increase.</p>';
-        rh += '</div>';
-
-        rh += '<div class="ubi-rd-panel" data-panel="split"' + (savedRedirect === 'split' ? '' : ' style="display:none"') + '>';
+        // Split sliders directly (no pill selection needed)
         rh += '<div class="ubi-split-sliders" id="splitSliders">';
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
         rh += '</div>';
-        rh += '</div>';
-
-        rh += '</div>'; // end detail
 
         rh += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
         rh += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
 
         container.innerHTML = rh;
-
-        // Wire up pill clicks
-        var _activeValue = data.whale_redirect_target || '';
-        container.querySelectorAll('.ubi-pill').forEach(function(pill) {
-            pill.addEventListener('click', function() {
-                container.querySelectorAll('.ubi-pill').forEach(function(p) { p.classList.remove('active'); });
-                pill.classList.add('active');
-                _activeValue = pill.getAttribute('data-value') || '';
-                container.querySelectorAll('.ubi-rd-panel').forEach(function(panel) {
-                    panel.style.display = panel.getAttribute('data-panel') === _activeValue ? '' : 'none';
-                });
-            });
-        });
 
         // Wire up split sliders
         var splitKeep = document.getElementById('splitKeep');
@@ -888,35 +832,29 @@ function daysSince(dateStr) {
         var saveBtn = document.getElementById('giveBackSaveBtn');
         if (saveBtn) {
             saveBtn.addEventListener('click', async function() {
-                var activePill = container.querySelector('.ubi-pill.active');
-                var value = activePill ? (activePill.getAttribute('data-value') || null) : null;
-                var orgId = activePill ? (activePill.getAttribute('data-org-id') || null) : null;
                 var statusEl = document.getElementById('giveBackStatus');
                 saveBtn.disabled = true;
                 if (statusEl) statusEl.textContent = 'Saving...';
 
+                var k = Number(document.getElementById('splitKeep').value) || 0;
+                var g = Number(document.getElementById('splitKingdom').value) || 0;
+                var r = Number(document.getElementById('splitReinvest').value) || 0;
+                if (k + g + r !== 100) {
+                    ubiToast('Split must total 100%', 'error');
+                    saveBtn.disabled = false;
+                    return;
+                }
+
                 var body = {
                     action: 'update-whale-redirect',
                     wallet_address: stakeWallet,
-                    redirect_target: value,
-                    org_id: orgId
+                    redirect_target: 'split',
+                    split_keep_pct: k,
+                    split_kingdom_pct: g,
+                    split_reinvest_pct: r
                 };
-
-                if (value === 'split') {
-                    var k = Number(document.getElementById('splitKeep').value) || 0;
-                    var g = Number(document.getElementById('splitKingdom').value) || 0;
-                    var r = Number(document.getElementById('splitReinvest').value) || 0;
-                    if (k + g + r !== 100) {
-                        ubiToast('Split must total 100%', 'error');
-                        saveBtn.disabled = false;
-                        return;
-                    }
-                    body.split_keep_pct = k;
-                    body.split_kingdom_pct = g;
-                    body.split_reinvest_pct = r;
-                    var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
-                    if (firstOrg) body.org_id = firstOrg.id;
-                }
+                var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
+                if (firstOrg) body.org_id = firstOrg.id;
 
                 try {
                     var resp = await fetch('/api/inclawbate/ubi', {
@@ -1547,14 +1485,7 @@ function daysSince(dateStr) {
         // Restore redirect static content
         var redirectContent = document.getElementById('redirectStepContent');
         if (redirectContent) {
-            redirectContent.innerHTML =
-                '<div class="ubi-redirect-pills" id="giveBackStandaloneOrgs">' +
-                    '<span class="ubi-pill active">\uD83C\uDF3F Keep</span>' +
-                    '<span class="ubi-pill ubi-pill--kingdom">\u271D\uFE0F Kingdom</span>' +
-                    '<span class="ubi-pill">\uD83C\uDF31 Reinvest</span>' +
-                    '<span class="ubi-pill ubi-pill--split">\uD83E\uDD32 Split</span>' +
-                '</div>' +
-                '<p class="ubi-giveback-connect-hint">Connect your wallet to set your preference.</p>';
+            redirectContent.innerHTML = '<p class="ubi-giveback-connect-hint">Connect your wallet to set your split.</p>';
         }
 
         // Reset connect buttons
