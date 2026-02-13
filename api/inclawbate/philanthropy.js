@@ -1,7 +1,7 @@
 // Inclawbate — Philanthropy Vote
-// GET  — public results (weighted by inCLAWNCH stake)
+// GET  — public results (weighted by stakes: CLAWNCH 1x, inCLAWNCH 2x)
 // GET  ?wallet=0x... — also returns user's vote + stake
-// POST {wallet_address, philanthropy_pct} — upsert vote (must have active inCLAWNCH stakes)
+// POST {wallet_address, philanthropy_pct} — upsert vote (must have active CLAWNCH or inCLAWNCH stakes)
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -31,18 +31,18 @@ export default async function handler(req, res) {
             .from('inclawbate_philanthropy_votes')
             .select('wallet_address, philanthropy_pct');
 
-        // Fetch all active inCLAWNCH stakes (vote weight source)
+        // Fetch all active stakes (CLAWNCH 1x weight, inCLAWNCH 2x weight)
         const { data: stakes } = await supabase
             .from('inclawbate_ubi_contributions')
             .select('wallet_address, clawnch_amount, token')
-            .eq('active', true)
-            .eq('token', 'inclawnch');
+            .eq('active', true);
 
-        // Build wallet → total inCLAWNCH stake map
+        // Build wallet → weighted voting power map
         const stakeMap = {};
         (stakes || []).forEach(function(s) {
             const w = s.wallet_address;
-            stakeMap[w] = (stakeMap[w] || 0) + (Number(s.clawnch_amount) || 0);
+            const multiplier = s.token === 'inclawnch' ? 2 : 1;
+            stakeMap[w] = (stakeMap[w] || 0) + (Number(s.clawnch_amount) || 0) * multiplier;
         });
 
         // Compute weighted results
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
         for (const wallet in voteMap) {
             const stake = stakeMap[wallet] || 0;
-            if (stake <= 0) continue; // no active inCLAWNCH = zero weight
+            if (stake <= 0) continue; // no active stakes = zero weight
             totalWeight += stake;
             weightedPhilanthropy += stake * voteMap[wallet];
             voterCount++;
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             weighted_philanthropy_pct: Math.round(weightedPct * 100) / 100,
             weighted_reinvest_pct: Math.round((100 - weightedPct) * 100) / 100,
             voter_count: voterCount,
-            total_inclawnch_voting: Math.round(totalWeight)
+            total_weighted_voting: Math.round(totalWeight)
         };
 
         // If wallet param, include user's vote + stake
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
                 .single();
 
             result.my_vote = myVote ? myVote.philanthropy_pct : null;
-            result.my_inclawnch_stake = stakeMap[w] || 0;
+            result.my_voting_power = stakeMap[w] || 0;
         }
 
         return res.status(200).json(result);
@@ -103,20 +103,20 @@ export default async function handler(req, res) {
 
         const w = wallet_address.toLowerCase();
 
-        // Verify wallet has active inCLAWNCH stakes
+        // Verify wallet has active stakes (CLAWNCH or inCLAWNCH)
         const { data: activeStakes } = await supabase
             .from('inclawbate_ubi_contributions')
-            .select('clawnch_amount')
+            .select('clawnch_amount, token')
             .eq('wallet_address', w)
-            .eq('token', 'inclawnch')
             .eq('active', true);
 
-        const totalStake = (activeStakes || []).reduce(function(sum, s) {
-            return sum + (Number(s.clawnch_amount) || 0);
+        const totalWeight = (activeStakes || []).reduce(function(sum, s) {
+            const multiplier = s.token === 'inclawnch' ? 2 : 1;
+            return sum + (Number(s.clawnch_amount) || 0) * multiplier;
         }, 0);
 
-        if (totalStake <= 0) {
-            return res.status(403).json({ error: 'You must have active inCLAWNCH stakes to vote' });
+        if (totalWeight <= 0) {
+            return res.status(403).json({ error: 'You must have active CLAWNCH or inCLAWNCH stakes to vote' });
         }
 
         // Upsert vote

@@ -51,7 +51,7 @@
         var reinvestPct = data.weighted_reinvest_pct || 100;
         var philPct = data.weighted_philanthropy_pct || 0;
         var voters = data.voter_count || 0;
-        var totalVoting = data.total_inclawnch_voting || 0;
+        var totalVoting = data.total_weighted_voting || 0;
 
         var emptyEl = document.getElementById('philEmpty');
         var contentEl = document.getElementById('philResultsContent');
@@ -176,10 +176,10 @@
         var noStake = document.getElementById('philNoStake');
         var connectWrap = document.getElementById('philConnectWrap');
 
-        var myStake = data.my_inclawnch_stake || 0;
+        var myPower = data.my_voting_power || 0;
 
-        if (myStake <= 0) {
-            // No inCLAWNCH stakes — show message
+        if (myPower <= 0) {
+            // No active stakes — show message
             if (noStake) noStake.style.display = 'block';
             if (form) form.style.display = 'none';
             return;
@@ -190,7 +190,7 @@
         if (form) form.style.display = 'block';
 
         var stakeEl = document.getElementById('philMyStake');
-        if (stakeEl) stakeEl.textContent = fmt(myStake);
+        if (stakeEl) stakeEl.textContent = fmt(myPower);
 
         // Restore existing vote
         if (data.my_vote !== null && data.my_vote !== undefined) {
