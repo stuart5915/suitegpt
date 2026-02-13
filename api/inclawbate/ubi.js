@@ -585,7 +585,7 @@ export default async function handler(req, res) {
             }
 
             if (Object.keys(updateObj).length <= 1) {
-                return res.status(400).json({ error: 'Provide weekly_rate or reward_split_pct' });
+                return res.status(400).json({ error: 'Provide weekly_rate, daily_rate, reward_split_pct, or total_distributed' });
             }
 
             const { error: updateErr } = await supabase
