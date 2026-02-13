@@ -26,8 +26,8 @@ export async function startXAuth() {
     const codeChallenge = base64urlEncode(challengeBuffer);
     const state = generateRandomString(32);
 
-    sessionStorage.setItem('x_code_verifier', codeVerifier);
-    sessionStorage.setItem('x_auth_state', state);
+    localStorage.setItem('x_code_verifier', codeVerifier);
+    localStorage.setItem('x_auth_state', state);
 
     const res = await fetch(`/api/inclawbate/x-auth?code_challenge=${encodeURIComponent(codeChallenge)}&state=${encodeURIComponent(state)}`);
     const data = await res.json();
@@ -40,12 +40,12 @@ export async function startXAuth() {
 }
 
 export async function handleXCallback(code, state) {
-    const savedState = sessionStorage.getItem('x_auth_state');
+    const savedState = localStorage.getItem('x_auth_state');
     if (state && savedState && state !== savedState) {
         throw new Error('State mismatch — possible CSRF attack');
     }
 
-    const codeVerifier = sessionStorage.getItem('x_code_verifier');
+    const codeVerifier = localStorage.getItem('x_code_verifier');
     if (!codeVerifier) {
         throw new Error('Missing code verifier — please try connecting again');
     }
@@ -63,8 +63,8 @@ export async function handleXCallback(code, state) {
     const data = await res.json();
 
     // Clean up
-    sessionStorage.removeItem('x_code_verifier');
-    sessionStorage.removeItem('x_auth_state');
+    localStorage.removeItem('x_code_verifier');
+    localStorage.removeItem('x_auth_state');
 
     if (!res.ok || !data.success) {
         throw new Error(data.error || 'Authentication failed');
