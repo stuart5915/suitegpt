@@ -26,6 +26,9 @@
             max-width: 960px;
             margin: 0 auto;
             padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(172, 30%, 40%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(9, 50%, 45%, 0.04) 0%, transparent 50%);
         }
 
         /* ── Countdown Timer ── */
@@ -96,6 +99,11 @@
             padding: 0 2px;
             align-self: flex-start;
             margin-top: 6px;
+            animation: colonPulse 2s ease-in-out infinite;
+        }
+        @keyframes colonPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
         }
 
         /* Progress bar */
@@ -256,10 +264,12 @@
             text-align: center;
             position: relative;
             overflow: hidden;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
         }
         .dash-stat:hover {
             border-color: var(--border-bright);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px hsla(0, 0%, 100%, 0.03);
         }
         .dash-stat::before {
             content: '';
@@ -346,9 +356,9 @@
             justify-content: center;
             gap: var(--space-md);
             flex-wrap: wrap;
-            padding: 10px var(--space-lg);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
+            padding: 12px var(--space-lg);
+            background: linear-gradient(135deg, hsla(172, 30%, 40%, 0.08) 0%, hsla(43, 40%, 45%, 0.06) 100%);
+            border: 1px solid hsla(172, 30%, 40%, 0.15);
             border-radius: var(--radius-lg);
             font-family: var(--font-mono);
             font-size: 0.72rem;
@@ -388,6 +398,13 @@
         }
         .dash-vault:hover {
             border-color: var(--border-bright);
+            transform: translateY(-3px);
+        }
+        .dash-vault--clawnch:hover {
+            box-shadow: 0 8px 30px hsla(172, 40%, 45%, 0.12), 0 0 0 1px hsla(172, 40%, 45%, 0.15);
+        }
+        .dash-vault--inclawnch:hover {
+            box-shadow: 0 8px 30px hsla(43, 60%, 50%, 0.12), 0 0 0 1px hsla(43, 60%, 50%, 0.15);
         }
         .dash-vault::before {
             content: '';
@@ -1190,7 +1207,9 @@
             .dash { padding-left: var(--space-md); padding-right: var(--space-md); }
             .dash-hero-top h1 { font-size: 1.35rem; }
             .dash-stats-row { grid-template-columns: repeat(2, 1fr); }
+            .dash-stats-row--trio { grid-template-columns: repeat(3, 1fr); }
             .dash-vault-grid { grid-template-columns: 1fr; }
+            .dash-vault:hover { transform: none; } /* no hover lift on touch */
             .dash-detail-bar { font-size: 0.65rem; gap: var(--space-sm); }
             .dash-revenue-split { grid-template-columns: 1fr; }
             .dash-revenue-pool { flex-direction: column; text-align: center; }
@@ -1200,12 +1219,22 @@
             .dash-yield-sources { grid-template-columns: 1fr; }
             .ubi-stake-row { flex-wrap: wrap; gap: var(--space-sm); }
             .dash-milestones { gap: 4px; }
+            .dash-vault-apy { font-size: 1.1rem; }
         }
         @media (max-width: 480px) {
             .dash-stats-row { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
-            .dash-stat-val { font-size: 1.6rem; }
+            .dash-stats-row--trio { grid-template-columns: 1fr 1fr 1fr; gap: var(--space-xs); }
+            .dash-stat-val { font-size: 1.4rem; }
+            .dash-stat-label { font-size: 0.5rem; letter-spacing: 0.08em; }
+            .dash-stat-sub { font-size: 0.55rem; }
             .dash-tab-buttons { width: 100%; }
             .dash-tab-btn { flex: 1; padding: 7px 10px; font-size: 0.65rem; }
+            .dash-countdown-num { font-size: 2rem; }
+            .dash-countdown-seg { min-width: 44px; }
+            .dash-countdown-colon { font-size: 1.3rem; }
+            .dash-countdown-info { font-size: 0.62rem; }
+            .dash-vault-apy { font-size: 0.95rem; }
+            .dash-hero-connect { font-size: 0.8rem; padding: 8px 24px; }
         }
 
         /* Animations */
