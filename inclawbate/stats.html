@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclawbate Stats</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deepest: #06060b;
+            --bg-surface: #0a0a11;
+            --bg-elevated: #101018;
+            --bg-card: #15151e;
+            --border-subtle: hsl(240, 4%, 16%);
+            --border-default: hsl(240, 3%, 22%);
+            --lobster-400: hsl(9, 52%, 56%);
+            --seafoam-300: hsl(172, 30%, 56%);
+            --seafoam-400: hsl(172, 32%, 48%);
+            --sand-300: hsl(32, 32%, 66%);
+            --text-primary: hsl(12, 8%, 92%);
+            --text-secondary: hsl(12, 4%, 58%);
+            --text-dim: hsl(12, 2%, 42%);
+            --font-display: 'Nunito', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            background: var(--bg-deepest);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            min-height: 100vh;
+        }
+
+        .stats-page {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 32px 24px 48px;
+        }
+
+        /* Header */
+        .stats-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+        .stats-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f0ece6 0%, #d4a574 40%, #c75b3f 65%, #e8b4a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+        .stats-header .subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            font-family: var(--font-mono);
+        }
+        .stats-header .subtitle .live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: var(--seafoam-400);
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .stat-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--seafoam-400), var(--lobster-400));
+            opacity: 0.5;
+        }
+        .stat-card.accent-seafoam::before { background: var(--seafoam-400); opacity: 0.7; }
+        .stat-card.accent-lobster::before { background: var(--lobster-400); opacity: 0.7; }
+        .stat-card.accent-sand::before { background: var(--sand-300); opacity: 0.7; }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 900;
+            font-family: var(--font-mono);
+            line-height: 1;
+            color: var(--text-primary);
+        }
+        .stat-value .unit {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 6px;
+            font-family: var(--font-mono);
+        }
+
+        /* Wide card (spans 3 cols) */
+        .stat-card.wide {
+            grid-column: 1 / -1;
+        }
+
+        /* Section heading */
+        .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 14px;
+            padding-left: 4px;
+        }
+
+        /* Top skills list */
+        .skills-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .skill-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .skill-chip .count {
+            color: var(--seafoam-300);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        /* Recent signups */
+        .signups-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .signup-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 8px 14px 8px 8px;
+        }
+        .signup-item img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border-default);
+        }
+        .signup-item .name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .signup-item .handle {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .signup-item .wallet-badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--seafoam-400);
+            margin-left: 4px;
+        }
+
+        /* Top earners */
+        .earners-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .earner-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 10px 16px 10px 10px;
+        }
+        .earner-row img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border-default);
+        }
+        .earner-row .info {
+            flex: 1;
+        }
+        .earner-row .name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .earner-row .handle {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .earner-row .earned {
+            font-size: 16px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            color: var(--seafoam-300);
+        }
+        .earner-rank {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-dim);
+            width: 22px;
+            text-align: center;
+        }
+
+        /* Price bar */
+        .price-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 28px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .price-bar .price {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .price-bar .change.up { color: var(--seafoam-400); }
+        .price-bar .change.down { color: hsl(0, 68%, 56%); }
+
+        /* Countdown */
+        .countdown-bar {
+            text-align: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 28px;
+        }
+        .countdown-bar .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .countdown-bar .time {
+            font-size: 22px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            color: var(--seafoam-300);
+        }
+
+        /* Watermark / timestamp */
+        .stats-footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+
+        /* Loading state */
+        .loading .stat-value {
+            background: var(--bg-card);
+            border-radius: 6px;
+            color: transparent;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stats-page loading" id="statsPage">
+        <!-- Header -->
+        <div class="stats-header">
+            <h1>Inclawbate Stats</h1>
+            <div class="subtitle"><span class="live-dot"></span>Live — auto-refreshes every 30s</div>
+        </div>
+
+        <!-- Price bar -->
+        <div class="price-bar" id="priceBar">
+            <span>$CLAWNCH <span class="price" id="clawnchPrice">—</span></span>
+            <span class="change" id="clawnchChange">—</span>
+            <span style="color: var(--text-dim)">|</span>
+            <span>MCap <span class="price" id="clawnchMcap">—</span></span>
+        </div>
+
+        <!-- Next distribution countdown -->
+        <div class="countdown-bar">
+            <div class="label">Next Daily UBI Distribution</div>
+            <div class="time" id="countdown">—</div>
+        </div>
+
+        <!-- Main stats grid -->
+        <div class="section-label">Platform</div>
+        <div class="stats-grid" id="platformGrid">
+            <div class="stat-card accent-lobster">
+                <div class="stat-label">Humans</div>
+                <div class="stat-value" id="totalHumans">—</div>
+            </div>
+            <div class="stat-card accent-seafoam">
+                <div class="stat-label">Wallets Connected</div>
+                <div class="stat-value" id="walletsConnected">—</div>
+            </div>
+            <div class="stat-card accent-sand">
+                <div class="stat-label">Total Hires</div>
+                <div class="stat-value" id="totalHires">—</div>
+            </div>
+            <div class="stat-card accent-lobster">
+                <div class="stat-label">CLAWNCH Earned</div>
+                <div class="stat-value" id="totalClawnchEarned">—</div>
+                <div class="stat-sub" id="totalClawnchEarnedUsd"></div>
+            </div>
+            <div class="stat-card accent-seafoam">
+                <div class="stat-label">Currently Busy</div>
+                <div class="stat-value" id="busyCount">—</div>
+            </div>
+            <div class="stat-card accent-sand">
+                <div class="stat-label">Daily UBI Rate</div>
+                <div class="stat-value" id="dailyRate">—</div>
+                <div class="stat-sub" id="dailyRateUsd"></div>
+            </div>
+        </div>
+
+        <!-- UBI staking stats -->
+        <div class="section-label">UBI Staking</div>
+        <div class="stats-grid" id="stakingGrid">
+            <div class="stat-card accent-seafoam">
+                <div class="stat-label">$CLAWNCH Staked</div>
+                <div class="stat-value" id="clawnchStaked">—</div>
+                <div class="stat-sub" id="clawnchStakedUsd"></div>
+            </div>
+            <div class="stat-card accent-lobster">
+                <div class="stat-label">$inCLAWNCH Staked</div>
+                <div class="stat-value" id="inclawnchStaked">—</div>
+            </div>
+            <div class="stat-card accent-sand">
+                <div class="stat-label">Active Stakers</div>
+                <div class="stat-value" id="totalStakers">—</div>
+            </div>
+            <div class="stat-card accent-seafoam">
+                <div class="stat-label">Total Distributed</div>
+                <div class="stat-value" id="totalDistributed">—</div>
+                <div class="stat-sub" id="distributionCount"></div>
+            </div>
+            <div class="stat-card accent-lobster">
+                <div class="stat-label">Reward Split</div>
+                <div class="stat-value" id="rewardSplit">—</div>
+                <div class="stat-sub">stakers / treasury</div>
+            </div>
+            <div class="stat-card accent-sand">
+                <div class="stat-label">Last Distribution</div>
+                <div class="stat-value" id="lastDistribution" style="font-size:18px">—</div>
+            </div>
+        </div>
+
+        <!-- Top Skills -->
+        <div class="section-label">Top Skills</div>
+        <div class="stat-card wide" style="margin-bottom:28px">
+            <div class="skills-row" id="topSkills">
+                <span class="skill-chip" style="color:var(--text-dim)">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Top Earners -->
+        <div class="section-label">Top Earners</div>
+        <div class="earners-list" id="topEarners" style="margin-bottom:28px">
+        </div>
+
+        <!-- Recent Signups -->
+        <div class="section-label">Recent Signups</div>
+        <div class="signups-list" id="recentSignups" style="margin-bottom:28px">
+        </div>
+
+        <!-- Footer -->
+        <div class="stats-footer">
+            inclawbate.com — <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const API_BASE = 'https://www.inclawbate.com/api/inclawbate';
+        const DEXSCREENER = 'https://api.dexscreener.com/latest/dex/tokens/0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
+
+        let clawnchPrice = 0;
+
+        function fmt(n) {
+            if (n === null || n === undefined) return '—';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return n.toLocaleString();
+        }
+
+        function fmtUsd(amount) {
+            if (!clawnchPrice || !amount) return '';
+            var usd = amount * clawnchPrice;
+            return '~$' + usd.toFixed(2) + ' USD';
+        }
+
+        function el(id) { return document.getElementById(id); }
+
+        // Countdown to next daily 8am UTC
+        function getNextDaily8am() {
+            var now = new Date();
+            var next = new Date(now);
+            next.setUTCHours(8, 0, 0, 0);
+            if (now >= next) next.setUTCDate(next.getUTCDate() + 1);
+            return next;
+        }
+
+        function updateCountdown() {
+            var ms = getNextDaily8am() - new Date();
+            if (ms <= 0) { el('countdown').textContent = 'Distributing now...'; return; }
+            var h = Math.floor(ms / 3600000);
+            var m = Math.floor((ms % 3600000) / 60000);
+            var s = Math.floor((ms % 60000) / 1000);
+            el('countdown').textContent = h + 'h ' + m + 'm ' + s + 's';
+        }
+
+        function updateTimestamp() {
+            var now = new Date();
+            el('timestamp').textContent = now.toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+            }) + ' at ' + now.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        // Fetch CLAWNCH price from DexScreener
+        async function fetchPrice() {
+            try {
+                var resp = await fetch(DEXSCREENER);
+                var data = await resp.json();
+                if (data.pairs && data.pairs.length > 0) {
+                    var pair = data.pairs[0];
+                    clawnchPrice = parseFloat(pair.priceUsd) || 0;
+                    el('clawnchPrice').textContent = '$' + clawnchPrice.toFixed(6);
+
+                    var change = parseFloat(pair.priceChange?.h24) || 0;
+                    var changeEl = el('clawnchChange');
+                    changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + '% 24h';
+                    changeEl.className = 'change ' + (change >= 0 ? 'up' : 'down');
+
+                    var mcap = pair.marketCap || pair.fdv || 0;
+                    el('clawnchMcap').textContent = '$' + fmt(mcap);
+                }
+            } catch (e) {
+                console.warn('Price fetch failed:', e);
+            }
+        }
+
+        // Fetch platform stats
+        async function fetchStats() {
+            try {
+                var resp = await fetch(API_BASE + '/stats');
+                var d = await resp.json();
+
+                el('totalHumans').textContent = fmt(d.total_humans);
+                el('walletsConnected').textContent = fmt(d.wallets_connected);
+                el('totalHires').textContent = fmt(d.total_hires);
+                el('totalClawnchEarned').textContent = fmt(d.total_clawnch);
+                el('totalClawnchEarnedUsd').textContent = fmtUsd(d.total_clawnch);
+                el('busyCount').textContent = fmt(d.busy_count);
+
+                // Top skills
+                if (d.top_skills && d.top_skills.length > 0) {
+                    el('topSkills').innerHTML = d.top_skills.map(function(s) {
+                        return '<span class="skill-chip">' + escHtml(s.skill) + '<span class="count">' + s.count + '</span></span>';
+                    }).join('');
+                }
+
+                // Top earners
+                if (d.top_earners && d.top_earners.length > 0) {
+                    el('topEarners').innerHTML = d.top_earners.map(function(e, i) {
+                        var avatar = e.x_avatar_url || '';
+                        var img = avatar ? '<img src="' + escAttr(avatar) + '" alt="">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-default)"></div>';
+                        return '<div class="earner-row">' +
+                            '<span class="earner-rank">#' + (i + 1) + '</span>' +
+                            img +
+                            '<div class="info"><div class="name">' + escHtml(e.x_name || e.x_handle) + '</div><div class="handle">@' + escHtml(e.x_handle) + '</div></div>' +
+                            '<div class="earned">' + fmt(e.total_earned) + ' <span style="font-size:11px;color:var(--text-dim)">CLAWNCH</span></div>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                // Recent signups
+                if (d.recent_signups && d.recent_signups.length > 0) {
+                    el('recentSignups').innerHTML = d.recent_signups.map(function(s) {
+                        var avatar = s.x_avatar_url || '';
+                        var img = avatar ? '<img src="' + escAttr(avatar) + '" alt="">' : '<div style="width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-default)"></div>';
+                        var wallet = s.has_wallet ? '<span class="wallet-badge" title="Wallet connected"></span>' : '';
+                        return '<div class="signup-item">' +
+                            img +
+                            '<div><div class="name">' + escHtml(s.x_name || s.x_handle) + wallet + '</div>' +
+                            '<div class="handle">@' + escHtml(s.x_handle) + '</div></div>' +
+                        '</div>';
+                    }).join('');
+                }
+            } catch (e) {
+                console.warn('Stats fetch failed:', e);
+            }
+        }
+
+        // Fetch UBI staking stats
+        async function fetchUbi() {
+            try {
+                var resp = await fetch(API_BASE + '/ubi');
+                var d = await resp.json();
+
+                el('clawnchStaked').textContent = fmt(Math.round(d.total_balance || 0));
+                el('clawnchStakedUsd').textContent = fmtUsd(d.total_balance);
+                el('inclawnchStaked').textContent = fmt(Math.round(d.inclawnch_staked || 0));
+                el('totalStakers').textContent = fmt(d.total_stakers || 0);
+
+                var dailyRate = d.daily_rate || 0;
+                el('dailyRate').innerHTML = fmt(Math.round(dailyRate)) + '<span class="unit">CLAWNCH</span>';
+                el('dailyRateUsd').textContent = fmtUsd(dailyRate);
+
+                el('totalDistributed').textContent = fmt(Math.round(d.total_distributed || 0));
+                el('distributionCount').textContent = (d.distribution_count || 0) + ' distributions';
+
+                var split = d.reward_split_pct || 80;
+                el('rewardSplit').innerHTML = split + '<span class="unit">/ ' + (100 - split) + '</span>';
+
+                if (d.last_distribution_at) {
+                    var dt = new Date(d.last_distribution_at);
+                    el('lastDistribution').textContent = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    el('lastDistribution').textContent = 'None yet';
+                }
+            } catch (e) {
+                console.warn('UBI fetch failed:', e);
+            }
+        }
+
+        function escHtml(s) {
+            if (!s) return '';
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function escAttr(s) {
+            return escHtml(s);
+        }
+
+        // Initial load
+        async function loadAll() {
+            await Promise.all([fetchPrice(), fetchStats(), fetchUbi()]);
+            document.getElementById('statsPage').classList.remove('loading');
+            updateTimestamp();
+        }
+
+        loadAll();
+
+        // Auto-refresh every 30 seconds
+        setInterval(function() {
+            fetchPrice();
+            fetchStats();
+            fetchUbi();
+            updateTimestamp();
+        }, 30000);
+
+        // Countdown ticks every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    })();
+    </script>
+</body>
+</html>
