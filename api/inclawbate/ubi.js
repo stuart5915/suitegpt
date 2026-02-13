@@ -9,6 +9,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 
+const TG_BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
+const TG_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+
+async function notifyAdmin(text) {
+    if (!TG_BOT_TOKEN || !TG_ADMIN_CHAT_ID) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: TG_ADMIN_CHAT_ID, text, parse_mode: 'HTML' })
+        });
+    } catch (e) { /* silent */ }
+}
+
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com'
@@ -454,6 +468,17 @@ export default async function handler(req, res) {
                     .from('inclawbate_ubi_treasury')
                     .update(updateObj)
                     .eq('id', 1);
+            }
+
+            // Notify admin if queued (not instant)
+            if (!instant) {
+                const tokenLabel = tokenType === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+                notifyAdmin(
+                    `🦞 <b>Withdrawal Request</b>\n\n` +
+                    `Wallet: <code>${wallet_address}</code>\n` +
+                    `Amount: ${Math.floor(totalUnstaked).toLocaleString()} ${tokenLabel}\n\n` +
+                    `The unstake wallet needs to be topped up.`
+                );
             }
 
             return res.status(200).json({
