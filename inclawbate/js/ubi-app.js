@@ -682,11 +682,26 @@ function daysSince(dateStr) {
             }
         }
 
-        // No wallet available at all
-        document.querySelectorAll('.stake-status').forEach(function(el) {
-            el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
-            el.className = 'ubi-stake-status stake-status error';
-        });
+        // No wallet available — on mobile, offer deep links to open in wallet app browser
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            var dappUrl = encodeURIComponent(window.location.href);
+            var rawUrl = window.location.href;
+            document.querySelectorAll('.stake-status').forEach(function(el) {
+                el.innerHTML = 'Open this page in your wallet app:<br>' +
+                    '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">MetaMask</a>' +
+                    ' &middot; ' +
+                    '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Coinbase Wallet</a>' +
+                    ' &middot; ' +
+                    '<a href="https://link.trustwallet.com/open_url?coin_id=8453&url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Trust Wallet</a>';
+                el.className = 'ubi-stake-status stake-status';
+            });
+        } else {
+            document.querySelectorAll('.stake-status').forEach(function(el) {
+                el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet extension.';
+                el.className = 'ubi-stake-status stake-status error';
+            });
+        }
         return null;
     }
 
