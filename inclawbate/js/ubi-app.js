@@ -248,12 +248,10 @@ function daysSince(dateStr) {
         var weeklyRate = Number(ubiData?.weekly_rate) || 0;
         var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
 
-        // Overall APY in header stat
-        if (totalWeightedStake > 0 && weeklyRate > 0) {
-            var overallApy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
-            document.getElementById('statApy').textContent = overallApy + '%';
-        } else {
-            document.getElementById('statApy').textContent = '--';
+        // Weekly distribution hero number
+        var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
+        if (cdWeeklyEl) {
+            cdWeeklyEl.textContent = weeklyRate > 0 ? fmt(Math.round(weeklyRate)) : '--';
         }
 
         // Per-card APYs
