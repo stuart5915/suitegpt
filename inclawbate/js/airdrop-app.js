@@ -390,12 +390,16 @@ function updateDistTimer(lastDistAt, distCount) {
         // Never distributed yet
         countdownEl.textContent = 'No distributions yet';
         countdownEl.className = 'ubi-dist-timer-countdown overdue';
-        labelEl.textContent = 'Send your first weekly UBI distribution below';
+        labelEl.textContent = 'Send your first daily UBI distribution below';
         return;
     }
 
-    const lastDist = new Date(lastDistAt).getTime();
-    const nextDist = lastDist + (7 * 24 * 60 * 60 * 1000); // +7 days
+    // Next distribution = next 6am EST (11am UTC)
+    const now = new Date();
+    const nextDist6am = new Date(now);
+    nextDist6am.setUTCHours(11, 0, 0, 0);
+    if (now >= nextDist6am) nextDist6am.setUTCDate(nextDist6am.getUTCDate() + 1);
+    const nextDist = nextDist6am.getTime();
 
     function tick() {
         const now = Date.now();
@@ -473,10 +477,11 @@ async function loadDistribution() {
     const stakers = dist.stakers || [];
     const pendingUnstakes = dist.pending_unstakes || [];
     const weeklyRate = dist.weekly_rate || 0;
+    const dailyRate = weeklyRate / 7;
     const totalWeighted = dist.total_weighted_days || 0;
 
     // Update stats
-    document.getElementById('distWeeklyRate').textContent = fmtNum(weeklyRate);
+    document.getElementById('distDailyRate').textContent = fmtNum(Math.round(dailyRate));
     document.getElementById('distTotalWeighted').textContent = fmtNum(totalWeighted);
     document.getElementById('distActiveStakers').textContent = stakers.length;
 
@@ -487,13 +492,13 @@ async function loadDistribution() {
     const clawnchStaked = Number(data.total_balance) || 0;
     const inclawnchStaked = Number(data.inclawnch_staked) || 0;
     const totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
-    if (totalWeightedStake > 0 && weeklyRate > 0) {
-        const apy = ((weeklyRate * 52) / totalWeightedStake * 100).toFixed(1);
+    if (totalWeightedStake > 0 && dailyRate > 0) {
+        const apy = ((dailyRate * 365) / totalWeightedStake * 100).toFixed(1);
         document.getElementById('distEffectiveApy').textContent = apy + '%';
     }
 
-    // Set input to current weekly rate
-    document.getElementById('weeklyRateInput').value = weeklyRate || '';
+    // Set input to current daily rate
+    document.getElementById('dailyRateInput').value = Math.round(dailyRate) || '';
     document.getElementById('splitPctInput').value = Number(data.reward_split_pct) || 80;
 
     // Render staker table
@@ -551,9 +556,9 @@ async function loadDistribution() {
     document.getElementById('returnUnstakedBtn').disabled = pendingUnstakes.length === 0;
 }
 
-// Set weekly rate
+// Set daily rate
 document.getElementById('setRateBtn').addEventListener('click', async () => {
-    const rateInput = document.getElementById('weeklyRateInput');
+    const rateInput = document.getElementById('dailyRateInput');
     const rateStatus = document.getElementById('rateStatus');
     const rate = Number(rateInput.value);
 
@@ -573,12 +578,12 @@ document.getElementById('setRateBtn').addEventListener('click', async () => {
             body: JSON.stringify({
                 action: 'update-config',
                 wallet_address: userAddress,
-                weekly_rate: rate
+                daily_rate: rate
             })
         });
         const data = await resp.json();
         if (resp.ok && data.success) {
-            rateStatus.textContent = 'Weekly rate set to ' + fmtNum(rate) + ' CLAWNCH';
+            rateStatus.textContent = 'Daily rate set to ' + fmtNum(rate) + ' CLAWNCH';
             rateStatus.className = 'airdrop-status success';
             loadDistribution();
         } else {
