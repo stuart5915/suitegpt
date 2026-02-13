@@ -908,7 +908,11 @@ function daysSince(dateStr) {
             unstakeAvailable.clawnch = Number(data.clawnch) || 0;
             unstakeAvailable.inclawnch = Number(data.inclawnch) || 0;
 
-            // Banner removed from UI — data still used internally by handleUnstake
+            // Update withdrawal liquidity display
+            var wlC = document.getElementById('wlClawnch');
+            var wlI = document.getElementById('wlInclawnch');
+            if (wlC) wlC.textContent = fmt(Math.floor(unstakeAvailable.clawnch));
+            if (wlI) wlI.textContent = fmt(Math.floor(unstakeAvailable.inclawnch));
         } catch (e) { /* silent */ }
     }
 
