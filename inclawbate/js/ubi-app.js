@@ -834,8 +834,13 @@ function daysSince(dateStr) {
                 html += '</div>';
                 html += '</div>';
 
-                // Whale widget — always visible, locked for non-capped users
+                // Whale widget — manage standalone teaser + inline full widget
+                var whaleTeaser = document.getElementById('whaleTeaser');
+
                 if (isCapped) {
+                    // Hide standalone teaser — whale gets the full widget here
+                    if (whaleTeaser) whaleTeaser.style.display = 'none';
+
                     var excessDaily = uncappedAllocation - capAmount;
                     var excessUsd = excessDaily * clawnchPrice;
                     var savedRedirect = data.whale_redirect_target || null;
@@ -890,35 +895,21 @@ function daysSince(dateStr) {
                     html += '<span class="ubi-whale-save-status" id="whaleRedirectStatus"></span>';
                     html += '</div>';
                 } else {
-                    // Locked teaser — calculate threshold to become a whale
-                    var whaleThresholdWeighted = totalWeightedAll * (walletCapPct / 100);
-                    var neededExtra = Math.max(0, whaleThresholdWeighted - userWeighted);
-                    var thresholdUsd = clawnchPrice > 0 ? neededExtra * clawnchPrice : 0;
-                    var thresholdLabel = '';
-                    if (thresholdUsd > 0) {
-                        thresholdLabel = 'Stake ~$' + fmtUsd(thresholdUsd) + ' more in CLAWNCH or inCLAWNCH to unlock';
-                    } else {
-                        thresholdLabel = 'Stake ' + fmt(Math.ceil(neededExtra)) + ' more weighted CLAWNCH to unlock';
+                    // Not capped — update standalone teaser with personalized threshold
+                    if (whaleTeaser) {
+                        whaleTeaser.style.display = '';
+                        var descEl = document.getElementById('whaleTeaserDesc');
+                        if (descEl) {
+                            var whaleThresholdWeighted = totalWeightedAll * (walletCapPct / 100);
+                            var neededExtra = Math.max(0, whaleThresholdWeighted - userWeighted);
+                            var thresholdUsd = clawnchPrice > 0 ? neededExtra * clawnchPrice : 0;
+                            if (thresholdUsd > 0) {
+                                descEl.textContent = 'Stake ~$' + fmtUsd(thresholdUsd) + ' more in CLAWNCH or inCLAWNCH to unlock';
+                            } else {
+                                descEl.textContent = 'Stake ' + fmt(Math.ceil(neededExtra)) + ' more weighted CLAWNCH to unlock';
+                            }
+                        }
                     }
-
-                    html += '<div class="ubi-whale-widget ubi-whale-widget--locked">';
-                    html += '<div class="ubi-whale-locked-overlay">';
-                    html += '<span class="ubi-whale-locked-icon">\uD83D\uDC33</span>';
-                    html += '<span class="ubi-whale-locked-title">Whale Distributor</span>';
-                    html += '<span class="ubi-whale-locked-desc">' + esc(thresholdLabel) + '</span>';
-                    html += '<span class="ubi-whale-locked-sub">Whales control where their excess yield goes &mdash; philanthropy, reinvest, or redistribute</span>';
-                    html += '</div>';
-
-                    // Faded background content for visual tease
-                    html += '<div class="ubi-whale-locked-bg">';
-                    html += '<div class="ubi-whale-options">';
-                    html += '<div class="ubi-whale-option"><span class="ubi-whale-option-icon">\uD83D\uDD04</span><span class="ubi-whale-option-title">Redistribute</span></div>';
-                    html += '<div class="ubi-whale-option"><span class="ubi-whale-option-icon">\uD83D\uDC9C</span><span class="ubi-whale-option-title">Philanthropy</span></div>';
-                    html += '<div class="ubi-whale-option"><span class="ubi-whale-option-icon">\uD83C\uDF31</span><span class="ubi-whale-option-title">Reinvest</span></div>';
-                    html += '</div>';
-                    html += '</div>';
-
-                    html += '</div>';
                 }
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
