@@ -746,22 +746,42 @@ document.getElementById('returnUnstakedBtn').addEventListener('click', async () 
     const inclawnchReturns = aggregated.filter(a => a.token === 'inclawnch');
 
     try {
+        let lastTxHash = null;
+
         // Return CLAWNCH tokens
         if (clawnchReturns.length > 0) {
             distStatus.textContent = 'Returning CLAWNCH to ' + clawnchReturns.length + ' wallets...';
             distStatus.className = 'airdrop-status';
-            await disperseReturn(CLAWNCH_ADDRESS, clawnchReturns, distStatus);
+            lastTxHash = await disperseReturn(CLAWNCH_ADDRESS, clawnchReturns, distStatus);
         }
 
         // Return inCLAWNCH tokens
         if (inclawnchReturns.length > 0) {
             distStatus.textContent = 'Returning inCLAWNCH to ' + inclawnchReturns.length + ' wallets...';
             distStatus.className = 'airdrop-status';
-            await disperseReturn(INCLAWNCH_ADDRESS, inclawnchReturns, distStatus);
+            lastTxHash = await disperseReturn(INCLAWNCH_ADDRESS, inclawnchReturns, distStatus);
         }
+
+        // Mark unstakes as returned in DB
+        distStatus.textContent = 'Recording returns...';
+        try {
+            await fetch(API_BASE + '/ubi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'mark-returned',
+                    wallet_address: userAddress,
+                    returns: aggregated.map(a => ({ wallet: a.wallet, token: a.token })),
+                    tx_hash: lastTxHash
+                })
+            });
+        } catch (e) { /* non-critical */ }
 
         distStatus.textContent = 'All unstaked tokens returned!';
         distStatus.className = 'airdrop-status success';
+
+        // Refresh to clear returned items from list
+        loadDistribution();
     } catch (err) {
         console.error('Return unstaked error:', err);
         distStatus.textContent = err.message || 'Return failed';
@@ -813,6 +833,7 @@ async function disperseReturn(tokenAddress, returns, statusEl) {
 
     statusEl.textContent = 'Confirming...';
     await waitForReceipt(disperseTx);
+    return disperseTx;
 }
 
 // ── ABI encode disperseToken(address, address[], uint256[]) ──

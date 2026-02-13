@@ -222,14 +222,31 @@ export default async function handler(req, res) {
             };
 
             // Also include pending unstakes (recently unstaked, for return)
-            const { data: unstaked } = await supabase
-                .from('inclawbate_ubi_contributions')
-                .select('wallet_address, x_handle, x_name, clawnch_amount, token, unstaked_at')
-                .eq('active', false)
-                .not('unstaked_at', 'is', null)
-                .order('unstaked_at', { ascending: false })
-                .limit(50);
-            result.distribution.pending_unstakes = unstaked || [];
+            // Try filtering out already-returned ones first
+            let unstaked = [];
+            try {
+                const { data: u1, error: u1Err } = await supabase
+                    .from('inclawbate_ubi_contributions')
+                    .select('id, wallet_address, x_handle, x_name, clawnch_amount, token, unstaked_at, withdrawal_status')
+                    .eq('active', false)
+                    .not('unstaked_at', 'is', null)
+                    .or('withdrawal_status.is.null,withdrawal_status.neq.completed')
+                    .order('unstaked_at', { ascending: false })
+                    .limit(50);
+                if (u1Err) throw u1Err;
+                unstaked = u1 || [];
+            } catch (e) {
+                // withdrawal_status column may not exist — fall back to unfiltered
+                const { data: u2 } = await supabase
+                    .from('inclawbate_ubi_contributions')
+                    .select('id, wallet_address, x_handle, x_name, clawnch_amount, token, unstaked_at')
+                    .eq('active', false)
+                    .not('unstaked_at', 'is', null)
+                    .order('unstaked_at', { ascending: false })
+                    .limit(50);
+                unstaked = u2 || [];
+            }
+            result.distribution.pending_unstakes = unstaked;
         }
 
         return res.status(200).json(result);
@@ -550,6 +567,50 @@ export default async function handler(req, res) {
                 success: true,
                 distribution_count: (Number(curr?.distribution_count) || 0) + 1
             });
+        }
+
+        // ── Mark Unstakes as Returned (admin only) ──
+        if (action === 'mark-returned') {
+            const { wallet_address, returns, tx_hash } = req.body;
+            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+
+            // returns = [{wallet, token}] — mark all matching pending unstakes as completed
+            if (!Array.isArray(returns) || returns.length === 0) {
+                return res.status(400).json({ error: 'returns array required' });
+            }
+
+            let marked = 0;
+            for (const r of returns) {
+                // Try with withdrawal_status column first
+                try {
+                    const { data: rows } = await supabase
+                        .from('inclawbate_ubi_contributions')
+                        .select('id')
+                        .eq('wallet_address', r.wallet.toLowerCase())
+                        .eq('token', r.token)
+                        .eq('active', false)
+                        .not('unstaked_at', 'is', null);
+
+                    if (rows && rows.length > 0) {
+                        const ids = rows.map(row => row.id);
+                        await supabase
+                            .from('inclawbate_ubi_contributions')
+                            .update({
+                                withdrawal_status: 'completed',
+                                withdrawal_tx: tx_hash || null
+                            })
+                            .in('id', ids);
+                        marked += ids.length;
+                    }
+                } catch (e) {
+                    // Column may not exist — skip gracefully
+                    console.error('mark-returned error for', r.wallet, r.token, e.message);
+                }
+            }
+
+            return res.status(200).json({ success: true, marked });
         }
 
         return res.status(400).json({ error: 'Unknown action' });
