@@ -176,14 +176,25 @@ export default async function handler(req, res) {
             .eq('id', 1)
             .single();
 
-        // Get total active stakers (unique wallets)
-        const { data: activeWallets } = await supabase
+        // Get all active stakes to compute real TVL + staker count
+        const { data: activeStakes } = await supabase
             .from('inclawbate_ubi_contributions')
-            .select('wallet_address')
+            .select('wallet_address, clawnch_amount, token')
             .eq('active', true);
 
-        const uniqueWallets = new Set((activeWallets || []).map(r => r.wallet_address));
+        const uniqueWallets = new Set((activeStakes || []).map(r => r.wallet_address));
         const totalStakers = uniqueWallets.size;
+
+        // Compute actual staked totals from active contributions
+        let realClawnchStaked = 0;
+        let realInclawnchStaked = 0;
+        (activeStakes || []).forEach(s => {
+            if (s.token === 'inclawnch') {
+                realInclawnchStaked += s.clawnch_amount;
+            } else {
+                realClawnchStaked += s.clawnch_amount;
+            }
+        });
 
         // Recent contributors (active only)
         let contributors = [];
@@ -211,6 +222,9 @@ export default async function handler(req, res) {
             result.reward_split_pct = 80;
         }
 
+        // Override with real computed totals (treasury counters can drift)
+        result.total_balance = realClawnchStaked;
+        result.inclawnch_staked = realInclawnchStaked;
         result.total_stakers = totalStakers;
         result.contributors = contributors;
 
