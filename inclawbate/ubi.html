@@ -245,6 +245,9 @@
             margin-left: auto;
             margin-right: auto;
         }
+        .dash-stats-row--trio {
+            grid-template-columns: repeat(3, 1fr);
+        }
         .dash-stat {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
@@ -308,6 +311,32 @@
             font-size: 0.65rem;
             color: var(--text-dim);
             display: block;
+        }
+
+        /* Buy buttons row */
+        .dash-buy-row {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        .dash-buy-btn {
+            padding: 8px 24px;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .dash-buy-btn:hover { opacity: 0.85; transform: scale(1.03); }
+        .dash-buy-btn--seafoam {
+            background: linear-gradient(135deg, var(--seafoam-400), hsl(160, 35%, 45%));
+            color: white;
+        }
+        .dash-buy-btn--gold {
+            background: linear-gradient(135deg, hsl(43, 70%, 55%), var(--lobster-400));
+            color: white;
         }
 
         /* Detail bar */
@@ -1253,11 +1282,16 @@
             <button class="dash-hero-connect stake-connect-btn" data-token="clawnch">Connect Wallet</button>
         </div>
 
-        <div class="dash-stats-row dash-stats-row--compact">
-            <div class="dash-stat">
-                <span class="dash-stat-label">TVL</span>
-                <span class="dash-stat-val" id="treasuryUsd">--</span>
-                <span class="dash-stat-sub" id="treasuryValue">0 CLAWNCH</span>
+        <div class="dash-stats-row dash-stats-row--trio">
+            <div class="dash-stat dash-stat--seafoam">
+                <span class="dash-stat-label">CLAWNCH Staked</span>
+                <span class="dash-stat-val" id="statClawnchStaked">0</span>
+                <span class="dash-stat-sub" id="tvlClawnchUsd"></span>
+            </div>
+            <div class="dash-stat dash-stat--gold">
+                <span class="dash-stat-label">inCLAWNCH Staked</span>
+                <span class="dash-stat-val" id="statInclawnchStaked">0</span>
+                <span class="dash-stat-sub" id="tvlInclawnchUsd"></span>
             </div>
             <div class="dash-stat">
                 <span class="dash-stat-label">Stakers</span>
@@ -1265,10 +1299,17 @@
                 <span class="dash-stat-sub" id="statApy">--</span>
             </div>
         </div>
-        <!-- Hidden APY elements for JS compatibility -->
+        <!-- Hidden elements for JS compatibility -->
         <div style="display:none">
             <span id="apyValClawnch">--</span>
             <span id="apyValInclawnch">--</span>
+            <span id="treasuryUsd">--</span>
+            <span id="treasuryValue"></span>
+        </div>
+
+        <div class="dash-buy-row">
+            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base" target="_blank" rel="noopener" class="dash-buy-btn dash-buy-btn--seafoam">Buy CLAWNCH</a>
+            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base" target="_blank" rel="noopener" class="dash-buy-btn dash-buy-btn--gold">Buy inCLAWNCH</a>
         </div>
 
         <div class="dash-detail-bar">
@@ -1281,8 +1322,6 @@
 
         <!-- Hidden elements for JS compatibility -->
         <div style="display:none">
-            <span id="statClawnchStaked">0</span>
-            <span id="statInclawnchStaked">0</span>
             <span id="ubiIncomeValue">--</span>
             <span id="ubiIncomeSub"></span>
             <span id="ubiIncomeWeekly">--</span>

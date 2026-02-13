@@ -129,16 +129,19 @@ function daysSince(dateStr) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
         const inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
 
-        // Treasury main display: both token amounts
+        // Treasury display (hidden, for JS compat)
         document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH + ' + fmt(inclawnchStaked) + ' inCLAWNCH';
 
-        // USD value (both tokens combined)
-        const totalUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
-        if (clawnchPrice > 0 || inclawnchPrice > 0) {
-            document.getElementById('treasuryUsd').textContent = '~$' + fmtUsd(totalUsd) + ' USD';
-        } else {
-            document.getElementById('treasuryUsd').textContent = '';
-        }
+        // USD value per token
+        const clawnchUsd = clawnchStaked * clawnchPrice;
+        const inclawnchUsd = inclawnchStaked * inclawnchPrice;
+        const totalUsd = clawnchUsd + inclawnchUsd;
+        document.getElementById('treasuryUsd').textContent = '~$' + fmtUsd(totalUsd) + ' USD';
+
+        var tvlCEl = document.getElementById('tvlClawnchUsd');
+        var tvlIEl = document.getElementById('tvlInclawnchUsd');
+        if (tvlCEl) tvlCEl.textContent = clawnchPrice > 0 ? '~$' + fmtUsd(clawnchUsd) : '';
+        if (tvlIEl) tvlIEl.textContent = inclawnchPrice > 0 ? '~$' + fmtUsd(inclawnchUsd) : '';
 
         // Show fetched CLAWNCH price for transparency
         var priceEl = document.getElementById('treasuryPrice');
