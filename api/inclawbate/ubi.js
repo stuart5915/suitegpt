@@ -470,9 +470,16 @@ export default async function handler(req, res) {
                     .eq('id', 1);
             }
 
-            // Notify admin if queued (not instant)
-            if (!instant) {
-                const tokenLabel = tokenType === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+            // Notify admin
+            const tokenLabel = tokenType === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+            if (instant) {
+                notifyAdmin(
+                    `✅ <b>Unstake Sent</b>\n\n` +
+                    `Wallet: <code>${wallet_address}</code>\n` +
+                    `Amount: ${Math.floor(totalUnstaked).toLocaleString()} ${tokenLabel}\n` +
+                    `Tx: <a href="https://basescan.org/tx/${txHash}">View</a>`
+                );
+            } else {
                 notifyAdmin(
                     `🦞 <b>Withdrawal Request</b>\n\n` +
                     `Wallet: <code>${wallet_address}</code>\n` +
