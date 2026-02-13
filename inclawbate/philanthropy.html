@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philanthropy Vote — Inclawbate</title>
+    <meta name="description" content="Direct treasury yield: reinvest into UBI or fund real-world philanthropy. Your inCLAWNCH stake is your vote.">
+    <meta property="og:title" content="Philanthropy Vote — Inclawbate">
+    <meta property="og:description" content="inCLAWNCH stakers decide: grow UBI or fund missions. Your stake, your voice.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/philanthropy">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?tagline=Philanthropy+Vote">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* ══════════════════════════════════════
+           PHILANTHROPY VOTE PAGE
+           ══════════════════════════════════════ */
+        .phil {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(172, 30%, 40%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(9, 50%, 45%, 0.04) 0%, transparent 50%);
+        }
+
+        /* ── Hero ── */
+        .phil-hero {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+            animation: philFadeIn 0.5s var(--ease-smooth) both;
+        }
+        .phil-hero h1 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-xs);
+        }
+        .phil-hero p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── Community Results Card ── */
+        .phil-results {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+            animation: philFadeIn 0.5s 0.05s var(--ease-smooth) both;
+        }
+        .phil-results::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--seafoam-400), var(--lobster-400));
+        }
+        .phil-results-title {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            text-align: center;
+            margin-bottom: var(--space-lg);
+        }
+
+        /* Split bar */
+        .phil-bar-wrap {
+            margin-bottom: var(--space-md);
+        }
+        .phil-bar {
+            height: 32px;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            display: flex;
+            position: relative;
+            background: var(--bg-card);
+        }
+        .phil-bar-reinvest {
+            height: 100%;
+            background: linear-gradient(90deg, var(--seafoam-400), hsl(160, 32%, 52%));
+            transition: width 0.8s var(--ease-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+        .phil-bar-philanthropy {
+            height: 100%;
+            background: linear-gradient(90deg, hsl(9, 48%, 50%), var(--lobster-400));
+            transition: width 0.8s var(--ease-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+        .phil-bar-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+            padding: 0 8px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .phil-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        .phil-bar-side {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .phil-bar-side-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .phil-bar-side--reinvest .phil-bar-side-label { color: var(--seafoam-300); }
+        .phil-bar-side--philanthropy .phil-bar-side-label { color: var(--lobster-300); }
+        .phil-bar-side--philanthropy { text-align: right; }
+        .phil-bar-side-val {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--text-dim);
+        }
+
+        /* Stats row */
+        .phil-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: var(--space-lg);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .phil-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .phil-stat-val {
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .phil-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+        }
+
+        /* Empty state */
+        .phil-empty {
+            text-align: center;
+            padding: var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* ── Your Vote Card ── */
+        .phil-vote {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+            animation: philFadeIn 0.5s 0.1s var(--ease-smooth) both;
+        }
+        .phil-vote::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 15%; right: 15%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--seafoam-400), var(--lobster-400), transparent);
+            border-radius: 0 0 4px 4px;
+        }
+        .phil-vote-title {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--seafoam-400);
+            margin-bottom: var(--space-md);
+            text-align: center;
+        }
+
+        /* Connect state */
+        .phil-connect-wrap {
+            text-align: center;
+            padding: var(--space-md) 0;
+        }
+        .phil-connect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 28px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-smooth);
+        }
+        .phil-connect-btn:hover {
+            border-color: var(--seafoam-400);
+            background: hsla(172, 32%, 48%, 0.06);
+        }
+        .phil-connect-btn.connected {
+            border-color: var(--seafoam-400);
+            background: hsla(172, 32%, 48%, 0.08);
+            color: var(--seafoam-300);
+        }
+
+        /* No-stake message */
+        .phil-no-stake {
+            text-align: center;
+            padding: var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            display: none;
+        }
+        .phil-no-stake a {
+            color: var(--seafoam-300);
+            text-decoration: underline;
+        }
+
+        /* Vote form (hidden until wallet connects + has stakes) */
+        .phil-form {
+            display: none;
+        }
+
+        .phil-stake-info {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .phil-stake-info strong {
+            color: var(--text-primary);
+        }
+
+        /* Preset buttons */
+        .phil-presets {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+        }
+        .phil-preset-btn {
+            padding: 7px 18px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-smooth);
+        }
+        .phil-preset-btn:hover {
+            border-color: var(--lobster-400);
+            color: var(--text-primary);
+        }
+        .phil-preset-btn.active {
+            background: hsla(9, 52%, 56%, 0.12);
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+
+        /* Slider */
+        .phil-slider-wrap {
+            margin-bottom: var(--space-lg);
+            padding: 0 var(--space-sm);
+        }
+        .phil-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .phil-slider-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .phil-slider-label--reinvest { color: var(--seafoam-300); }
+        .phil-slider-label--philanthropy { color: var(--lobster-300); }
+
+        .phil-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(90deg, var(--seafoam-400), var(--lobster-400));
+            outline: none;
+            cursor: pointer;
+        }
+        .phil-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 3px solid var(--bg-elevated);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .phil-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        .phil-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--text-primary);
+            border: 3px solid var(--bg-elevated);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+
+        /* Preview */
+        .phil-preview {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+            padding: var(--space-md);
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-subtle);
+        }
+        .phil-preview-pct {
+            font-family: var(--font-mono);
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .phil-preview-reinvest {
+            color: var(--seafoam-300);
+        }
+        .phil-preview-philanthropy {
+            color: var(--lobster-300);
+        }
+        .phil-preview-split {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-lg);
+        }
+        .phil-preview-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .phil-preview-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+
+        /* Cast vote button */
+        .phil-cast-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--accent-gradient);
+            color: white;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s var(--ease-smooth);
+        }
+        .phil-cast-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        .phil-cast-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .phil-vote-status {
+            text-align: center;
+            margin-top: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            min-height: 1.2em;
+        }
+        .phil-vote-status.success { color: var(--seafoam-300); }
+        .phil-vote-status.error { color: var(--lobster-300); }
+
+        /* ── Explainer Cards ── */
+        .phil-explainer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+            animation: philFadeIn 0.5s 0.15s var(--ease-smooth) both;
+        }
+        .phil-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        .phil-card::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: 20%; right: 20%;
+            height: 2px;
+            border-radius: 0 0 4px 4px;
+        }
+        .phil-card--reinvest::before {
+            background: linear-gradient(90deg, transparent, var(--seafoam-400), transparent);
+        }
+        .phil-card--philanthropy::before {
+            background: linear-gradient(90deg, transparent, var(--lobster-400), transparent);
+        }
+        .phil-card-icon {
+            font-size: 1.6rem;
+            margin-bottom: var(--space-sm);
+        }
+        .phil-card-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .phil-card--reinvest .phil-card-title { color: var(--seafoam-300); }
+        .phil-card--philanthropy .phil-card-title { color: var(--lobster-300); }
+        .phil-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .phil { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .phil-hero h1 { font-size: 1.4rem; }
+        }
+        @media (max-width: 560px) {
+            .phil-explainer { grid-template-columns: 1fr; }
+            .phil-stats { gap: 20px; }
+            .phil-bar { height: 26px; }
+            .phil-bar-label { font-size: 0.6rem; }
+        }
+
+        @keyframes philFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Toast ── */
+        .phil-toast-container {
+            position: fixed;
+            top: 80px;
+            right: 16px;
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .phil-toast {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            transform: translateX(120%);
+            transition: all 0.3s var(--ease-smooth);
+        }
+        .phil-toast.visible { transform: translateX(0); }
+        .phil-toast.hiding { opacity: 0; transform: translateX(40px); }
+        .phil-toast--error { border-color: hsla(12, 75%, 55%, 0.4); }
+        .phil-toast--success { border-color: hsla(172, 50%, 45%, 0.4); }
+        .phil-toast-icon { font-size: 1.1rem; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/humans" class="nav-link">Humans</a>
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <a href="/ubi" class="nav-link">UBI</a>
+        <a href="/philanthropy" class="nav-link active">Philanthropy</a>
+        <a href="/docs" class="nav-link">Docs</a>
+    </div>
+</nav>
+
+<div class="phil">
+
+    <!-- ═══ Hero ═══ -->
+    <section class="phil-hero">
+        <h1>Philanthropy Vote</h1>
+        <p>Your inCLAWNCH stake is your voice. Direct treasury yield toward growing UBI payouts or funding real-world missions&mdash;churches, charities, and causes that matter.</p>
+    </section>
+
+    <!-- ═══ Community Results ═══ -->
+    <section class="phil-results">
+        <div class="phil-results-title">Community Allocation</div>
+
+        <div id="philResultsContent">
+            <div class="phil-bar-wrap">
+                <div class="phil-bar">
+                    <div class="phil-bar-reinvest" id="barReinvest" style="width:100%">
+                        <span class="phil-bar-label" id="barReinvestLabel">--</span>
+                    </div>
+                    <div class="phil-bar-philanthropy" id="barPhilanthropy" style="width:0%">
+                        <span class="phil-bar-label" id="barPhilanthropyLabel">--</span>
+                    </div>
+                </div>
+                <div class="phil-bar-labels">
+                    <div class="phil-bar-side phil-bar-side--reinvest">
+                        <span class="phil-bar-side-label">Reinvest UBI</span>
+                        <span class="phil-bar-side-val" id="barReinvestSub">Grow everyone's daily payouts</span>
+                    </div>
+                    <div class="phil-bar-side phil-bar-side--philanthropy">
+                        <span class="phil-bar-side-label">Philanthropy</span>
+                        <span class="phil-bar-side-val" id="barPhilanthropySub">Fund real-world missions</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="phil-stats">
+                <div class="phil-stat">
+                    <span class="phil-stat-val" id="statVoters">0</span>
+                    <span class="phil-stat-label">Voters</span>
+                </div>
+                <div class="phil-stat">
+                    <span class="phil-stat-val" id="statVotingPower">0</span>
+                    <span class="phil-stat-label">inCLAWNCH Voting</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="phil-empty" id="philEmpty">
+            No votes yet. Be the first to shape the treasury.
+        </div>
+    </section>
+
+    <!-- ═══ Your Vote ═══ -->
+    <section class="phil-vote">
+        <div class="phil-vote-title">Your Vote</div>
+
+        <div class="phil-connect-wrap" id="philConnectWrap">
+            <button class="phil-connect-btn" id="philConnectBtn">Connect Wallet</button>
+        </div>
+
+        <div class="phil-no-stake" id="philNoStake">
+            You need active inCLAWNCH stakes to vote.<br>
+            <a href="/ubi">Stake inCLAWNCH to participate</a>
+        </div>
+
+        <div class="phil-form" id="philForm">
+            <div class="phil-stake-info">
+                Your voting power: <strong id="philMyStake">0</strong> inCLAWNCH
+            </div>
+
+            <div class="phil-presets">
+                <button class="phil-preset-btn" data-pct="0">0% Charity</button>
+                <button class="phil-preset-btn" data-pct="25">25%</button>
+                <button class="phil-preset-btn" data-pct="50">50/50</button>
+                <button class="phil-preset-btn" data-pct="75">75%</button>
+                <button class="phil-preset-btn" data-pct="100">100% Charity</button>
+            </div>
+
+            <div class="phil-slider-wrap">
+                <div class="phil-slider-labels">
+                    <span class="phil-slider-label phil-slider-label--reinvest">Reinvest UBI</span>
+                    <span class="phil-slider-label phil-slider-label--philanthropy">Philanthropy</span>
+                </div>
+                <input type="range" class="phil-slider" id="philSlider" min="0" max="100" value="0" step="1">
+            </div>
+
+            <div class="phil-preview">
+                <div class="phil-preview-split">
+                    <div class="phil-preview-side">
+                        <span class="phil-preview-pct phil-preview-reinvest" id="previewReinvest">100%</span>
+                        <span class="phil-preview-label">Reinvest</span>
+                    </div>
+                    <div class="phil-preview-side">
+                        <span class="phil-preview-pct phil-preview-philanthropy" id="previewPhilanthropy">0%</span>
+                        <span class="phil-preview-label">Philanthropy</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="phil-cast-btn" id="philCastBtn">Cast Vote</button>
+            <div class="phil-vote-status" id="philVoteStatus"></div>
+        </div>
+    </section>
+
+    <!-- ═══ Explainer Cards ═══ -->
+    <section class="phil-explainer">
+        <div class="phil-card phil-card--reinvest">
+            <div class="phil-card-icon">&#128200;</div>
+            <div class="phil-card-title">Reinvest UBI</div>
+            <div class="phil-card-desc">
+                Treasury yield is used to buy back CLAWNCH and distribute it to all stakers.
+                More reinvestment means bigger daily UBI payouts for everyone in the pool.
+            </div>
+        </div>
+        <div class="phil-card phil-card--philanthropy">
+            <div class="phil-card-icon">&#128156;</div>
+            <div class="phil-card-title">Philanthropy</div>
+            <div class="phil-card-desc">
+                A share of treasury yield goes to real-world causes&mdash;churches, missions, charities,
+                and communities in need. Inclawbate Missions will let stakers propose and vote on specific recipients.
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; The Agent-Human Economy</p>
+        <div class="footer-links">
+            <a href="/humans" class="footer-link">Browse</a>
+            <a href="/inclawbator" class="footer-link">Inclawbator</a>
+            <a href="/ubi" class="footer-link">UBI</a>
+            <a href="/philanthropy" class="footer-link">Philanthropy</a>
+            <a href="/docs" class="footer-link">Docs</a>
+        </div>
+    </div>
+</footer>
+
+<!-- Toast container -->
+<div class="phil-toast-container" id="philToastContainer"></div>
+
+<script src="/js/nav-auth.js"></script>
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/philanthropy-app.js"></script>
+
+</body>
+</html>
