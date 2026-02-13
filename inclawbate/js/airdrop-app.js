@@ -566,9 +566,10 @@ async function loadDistribution() {
         document.getElementById('distEffectiveApy').textContent = apy + '%';
     }
 
-    // Set input to current daily rate
+    // Set inputs to current config
     document.getElementById('dailyRateInput').value = Math.round(dailyRate) || '';
     document.getElementById('splitPctInput').value = Number(data.reward_split_pct) || 80;
+    document.getElementById('walletCapInput').value = Number(data.wallet_cap_pct) || 10;
 
     // Render staker table
     const tbody = document.getElementById('stakerTableBody');
@@ -580,13 +581,17 @@ async function loadDistribution() {
             const tokenLabel = s.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
             const barWidth = Math.max(4, Math.min(80, s.share_pct * 0.8));
             const autoBadge = s.auto_stake ? '<span class="ubi-autostake-badge">auto</span>' : '';
+            const cappedBadge = s.is_capped ? '<span class="ubi-capped-badge">capped</span>' : '';
+            const shareDisplay = s.is_capped
+                ? `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}% <span style="color:var(--text-dim);font-size:0.7em;">(was ${s.raw_share_pct}%)</span>`
+                : `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%`;
             return `<tr>
-                <td><strong>${escHtml(name)}</strong>${autoBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
+                <td><strong>${escHtml(name)}</strong>${autoBadge}${cappedBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
                 <td>${tokenLabel}</td>
                 <td class="mono">${fmtNum(s.amount)}</td>
                 <td class="mono">${s.staked_days}d</td>
                 <td class="mono">${fmtNum(s.weighted_days)}</td>
-                <td><span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%</td>
+                <td>${shareDisplay}</td>
                 <td class="mono" style="color: var(--seafoam-300); font-weight:600;">${fmtNum(s.share_amount)}</td>
             </tr>`;
         }).join('');
@@ -727,6 +732,46 @@ document.getElementById('setSplitBtn').addEventListener('click', async () => {
     } catch (err) {
         splitStatus.textContent = err.message || 'Failed';
         splitStatus.className = 'airdrop-status error';
+    }
+});
+
+// Set wallet cap percentage
+document.getElementById('setCapBtn').addEventListener('click', async () => {
+    const capInput = document.getElementById('walletCapInput');
+    const capStatus = document.getElementById('capStatus');
+    const cap = Number(capInput.value);
+
+    if (isNaN(cap) || cap < 1 || cap > 100) {
+        capStatus.textContent = 'Enter 1-100';
+        capStatus.className = 'airdrop-status error';
+        return;
+    }
+
+    capStatus.textContent = 'Saving...';
+    capStatus.className = 'airdrop-status';
+
+    try {
+        const resp = await fetch(API_BASE + '/ubi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'update-config',
+                wallet_address: userAddress,
+                wallet_cap_pct: cap
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            capStatus.textContent = 'Per-wallet cap set to ' + cap + '%';
+            capStatus.className = 'airdrop-status success';
+            loadDistribution();
+        } else {
+            capStatus.textContent = data.error || 'Failed';
+            capStatus.className = 'airdrop-status error';
+        }
+    } catch (err) {
+        capStatus.textContent = err.message || 'Failed';
+        capStatus.className = 'airdrop-status error';
     }
 });
 

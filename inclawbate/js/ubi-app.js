@@ -802,9 +802,21 @@ function daysSince(dateStr) {
             if (userWeighted > 0 && totalWeightedAll > 0 && dailyRateVal > 0) {
                 var sharePct = (userWeighted / totalWeightedAll) * 100;
                 var dailyAllocation = (userWeighted / totalWeightedAll) * dailyRateVal;
+
+                // Apply whale cap client-side for display
+                var walletCapPct = Number(ubiData?.wallet_cap_pct) || 10;
+                var capAmount = dailyRateVal * (walletCapPct / 100);
+                var isCapped = dailyAllocation > capAmount && walletCapPct < 100;
+                var uncappedAllocation = dailyAllocation;
+                if (isCapped) {
+                    dailyAllocation = capAmount;
+                }
+
                 var dailyUsdVal = dailyAllocation * clawnchPrice;
                 var yearlyAllocation = dailyAllocation * 365;
                 var yearlyUsdVal = yearlyAllocation * clawnchPrice;
+
+                var displaySharePct = isCapped ? walletCapPct : sharePct;
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
@@ -818,9 +830,66 @@ function daysSince(dateStr) {
                 if (clawnchPrice > 0 && dailyUsdVal >= 0.01) {
                     html += '<span class="ubi-pc-usd">~$' + fmtUsd(dailyUsdVal) + '/day &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
                 }
-                html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
+                html += '<span class="ubi-pc-share">' + displaySharePct.toFixed(2) + '% of pool' + (isCapped ? ' (capped)' : '') + '</span>';
                 html += '</div>';
                 html += '</div>';
+
+                // Whale widget — show for capped stakers
+                if (isCapped) {
+                    var excessDaily = uncappedAllocation - capAmount;
+                    var excessUsd = excessDaily * clawnchPrice;
+                    var savedRedirect = data.whale_redirect_target || null;
+
+                    html += '<div class="ubi-whale-widget" id="whaleWidget">';
+                    html += '<div class="ubi-whale-header">';
+                    html += '<span class="ubi-whale-emoji">\uD83D\uDC33</span>';
+                    html += '<span class="ubi-whale-title">Whale Cap Active (' + walletCapPct + '% max)</span>';
+                    html += '</div>';
+
+                    html += '<div class="ubi-whale-stats">';
+                    html += '<div class="ubi-whale-stat">';
+                    html += '<span class="ubi-whale-stat-label">Uncapped Share</span>';
+                    html += '<span class="ubi-whale-stat-value">' + fmt(Math.round(uncappedAllocation)) + ' CLAWNCH/day (' + sharePct.toFixed(1) + '%)</span>';
+                    html += '</div>';
+                    html += '<div class="ubi-whale-stat">';
+                    html += '<span class="ubi-whale-stat-label">Your Capped Share</span>';
+                    html += '<span class="ubi-whale-stat-value ubi-whale-stat-value--capped">' + fmt(Math.round(capAmount)) + ' CLAWNCH/day (' + walletCapPct + '%)</span>';
+                    html += '</div>';
+                    html += '<div class="ubi-whale-stat">';
+                    html += '<span class="ubi-whale-stat-label">Excess Redistributed</span>';
+                    html += '<span class="ubi-whale-stat-value ubi-whale-stat-value--excess">' + fmt(Math.round(excessDaily)) + ' CLAWNCH/day' + (clawnchPrice > 0 ? ' (~$' + fmtUsd(excessUsd) + ')' : '') + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    html += '<div class="ubi-whale-redirect-label">Where should your excess go?</div>';
+                    html += '<div class="ubi-whale-options">';
+
+                    html += '<label class="ubi-whale-option' + (!savedRedirect ? ' active' : '') + '">';
+                    html += '<input type="radio" name="whaleRedirect" value=""' + (!savedRedirect ? ' checked' : '') + '>';
+                    html += '<span class="ubi-whale-option-icon">\uD83D\uDD04</span>';
+                    html += '<span class="ubi-whale-option-title">Redistribute</span>';
+                    html += '<span class="ubi-whale-option-desc">Spread to smaller stakers (default)</span>';
+                    html += '</label>';
+
+                    html += '<label class="ubi-whale-option' + (savedRedirect === 'philanthropy' ? ' active' : '') + '">';
+                    html += '<input type="radio" name="whaleRedirect" value="philanthropy"' + (savedRedirect === 'philanthropy' ? ' checked' : '') + '>';
+                    html += '<span class="ubi-whale-option-icon">\uD83D\uDC9C</span>';
+                    html += '<span class="ubi-whale-option-title">Philanthropy</span>';
+                    html += '<span class="ubi-whale-option-desc">Direct excess to community causes</span>';
+                    html += '</label>';
+
+                    html += '<label class="ubi-whale-option' + (savedRedirect === 'reinvest' ? ' active' : '') + '">';
+                    html += '<input type="radio" name="whaleRedirect" value="reinvest"' + (savedRedirect === 'reinvest' ? ' checked' : '') + '>';
+                    html += '<span class="ubi-whale-option-icon">\uD83C\uDF31</span>';
+                    html += '<span class="ubi-whale-option-title">Reinvest</span>';
+                    html += '<span class="ubi-whale-option-desc">Return excess to the UBI pool</span>';
+                    html += '</label>';
+
+                    html += '</div>';
+                    html += '<button class="ubi-whale-save-btn" id="whaleRedirectSaveBtn">Save Preference</button>';
+                    html += '<span class="ubi-whale-save-status" id="whaleRedirectStatus"></span>';
+                    html += '</div>';
+                }
             } else if (userWeighted > 0 && totalWeightedAll > 0) {
                 var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
                 html += '<div class="ubi-pending-allocation">';
@@ -920,6 +989,54 @@ function daysSince(dateStr) {
                     }
                     autoToggle.disabled = false;
                 });
+            }
+
+            // Wire up whale redirect option cards + save button
+            var whaleWidget = document.getElementById('whaleWidget');
+            if (whaleWidget) {
+                // Make option cards toggle active class
+                whaleWidget.querySelectorAll('.ubi-whale-option').forEach(function(opt) {
+                    opt.addEventListener('click', function() {
+                        whaleWidget.querySelectorAll('.ubi-whale-option').forEach(function(o) { o.classList.remove('active'); });
+                        opt.classList.add('active');
+                        opt.querySelector('input').checked = true;
+                    });
+                });
+
+                var saveBtn = document.getElementById('whaleRedirectSaveBtn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', async function() {
+                        var selected = whaleWidget.querySelector('input[name="whaleRedirect"]:checked');
+                        var value = selected ? (selected.value || null) : null;
+                        var statusEl = document.getElementById('whaleRedirectStatus');
+                        saveBtn.disabled = true;
+                        if (statusEl) statusEl.textContent = 'Saving...';
+
+                        try {
+                            var resp = await fetch('/api/inclawbate/ubi', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'update-whale-redirect',
+                                    wallet_address: stakeWallet,
+                                    redirect_target: value
+                                })
+                            });
+                            var rData = await resp.json();
+                            if (resp.ok && rData.success) {
+                                if (statusEl) statusEl.textContent = 'Saved!';
+                                ubiToast('Redirect preference saved', 'success');
+                            } else {
+                                if (statusEl) statusEl.textContent = rData.error || 'Failed';
+                                ubiToast(rData.error || 'Failed to save', 'error');
+                            }
+                        } catch (e) {
+                            if (statusEl) statusEl.textContent = 'Failed';
+                            ubiToast('Failed to save preference', 'error');
+                        }
+                        saveBtn.disabled = false;
+                    });
+                }
             }
 
             // Start personalized countdown timer

@@ -97,8 +97,8 @@ async function verifyTokenTransfer(txHash, tokenAddress) {
     return { valid: true, amount, from };
 }
 
-// Calculate staker-days breakdown for all active stakers
-async function calculateStakerDays(weeklyRate) {
+// Calculate staker-days breakdown for all active stakers (with per-wallet cap)
+async function calculateStakerDays(weeklyRate, walletCapPct) {
     const { data: activeStakes } = await supabase
         .from('inclawbate_ubi_contributions')
         .select('wallet_address, x_handle, x_name, clawnch_amount, token, created_at')
@@ -166,18 +166,63 @@ async function calculateStakerDays(weeklyRate) {
         autoStakeMap[p.wallet_address.toLowerCase()] = p.ubi_auto_stake || false;
     });
 
+    var dailyRate = weeklyRate / 7;
+
+    // Compute initial proportional shares
     for (const s of stakers) {
         s.auto_stake = autoStakeMap[s.wallet.toLowerCase()] || false;
         s.share_pct = totalWeightedDays > 0 ? (s.weighted_days / totalWeightedDays) * 100 : 0;
-        var dailyRate = weeklyRate / 7;
         s.share_amount = totalWeightedDays > 0 && dailyRate > 0
             ? (s.weighted_days / totalWeightedDays) * dailyRate
             : 0;
-        // Round for display
+        s.is_capped = false;
+        s.raw_share_amount = s.share_amount;
+        s.raw_share_pct = s.share_pct;
+    }
+
+    // ── Iterative Per-Wallet Cap ──
+    var capPct = Number(walletCapPct) || 10;
+    if (capPct < 100 && dailyRate > 0) {
+        var capAmount = dailyRate * (capPct / 100);
+
+        for (var iter = 0; iter < 10; iter++) {
+            var newlyCapped = stakers.filter(s => !s.is_capped && s.share_amount > capAmount);
+            if (newlyCapped.length === 0) break;
+
+            var redistributionPool = 0;
+            for (const s of newlyCapped) {
+                redistributionPool += s.share_amount - capAmount;
+                s.raw_share_amount = s.share_amount;
+                s.share_amount = capAmount;
+                s.is_capped = true;
+            }
+
+            // Redistribute excess proportionally to uncapped stakers by weighted_days
+            var uncapped = stakers.filter(s => !s.is_capped);
+            if (uncapped.length === 0) break; // all capped — remainder stays in treasury
+
+            var uncappedWeight = uncapped.reduce((sum, s) => sum + s.weighted_days, 0);
+            if (uncappedWeight > 0) {
+                for (const s of uncapped) {
+                    s.share_amount += redistributionPool * (s.weighted_days / uncappedWeight);
+                }
+            }
+        }
+
+        // Recalculate share_pct from final share_amount
+        for (const s of stakers) {
+            s.share_pct = dailyRate > 0 ? (s.share_amount / dailyRate) * 100 : 0;
+        }
+    }
+
+    // Round for display
+    for (const s of stakers) {
         s.staked_days = Math.round(s.staked_days * 10) / 10;
         s.weighted_days = Math.round(s.weighted_days * 100) / 100;
         s.share_pct = Math.round(s.share_pct * 100) / 100;
         s.share_amount = Math.round(s.share_amount * 100) / 100;
+        s.raw_share_amount = Math.round(s.raw_share_amount * 100) / 100;
+        s.raw_share_pct = Math.round(s.raw_share_pct * 100) / 100;
     }
 
     // Sort by share descending
@@ -259,6 +304,10 @@ export default async function handler(req, res) {
         result.daily_rate = (Number(result.weekly_rate) || 0) / 7;
         // Deposit address — stakes go to the unstake wallet so it self-funds withdrawals
         result.deposit_address = DEPOSIT_WALLET;
+        // Per-wallet cap percentage (default 10)
+        if (result.wallet_cap_pct === undefined || result.wallet_cap_pct === null) {
+            result.wallet_cap_pct = 10;
+        }
 
         // If wallet query param, return user's active stakes + auto_stake preference
         const walletParam = req.query.wallet;
@@ -270,19 +319,22 @@ export default async function handler(req, res) {
                 .order('created_at', { ascending: false });
             result.my_stakes = myStakes || [];
 
-            // Include auto_stake preference
+            // Include auto_stake + whale redirect preferences
             const { data: prof } = await supabase
                 .from('human_profiles')
-                .select('ubi_auto_stake')
+                .select('ubi_auto_stake, ubi_whale_redirect_pct, ubi_whale_redirect_target')
                 .eq('wallet_address', walletParam.toLowerCase())
                 .single();
             result.auto_stake = prof?.ubi_auto_stake || false;
+            result.whale_redirect_pct = Number(prof?.ubi_whale_redirect_pct) || 0;
+            result.whale_redirect_target = prof?.ubi_whale_redirect_target || null;
         }
 
         // If distribution=true (admin), return full staker breakdown
         if (req.query.distribution === 'true') {
             const weeklyRate = Number(result.weekly_rate) || 0;
-            const { stakers, total_weighted_days } = await calculateStakerDays(weeklyRate);
+            const capPct = Number(result.wallet_cap_pct) || 10;
+            const { stakers, total_weighted_days } = await calculateStakerDays(weeklyRate, capPct);
             result.distribution = {
                 stakers,
                 total_weighted_days,
@@ -616,13 +668,21 @@ export default async function handler(req, res) {
                 updateObj.reward_split_pct = pct;
             }
 
+            if (req.body.wallet_cap_pct !== undefined) {
+                const cap = Number(req.body.wallet_cap_pct);
+                if (isNaN(cap) || cap < 1 || cap > 100) {
+                    return res.status(400).json({ error: 'wallet_cap_pct must be 1-100' });
+                }
+                updateObj.wallet_cap_pct = cap;
+            }
+
             if (req.body.total_distributed !== undefined) {
                 const td = Number(req.body.total_distributed);
                 if (!isNaN(td) && td >= 0) updateObj.total_distributed = td;
             }
 
             if (Object.keys(updateObj).length <= 1) {
-                return res.status(400).json({ error: 'Provide weekly_rate, daily_rate, reward_split_pct, or total_distributed' });
+                return res.status(400).json({ error: 'Provide weekly_rate, daily_rate, reward_split_pct, wallet_cap_pct, or total_distributed' });
             }
 
             const { error: updateErr } = await supabase
@@ -638,7 +698,8 @@ export default async function handler(req, res) {
                 success: true,
                 weekly_rate: updateObj.weekly_rate,
                 daily_rate: updateObj.weekly_rate ? updateObj.weekly_rate / 7 : undefined,
-                reward_split_pct: updateObj.reward_split_pct
+                reward_split_pct: updateObj.reward_split_pct,
+                wallet_cap_pct: updateObj.wallet_cap_pct
             });
         }
 
@@ -837,6 +898,48 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, recorded });
+        }
+
+        // ── Update Whale Redirect Preference ──
+        if (action === 'update-whale-redirect') {
+            const { wallet_address, redirect_target } = req.body;
+            if (!wallet_address) {
+                return res.status(400).json({ error: 'wallet_address required' });
+            }
+
+            const wallet = wallet_address.toLowerCase();
+
+            // Validate redirect_target: null (keep redistributed), 'philanthropy', or 'reinvest'
+            const validTargets = [null, 'philanthropy', 'reinvest'];
+            if (!validTargets.includes(redirect_target)) {
+                return res.status(400).json({ error: 'redirect_target must be null, philanthropy, or reinvest' });
+            }
+
+            const { data: profile } = await supabase
+                .from('human_profiles')
+                .select('wallet_address')
+                .eq('wallet_address', wallet)
+                .single();
+
+            if (!profile) {
+                return res.status(404).json({ error: 'Profile not found' });
+            }
+
+            const { error: updateErr } = await supabase
+                .from('human_profiles')
+                .update({
+                    ubi_whale_redirect_target: redirect_target
+                })
+                .eq('wallet_address', wallet);
+
+            if (updateErr) {
+                return res.status(500).json({ error: 'Failed to update redirect preference' });
+            }
+
+            return res.status(200).json({
+                success: true,
+                redirect_target: redirect_target
+            });
         }
 
         return res.status(400).json({ error: 'Unknown action' });
