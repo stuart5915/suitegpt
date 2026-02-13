@@ -135,9 +135,22 @@ function humanCard(p) {
 
     const hasWallet = !!p.wallet_address;
     const cardClass = hasWallet ? 'human-card' : 'human-card no-wallet';
-    const totalPaid = p.total_paid || 0;
+    const airdropPaid = p.total_paid || 0;
+    const ubiReceived = Number(p.ubi_total_received) || 0;
+    const totalPaid = airdropPaid + ubiReceived;
     const hires = p.hire_count || 0;
     const barPct = totalPaid > 0 ? Math.max(4, Math.round((totalPaid / maxPaid) * 100)) : 0;
+
+    let clawnchMeta = '<span class="text-dim">No allocation yet</span>';
+    if (totalPaid > 0) {
+        const parts = [];
+        if (airdropPaid > 0) parts.push(`<span class="human-card-earned-detail">Airdrop: ${Math.round(airdropPaid).toLocaleString()}</span>`);
+        if (ubiReceived > 0) parts.push(`<span class="human-card-earned-detail">UBI: ${Math.round(ubiReceived).toLocaleString()}</span>`);
+        clawnchMeta = `<span class="human-card-earned">${Math.round(totalPaid).toLocaleString()} CLAWNCH</span>`;
+        if (airdropPaid > 0 && ubiReceived > 0) {
+            clawnchMeta += `<span class="human-card-earned-breakdown">${parts.join(' · ')}</span>`;
+        }
+    }
 
     return `<a href="/u/${handle}" class="${cardClass}">
         <div class="human-card-header">
@@ -150,7 +163,7 @@ function humanCard(p) {
         ${tagline ? `<div class="human-card-tagline">${tagline}</div>` : ''}
         ${skillBadges ? `<div class="human-card-skills">${skillBadges}</div>` : ''}
         <div class="human-card-meta">
-            ${totalPaid > 0 ? `<span class="human-card-earned">${Math.round(totalPaid).toLocaleString()} CLAWNCH</span>` : '<span class="text-dim">No allocation yet</span>'}
+            ${clawnchMeta}
             ${hires > 0 ? `<span class="text-dim">${hires} hire${hires > 1 ? 's' : ''}</span>` : ''}
         </div>
         ${totalPaid > 0 ? `<div class="human-card-bar"><div class="human-card-bar-fill" style="width:${barPct}%"></div></div>` : ''}
@@ -180,7 +193,7 @@ async function loadProfiles(append = false) {
         hasMore = res.hasMore || false;
 
         // Calculate max CLAWNCH for allocation bars
-        const batchMax = profiles.reduce((max, p) => Math.max(max, p.total_paid || 0), 0);
+        const batchMax = profiles.reduce((max, p) => Math.max(max, (p.total_paid || 0) + (Number(p.ubi_total_received) || 0)), 0);
         if (!append) maxPaid = batchMax || 1;
         else maxPaid = Math.max(maxPaid, batchMax);
 

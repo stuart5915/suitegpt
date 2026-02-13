@@ -648,6 +648,25 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to record distribution' });
             }
 
+            // Increment ubi_total_received per wallet
+            const recipients = req.body.recipients; // [{wallet, amount}]
+            if (Array.isArray(recipients) && recipients.length > 0) {
+                for (const r of recipients) {
+                    if (!r.wallet || !r.amount) continue;
+                    const { data: profile } = await supabase
+                        .from('human_profiles')
+                        .select('ubi_total_received')
+                        .eq('wallet_address', r.wallet.toLowerCase())
+                        .single();
+                    if (profile) {
+                        await supabase
+                            .from('human_profiles')
+                            .update({ ubi_total_received: (Number(profile.ubi_total_received) || 0) + Number(r.amount) })
+                            .eq('wallet_address', r.wallet.toLowerCase());
+                    }
+                }
+            }
+
             return res.status(200).json({
                 success: true,
                 distribution_count: (Number(curr?.distribution_count) || 0) + 1,

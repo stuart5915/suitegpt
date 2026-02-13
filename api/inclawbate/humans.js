@@ -16,7 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
 
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 

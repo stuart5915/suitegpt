@@ -774,7 +774,11 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
             await fetch(API_BASE + '/ubi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'mark-distributed', wallet_address: userAddress })
+                body: JSON.stringify({
+                    action: 'mark-distributed',
+                    wallet_address: userAddress,
+                    recipients: stakers.map(s => ({ wallet: s.wallet, amount: Math.floor(s.share_amount) }))
+                })
             });
         } catch (e) { /* non-critical */ }
 
