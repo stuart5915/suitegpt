@@ -1,7 +1,7 @@
 // Inclawbate — Philanthropy Vote
-// GET  — public results (weighted by stakes: CLAWNCH 1x, inCLAWNCH 2x)
-// GET  ?wallet=0x... — also returns user's vote + stake
-// POST {wallet_address, philanthropy_pct} — upsert vote (must have active CLAWNCH or inCLAWNCH stakes)
+// GET  — public results (weighted by live on-chain balances: CLAWNCH 1x, inCLAWNCH 2x)
+// GET  ?wallet=0x... — also returns user's vote + balance
+// POST {wallet_address, philanthropy_pct} — upsert vote (must hold CLAWNCH or inCLAWNCH)
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,10 +10,60 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
+const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
+const INCLAWNCH_ADDRESS = '0xb0b6e0e9da530f68d713cc03a813b506205ac808';
+const BALANCE_SELECTOR = '0x70a08231';
+
+const BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org'
+];
+
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+function pad32(hex) {
+    return hex.replace('0x', '').padStart(64, '0');
+}
+
+async function rpcCall(method, params) {
+    for (let i = 0; i < BASE_RPCS.length; i++) {
+        try {
+            const resp = await fetch(BASE_RPCS[i], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+            });
+            if (resp.status === 429) continue;
+            const data = await resp.json();
+            if (data.result !== undefined) return data.result;
+        } catch (e) { /* try next */ }
+    }
+    return null;
+}
+
+// Fetch CLAWNCH + inCLAWNCH balances for a single wallet
+async function getWalletBalances(wallet) {
+    const callData = BALANCE_SELECTOR + pad32(wallet);
+    const [clRes, inRes] = await Promise.all([
+        rpcCall('eth_call', [{ to: CLAWNCH_ADDRESS, data: callData }, 'latest']),
+        rpcCall('eth_call', [{ to: INCLAWNCH_ADDRESS, data: callData }, 'latest'])
+    ]);
+    const clawnch = clRes ? Number(BigInt(clRes)) / 1e18 : 0;
+    const inclawnch = inRes ? Number(BigInt(inRes)) / 1e18 : 0;
+    return { clawnch, inclawnch, weight: clawnch + (inclawnch * 2) };
+}
+
+// Batch-fetch balances for multiple wallets in parallel
+async function getBatchBalances(wallets) {
+    const results = await Promise.all(wallets.map(w => getWalletBalances(w)));
+    const map = {};
+    wallets.forEach(function(w, i) { map[w] = results[i]; });
+    return map;
+}
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -31,35 +81,28 @@ export default async function handler(req, res) {
             .from('inclawbate_philanthropy_votes')
             .select('wallet_address, philanthropy_pct');
 
-        // Fetch all active stakes (CLAWNCH 1x weight, inCLAWNCH 2x weight)
-        const { data: stakes } = await supabase
-            .from('inclawbate_ubi_contributions')
-            .select('wallet_address, clawnch_amount, token')
-            .eq('active', true);
+        const voterWallets = (votes || []).map(v => v.wallet_address);
 
-        // Build wallet → weighted voting power map
-        const stakeMap = {};
-        (stakes || []).forEach(function(s) {
-            const w = s.wallet_address;
-            const multiplier = s.token === 'inclawnch' ? 2 : 1;
-            stakeMap[w] = (stakeMap[w] || 0) + (Number(s.clawnch_amount) || 0) * multiplier;
-        });
+        // Include queried wallet in the batch if not already a voter
+        const walletParam = req.query.wallet ? req.query.wallet.toLowerCase() : null;
+        const allWallets = walletParam && !voterWallets.includes(walletParam)
+            ? [...voterWallets, walletParam]
+            : voterWallets;
+
+        // Fetch live on-chain balances for all voters (+ queried wallet)
+        const balanceMap = allWallets.length > 0 ? await getBatchBalances(allWallets) : {};
 
         // Compute weighted results
-        const voteMap = {};
-        (votes || []).forEach(function(v) {
-            voteMap[v.wallet_address] = v.philanthropy_pct;
-        });
-
         let totalWeight = 0;
         let weightedPhilanthropy = 0;
         let voterCount = 0;
 
-        for (const wallet in voteMap) {
-            const stake = stakeMap[wallet] || 0;
-            if (stake <= 0) continue; // no active stakes = zero weight
-            totalWeight += stake;
-            weightedPhilanthropy += stake * voteMap[wallet];
+        for (const vote of (votes || [])) {
+            const bal = balanceMap[vote.wallet_address];
+            const weight = bal ? bal.weight : 0;
+            if (weight <= 0) continue; // sold tokens = zero weight
+            totalWeight += weight;
+            weightedPhilanthropy += weight * vote.philanthropy_pct;
             voterCount++;
         }
 
@@ -72,18 +115,19 @@ export default async function handler(req, res) {
             total_weighted_voting: Math.round(totalWeight)
         };
 
-        // If wallet param, include user's vote + stake
-        const walletParam = req.query.wallet;
+        // If wallet param, include user's vote + live balance
         if (walletParam) {
-            const w = walletParam.toLowerCase();
             const { data: myVote } = await supabase
                 .from('inclawbate_philanthropy_votes')
                 .select('philanthropy_pct')
-                .eq('wallet_address', w)
+                .eq('wallet_address', walletParam)
                 .single();
 
+            const bal = balanceMap[walletParam] || { clawnch: 0, inclawnch: 0, weight: 0 };
             result.my_vote = myVote ? myVote.philanthropy_pct : null;
-            result.my_voting_power = stakeMap[w] || 0;
+            result.my_voting_power = Math.round(bal.weight);
+            result.my_clawnch = Math.round(bal.clawnch);
+            result.my_inclawnch = Math.round(bal.inclawnch);
         }
 
         return res.status(200).json(result);
@@ -103,20 +147,11 @@ export default async function handler(req, res) {
 
         const w = wallet_address.toLowerCase();
 
-        // Verify wallet has active stakes (CLAWNCH or inCLAWNCH)
-        const { data: activeStakes } = await supabase
-            .from('inclawbate_ubi_contributions')
-            .select('clawnch_amount, token')
-            .eq('wallet_address', w)
-            .eq('active', true);
+        // Verify wallet holds CLAWNCH or inCLAWNCH (live on-chain check)
+        const bal = await getWalletBalances(w);
 
-        const totalWeight = (activeStakes || []).reduce(function(sum, s) {
-            const multiplier = s.token === 'inclawnch' ? 2 : 1;
-            return sum + (Number(s.clawnch_amount) || 0) * multiplier;
-        }, 0);
-
-        if (totalWeight <= 0) {
-            return res.status(403).json({ error: 'You must have active CLAWNCH or inCLAWNCH stakes to vote' });
+        if (bal.weight <= 0) {
+            return res.status(403).json({ error: 'You must hold CLAWNCH or inCLAWNCH to vote' });
         }
 
         // Upsert vote
