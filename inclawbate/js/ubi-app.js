@@ -322,6 +322,17 @@ function daysSince(dateStr) {
             }
         }
 
+        // Countdown KPI: annual UBI rate in USD
+        var cdAnnualEl = document.getElementById('cdAnnualUbiUsd');
+        if (cdAnnualEl) {
+            if (dailyRate > 0 && clawnchPrice > 0) {
+                var annualUsd = dailyRate * 365 * clawnchPrice;
+                cdAnnualEl.textContent = '$' + fmt(Math.round(annualUsd));
+            } else {
+                cdAnnualEl.textContent = '--';
+            }
+        }
+
         // Daily earnings per 100k staked
         if (weeklyClawnchEl) {
             if (totalWeightedStake > 0 && dailyRate > 0) {
