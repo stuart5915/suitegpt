@@ -723,14 +723,19 @@ function daysSince(dateStr) {
 
     async function handleUnstake(token) {
         var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
-        if (!confirm('Unstake all your ' + tokenLabel + '? Your tokens will be returned in the next weekly distribution.')) {
+        if (!confirm('Unstake all your ' + tokenLabel + '? Your tokens will be sent back to your wallet immediately.')) {
             return;
         }
 
         var btn = document.querySelector('.btn-unstake[data-token="' + token + '"]');
+        var statusEl = document.querySelector('.stake-status[data-token="' + token + '"]');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Unstaking...';
+            btn.textContent = 'Sending tokens...';
+        }
+        if (statusEl) {
+            statusEl.textContent = 'Sending ' + tokenLabel + ' back to your wallet...';
+            statusEl.className = 'ubi-stake-status stake-status';
         }
 
         try {
@@ -759,18 +764,37 @@ function daysSince(dateStr) {
                 var iStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
                 document.getElementById('treasuryValue').textContent = fmt(cStaked) + ' CLAWNCH + ' + fmt(iStaked) + ' inCLAWNCH';
 
-                // Reload stakes + APY
+                if (statusEl) {
+                    var txLink = data.tx_hash ? ' <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>' : '';
+                    statusEl.innerHTML = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet.' + txLink;
+                    statusEl.className = 'ubi-stake-status stake-status success';
+                }
+
+                // Reload stakes, balances, APY
+                fetchBalances();
                 loadMyStakes();
                 updateAllApys();
             } else {
-                alert(data.error || 'Unstake failed');
+                var errMsg = data.error || 'Unstake failed';
+                if (statusEl) {
+                    statusEl.textContent = errMsg;
+                    statusEl.className = 'ubi-stake-status stake-status error';
+                } else {
+                    alert(errMsg);
+                }
                 if (btn) {
                     btn.disabled = false;
                     btn.textContent = 'Unstake';
                 }
             }
         } catch (err) {
-            alert('Unstake failed: ' + (err.message || 'Unknown error'));
+            var errText = 'Unstake failed: ' + (err.message || 'Unknown error');
+            if (statusEl) {
+                statusEl.textContent = errText;
+                statusEl.className = 'ubi-stake-status stake-status error';
+            } else {
+                alert(errText);
+            }
             if (btn) {
                 btn.disabled = false;
                 btn.textContent = 'Unstake';

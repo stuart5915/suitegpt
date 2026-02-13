@@ -7,6 +7,7 @@
 // POST {action:"update-config", wallet_address, weekly_rate} — admin: set weekly rate
 
 import { createClient } from '@supabase/supabase-js';
+import { ethers } from 'ethers';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -324,13 +325,17 @@ export default async function handler(req, res) {
             });
         }
 
-        // ── Unstake ──
+        // ── Unstake (instant on-chain return) ──
         if (action === 'unstake') {
             const { wallet_address, token } = req.body;
             if (!wallet_address) {
                 return res.status(400).json({ error: 'wallet_address required' });
             }
+            if (!/^0x[a-fA-F0-9]{40}$/.test(wallet_address)) {
+                return res.status(400).json({ error: 'Invalid wallet address' });
+            }
             const tokenType = (token === 'inclawnch') ? 'inclawnch' : 'clawnch';
+            const tokenAddress = TOKEN_ADDRESSES[tokenType];
 
             // Get total amount being unstaked
             const { data: activeStakes } = await supabase
@@ -347,14 +352,63 @@ export default async function handler(req, res) {
             const totalUnstaked = activeStakes.reduce((sum, s) => sum + s.clawnch_amount, 0);
             const ids = activeStakes.map(s => s.id);
 
-            // Mark all as inactive
+            // Send tokens back on-chain
+            const privateKey = process.env.PROTOCOL_PRIVATE_KEY;
+            if (!privateKey) {
+                return res.status(500).json({ error: 'Unstaking temporarily unavailable. Contact admin.' });
+            }
+
+            let txHash;
+            try {
+                const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+                const wallet = new ethers.Wallet(privateKey, provider);
+
+                // Verify the wallet matches our protocol wallet
+                if (wallet.address.toLowerCase() !== PROTOCOL_WALLET) {
+                    return res.status(500).json({ error: 'Wallet configuration error' });
+                }
+
+                const erc20 = new ethers.Contract(tokenAddress, [
+                    'function transfer(address to, uint256 amount) returns (bool)',
+                    'function balanceOf(address) view returns (uint256)'
+                ], wallet);
+
+                // Convert to wei (18 decimals)
+                const amountWei = ethers.parseUnits(Math.floor(totalUnstaked).toString(), 18);
+
+                // Check protocol wallet has enough balance
+                const balance = await erc20.balanceOf(PROTOCOL_WALLET);
+                if (balance < amountWei) {
+                    return res.status(400).json({
+                        error: 'Insufficient protocol balance. Contact admin for manual return.'
+                    });
+                }
+
+                // Send the tokens back
+                const tx = await erc20.transfer(wallet_address, amountWei);
+                const receipt = await tx.wait();
+
+                if (!receipt || receipt.status !== 1) {
+                    return res.status(500).json({ error: 'On-chain transfer failed' });
+                }
+
+                txHash = receipt.hash;
+            } catch (chainErr) {
+                console.error('Unstake on-chain error:', chainErr.message);
+                return res.status(500).json({
+                    error: 'Failed to send tokens on-chain: ' + (chainErr.reason || chainErr.message || 'Unknown error')
+                });
+            }
+
+            // On-chain transfer succeeded — now update DB
             const { error: updateErr } = await supabase
                 .from('inclawbate_ubi_contributions')
                 .update({ active: false, unstaked_at: new Date().toISOString() })
                 .in('id', ids);
 
             if (updateErr) {
-                return res.status(500).json({ error: 'Failed to unstake' });
+                // Tokens were sent but DB update failed — log for manual fix
+                console.error('DB update failed after successful unstake tx:', txHash, 'ids:', ids);
             }
 
             // Decrement treasury balance
@@ -376,7 +430,8 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 amount: totalUnstaked,
-                token: tokenType
+                token: tokenType,
+                tx_hash: txHash
             });
         }
 
