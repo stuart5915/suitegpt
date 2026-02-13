@@ -464,21 +464,21 @@ function daysSince(dateStr) {
         var ONE_DAY = 24 * 60 * 60 * 1000;
 
         function getDaily8am(direction) {
-            // direction: 'next' or 'last'
+            // direction: 'next' or 'last' — targets 8am UTC
             var now = new Date();
             var target = new Date(now);
-            target.setHours(8, 0, 0, 0);
+            target.setUTCHours(8, 0, 0, 0);
 
             if (direction === 'next') {
                 if (now >= target) {
-                    // Already past 8am today — next is tomorrow
-                    target.setDate(target.getDate() + 1);
+                    // Already past 8am UTC today — next is tomorrow
+                    target.setUTCDate(target.getUTCDate() + 1);
                 }
             } else {
-                // last 8am
+                // last 8am UTC
                 if (now < target) {
-                    // Before 8am today — last was yesterday
-                    target.setDate(target.getDate() - 1);
+                    // Before 8am UTC today — last was yesterday
+                    target.setUTCDate(target.getUTCDate() - 1);
                 }
             }
             return target;
@@ -845,11 +845,11 @@ function daysSince(dateStr) {
                 function getPcDaily8am(dir) {
                     var now = new Date();
                     var t = new Date(now);
-                    t.setHours(8, 0, 0, 0);
+                    t.setUTCHours(8, 0, 0, 0);
                     if (dir === 'next') {
-                        if (now >= t) t.setDate(t.getDate() + 1);
+                        if (now >= t) t.setUTCDate(t.getUTCDate() + 1);
                     } else {
-                        if (now < t) t.setDate(t.getDate() - 1);
+                        if (now < t) t.setUTCDate(t.getUTCDate() - 1);
                     }
                     return t;
                 }
