@@ -15,6 +15,8 @@ const appKit = createAppKit({
     url: 'https://inclawbate.com',
     icons: []
   },
+  enableCoinbase: true,
+  coinbasePreference: 'all',
   themeMode: 'dark',
   themeVariables: {
     '--w3m-accent': '#6ba297'

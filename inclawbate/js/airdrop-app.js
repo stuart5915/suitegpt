@@ -576,8 +576,9 @@ async function loadDistribution() {
             const name = s.x_name || s.x_handle || shortAddr(s.wallet);
             const tokenLabel = s.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
             const barWidth = Math.max(4, Math.min(80, s.share_pct * 0.8));
+            const autoBadge = s.auto_stake ? '<span class="ubi-autostake-badge">auto</span>' : '';
             return `<tr>
-                <td><strong>${escHtml(name)}</strong><br><span class="mono">${shortAddr(s.wallet)}</span></td>
+                <td><strong>${escHtml(name)}</strong>${autoBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
                 <td>${tokenLabel}</td>
                 <td class="mono">${fmtNum(s.amount)}</td>
                 <td class="mono">${s.staked_days}d</td>
@@ -586,6 +587,30 @@ async function loadDistribution() {
                 <td class="mono" style="color: var(--seafoam-300); font-weight:600;">${fmtNum(s.share_amount)}</td>
             </tr>`;
         }).join('');
+    }
+
+    // Show auto-stake vs manual split summary
+    const splitSummary = document.getElementById('distSplitSummary');
+    if (splitSummary && stakers.length > 0) {
+        const manualStakers = stakers.filter(s => !s.auto_stake && s.share_amount > 0);
+        const autoStakers = stakers.filter(s => s.auto_stake && s.share_amount > 0);
+        const manualTotal = manualStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+
+        if (autoStakers.length > 0) {
+            splitSummary.style.display = '';
+            splitSummary.innerHTML = `
+                <div class="split-group">
+                    <span class="split-group-count">${manualStakers.length}</span> manual
+                    <span class="split-group-amount">${fmtNum(manualTotal)} CLAWNCH via Disperse</span>
+                </div>
+                <div class="split-group">
+                    <span class="split-group-count">${autoStakers.length}</span> auto-stake
+                    <span class="split-group-amount">${fmtNum(autoTotal)} CLAWNCH compounded</span>
+                </div>`;
+        } else {
+            splitSummary.style.display = 'none';
+        }
     }
 
     // Render pending unstakes
@@ -707,12 +732,16 @@ document.getElementById('refreshDistBtn').addEventListener('click', () => {
     loadDistribution();
 });
 
-// Airdrop UBI via Disperse
+// Airdrop UBI via Disperse (with auto-stake split)
 document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
     if (!distData?.distribution?.stakers?.length) return;
 
-    const stakers = distData.distribution.stakers.filter(s => s.share_amount > 0);
-    if (stakers.length === 0) return;
+    const allStakers = distData.distribution.stakers.filter(s => s.share_amount > 0);
+    if (allStakers.length === 0) return;
+
+    // Split into manual and auto-stake groups
+    const manualStakers = allStakers.filter(s => !s.auto_stake);
+    const autoStakers = allStakers.filter(s => s.auto_stake);
 
     const distStatus = document.getElementById('distStatus');
     const btn = document.getElementById('airdropUbiBtn');
@@ -721,56 +750,82 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
     distStatus.className = 'airdrop-status';
 
     try {
-        const recipients = stakers.map(s => s.wallet);
-        const amounts = stakers.map(s => toWei(Math.floor(s.share_amount)));
-        const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
+        // Disperse only to manual stakers
+        if (manualStakers.length > 0) {
+            const recipients = manualStakers.map(s => s.wallet);
+            const amounts = manualStakers.map(s => toWei(Math.floor(s.share_amount)));
+            const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
 
-        // Check balance
-        const balanceData = BALANCE_SELECTOR + pad32(userAddress);
-        const balResult = await provider.request({
-            method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
-        });
-        const balance = BigInt(balResult);
-        if (balance < totalWei) {
-            distStatus.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
-            distStatus.className = 'airdrop-status error';
-            btn.disabled = false;
-            return;
-        }
-
-        // Check allowance
-        distStatus.textContent = 'Checking allowance...';
-        const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
-        const allowResult = await provider.request({
-            method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
-        });
-        const allowance = BigInt(allowResult);
-
-        if (allowance < totalWei) {
-            distStatus.textContent = 'Approving CLAWNCH spend...';
-            const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
-            const approveTx = await provider.request({
-                method: 'eth_sendTransaction',
-                params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+            // Check balance
+            const balanceData = BALANCE_SELECTOR + pad32(userAddress);
+            const balResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
             });
-            distStatus.textContent = 'Waiting for approval...';
-            await waitForReceipt(approveTx);
+            const balance = BigInt(balResult);
+            if (balance < totalWei) {
+                distStatus.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+                distStatus.className = 'airdrop-status error';
+                btn.disabled = false;
+                return;
+            }
+
+            // Check allowance
+            distStatus.textContent = 'Checking allowance...';
+            const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+            const allowResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+            });
+            const allowance = BigInt(allowResult);
+
+            if (allowance < totalWei) {
+                distStatus.textContent = 'Approving CLAWNCH spend...';
+                const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
+                const approveTx = await provider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+                });
+                distStatus.textContent = 'Waiting for approval...';
+                await waitForReceipt(approveTx);
+            }
+
+            // Disperse
+            distStatus.textContent = `Sending UBI to ${manualStakers.length} stakers...`;
+            const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+            const disperseTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+            });
+
+            distStatus.textContent = 'Confirming...';
+            await waitForReceipt(disperseTx);
         }
 
-        // Disperse
-        distStatus.textContent = `Sending UBI to ${stakers.length} stakers...`;
-        const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
-        const disperseTx = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
-        });
+        // Record auto-stakes in DB
+        if (autoStakers.length > 0) {
+            distStatus.textContent = `Recording ${autoStakers.length} auto-stakes...`;
+            try {
+                await fetch(API_BASE + '/ubi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'record-auto-stakes',
+                        wallet_address: userAddress,
+                        distribution_count: distData.distribution_count || 0,
+                        recipients: autoStakers.map(s => ({
+                            wallet: s.wallet,
+                            amount: Math.floor(s.share_amount),
+                            token: 'clawnch'
+                        }))
+                    })
+                });
+            } catch (e) {
+                console.error('Auto-stake recording error:', e);
+            }
+        }
 
-        distStatus.textContent = 'Confirming...';
-        await waitForReceipt(disperseTx);
-
-        // Mark distribution complete in DB
+        // Mark distribution complete for ALL recipients (both groups)
         distStatus.textContent = 'Recording distribution...';
         try {
             await fetch(API_BASE + '/ubi', {
@@ -779,12 +834,24 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
                 body: JSON.stringify({
                     action: 'mark-distributed',
                     wallet_address: userAddress,
-                    recipients: stakers.map(s => ({ wallet: s.wallet, amount: Math.floor(s.share_amount) }))
+                    recipients: allStakers.map(s => ({ wallet: s.wallet, amount: Math.floor(s.share_amount) }))
                 })
             });
         } catch (e) { /* non-critical */ }
 
-        distStatus.textContent = `UBI distributed to ${stakers.length} stakers!`;
+        // Build status message
+        const manualTotal = manualStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        let statusMsg = '';
+        if (manualStakers.length > 0 && autoStakers.length > 0) {
+            statusMsg = `Sent ${fmtNum(manualTotal)} CLAWNCH to ${manualStakers.length} wallets, auto-staked ${fmtNum(autoTotal)} CLAWNCH for ${autoStakers.length} stakers`;
+        } else if (autoStakers.length > 0) {
+            statusMsg = `Auto-staked ${fmtNum(autoTotal)} CLAWNCH for ${autoStakers.length} stakers`;
+        } else {
+            statusMsg = `UBI distributed to ${manualStakers.length} stakers!`;
+        }
+
+        distStatus.textContent = statusMsg;
         distStatus.className = 'airdrop-status success';
 
         // Refresh to update timer

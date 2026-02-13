@@ -759,6 +759,7 @@ function daysSince(dateStr) {
             const resp = await fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase());
             const data = await resp.json();
             const stakes = data.my_stakes || [];
+            const autoStakeOn = data.auto_stake || false;
 
             const activeStakes = stakes.filter(function(s) { return s.active; });
             const pendingUnstakes = stakes.filter(function(s) { return !s.active && s.unstaked_at && s.withdrawal_status !== 'completed'; });
@@ -801,7 +802,8 @@ function daysSince(dateStr) {
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH &rarr; your wallet</div>';
+                var pcDestLabel = autoStakeOn ? 'auto-staked' : 'your wallet';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH &rarr; ' + pcDestLabel + '</div>';
                 html += '<div class="ubi-pc-timer-row">';
                 html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
                 html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
@@ -843,6 +845,21 @@ function daysSince(dateStr) {
                 '</div>';
             });
 
+            // Auto-stake toggle (only when user has active stakes)
+            if (activeStakes.length > 0) {
+                var checkedAttr = autoStakeOn ? ' checked' : '';
+                html += '<div class="ubi-autostake-row">';
+                html += '<label class="ubi-autostake-toggle">';
+                html += '<input type="checkbox" id="autoStakeToggle"' + checkedAttr + '>';
+                html += '<span class="ubi-autostake-slider"></span>';
+                html += '</label>';
+                html += '<div class="ubi-autostake-info">';
+                html += '<div class="ubi-autostake-label">Auto-stake rewards</div>';
+                html += '<div class="ubi-autostake-desc">Rewards automatically compound into your staked position instead of being sent to your wallet.</div>';
+                html += '</div>';
+                html += '</div>';
+            }
+
             if (pendingUnstakes.length > 0) {
                 var pendingTotal = {};
                 pendingUnstakes.forEach(function(s) {
@@ -866,6 +883,38 @@ function daysSince(dateStr) {
                     handleUnstake(btn.getAttribute('data-token'));
                 });
             });
+
+            // Wire up auto-stake toggle
+            var autoToggle = document.getElementById('autoStakeToggle');
+            if (autoToggle) {
+                autoToggle.addEventListener('change', async function() {
+                    autoToggle.disabled = true;
+                    try {
+                        var tResp = await fetch('/api/inclawbate/ubi', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'toggle-auto-stake', wallet_address: stakeWallet })
+                        });
+                        var tData = await tResp.json();
+                        if (tResp.ok && tData.success) {
+                            autoToggle.checked = tData.auto_stake;
+                            ubiToast(tData.auto_stake ? 'Auto-stake enabled — rewards will compound' : 'Auto-stake disabled — rewards sent to wallet', 'success');
+                            // Update countdown text
+                            var amountEl = document.getElementById('posCountdownAmount');
+                            if (amountEl) {
+                                amountEl.innerHTML = amountEl.innerHTML.replace(/\u2192 (auto-staked|your wallet)/, '\u2192 ' + (tData.auto_stake ? 'auto-staked' : 'your wallet'));
+                            }
+                        } else {
+                            autoToggle.checked = !autoToggle.checked; // revert
+                            ubiToast(tData.error || 'Failed to update', 'error');
+                        }
+                    } catch (e) {
+                        autoToggle.checked = !autoToggle.checked;
+                        ubiToast('Failed to update auto-stake', 'error');
+                    }
+                    autoToggle.disabled = false;
+                });
+            }
 
             // Start personalized countdown timer
             if (_posCountdownInterval) clearInterval(_posCountdownInterval);

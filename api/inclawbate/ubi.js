@@ -153,7 +153,19 @@ async function calculateStakerDays(weeklyRate) {
     const stakers = Object.values(walletMap);
     const totalWeightedDays = stakers.reduce((sum, s) => sum + s.weighted_days, 0);
 
+    // Look up auto_stake preference for each staker
+    const uniqueWalletsArr = [...new Set(stakers.map(s => s.wallet.toLowerCase()))];
+    const { data: autoStakeProfiles } = await supabase
+        .from('human_profiles')
+        .select('wallet_address, ubi_auto_stake')
+        .in('wallet_address', uniqueWalletsArr);
+    const autoStakeMap = {};
+    (autoStakeProfiles || []).forEach(p => {
+        autoStakeMap[p.wallet_address.toLowerCase()] = p.ubi_auto_stake || false;
+    });
+
     for (const s of stakers) {
+        s.auto_stake = autoStakeMap[s.wallet.toLowerCase()] || false;
         s.share_pct = totalWeightedDays > 0 ? (s.weighted_days / totalWeightedDays) * 100 : 0;
         var dailyRate = weeklyRate / 7;
         s.share_amount = totalWeightedDays > 0 && dailyRate > 0
@@ -244,7 +256,7 @@ export default async function handler(req, res) {
         // Compute daily_rate from weekly_rate for daily distribution schedule
         result.daily_rate = (Number(result.weekly_rate) || 0) / 7;
 
-        // If wallet query param, return user's active stakes
+        // If wallet query param, return user's active stakes + auto_stake preference
         const walletParam = req.query.wallet;
         if (walletParam) {
             const { data: myStakes } = await supabase
@@ -253,6 +265,14 @@ export default async function handler(req, res) {
                 .eq('wallet_address', walletParam.toLowerCase())
                 .order('created_at', { ascending: false });
             result.my_stakes = myStakes || [];
+
+            // Include auto_stake preference
+            const { data: prof } = await supabase
+                .from('human_profiles')
+                .select('ubi_auto_stake')
+                .eq('wallet_address', walletParam.toLowerCase())
+                .single();
+            result.auto_stake = prof?.ubi_auto_stake || false;
         }
 
         // If distribution=true (admin), return full staker breakdown
@@ -716,6 +736,103 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, marked });
+        }
+
+        // ── Toggle Auto-Stake Preference ──
+        if (action === 'toggle-auto-stake') {
+            const { wallet_address } = req.body;
+            if (!wallet_address) {
+                return res.status(400).json({ error: 'wallet_address required' });
+            }
+
+            const wallet = wallet_address.toLowerCase();
+            const { data: profile } = await supabase
+                .from('human_profiles')
+                .select('ubi_auto_stake')
+                .eq('wallet_address', wallet)
+                .single();
+
+            if (!profile) {
+                return res.status(404).json({ error: 'Profile not found' });
+            }
+
+            const newVal = !profile.ubi_auto_stake;
+            const { error: updateErr } = await supabase
+                .from('human_profiles')
+                .update({ ubi_auto_stake: newVal })
+                .eq('wallet_address', wallet);
+
+            if (updateErr) {
+                return res.status(500).json({ error: 'Failed to update auto-stake preference' });
+            }
+
+            return res.status(200).json({ success: true, auto_stake: newVal });
+        }
+
+        // ── Record Auto-Stakes (admin only) ──
+        if (action === 'record-auto-stakes') {
+            const { wallet_address, recipients, distribution_count } = req.body;
+            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            if (!Array.isArray(recipients) || recipients.length === 0) {
+                return res.status(400).json({ error: 'recipients array required' });
+            }
+
+            let recorded = 0;
+            for (const r of recipients) {
+                if (!r.wallet || !r.amount || r.amount <= 0) continue;
+                const wallet = r.wallet.toLowerCase();
+                const token = r.token || 'clawnch';
+                const distNum = distribution_count || 0;
+                const syntheticTx = `auto-ubi-${distNum}-${wallet.slice(0, 8)}`;
+
+                // Look up profile for x_handle/x_name
+                let xHandle = null;
+                let xName = null;
+                const { data: prof } = await supabase
+                    .from('human_profiles')
+                    .select('x_handle, x_name')
+                    .eq('wallet_address', wallet)
+                    .single();
+                if (prof) {
+                    xHandle = prof.x_handle;
+                    xName = prof.x_name;
+                }
+
+                // Insert contribution record (auto-staked UBI)
+                await supabase
+                    .from('inclawbate_ubi_contributions')
+                    .insert({
+                        wallet_address: wallet,
+                        x_handle: xHandle,
+                        x_name: xName,
+                        tx_hash: syntheticTx,
+                        clawnch_amount: r.amount,
+                        token: token,
+                        active: true
+                    });
+
+                // Increment treasury balance
+                const balanceColumn = token === 'inclawnch' ? 'inclawnch_staked' : 'total_balance';
+                const { data: curr } = await supabase
+                    .from('inclawbate_ubi_treasury')
+                    .select('total_balance, inclawnch_staked')
+                    .eq('id', 1)
+                    .single();
+                if (curr) {
+                    const updateObj = { updated_at: new Date().toISOString() };
+                    updateObj[balanceColumn] = Number(curr[balanceColumn] || 0) + r.amount;
+                    await supabase
+                        .from('inclawbate_ubi_treasury')
+                        .update(updateObj)
+                        .eq('id', 1);
+                }
+
+                recorded++;
+            }
+
+            return res.status(200).json({ success: true, recorded });
         }
 
         return res.status(400).json({ error: 'Unknown action' });
