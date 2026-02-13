@@ -590,6 +590,11 @@ async function loadDistribution() {
                 givesBackBadge = `<span class="ubi-givesback-badge" title="Gives back to ${escHtml(orgName)}">gives back &rarr; ${escHtml(orgName)}</span>`;
             } else if (s.redirect_target === 'reinvest') {
                 givesBackBadge = '<span class="ubi-givesback-badge">reinvests</span>';
+            } else if (s.redirect_target === 'split') {
+                const k = s.split_keep_pct || 0;
+                const g = s.split_kingdom_pct || 0;
+                const r = s.split_reinvest_pct || 0;
+                givesBackBadge = `<span class="ubi-givesback-badge" title="Split: ${k}% keep, ${g}% kingdom, ${r}% reinvest">splits ${k}/${g}/${r}</span>`;
             }
             const shareDisplay = `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%`;
             return `<tr>
@@ -611,12 +616,21 @@ async function loadDistribution() {
         const autoStakers = stakers.filter(s => s.auto_stake && s.share_amount > 0);
         const philStakers = stakers.filter(s => s.redirect_target === 'philanthropy' && s.share_amount > 0);
         const reinvestStakers = stakers.filter(s => s.redirect_target === 'reinvest' && s.share_amount > 0);
+        const splitStakers = stakers.filter(s => s.redirect_target === 'split' && s.share_amount > 0);
         const manualTotal = manualStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         const philTotal = philStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         const reinvestTotal = reinvestStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+        // Split stakers: calculate kingdom + reinvest portions
+        let splitKingdomTotal = 0, splitReinvestTotal = 0, splitKeepTotal = 0;
+        splitStakers.forEach(s => {
+            const amt = Math.floor(s.share_amount);
+            splitKeepTotal += Math.round(amt * ((s.split_keep_pct || 0) / 100));
+            splitKingdomTotal += Math.round(amt * ((s.split_kingdom_pct || 0) / 100));
+            splitReinvestTotal += Math.round(amt * ((s.split_reinvest_pct || 0) / 100));
+        });
 
-        const hasExtra = autoStakers.length > 0 || philStakers.length > 0 || reinvestStakers.length > 0;
+        const hasExtra = autoStakers.length > 0 || philStakers.length > 0 || reinvestStakers.length > 0 || splitStakers.length > 0;
         if (hasExtra) {
             splitSummary.style.display = '';
             let summaryHtml = `
@@ -643,6 +657,13 @@ async function loadDistribution() {
                 <div class="split-group">
                     <span class="split-group-count">${reinvestStakers.length}</span> reinvesting
                     <span class="split-group-amount">${fmtNum(reinvestTotal)} CLAWNCH back to pool</span>
+                </div>`;
+            }
+            if (splitStakers.length > 0) {
+                summaryHtml += `
+                <div class="split-group">
+                    <span class="split-group-count">${splitStakers.length}</span> splitting
+                    <span class="split-group-amount">${fmtNum(splitKeepTotal)} keep · ${fmtNum(splitKingdomTotal)} kingdom · ${fmtNum(splitReinvestTotal)} reinvest</span>
                 </div>`;
             }
             splitSummary.innerHTML = summaryHtml;

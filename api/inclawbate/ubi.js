@@ -159,7 +159,7 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
     const uniqueWalletsArr = [...new Set(stakers.map(s => s.wallet.toLowerCase()))];
     const { data: stakerProfiles } = await supabase
         .from('human_profiles')
-        .select('wallet_address, ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id')
+        .select('wallet_address, ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id, ubi_split_keep_pct, ubi_split_kingdom_pct, ubi_split_reinvest_pct')
         .in('wallet_address', uniqueWalletsArr);
     const profileMap = {};
     (stakerProfiles || []).forEach(p => {
@@ -174,6 +174,9 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
         s.auto_stake = prof.ubi_auto_stake || false;
         s.redirect_target = prof.ubi_whale_redirect_target || null;
         s.redirect_org_id = prof.ubi_redirect_org_id || null;
+        s.split_keep_pct = prof.ubi_split_keep_pct ?? null;
+        s.split_kingdom_pct = prof.ubi_split_kingdom_pct ?? null;
+        s.split_reinvest_pct = prof.ubi_split_reinvest_pct ?? null;
         s.share_pct = totalWeightedDays > 0 ? (s.weighted_days / totalWeightedDays) * 100 : 0;
         s.share_amount = totalWeightedDays > 0 && dailyRate > 0
             ? (s.weighted_days / totalWeightedDays) * dailyRate
@@ -285,12 +288,15 @@ export default async function handler(req, res) {
             // Include auto_stake + redirect preferences
             const { data: prof } = await supabase
                 .from('human_profiles')
-                .select('ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id')
+                .select('ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id, ubi_split_keep_pct, ubi_split_kingdom_pct, ubi_split_reinvest_pct')
                 .eq('wallet_address', walletParam.toLowerCase())
                 .single();
             result.auto_stake = prof?.ubi_auto_stake || false;
             result.whale_redirect_target = prof?.ubi_whale_redirect_target || null;
             result.redirect_org_id = prof?.ubi_redirect_org_id || null;
+            result.split_keep_pct = prof?.ubi_split_keep_pct ?? null;
+            result.split_kingdom_pct = prof?.ubi_split_kingdom_pct ?? null;
+            result.split_reinvest_pct = prof?.ubi_split_reinvest_pct ?? null;
         }
 
         // Fetch active philanthropy orgs
@@ -877,17 +883,27 @@ export default async function handler(req, res) {
 
         // ── Update Give Back / Redirect Preference (any staker) ──
         if (action === 'update-whale-redirect') {
-            const { wallet_address, redirect_target, org_id } = req.body;
+            const { wallet_address, redirect_target, org_id, split_keep_pct, split_kingdom_pct, split_reinvest_pct } = req.body;
             if (!wallet_address) {
                 return res.status(400).json({ error: 'wallet_address required' });
             }
 
             const wallet = wallet_address.toLowerCase();
 
-            // Validate redirect_target: null (keep), 'philanthropy', or 'reinvest'
-            const validTargets = [null, 'philanthropy', 'reinvest'];
+            // Validate redirect_target: null (keep), 'philanthropy', 'reinvest', or 'split'
+            const validTargets = [null, 'philanthropy', 'reinvest', 'split'];
             if (!validTargets.includes(redirect_target)) {
-                return res.status(400).json({ error: 'redirect_target must be null, philanthropy, or reinvest' });
+                return res.status(400).json({ error: 'redirect_target must be null, philanthropy, reinvest, or split' });
+            }
+
+            // Validate split percentages if target is 'split'
+            if (redirect_target === 'split') {
+                const k = Number(split_keep_pct) || 0;
+                const g = Number(split_kingdom_pct) || 0;
+                const r = Number(split_reinvest_pct) || 0;
+                if (k < 0 || g < 0 || r < 0 || k + g + r !== 100) {
+                    return res.status(400).json({ error: 'Split percentages must be non-negative and sum to 100' });
+                }
             }
 
             const { data: profile } = await supabase
@@ -902,7 +918,10 @@ export default async function handler(req, res) {
 
             const updateFields = {
                 ubi_whale_redirect_target: redirect_target,
-                ubi_redirect_org_id: redirect_target === 'philanthropy' && org_id ? Number(org_id) : null
+                ubi_redirect_org_id: (redirect_target === 'philanthropy' || redirect_target === 'split') && org_id ? Number(org_id) : null,
+                ubi_split_keep_pct: redirect_target === 'split' ? Number(split_keep_pct) || 0 : null,
+                ubi_split_kingdom_pct: redirect_target === 'split' ? Number(split_kingdom_pct) || 0 : null,
+                ubi_split_reinvest_pct: redirect_target === 'split' ? Number(split_reinvest_pct) || 0 : null
             };
 
             const { error: updateErr } = await supabase
@@ -917,7 +936,10 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 redirect_target: redirect_target,
-                org_id: updateFields.ubi_redirect_org_id
+                org_id: updateFields.ubi_redirect_org_id,
+                split_keep_pct: updateFields.ubi_split_keep_pct,
+                split_kingdom_pct: updateFields.ubi_split_kingdom_pct,
+                split_reinvest_pct: updateFields.ubi_split_reinvest_pct
             });
         }
 

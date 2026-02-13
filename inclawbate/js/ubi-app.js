@@ -901,6 +901,24 @@ function daysSince(dateStr) {
                 html += '<span class="ubi-giveback-option-desc">Return your rewards to the UBI pool. Your sacrifice increases the yield for every other human staker. Decrease yourself so others increase.</span>';
                 html += '</label>';
 
+                // Split option
+                var savedKeep = data.split_keep_pct ?? 34;
+                var savedKingdom = data.split_kingdom_pct ?? 33;
+                var savedReinvest = data.split_reinvest_pct ?? 33;
+                html += '<label class="ubi-giveback-option ubi-giveback-option--split' + (savedRedirect === 'split' ? ' active' : '') + '">';
+                html += '<input type="radio" name="giveBackChoice" value="split"' + (savedRedirect === 'split' ? ' checked' : '') + '>';
+                html += '<span class="ubi-giveback-option-icon">\uD83E\uDD32</span>';
+                html += '<span class="ubi-giveback-option-title">Split</span>';
+                html += '<span class="ubi-giveback-option-subtitle">Balance all three.</span>';
+                html += '<span class="ubi-giveback-option-desc">Custom split \u2014 choose a percentage for yourself, The Kingdom, and the pool. Design your own energy distribution.</span>';
+                html += '<div class="ubi-split-sliders" id="splitSliders">';
+                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
+                html += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
+                html += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Reinvest</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
+                html += '<div class="ubi-split-total" id="splitTotal">Total: ' + (savedKeep + savedKingdom + savedReinvest) + '%</div>';
+                html += '</div>';
+                html += '</label>';
+
                 html += '</div>';
                 html += '<button class="ubi-giveback-save-btn" id="giveBackSaveBtn">Save Preference</button>';
                 html += '<span class="ubi-giveback-save-status" id="giveBackStatus"></span>';
@@ -1010,12 +1028,55 @@ function daysSince(dateStr) {
             var gbWidget = document.getElementById('giveBackWidget');
             if (gbWidget) {
                 gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(opt) {
-                    opt.addEventListener('click', function() {
+                    opt.addEventListener('click', function(e) {
+                        // Don't toggle when interacting with sliders
+                        if (e.target.classList.contains('ubi-split-range')) return;
                         gbWidget.querySelectorAll('.ubi-giveback-option').forEach(function(o) { o.classList.remove('active'); });
                         opt.classList.add('active');
-                        opt.querySelector('input').checked = true;
+                        opt.querySelector('input[name="giveBackChoice"]').checked = true;
                     });
                 });
+
+                // Wire up split sliders — adjust others to keep total at 100
+                var splitKeep = document.getElementById('splitKeep');
+                var splitKingdom = document.getElementById('splitKingdom');
+                var splitReinvest = document.getElementById('splitReinvest');
+                if (splitKeep && splitKingdom && splitReinvest) {
+                    function updateSplitDisplay() {
+                        var k = Number(splitKeep.value);
+                        var g = Number(splitKingdom.value);
+                        var r = Number(splitReinvest.value);
+                        document.getElementById('splitKeepVal').textContent = k + '%';
+                        document.getElementById('splitKingdomVal').textContent = g + '%';
+                        document.getElementById('splitReinvestVal').textContent = r + '%';
+                        var total = k + g + r;
+                        var totalEl = document.getElementById('splitTotal');
+                        if (totalEl) {
+                            totalEl.textContent = 'Total: ' + total + '%';
+                            totalEl.style.color = total === 100 ? 'hsl(140, 50%, 60%)' : 'hsl(0, 70%, 60%)';
+                        }
+                    }
+                    function balanceSliders(changed, others) {
+                        var val = Number(changed.value);
+                        var remaining = 100 - val;
+                        var o1 = Number(others[0].value);
+                        var o2 = Number(others[1].value);
+                        var sum = o1 + o2;
+                        if (sum === 0) {
+                            others[0].value = Math.round(remaining / 2);
+                            others[1].value = remaining - Math.round(remaining / 2);
+                        } else {
+                            var r1 = Math.round((o1 / sum) * remaining);
+                            var r2 = remaining - r1;
+                            others[0].value = Math.max(0, r1);
+                            others[1].value = Math.max(0, r2);
+                        }
+                        updateSplitDisplay();
+                    }
+                    splitKeep.addEventListener('input', function() { balanceSliders(splitKeep, [splitKingdom, splitReinvest]); });
+                    splitKingdom.addEventListener('input', function() { balanceSliders(splitKingdom, [splitKeep, splitReinvest]); });
+                    splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
+                }
 
                 var saveBtn = document.getElementById('giveBackSaveBtn');
                 if (saveBtn) {
@@ -1027,21 +1088,42 @@ function daysSince(dateStr) {
                         saveBtn.disabled = true;
                         if (statusEl) statusEl.textContent = 'Saving...';
 
+                        var body = {
+                            action: 'update-whale-redirect',
+                            wallet_address: stakeWallet,
+                            redirect_target: value,
+                            org_id: orgId
+                        };
+
+                        // Include split percentages if Split is selected
+                        if (value === 'split') {
+                            var k = Number(document.getElementById('splitKeep').value) || 0;
+                            var g = Number(document.getElementById('splitKingdom').value) || 0;
+                            var r = Number(document.getElementById('splitReinvest').value) || 0;
+                            if (k + g + r !== 100) {
+                                if (statusEl) statusEl.textContent = 'Must total 100%';
+                                ubiToast('Split percentages must add up to 100%', 'error');
+                                saveBtn.disabled = false;
+                                return;
+                            }
+                            body.split_keep_pct = k;
+                            body.split_kingdom_pct = g;
+                            body.split_reinvest_pct = r;
+                            // Use first org for kingdom portion
+                            var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
+                            if (firstOrg) body.org_id = firstOrg.id;
+                        }
+
                         try {
                             var resp = await fetch('/api/inclawbate/ubi', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    action: 'update-whale-redirect',
-                                    wallet_address: stakeWallet,
-                                    redirect_target: value,
-                                    org_id: orgId
-                                })
+                                body: JSON.stringify(body)
                             });
                             var rData = await resp.json();
                             if (resp.ok && rData.success) {
                                 if (statusEl) statusEl.textContent = 'Saved!';
-                                ubiToast('Give Back preference saved', 'success');
+                                ubiToast('Preference saved', 'success');
                             } else {
                                 if (statusEl) statusEl.textContent = rData.error || 'Failed';
                                 ubiToast(rData.error || 'Failed to save', 'error');
