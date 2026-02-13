@@ -297,7 +297,7 @@ export default async function handler(req, res) {
         try {
             const { data: orgs } = await supabase
                 .from('inclawbate_philanthropy_orgs')
-                .select('id, name, description, wallet_address, image_url')
+                .select('id, name, description, wallet_address, image_url, website_url')
                 .eq('is_active', true)
                 .order('id', { ascending: true });
             result.philanthropy_orgs = orgs || [];

@@ -1755,20 +1755,20 @@
         }
         .ubi-giveback-options {
             display: flex;
+            flex-direction: column;
             gap: var(--space-sm);
-            flex-wrap: wrap;
             margin-bottom: var(--space-md);
         }
         .ubi-giveback-option {
-            flex: 1;
-            min-width: 120px;
-            padding: var(--space-sm) var(--space-md);
+            padding: var(--space-md) var(--space-lg);
             background: hsla(0, 0%, 100%, 0.03);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg);
             cursor: pointer;
             transition: all 0.2s;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
         .ubi-giveback-option:hover {
             border-color: hsla(140, 40%, 45%, 0.4);
@@ -1781,21 +1781,57 @@
         .ubi-giveback-option input { display: none; }
         .ubi-giveback-option-icon {
             font-size: 1.1rem;
-            display: block;
-            margin-bottom: 4px;
+            display: inline;
+            margin-right: 6px;
         }
         .ubi-giveback-option-title {
-            font-size: 0.78rem;
+            font-size: 0.82rem;
             font-weight: 700;
             color: var(--text-primary);
+            display: inline;
+        }
+        .ubi-giveback-option-subtitle {
+            font-size: 0.72rem;
+            font-weight: 600;
+            font-style: italic;
+            color: var(--text-secondary);
             display: block;
+            margin-top: 2px;
         }
         .ubi-giveback-option-desc {
             font-size: 0.65rem;
             color: var(--text-dim);
-            line-height: 1.3;
-            margin-top: 2px;
+            line-height: 1.4;
+            margin-top: 4px;
             display: block;
+        }
+        .ubi-giveback-option--kingdom.active {
+            border-color: hsl(40, 60%, 55%);
+            background: hsla(40, 50%, 40%, 0.12);
+        }
+        .ubi-giveback-option--kingdom:hover {
+            border-color: hsla(40, 50%, 50%, 0.5);
+            background: hsla(40, 40%, 40%, 0.08);
+        }
+        .ubi-giveback-ministries {
+            display: block;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid hsla(0, 0%, 100%, 0.06);
+        }
+        .ubi-giveback-ministry {
+            display: block;
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            padding: 2px 0;
+        }
+        .ubi-giveback-ministry a {
+            color: hsl(40, 60%, 65%);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+        .ubi-giveback-ministry a:hover {
+            color: hsl(40, 70%, 75%);
         }
         .ubi-giveback-save-btn {
             padding: 8px 20px;
@@ -1835,8 +1871,7 @@
         }
 
         @media (max-width: 480px) {
-            .ubi-giveback-options { flex-direction: column; }
-            .ubi-giveback-option { min-width: 0; }
+            .ubi-giveback-option { padding: var(--space-sm) var(--space-md); }
         }
     </style>
 </head>
@@ -2057,13 +2092,13 @@
         </div>
     </section>
 
-    <!-- ═══ Give Back (visible to all) ═══ -->
+    <!-- ═══ Redirect Your Energy (visible to all) ═══ -->
     <div class="ubi-giveback-widget" id="giveBackStandalone">
         <div class="ubi-giveback-header">
             <span class="ubi-giveback-icon">&#x2764;&#xFE0F;</span>
-            <span class="ubi-giveback-title">Give Back</span>
+            <span class="ubi-giveback-title">Redirect Your Energy</span>
         </div>
-        <p class="ubi-giveback-explainer">Any staker can choose to redirect their UBI rewards to community causes. Connect your wallet to choose.</p>
+        <p class="ubi-giveback-explainer">Your UBI represents reclaimed time, focus, and energy. Choose where it flows. Connect your wallet to set your preference.</p>
         <div class="ubi-giveback-options ubi-giveback-options--display" id="giveBackStandaloneOrgs">
             <!-- Populated dynamically from API -->
         </div>
@@ -2075,16 +2110,29 @@
             var container = document.getElementById('giveBackStandaloneOrgs');
             if (!container || !orgs) return;
             var html = '';
-            html += '<div class="ubi-giveback-option"><span class="ubi-giveback-option-icon">&#x1F4B0;</span><span class="ubi-giveback-option-title">Keep Rewards</span><span class="ubi-giveback-option-desc">Receive your daily UBI</span></div>';
-            for (var i = 0; i < orgs.length; i++) {
-                var o = orgs[i];
-                var name = document.createElement('span');
-                name.textContent = o.name;
-                var desc = document.createElement('span');
-                desc.textContent = o.description || '';
-                html += '<div class="ubi-giveback-option"><span class="ubi-giveback-option-icon">&#x1F49A;</span><span class="ubi-giveback-option-title">' + name.textContent + '</span><span class="ubi-giveback-option-desc">' + desc.textContent + '</span></div>';
+            html += '<div class="ubi-giveback-option"><span class="ubi-giveback-option-icon">&#x1F33F;</span><span class="ubi-giveback-option-title">Keep</span><span class="ubi-giveback-option-subtitle">Grow your own garden.</span><span class="ubi-giveback-option-desc">Receive your daily UBI. Rebuild the time that was stolen from you.</span></div>';
+            html += '<div class="ubi-giveback-option ubi-giveback-option--kingdom"><span class="ubi-giveback-option-icon">&#x271D;&#xFE0F;</span><span class="ubi-giveback-option-title">The Kingdom</span><span class="ubi-giveback-option-subtitle">Fund what matters eternally.</span><span class="ubi-giveback-option-desc">Your rewards go to verified ministry partners. The agents earn. The humans give. The Kingdom grows.</span>';
+            if (orgs.length > 0) {
+                html += '<span class="ubi-giveback-ministries">';
+                for (var i = 0; i < orgs.length; i++) {
+                    var o = orgs[i];
+                    var name = document.createElement('span');
+                    name.textContent = o.name;
+                    var url = o.website_url || '';
+                    html += '<span class="ubi-giveback-ministry">';
+                    if (url) {
+                        var link = document.createElement('a');
+                        link.textContent = name.textContent;
+                        html += '<a href="' + url + '" target="_blank" rel="noopener">' + name.textContent + '</a>';
+                    } else {
+                        html += name.textContent;
+                    }
+                    html += '</span>';
+                }
+                html += '</span>';
             }
-            html += '<div class="ubi-giveback-option"><span class="ubi-giveback-option-icon">&#x1F331;</span><span class="ubi-giveback-option-title">Reinvest</span><span class="ubi-giveback-option-desc">Return to the UBI pool</span></div>';
+            html += '</div>';
+            html += '<div class="ubi-giveback-option"><span class="ubi-giveback-option-icon">&#x1F331;</span><span class="ubi-giveback-option-title">Reinvest</span><span class="ubi-giveback-option-subtitle">Compound the commons.</span><span class="ubi-giveback-option-desc">Return your rewards to the UBI pool. Decrease yourself so others increase.</span></div>';
             container.innerHTML = html;
         }
         // Try to render from already-fetched data, or re-fetch

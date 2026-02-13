@@ -850,38 +850,55 @@ function daysSince(dateStr) {
                 html += '<div class="ubi-giveback-widget" id="giveBackWidget">';
                 html += '<div class="ubi-giveback-header">';
                 html += '<span class="ubi-giveback-icon">\u2764\uFE0F</span>';
-                html += '<span class="ubi-giveback-title">Give Back</span>';
+                html += '<span class="ubi-giveback-title">Redirect Your Energy</span>';
                 html += '</div>';
-                html += '<p class="ubi-giveback-explainer">Choose where your daily UBI rewards go. You can keep them, redirect to a community cause, or reinvest into the pool.</p>';
+                html += '<p class="ubi-giveback-explainer">Your UBI represents reclaimed time, focus, and energy. Choose where it flows.</p>';
 
                 html += '<div class="ubi-giveback-options">';
 
                 // Keep option
                 html += '<label class="ubi-giveback-option' + (!savedRedirect ? ' active' : '') + '">';
                 html += '<input type="radio" name="giveBackChoice" value=""' + (!savedRedirect ? ' checked' : '') + '>';
-                html += '<span class="ubi-giveback-option-icon">\uD83D\uDCB0</span>';
-                html += '<span class="ubi-giveback-option-title">Keep Rewards</span>';
-                html += '<span class="ubi-giveback-option-desc">Receive your daily UBI (default)</span>';
+                html += '<span class="ubi-giveback-option-icon">\uD83C\uDF3F</span>';
+                html += '<span class="ubi-giveback-option-title">Keep</span>';
+                html += '<span class="ubi-giveback-option-subtitle">Grow your own garden.</span>';
+                html += '<span class="ubi-giveback-option-desc">Receive your daily UBI. Rebuild the time that was stolen from you. No shame in this \u2014 you can\'t pour from an empty cup.</span>';
                 html += '</label>';
 
-                // Org cards from API
-                for (var oi = 0; oi < orgs.length; oi++) {
-                    var org = orgs[oi];
-                    var isSelected = savedRedirect === 'philanthropy' && savedOrgId === org.id;
-                    html += '<label class="ubi-giveback-option' + (isSelected ? ' active' : '') + '" data-org-id="' + org.id + '">';
-                    html += '<input type="radio" name="giveBackChoice" value="philanthropy" data-org-id="' + org.id + '"' + (isSelected ? ' checked' : '') + '>';
-                    html += '<span class="ubi-giveback-option-icon">\uD83D\uDC9A</span>';
-                    html += '<span class="ubi-giveback-option-title">' + esc(org.name) + '</span>';
-                    html += '<span class="ubi-giveback-option-desc">' + esc(org.description || '') + '</span>';
-                    html += '</label>';
+                // The Kingdom — org cards from API
+                var anyKingdomSelected = savedRedirect === 'philanthropy';
+                var firstOrgId = orgs.length > 0 ? orgs[0].id : '';
+                html += '<label class="ubi-giveback-option ubi-giveback-option--kingdom' + (anyKingdomSelected ? ' active' : '') + '">';
+                html += '<input type="radio" name="giveBackChoice" value="philanthropy" data-org-id="' + firstOrgId + '"' + (anyKingdomSelected ? ' checked' : '') + '>';
+                html += '<span class="ubi-giveback-option-icon">\u271D\uFE0F</span>';
+                html += '<span class="ubi-giveback-option-title">The Kingdom</span>';
+                html += '<span class="ubi-giveback-option-subtitle">Fund what matters eternally.</span>';
+                html += '<span class="ubi-giveback-option-desc">Your rewards go to verified ministry partners \u2014 church planting, homeless outreach, community ministry, and organizations ushering the gospel. The agents earn. The humans give. The Kingdom grows.</span>';
+                if (orgs.length > 0) {
+                    html += '<span class="ubi-giveback-ministries">';
+                    for (var oi = 0; oi < orgs.length; oi++) {
+                        var org = orgs[oi];
+                        var orgUrl = org.website_url || '';
+                        html += '<span class="ubi-giveback-ministry">';
+                        if (orgUrl) {
+                            html += '<a href="' + esc(orgUrl) + '" target="_blank" rel="noopener">' + esc(org.name) + '</a>';
+                        } else {
+                            html += esc(org.name);
+                        }
+                        if (org.description) html += ' \u2014 <em>' + esc(org.description) + '</em>';
+                        html += '</span>';
+                    }
+                    html += '</span>';
                 }
+                html += '</label>';
 
                 // Reinvest option
                 html += '<label class="ubi-giveback-option' + (savedRedirect === 'reinvest' ? ' active' : '') + '">';
                 html += '<input type="radio" name="giveBackChoice" value="reinvest"' + (savedRedirect === 'reinvest' ? ' checked' : '') + '>';
                 html += '<span class="ubi-giveback-option-icon">\uD83C\uDF31</span>';
                 html += '<span class="ubi-giveback-option-title">Reinvest</span>';
-                html += '<span class="ubi-giveback-option-desc">Return rewards to the UBI pool</span>';
+                html += '<span class="ubi-giveback-option-subtitle">Compound the commons.</span>';
+                html += '<span class="ubi-giveback-option-desc">Return your rewards to the UBI pool. Your sacrifice increases the yield for every other human staker. Decrease yourself so others increase.</span>';
                 html += '</label>';
 
                 html += '</div>';
