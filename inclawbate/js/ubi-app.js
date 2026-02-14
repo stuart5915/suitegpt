@@ -285,6 +285,7 @@ function daysSince(dateStr) {
 
         // APY calculation + card APYs
         updateAllApys();
+        updateCalc();
 
         // Roadmap
         updateRoadmap(totalUsd);
@@ -473,6 +474,87 @@ function daysSince(dateStr) {
         if (n >= 1) return n.toFixed(2);
         return n.toFixed(2);
     }
+
+    // ── Staking Calculator ──
+    function updateCalc() {
+        var raw = (document.getElementById('calcAmount').value || '').replace(/,/g, '');
+        var amount = Number(raw) || 0;
+        var colC = document.getElementById('calcColClawnch');
+        var colI = document.getElementById('calcColInclawnch');
+        var usdEl = document.getElementById('calcUsd');
+        if (!colC || !colI) return;
+
+        // Show USD equivalent of input
+        if (usdEl) {
+            usdEl.textContent = (amount > 0 && clawnchPrice > 0)
+                ? '~$' + fmtUsd(amount * clawnchPrice)
+                : '';
+        }
+
+        if (amount <= 0 || !ubiData) {
+            colC.innerHTML = '<div class="ubi-calc-col-title">CLAWNCH (1x)</div><div class="ubi-calc-empty">Type an amount above</div>';
+            colI.innerHTML = '<div class="ubi-calc-col-title">inCLAWNCH (2x)</div><div class="ubi-calc-empty">Type an amount above</div>';
+            return;
+        }
+
+        var weeklyRate = Number(ubiData.weekly_rate) || 0;
+        var dailyRate = weeklyRate / 7;
+        var clawnchStaked = Number(ubiData.total_balance) || 0;
+        var inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
+        var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
+
+        function renderCol(mult, label) {
+            var weightedAmount = amount * mult;
+            var newTotal = totalWeightedStake + weightedAmount;
+            var daily = newTotal > 0 ? (weightedAmount / newTotal) * dailyRate : 0;
+            var weekly = daily * 7;
+            var monthly = daily * 30;
+            var annual = daily * 365;
+            var apy = newTotal > 0 ? (dailyRate * 365 * mult) / newTotal * 100 : 0;
+            var dailyUsd = daily * clawnchPrice;
+
+            var html = '<div class="ubi-calc-col-title">' + label + '</div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Daily</span><span class="ubi-calc-row-val">' + fmt(daily) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Weekly</span><span class="ubi-calc-row-val">' + fmt(weekly) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Monthly</span><span class="ubi-calc-row-val">' + fmt(monthly) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Annual</span><span class="ubi-calc-row-val">' + fmt(annual) + '</span></div>';
+            if (clawnchPrice > 0) {
+                html += '<div class="ubi-calc-row ubi-calc-row--usd"><span class="ubi-calc-row-label">Daily USD</span><span class="ubi-calc-row-val">~$' + fmtUsd(dailyUsd) + '/day</span></div>';
+            }
+            html += '<div class="ubi-calc-row ubi-calc-row--apy"><span class="ubi-calc-row-label">APY</span><span class="ubi-calc-row-val">' + (apy > 0 ? apy.toFixed(1) + '%' : '--') + '</span></div>';
+            return html;
+        }
+
+        colC.innerHTML = renderCol(1, 'CLAWNCH (1x)');
+        colI.innerHTML = renderCol(2, 'inCLAWNCH (2x)');
+    }
+
+    // Format calc input with commas on every keystroke
+    var calcInput = document.getElementById('calcAmount');
+    if (calcInput) {
+        calcInput.addEventListener('input', function() {
+            var raw = calcInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+            if (raw) {
+                var num = parseInt(raw, 10);
+                calcInput.value = num.toLocaleString();
+            }
+            updateCalc();
+        });
+    }
+
+    // % of wallet buttons
+    document.querySelectorAll('.ubi-calc-pct-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var pct = parseInt(btn.getAttribute('data-pct')) || 0;
+            var totalBal = (walletBalances.clawnch || 0) + (walletBalances.inclawnch || 0);
+            if (totalBal <= 0) return;
+            var amount = Math.floor(totalBal * pct / 100);
+            if (calcInput) {
+                calcInput.value = amount.toLocaleString();
+                updateCalc();
+            }
+        });
+    });
 
     function buildSplitHtml(dailyAmt, price, keepPct, kingdomPct, reinvestPct) {
         function splitLine(label, pct) {
@@ -795,6 +877,10 @@ function daysSince(dateStr) {
 
         // Fetch and show wallet balances
         fetchBalances();
+
+        // Show calculator % buttons
+        var calcPctRow = document.getElementById('calcPctRow');
+        if (calcPctRow) calcPctRow.style.display = '';
 
         // Load user's stakes
         loadMyStakes();
@@ -1360,6 +1446,7 @@ function daysSince(dateStr) {
                 fetchUnstakeBalance();
                 loadMyStakes();
                 updateAllApys();
+                updateCalc();
             } else {
                 var errMsg = data.error || 'Unstake failed';
                 if (statusEl) {
@@ -1527,12 +1614,14 @@ function daysSince(dateStr) {
                 loadMyStakes();
                 fetchBalances();
                 updateAllApys();
+                updateCalc();
             } else if (apiData && apiData.duplicate) {
                 status.textContent = 'Stake already recorded!';
                 status.className = 'ubi-stake-status stake-status success';
                 loadMyStakes();
                 fetchBalances();
                 updateAllApys();
+                updateCalc();
             } else {
                 status.textContent = 'Transaction confirmed on-chain but recording failed. It will be recovered automatically on next page load.';
                 status.className = 'ubi-stake-status stake-status error';
