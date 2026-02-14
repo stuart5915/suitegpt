@@ -125,6 +125,13 @@ export default async function handler(req, res) {
             }
         } catch (e) { /* column may not exist yet */ }
 
+        // Fetch active orgs
+        const { data: orgs } = await supabase
+            .from('inclawbate_philanthropy_orgs')
+            .select('id, name, description, tagline, icon_emoji, image_url, website_url, wallet_address')
+            .eq('is_active', true)
+            .order('id', { ascending: true });
+
         const result = {
             weighted_philanthropy_pct: Math.round(weightedPct * 100) / 100,
             weighted_reinvest_pct: Math.round((100 - weightedPct) * 100) / 100,
@@ -132,7 +139,8 @@ export default async function handler(req, res) {
             total_weighted_voting: Math.round(totalWeight),
             total_clawnch_voting: Math.round(totalClawnch),
             total_inclawnch_voting: Math.round(totalInclawnch),
-            kingdom_total_distributed: kingdomTotal
+            kingdom_total_distributed: kingdomTotal,
+            orgs: orgs || []
         };
 
         // If wallet param, include user's vote + live balance
@@ -191,6 +199,54 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, org_id: Number(org_id) });
+        }
+
+        // ── Submit Org Listing ──
+        if (action === 'submit_org') {
+            const { name, description, org_wallet, tx_hash, tagline, icon_emoji, website_url } = req.body;
+
+            if (!name || typeof name !== 'string' || name.trim().length < 3 || name.trim().length > 80) {
+                return res.status(400).json({ error: 'Name must be 3-80 characters' });
+            }
+            if (!description || typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 500) {
+                return res.status(400).json({ error: 'Description must be 10-500 characters' });
+            }
+            if (!org_wallet || !/^0x[a-fA-F0-9]{40}$/.test(org_wallet)) {
+                return res.status(400).json({ error: 'Valid org wallet address required' });
+            }
+            if (!tx_hash || typeof tx_hash !== 'string') {
+                return res.status(400).json({ error: 'Transaction hash required' });
+            }
+            if (tagline && tagline.length > 80) {
+                return res.status(400).json({ error: 'Tagline must be under 80 characters' });
+            }
+            if (icon_emoji && icon_emoji.length > 4) {
+                return res.status(400).json({ error: 'Emoji must be under 4 characters' });
+            }
+
+            const orgData = {
+                name: name.trim(),
+                description: description.trim(),
+                wallet_address: org_wallet.toLowerCase(),
+                submitted_by: w,
+                tx_hash: tx_hash,
+                is_active: true
+            };
+            if (tagline) orgData.tagline = tagline.trim();
+            if (icon_emoji) orgData.icon_emoji = icon_emoji;
+            if (website_url) orgData.website_url = website_url.trim();
+
+            const { data: newOrg, error: insertErr } = await supabase
+                .from('inclawbate_philanthropy_orgs')
+                .insert(orgData)
+                .select('id, name, description, tagline, icon_emoji, image_url, website_url, wallet_address')
+                .single();
+
+            if (insertErr) {
+                return res.status(500).json({ error: 'Failed to create listing' });
+            }
+
+            return res.status(200).json({ success: true, org: newOrg });
         }
 
         // ── Legacy: Cast Vote ──

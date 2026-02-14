@@ -5,6 +5,10 @@
     var connectedWallet = null;
 
     var CLAWNCH_TOKEN = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
+    var UBI_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+    var ORG_LISTING_FEE = 10000;
+
+    var loadedOrgs = [];
 
     var typeConfig = {
         gcm: { apiType: 'goclawnchme', hasOpen: false, expandedId: null, showProgress: true, showFund: true },
@@ -79,15 +83,22 @@
         var el = document.getElementById('kingdomDestination');
         if (!el) return;
 
-        // For now only E3 (id=1) is available
-        if (orgId === 1) {
+        // Look up org from loaded array
+        var org = null;
+        for (var i = 0; i < loadedOrgs.length; i++) {
+            if (loadedOrgs[i].id === orgId) { org = loadedOrgs[i]; break; }
+        }
+
+        if (org) {
+            var icon = org.icon_emoji || '\uD83C\uDFE2';
+            var taglineHtml = org.tagline ? '<div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--sand-300);">' + escHtml(org.tagline) + '</div>' : '';
             el.innerHTML =
                 '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>' +
                 '<div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;">' +
-                    '<span style="font-size:1.6rem;flex-shrink:0;">&#9981;</span>' +
+                    '<span style="font-size:1.6rem;flex-shrink:0;">' + icon + '</span>' +
                     '<div style="flex:1;min-width:0;">' +
-                        '<div style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:var(--text-primary);">E3 Ministry</div>' +
-                        '<div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--sand-300);">Equip &middot; Evangelize &middot; Establish</div>' +
+                        '<div style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:var(--text-primary);">' + escHtml(org.name) + '</div>' +
+                        taglineHtml +
                     '</div>' +
                     (kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' CLAWNCH</div>' : '') +
                 '</div>';
@@ -100,6 +111,7 @@
 
     // ── Load kingdom status for connected wallet ──
     var selectedOrgId = null;
+    var lastKingdomAmt = 0;
 
     function computeUserShare(data) {
         // Approximate user's share from their stakes vs total
@@ -139,6 +151,7 @@
             if (kingdomPct > 0) {
                 var shareAmt = computeUserShare(data);
                 var kingdomAmt = Math.round(shareAmt * kingdomPct / 100 * 100) / 100;
+                lastKingdomAmt = kingdomAmt;
 
                 if (pctEl) pctEl.textContent = kingdomPct + '%';
                 if (labelEl) {
@@ -199,10 +212,62 @@
         }
     }
 
-    // Wire up org card clicks
-    document.querySelectorAll('.phil-kingdom-card').forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            if (e.target.closest('a')) return; // don't hijack links
+    // ── Load & Render Orgs ──
+    async function loadOrgs() {
+        try {
+            var res = await fetch('/api/inclawbate/philanthropy');
+            var data = await res.json();
+            loadedOrgs = data.orgs || [];
+            renderOrgCards(loadedOrgs);
+            // Re-render destination in case loadKingdomStatus finished first
+            if (selectedOrgId) renderKingdomDestination(selectedOrgId, lastKingdomAmt);
+        } catch (e) {
+            // silent
+        }
+    }
+
+    function renderOrgCards(orgs) {
+        var container = document.getElementById('orgsList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (orgs.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:var(--space-lg);color:var(--text-dim);font-size:0.82rem;">No organizations listed yet.</div>';
+            return;
+        }
+
+        for (var i = 0; i < orgs.length; i++) {
+            var o = orgs[i];
+            var icon = o.icon_emoji || '\uD83C\uDFE2';
+            var card = document.createElement('div');
+            card.className = 'phil-kingdom-card';
+            card.setAttribute('data-org-id', o.id);
+            if (o.id === selectedOrgId) card.classList.add('selected');
+
+            var bodyHtml = '<div class="phil-kingdom-card-name">' + escHtml(o.name) + '</div>';
+            if (o.tagline) bodyHtml += '<div class="phil-kingdom-card-motto">' + escHtml(o.tagline) + '</div>';
+            bodyHtml += '<div class="phil-kingdom-card-desc">' + escHtml(o.description) + '</div>';
+            if (o.website_url) {
+                var displayUrl = o.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                bodyHtml += '<a href="' + escHtml(o.website_url) + '" target="_blank" rel="noopener" class="phil-kingdom-card-link">' + escHtml(displayUrl) + ' &rarr;</a>';
+            }
+
+            card.innerHTML =
+                '<span class="phil-kingdom-card-icon">' + icon + '</span>' +
+                '<div class="phil-kingdom-card-body">' + bodyHtml + '</div>' +
+                '<span class="phil-kingdom-card-check">&#10003;</span>';
+
+            container.appendChild(card);
+        }
+    }
+
+    // Event delegation for org card clicks
+    var orgsContainer = document.getElementById('orgsList');
+    if (orgsContainer) {
+        orgsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('a')) return;
+            var card = e.target.closest('.phil-kingdom-card');
+            if (!card) return;
             if (!connectedWallet) {
                 philToast('Connect your wallet first', 'error');
                 return;
@@ -210,7 +275,118 @@
             var orgId = Number(card.getAttribute('data-org-id'));
             selectOrg(orgId);
         });
-    });
+    }
+
+    // ── Org Listing Form ──
+    window._toggleOrgForm = function() {
+        if (!connectedWallet) {
+            connectWallet();
+            return;
+        }
+        var form = document.getElementById('orgSubmitForm');
+        if (form) {
+            form.classList.toggle('visible');
+            if (form.classList.contains('visible')) {
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    };
+
+    // Org description char counter
+    var orgDescField = document.getElementById('orgDescription');
+    var orgDescCount = document.getElementById('orgDescCount');
+    if (orgDescField && orgDescCount) {
+        orgDescField.addEventListener('input', function() {
+            orgDescCount.textContent = orgDescField.value.length + ' / 500';
+        });
+    }
+
+    // Submit org listing
+    var orgSubmitBtn = document.getElementById('orgSubmitBtn');
+    if (orgSubmitBtn) {
+        orgSubmitBtn.addEventListener('click', async function() {
+            if (!connectedWallet) { connectWallet(); return; }
+
+            var name = (document.getElementById('orgName').value || '').trim();
+            var tagline = (document.getElementById('orgTagline').value || '').trim();
+            var desc = (document.getElementById('orgDescription').value || '').trim();
+            var website = (document.getElementById('orgWebsite').value || '').trim();
+            var orgWallet = (document.getElementById('orgWallet').value || '').trim();
+            var emoji = (document.getElementById('orgEmoji').value || '').trim();
+
+            if (name.length < 3 || name.length > 80) { philToast('Name must be 3-80 characters', 'error'); return; }
+            if (desc.length < 10 || desc.length > 500) { philToast('Description must be 10-500 characters', 'error'); return; }
+            if (!/^0x[a-fA-F0-9]{40}$/.test(orgWallet)) { philToast('Enter a valid wallet address (0x...)', 'error'); return; }
+
+            orgSubmitBtn.disabled = true;
+            orgSubmitBtn.textContent = 'Sending 10,000 CLAWNCH...';
+
+            try {
+                var provider = getProvider();
+                if (!provider) throw new Error('No wallet connected');
+
+                // ERC-20 transfer: 10,000 CLAWNCH to UBI treasury
+                var transferData = '0xa9059cbb' + pad32(UBI_TREASURY) + pad32(toHexWei(ORG_LISTING_FEE));
+
+                var txHash = await provider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{
+                        from: connectedWallet,
+                        to: CLAWNCH_TOKEN,
+                        data: transferData
+                    }]
+                });
+
+                philToast('Payment sent! Creating listing...', 'success');
+                orgSubmitBtn.textContent = 'Creating listing...';
+
+                var body = {
+                    action: 'submit_org',
+                    wallet_address: connectedWallet,
+                    name: name,
+                    description: desc,
+                    org_wallet: orgWallet,
+                    tx_hash: txHash
+                };
+                if (tagline) body.tagline = tagline;
+                if (emoji) body.icon_emoji = emoji;
+                if (website) body.website_url = website;
+
+                var res = await fetch('/api/inclawbate/philanthropy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                var data = await res.json();
+
+                if (data.success) {
+                    philToast('Listed! Your org is now live.', 'success');
+                    // Clear form
+                    document.getElementById('orgName').value = '';
+                    document.getElementById('orgTagline').value = '';
+                    document.getElementById('orgDescription').value = '';
+                    document.getElementById('orgWebsite').value = '';
+                    document.getElementById('orgWallet').value = '';
+                    document.getElementById('orgEmoji').value = '';
+                    if (orgDescCount) orgDescCount.textContent = '0 / 500';
+                    document.getElementById('orgSubmitForm').classList.remove('visible');
+                    // Reload orgs
+                    loadOrgs();
+                } else {
+                    philToast(data.error || 'Failed to create listing', 'error');
+                }
+            } catch (e) {
+                if (e.code === 4001) {
+                    philToast('Transaction cancelled', 'error');
+                } else {
+                    philToast(e.message || 'Transaction failed', 'error');
+                }
+            }
+
+            orgSubmitBtn.disabled = false;
+            orgSubmitBtn.textContent = 'Pay 10,000 CLAWNCH & List';
+        });
+    }
 
     // ── Wallet Connect ──
     async function connectWallet() {
@@ -273,9 +449,10 @@
         var ubiConnectMsg = document.getElementById('ubiConnectMsg');
         if (ubiConnectMsg) ubiConnectMsg.style.display = 'none';
 
-        // Load kingdom status + requests for both types
+        // Load kingdom status, orgs, + requests for both types
         await Promise.all([
             loadKingdomStatus(address),
+            loadOrgs(),
             loadRequests('gcm'),
             loadRequests('ubi')
         ]);
@@ -913,6 +1090,7 @@
     });
 
     // ── Initial load (no wallet needed) ──
+    loadOrgs();
     loadRequests('gcm');
     loadRequests('ubi');
 })();
