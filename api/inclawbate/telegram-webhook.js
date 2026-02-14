@@ -29,7 +29,13 @@ export default async function handler(req, res) {
         if (!message || !message.text) return res.status(200).json({ ok: true });
 
         const chatId = message.chat.id;
+        const chatType = message.chat.type; // 'private', 'group', or 'supergroup'
         const text = message.text.trim();
+
+        // In group chats, only respond to bot commands (starting with /)
+        if (chatType !== 'private' && !text.startsWith('/')) {
+            return res.status(200).json({ ok: true });
+        }
 
         // Handle /start <handle>
         if (text.startsWith('/start')) {
