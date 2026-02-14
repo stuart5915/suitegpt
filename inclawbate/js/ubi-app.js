@@ -312,12 +312,13 @@ function daysSince(dateStr) {
             cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
         }
         if (cdBlendedApyEl) {
-            // Blended APY = total annual yield in USD / total staked USD value * 100
+            // Blended APY = weighted average of each vault's APY by USD value
             var blendedApy = 0;
-            var totalStakedUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
-            var annualYieldUsd = dailyRate * 365 * clawnchPrice;
-            if (totalStakedUsd > 0 && annualYieldUsd > 0) {
-                blendedApy = (annualYieldUsd / totalStakedUsd) * 100;
+            var clawnchUsd = clawnchStaked * clawnchPrice;
+            var inclawnchUsd = inclawnchStaked * inclawnchPrice;
+            var totalUsd = clawnchUsd + inclawnchUsd;
+            if (totalUsd > 0 && clawnchApy > 0) {
+                blendedApy = (clawnchUsd / totalUsd) * clawnchApy + (inclawnchUsd / totalUsd) * inclawnchApy;
             }
             cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
         }
