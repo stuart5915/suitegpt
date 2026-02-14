@@ -527,6 +527,18 @@
         }
     }
 
+    // ── Tab Switching ──
+    document.querySelectorAll('.phil-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.phil-tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.phil-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+            tab.classList.add('active');
+            var panel = tab.getAttribute('data-panel');
+            var el = document.getElementById(panel === 'orgs' ? 'panelOrgs' : 'panelHumans');
+            if (el) el.classList.add('active');
+        });
+    });
+
     // ── Initial load (no wallet needed) ──
     loadCommunityStats();
     loadRequests();
