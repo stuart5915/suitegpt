@@ -811,10 +811,64 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
     distStatus.className = 'airdrop-status';
 
     try {
-        // Disperse only to manual stakers
-        if (manualStakers.length > 0) {
-            const recipients = manualStakers.map(s => s.wallet);
-            const amounts = manualStakers.map(s => toWei(Math.floor(s.share_amount)));
+        // Look up philanthropy org wallets for Kingdom routing
+        const orgWalletMap = {};
+        (distData.philanthropy_orgs || []).forEach(o => {
+            if (o.wallet_address) orgWalletMap[o.id] = o.wallet_address.toLowerCase();
+        });
+        const defaultOrgWallet = Object.values(orgWalletMap)[0] || null;
+
+        // Build Disperse recipients with split routing
+        // Each manual staker's share gets split according to their preferences:
+        //   Keep portion    → staker's wallet
+        //   Kingdom portion → E3 Ministry wallet
+        //   Reinvest portion → stays in treasury (not sent)
+        const disperseMap = {}; // wallet → accumulated amount
+        let reinvestTotal = 0;
+        let kingdomTotal = 0;
+        let keepTotal = 0;
+
+        for (const s of manualStakers) {
+            const amt = Math.floor(s.share_amount);
+            if (amt <= 0) continue;
+
+            if (s.redirect_target === 'split') {
+                const kPct = s.split_keep_pct ?? 100;
+                const gPct = s.split_kingdom_pct ?? 0;
+                const rPct = s.split_reinvest_pct ?? 0;
+                const keepAmt = Math.round(amt * kPct / 100);
+                const kingdomAmt = Math.round(amt * gPct / 100);
+                const reinvestAmt = amt - keepAmt - kingdomAmt;
+
+                if (keepAmt > 0) {
+                    disperseMap[s.wallet] = (disperseMap[s.wallet] || 0) + keepAmt;
+                    keepTotal += keepAmt;
+                }
+                if (kingdomAmt > 0 && defaultOrgWallet) {
+                    disperseMap[defaultOrgWallet] = (disperseMap[defaultOrgWallet] || 0) + kingdomAmt;
+                    kingdomTotal += kingdomAmt;
+                }
+                reinvestTotal += reinvestAmt;
+            } else if (s.redirect_target === 'philanthropy') {
+                const orgWallet = (s.redirect_org_id && orgWalletMap[s.redirect_org_id]) || defaultOrgWallet;
+                if (orgWallet) {
+                    disperseMap[orgWallet] = (disperseMap[orgWallet] || 0) + amt;
+                    kingdomTotal += amt;
+                }
+            } else if (s.redirect_target === 'reinvest') {
+                reinvestTotal += amt;
+            } else {
+                // Default: send full amount to staker (Keep)
+                disperseMap[s.wallet] = (disperseMap[s.wallet] || 0) + amt;
+                keepTotal += amt;
+            }
+        }
+
+        const disperseEntries = Object.entries(disperseMap).filter(([, amt]) => amt > 0);
+
+        if (disperseEntries.length > 0) {
+            const recipients = disperseEntries.map(([addr]) => addr);
+            const amounts = disperseEntries.map(([, amt]) => toWei(amt));
             const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
 
             // Check balance
@@ -852,7 +906,7 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
             }
 
             // Disperse
-            distStatus.textContent = `Sending UBI to ${manualStakers.length} stakers...`;
+            distStatus.textContent = `Sending UBI to ${recipients.length} addresses...`;
             const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
             const disperseTx = await provider.request({
                 method: 'eth_sendTransaction',
@@ -901,16 +955,13 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
         } catch (e) { /* non-critical */ }
 
         // Build status message
-        const manualTotal = manualStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
-        let statusMsg = '';
-        if (manualStakers.length > 0 && autoStakers.length > 0) {
-            statusMsg = `Sent ${fmtNum(manualTotal)} CLAWNCH to ${manualStakers.length} wallets, auto-staked ${fmtNum(autoTotal)} CLAWNCH for ${autoStakers.length} stakers`;
-        } else if (autoStakers.length > 0) {
-            statusMsg = `Auto-staked ${fmtNum(autoTotal)} CLAWNCH for ${autoStakers.length} stakers`;
-        } else {
-            statusMsg = `UBI distributed to ${manualStakers.length} stakers!`;
-        }
+        let parts = [];
+        if (keepTotal > 0) parts.push(`${fmtNum(keepTotal)} kept`);
+        if (kingdomTotal > 0) parts.push(`${fmtNum(kingdomTotal)} to Kingdom`);
+        if (reinvestTotal > 0) parts.push(`${fmtNum(reinvestTotal)} reinvested`);
+        if (autoTotal > 0) parts.push(`${fmtNum(autoTotal)} auto-staked`);
+        const statusMsg = 'UBI distributed! ' + parts.join(' · ');
 
         distStatus.textContent = statusMsg;
         distStatus.className = 'airdrop-status success';
