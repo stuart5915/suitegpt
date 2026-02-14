@@ -920,7 +920,8 @@ export default async function handler(req, res) {
                 .upsert(updateFields, { onConflict: 'wallet_address' });
 
             if (updateErr) {
-                return res.status(500).json({ error: 'Failed to update redirect preference' });
+                console.error('Redirect upsert error:', updateErr);
+                return res.status(500).json({ error: 'Failed to update redirect preference', detail: updateErr.message });
             }
 
             return res.status(200).json({
