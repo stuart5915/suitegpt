@@ -312,10 +312,11 @@ function daysSince(dateStr) {
             cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
         }
         if (cdBlendedApyEl) {
-            // Blended APY = total annual yield / total weighted stake * 100
+            // Blended APY = total annual yield / unweighted total staked * 100
             var blendedApy = 0;
-            if (totalWeightedStake > 0 && dailyRate > 0) {
-                blendedApy = (dailyRate * 365) / totalWeightedStake * 100;
+            var unweightedTotal = clawnchStaked + inclawnchStaked;
+            if (unweightedTotal > 0 && dailyRate > 0) {
+                blendedApy = (dailyRate * 365) / unweightedTotal * 100;
             }
             cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
         }
