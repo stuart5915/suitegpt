@@ -933,7 +933,7 @@ function daysSince(dateStr) {
                         ubiToast('Saved', 'success');
                     } else {
                         if (statusEl) statusEl.textContent = '';
-                        ubiToast(rData.error || 'Failed to save', 'error');
+                        ubiToast((rData.error || 'Failed to save') + (rData.detail ? ' — ' + rData.detail : ''), 'error');
                     }
                 } catch (e) {
                     if (statusEl) statusEl.textContent = '';
