@@ -63,11 +63,14 @@ export default async function handler(req, res) {
             });
         }
 
-        // List open requests
-        const { data: requests, error } = await supabase
+        // List open requests (optionally filtered by type)
+        const requestType = req.query.type;
+        let query = supabase
             .from('inclawbate_ubi_requests')
             .select('*')
-            .eq('status', 'open')
+            .eq('status', 'open');
+        if (requestType) query = query.eq('request_type', requestType);
+        const { data: requests, error } = await query
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -99,6 +102,7 @@ export default async function handler(req, res) {
             description: r.description,
             amount_requested: r.amount_requested,
             total_funded: r.total_funded,
+            request_type: r.request_type || 'goclawnchme',
             created_at: r.created_at,
             comment_count: commentCounts[r.id] || 0,
             handle: handles[r.wallet_address] || null
@@ -117,7 +121,8 @@ export default async function handler(req, res) {
         const w = wallet_address.toLowerCase();
 
         if (action === 'create') {
-            const { title, description, amount_requested, socials } = req.body;
+            const { title, description, amount_requested, socials, request_type } = req.body;
+            const rtype = (request_type === 'ubi') ? 'ubi' : 'goclawnchme';
 
             // Validate title
             if (!title || typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 100) {
@@ -135,16 +140,17 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Amount must be greater than 0' });
             }
 
-            // Check max 1 open per wallet
+            // Check max 1 open per wallet per type
             const { data: existing } = await supabase
                 .from('inclawbate_ubi_requests')
                 .select('id')
                 .eq('wallet_address', w)
                 .eq('status', 'open')
+                .eq('request_type', rtype)
                 .limit(1);
 
             if (existing && existing.length > 0) {
-                return res.status(409).json({ error: 'You already have an open request. Close it before creating a new one.' });
+                return res.status(409).json({ error: 'You already have an open ' + (rtype === 'ubi' ? 'UBI request' : 'fundraiser') + '. Close it before creating a new one.' });
             }
 
             // Validate socials (optional, object with string values)
@@ -167,6 +173,7 @@ export default async function handler(req, res) {
                     title: title.trim(),
                     description: description.trim(),
                     amount_requested: amount,
+                    request_type: rtype,
                     ...(cleanSocials ? { socials: cleanSocials } : {})
                 })
                 .select()

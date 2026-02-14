@@ -3,10 +3,15 @@
 (function() {
     var BASE_CHAIN_ID = '0x2105';
     var connectedWallet = null;
-    var userHasOpenRequest = false;
-    var expandedRequestId = null;
 
     var CLAWNCH_TOKEN = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
+
+    var typeConfig = {
+        gcm: { apiType: 'goclawnchme', hasOpen: false, expandedId: null, showProgress: true, showFund: true },
+        ubi: { apiType: 'ubi', hasOpen: false, expandedId: null, showProgress: false, showFund: false }
+    };
+
+    var panelMap = { orgs: 'panelOrgs', gcm: 'panelGcm', ubi: 'panelUbi' };
 
     function fmt(n) { return Math.round(Number(n) || 0).toLocaleString(); }
 
@@ -253,21 +258,27 @@
         var connectWrap = document.getElementById('kingdomConnectWrap');
         if (connectWrap) connectWrap.style.display = 'none';
 
-        // Hide request connect message
-        var reqConnectMsg = document.getElementById('reqConnectMsg');
-        if (reqConnectMsg) reqConnectMsg.style.display = 'none';
+        // Hide connect messages for BOTH request panels
+        var gcmConnectMsg = document.getElementById('gcmConnectMsg');
+        if (gcmConnectMsg) gcmConnectMsg.style.display = 'none';
+        var ubiConnectMsg = document.getElementById('ubiConnectMsg');
+        if (ubiConnectMsg) ubiConnectMsg.style.display = 'none';
 
-        // Load kingdom status + requests
+        // Load kingdom status + requests for both types
         await Promise.all([
             loadKingdomStatus(address),
-            loadRequests()
+            loadRequests('gcm'),
+            loadRequests('ubi')
         ]);
     }
 
     function disconnectWallet() {
         if (!connectedWallet) return;
         connectedWallet = null;
-        userHasOpenRequest = false;
+        typeConfig.gcm.hasOpen = false;
+        typeConfig.ubi.hasOpen = false;
+        typeConfig.gcm.expandedId = null;
+        typeConfig.ubi.expandedId = null;
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
         // Reset kingdom connect
@@ -284,15 +295,17 @@
         var nudgeEl = document.getElementById('kingdomNudge');
         if (nudgeEl) nudgeEl.style.display = 'none';
 
-        // Reset request section
-        var reqConnectMsg = document.getElementById('reqConnectMsg');
-        if (reqConnectMsg) reqConnectMsg.style.display = 'block';
-        var reqCreateBtn = document.getElementById('reqCreateBtn');
-        if (reqCreateBtn) reqCreateBtn.style.display = 'none';
-        var reqForm = document.getElementById('reqForm');
-        if (reqForm) reqForm.classList.remove('visible');
-        var reqHasOpen = document.getElementById('reqHasOpen');
-        if (reqHasOpen) reqHasOpen.style.display = 'none';
+        // Reset BOTH request panels
+        ['gcm', 'ubi'].forEach(function(type) {
+            var connectMsg = document.getElementById(type + 'ConnectMsg');
+            if (connectMsg) connectMsg.style.display = 'block';
+            var createBtn = document.getElementById(type + 'CreateBtn');
+            if (createBtn) createBtn.style.display = 'none';
+            var form = document.getElementById(type + 'Form');
+            if (form) form.classList.remove('visible');
+            var hasOpen = document.getElementById(type + 'HasOpen');
+            if (hasOpen) hasOpen.style.display = 'none';
+        });
     }
 
     // Kingdom connect button
@@ -304,61 +317,75 @@
         });
     }
 
-    // Request connect button (shared wallet)
-    var reqConnectBtn = document.getElementById('reqConnectBtn');
-    if (reqConnectBtn) {
-        reqConnectBtn.addEventListener('click', function() {
+    // GCM connect button
+    var gcmConnectBtn = document.getElementById('gcmConnectBtn');
+    if (gcmConnectBtn) {
+        gcmConnectBtn.addEventListener('click', function() {
+            if (connectedWallet) { disconnectWallet(); return; }
+            connectWallet();
+        });
+    }
+
+    // UBI connect button
+    var ubiConnectBtn = document.getElementById('ubiConnectBtn');
+    if (ubiConnectBtn) {
+        ubiConnectBtn.addEventListener('click', function() {
             if (connectedWallet) { disconnectWallet(); return; }
             connectWallet();
         });
     }
 
     // ══════════════════════════════════════
-    //  CHARACTER COUNTER
+    //  CHARACTER COUNTERS
     // ══════════════════════════════════════
 
-    var descField = document.getElementById('reqDesc');
-    var descCount = document.getElementById('reqDescCount');
-    if (descField && descCount) {
-        descField.addEventListener('input', function() {
-            var len = descField.value.length;
-            descCount.textContent = len.toLocaleString() + ' / 5,000';
-        });
-    }
+    ['gcm', 'ubi'].forEach(function(type) {
+        var descField = document.getElementById(type + 'Desc');
+        var descCount = document.getElementById(type + 'DescCount');
+        if (descField && descCount) {
+            descField.addEventListener('input', function() {
+                var len = descField.value.length;
+                descCount.textContent = len.toLocaleString() + ' / 5,000';
+            });
+        }
+    });
 
     // ══════════════════════════════════════
-    //  UBI REQUESTS
+    //  PARAMETERIZED REQUEST FUNCTIONS
     // ══════════════════════════════════════
 
-    async function loadRequests() {
+    async function loadRequests(type) {
+        var cfg = typeConfig[type];
+        if (!cfg) return;
         try {
-            var res = await fetch('/api/inclawbate/ubi-requests');
+            var res = await fetch('/api/inclawbate/ubi-requests?type=' + cfg.apiType);
             var data = await res.json();
-            renderRequestList(data.requests || []);
+            renderRequestList(data.requests || [], type);
         } catch (e) {
             // silent
         }
     }
 
-    function renderRequestList(requests) {
-        var list = document.getElementById('reqList');
-        var empty = document.getElementById('reqEmpty');
+    function renderRequestList(requests, type) {
+        var cfg = typeConfig[type];
+        var list = document.getElementById(type + 'List');
+        var empty = document.getElementById(type + 'Empty');
         if (!list) return;
 
-        // Check if user has open request
-        userHasOpenRequest = false;
+        // Check if user has open request of this type
+        cfg.hasOpen = false;
         if (connectedWallet) {
             var w = connectedWallet.toLowerCase();
             for (var i = 0; i < requests.length; i++) {
                 if (requests[i].wallet_address === w) {
-                    userHasOpenRequest = true;
+                    cfg.hasOpen = true;
                     break;
                 }
             }
         }
 
         // Update form visibility
-        updateRequestFormState();
+        updateRequestFormState(type);
 
         // Clear old cards but keep empty el
         var oldCards = list.querySelectorAll('.phil-req-card');
@@ -382,102 +409,123 @@
             var preview = (r.description || '').substring(0, 120);
             if ((r.description || '').length > 120) preview += '...';
 
-            card.innerHTML =
+            var amountHtml;
+            if (cfg.showProgress) {
+                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' CLAWNCH</div>';
+            } else {
+                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' CLAWNCH/mo</div>';
+            }
+
+            var cardBodyHtml =
                 '<div class="phil-req-card-header">' +
                     '<div class="phil-req-card-title">' + escHtml(r.title) + '</div>' +
-                    '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' CLAWNCH</div>' +
+                    amountHtml +
                 '</div>' +
                 '<div class="phil-req-card-meta">' +
                     '<span>' + authorDisplay + '</span>' +
                     '<span>' + timeAgo(r.created_at) + '</span>' +
                     '<span>' + (r.comment_count || 0) + ' comment' + ((r.comment_count || 0) !== 1 ? 's' : '') + '</span>' +
-                '</div>' +
-                progressHtml(r.total_funded, r.amount_requested) +
-                '<div class="phil-req-card-preview">' + escHtml(preview) + '</div>' +
-                '<div class="phil-req-expanded" id="reqExpanded' + r.id + '"></div>';
+                '</div>';
 
-            card.addEventListener('click', (function(reqId) {
+            if (cfg.showProgress) {
+                cardBodyHtml += progressHtml(r.total_funded, r.amount_requested);
+            } else {
+                cardBodyHtml += '<div style="margin-top:8px;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--sand-300);">' + fmt(r.amount_requested) + ' CLAWNCH/month requested</div>';
+            }
+
+            cardBodyHtml +=
+                '<div class="phil-req-card-preview">' + escHtml(preview) + '</div>' +
+                '<div class="phil-req-expanded" id="' + type + 'Expanded' + r.id + '"></div>';
+
+            card.innerHTML = cardBodyHtml;
+
+            card.addEventListener('click', (function(reqId, t) {
                 return function(e) {
                     if (e.target.closest('.phil-req-comment-form') || e.target.closest('.phil-req-close-btn') || e.target.closest('button')) return;
-                    toggleRequestExpand(reqId);
+                    toggleRequestExpand(reqId, t);
                 };
-            })(r.id));
+            })(r.id, type));
 
             list.appendChild(card);
         }
     }
 
-    function updateRequestFormState() {
-        var reqForm = document.getElementById('reqForm');
-        var reqHasOpen = document.getElementById('reqHasOpen');
-        var reqConnectMsg = document.getElementById('reqConnectMsg');
-        var reqCreateBtn = document.getElementById('reqCreateBtn');
+    function updateRequestFormState(type) {
+        var cfg = typeConfig[type];
+        var form = document.getElementById(type + 'Form');
+        var hasOpen = document.getElementById(type + 'HasOpen');
+        var connectMsg = document.getElementById(type + 'ConnectMsg');
+        var createBtn = document.getElementById(type + 'CreateBtn');
 
         if (!connectedWallet) {
-            if (reqConnectMsg) reqConnectMsg.style.display = 'block';
-            if (reqCreateBtn) reqCreateBtn.style.display = 'none';
-            if (reqForm) reqForm.classList.remove('visible');
-            if (reqHasOpen) reqHasOpen.style.display = 'none';
+            if (connectMsg) connectMsg.style.display = 'block';
+            if (createBtn) createBtn.style.display = 'none';
+            if (form) form.classList.remove('visible');
+            if (hasOpen) hasOpen.style.display = 'none';
             return;
         }
 
-        if (reqConnectMsg) reqConnectMsg.style.display = 'none';
+        if (connectMsg) connectMsg.style.display = 'none';
 
-        if (userHasOpenRequest) {
-            if (reqCreateBtn) reqCreateBtn.style.display = 'none';
-            if (reqForm) reqForm.classList.remove('visible');
-            if (reqHasOpen) reqHasOpen.style.display = 'block';
+        if (cfg.hasOpen) {
+            if (createBtn) createBtn.style.display = 'none';
+            if (form) form.classList.remove('visible');
+            if (hasOpen) hasOpen.style.display = 'block';
         } else {
             // Show "Create Post" button, keep form hidden until clicked
-            if (reqCreateBtn) reqCreateBtn.style.display = 'inline-flex';
-            if (reqHasOpen) reqHasOpen.style.display = 'none';
+            if (createBtn) createBtn.style.display = 'inline-flex';
+            if (hasOpen) hasOpen.style.display = 'none';
             // Don't auto-show form — wait for button click
         }
     }
 
-    // Create Post button → reveal form
-    var createBtn = document.getElementById('reqCreateBtn');
-    if (createBtn) {
-        createBtn.addEventListener('click', function() {
-            var reqForm = document.getElementById('reqForm');
-            if (reqForm) {
-                reqForm.classList.add('visible');
-                reqForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            createBtn.style.display = 'none';
-        });
-    }
+    // Create Post buttons → reveal respective forms
+    ['gcm', 'ubi'].forEach(function(type) {
+        var createBtn = document.getElementById(type + 'CreateBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', function() {
+                var form = document.getElementById(type + 'Form');
+                if (form) {
+                    form.classList.add('visible');
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                createBtn.style.display = 'none';
+            });
+        }
+    });
 
-    async function toggleRequestExpand(reqId) {
-        var el = document.getElementById('reqExpanded' + reqId);
+    async function toggleRequestExpand(reqId, type) {
+        var cfg = typeConfig[type];
+        var el = document.getElementById(type + 'Expanded' + reqId);
         if (!el) return;
 
-        if (expandedRequestId === reqId) {
+        if (cfg.expandedId === reqId) {
             el.classList.remove('visible');
-            expandedRequestId = null;
+            cfg.expandedId = null;
             return;
         }
 
         // Collapse previous
-        if (expandedRequestId !== null) {
-            var prev = document.getElementById('reqExpanded' + expandedRequestId);
+        if (cfg.expandedId !== null) {
+            var prev = document.getElementById(type + 'Expanded' + cfg.expandedId);
             if (prev) prev.classList.remove('visible');
         }
 
-        expandedRequestId = reqId;
+        cfg.expandedId = reqId;
         el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-dim);font-size:0.8rem;">Loading...</div>';
         el.classList.add('visible');
 
         try {
             var res = await fetch('/api/inclawbate/ubi-requests?id=' + reqId);
             var data = await res.json();
-            renderExpandedRequest(el, data.request, data.comments || []);
+            renderExpandedRequest(el, data.request, data.comments || [], type);
         } catch (e) {
             el.innerHTML = '<div style="text-align:center;color:var(--lobster-300);font-size:0.8rem;">Failed to load</div>';
         }
     }
 
-    function renderExpandedRequest(el, request, comments) {
+    function renderExpandedRequest(el, request, comments, type) {
+        var cfg = typeConfig[type];
         var html = '<div class="phil-req-full-desc">' + escHtml(request.description) + '</div>';
 
         // Show socials if present
@@ -493,11 +541,16 @@
             html += '</div>';
         }
 
-        // Progress bar (large)
-        html += progressHtml(request.total_funded, request.amount_requested);
+        if (cfg.showProgress) {
+            // Progress bar (large)
+            html += progressHtml(request.total_funded, request.amount_requested);
+        } else {
+            // UBI: show monthly label instead
+            html += '<div style="margin:12px 0;font-family:var(--font-mono);font-size:0.75rem;font-weight:700;color:var(--sand-300);">' + fmt(request.amount_requested) + ' CLAWNCH/month requested</div>';
+        }
 
-        // Fund UI (if connected and not own request)
-        if (connectedWallet && request.wallet_address !== connectedWallet.toLowerCase()) {
+        // Fund UI (only for GCM, if connected and not own request)
+        if (cfg.showFund && connectedWallet && request.wallet_address !== connectedWallet.toLowerCase()) {
             html += '<div class="phil-req-fund">' +
                 '<span class="phil-req-fund-label">Send CLAWNCH</span>' +
                 '<input type="number" class="phil-req-fund-input" id="fundInput' + request.id + '" placeholder="Amount" min="1" step="1">' +
@@ -507,7 +560,7 @@
 
         // Close button (only for owner)
         if (connectedWallet && request.wallet_address === connectedWallet.toLowerCase()) {
-            html += '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this)">Close Request</button>';
+            html += '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this, \'' + type + '\')">Close Request</button>';
         }
 
         // Comments
@@ -531,8 +584,8 @@
         // Comment form (if connected)
         if (connectedWallet) {
             html += '<div class="phil-req-comment-form">' +
-                '<input class="phil-req-comment-input" placeholder="Add a comment..." maxlength="1000" id="commentInput' + request.id + '">' +
-                '<button class="phil-req-comment-send" onclick="window._postComment(' + request.id + ')">Send</button>' +
+                '<input class="phil-req-comment-input" placeholder="Add a comment..." maxlength="1000" id="commentInput' + type + request.id + '">' +
+                '<button class="phil-req-comment-send" onclick="window._postComment(' + request.id + ', \'' + type + '\')">Send</button>' +
             '</div>';
         }
 
@@ -541,7 +594,7 @@
     }
 
     // Global functions for onclick handlers
-    window._closeRequest = async function(reqId, btn) {
+    window._closeRequest = async function(reqId, btn, type) {
         if (!connectedWallet) return;
         btn.disabled = true;
         btn.textContent = 'Closing...';
@@ -559,8 +612,8 @@
             var data = await res.json();
             if (data.success) {
                 philToast('Request closed', 'success');
-                expandedRequestId = null;
-                loadRequests();
+                typeConfig[type].expandedId = null;
+                loadRequests(type);
             } else {
                 philToast(data.error || 'Failed to close', 'error');
                 btn.disabled = false;
@@ -623,9 +676,9 @@
                 philToast('Funded ' + fmt(amount) + ' CLAWNCH!', 'success');
                 input.value = '';
                 // Refresh the expanded view
-                expandedRequestId = null;
-                toggleRequestExpand(reqId);
-                loadRequests();
+                typeConfig.gcm.expandedId = null;
+                toggleRequestExpand(reqId, 'gcm');
+                loadRequests('gcm');
             } else {
                 philToast(data.error || 'Failed to record funding', 'error');
             }
@@ -641,9 +694,9 @@
         btn.textContent = 'Fund';
     };
 
-    window._postComment = async function(reqId) {
+    window._postComment = async function(reqId, type) {
         if (!connectedWallet) return;
-        var input = document.getElementById('commentInput' + reqId);
+        var input = document.getElementById('commentInput' + type + reqId);
         if (!input) return;
         var text = input.value.trim();
         if (!text) return;
@@ -664,8 +717,8 @@
             var data = await res.json();
             if (data.success) {
                 input.value = '';
-                toggleRequestExpand(reqId); // collapse
-                setTimeout(function() { toggleRequestExpand(reqId); }, 100); // re-expand
+                toggleRequestExpand(reqId, type); // collapse
+                setTimeout(function() { toggleRequestExpand(reqId, type); }, 100); // re-expand
             } else {
                 philToast(data.error || 'Failed to comment', 'error');
             }
@@ -676,24 +729,27 @@
         input.disabled = false;
     };
 
-    // Submit new request
-    var reqSubmitBtn = document.getElementById('reqSubmitBtn');
-    if (reqSubmitBtn) {
-        reqSubmitBtn.addEventListener('click', async function() {
+    // Submit new request (parameterized)
+    function submitRequest(type) {
+        var cfg = typeConfig[type];
+        var submitBtn = document.getElementById(type + 'SubmitBtn');
+        if (!submitBtn) return;
+
+        submitBtn.addEventListener('click', async function() {
             if (!connectedWallet) return;
 
-            var title = (document.getElementById('reqTitle').value || '').trim();
-            var desc = (document.getElementById('reqDesc').value || '').trim();
-            var amount = Number(document.getElementById('reqAmount').value || 0);
+            var title = (document.getElementById(type + 'Title').value || '').trim();
+            var desc = (document.getElementById(type + 'Desc').value || '').trim();
+            var amount = Number(document.getElementById(type + 'Amount').value || 0);
 
             // Collect socials
             var socials = {};
-            var sx = (document.getElementById('reqSocialX')?.value || '').trim();
-            var sig = (document.getElementById('reqSocialIG')?.value || '').trim();
-            var syt = (document.getElementById('reqSocialYT')?.value || '').trim();
-            var sdc = (document.getElementById('reqSocialDiscord')?.value || '').trim();
-            var stg = (document.getElementById('reqSocialTG')?.value || '').trim();
-            var sgh = (document.getElementById('reqSocialGH')?.value || '').trim();
+            var sx = (document.getElementById(type + 'SocialX') ? document.getElementById(type + 'SocialX').value : '').trim();
+            var sig = (document.getElementById(type + 'SocialIG') ? document.getElementById(type + 'SocialIG').value : '').trim();
+            var syt = (document.getElementById(type + 'SocialYT') ? document.getElementById(type + 'SocialYT').value : '').trim();
+            var sdc = (document.getElementById(type + 'SocialDiscord') ? document.getElementById(type + 'SocialDiscord').value : '').trim();
+            var stg = (document.getElementById(type + 'SocialTG') ? document.getElementById(type + 'SocialTG').value : '').trim();
+            var sgh = (document.getElementById(type + 'SocialGH') ? document.getElementById(type + 'SocialGH').value : '').trim();
             if (sx) socials.x = sx;
             if (sig) socials.instagram = sig;
             if (syt) socials.youtube = syt;
@@ -714,8 +770,8 @@
                 return;
             }
 
-            reqSubmitBtn.disabled = true;
-            reqSubmitBtn.textContent = 'Posting...';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Posting...';
 
             try {
                 var body = {
@@ -723,7 +779,8 @@
                     wallet_address: connectedWallet,
                     title: title,
                     description: desc,
-                    amount_requested: amount
+                    amount_requested: amount,
+                    request_type: cfg.apiType
                 };
                 if (Object.keys(socials).length > 0) body.socials = socials;
 
@@ -735,15 +792,16 @@
                 var data = await res.json();
                 if (data.success) {
                     philToast('Request posted!', 'success');
-                    document.getElementById('reqTitle').value = '';
-                    document.getElementById('reqDesc').value = '';
-                    document.getElementById('reqAmount').value = '';
-                    ['reqSocialX','reqSocialIG','reqSocialYT','reqSocialDiscord','reqSocialTG','reqSocialGH'].forEach(function(id) {
+                    document.getElementById(type + 'Title').value = '';
+                    document.getElementById(type + 'Desc').value = '';
+                    document.getElementById(type + 'Amount').value = '';
+                    [type + 'SocialX', type + 'SocialIG', type + 'SocialYT', type + 'SocialDiscord', type + 'SocialTG', type + 'SocialGH'].forEach(function(id) {
                         var el = document.getElementById(id);
                         if (el) el.value = '';
                     });
+                    var descCount = document.getElementById(type + 'DescCount');
                     if (descCount) descCount.textContent = '0 / 5,000';
-                    loadRequests();
+                    loadRequests(type);
                 } else {
                     philToast(data.error || 'Failed to post', 'error');
                 }
@@ -751,10 +809,14 @@
                 philToast('Network error', 'error');
             }
 
-            reqSubmitBtn.disabled = false;
-            reqSubmitBtn.textContent = 'Submit Proof of Need';
+            submitBtn.disabled = false;
+            submitBtn.textContent = (type === 'gcm') ? 'Launch Fundraiser' : 'Submit UBI Request';
         });
     }
+
+    // Wire up submit handlers for both types
+    submitRequest('gcm');
+    submitRequest('ubi');
 
     // ── WalletKit Integration ──
     if (window.WalletKit) {
@@ -776,12 +838,13 @@
             document.querySelectorAll('.phil-tab-panel').forEach(function(p) { p.classList.remove('active'); });
             tab.classList.add('active');
             var panel = tab.getAttribute('data-panel');
-            var el = document.getElementById(panel === 'orgs' ? 'panelOrgs' : 'panelHumans');
+            var el = document.getElementById(panelMap[panel] || panel);
             if (el) el.classList.add('active');
         });
     });
 
     // ── Initial load (no wallet needed) ──
     loadCommunityStats();
-    loadRequests();
+    loadRequests('gcm');
+    loadRequests('ubi');
 })();
