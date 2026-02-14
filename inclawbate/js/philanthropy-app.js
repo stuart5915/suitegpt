@@ -238,7 +238,7 @@
             if (data.success) {
                 selectedOrgId = orgId;
                 selectedRequestId = null;
-                highlightSelectedOrg();
+                renderOrgCards(loadedOrgs);
                 highlightSelectedRequest();
                 renderKingdomDestination(lastKingdomAmt);
                 philToast('Allocation updated', 'success');
@@ -274,7 +274,7 @@
             if (data.success) {
                 selectedRequestId = reqId;
                 selectedOrgId = null;
-                highlightSelectedOrg();
+                renderOrgCards(loadedOrgs);
                 highlightSelectedRequest();
                 renderKingdomDestination(lastKingdomAmt);
                 philToast('Allocation updated', 'success');
@@ -330,6 +330,16 @@
                 bodyHtml += '<a href="' + escHtml(o.website_url) + '" target="_blank" rel="noopener" class="phil-kingdom-card-link">' + escHtml(displayUrl) + ' &rarr;</a>';
             }
 
+            // Direct Kingdom Here button
+            var isSelected = o.id === selectedOrgId && !selectedRequestId;
+            if (connectedWallet) {
+                if (isSelected) {
+                    bodyHtml += '<div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 14px;border-radius:var(--radius-full);background:hsla(172,32%,48%,0.1);border:1px solid var(--seafoam-400);font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);">&#10003; Kingdom goes here</div>';
+                } else {
+                    bodyHtml += '<button class="phil-kingdom-select-btn" data-select-org="' + o.id + '" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 14px;border-radius:var(--radius-full);border:1px solid var(--seafoam-400);background:hsla(172,32%,48%,0.06);color:var(--seafoam-300);font-family:var(--font-mono);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;">\uD83D\uDC51 Direct Kingdom Here</button>';
+                }
+            }
+
             card.innerHTML =
                 '<span class="phil-kingdom-card-icon">' + icon + '</span>' +
                 '<div class="phil-kingdom-card-body">' + bodyHtml + '</div>' +
@@ -344,14 +354,15 @@
     if (orgsContainer) {
         orgsContainer.addEventListener('click', function(e) {
             if (e.target.closest('a')) return;
-            var card = e.target.closest('.phil-kingdom-card');
-            if (!card) return;
-            if (!connectedWallet) {
-                philToast('Connect your wallet first', 'error');
+            // Handle "Direct Kingdom Here" button
+            var btn = e.target.closest('.phil-kingdom-select-btn');
+            if (btn) {
+                e.stopPropagation();
+                var orgId = Number(btn.getAttribute('data-select-org'));
+                if (!connectedWallet) { philToast('Connect your wallet first', 'error'); return; }
+                selectOrg(orgId);
                 return;
             }
-            var orgId = Number(card.getAttribute('data-org-id'));
-            selectOrg(orgId);
         });
     }
 
