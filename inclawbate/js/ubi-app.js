@@ -793,7 +793,7 @@ function daysSince(dateStr) {
         rh += '<div class="ubi-split-sliders" id="splitSliders">';
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
         rh += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
-        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 Pool</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
+        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 UBI Fund</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
         rh += '</div>';
 
         rh += '<p class="ubi-split-blurb" id="splitBlurb"></p>';
@@ -816,7 +816,7 @@ function daysSince(dateStr) {
                 var parts = [];
                 if (k > 0) parts.push(k + '% for myself');
                 if (g > 0) parts.push(g + '% to the Kingdom');
-                if (r > 0) parts.push(r + '% back into the pool');
+                if (r > 0) parts.push(r + '% back to the Inclawbate UBI fund for higher distributions');
                 var blurb = document.getElementById('splitBlurb');
                 if (blurb) blurb.textContent = parts.length ? 'I\'m giving ' + parts.join(', ') + '.' : '';
             }
