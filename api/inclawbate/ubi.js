@@ -928,8 +928,7 @@ export default async function handler(req, res) {
 
             const { error: updateErr } = await supabase
                 .from('human_profiles')
-                .update(updateFields)
-                .eq('wallet_address', wallet);
+                .upsert({ wallet_address: wallet, ...updateFields }, { onConflict: 'wallet_address' });
 
             if (updateErr) {
                 console.error('Redirect upsert error:', updateErr);
