@@ -38,6 +38,16 @@ function shortAddr(a) {
 function fmtNum(n) {
     return Math.round(Number(n) || 0).toLocaleString();
 }
+function timeSinceStr(dateStr) {
+    const ms = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ' + (mins % 60) + 'm ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ' + (hrs % 24) + 'h ago';
+}
 
 // ── Wallet ──
 const connectBtn = document.getElementById('connectBtn');
@@ -473,7 +483,7 @@ function updateDistTimer(lastDistAt, distCount) {
             const mins = Math.floor((overdue % 3600000) / 60000);
             countdownEl.textContent = 'OVERDUE by ' + (hrs > 0 ? hrs + 'h ' : '') + mins + 'm';
             countdownEl.className = 'ubi-dist-timer-countdown overdue';
-            labelEl.textContent = 'Distribution #' + ((distCount || 0) + 1) + ' is ready — send it now!';
+            labelEl.textContent = 'Distribution #' + ((distCount || 0) + 1) + ' is ready · Last: ' + timeSinceStr(lastDistAt);
         } else {
             const days = Math.floor(diff / 86400000);
             const hrs = Math.floor((diff % 86400000) / 3600000);
@@ -481,7 +491,7 @@ function updateDistTimer(lastDistAt, distCount) {
             const secs = Math.floor((diff % 60000) / 1000);
             countdownEl.textContent = (days > 0 ? days + 'd ' : '') + hrs + 'h ' + mins + 'm ' + secs + 's';
             countdownEl.className = 'ubi-dist-timer-countdown ok';
-            labelEl.textContent = 'Next distribution (#' + ((distCount || 0) + 1) + ') • Last sent ' + new Date(lastDistAt).toLocaleDateString();
+            labelEl.textContent = 'Next distribution (#' + ((distCount || 0) + 1) + ') · Last: ' + timeSinceStr(lastDistAt);
         }
     }
 
@@ -577,33 +587,38 @@ async function loadDistribution() {
     // Render staker table
     const tbody = document.getElementById('stakerTableBody');
     if (stakers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No active stakers</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No active stakers</td></tr>';
     } else {
         tbody.innerHTML = stakers.map(s => {
             const name = s.x_name || s.x_handle || shortAddr(s.wallet);
             const tokenLabel = s.token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
             const barWidth = Math.max(4, Math.min(80, s.share_pct * 0.8));
             const autoBadge = s.auto_stake ? '<span class="ubi-autostake-badge">auto</span>' : '';
-            let givesBackBadge = '';
-            if (s.redirect_target === 'philanthropy') {
-                const orgName = s.redirect_org_id && orgMap[s.redirect_org_id] ? orgMap[s.redirect_org_id] : 'philanthropy';
-                givesBackBadge = `<span class="ubi-givesback-badge" title="Gives back to ${escHtml(orgName)}">gives back &rarr; ${escHtml(orgName)}</span>`;
+            let allocHtml = '';
+            if (s.auto_stake) {
+                allocHtml = '<span class="alloc-auto">auto-stake</span>';
+            } else if (s.redirect_target === 'philanthropy') {
+                const orgName = s.redirect_org_id && orgMap[s.redirect_org_id] ? orgMap[s.redirect_org_id] : 'Kingdom';
+                allocHtml = `<span class="alloc-kingdom">&rarr; ${escHtml(orgName)}</span>`;
             } else if (s.redirect_target === 'reinvest') {
-                givesBackBadge = '<span class="ubi-givesback-badge">reinvests</span>';
+                allocHtml = '<span class="alloc-reinvest">&rarr; reinvest</span>';
             } else if (s.redirect_target === 'split') {
                 const k = s.split_keep_pct || 0;
                 const g = s.split_kingdom_pct || 0;
                 const r = s.split_reinvest_pct || 0;
-                givesBackBadge = `<span class="ubi-givesback-badge" title="Split: ${k}% keep, ${g}% kingdom, ${r}% reinvest">splits ${k}/${g}/${r}</span>`;
+                allocHtml = `<span class="alloc-keep">${k}%</span> / <span class="alloc-kingdom">${g}%</span> / <span class="alloc-reinvest">${r}%</span>`;
+            } else {
+                allocHtml = '<span class="alloc-keep">keep</span>';
             }
             const shareDisplay = `<span class="share-bar" style="width:${barWidth}px"></span>${s.share_pct}%`;
             return `<tr>
-                <td><strong>${escHtml(name)}</strong>${autoBadge}${givesBackBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
+                <td><strong>${escHtml(name)}</strong>${autoBadge}<br><span class="mono">${shortAddr(s.wallet)}</span></td>
                 <td>${tokenLabel}</td>
                 <td class="mono">${fmtNum(s.amount)}</td>
                 <td class="mono">${s.staked_days}d</td>
                 <td class="mono">${fmtNum(s.weighted_days)}</td>
                 <td>${shareDisplay}</td>
+                <td class="alloc-cell">${allocHtml}</td>
                 <td class="mono" style="color: var(--seafoam-300); font-weight:600;">${fmtNum(s.share_amount)}</td>
             </tr>`;
         }).join('');
@@ -965,6 +980,15 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
 
         distStatus.textContent = statusMsg;
         distStatus.className = 'airdrop-status success';
+
+        // Show completion banner
+        const banner = document.getElementById('distCompleteBanner');
+        const bannerMsg = document.getElementById('distCompleteBannerMsg');
+        if (banner) {
+            bannerMsg.textContent = parts.join(' · ');
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 60000);
+        }
 
         // Refresh to update timer
         loadDistribution();
