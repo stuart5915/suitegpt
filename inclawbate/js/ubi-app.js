@@ -886,9 +886,11 @@ function daysSince(dateStr) {
                         if (statusEl) statusEl.textContent = '';
                         ubiToast('Saved', 'success');
                     } else {
+                        if (statusEl) statusEl.textContent = '';
                         ubiToast(rData.error || 'Failed to save', 'error');
                     }
                 } catch (e) {
+                    if (statusEl) statusEl.textContent = '';
                     ubiToast('Failed to save', 'error');
                 }
                 saveBtn.disabled = false;

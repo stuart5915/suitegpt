@@ -906,17 +906,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            const { data: profile } = await supabase
-                .from('human_profiles')
-                .select('wallet_address')
-                .eq('wallet_address', wallet)
-                .single();
-
-            if (!profile) {
-                return res.status(404).json({ error: 'Profile not found' });
-            }
-
             const updateFields = {
+                wallet_address: wallet,
                 ubi_whale_redirect_target: redirect_target,
                 ubi_redirect_org_id: (redirect_target === 'philanthropy' || redirect_target === 'split') && org_id ? Number(org_id) : null,
                 ubi_split_keep_pct: redirect_target === 'split' ? Number(split_keep_pct) || 0 : null,
@@ -926,8 +917,7 @@ export default async function handler(req, res) {
 
             const { error: updateErr } = await supabase
                 .from('human_profiles')
-                .update(updateFields)
-                .eq('wallet_address', wallet);
+                .upsert(updateFields, { onConflict: 'wallet_address' });
 
             if (updateErr) {
                 return res.status(500).json({ error: 'Failed to update redirect preference' });
