@@ -980,8 +980,20 @@ function copyCA(id) {
         if (el) el.textContent = val;
     }
 
+    // Retry fetch once on failure
+    function fetchRetry(url, opts) {
+        return fetch(url, opts).then(function(r) {
+            if (r.ok) return r.json();
+            throw new Error('not ok');
+        }).catch(function() {
+            return new Promise(function(resolve) { setTimeout(resolve, 1000); }).then(function() {
+                return fetch(url, opts).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+            });
+        });
+    }
+
     Promise.all([
-        fetch('/api/inclawbate/ubi').then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; }),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
@@ -992,6 +1004,23 @@ function copyCA(id) {
 
         var clPrice = bestPrice(clDex, CLAWNCH);
         var inPrice = bestPrice(inDex, INCLAWNCH);
+
+        // localStorage fallback for prices
+        if (!clPrice || !inPrice) {
+            try {
+                var raw = localStorage.getItem('_ubi_prices');
+                if (raw) {
+                    var cached = JSON.parse(raw);
+                    if (Date.now() - cached.t < 1800000) {
+                        if (!clPrice && cached.cp) clPrice = cached.cp;
+                        if (!inPrice && cached.ip) inPrice = cached.ip;
+                    }
+                }
+            } catch (e) {}
+        }
+        if (clPrice > 0 || inPrice > 0) {
+            try { localStorage.setItem('_ubi_prices', JSON.stringify({ cp: clPrice, ip: inPrice, t: Date.now() })); } catch (e) {}
+        }
 
         var clStaked = Number(ubi.total_balance) || 0;
         var inStaked = Number(ubi.inclawnch_staked) || 0;

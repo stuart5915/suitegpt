@@ -142,10 +142,42 @@ function daysSince(dateStr) {
         return parseFloat(candidates[0].priceUsd) || 0;
     }
 
+    // Price cache: save last-known prices so if APIs fail, we have a fallback
+    function cachePrices(cp, ip) {
+        try {
+            localStorage.setItem('_ubi_prices', JSON.stringify({ cp, ip, t: Date.now() }));
+        } catch (e) {}
+    }
+    function getCachedPrices() {
+        try {
+            var raw = localStorage.getItem('_ubi_prices');
+            if (!raw) return null;
+            var d = JSON.parse(raw);
+            // Only use cache if less than 30 minutes old
+            if (Date.now() - d.t > 1800000) return null;
+            return d;
+        } catch (e) { return null; }
+    }
+
+    // Fetch with single retry on failure
+    async function fetchRetry(url, opts) {
+        try {
+            var r = await fetch(url, opts);
+            if (r.ok) return await r.json();
+        } catch (e) {}
+        // Retry once after 1s
+        await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+        try {
+            var r2 = await fetch(url, opts);
+            if (r2.ok) return await r2.json();
+        } catch (e) {}
+        return null;
+    }
+
     // Fetch UBI data, prices, and protocol WETH balance in parallel
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
     const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, wethBalRes] = await Promise.all([
-        fetch('/api/inclawbate/ubi').then(r => r.json()).catch(() => null),
+        fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS)
@@ -175,6 +207,20 @@ function daysSince(dateStr) {
         if (!inclawnchPrice && geckoRes[iKey] && geckoRes[iKey].usd) {
             inclawnchPrice = geckoRes[iKey].usd;
         }
+    }
+
+    // localStorage fallback: use cached prices if all APIs failed
+    if (!clawnchPrice || !inclawnchPrice) {
+        var cached = getCachedPrices();
+        if (cached) {
+            if (!clawnchPrice && cached.cp) clawnchPrice = cached.cp;
+            if (!inclawnchPrice && cached.ip) inclawnchPrice = cached.ip;
+        }
+    }
+
+    // Cache current prices for future fallback
+    if (clawnchPrice > 0 || inclawnchPrice > 0) {
+        cachePrices(clawnchPrice, inclawnchPrice);
     }
 
     ubiData = ubiRes;
@@ -214,8 +260,8 @@ function daysSince(dateStr) {
 
         var tvlCEl = document.getElementById('tvlClawnchUsd');
         var tvlIEl = document.getElementById('tvlInclawnchUsd');
-        if (tvlCEl) tvlCEl.textContent = clawnchPrice > 0 ? '~$' + fmtUsd(clawnchUsd) : '';
-        if (tvlIEl) tvlIEl.textContent = inclawnchPrice > 0 ? '~$' + fmtUsd(inclawnchUsd) : '';
+        if (tvlCEl) tvlCEl.textContent = clawnchPrice > 0 ? '~$' + fmtUsd(clawnchUsd) : '(price unavailable)';
+        if (tvlIEl) tvlIEl.textContent = inclawnchPrice > 0 ? '~$' + fmtUsd(inclawnchUsd) : '(price unavailable)';
 
         // Show fetched CLAWNCH price for transparency
         var priceEl = document.getElementById('treasuryPrice');
