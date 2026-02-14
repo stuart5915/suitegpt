@@ -906,9 +906,20 @@ export default async function handler(req, res) {
                 }
             }
 
+            // Default org_id to 1 (E3 Ministry) when kingdom allocation > 0
+            let resolvedOrgId = null;
+            if (redirect_target === 'philanthropy' || redirect_target === 'split') {
+                const kingdomPct = Number(split_kingdom_pct) || 0;
+                if (org_id) {
+                    resolvedOrgId = Number(org_id);
+                } else if (redirect_target === 'philanthropy' || kingdomPct > 0) {
+                    resolvedOrgId = 1; // E3 Ministry default
+                }
+            }
+
             const updateFields = {
                 ubi_whale_redirect_target: redirect_target,
-                ubi_redirect_org_id: (redirect_target === 'philanthropy' || redirect_target === 'split') && org_id ? Number(org_id) : null,
+                ubi_redirect_org_id: resolvedOrgId,
                 ubi_split_keep_pct: redirect_target === 'split' ? Number(split_keep_pct) || 0 : null,
                 ubi_split_kingdom_pct: redirect_target === 'split' ? Number(split_kingdom_pct) || 0 : null,
                 ubi_split_reinvest_pct: redirect_target === 'split' ? Number(split_reinvest_pct) || 0 : null

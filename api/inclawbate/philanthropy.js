@@ -154,27 +154,57 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        const { wallet_address, philanthropy_pct } = req.body;
+        const { action, wallet_address } = req.body;
 
         if (!wallet_address || typeof wallet_address !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(wallet_address)) {
             return res.status(400).json({ error: 'Valid wallet_address required' });
         }
 
+        const w = wallet_address.toLowerCase();
+
+        // ── Set Kingdom Org ──
+        if (action === 'set_kingdom_org') {
+            const { org_id } = req.body;
+            if (!org_id || !Number.isInteger(Number(org_id))) {
+                return res.status(400).json({ error: 'Valid org_id required' });
+            }
+
+            // Verify org exists
+            const { data: org } = await supabase
+                .from('inclawbate_philanthropy_orgs')
+                .select('id')
+                .eq('id', Number(org_id))
+                .eq('is_active', true)
+                .single();
+
+            if (!org) {
+                return res.status(404).json({ error: 'Organization not found' });
+            }
+
+            const { error: updateErr } = await supabase
+                .from('human_profiles')
+                .update({ ubi_redirect_org_id: Number(org_id) })
+                .eq('wallet_address', w);
+
+            if (updateErr) {
+                return res.status(500).json({ error: 'Failed to update org selection' });
+            }
+
+            return res.status(200).json({ success: true, org_id: Number(org_id) });
+        }
+
+        // ── Legacy: Cast Vote ──
+        const { philanthropy_pct } = req.body;
         const pct = Number(philanthropy_pct);
         if (isNaN(pct) || pct < 0 || pct > 100 || !Number.isInteger(pct)) {
             return res.status(400).json({ error: 'philanthropy_pct must be an integer 0-100' });
         }
 
-        const w = wallet_address.toLowerCase();
-
-        // Verify wallet holds CLAWNCH or inCLAWNCH (live on-chain check)
         const bal = await getWalletBalances(w);
-
         if (bal.weight <= 0) {
             return res.status(403).json({ error: 'You must hold CLAWNCH or inCLAWNCH to vote' });
         }
 
-        // Upsert vote
         const { error: upsertErr } = await supabase
             .from('inclawbate_philanthropy_votes')
             .upsert({

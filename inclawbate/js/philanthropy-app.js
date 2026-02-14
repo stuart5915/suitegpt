@@ -59,6 +59,8 @@
     }
 
     // ── Load kingdom status for connected wallet ──
+    var selectedOrgId = null;
+
     async function loadKingdomStatus(wallet) {
         try {
             var res = await fetch('/api/inclawbate/ubi?wallet=' + wallet);
@@ -87,10 +89,60 @@
                 if (statusEl) statusEl.style.display = 'none';
                 if (nudgeEl) nudgeEl.style.display = 'block';
             }
+
+            // Highlight selected org
+            selectedOrgId = data.redirect_org_id || 1;
+            highlightSelectedOrg();
         } catch (e) {
             // silent
         }
     }
+
+    function highlightSelectedOrg() {
+        document.querySelectorAll('.phil-kingdom-card').forEach(function(card) {
+            var orgId = Number(card.getAttribute('data-org-id'));
+            card.classList.toggle('selected', orgId === selectedOrgId);
+        });
+    }
+
+    async function selectOrg(orgId) {
+        if (!connectedWallet || orgId === selectedOrgId) return;
+
+        try {
+            var res = await fetch('/api/inclawbate/philanthropy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set_kingdom_org',
+                    wallet_address: connectedWallet,
+                    org_id: orgId
+                })
+            });
+            var data = await res.json();
+            if (data.success) {
+                selectedOrgId = orgId;
+                highlightSelectedOrg();
+                philToast('Allocation updated', 'success');
+            } else {
+                philToast(data.error || 'Failed to update', 'error');
+            }
+        } catch (e) {
+            philToast('Network error', 'error');
+        }
+    }
+
+    // Wire up org card clicks
+    document.querySelectorAll('.phil-kingdom-card').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            if (e.target.closest('a')) return; // don't hijack links
+            if (!connectedWallet) {
+                philToast('Connect your wallet first', 'error');
+                return;
+            }
+            var orgId = Number(card.getAttribute('data-org-id'));
+            selectOrg(orgId);
+        });
+    });
 
     // ── Wallet Connect ──
     async function connectWallet() {
