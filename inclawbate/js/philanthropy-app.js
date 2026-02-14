@@ -75,15 +75,26 @@
         return window.ethereum || null;
     }
 
-    // ── Load community stats (kingdom total) ──
-    async function loadCommunityStats() {
-        try {
-            var res = await fetch('/api/inclawbate/philanthropy');
-            var data = await res.json();
-            var el = document.getElementById('statKingdomTotal');
-            if (el) el.textContent = fmt(data.kingdom_total_distributed || 0);
-        } catch (e) {
-            // silent
+    function renderKingdomDestination(orgId, kingdomAmt) {
+        var el = document.getElementById('kingdomDestination');
+        if (!el) return;
+
+        // For now only E3 (id=1) is available
+        if (orgId === 1) {
+            el.innerHTML =
+                '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>' +
+                '<div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;">' +
+                    '<span style="font-size:1.6rem;flex-shrink:0;">&#9981;</span>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:var(--text-primary);">E3 Ministry</div>' +
+                        '<div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--sand-300);">Equip &middot; Evangelize &middot; Establish</div>' +
+                    '</div>' +
+                    (kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' CLAWNCH</div>' : '') +
+                '</div>';
+        } else {
+            el.innerHTML =
+                '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>' +
+                '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;font-size:0.85rem;color:var(--text-secondary);">Organization #' + orgId + '</div>';
         }
     }
 
@@ -139,11 +150,9 @@
                 if (statusEl) statusEl.style.display = 'block';
                 if (nudgeEl) nudgeEl.style.display = 'none';
 
-                // Update community stat with user's kingdom amount
-                var statEl = document.getElementById('statKingdomTotal');
-                if (statEl && kingdomAmt > 0) {
-                    statEl.textContent = fmt(kingdomAmt);
-                }
+                // Show where kingdom allocation is going
+                selectedOrgId = data.redirect_org_id || 1;
+                renderKingdomDestination(selectedOrgId, kingdomAmt);
             } else {
                 if (statusEl) statusEl.style.display = 'none';
                 if (nudgeEl) nudgeEl.style.display = 'block';
@@ -844,7 +853,6 @@
     });
 
     // ── Initial load (no wallet needed) ──
-    loadCommunityStats();
     loadRequests('gcm');
     loadRequests('ubi');
 })();
