@@ -112,13 +112,27 @@ export default async function handler(req, res) {
 
         const weightedPct = totalWeight > 0 ? weightedPhilanthropy / totalWeight : 0;
 
+        // Fetch kingdom total from treasury
+        let kingdomTotal = 0;
+        try {
+            const { data: treasury } = await supabase
+                .from('inclawbate_ubi_treasury')
+                .select('kingdom_total_distributed')
+                .limit(1)
+                .single();
+            if (treasury && treasury.kingdom_total_distributed) {
+                kingdomTotal = Number(treasury.kingdom_total_distributed);
+            }
+        } catch (e) { /* column may not exist yet */ }
+
         const result = {
             weighted_philanthropy_pct: Math.round(weightedPct * 100) / 100,
             weighted_reinvest_pct: Math.round((100 - weightedPct) * 100) / 100,
             voter_count: voterCount,
             total_weighted_voting: Math.round(totalWeight),
             total_clawnch_voting: Math.round(totalClawnch),
-            total_inclawnch_voting: Math.round(totalInclawnch)
+            total_inclawnch_voting: Math.round(totalInclawnch),
+            kingdom_total_distributed: kingdomTotal
         };
 
         // If wallet param, include user's vote + live balance
