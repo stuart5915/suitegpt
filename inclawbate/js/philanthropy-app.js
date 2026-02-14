@@ -263,6 +263,8 @@
         // Reset request section
         var reqConnectMsg = document.getElementById('reqConnectMsg');
         if (reqConnectMsg) reqConnectMsg.style.display = 'block';
+        var reqCreateBtn = document.getElementById('reqCreateBtn');
+        if (reqCreateBtn) reqCreateBtn.style.display = 'none';
         var reqForm = document.getElementById('reqForm');
         if (reqForm) reqForm.classList.remove('visible');
         var reqHasOpen = document.getElementById('reqHasOpen');
@@ -384,9 +386,11 @@
         var reqForm = document.getElementById('reqForm');
         var reqHasOpen = document.getElementById('reqHasOpen');
         var reqConnectMsg = document.getElementById('reqConnectMsg');
+        var reqCreateBtn = document.getElementById('reqCreateBtn');
 
         if (!connectedWallet) {
             if (reqConnectMsg) reqConnectMsg.style.display = 'block';
+            if (reqCreateBtn) reqCreateBtn.style.display = 'none';
             if (reqForm) reqForm.classList.remove('visible');
             if (reqHasOpen) reqHasOpen.style.display = 'none';
             return;
@@ -395,12 +399,28 @@
         if (reqConnectMsg) reqConnectMsg.style.display = 'none';
 
         if (userHasOpenRequest) {
+            if (reqCreateBtn) reqCreateBtn.style.display = 'none';
             if (reqForm) reqForm.classList.remove('visible');
             if (reqHasOpen) reqHasOpen.style.display = 'block';
         } else {
-            if (reqForm) reqForm.classList.add('visible');
+            // Show "Create Post" button, keep form hidden until clicked
+            if (reqCreateBtn) reqCreateBtn.style.display = 'inline-flex';
             if (reqHasOpen) reqHasOpen.style.display = 'none';
+            // Don't auto-show form — wait for button click
         }
+    }
+
+    // Create Post button → reveal form
+    var createBtn = document.getElementById('reqCreateBtn');
+    if (createBtn) {
+        createBtn.addEventListener('click', function() {
+            var reqForm = document.getElementById('reqForm');
+            if (reqForm) {
+                reqForm.classList.add('visible');
+                reqForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            createBtn.style.display = 'none';
+        });
     }
 
     async function toggleRequestExpand(reqId) {
