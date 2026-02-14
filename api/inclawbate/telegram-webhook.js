@@ -32,8 +32,8 @@ export default async function handler(req, res) {
         const chatType = message.chat.type; // 'private', 'group', or 'supergroup'
         const text = message.text.trim();
 
-        // In group chats, only respond to bot commands (starting with /)
-        if (chatType !== 'private' && !text.startsWith('/')) {
+        // Only respond in private DMs — stay completely silent in groups
+        if (chatType !== 'private') {
             return res.status(200).json({ ok: true });
         }
 
