@@ -6,7 +6,31 @@
     var userHasOpenRequest = false;
     var expandedRequestId = null;
 
+    var CLAWNCH_TOKEN = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
+
     function fmt(n) { return Math.round(Number(n) || 0).toLocaleString(); }
+
+    function progressHtml(funded, requested) {
+        var f = Number(funded) || 0;
+        var r = Number(requested) || 1;
+        var pct = Math.min(100, Math.round(f / r * 100));
+        return '<div class="phil-req-progress">' +
+            '<div class="phil-req-progress-bar"><div class="phil-req-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="phil-req-progress-text">' +
+                '<span>' + fmt(f) + ' / ' + fmt(r) + ' CLAWNCH</span>' +
+                '<span class="phil-req-progress-pct">' + pct + '% funded</span>' +
+            '</div></div>';
+    }
+
+    function pad32(hex) {
+        return hex.replace('0x', '').padStart(64, '0');
+    }
+
+    function toHexWei(amount) {
+        // Convert CLAWNCH amount to hex wei (18 decimals)
+        var wei = BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
+        return '0x' + wei.toString(16);
+    }
 
     function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
 
@@ -368,6 +392,7 @@
                     '<span>' + timeAgo(r.created_at) + '</span>' +
                     '<span>' + (r.comment_count || 0) + ' comment' + ((r.comment_count || 0) !== 1 ? 's' : '') + '</span>' +
                 '</div>' +
+                progressHtml(r.total_funded, r.amount_requested) +
                 '<div class="phil-req-card-preview">' + escHtml(preview) + '</div>' +
                 '<div class="phil-req-expanded" id="reqExpanded' + r.id + '"></div>';
 
@@ -468,6 +493,18 @@
             html += '</div>';
         }
 
+        // Progress bar (large)
+        html += progressHtml(request.total_funded, request.amount_requested);
+
+        // Fund UI (if connected and not own request)
+        if (connectedWallet && request.wallet_address !== connectedWallet.toLowerCase()) {
+            html += '<div class="phil-req-fund">' +
+                '<span class="phil-req-fund-label">Send CLAWNCH</span>' +
+                '<input type="number" class="phil-req-fund-input" id="fundInput' + request.id + '" placeholder="Amount" min="1" step="1">' +
+                '<button class="phil-req-fund-btn" id="fundBtn' + request.id + '" onclick="window._fundRequest(' + request.id + ', \'' + request.wallet_address + '\')">Fund</button>' +
+            '</div>';
+        }
+
         // Close button (only for owner)
         if (connectedWallet && request.wallet_address === connectedWallet.toLowerCase()) {
             html += '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this)">Close Request</button>';
@@ -534,6 +571,74 @@
             btn.disabled = false;
             btn.textContent = 'Close Request';
         }
+    };
+
+    window._fundRequest = async function(reqId, recipientWallet) {
+        if (!connectedWallet) return;
+        var input = document.getElementById('fundInput' + reqId);
+        var btn = document.getElementById('fundBtn' + reqId);
+        if (!input || !btn) return;
+
+        var amount = Number(input.value);
+        if (!amount || amount <= 0) {
+            philToast('Enter an amount to send', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        try {
+            var provider = getProvider();
+            if (!provider) throw new Error('No wallet connected');
+
+            // ERC-20 transfer: transfer(address,uint256)
+            var transferData = '0xa9059cbb' + pad32(recipientWallet) + pad32(toHexWei(amount));
+
+            var txHash = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: connectedWallet,
+                    to: CLAWNCH_TOKEN,
+                    data: transferData
+                }]
+            });
+
+            philToast('Transaction sent! Waiting for confirmation...', 'success');
+
+            // Record the funding in the API
+            var res = await fetch('/api/inclawbate/ubi-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'fund',
+                    wallet_address: connectedWallet,
+                    request_id: reqId,
+                    amount: amount,
+                    tx_hash: txHash
+                })
+            });
+            var data = await res.json();
+            if (data.success) {
+                philToast('Funded ' + fmt(amount) + ' CLAWNCH!', 'success');
+                input.value = '';
+                // Refresh the expanded view
+                expandedRequestId = null;
+                toggleRequestExpand(reqId);
+                loadRequests();
+            } else {
+                philToast(data.error || 'Failed to record funding', 'error');
+            }
+        } catch (e) {
+            if (e.code === 4001) {
+                philToast('Transaction cancelled', 'error');
+            } else {
+                philToast(e.message || 'Transaction failed', 'error');
+            }
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Fund';
     };
 
     window._postComment = async function(reqId) {

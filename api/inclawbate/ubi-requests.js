@@ -221,6 +221,59 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, comment: created });
         }
 
+        if (action === 'fund') {
+            const { request_id, amount, tx_hash } = req.body;
+
+            if (!request_id) {
+                return res.status(400).json({ error: 'request_id required' });
+            }
+
+            const fundAmount = Number(amount);
+            if (!fundAmount || fundAmount <= 0) {
+                return res.status(400).json({ error: 'Amount must be greater than 0' });
+            }
+
+            if (!tx_hash || typeof tx_hash !== 'string') {
+                return res.status(400).json({ error: 'tx_hash required' });
+            }
+
+            // Verify request exists and is open
+            const { data: request } = await supabase
+                .from('inclawbate_ubi_requests')
+                .select('id, status, total_funded, wallet_address')
+                .eq('id', request_id)
+                .single();
+
+            if (!request) {
+                return res.status(404).json({ error: 'Request not found' });
+            }
+            if (request.status !== 'open') {
+                return res.status(400).json({ error: 'Cannot fund a closed request' });
+            }
+
+            // Update total_funded
+            const newTotal = (Number(request.total_funded) || 0) + fundAmount;
+            const { error: updateErr } = await supabase
+                .from('inclawbate_ubi_requests')
+                .update({ total_funded: newTotal, updated_at: new Date().toISOString() })
+                .eq('id', request_id);
+
+            if (updateErr) {
+                return res.status(500).json({ error: 'Failed to record funding' });
+            }
+
+            // Auto-post a comment recording the funding
+            await supabase
+                .from('inclawbate_ubi_request_comments')
+                .insert({
+                    request_id: request_id,
+                    wallet_address: w,
+                    comment: 'Funded ' + fundAmount.toLocaleString() + ' CLAWNCH (tx: ' + tx_hash.substring(0, 10) + '...)'
+                });
+
+            return res.status(200).json({ success: true, total_funded: newTotal });
+        }
+
         if (action === 'close') {
             const { request_id } = req.body;
 
