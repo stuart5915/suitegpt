@@ -477,23 +477,31 @@ function daysSince(dateStr) {
 
     // ── Staking Calculator ──
     function updateCalc() {
-        var raw = (document.getElementById('calcAmount').value || '').replace(/,/g, '');
-        var amount = Number(raw) || 0;
+        var rawC = (document.getElementById('calcAmountClawnch').value || '').replace(/,/g, '');
+        var rawI = (document.getElementById('calcAmountInclawnch').value || '').replace(/,/g, '');
+        var clawnchAmt = Number(rawC) || 0;
+        var inclawnchAmt = Number(rawI) || 0;
         var colC = document.getElementById('calcColClawnch');
         var colI = document.getElementById('calcColInclawnch');
-        var usdEl = document.getElementById('calcUsd');
+        var usdC = document.getElementById('calcUsdClawnch');
+        var usdI = document.getElementById('calcUsdInclawnch');
         if (!colC || !colI) return;
 
-        // Show USD equivalent of input
-        if (usdEl) {
-            usdEl.textContent = (amount > 0 && clawnchPrice > 0)
-                ? '~$' + fmtUsd(amount * clawnchPrice)
+        // Show USD equivalents
+        if (usdC) {
+            usdC.textContent = (clawnchAmt > 0 && clawnchPrice > 0)
+                ? '~$' + fmtUsd(clawnchAmt * clawnchPrice)
+                : '';
+        }
+        if (usdI) {
+            usdI.textContent = (inclawnchAmt > 0 && clawnchPrice > 0)
+                ? '~$' + fmtUsd(inclawnchAmt * clawnchPrice)
                 : '';
         }
 
-        if (amount <= 0 || !ubiData) {
-            colC.innerHTML = '<div class="ubi-calc-col-title">CLAWNCH (1x)</div><div class="ubi-calc-empty">Type an amount above</div>';
-            colI.innerHTML = '<div class="ubi-calc-col-title">inCLAWNCH (2x)</div><div class="ubi-calc-empty">Type an amount above</div>';
+        if ((clawnchAmt <= 0 && inclawnchAmt <= 0) || !ubiData) {
+            colC.innerHTML = '<div class="ubi-calc-col-title">CLAWNCH (1x)</div><div class="ubi-calc-empty">Enter an amount above</div>';
+            colI.innerHTML = '<div class="ubi-calc-col-title">inCLAWNCH (2x)</div><div class="ubi-calc-empty">Enter an amount above</div>';
             return;
         }
 
@@ -503,14 +511,19 @@ function daysSince(dateStr) {
         var inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
         var totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
 
-        function renderCol(mult, label) {
+        // Combined dilution from both inputs
+        var newTotalWeighted = totalWeightedStake + clawnchAmt + (inclawnchAmt * 2);
+
+        function renderCol(amount, mult, label) {
             var weightedAmount = amount * mult;
-            var newTotal = totalWeightedStake + weightedAmount;
-            var daily = newTotal > 0 ? (weightedAmount / newTotal) * dailyRate : 0;
+            if (amount <= 0) {
+                return '<div class="ubi-calc-col-title">' + label + '</div><div class="ubi-calc-empty">Enter an amount above</div>';
+            }
+            var daily = newTotalWeighted > 0 ? (weightedAmount / newTotalWeighted) * dailyRate : 0;
             var weekly = daily * 7;
             var monthly = daily * 30;
             var annual = daily * 365;
-            var apy = newTotal > 0 ? (dailyRate * 365 * mult) / newTotal * 100 : 0;
+            var apy = newTotalWeighted > 0 ? (dailyRate * 365 * mult) / newTotalWeighted * 100 : 0;
             var dailyUsd = daily * clawnchPrice;
 
             var html = '<div class="ubi-calc-col-title">' + label + '</div>';
@@ -525,32 +538,55 @@ function daysSince(dateStr) {
             return html;
         }
 
-        colC.innerHTML = renderCol(1, 'CLAWNCH (1x)');
-        colI.innerHTML = renderCol(2, 'inCLAWNCH (2x)');
+        colC.innerHTML = renderCol(clawnchAmt, 1, 'CLAWNCH (1x)');
+        colI.innerHTML = renderCol(inclawnchAmt, 2, 'inCLAWNCH (2x)');
     }
 
-    // Format calc input with commas on every keystroke
-    var calcInput = document.getElementById('calcAmount');
-    if (calcInput) {
-        calcInput.addEventListener('input', function() {
-            var raw = calcInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+    // Format calc inputs with commas on every keystroke
+    function setupCalcInput(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var raw = el.value.replace(/,/g, '').replace(/[^0-9]/g, '');
             if (raw) {
                 var num = parseInt(raw, 10);
-                calcInput.value = num.toLocaleString();
+                el.value = num.toLocaleString();
             }
             updateCalc();
         });
     }
+    setupCalcInput('calcAmountClawnch');
+    setupCalcInput('calcAmountInclawnch');
 
-    // % of wallet buttons
+    // Calculator modal open/close
+    var calcOverlay = document.getElementById('calcOverlay');
+    var calcTriggerBtn = document.getElementById('calcTriggerBtn');
+    var calcCloseBtn = document.getElementById('calcCloseBtn');
+
+    function openCalcModal() {
+        if (calcOverlay) calcOverlay.classList.add('visible');
+    }
+    function closeCalcModal() {
+        if (calcOverlay) calcOverlay.classList.remove('visible');
+    }
+    if (calcTriggerBtn) calcTriggerBtn.addEventListener('click', openCalcModal);
+    if (calcCloseBtn) calcCloseBtn.addEventListener('click', closeCalcModal);
+    if (calcOverlay) calcOverlay.addEventListener('click', function(e) {
+        if (e.target === calcOverlay) closeCalcModal();
+    });
+
+    // % of wallet buttons (per-token)
     document.querySelectorAll('.ubi-calc-pct-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var pct = parseInt(btn.getAttribute('data-pct')) || 0;
-            var totalBal = (walletBalances.clawnch || 0) + (walletBalances.inclawnch || 0);
-            if (totalBal <= 0) return;
-            var amount = Math.floor(totalBal * pct / 100);
-            if (calcInput) {
-                calcInput.value = amount.toLocaleString();
+            var token = btn.getAttribute('data-token');
+            var bal = (token === 'inclawnch') ? (walletBalances.inclawnch || 0) : (walletBalances.clawnch || 0);
+            if (bal <= 0) return;
+            var amount = Math.floor(bal * pct / 100);
+            var inputId = (token === 'inclawnch') ? 'calcAmountInclawnch' : 'calcAmountClawnch';
+            var inputEl = document.getElementById(inputId);
+            if (inputEl) {
+                inputEl.value = amount.toLocaleString();
                 updateCalc();
             }
         });
@@ -878,9 +914,11 @@ function daysSince(dateStr) {
         // Fetch and show wallet balances
         fetchBalances();
 
-        // Show calculator % buttons
-        var calcPctRow = document.getElementById('calcPctRow');
-        if (calcPctRow) calcPctRow.style.display = '';
+        // Show calculator % buttons for both tokens
+        var calcPctRowC = document.getElementById('calcPctRowClawnch');
+        var calcPctRowI = document.getElementById('calcPctRowInclawnch');
+        if (calcPctRowC) calcPctRowC.style.display = '';
+        if (calcPctRowI) calcPctRowI.style.display = '';
 
         // Load user's stakes
         loadMyStakes();

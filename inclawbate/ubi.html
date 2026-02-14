@@ -2050,52 +2050,132 @@
         }
 
         /* ── Staking Calculator ── */
-        .ubi-calc {
+        /* ── Calculator Trigger Button ── */
+        .ubi-calc-trigger-wrap {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+        .ubi-calc-trigger-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 32px;
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
             background: var(--bg-elevated);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ubi-calc-trigger-btn:hover {
+            border-color: var(--seafoam-400);
+            background: hsla(172, 30%, 40%, 0.08);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px hsla(172, 40%, 45%, 0.1);
+        }
+        .ubi-calc-trigger-btn::before {
+            content: '\1F4CA';
+        }
+
+        /* ── Calculator Modal Overlay ── */
+        .ubi-calc-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .ubi-calc-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .ubi-calc-modal {
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-2xl);
             padding: var(--space-xl);
-            margin-bottom: var(--space-xl);
+            max-width: 580px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.2s var(--ease-smooth);
             position: relative;
-            overflow: hidden;
         }
-        .ubi-calc::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--seafoam-400), hsl(160, 32%, 52%), hsl(43, 65%, 50%), var(--lobster-400));
+        .ubi-calc-overlay.visible .ubi-calc-modal {
+            transform: scale(1) translateY(0);
         }
-        .ubi-calc-header {
+        .ubi-calc-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+        .ubi-calc-modal-title {
             font-family: var(--font-display);
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 800;
             color: var(--text-primary);
-            margin-bottom: var(--space-lg);
-            text-align: center;
+        }
+        .ubi-calc-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-md);
+            transition: color 0.15s, background 0.15s;
+        }
+        .ubi-calc-modal-close:hover {
+            color: var(--text-primary);
+            background: hsla(0,0%,100%,0.06);
+        }
+
+        /* ── Calculator Input Groups ── */
+        .ubi-calc-input-group {
+            margin-bottom: var(--space-md);
+        }
+        .ubi-calc-input-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--seafoam-300);
+            margin-bottom: 6px;
+        }
+        .ubi-calc-input-label--gold {
+            color: hsl(43, 70%, 62%);
         }
         .ubi-calc-input-row {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             gap: var(--space-sm);
-            margin-bottom: var(--space-lg);
         }
         .ubi-calc-input-wrap {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            width: 100%;
-            max-width: 420px;
         }
         .ubi-calc-input {
             flex: 1;
             background: var(--bg-sunken);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg);
-            padding: 12px 16px;
+            padding: 10px 14px;
             font-family: var(--font-mono);
-            font-size: 1.3rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: var(--text-primary);
             text-align: center;
@@ -2111,23 +2191,22 @@
         }
         .ubi-calc-usd {
             font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--text-dim);
             white-space: nowrap;
-            min-width: 80px;
+            min-width: 70px;
         }
         .ubi-calc-pct-row {
             display: flex;
-            gap: 8px;
-            justify-content: center;
+            gap: 6px;
         }
         .ubi-calc-pct-btn {
             background: var(--bg-sunken);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
-            padding: 4px 12px;
+            padding: 3px 10px;
             font-family: var(--font-mono);
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: var(--text-secondary);
             cursor: pointer;
@@ -2137,10 +2216,12 @@
             border-color: var(--seafoam-400);
             color: var(--text-primary);
         }
+
+        /* ── Calculator Results ── */
         .ubi-calc-results {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: var(--space-lg);
+            gap: var(--space-md);
         }
         .ubi-calc-col {
             background: var(--bg-sunken);
@@ -2164,7 +2245,7 @@
         }
         .ubi-calc-col-title {
             font-family: var(--font-display);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 700;
             margin-bottom: var(--space-md);
             text-align: center;
@@ -2187,7 +2268,7 @@
         }
         .ubi-calc-row-val {
             font-family: var(--font-mono);
-            font-size: 0.88rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -2214,7 +2295,7 @@
         }
         .ubi-calc-note {
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-dim);
             margin-top: var(--space-md);
             margin-bottom: 0;
@@ -2224,7 +2305,11 @@
                 grid-template-columns: 1fr;
             }
             .ubi-calc-input {
-                font-size: 1.1rem;
+                font-size: 1rem;
+            }
+            .ubi-calc-modal {
+                width: 96%;
+                padding: var(--space-lg) var(--space-md);
             }
         }
     </style>
@@ -2362,33 +2447,10 @@
     <!-- unstakeAvailBanner removed: internal info, not user-facing -->
     <div id="unstakeAvailBanner" style="display:none"></div>
 
-    <!-- ═══ Staking Calculator ═══ -->
-    <section class="ubi-calc" id="ubiCalc">
-        <div class="ubi-calc-header">Estimate Your Returns</div>
-        <div class="ubi-calc-input-row">
-            <div class="ubi-calc-input-wrap">
-                <input type="text" id="calcAmount" class="ubi-calc-input" placeholder="Enter token amount" inputmode="numeric" autocomplete="off">
-                <span class="ubi-calc-usd" id="calcUsd"></span>
-            </div>
-            <div class="ubi-calc-pct-row" id="calcPctRow" style="display:none">
-                <button class="ubi-calc-pct-btn" data-pct="25">25%</button>
-                <button class="ubi-calc-pct-btn" data-pct="50">50%</button>
-                <button class="ubi-calc-pct-btn" data-pct="75">75%</button>
-                <button class="ubi-calc-pct-btn" data-pct="100">100%</button>
-            </div>
-        </div>
-        <div class="ubi-calc-results">
-            <div class="ubi-calc-col ubi-calc-col--clawnch" id="calcColClawnch">
-                <div class="ubi-calc-col-title">CLAWNCH (1x)</div>
-                <div class="ubi-calc-empty">Type an amount above</div>
-            </div>
-            <div class="ubi-calc-col ubi-calc-col--inclawnch" id="calcColInclawnch">
-                <div class="ubi-calc-col-title">inCLAWNCH (2x)</div>
-                <div class="ubi-calc-empty">Type an amount above</div>
-            </div>
-        </div>
-        <p class="ubi-calc-note">Estimates based on current pool. Returns change as stakers enter and exit.</p>
-    </section>
+    <!-- ═══ Calculator Trigger Button ═══ -->
+    <div class="ubi-calc-trigger-wrap">
+        <button class="ubi-calc-trigger-btn" id="calcTriggerBtn">Estimate Your Returns</button>
+    </div>
 
     <!-- ═══ Step 1: Connect ═══ -->
     <div class="ubi-step" id="ubiStep1">
@@ -2623,6 +2685,57 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
 });
 
 </script>
+
+<!-- Calculator Modal -->
+<div class="ubi-calc-overlay" id="calcOverlay">
+    <div class="ubi-calc-modal">
+        <div class="ubi-calc-modal-header">
+            <span class="ubi-calc-modal-title">Estimate Your Returns</span>
+            <button class="ubi-calc-modal-close" id="calcCloseBtn">&times;</button>
+        </div>
+        <div class="ubi-calc-input-group">
+            <label class="ubi-calc-input-label">CLAWNCH</label>
+            <div class="ubi-calc-input-row">
+                <div class="ubi-calc-input-wrap">
+                    <input type="text" id="calcAmountClawnch" class="ubi-calc-input" placeholder="0" inputmode="numeric" autocomplete="off">
+                    <span class="ubi-calc-usd" id="calcUsdClawnch"></span>
+                </div>
+                <div class="ubi-calc-pct-row" id="calcPctRowClawnch" style="display:none">
+                    <button class="ubi-calc-pct-btn" data-pct="25" data-token="clawnch">25%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="50" data-token="clawnch">50%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="75" data-token="clawnch">75%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="100" data-token="clawnch">100%</button>
+                </div>
+            </div>
+        </div>
+        <div class="ubi-calc-input-group">
+            <label class="ubi-calc-input-label ubi-calc-input-label--gold">inCLAWNCH</label>
+            <div class="ubi-calc-input-row">
+                <div class="ubi-calc-input-wrap">
+                    <input type="text" id="calcAmountInclawnch" class="ubi-calc-input" placeholder="0" inputmode="numeric" autocomplete="off">
+                    <span class="ubi-calc-usd" id="calcUsdInclawnch"></span>
+                </div>
+                <div class="ubi-calc-pct-row" id="calcPctRowInclawnch" style="display:none">
+                    <button class="ubi-calc-pct-btn" data-pct="25" data-token="inclawnch">25%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="50" data-token="inclawnch">50%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="75" data-token="inclawnch">75%</button>
+                    <button class="ubi-calc-pct-btn" data-pct="100" data-token="inclawnch">100%</button>
+                </div>
+            </div>
+        </div>
+        <div class="ubi-calc-results">
+            <div class="ubi-calc-col ubi-calc-col--clawnch" id="calcColClawnch">
+                <div class="ubi-calc-col-title">CLAWNCH (1x)</div>
+                <div class="ubi-calc-empty">Enter an amount above</div>
+            </div>
+            <div class="ubi-calc-col ubi-calc-col--inclawnch" id="calcColInclawnch">
+                <div class="ubi-calc-col-title">inCLAWNCH (2x)</div>
+                <div class="ubi-calc-empty">Enter an amount above</div>
+            </div>
+        </div>
+        <p class="ubi-calc-note">Estimates based on current pool. Returns change as stakers enter and exit.</p>
+    </div>
+</div>
 
 <!-- App Modal -->
 <div class="ubi-modal-overlay" id="ubiModalOverlay">
