@@ -799,15 +799,10 @@ export default async function handler(req, res) {
                 .eq('wallet_address', wallet)
                 .single();
 
-            if (!profile) {
-                return res.status(404).json({ error: 'Profile not found' });
-            }
-
-            const newVal = !profile.ubi_auto_stake;
+            const newVal = !(profile?.ubi_auto_stake);
             const { error: updateErr } = await supabase
                 .from('human_profiles')
-                .update({ ubi_auto_stake: newVal })
-                .eq('wallet_address', wallet);
+                .upsert({ wallet_address: wallet, ubi_auto_stake: newVal }, { onConflict: 'wallet_address' });
 
             if (updateErr) {
                 return res.status(500).json({ error: 'Failed to update auto-stake preference' });
