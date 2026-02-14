@@ -13,6 +13,8 @@ let currentFilter = 'all';
 let sending = false;
 let pendingFile = null; // { file, name, type, dataUrl }
 const seenMessageIds = new Set();
+let notifications = [];
+let notifLoaded = false;
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 
 function authHeaders() {
@@ -145,13 +147,28 @@ function init() {
                 telegramBar.classList.add('hidden');
                 telegramConn.classList.add('hidden');
                 creditsPanel.classList.remove('hidden');
+                document.getElementById('notifList').classList.add('hidden');
                 document.getElementById('dashMain').classList.add('hidden');
                 loadCreditsPanel();
                 return;
             }
 
+            if (dir === 'notifications') {
+                convoList.classList.add('hidden');
+                statsEl.classList.add('hidden');
+                telegramBar.classList.add('hidden');
+                telegramConn.classList.add('hidden');
+                creditsPanel.classList.add('hidden');
+                document.getElementById('notifList').classList.remove('hidden');
+                document.getElementById('dashMain').classList.add('hidden');
+                document.getElementById('outreachFilters').classList.add('hidden');
+                loadNotifications();
+                return;
+            }
+
             // Restore conversation view
             creditsPanel.classList.add('hidden');
+            document.getElementById('notifList').classList.add('hidden');
             convoList.classList.remove('hidden');
             statsEl.classList.remove('hidden');
             document.getElementById('dashMain').classList.remove('hidden');
@@ -227,6 +244,9 @@ function init() {
     });
 
     loadConversations();
+
+    // Load unread notification count for badge
+    loadNotifBadge();
 }
 
 function applyFilter() {
@@ -708,6 +728,140 @@ async function loadCreditsPanel() {
         // Silent
     }
 }
+
+// ── Notifications ──
+function getWallet() {
+    try {
+        const p = JSON.parse(localStorage.getItem('inclawbate_profile') || '{}');
+        return p.wallet_address || null;
+    } catch { return null; }
+}
+
+async function loadNotifBadge() {
+    const wallet = getWallet();
+    if (!wallet) return;
+    try {
+        const res = await fetch(`${API_BASE}/notifications?wallet=${wallet}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        updateNotifBadge(data.unread_count || 0);
+    } catch { /* silent */ }
+}
+
+async function loadNotifications() {
+    const wallet = getWallet();
+    if (!wallet) {
+        document.getElementById('notifItems').innerHTML =
+            '<div class="dash-no-convos"><p>Connect a wallet on your profile to receive notifications.</p></div>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/notifications?wallet=${wallet}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        notifications = data.notifications || [];
+        notifLoaded = true;
+        updateNotifBadge(data.unread_count || 0);
+        renderNotifications();
+    } catch {
+        document.getElementById('notifItems').innerHTML =
+            '<div class="dash-no-convos"><p>Failed to load notifications.</p></div>';
+    }
+}
+
+function renderNotifications() {
+    const container = document.getElementById('notifItems');
+    const noNotifs = document.getElementById('noNotifs');
+
+    if (notifications.length === 0) {
+        container.innerHTML = '';
+        container.appendChild(noNotifs);
+        noNotifs.style.display = '';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    notifications.forEach(n => {
+        const el = document.createElement('div');
+        el.className = `dash-notif-item${n.read ? '' : ' unread'}`;
+
+        const icon = n.type === 'fund' ? '\uD83D\uDCB0' : '\uD83D\uDCAC';
+        const fromLabel = n.from_handle ? `@${esc(n.from_handle)}` : (n.from_wallet ? n.from_wallet.slice(0, 6) + '...' + n.from_wallet.slice(-4) : 'Someone');
+
+        el.innerHTML = `
+            <div class="dash-notif-icon">${icon}</div>
+            <div class="dash-notif-body">
+                <div class="dash-notif-text"><strong>${fromLabel}</strong> ${esc(n.message)}</div>
+                <div class="dash-notif-time">${timeAgo(n.created_at)}</div>
+            </div>
+            ${n.read ? '' : '<div class="dash-notif-dot"></div>'}
+        `;
+
+        el.addEventListener('click', () => {
+            if (!n.read) markNotifRead(n.id);
+        });
+
+        container.appendChild(el);
+    });
+}
+
+function updateNotifBadge(count) {
+    const badge = document.getElementById('notifBadge');
+    if (!badge) return;
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+async function markNotifRead(notifId) {
+    const wallet = getWallet();
+    if (!wallet) return;
+
+    try {
+        await fetch(`${API_BASE}/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark_read',
+                wallet_address: wallet,
+                notification_id: notifId
+            })
+        });
+
+        const n = notifications.find(x => x.id === notifId);
+        if (n) n.read = true;
+        const unread = notifications.filter(x => !x.read).length;
+        updateNotifBadge(unread);
+        renderNotifications();
+    } catch { /* silent */ }
+}
+
+async function markAllNotifsRead() {
+    const wallet = getWallet();
+    if (!wallet) return;
+
+    try {
+        await fetch(`${API_BASE}/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark_read',
+                wallet_address: wallet
+            })
+        });
+
+        notifications.forEach(n => { n.read = true; });
+        updateNotifBadge(0);
+        renderNotifications();
+    } catch { /* silent */ }
+}
+
+document.getElementById('markAllRead')?.addEventListener('click', markAllNotifsRead);
 
 // Boot
 init();

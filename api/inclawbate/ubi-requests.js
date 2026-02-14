@@ -200,7 +200,7 @@ export default async function handler(req, res) {
             // Verify request exists and is open
             const { data: request } = await supabase
                 .from('inclawbate_ubi_requests')
-                .select('id, status')
+                .select('id, status, wallet_address, title')
                 .eq('id', request_id)
                 .single();
 
@@ -225,6 +225,17 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Failed to add comment' });
             }
 
+            // Notify request author (if commenter is not the author)
+            if (request.wallet_address !== w) {
+                await supabase.from('inclawbate_notifications').insert({
+                    wallet_address: request.wallet_address,
+                    type: 'comment',
+                    request_id: request_id,
+                    from_wallet: w,
+                    message: 'commented on "' + (request.title || '').substring(0, 60) + '"'
+                }).catch(() => {});
+            }
+
             return res.status(200).json({ success: true, comment: created });
         }
 
@@ -247,7 +258,7 @@ export default async function handler(req, res) {
             // Verify request exists and is open
             const { data: request } = await supabase
                 .from('inclawbate_ubi_requests')
-                .select('id, status, total_funded, wallet_address')
+                .select('id, status, total_funded, wallet_address, title')
                 .eq('id', request_id)
                 .single();
 
@@ -277,6 +288,17 @@ export default async function handler(req, res) {
                     wallet_address: w,
                     comment: 'Funded ' + fundAmount.toLocaleString() + ' CLAWNCH (tx: ' + tx_hash.substring(0, 10) + '...)'
                 });
+
+            // Notify request author
+            if (request.wallet_address !== w) {
+                await supabase.from('inclawbate_notifications').insert({
+                    wallet_address: request.wallet_address,
+                    type: 'fund',
+                    request_id: request_id,
+                    from_wallet: w,
+                    message: 'funded ' + fundAmount.toLocaleString() + ' CLAWNCH on "' + (request.title || '').substring(0, 60) + '"'
+                }).catch(() => {});
+            }
 
             return res.status(200).json({ success: true, total_funded: newTotal });
         }
