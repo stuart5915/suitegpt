@@ -474,6 +474,22 @@ function daysSince(dateStr) {
         return n.toFixed(2);
     }
 
+    function buildSplitHtml(dailyAmt, price, keepPct, kingdomPct, reinvestPct) {
+        function splitLine(label, pct) {
+            var amt = Math.round(dailyAmt * pct / 100);
+            var usd = price > 0 ? ' ($' + (amt * price).toFixed(2) + ')' : '';
+            return '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+                + '<span>' + label + '</span>'
+                + '<span style="font-family:var(--font-mono);color:var(--text-secondary);">' + fmt(amt) + ' CLAWNCH' + usd + ' <span style="color:var(--text-dim);">' + pct + '%</span></span>'
+                + '</div>';
+        }
+        return '<div class="ubi-pc-split" id="posCountdownSplit" style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;display:flex;flex-direction:column;gap:2px;" data-daily="' + dailyAmt + '" data-price="' + price + '">'
+            + splitLine('Keep', keepPct)
+            + splitLine('Kingdom', kingdomPct)
+            + splitLine('UBI Fund', reinvestPct)
+            + '</div>';
+    }
+
     // ── Protocol Revenue Logic ──
     function updateRevenueSection(wethBal, clPrice) {
         var rewardPct = Number(ubiData?.reward_split_pct) || 80;
@@ -933,7 +949,11 @@ function daysSince(dateStr) {
                         ubiToast('Saved', 'success');
                         // Update countdown split display
                         var splitEl = document.getElementById('posCountdownSplit');
-                        if (splitEl) splitEl.textContent = k + '% keep · ' + g + '% kingdom · ' + r + '% UBI fund';
+                        if (splitEl) {
+                            var da = parseFloat(splitEl.dataset.daily) || 0;
+                            var dp = parseFloat(splitEl.dataset.price) || 0;
+                            splitEl.outerHTML = buildSplitHtml(da, dp, k, g, r);
+                        }
                     } else {
                         if (statusEl) statusEl.textContent = '';
                         ubiToast((rData.error || 'Failed to save') + (rData.detail ? ' — ' + rData.detail : ''), 'error');
@@ -1005,13 +1025,12 @@ function daysSince(dateStr) {
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
-                var pcDestLabel = autoStakeOn ? 'auto-staked' : 'your wallet';
                 var dailyUsdStr = dailyUsdVal > 0 ? ' ($' + dailyUsdVal.toFixed(2) + ')' : '';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH' + dailyUsdStr + ' &rarr; ' + pcDestLabel + '</div>';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH' + dailyUsdStr + '</div>';
                 var sKeep = data.split_keep_pct ?? 100;
                 var sKingdom = data.split_kingdom_pct ?? 0;
                 var sReinvest = data.split_reinvest_pct ?? 0;
-                html += '<div class="ubi-pc-split" id="posCountdownSplit" style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">' + sKeep + '% keep · ' + sKingdom + '% kingdom · ' + sReinvest + '% UBI fund</div>';
+                html += buildSplitHtml(dailyAllocation, clawnchPrice, sKeep, sKingdom, sReinvest);
                 html += '<div class="ubi-pc-timer-row">';
                 html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
                 html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
