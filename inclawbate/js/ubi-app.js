@@ -953,7 +953,8 @@ function daysSince(dateStr) {
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
                 var pcDestLabel = autoStakeOn ? 'auto-staked' : 'your wallet';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH &rarr; ' + pcDestLabel + '</div>';
+                var dailyUsdStr = dailyUsdVal > 0 ? ' ($' + dailyUsdVal.toFixed(2) + ')' : '';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH' + dailyUsdStr + ' &rarr; ' + pcDestLabel + '</div>';
                 html += '<div class="ubi-pc-timer-row">';
                 html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
                 html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
