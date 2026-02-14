@@ -1,4 +1,4 @@
-// Inclawbate — Philanthropy Vote Page
+// Inclawbate — Kingdom Page
 
 (function() {
     var BASE_CHAIN_ID = '0x2105';
@@ -46,108 +46,51 @@
         return window.ethereum || null;
     }
 
-    // ── Load community results (no wallet needed) ──
-    async function loadResults(wallet) {
-        var url = '/api/inclawbate/philanthropy';
-        if (wallet) url += '?wallet=' + wallet;
-
+    // ── Load community stats (kingdom total) ──
+    async function loadCommunityStats() {
         try {
-            var res = await fetch(url);
+            var res = await fetch('/api/inclawbate/philanthropy');
             var data = await res.json();
-            updateResultsUI(data);
-            return data;
+            var el = document.getElementById('statKingdomTotal');
+            if (el) el.textContent = fmt(data.kingdom_total_distributed || 0);
         } catch (e) {
-            return null;
+            // silent
         }
     }
 
-    function updateResultsUI(data) {
-        if (!data) return;
+    // ── Load kingdom status for connected wallet ──
+    async function loadKingdomStatus(wallet) {
+        try {
+            var res = await fetch('/api/inclawbate/ubi?wallet=' + wallet);
+            var data = await res.json();
 
-        var reinvestPct = data.weighted_reinvest_pct || 100;
-        var philPct = data.weighted_philanthropy_pct || 0;
-        var voters = data.voter_count || 0;
-        var totalVoting = data.total_weighted_voting || 0;
+            var pctEl = document.getElementById('kingdomUserPct');
+            var labelEl = document.getElementById('kingdomUserLabel');
+            var nudgeEl = document.getElementById('kingdomNudge');
+            var statusEl = document.getElementById('kingdomStatusContent');
 
-        var emptyEl = document.getElementById('philEmpty');
-        var contentEl = document.getElementById('philResultsContent');
+            var target = data.whale_redirect_target;
+            var kingdomPct = 0;
 
-        if (voters === 0) {
-            if (emptyEl) emptyEl.style.display = 'block';
-            if (contentEl) contentEl.style.display = 'none';
-            return;
-        }
+            if (target === 'philanthropy') {
+                kingdomPct = 100;
+            } else if (target === 'split') {
+                kingdomPct = data.split_kingdom_pct || 0;
+            }
 
-        if (emptyEl) emptyEl.style.display = 'none';
-        if (contentEl) contentEl.style.display = 'block';
-
-        // Update bar widths
-        var barReinvest = document.getElementById('barReinvest');
-        var barPhilanthropy = document.getElementById('barPhilanthropy');
-        if (barReinvest) barReinvest.style.width = Math.max(reinvestPct, 2) + '%';
-        if (barPhilanthropy) barPhilanthropy.style.width = Math.max(philPct, 2) + '%';
-
-        // Bar labels (only show if > 10% to avoid cramming)
-        var reinvestLabel = document.getElementById('barReinvestLabel');
-        var philLabel = document.getElementById('barPhilanthropyLabel');
-        if (reinvestLabel) reinvestLabel.textContent = reinvestPct >= 10 ? reinvestPct.toFixed(1) + '%' : '';
-        if (philLabel) philLabel.textContent = philPct >= 10 ? philPct.toFixed(1) + '%' : '';
-
-        // Stats
-        var voterEl = document.getElementById('statVoters');
-        var powerEl = document.getElementById('statVotingPower');
-        var powerSubEl = document.getElementById('statVotingPowerSub');
-        if (voterEl) voterEl.textContent = voters;
-        if (powerEl) powerEl.textContent = fmt(totalVoting);
-        if (powerSubEl) {
-            var cl = data.total_clawnch_voting || 0;
-            var incl = data.total_inclawnch_voting || 0;
-            var parts = [];
-            if (cl > 0) parts.push(fmt(cl) + ' CLAWNCH');
-            if (incl > 0) parts.push(fmt(incl) + ' inCLAWNCH');
-            powerSubEl.textContent = parts.length > 0 ? '[' + parts.join(' + ') + ']' : '';
-        }
-
-        // Kingdom total
-        var kingdomEl = document.getElementById('kingdomTotal');
-        if (kingdomEl) {
-            kingdomEl.textContent = fmt(data.kingdom_total_distributed || 0);
+            if (kingdomPct > 0) {
+                if (pctEl) pctEl.textContent = kingdomPct + '%';
+                if (labelEl) labelEl.textContent = 'of your UBI goes to Kingdom';
+                if (statusEl) statusEl.style.display = 'block';
+                if (nudgeEl) nudgeEl.style.display = 'none';
+            } else {
+                if (statusEl) statusEl.style.display = 'none';
+                if (nudgeEl) nudgeEl.style.display = 'block';
+            }
+        } catch (e) {
+            // silent
         }
     }
-
-    // ── Slider + Preset Logic ──
-    var currentPct = 0; // philanthropy_pct
-
-    function updatePreview(pct) {
-        currentPct = pct;
-        var slider = document.getElementById('philSlider');
-        if (slider && parseInt(slider.value) !== pct) slider.value = pct;
-
-        var reinvest = 100 - pct;
-        document.getElementById('previewReinvest').textContent = reinvest + '%';
-        document.getElementById('previewPhilanthropy').textContent = pct + '%';
-
-        // Update preset active states
-        document.querySelectorAll('.phil-preset-btn').forEach(function(btn) {
-            var btnPct = parseInt(btn.getAttribute('data-pct'));
-            btn.classList.toggle('active', btnPct === pct);
-        });
-    }
-
-    // Wire up slider
-    var slider = document.getElementById('philSlider');
-    if (slider) {
-        slider.addEventListener('input', function() {
-            updatePreview(parseInt(slider.value));
-        });
-    }
-
-    // Wire up preset buttons
-    document.querySelectorAll('.phil-preset-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            updatePreview(parseInt(btn.getAttribute('data-pct')));
-        });
-    });
 
     // ── Wallet Connect ──
     async function connectWallet() {
@@ -193,60 +136,26 @@
     async function onWalletConnected(address) {
         connectedWallet = address;
 
-        // Update vote section connect button
-        var btn = document.getElementById('philConnectBtn');
-        if (btn) {
-            btn.textContent = shortAddr(address) + ' \u00B7 Disconnect';
-            btn.classList.add('connected');
+        // Update kingdom connect button
+        var kingdomBtn = document.getElementById('kingdomConnectBtn');
+        if (kingdomBtn) {
+            kingdomBtn.textContent = shortAddr(address) + ' \u00B7 Disconnect';
+            kingdomBtn.classList.add('connected');
         }
 
-        // Update request section connect button
+        // Hide connect wraps, show status
+        var connectWrap = document.getElementById('kingdomConnectWrap');
+        if (connectWrap) connectWrap.style.display = 'none';
+
+        // Hide request connect message
         var reqConnectMsg = document.getElementById('reqConnectMsg');
         if (reqConnectMsg) reqConnectMsg.style.display = 'none';
 
-        // Fetch results with wallet to get user's vote + stake
-        var data = await loadResults(address);
-        if (!data) return;
-
-        var form = document.getElementById('philForm');
-        var noStake = document.getElementById('philNoStake');
-        var connectWrap = document.getElementById('philConnectWrap');
-
-        var myPower = data.my_voting_power || 0;
-
-        if (myPower <= 0) {
-            // No active stakes — show message
-            if (noStake) noStake.style.display = 'block';
-            if (form) form.style.display = 'none';
-            return;
-        }
-
-        // Has stakes — show form
-        if (noStake) noStake.style.display = 'none';
-        if (form) form.style.display = 'block';
-
-        var stakeEl = document.getElementById('philMyStake');
-        if (stakeEl) stakeEl.textContent = fmt(myPower);
-
-        var mySubEl = document.getElementById('philMyStakeSub');
-        if (mySubEl) {
-            var myCl = data.my_clawnch || 0;
-            var myIncl = data.my_inclawnch || 0;
-            var parts = [];
-            if (myCl > 0) parts.push(fmt(myCl) + ' CLAWNCH');
-            if (myIncl > 0) parts.push(fmt(myIncl) + ' inCLAWNCH');
-            mySubEl.textContent = parts.length > 0 ? '[' + parts.join(' + ') + ']' : '';
-        }
-
-        // Restore existing vote
-        if (data.my_vote !== null && data.my_vote !== undefined) {
-            updatePreview(data.my_vote);
-        } else {
-            updatePreview(0);
-        }
-
-        // Load requests (to check if user has open request)
-        loadRequests();
+        // Load kingdom status + requests
+        await Promise.all([
+            loadKingdomStatus(address),
+            loadRequests()
+        ]);
     }
 
     function disconnectWallet() {
@@ -255,17 +164,19 @@
         userHasOpenRequest = false;
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
-        var btn = document.getElementById('philConnectBtn');
-        if (btn) {
-            btn.textContent = 'Connect Wallet';
-            btn.classList.remove('connected');
+        // Reset kingdom connect
+        var kingdomBtn = document.getElementById('kingdomConnectBtn');
+        if (kingdomBtn) {
+            kingdomBtn.textContent = 'Connect Wallet';
+            kingdomBtn.classList.remove('connected');
         }
+        var connectWrap = document.getElementById('kingdomConnectWrap');
+        if (connectWrap) connectWrap.style.display = 'block';
 
-        document.getElementById('philForm').style.display = 'none';
-        document.getElementById('philNoStake').style.display = 'none';
-
-        var statusEl = document.getElementById('philVoteStatus');
-        if (statusEl) { statusEl.textContent = ''; statusEl.className = 'phil-vote-status'; }
+        var statusEl = document.getElementById('kingdomStatusContent');
+        if (statusEl) statusEl.style.display = 'none';
+        var nudgeEl = document.getElementById('kingdomNudge');
+        if (nudgeEl) nudgeEl.style.display = 'none';
 
         // Reset request section
         var reqConnectMsg = document.getElementById('reqConnectMsg');
@@ -276,77 +187,34 @@
         if (reqHasOpen) reqHasOpen.style.display = 'none';
     }
 
-    // Connect button click (vote section)
-    var connectBtn = document.getElementById('philConnectBtn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', function() {
-            if (connectedWallet) {
-                disconnectWallet();
-                return;
-            }
+    // Kingdom connect button
+    var kingdomBtn = document.getElementById('kingdomConnectBtn');
+    if (kingdomBtn) {
+        kingdomBtn.addEventListener('click', function() {
+            if (connectedWallet) { disconnectWallet(); return; }
             connectWallet();
         });
     }
 
-    // Connect button click (request section) — shared wallet
+    // Request connect button (shared wallet)
     var reqConnectBtn = document.getElementById('reqConnectBtn');
     if (reqConnectBtn) {
         reqConnectBtn.addEventListener('click', function() {
-            if (connectedWallet) {
-                disconnectWallet();
-                return;
-            }
+            if (connectedWallet) { disconnectWallet(); return; }
             connectWallet();
         });
     }
 
-    // ── Cast Vote ──
-    var castBtn = document.getElementById('philCastBtn');
-    if (castBtn) {
-        castBtn.addEventListener('click', async function() {
-            if (!connectedWallet) return;
+    // ══════════════════════════════════════
+    //  CHARACTER COUNTER
+    // ══════════════════════════════════════
 
-            castBtn.disabled = true;
-            castBtn.textContent = 'Casting...';
-            var statusEl = document.getElementById('philVoteStatus');
-
-            try {
-                var res = await fetch('/api/inclawbate/philanthropy', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        wallet_address: connectedWallet,
-                        philanthropy_pct: currentPct
-                    })
-                });
-
-                var data = await res.json();
-
-                if (data.success) {
-                    philToast('Vote cast! ' + (100 - currentPct) + '% UBI / ' + currentPct + '% Philanthropy', 'success');
-                    if (statusEl) {
-                        statusEl.textContent = 'Vote saved';
-                        statusEl.className = 'phil-vote-status success';
-                    }
-                    // Refresh community results
-                    loadResults(connectedWallet);
-                } else {
-                    philToast(data.error || 'Failed to cast vote', 'error');
-                    if (statusEl) {
-                        statusEl.textContent = data.error || 'Failed';
-                        statusEl.className = 'phil-vote-status error';
-                    }
-                }
-            } catch (e) {
-                philToast('Network error', 'error');
-                if (statusEl) {
-                    statusEl.textContent = 'Network error';
-                    statusEl.className = 'phil-vote-status error';
-                }
-            }
-
-            castBtn.disabled = false;
-            castBtn.textContent = 'Cast Vote';
+    var descField = document.getElementById('reqDesc');
+    var descCount = document.getElementById('reqDescCount');
+    if (descField && descCount) {
+        descField.addEventListener('input', function() {
+            var len = descField.value.length;
+            descCount.textContent = len.toLocaleString() + ' / 5,000';
         });
     }
 
@@ -402,6 +270,10 @@
 
             var authorDisplay = r.handle ? '@' + escHtml(r.handle) : shortAddr(r.wallet_address);
 
+            // Preview: first 120 chars of description
+            var preview = (r.description || '').substring(0, 120);
+            if ((r.description || '').length > 120) preview += '...';
+
             card.innerHTML =
                 '<div class="phil-req-card-header">' +
                     '<div class="phil-req-card-title">' + escHtml(r.title) + '</div>' +
@@ -412,11 +284,11 @@
                     '<span>' + timeAgo(r.created_at) + '</span>' +
                     '<span>' + (r.comment_count || 0) + ' comment' + ((r.comment_count || 0) !== 1 ? 's' : '') + '</span>' +
                 '</div>' +
+                '<div class="phil-req-card-preview">' + escHtml(preview) + '</div>' +
                 '<div class="phil-req-expanded" id="reqExpanded' + r.id + '"></div>';
 
             card.addEventListener('click', (function(reqId) {
                 return function(e) {
-                    // Don't toggle if clicking inside form/button
                     if (e.target.closest('.phil-req-comment-form') || e.target.closest('.phil-req-close-btn') || e.target.closest('button')) return;
                     toggleRequestExpand(reqId);
                 };
@@ -572,7 +444,6 @@
             var data = await res.json();
             if (data.success) {
                 input.value = '';
-                // Refresh expanded view
                 toggleRequestExpand(reqId); // collapse
                 setTimeout(function() { toggleRequestExpand(reqId); }, 100); // re-expand
             } else {
@@ -599,8 +470,8 @@
                 philToast('Title must be 3-100 characters', 'error');
                 return;
             }
-            if (desc.length < 10 || desc.length > 2000) {
-                philToast('Description must be 10-2000 characters', 'error');
+            if (desc.length < 10 || desc.length > 5000) {
+                philToast('Description must be 10-5,000 characters', 'error');
                 return;
             }
             if (!amount || amount <= 0) {
@@ -629,6 +500,7 @@
                     document.getElementById('reqTitle').value = '';
                     document.getElementById('reqDesc').value = '';
                     document.getElementById('reqAmount').value = '';
+                    if (descCount) descCount.textContent = '0 / 5,000';
                     loadRequests();
                 } else {
                     philToast(data.error || 'Failed to post', 'error');
@@ -638,7 +510,7 @@
             }
 
             reqSubmitBtn.disabled = false;
-            reqSubmitBtn.textContent = 'Post Request';
+            reqSubmitBtn.textContent = 'Submit Proof of Need';
         });
     }
 
@@ -655,7 +527,7 @@
         }
     }
 
-    // ── Initial load (no wallet) ──
-    loadResults();
+    // ── Initial load (no wallet needed) ──
+    loadCommunityStats();
     loadRequests();
 })();

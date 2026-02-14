@@ -125,8 +125,8 @@ export default async function handler(req, res) {
             }
 
             // Validate description
-            if (!description || typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 2000) {
-                return res.status(400).json({ error: 'Description must be 10-2000 characters' });
+            if (!description || typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 5000) {
+                return res.status(400).json({ error: 'Description must be 10-5000 characters' });
             }
 
             // Validate amount
