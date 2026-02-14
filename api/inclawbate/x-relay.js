@@ -1,21 +1,59 @@
 // X → Telegram Channel Relay
 // Cron: polls X API for new tweets from @artstu and @inclawbate,
 // formats them, and sends to the @inclawbate Telegram channel.
-// Runs every 5 minutes via Vercel Cron.
+// Runs every 1 minute via Vercel Cron.
+// Uses OAuth 1.0a (free tier doesn't support Bearer for reads).
 
 import { createClient } from '@supabase/supabase-js';
 import { escHtml } from './notify.js';
+import crypto from 'crypto';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
 const TELEGRAM_BOT_TOKEN = process.env.INCLAWBATE_TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHANNEL = '@inclawbate';
 
 const X_API_BASE = 'https://api.twitter.com/2';
+
+// Build OAuth 1.0a Authorization header for GET requests
+function oauthHeader(method, url, queryParams = {}) {
+    const { X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET } = process.env;
+
+    const oauth = {
+        oauth_consumer_key: X_API_KEY,
+        oauth_nonce: crypto.randomBytes(16).toString('hex'),
+        oauth_signature_method: 'HMAC-SHA1',
+        oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+        oauth_token: X_ACCESS_TOKEN,
+        oauth_version: '1.0'
+    };
+
+    // Combine oauth params + query params for signature
+    const allParams = { ...oauth, ...queryParams };
+    const paramString = Object.keys(allParams)
+        .sort()
+        .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(allParams[k])}`)
+        .join('&');
+
+    const signatureBase = [
+        method,
+        encodeURIComponent(url),
+        encodeURIComponent(paramString)
+    ].join('&');
+
+    const signingKey = `${encodeURIComponent(X_API_SECRET)}&${encodeURIComponent(X_ACCESS_SECRET)}`;
+    const signature = crypto.createHmac('sha1', signingKey).update(signatureBase).digest('base64');
+
+    oauth.oauth_signature = signature;
+
+    return 'OAuth ' + Object.keys(oauth)
+        .sort()
+        .map(k => `${encodeURIComponent(k)}="${encodeURIComponent(oauth[k])}"`)
+        .join(', ');
+}
 
 export default async function handler(req, res) {
     // Verify cron auth
@@ -25,8 +63,9 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    if (!X_BEARER_TOKEN) {
-        return res.status(500).json({ error: 'X_BEARER_TOKEN not configured' });
+    const { X_API_KEY, X_ACCESS_TOKEN } = process.env;
+    if (!X_API_KEY || !X_ACCESS_TOKEN) {
+        return res.status(500).json({ error: 'X API credentials not configured' });
     }
 
     try {
@@ -42,13 +81,14 @@ export default async function handler(req, res) {
 
         let totalFound = 0;
         let totalSent = 0;
+        const errors = [];
 
         for (const account of accounts) {
             // Resolve user ID if missing
             if (!account.x_user_id) {
                 const userId = await resolveUserId(account.x_handle);
                 if (!userId) {
-                    console.error(`Could not resolve user ID for @${account.x_handle}`);
+                    errors.push(`Could not resolve @${account.x_handle}`);
                     continue;
                 }
                 await supabase
@@ -61,7 +101,6 @@ export default async function handler(req, res) {
             // Fetch new tweets
             const tweets = await fetchTweets(account.x_user_id, account.last_tweet_id);
             if (!tweets || tweets.length === 0) {
-                // Update last_checked even if no tweets
                 await supabase
                     .from('x_relay_state')
                     .update({ last_checked_at: new Date().toISOString() })
@@ -80,13 +119,11 @@ export default async function handler(req, res) {
                 const sent = await sendToTelegram(account.x_handle, tweet);
                 if (sent) totalSent++;
 
-                // Track newest ID
                 if (!newestId || BigInt(tweet.id) > BigInt(newestId)) {
                     newestId = tweet.id;
                 }
             }
 
-            // Update state with newest tweet ID
             await supabase
                 .from('x_relay_state')
                 .update({
@@ -100,23 +137,29 @@ export default async function handler(req, res) {
             success: true,
             tweets_found: totalFound,
             messages_sent: totalSent,
-            accounts_checked: accounts.length
+            accounts_checked: accounts.length,
+            ...(errors.length ? { errors } : {})
         });
 
     } catch (e) {
         console.error('X relay error:', e);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: e.message || 'Internal server error' });
     }
 }
 
 // Resolve X handle → numeric user ID
 async function resolveUserId(handle) {
     try {
-        const resp = await fetch(`${X_API_BASE}/users/by/username/${handle}`, {
-            headers: { 'Authorization': `Bearer ${X_BEARER_TOKEN}` }
+        const url = `${X_API_BASE}/users/by/username/${handle}`;
+        const auth = oauthHeader('GET', url);
+
+        const resp = await fetch(url, {
+            headers: { 'Authorization': auth }
         });
+
         if (!resp.ok) {
-            console.error(`X API /users/by/username/${handle}: ${resp.status}`);
+            const body = await resp.text();
+            console.error(`X API /users/by/username/${handle}: ${resp.status} ${body}`);
             return null;
         }
         const json = await resp.json();
@@ -130,18 +173,23 @@ async function resolveUserId(handle) {
 // Fetch recent tweets from a user since a given tweet ID
 async function fetchTweets(userId, sinceId) {
     try {
-        const params = new URLSearchParams({
+        const url = `${X_API_BASE}/users/${userId}/tweets`;
+        const queryParams = {
             'tweet.fields': 'created_at,in_reply_to_user_id,referenced_tweets',
             'max_results': '10'
-        });
-        if (sinceId) params.set('since_id', sinceId);
+        };
+        if (sinceId) queryParams['since_id'] = sinceId;
 
-        const resp = await fetch(`${X_API_BASE}/users/${userId}/tweets?${params}`, {
-            headers: { 'Authorization': `Bearer ${X_BEARER_TOKEN}` }
+        const auth = oauthHeader('GET', url, queryParams);
+        const qs = new URLSearchParams(queryParams).toString();
+
+        const resp = await fetch(`${url}?${qs}`, {
+            headers: { 'Authorization': auth }
         });
 
         if (!resp.ok) {
-            console.error(`X API /users/${userId}/tweets: ${resp.status}`);
+            const body = await resp.text();
+            console.error(`X API /users/${userId}/tweets: ${resp.status} ${body}`);
             return null;
         }
 
