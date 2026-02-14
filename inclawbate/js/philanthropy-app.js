@@ -330,20 +330,21 @@
                 bodyHtml += '<a href="' + escHtml(o.website_url) + '" target="_blank" rel="noopener" class="phil-kingdom-card-link">' + escHtml(displayUrl) + ' &rarr;</a>';
             }
 
-            // Direct Kingdom Here button
+            // Direct Kingdom Here button (right side)
             var isSelected = o.id === selectedOrgId && !selectedRequestId;
+            var rightHtml = '';
             if (connectedWallet) {
                 if (isSelected) {
-                    bodyHtml += '<div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 14px;border-radius:var(--radius-full);background:hsla(172,32%,48%,0.1);border:1px solid var(--seafoam-400);font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);">&#10003; Kingdom goes here</div>';
+                    rightHtml = '<div style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:var(--radius-full);background:hsla(172,32%,48%,0.1);border:1px solid var(--seafoam-400);font-family:var(--font-mono);font-size:0.65rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">&#10003; Kingdom</div>';
                 } else {
-                    bodyHtml += '<button class="phil-kingdom-select-btn" data-select-org="' + o.id + '" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 14px;border-radius:var(--radius-full);border:1px solid var(--seafoam-400);background:hsla(172,32%,48%,0.06);color:var(--seafoam-300);font-family:var(--font-mono);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;">\uD83D\uDC51 Direct Kingdom Here</button>';
+                    rightHtml = '<button class="phil-kingdom-select-btn" data-select-org="' + o.id + '" style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:var(--radius-full);border:1px solid var(--seafoam-400);background:hsla(172,32%,48%,0.06);color:var(--seafoam-300);font-family:var(--font-mono);font-size:0.65rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;">\uD83D\uDC51 Direct Here</button>';
                 }
             }
 
             card.innerHTML =
                 '<span class="phil-kingdom-card-icon">' + icon + '</span>' +
                 '<div class="phil-kingdom-card-body">' + bodyHtml + '</div>' +
-                '<span class="phil-kingdom-card-check">&#10003;</span>';
+                rightHtml;
 
             container.appendChild(card);
         }
