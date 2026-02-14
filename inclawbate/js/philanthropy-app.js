@@ -567,9 +567,26 @@
             '</div>';
         }
 
-        // Close button (only for owner)
+        // Owner actions (edit + close)
         if (connectedWallet && request.wallet_address === connectedWallet.toLowerCase()) {
-            html += '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this, \'' + type + '\')">Close Request</button>';
+            html += '<div style="display:flex;gap:8px;margin-bottom:var(--space-md);">' +
+                '<button class="phil-req-close-btn" onclick="window._editRequest(' + request.id + ', \'' + type + '\')" style="border-color:var(--border-default);background:var(--bg-elevated);color:var(--text-secondary);">Edit</button>' +
+                '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this, \'' + type + '\')">Close Request</button>' +
+            '</div>';
+
+            // Edit form (hidden until Edit clicked)
+            html += '<div id="editForm' + request.id + '" style="display:none;margin-bottom:var(--space-lg);padding:var(--space-md);background:var(--bg-elevated);border-radius:var(--radius-lg);">' +
+                '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Title</label>' +
+                '<input type="text" id="editTitle' + request.id + '" value="' + escHtml(request.title).replace(/"/g, '&quot;') + '" maxlength="100" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-display);font-size:0.85rem;outline:none;box-sizing:border-box;"></div>' +
+                '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Description</label>' +
+                '<textarea id="editDesc' + request.id + '" maxlength="5000" rows="8" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-display);font-size:0.85rem;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6;">' + escHtml(request.description) + '</textarea></div>' +
+                '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Amount' + (cfg.showProgress ? '' : ' (CLAWNCH/month)') + '</label>' +
+                '<input type="number" id="editAmount' + request.id + '" value="' + request.amount_requested + '" min="1" step="1" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:0.85rem;outline:none;box-sizing:border-box;"></div>' +
+                '<div style="display:flex;gap:8px;">' +
+                    '<button onclick="window._saveEdit(' + request.id + ', \'' + type + '\')" style="flex:1;padding:10px;border-radius:var(--radius-full);border:none;background:var(--accent-gradient);color:#fff;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;cursor:pointer;">Save Changes</button>' +
+                    '<button onclick="document.getElementById(\'editForm' + request.id + '\').style.display=\'none\'" style="padding:10px 16px;border-radius:var(--radius-full);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-secondary);font-family:var(--font-mono);font-size:0.82rem;font-weight:600;cursor:pointer;">Cancel</button>' +
+                '</div>' +
+            '</div>';
         }
 
         // Comments
@@ -603,6 +620,49 @@
     }
 
     // Global functions for onclick handlers
+    window._editRequest = function(reqId, type) {
+        var form = document.getElementById('editForm' + reqId);
+        if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window._saveEdit = async function(reqId, type) {
+        if (!connectedWallet) return;
+
+        var title = (document.getElementById('editTitle' + reqId).value || '').trim();
+        var desc = (document.getElementById('editDesc' + reqId).value || '').trim();
+        var amount = Number(document.getElementById('editAmount' + reqId).value || 0);
+
+        if (title.length < 3) { philToast('Title must be at least 3 characters', 'error'); return; }
+        if (desc.length < 10) { philToast('Description must be at least 10 characters', 'error'); return; }
+        if (!amount || amount <= 0) { philToast('Amount must be greater than 0', 'error'); return; }
+
+        try {
+            var res = await fetch('/api/inclawbate/ubi-requests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'edit',
+                    wallet_address: connectedWallet,
+                    request_id: reqId,
+                    title: title,
+                    description: desc,
+                    amount_requested: amount
+                })
+            });
+            var data = await res.json();
+            if (data.success) {
+                philToast('Updated!', 'success');
+                typeConfig[type].expandedId = null;
+                toggleRequestExpand(reqId, type);
+                loadRequests(type);
+            } else {
+                philToast(data.error || 'Failed to update', 'error');
+            }
+        } catch (e) {
+            philToast('Network error', 'error');
+        }
+    };
+
     window._closeRequest = async function(reqId, btn, type) {
         if (!connectedWallet) return;
         btn.disabled = true;

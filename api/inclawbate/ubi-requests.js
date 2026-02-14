@@ -281,6 +281,67 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, total_funded: newTotal });
         }
 
+        if (action === 'edit') {
+            const { request_id, title, description, amount_requested } = req.body;
+
+            if (!request_id) {
+                return res.status(400).json({ error: 'request_id required' });
+            }
+
+            // Verify ownership
+            const { data: request } = await supabase
+                .from('inclawbate_ubi_requests')
+                .select('id, wallet_address, status')
+                .eq('id', request_id)
+                .single();
+
+            if (!request) {
+                return res.status(404).json({ error: 'Request not found' });
+            }
+            if (request.wallet_address !== w) {
+                return res.status(403).json({ error: 'Only the author can edit this request' });
+            }
+            if (request.status !== 'open') {
+                return res.status(400).json({ error: 'Cannot edit a closed request' });
+            }
+
+            // Build update object (only update provided fields)
+            const updates = { updated_at: new Date().toISOString() };
+
+            if (title !== undefined) {
+                if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 100) {
+                    return res.status(400).json({ error: 'Title must be 3-100 characters' });
+                }
+                updates.title = title.trim();
+            }
+
+            if (description !== undefined) {
+                if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 5000) {
+                    return res.status(400).json({ error: 'Description must be 10-5000 characters' });
+                }
+                updates.description = description.trim();
+            }
+
+            if (amount_requested !== undefined) {
+                const amt = Number(amount_requested);
+                if (!amt || amt <= 0) {
+                    return res.status(400).json({ error: 'Amount must be greater than 0' });
+                }
+                updates.amount_requested = amt;
+            }
+
+            const { error } = await supabase
+                .from('inclawbate_ubi_requests')
+                .update(updates)
+                .eq('id', request_id);
+
+            if (error) {
+                return res.status(500).json({ error: 'Failed to update request' });
+            }
+
+            return res.status(200).json({ success: true });
+        }
+
         if (action === 'close') {
             const { request_id } = req.body;
 
