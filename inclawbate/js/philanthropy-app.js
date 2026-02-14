@@ -293,7 +293,7 @@
     // ── Load & Render Orgs ──
     async function loadOrgs() {
         try {
-            var res = await fetch('/api/inclawbate/philanthropy');
+            var res = await fetch('/api/inclawbate/philanthropy?orgs_only=true');
             var data = await res.json();
             loadedOrgs = data.orgs || [];
             renderOrgCards(loadedOrgs);

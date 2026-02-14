@@ -76,6 +76,16 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     if (req.method === 'GET') {
+        // Fast path: just return orgs (no balance fetching)
+        if (req.query.orgs_only === 'true') {
+            const { data: orgs } = await supabase
+                .from('inclawbate_philanthropy_orgs')
+                .select('id, name, description, tagline, icon_emoji, image_url, website_url, wallet_address')
+                .eq('is_active', true)
+                .order('id', { ascending: true });
+            return res.status(200).json({ orgs: orgs || [] });
+        }
+
         // Fetch all votes
         const { data: votes } = await supabase
             .from('inclawbate_philanthropy_votes')
