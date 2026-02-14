@@ -117,7 +117,7 @@ export default async function handler(req, res) {
         const w = wallet_address.toLowerCase();
 
         if (action === 'create') {
-            const { title, description, amount_requested } = req.body;
+            const { title, description, amount_requested, socials } = req.body;
 
             // Validate title
             if (!title || typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 100) {
@@ -147,13 +147,27 @@ export default async function handler(req, res) {
                 return res.status(409).json({ error: 'You already have an open request. Close it before creating a new one.' });
             }
 
+            // Validate socials (optional, object with string values)
+            let cleanSocials = null;
+            if (socials && typeof socials === 'object') {
+                cleanSocials = {};
+                const allowedKeys = ['x', 'instagram', 'youtube', 'discord', 'telegram', 'github'];
+                for (const k of allowedKeys) {
+                    if (socials[k] && typeof socials[k] === 'string') {
+                        cleanSocials[k] = socials[k].trim().substring(0, 200);
+                    }
+                }
+                if (Object.keys(cleanSocials).length === 0) cleanSocials = null;
+            }
+
             const { data: created, error } = await supabase
                 .from('inclawbate_ubi_requests')
                 .insert({
                     wallet_address: w,
                     title: title.trim(),
                     description: description.trim(),
-                    amount_requested: amount
+                    amount_requested: amount,
+                    ...(cleanSocials ? { socials: cleanSocials } : {})
                 })
                 .select()
                 .single();

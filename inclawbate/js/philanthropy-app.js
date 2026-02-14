@@ -61,6 +61,22 @@
     // ── Load kingdom status for connected wallet ──
     var selectedOrgId = null;
 
+    function computeUserShare(data) {
+        // Approximate user's share from their stakes vs total
+        var myStakes = data.my_stakes || [];
+        var userWeight = 0;
+        for (var i = 0; i < myStakes.length; i++) {
+            var s = myStakes[i];
+            if (!s.active) continue;
+            var mult = (s.token === 'inclawnch') ? 2 : 1;
+            userWeight += s.clawnch_amount * mult;
+        }
+        var totalWeight = (Number(data.total_balance) || 0) + (Number(data.inclawnch_staked) || 0) * 2;
+        var dailyRate = Number(data.daily_rate) || 0;
+        if (totalWeight <= 0 || dailyRate <= 0) return 0;
+        return (userWeight / totalWeight) * dailyRate;
+    }
+
     async function loadKingdomStatus(wallet) {
         try {
             var res = await fetch('/api/inclawbate/ubi?wallet=' + wallet);
@@ -81,10 +97,24 @@
             }
 
             if (kingdomPct > 0) {
+                var shareAmt = computeUserShare(data);
+                var kingdomAmt = Math.round(shareAmt * kingdomPct / 100 * 100) / 100;
+
                 if (pctEl) pctEl.textContent = kingdomPct + '%';
-                if (labelEl) labelEl.textContent = 'of your UBI goes to Kingdom';
+                if (labelEl) {
+                    labelEl.textContent = 'of your UBI goes to Kingdom';
+                    if (kingdomAmt > 0) {
+                        labelEl.textContent += ' (~' + fmt(kingdomAmt) + ' CLAWNCH per distribution)';
+                    }
+                }
                 if (statusEl) statusEl.style.display = 'block';
                 if (nudgeEl) nudgeEl.style.display = 'none';
+
+                // Update community stat with user's kingdom amount
+                var statEl = document.getElementById('statKingdomTotal');
+                if (statEl && kingdomAmt > 0) {
+                    statEl.textContent = fmt(kingdomAmt);
+                }
             } else {
                 if (statusEl) statusEl.style.display = 'none';
                 if (nudgeEl) nudgeEl.style.display = 'block';
@@ -405,6 +435,19 @@
     function renderExpandedRequest(el, request, comments) {
         var html = '<div class="phil-req-full-desc">' + escHtml(request.description) + '</div>';
 
+        // Show socials if present
+        var socials = request.socials;
+        if (socials && typeof socials === 'object' && Object.keys(socials).length > 0) {
+            html += '<div class="phil-req-socials-display">';
+            var labels = { x: 'X', instagram: 'Instagram', youtube: 'YouTube', discord: 'Discord', telegram: 'Telegram', github: 'GitHub' };
+            for (var key in socials) {
+                if (socials[key]) {
+                    html += '<span class="phil-req-social-badge">' + (labels[key] || key) + ': ' + escHtml(socials[key]) + '</span>';
+                }
+            }
+            html += '</div>';
+        }
+
         // Close button (only for owner)
         if (connectedWallet && request.wallet_address === connectedWallet.toLowerCase()) {
             html += '<button class="phil-req-close-btn" onclick="window._closeRequest(' + request.id + ', this)">Close Request</button>';
@@ -518,6 +561,21 @@
             var desc = (document.getElementById('reqDesc').value || '').trim();
             var amount = Number(document.getElementById('reqAmount').value || 0);
 
+            // Collect socials
+            var socials = {};
+            var sx = (document.getElementById('reqSocialX')?.value || '').trim();
+            var sig = (document.getElementById('reqSocialIG')?.value || '').trim();
+            var syt = (document.getElementById('reqSocialYT')?.value || '').trim();
+            var sdc = (document.getElementById('reqSocialDiscord')?.value || '').trim();
+            var stg = (document.getElementById('reqSocialTG')?.value || '').trim();
+            var sgh = (document.getElementById('reqSocialGH')?.value || '').trim();
+            if (sx) socials.x = sx;
+            if (sig) socials.instagram = sig;
+            if (syt) socials.youtube = syt;
+            if (sdc) socials.discord = sdc;
+            if (stg) socials.telegram = stg;
+            if (sgh) socials.github = sgh;
+
             if (title.length < 3 || title.length > 100) {
                 philToast('Title must be 3-100 characters', 'error');
                 return;
@@ -535,16 +593,19 @@
             reqSubmitBtn.textContent = 'Posting...';
 
             try {
+                var body = {
+                    action: 'create',
+                    wallet_address: connectedWallet,
+                    title: title,
+                    description: desc,
+                    amount_requested: amount
+                };
+                if (Object.keys(socials).length > 0) body.socials = socials;
+
                 var res = await fetch('/api/inclawbate/ubi-requests', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'create',
-                        wallet_address: connectedWallet,
-                        title: title,
-                        description: desc,
-                        amount_requested: amount
-                    })
+                    body: JSON.stringify(body)
                 });
                 var data = await res.json();
                 if (data.success) {
@@ -552,6 +613,10 @@
                     document.getElementById('reqTitle').value = '';
                     document.getElementById('reqDesc').value = '';
                     document.getElementById('reqAmount').value = '';
+                    ['reqSocialX','reqSocialIG','reqSocialYT','reqSocialDiscord','reqSocialTG','reqSocialGH'].forEach(function(id) {
+                        var el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
                     if (descCount) descCount.textContent = '0 / 5,000';
                     loadRequests();
                 } else {
