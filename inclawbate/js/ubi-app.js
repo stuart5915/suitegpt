@@ -1056,10 +1056,6 @@ function daysSince(dateStr) {
                 var g = grouped[token];
                 var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
                 var tokenClass = 'ubi-contrib-token--' + token;
-                var avail = token === 'inclawnch' ? unstakeAvailable.inclawnch : unstakeAvailable.clawnch;
-                var availNote = avail >= g.amount
-                    ? '<span class="ubi-unstake-avail ubi-unstake-avail--ok">' + fmt(Math.floor(avail)) + ' available</span>'
-                    : '<span class="ubi-unstake-avail ubi-unstake-avail--low">' + fmt(Math.floor(avail)) + ' / ' + fmt(g.amount) + ' available</span>';
                 html += '<div class="ubi-stake-row">' +
                     '<div class="ubi-stake-row-info">' +
                         '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
@@ -1067,7 +1063,6 @@ function daysSince(dateStr) {
                         '<span class="ubi-stake-row-days">staking for ' + daysSince(g.earliest) + '</span>' +
                     '</div>' +
                     '<div class="ubi-stake-row-actions">' +
-                        availNote +
                         '<button class="btn-unstake" data-token="' + token + '">Unstake</button>' +
                     '</div>' +
                 '</div>';
@@ -1307,19 +1302,11 @@ function daysSince(dateStr) {
             userAmount = activeForToken.reduce(function(sum, s) { return sum + s.clawnch_amount; }, 0);
         } catch(e) {}
 
-        var available = token === 'inclawnch' ? unstakeAvailable.inclawnch : unstakeAvailable.clawnch;
-        var isInstant = available >= userAmount;
-
-        var confirmTitle = isInstant ? 'Unstake ' + tokenLabel : 'Request Withdrawal';
-        var confirmMsg = isInstant
-            ? 'Unstake all your ' + tokenLabel + '? Tokens will be sent to your wallet instantly.'
-            : 'Unstake all your ' + tokenLabel + '? Your withdrawal exceeds what\u2019s available for instant transfer. Your tokens will be returned to your wallet \u2014 usually within an hour, but it may take up to 24 hours.';
-
         var confirmed = await ubiModal({
-            icon: isInstant ? '\uD83E\uDD9E' : '\u23F3',
-            title: confirmTitle,
-            msg: confirmMsg,
-            confirmLabel: isInstant ? 'Unstake' : 'Request',
+            icon: '\uD83E\uDD9E',
+            title: 'Unstake ' + tokenLabel,
+            msg: 'Unstake all your ' + tokenLabel + '? Tokens will be sent to your wallet.',
+            confirmLabel: 'Unstake',
             confirmClass: 'ubi-modal-btn--confirm'
         });
         if (!confirmed) return;
@@ -1328,10 +1315,10 @@ function daysSince(dateStr) {
         var statusEl = document.querySelector('.stake-status[data-token="' + token + '"]');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = isInstant ? 'Sending tokens...' : 'Requesting...';
+            btn.textContent = 'Sending tokens...';
         }
         if (statusEl) {
-            statusEl.textContent = isInstant ? 'Sending ' + tokenLabel + ' back to your wallet...' : 'Submitting withdrawal request...';
+            statusEl.textContent = 'Sending ' + tokenLabel + ' back to your wallet...';
             statusEl.className = 'ubi-stake-status stake-status';
         }
 
@@ -1361,13 +1348,12 @@ function daysSince(dateStr) {
                 document.getElementById('treasuryValue').textContent = fmt(cStaked) + ' CLAWNCH + ' + fmt(iStaked) + ' inCLAWNCH';
 
                 if (statusEl) {
-                    if (data.instant && data.tx_hash) {
-                        statusEl.innerHTML = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet. <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
-                        statusEl.className = 'ubi-stake-status stake-status success';
-                    } else {
-                        statusEl.innerHTML = 'Withdrawal requested for ' + fmt(data.amount) + ' ' + tokenLabel + '. Your tokens will be sent shortly once the withdrawal wallet is funded.';
-                        statusEl.className = 'ubi-stake-status stake-status success';
+                    var msg = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet.';
+                    if (data.tx_hash) {
+                        msg += ' <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
                     }
+                    statusEl.innerHTML = msg;
+                    statusEl.className = 'ubi-stake-status stake-status success';
                 }
 
                 fetchBalances();
