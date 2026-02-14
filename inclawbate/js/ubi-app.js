@@ -524,16 +524,18 @@ function daysSince(dateStr) {
             var monthly = daily * 30;
             var annual = daily * 365;
             var apy = newTotalWeighted > 0 ? (dailyRate * 365 * mult) / newTotalWeighted * 100 : 0;
-            var dailyUsd = daily * clawnchPrice;
+
+            function valWithUsd(tokens) {
+                var s = fmt(tokens);
+                if (clawnchPrice > 0) s += ' <span class="ubi-calc-row-usd">($' + fmtUsd(tokens * clawnchPrice) + ')</span>';
+                return s;
+            }
 
             var html = '<div class="ubi-calc-col-title">' + label + '</div>';
-            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Daily</span><span class="ubi-calc-row-val">' + fmt(daily) + '</span></div>';
-            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Weekly</span><span class="ubi-calc-row-val">' + fmt(weekly) + '</span></div>';
-            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Monthly</span><span class="ubi-calc-row-val">' + fmt(monthly) + '</span></div>';
-            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Annual</span><span class="ubi-calc-row-val">' + fmt(annual) + '</span></div>';
-            if (clawnchPrice > 0) {
-                html += '<div class="ubi-calc-row ubi-calc-row--usd"><span class="ubi-calc-row-label">Daily USD</span><span class="ubi-calc-row-val">~$' + fmtUsd(dailyUsd) + '/day</span></div>';
-            }
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Daily</span><span class="ubi-calc-row-val">' + valWithUsd(daily) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Weekly</span><span class="ubi-calc-row-val">' + valWithUsd(weekly) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Monthly</span><span class="ubi-calc-row-val">' + valWithUsd(monthly) + '</span></div>';
+            html += '<div class="ubi-calc-row"><span class="ubi-calc-row-label">Annual</span><span class="ubi-calc-row-val">' + valWithUsd(annual) + '</span></div>';
             html += '<div class="ubi-calc-row ubi-calc-row--apy"><span class="ubi-calc-row-label">APY</span><span class="ubi-calc-row-val">' + (apy > 0 ? apy.toFixed(1) + '%' : '--') + '</span></div>';
             return html;
         }
