@@ -9,6 +9,7 @@
     var ORG_LISTING_FEE = 10000;
 
     var loadedOrgs = [];
+    var lastLoadedRequests = { gcm: [], ubi: [] };
 
     var typeConfig = {
         gcm: { apiType: 'goclawnchme', hasOpen: false, expandedId: null, showProgress: true, showFund: true },
@@ -79,38 +80,69 @@
         return window.ethereum || null;
     }
 
-    function renderKingdomDestination(orgId, kingdomAmt) {
+    function renderKingdomDestination(kingdomAmt) {
         var el = document.getElementById('kingdomDestination');
         if (!el) return;
 
+        var amtHtml = kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' CLAWNCH</div>' : '';
+        var header = '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>';
+
+        // Check if targeting a request
+        if (selectedRequestId && lastLoadedRequests) {
+            var req = null;
+            for (var t in lastLoadedRequests) {
+                for (var i = 0; i < lastLoadedRequests[t].length; i++) {
+                    if (lastLoadedRequests[t][i].id === selectedRequestId) { req = lastLoadedRequests[t][i]; break; }
+                }
+                if (req) break;
+            }
+            if (req) {
+                var authorDisplay = req.handle ? '@' + escHtml(req.handle) : shortAddr(req.wallet_address);
+                el.innerHTML = header +
+                    '<div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;">' +
+                        '<span style="font-size:1.6rem;flex-shrink:0;">\uD83D\uDE4F</span>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:var(--text-primary);">' + escHtml(req.title) + '</div>' +
+                            '<div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:600;color:var(--text-dim);">' + authorDisplay + '</div>' +
+                        '</div>' +
+                        amtHtml +
+                    '</div>';
+                return;
+            }
+        }
+
         // Look up org from loaded array
         var org = null;
-        for (var i = 0; i < loadedOrgs.length; i++) {
-            if (loadedOrgs[i].id === orgId) { org = loadedOrgs[i]; break; }
+        if (selectedOrgId) {
+            for (var j = 0; j < loadedOrgs.length; j++) {
+                if (loadedOrgs[j].id === selectedOrgId) { org = loadedOrgs[j]; break; }
+            }
         }
 
         if (org) {
             var icon = org.icon_emoji || '\uD83C\uDFE2';
             var taglineHtml = org.tagline ? '<div style="font-family:var(--font-mono);font-size:0.58rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--sand-300);">' + escHtml(org.tagline) + '</div>' : '';
-            el.innerHTML =
-                '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>' +
+            el.innerHTML = header +
                 '<div style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;">' +
                     '<span style="font-size:1.6rem;flex-shrink:0;">' + icon + '</span>' +
                     '<div style="flex:1;min-width:0;">' +
                         '<div style="font-family:var(--font-display);font-size:0.9rem;font-weight:800;color:var(--text-primary);">' + escHtml(org.name) + '</div>' +
                         taglineHtml +
                     '</div>' +
-                    (kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' CLAWNCH</div>' : '') +
+                    amtHtml +
                 '</div>';
+        } else if (selectedOrgId) {
+            el.innerHTML = header +
+                '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;font-size:0.85rem;color:var(--text-secondary);">Organization #' + selectedOrgId + '</div>';
         } else {
-            el.innerHTML =
-                '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>' +
-                '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;font-size:0.85rem;color:var(--text-secondary);">Organization #' + orgId + '</div>';
+            el.innerHTML = header +
+                '<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:14px 16px;font-size:0.85rem;color:var(--text-secondary);">No destination selected</div>';
         }
     }
 
     // ── Load kingdom status for connected wallet ──
     var selectedOrgId = null;
+    var selectedRequestId = null;
     var lastKingdomAmt = 0;
 
     function computeUserShare(data) {
@@ -164,16 +196,19 @@
                 if (nudgeEl) nudgeEl.style.display = 'none';
 
                 // Show where kingdom allocation is going
-                selectedOrgId = data.redirect_org_id || 1;
-                renderKingdomDestination(selectedOrgId, kingdomAmt);
+                selectedRequestId = data.redirect_request_id || null;
+                selectedOrgId = selectedRequestId ? null : (data.redirect_org_id || 1);
+                renderKingdomDestination(kingdomAmt);
             } else {
                 if (statusEl) statusEl.style.display = 'none';
                 if (nudgeEl) nudgeEl.style.display = 'block';
             }
 
-            // Highlight selected org
-            selectedOrgId = data.redirect_org_id || 1;
+            // Set selection state
+            selectedRequestId = data.redirect_request_id || null;
+            selectedOrgId = selectedRequestId ? null : (data.redirect_org_id || 1);
             highlightSelectedOrg();
+            highlightSelectedRequest();
         } catch (e) {
             // silent
         }
@@ -187,7 +222,7 @@
     }
 
     async function selectOrg(orgId) {
-        if (!connectedWallet || orgId === selectedOrgId) return;
+        if (!connectedWallet || (orgId === selectedOrgId && !selectedRequestId)) return;
 
         try {
             var res = await fetch('/api/inclawbate/philanthropy', {
@@ -202,7 +237,10 @@
             var data = await res.json();
             if (data.success) {
                 selectedOrgId = orgId;
+                selectedRequestId = null;
                 highlightSelectedOrg();
+                highlightSelectedRequest();
+                renderKingdomDestination(lastKingdomAmt);
                 philToast('Allocation updated', 'success');
             } else {
                 philToast(data.error || 'Failed to update', 'error');
@@ -212,6 +250,46 @@
         }
     }
 
+    function highlightSelectedRequest() {
+        document.querySelectorAll('.phil-req-card').forEach(function(card) {
+            var reqId = Number(card.getAttribute('data-id'));
+            card.classList.toggle('selected', reqId === selectedRequestId);
+        });
+    }
+
+    async function selectRequest(reqId) {
+        if (!connectedWallet || reqId === selectedRequestId) return;
+
+        try {
+            var res = await fetch('/api/inclawbate/philanthropy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set_kingdom_request',
+                    wallet_address: connectedWallet,
+                    request_id: reqId
+                })
+            });
+            var data = await res.json();
+            if (data.success) {
+                selectedRequestId = reqId;
+                selectedOrgId = null;
+                highlightSelectedOrg();
+                highlightSelectedRequest();
+                renderKingdomDestination(lastKingdomAmt);
+                philToast('Allocation updated', 'success');
+            } else {
+                philToast(data.error || 'Failed to update', 'error');
+            }
+        } catch (e) {
+            philToast('Network error', 'error');
+        }
+    }
+
+    window._selectRequest = function(reqId) {
+        selectRequest(reqId);
+    };
+
     // ── Load & Render Orgs ──
     async function loadOrgs() {
         try {
@@ -220,7 +298,7 @@
             loadedOrgs = data.orgs || [];
             renderOrgCards(loadedOrgs);
             // Re-render destination in case loadKingdomStatus finished first
-            if (selectedOrgId) renderKingdomDestination(selectedOrgId, lastKingdomAmt);
+            if (selectedOrgId || selectedRequestId) renderKingdomDestination(lastKingdomAmt);
         } catch (e) {
             // silent
         }
@@ -546,7 +624,9 @@
         try {
             var res = await fetch('/api/inclawbate/ubi-requests?type=' + cfg.apiType);
             var data = await res.json();
-            renderRequestList(data.requests || [], type);
+            var reqs = data.requests || [];
+            lastLoadedRequests[type] = reqs;
+            renderRequestList(reqs, type);
         } catch (e) {
             // silent
         }
@@ -588,6 +668,7 @@
             var card = document.createElement('div');
             card.className = 'phil-req-card';
             card.setAttribute('data-id', r.id);
+            if (r.id === selectedRequestId) card.classList.add('selected');
 
             var authorDisplay = r.handle ? '@' + escHtml(r.handle) : shortAddr(r.wallet_address);
 
@@ -733,6 +814,20 @@
         } else {
             // UBI: show monthly label instead
             html += '<div style="margin:12px 0;font-family:var(--font-mono);font-size:0.75rem;font-weight:700;color:var(--sand-300);">' + fmt(request.amount_requested) + ' CLAWNCH/month requested</div>';
+        }
+
+        // "Direct Kingdom Here" button (if connected and not own request)
+        if (connectedWallet && request.wallet_address !== connectedWallet.toLowerCase()) {
+            var isSelected = selectedRequestId === request.id;
+            if (isSelected) {
+                html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-md);padding:10px 16px;border-radius:var(--radius-full);background:hsla(172,32%,48%,0.1);border:1px solid var(--seafoam-400);">' +
+                    '<span style="font-size:0.9rem;">&#10003;</span>' +
+                    '<span style="font-family:var(--font-mono);font-size:0.78rem;font-weight:700;color:var(--seafoam-300);">Your Kingdom allocation goes here</span>' +
+                '</div>';
+            } else {
+                html += '<button onclick="window._selectRequest(' + request.id + ')" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:var(--space-md);padding:10px 20px;border-radius:var(--radius-full);border:1px solid var(--seafoam-400);background:hsla(172,32%,48%,0.06);color:var(--seafoam-300);font-family:var(--font-mono);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.2s;">' +
+                    '\uD83D\uDC51 Direct Kingdom Here</button>';
+            }
         }
 
         // Fund UI (only for GCM, if connected and not own request)

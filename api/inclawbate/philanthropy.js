@@ -191,7 +191,7 @@ export default async function handler(req, res) {
 
             const { error: updateErr } = await supabase
                 .from('human_profiles')
-                .update({ ubi_redirect_org_id: Number(org_id) })
+                .update({ ubi_redirect_org_id: Number(org_id), ubi_redirect_request_id: null })
                 .eq('wallet_address', w);
 
             if (updateErr) {
@@ -199,6 +199,37 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, org_id: Number(org_id) });
+        }
+
+        // ── Set Kingdom Request ──
+        if (action === 'set_kingdom_request') {
+            const { request_id } = req.body;
+            if (!request_id || !Number.isInteger(Number(request_id))) {
+                return res.status(400).json({ error: 'Valid request_id required' });
+            }
+
+            // Verify request exists and is open
+            const { data: reqRow } = await supabase
+                .from('inclawbate_ubi_requests')
+                .select('id')
+                .eq('id', Number(request_id))
+                .eq('status', 'open')
+                .single();
+
+            if (!reqRow) {
+                return res.status(404).json({ error: 'Request not found or closed' });
+            }
+
+            const { error: updateErr2 } = await supabase
+                .from('human_profiles')
+                .update({ ubi_redirect_request_id: Number(request_id), ubi_redirect_org_id: null })
+                .eq('wallet_address', w);
+
+            if (updateErr2) {
+                return res.status(500).json({ error: 'Failed to update request selection' });
+            }
+
+            return res.status(200).json({ success: true, request_id: Number(request_id) });
         }
 
         // ── Submit Org Listing ──

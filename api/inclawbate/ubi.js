@@ -288,12 +288,13 @@ export default async function handler(req, res) {
             // Include auto_stake + redirect preferences
             const { data: prof } = await supabase
                 .from('human_profiles')
-                .select('ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id, ubi_split_keep_pct, ubi_split_kingdom_pct, ubi_split_reinvest_pct')
+                .select('ubi_auto_stake, ubi_whale_redirect_target, ubi_redirect_org_id, ubi_redirect_request_id, ubi_split_keep_pct, ubi_split_kingdom_pct, ubi_split_reinvest_pct')
                 .eq('wallet_address', walletParam.toLowerCase())
                 .single();
             result.auto_stake = prof?.ubi_auto_stake || false;
             result.whale_redirect_target = prof?.ubi_whale_redirect_target || null;
             result.redirect_org_id = prof?.ubi_redirect_org_id || null;
+            result.redirect_request_id = prof?.ubi_redirect_request_id || null;
             result.split_keep_pct = prof?.ubi_split_keep_pct ?? null;
             result.split_kingdom_pct = prof?.ubi_split_kingdom_pct ?? null;
             result.split_reinvest_pct = prof?.ubi_split_reinvest_pct ?? null;
