@@ -719,6 +719,7 @@ async function loadDistribution() {
     // Enable buttons
     document.getElementById('airdropUbiBtn').disabled = stakers.length === 0 || weeklyRate <= 0;
     document.getElementById('returnUnstakedBtn').disabled = pendingUnstakes.length === 0;
+    document.getElementById('retryUnstakeBtn').disabled = pendingUnstakes.length === 0;
 }
 
 // Set daily rate
@@ -1072,6 +1073,57 @@ document.getElementById('returnUnstakedBtn').addEventListener('click', async () 
     } catch (err) {
         console.error('Return unstaked error:', err);
         distStatus.textContent = err.message || 'Return failed — already-sent returns were recorded. Refresh and retry remaining.';
+        distStatus.className = 'airdrop-status error';
+        btn.disabled = false;
+    }
+});
+
+// Mark pending unstakes as returned (manual send — no on-chain Disperse)
+document.getElementById('retryUnstakeBtn').addEventListener('click', async () => {
+    if (!distData?.distribution?.pending_unstakes?.length) return;
+
+    const distStatus = document.getElementById('distStatus');
+    const btn = document.getElementById('retryUnstakeBtn');
+    const txHash = document.getElementById('returnTxHash').value.trim() || null;
+
+    if (!confirm('Mark all pending unstakes as returned? This should only be done after you have already sent the tokens.')) return;
+
+    btn.disabled = true;
+    distStatus.textContent = 'Marking as returned...';
+    distStatus.className = 'airdrop-status';
+
+    // Aggregate by wallet+token
+    const unstakeMap = {};
+    for (const u of distData.distribution.pending_unstakes) {
+        const key = u.wallet_address + '_' + u.token;
+        if (!unstakeMap[key]) {
+            unstakeMap[key] = { wallet: u.wallet_address, token: u.token, total: 0 };
+        }
+        unstakeMap[key].total += u.clawnch_amount;
+    }
+    const returns = Object.values(unstakeMap);
+
+    try {
+        const resp = await fetch(API_BASE + '/ubi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'mark-returned',
+                wallet_address: userAddress,
+                returns: returns.map(a => ({ wallet: a.wallet, token: a.token })),
+                tx_hash: txHash
+            })
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || 'mark-returned failed');
+
+        distStatus.textContent = 'All pending unstakes marked as returned!';
+        distStatus.className = 'airdrop-status success';
+        document.getElementById('returnTxHash').value = '';
+        loadDistribution();
+    } catch (err) {
+        console.error('Mark returned error:', err);
+        distStatus.textContent = err.message || 'Failed to mark as returned';
         distStatus.className = 'airdrop-status error';
         btn.disabled = false;
     }
