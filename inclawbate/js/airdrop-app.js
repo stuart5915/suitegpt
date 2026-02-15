@@ -542,6 +542,7 @@ async function loadDistribution() {
     document.getElementById('distWalletClawnch').textContent = fmtNum(walletClawnch);
     document.getElementById('distWalletInclawnch').textContent = fmtNum(walletInclawnch);
     document.getElementById('distClawnchPrice').textContent = clawnchPrice > 0 ? '$' + clawnchPrice.toFixed(6) : '--';
+    document.getElementById('distInclawnchPrice').textContent = inclawnchPrice > 0 ? '$' + inclawnchPrice.toFixed(8) : '--';
     document.getElementById('distWalletUsd').textContent = walletUsd > 0 ? '$' + walletUsd.toFixed(2) : '--';
 
     const dist = data.distribution || {};
@@ -651,27 +652,27 @@ async function loadDistribution() {
             let summaryHtml = `
                 <div class="split-group">
                     <span class="split-group-count">${manualStakers.length}</span> manual
-                    <span class="split-group-amount">${fmtNum(manualTotal)} CLAWNCH via Disperse</span>
+                    <span class="split-group-amount">${fmtNum(manualTotal)} inCLAWNCH via Disperse</span>
                 </div>`;
             if (autoStakers.length > 0) {
                 summaryHtml += `
                 <div class="split-group">
                     <span class="split-group-count">${autoStakers.length}</span> auto-stake
-                    <span class="split-group-amount">${fmtNum(autoTotal)} CLAWNCH compounded</span>
+                    <span class="split-group-amount">${fmtNum(autoTotal)} inCLAWNCH compounded</span>
                 </div>`;
             }
             if (philStakers.length > 0) {
                 summaryHtml += `
                 <div class="split-group">
                     <span class="split-group-count">${philStakers.length}</span> giving back
-                    <span class="split-group-amount">${fmtNum(philTotal)} CLAWNCH to philanthropy</span>
+                    <span class="split-group-amount">${fmtNum(philTotal)} inCLAWNCH to philanthropy</span>
                 </div>`;
             }
             if (reinvestStakers.length > 0) {
                 summaryHtml += `
                 <div class="split-group">
                     <span class="split-group-count">${reinvestStakers.length}</span> reinvesting
-                    <span class="split-group-amount">${fmtNum(reinvestTotal)} CLAWNCH back to pool</span>
+                    <span class="split-group-amount">${fmtNum(reinvestTotal)} inCLAWNCH back to pool</span>
                 </div>`;
             }
             if (splitStakers.length > 0) {
@@ -749,7 +750,7 @@ document.getElementById('setRateBtn').addEventListener('click', async () => {
         });
         const data = await resp.json();
         if (resp.ok && data.success) {
-            rateStatus.textContent = 'Daily rate set to ' + fmtNum(rate) + ' CLAWNCH';
+            rateStatus.textContent = 'Daily rate set to ' + fmtNum(rate) + ' inCLAWNCH';
             rateStatus.className = 'airdrop-status success';
             loadDistribution();
         } else {
