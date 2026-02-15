@@ -399,7 +399,7 @@ function daysSince(dateStr) {
         if (weeklyClawnchEl) {
             if (totalWeightedStake > 0 && dailyRate > 0) {
                 var per100k = (100000 / totalWeightedStake) * dailyRate;
-                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' CLAWNCH/day</span> per 100k staked';
+                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' inCLAWNCH/day</span> per 100k staked';
             } else {
                 weeklyClawnchEl.textContent = '';
             }
@@ -407,7 +407,7 @@ function daysSince(dateStr) {
         if (weeklyInclawnchEl) {
             if (totalWeightedStake > 0 && dailyRate > 0) {
                 var per100k2x = (200000 / totalWeightedStake) * dailyRate;
-                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' CLAWNCH/day</span> per 100k staked';
+                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' inCLAWNCH/day</span> per 100k staked';
             } else {
                 weeklyInclawnchEl.textContent = '';
             }
@@ -613,7 +613,7 @@ function daysSince(dateStr) {
             var usd = price > 0 ? ' ($' + (amt * price).toFixed(2) + ')' : '';
             return '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
                 + '<span>' + label + '</span>'
-                + '<span style="font-family:var(--font-mono);color:var(--text-secondary);">' + fmt(amt) + ' CLAWNCH' + usd + ' <span style="color:var(--text-dim);">' + pct + '%</span></span>'
+                + '<span style="font-family:var(--font-mono);color:var(--text-secondary);">' + fmt(amt) + ' inCLAWNCH' + usd + ' <span style="color:var(--text-dim);">' + pct + '%</span></span>'
                 + '</div>';
         }
         return '<div class="ubi-pc-split" id="posCountdownSplit" style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;display:flex;flex-direction:column;gap:2px;" data-daily="' + dailyAmt + '" data-price="' + price + '">'
@@ -1158,24 +1158,24 @@ function daysSince(dateStr) {
                 var sharePct = (userWeighted / totalWeightedAll) * 100;
                 var dailyAllocation = (userWeighted / totalWeightedAll) * dailyRateVal;
 
-                var dailyUsdVal = dailyAllocation * clawnchPrice;
+                var dailyUsdVal = dailyAllocation * inclawnchPrice;
                 var yearlyAllocation = dailyAllocation * 365;
-                var yearlyUsdVal = yearlyAllocation * clawnchPrice;
+                var yearlyUsdVal = yearlyAllocation * inclawnchPrice;
 
                 html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
                 html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
                 var dailyUsdStr = dailyUsdVal > 0 ? ' ($' + dailyUsdVal.toFixed(2) + ')' : '';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' CLAWNCH' + dailyUsdStr + '</div>';
+                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' inCLAWNCH' + dailyUsdStr + '</div>';
                 var sKeep = data.split_keep_pct ?? 100;
                 var sKingdom = data.split_kingdom_pct ?? 0;
                 var sReinvest = data.split_reinvest_pct ?? 0;
-                html += buildSplitHtml(dailyAllocation, clawnchPrice, sKeep, sKingdom, sReinvest);
+                html += buildSplitHtml(dailyAllocation, inclawnchPrice, sKeep, sKingdom, sReinvest);
                 html += '<div class="ubi-pc-timer-row">';
                 html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
                 html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
                 html += '</div>';
                 html += '<div class="ubi-pc-footer">';
-                if (clawnchPrice > 0 && dailyUsdVal >= 0.01) {
+                if (inclawnchPrice > 0 && dailyUsdVal >= 0.01) {
                     html += '<span class="ubi-pc-usd">~$' + fmtUsd(dailyUsdVal) + '/day &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
                 }
                 html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
@@ -1327,7 +1327,7 @@ function daysSince(dateStr) {
                         pcWidget.classList.remove('ubi-pc-overdue');
                         var h = Math.floor(diff / 3600000);
                         var m = Math.floor((diff % 3600000) / 60000);
-                        if (timeEl) timeEl.textContent = '$CLAWNCH sending in ' + h + 'h ' + m + 'm';
+                        if (timeEl) timeEl.textContent = '$INCLAWNCH sending in ' + h + 'h ' + m + 'm';
                     }
                 }
 
