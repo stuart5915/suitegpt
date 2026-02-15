@@ -98,9 +98,6 @@ async function verifyTokenTransfer(txHash, tokenAddress) {
 }
 
 // Fetch token prices from DexScreener (with CoinGecko fallback)
-const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
-const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
-
 async function fetchTokenPrices() {
     let clawnchPrice = 0, inclawnchPrice = 0;
     try {
