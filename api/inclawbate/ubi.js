@@ -830,12 +830,25 @@ export default async function handler(req, res) {
                 .single();
 
             const newVal = !(profile?.ubi_auto_stake);
-            const { error: updateErr } = await supabase
+
+            // Try update first, insert minimal profile if no row exists
+            const { data: updated, error: updateErr } = await supabase
                 .from('human_profiles')
-                .upsert({ wallet_address: wallet, ubi_auto_stake: newVal }, { onConflict: 'wallet_address' });
+                .update({ ubi_auto_stake: newVal })
+                .eq('wallet_address', wallet)
+                .select('wallet_address');
 
             if (updateErr) {
                 return res.status(500).json({ error: 'Failed to update auto-stake preference' });
+            }
+
+            if (!updated || updated.length === 0) {
+                const { error: insertErr } = await supabase
+                    .from('human_profiles')
+                    .insert({ wallet_address: wallet, x_handle: wallet.slice(0, 10), ubi_auto_stake: newVal });
+                if (insertErr) {
+                    return res.status(500).json({ error: 'Failed to create profile for auto-stake preference' });
+                }
             }
 
             return res.status(200).json({ success: true, auto_stake: newVal });
