@@ -568,12 +568,14 @@ async function loadDistribution() {
     // Distribution countdown timer
     updateDistTimer(data.last_distribution_at, data.distribution_count);
 
-    // APY
+    // APY (USD-weighted)
     const clawnchStaked = Number(data.total_balance) || 0;
     const inclawnchStaked = Number(data.inclawnch_staked) || 0;
-    const totalWeightedStake = clawnchStaked + (inclawnchStaked * 2);
-    if (totalWeightedStake > 0 && dailyRate > 0) {
-        const apy = ((dailyRate * 365) / totalWeightedStake * 100).toFixed(1);
+    const clWeighted = clawnchPrice > 0 ? clawnchStaked * clawnchPrice : clawnchStaked;
+    const inWeighted = inclawnchPrice > 0 ? inclawnchStaked * inclawnchPrice * 2 : inclawnchStaked * 2;
+    const totalWeightedStake = clWeighted + inWeighted;
+    if (totalWeightedStake > 0 && dailyRate > 0 && inclawnchPrice > 0) {
+        const apy = (dailyRate * 365 * inclawnchPrice / totalWeightedStake * 100).toFixed(1);
         document.getElementById('distEffectiveApy').textContent = apy + '%';
     }
 

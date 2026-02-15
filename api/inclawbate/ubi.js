@@ -97,15 +97,44 @@ async function verifyTokenTransfer(txHash, tokenAddress) {
     return { valid: true, amount, from };
 }
 
-// Calculate staker-days breakdown for all active stakers (proportional distribution)
+// Fetch token prices from DexScreener (with CoinGecko fallback)
+const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
+
+async function fetchTokenPrices() {
+    let clawnchPrice = 0, inclawnchPrice = 0;
+    try {
+        const [cRes, iRes] = await Promise.all([
+            fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS).then(r => r.json()).catch(() => null),
+            fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).then(r => r.json()).catch(() => null)
+        ]);
+        if (cRes?.pairs?.length) clawnchPrice = parseFloat(cRes.pairs[0].priceUsd) || 0;
+        if (iRes?.pairs?.length) inclawnchPrice = parseFloat(iRes.pairs[0].priceUsd) || 0;
+    } catch (e) {}
+    // CoinGecko fallback
+    if (!clawnchPrice || !inclawnchPrice) {
+        try {
+            const gRes = await fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' + CLAWNCH_ADDRESS + ',' + INCLAWNCH_ADDRESS + '&vs_currencies=usd');
+            const gData = await gRes.json();
+            if (!clawnchPrice) clawnchPrice = gData[CLAWNCH_ADDRESS.toLowerCase()]?.usd || 0;
+            if (!inclawnchPrice) inclawnchPrice = gData[INCLAWNCH_ADDRESS.toLowerCase()]?.usd || 0;
+        } catch (e) {}
+    }
+    return { clawnchPrice, inclawnchPrice };
+}
+
+// Calculate staker-days breakdown for all active stakers (USD-weighted proportional distribution)
 async function calculateStakerDays(weeklyRate, walletCapPct) {
-    const { data: activeStakes } = await supabase
-        .from('inclawbate_ubi_contributions')
-        .select('wallet_address, x_handle, x_name, clawnch_amount, token, created_at')
-        .eq('active', true);
+    const [{ data: activeStakes }, prices] = await Promise.all([
+        supabase
+            .from('inclawbate_ubi_contributions')
+            .select('wallet_address, x_handle, x_name, clawnch_amount, token, created_at')
+            .eq('active', true),
+        fetchTokenPrices()
+    ]);
 
     if (!activeStakes || activeStakes.length === 0) {
-        return { stakers: [], total_weighted_days: 0 };
+        return { stakers: [], total_weighted_days: 0, prices };
     }
 
     // Exclude banned wallets
@@ -118,7 +147,7 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
     const filteredStakes = activeStakes.filter(s => !bannedWallets.has(s.wallet_address.toLowerCase()));
 
     if (filteredStakes.length === 0) {
-        return { stakers: [], total_weighted_days: 0 };
+        return { stakers: [], total_weighted_days: 0, prices };
     }
 
     const now = Date.now();
@@ -128,8 +157,11 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
         const wallet = stake.wallet_address;
         const token = stake.token || 'clawnch';
         const multiplier = token === 'inclawnch' ? 2 : 1;
+        // USD value of this stake (token amount × price × multiplier)
+        const tokenPrice = token === 'inclawnch' ? prices.inclawnchPrice : prices.clawnchPrice;
+        const usdValue = stake.clawnch_amount * tokenPrice;
         const days = Math.min(1, (now - new Date(stake.created_at).getTime()) / 86400000);
-        const weight = stake.clawnch_amount * multiplier * days;
+        const weight = usdValue * multiplier * days;
 
         const key = wallet + '_' + token;
         if (!walletMap[key]) {
@@ -194,7 +226,7 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
     // Sort by share descending
     stakers.sort((a, b) => b.share_pct - a.share_pct);
 
-    return { stakers, total_weighted_days: totalWeightedDays };
+    return { stakers, total_weighted_days: totalWeightedDays, prices };
 }
 
 export default async function handler(req, res) {
@@ -316,11 +348,12 @@ export default async function handler(req, res) {
         if (req.query.distribution === 'true') {
             const weeklyRate = Number(result.weekly_rate) || 0;
             const capPct = Number(result.wallet_cap_pct) || 10;
-            const { stakers, total_weighted_days } = await calculateStakerDays(weeklyRate, capPct);
+            const { stakers, total_weighted_days, prices } = await calculateStakerDays(weeklyRate, capPct);
             result.distribution = {
                 stakers,
                 total_weighted_days,
-                weekly_rate: weeklyRate
+                weekly_rate: weeklyRate,
+                prices
             };
 
             // Also include pending unstakes (recently unstaked, for return)
