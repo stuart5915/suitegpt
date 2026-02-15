@@ -496,8 +496,8 @@ function daysSince(dateStr) {
                 : '';
         }
         if (usdI) {
-            usdI.textContent = (inclawnchAmt > 0 && clawnchPrice > 0)
-                ? '~$' + fmtUsd(inclawnchAmt * clawnchPrice)
+            usdI.textContent = (inclawnchAmt > 0 && inclawnchPrice > 0)
+                ? '~$' + fmtUsd(inclawnchAmt * inclawnchPrice)
                 : '';
         }
 
