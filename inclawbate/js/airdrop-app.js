@@ -887,15 +887,15 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
             const amounts = disperseEntries.map(([, amt]) => toWei(amt));
             const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
 
-            // Check balance
+            // Check inCLAWNCH balance
             const balanceData = BALANCE_SELECTOR + pad32(userAddress);
             const balResult = await provider.request({
                 method: 'eth_call',
-                params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
+                params: [{ to: INCLAWNCH_ADDRESS, data: balanceData }, 'latest']
             });
             const balance = BigInt(balResult);
             if (balance < totalWei) {
-                distStatus.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+                distStatus.textContent = `Insufficient inCLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
                 distStatus.className = 'airdrop-status error';
                 btn.disabled = false;
                 return;
@@ -906,24 +906,24 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
             const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
             const allowResult = await provider.request({
                 method: 'eth_call',
-                params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+                params: [{ to: INCLAWNCH_ADDRESS, data: allowData }, 'latest']
             });
             const allowance = BigInt(allowResult);
 
             if (allowance < totalWei) {
-                distStatus.textContent = 'Approving CLAWNCH spend...';
+                distStatus.textContent = 'Approving inCLAWNCH spend...';
                 const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
                 const approveTx = await provider.request({
                     method: 'eth_sendTransaction',
-                    params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+                    params: [{ from: userAddress, to: INCLAWNCH_ADDRESS, data: approveData }]
                 });
                 distStatus.textContent = 'Waiting for approval...';
                 await waitForReceipt(approveTx);
             }
 
-            // Disperse
-            distStatus.textContent = `Sending UBI to ${recipients.length} addresses...`;
-            const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+            // Disperse inCLAWNCH
+            distStatus.textContent = `Sending UBI (inCLAWNCH) to ${recipients.length} addresses...`;
+            const calldata = buildDisperseTokenCalldata(INCLAWNCH_ADDRESS, recipients, amounts);
             const disperseTx = await provider.request({
                 method: 'eth_sendTransaction',
                 params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
@@ -947,7 +947,7 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
                         recipients: autoStakers.map(s => ({
                             wallet: s.wallet,
                             amount: Math.floor(s.share_amount),
-                            token: 'clawnch'
+                            token: 'inclawnch'
                         }))
                     })
                 });
@@ -973,10 +973,10 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
         // Build status message
         const autoTotal = autoStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
         let parts = [];
-        if (keepTotal > 0) parts.push(`${fmtNum(keepTotal)} kept`);
-        if (kingdomTotal > 0) parts.push(`${fmtNum(kingdomTotal)} to Kingdom`);
-        if (reinvestTotal > 0) parts.push(`${fmtNum(reinvestTotal)} reinvested`);
-        if (autoTotal > 0) parts.push(`${fmtNum(autoTotal)} auto-staked`);
+        if (keepTotal > 0) parts.push(`${fmtNum(keepTotal)} inCLAWNCH kept`);
+        if (kingdomTotal > 0) parts.push(`${fmtNum(kingdomTotal)} inCLAWNCH to Kingdom`);
+        if (reinvestTotal > 0) parts.push(`${fmtNum(reinvestTotal)} inCLAWNCH reinvested`);
+        if (autoTotal > 0) parts.push(`${fmtNum(autoTotal)} inCLAWNCH auto-staked`);
         const statusMsg = 'UBI distributed! ' + parts.join(' · ');
 
         distStatus.textContent = statusMsg;

@@ -1031,13 +1031,16 @@ function copyCA(id) {
         var dailyRate = weeklyRate / 7;
         var totalWeighted = clStaked + (inStaked * 2);
 
-        // Blended APY = weighted average of each vault's APY by USD value
-        var clawnchApy = totalWeighted > 0 && dailyRate > 0 ? (dailyRate * 365) / totalWeighted * 100 : 0;
+        // Blended APY = weighted average of each vault's USD APY
+        // Reward token is inCLAWNCH: APY = (annual reward USD) / (stake USD) * 100
+        var clawnchApy = 0;
         var inclawnchApy = 0;
-        if (totalWeighted > 0 && dailyRate > 0) {
-            inclawnchApy = clPrice > 0 && inPrice > 0
-                ? (dailyRate * 365 * 2) / totalWeighted * (clPrice / inPrice) * 100
-                : (dailyRate * 365 * 2) / totalWeighted * 100;
+        if (totalWeighted > 0 && dailyRate > 0 && inPrice > 0) {
+            if (clPrice > 0) clawnchApy = (dailyRate * 365 * inPrice) / (totalWeighted * clPrice) * 100;
+            inclawnchApy = (dailyRate * 365 * 2) / totalWeighted * 100;
+        } else if (totalWeighted > 0 && dailyRate > 0) {
+            clawnchApy = (dailyRate * 365) / totalWeighted * 100;
+            inclawnchApy = (dailyRate * 365 * 2) / totalWeighted * 100;
         }
         var clUsdApy = clStaked * clPrice;
         var inUsdApy = inStaked * inPrice;
