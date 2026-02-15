@@ -581,6 +581,19 @@ async function loadDistribution() {
     document.getElementById('dailyRateInput').value = Math.round(dailyRate) || '';
     document.getElementById('splitPctInput').value = Number(data.reward_split_pct) || 80;
 
+    // Live USD calc beside daily rate input
+    const dailyRateUsdEl = document.getElementById('dailyRateUsd');
+    function updateDailyRateUsd() {
+        const val = Number(document.getElementById('dailyRateInput').value) || 0;
+        if (val > 0 && inclawnchPrice > 0) {
+            dailyRateUsdEl.textContent = '~$' + (val * inclawnchPrice).toFixed(2) + ' USD';
+        } else {
+            dailyRateUsdEl.textContent = '';
+        }
+    }
+    updateDailyRateUsd();
+    document.getElementById('dailyRateInput').addEventListener('input', updateDailyRateUsd);
+
     // Build org name lookup from philanthropy_orgs
     const orgMap = {};
     (data.philanthropy_orgs || []).forEach(o => { orgMap[o.id] = o.name; });
