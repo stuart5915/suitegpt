@@ -279,8 +279,8 @@ function daysSince(dateStr) {
         var distEl = document.getElementById('statTotalDistributed');
         if (distEl) distEl.textContent = fmt(totalDistributed);
         var distUsdEl = document.getElementById('statTotalDistUsd');
-        if (distUsdEl && clawnchPrice > 0 && totalDistributed > 0) {
-            distUsdEl.textContent = '~$' + (totalDistributed * clawnchPrice).toFixed(2);
+        if (distUsdEl && inclawnchPrice > 0 && totalDistributed > 0) {
+            distUsdEl.textContent = '~$' + (totalDistributed * inclawnchPrice).toFixed(2);
         }
 
         // APY calculation + card APYs
@@ -387,9 +387,9 @@ function daysSince(dateStr) {
         // Countdown KPI: annual UBI rate in USD
         var cdAnnualEl = document.getElementById('cdAnnualUbiUsd');
         if (cdAnnualEl) {
-            if (dailyRate > 0 && clawnchPrice > 0) {
-                var annualUsd = dailyRate * 365 * clawnchPrice;
-                cdAnnualEl.textContent = '$' + fmt(Math.round(annualUsd));
+            if (dailyRate > 0 && inclawnchPrice > 0) {
+                var annualUsdKpi = dailyRate * 365 * inclawnchPrice;
+                cdAnnualEl.textContent = '$' + fmt(Math.round(annualUsdKpi));
             } else {
                 cdAnnualEl.textContent = '--';
             }
@@ -414,12 +414,12 @@ function daysSince(dateStr) {
         }
 
         // ── UBI Income Banner ──
-        var annualClawnch = dailyRate * 365;
-        var annualUsd = annualClawnch * clawnchPrice;
+        var annualInclawnch = dailyRate * 365;
+        var annualUsd = annualInclawnch * inclawnchPrice;
         var totalStakers = Number(ubiData?.total_stakers) || 0;
 
         // Pool value = total staked value in USD (CLAWNCH + inCLAWNCH at market prices)
-        var poolClawnch = clawnchStaked + (inclawnchStaked * 2); // weighted CLAWNCH equivalent
+        var poolTokens = clawnchStaked + (inclawnchStaked * 2);
         var poolUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
 
         var incomeValEl = document.getElementById('ubiIncomeValue');
@@ -429,23 +429,23 @@ function daysSince(dateStr) {
         var incomeStakersEl = document.getElementById('ubiIncomeStakers');
 
         if (incomeValEl) {
-            if (weeklyRate > 0 && clawnchPrice > 0) {
+            if (weeklyRate > 0 && inclawnchPrice > 0) {
                 incomeValEl.textContent = '$' + fmtUsd(annualUsd) + ' / year';
             } else if (weeklyRate > 0) {
-                incomeValEl.textContent = fmt(annualClawnch) + ' CLAWNCH / year';
+                incomeValEl.textContent = fmt(annualInclawnch) + ' inCLAWNCH / year';
             } else if (poolUsd > 0) {
                 incomeValEl.textContent = '$' + fmtUsd(poolUsd) + ' Pool';
-            } else if (poolClawnch > 0) {
-                incomeValEl.textContent = fmt(poolClawnch) + ' CLAWNCH Pool';
+            } else if (poolTokens > 0) {
+                incomeValEl.textContent = fmt(poolTokens) + ' tokens staked';
             } else {
                 incomeValEl.textContent = 'Coming Soon';
             }
         }
         if (incomeSubEl) {
             if (weeklyRate > 0) {
-                incomeSubEl.innerHTML = '<strong>' + fmt(annualClawnch) + ' CLAWNCH</strong> distributed annually to all stakers';
-            } else if (poolClawnch > 0) {
-                incomeSubEl.textContent = fmt(poolClawnch) + ' weighted CLAWNCH staked — set daily rate from admin to activate distributions';
+                incomeSubEl.innerHTML = '<strong>' + fmt(annualInclawnch) + ' inCLAWNCH</strong> distributed annually to all stakers';
+            } else if (poolTokens > 0) {
+                incomeSubEl.textContent = fmt(poolTokens) + ' weighted tokens staked — set daily rate from admin to activate distributions';
             } else {
                 incomeSubEl.textContent = 'Stake CLAWNCH or inCLAWNCH to grow the UBI pool';
             }
@@ -456,8 +456,8 @@ function daysSince(dateStr) {
         if (incomePerStakerEl) {
             if (totalStakers > 0 && annualUsd > 0) {
                 incomePerStakerEl.textContent = '~$' + fmtUsd(annualUsd / totalStakers);
-            } else if (totalStakers > 0 && annualClawnch > 0) {
-                incomePerStakerEl.textContent = '~' + fmt(annualClawnch / totalStakers) + ' CLAWNCH';
+            } else if (totalStakers > 0 && annualInclawnch > 0) {
+                incomePerStakerEl.textContent = '~' + fmt(annualInclawnch / totalStakers) + ' inCLAWNCH';
             } else if (totalStakers > 0 && poolUsd > 0) {
                 incomePerStakerEl.textContent = '~$' + fmtUsd(poolUsd / totalStakers);
             } else {
