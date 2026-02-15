@@ -951,13 +951,27 @@ export default async function handler(req, res) {
                 ubi_split_reinvest_pct: redirect_target === 'split' ? Number(split_reinvest_pct) || 0 : null
             };
 
-            const { error: updateErr } = await supabase
+            // Try update first (user already has a profile)
+            const { data: updated, error: updateErr } = await supabase
                 .from('human_profiles')
-                .upsert({ wallet_address: wallet, ...updateFields }, { onConflict: 'wallet_address' });
+                .update(updateFields)
+                .eq('wallet_address', wallet)
+                .select('wallet_address');
 
             if (updateErr) {
-                console.error('Redirect upsert error:', updateErr);
+                console.error('Redirect update error:', updateErr);
                 return res.status(500).json({ error: 'Failed to update redirect preference', detail: updateErr.message });
+            }
+
+            // If no row was updated, create a minimal profile
+            if (!updated || updated.length === 0) {
+                const { error: insertErr } = await supabase
+                    .from('human_profiles')
+                    .insert({ wallet_address: wallet, x_handle: wallet.slice(0, 10), ...updateFields });
+                if (insertErr) {
+                    console.error('Redirect insert error:', insertErr);
+                    return res.status(500).json({ error: 'Failed to create profile for redirect preference', detail: insertErr.message });
+                }
             }
 
             return res.status(200).json({
