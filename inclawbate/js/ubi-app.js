@@ -324,14 +324,18 @@ function daysSince(dateStr) {
 
         // Daily rate is displayed by the countdown tick (accumulating)
 
-        // Per-card APYs
-        // 1x CLAWNCH APY: (dailyRate * 365 * 1) / total_weighted_stake * 100
-        // 2x inCLAWNCH APY: (dailyRate * 365 * 2) / total_weighted_stake * 100
+        // Per-card APYs (USD-denominated)
+        // CLAWNCH APY: reward & stake are both CLAWNCH so price cancels out
+        // inCLAWNCH APY: must convert CLAWNCH reward value to inCLAWNCH cost basis
         var clawnchApy = 0;
         var inclawnchApy = 0;
         if (totalWeightedStake > 0 && dailyRate > 0) {
-            clawnchApy = (dailyRate * 365 * 1) / totalWeightedStake * 100;
-            inclawnchApy = (dailyRate * 365 * 2) / totalWeightedStake * 100;
+            clawnchApy = (dailyRate * 365) / totalWeightedStake * 100;
+            if (clawnchPrice > 0 && inclawnchPrice > 0) {
+                inclawnchApy = (dailyRate * 365 * 2) / totalWeightedStake * (clawnchPrice / inclawnchPrice) * 100;
+            } else {
+                inclawnchApy = (dailyRate * 365 * 2) / totalWeightedStake * 100;
+            }
         }
 
         var apyClawnchEl = document.getElementById('apyValClawnch');
@@ -523,7 +527,14 @@ function daysSince(dateStr) {
             var weekly = daily * 7;
             var monthly = daily * 30;
             var annual = daily * 365;
-            var apy = newTotalWeighted > 0 ? (dailyRate * 365 * mult) / newTotalWeighted * 100 : 0;
+            var apy = 0;
+            if (newTotalWeighted > 0) {
+                if (mult === 2 && clawnchPrice > 0 && inclawnchPrice > 0) {
+                    apy = (dailyRate * 365 * 2) / newTotalWeighted * (clawnchPrice / inclawnchPrice) * 100;
+                } else {
+                    apy = (dailyRate * 365 * mult) / newTotalWeighted * 100;
+                }
+            }
 
             function valWithUsd(tokens) {
                 var s = fmt(tokens);
