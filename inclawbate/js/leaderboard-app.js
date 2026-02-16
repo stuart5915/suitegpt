@@ -55,16 +55,24 @@ function esc(str) {
         var costPerReply = (CLAWNCH_PER_CREDIT * clawnchPrice).toFixed(4);
         var repliesPer1k = Math.floor(1000 / CLAWNCH_PER_CREDIT);
 
-        var priceEl = document.getElementById('pricePerReply');
-        if (priceEl) priceEl.textContent = '~$' + costPerReply;
+        ['pricePerReply', 'creditsPricePerReply'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = '~$' + costPerReply;
+        });
 
-        var repliesEl = document.getElementById('repliesPer1k');
-        if (repliesEl) repliesEl.textContent = repliesPer1k.toLocaleString();
+        ['repliesPer1k', 'creditsRepliesPer1k'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = repliesPer1k.toLocaleString();
+        });
 
-        var liveEl = document.getElementById('liveClawnchPrice');
-        if (liveEl) liveEl.textContent = '$' + clawnchPrice.toFixed(6);
+        ['liveClawnchPrice', 'creditsLivePrice'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = '$' + clawnchPrice.toFixed(6);
+        });
     } else {
-        var liveEl2 = document.getElementById('liveClawnchPrice');
-        if (liveEl2) liveEl2.textContent = 'unavailable';
+        ['liveClawnchPrice', 'creditsLivePrice'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = 'unavailable';
+        });
     }
 })();
