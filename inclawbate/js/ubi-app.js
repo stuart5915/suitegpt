@@ -377,7 +377,7 @@ function daysSince(dateStr) {
         if (cdTotalDistEl) {
             var td = Number(ubiData?.total_distributed) || 0;
             if (td > 0) {
-                var distUsd = clawnchPrice > 0 ? ' ($' + (td * clawnchPrice).toFixed(2) + ')' : '';
+                var distUsd = inclawnchPrice > 0 ? ' ($' + (td * inclawnchPrice).toFixed(2) + ')' : '';
                 cdTotalDistEl.innerHTML = fmt(td) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;">' + distUsd + '</span>';
             } else {
                 cdTotalDistEl.textContent = '--';
@@ -1144,10 +1144,11 @@ function daysSince(dateStr) {
             // Calculate user's estimated daily UBI
             var userClawnch = grouped.clawnch ? grouped.clawnch.amount : 0;
             var userInclawnch = grouped.inclawnch ? grouped.inclawnch.amount : 0;
-            var userWeighted = userClawnch + (userInclawnch * 2);
+            // USD-weighted to match backend calculateStakerDays (amount × price × multiplier)
+            var userWeighted = (userClawnch * clawnchPrice * 1) + (userInclawnch * inclawnchPrice * 2);
             var totalClawnchStaked = Number(ubiData?.total_balance) || 0;
             var totalInclawnchStaked = Number(ubiData?.inclawnch_staked) || 0;
-            var totalWeightedAll = totalClawnchStaked + (totalInclawnchStaked * 2);
+            var totalWeightedAll = (totalClawnchStaked * clawnchPrice * 1) + (totalInclawnchStaked * inclawnchPrice * 2);
             var weeklyRateVal = Number(ubiData?.weekly_rate) || 0;
             var dailyRateVal = weeklyRateVal / 7;
 

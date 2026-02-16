@@ -868,7 +868,7 @@ export default async function handler(req, res) {
             for (const r of recipients) {
                 if (!r.wallet || !r.amount || r.amount <= 0) continue;
                 const wallet = r.wallet.toLowerCase();
-                const token = r.token || 'clawnch';
+                const token = r.token || 'inclawnch';
                 const distNum = distribution_count || 0;
                 const syntheticTx = `auto-ubi-${distNum}-${wallet.slice(0, 8)}`;
 
