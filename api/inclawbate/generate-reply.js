@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
     if (!isAdmin && (!profile || profile.credits <= 0)) {
         return res.status(402).json({
-            error: 'No credits remaining. Deposit $CLAWNCH at inclawbate.com/deposit to get more.',
+            error: 'No credits remaining. Deposit $INCLAWNCH at inclawbate.com/deposit to get more.',
             credits: 0
         });
     }

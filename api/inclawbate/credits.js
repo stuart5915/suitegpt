@@ -18,7 +18,26 @@ const ALLOWED_ORIGINS = [
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'.toLowerCase();
 const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-const CLAWNCH_PER_CREDIT = 50;
+const TARGET_USD_PER_CREDIT = 0.005; // covers ~$0.003 API cost + margin
+const MIN_TOKENS_PER_CREDIT = 1;
+const MAX_TOKENS_PER_CREDIT = 10000;
+
+async function fetchInclawnchPrice() {
+    try {
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
+        const data = await resp.json();
+        if (data.pairs && data.pairs.length > 0) {
+            return parseFloat(data.pairs[0].priceUsd) || 0;
+        }
+    } catch (e) { /* price unavailable */ }
+    return 0;
+}
+
+function getTokensPerCredit(price) {
+    if (price <= 0) return 0;
+    const raw = TARGET_USD_PER_CREDIT / price;
+    return Math.max(MIN_TOKENS_PER_CREDIT, Math.min(MAX_TOKENS_PER_CREDIT, raw));
+}
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -224,9 +243,16 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: verification.reason });
             }
 
-            const credits = Math.floor(verification.amount / CLAWNCH_PER_CREDIT);
+            // Fetch live price for dynamic credit rate
+            const livePrice = await fetchInclawnchPrice();
+            if (livePrice <= 0) {
+                return res.status(503).json({ error: 'Unable to fetch INCLAWNCH price. Please try again in a moment.' });
+            }
+
+            const tokensPerCredit = getTokensPerCredit(livePrice);
+            const credits = Math.floor(verification.amount / tokensPerCredit);
             if (credits <= 0) {
-                return res.status(400).json({ error: `Deposit too small. Minimum ${CLAWNCH_PER_CREDIT} CLAWNCH for 1 credit.` });
+                return res.status(400).json({ error: `Deposit too small. At current price, minimum ~${Math.ceil(tokensPerCredit)} INCLAWNCH for 1 credit.` });
             }
 
             // Get user's handle for add_inclawbate_credits RPC
@@ -271,7 +297,9 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 credits_added: credits,
                 credits_total: newBalance,
-                clawnch_deposited: verification.amount
+                clawnch_deposited: verification.amount,
+                rate_used: Math.round(tokensPerCredit),
+                price_usd: livePrice
             });
         }
 

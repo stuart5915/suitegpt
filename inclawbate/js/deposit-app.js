@@ -4,13 +4,21 @@
 
     const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
     const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
-    const CLAWNCH_PER_CREDIT = 50;
+    const TARGET_USD_PER_CREDIT = 0.005;
+    const MIN_TOKENS_PER_CREDIT = 1;
+    const MAX_TOKENS_PER_CREDIT = 10000;
     const BASE_CHAIN_ID = '0x2105';
 
     let jwt = null;
     let connectedAccount = null;
     let provider = null;
-    let clawnchPrice = 0; // USD per CLAWNCH
+    let clawnchPrice = 0; // USD per INCLAWNCH
+
+    function getTokensPerCredit() {
+        if (clawnchPrice <= 0) return 0;
+        const raw = TARGET_USD_PER_CREDIT / clawnchPrice;
+        return Math.max(MIN_TOKENS_PER_CREDIT, Math.min(MAX_TOKENS_PER_CREDIT, raw));
+    }
 
     // ── Init ──
     const stored = localStorage.getItem('inclawbate_token');
@@ -58,7 +66,8 @@
 
     function updateEstimates() {
         const amount = parseInt(amountInput.value) || 0;
-        const credits = Math.floor(amount / CLAWNCH_PER_CREDIT);
+        const tpc = getTokensPerCredit();
+        const credits = tpc > 0 ? Math.floor(amount / tpc) : 0;
 
         if (amount > 0 && clawnchPrice > 0) {
             usdEstimate.textContent = '$' + (amount * clawnchPrice).toFixed(2);
@@ -70,6 +79,16 @@
 
         creditsEstimate.textContent = credits > 0 ? credits.toLocaleString() + ' replies' : '\u2014';
         depositBtn.disabled = !(connectedAccount && credits > 0);
+
+        // Update rate display
+        const rateEl = document.getElementById('depositRate');
+        if (rateEl) {
+            if (tpc > 0) {
+                rateEl.innerHTML = '<strong>~' + Math.round(tpc).toLocaleString() + ' INCLAWNCH = 1 credit</strong> &middot; 1 credit = 1 AI reply';
+            } else {
+                rateEl.innerHTML = '<strong>Loading rate...</strong> &middot; 1 credit = 1 AI reply';
+            }
+        }
     }
 
     amountInput.addEventListener('input', updateEstimates);
@@ -150,7 +169,8 @@
 
     async function executeDeposit() {
         const amount = parseInt(amountInput.value) || 0;
-        const credits = Math.floor(amount / CLAWNCH_PER_CREDIT);
+        const tpc = getTokensPerCredit();
+        const credits = tpc > 0 ? Math.floor(amount / tpc) : 0;
         if (!connectedAccount || !provider || credits <= 0) return;
 
         hideError();

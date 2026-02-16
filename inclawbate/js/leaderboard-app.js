@@ -1,7 +1,9 @@
 // Inclawbator — Leaderboard + Pricing
 
 var CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
-var CLAWNCH_PER_CREDIT = 50;
+var TARGET_USD_PER_CREDIT = 0.005;
+var MIN_TOKENS_PER_CREDIT = 1;
+var MAX_TOKENS_PER_CREDIT = 10000;
 
 function esc(str) {
     var div = document.createElement('div');
@@ -52,8 +54,11 @@ function esc(str) {
     }
 
     if (clawnchPrice > 0) {
-        var costPerReply = (CLAWNCH_PER_CREDIT * clawnchPrice).toFixed(4);
-        var repliesPer1k = Math.floor(1000 / CLAWNCH_PER_CREDIT);
+        var rawTpc = TARGET_USD_PER_CREDIT / clawnchPrice;
+        var tokensPerCredit = Math.max(MIN_TOKENS_PER_CREDIT, Math.min(MAX_TOKENS_PER_CREDIT, rawTpc));
+        var costPerReply = (tokensPerCredit * clawnchPrice).toFixed(4);
+        var repliesPer1k = Math.floor(1000 / tokensPerCredit);
+        var roundedTpc = Math.round(tokensPerCredit);
 
         ['pricePerReply', 'creditsPricePerReply'].forEach(function(id) {
             var el = document.getElementById(id);
@@ -68,6 +73,16 @@ function esc(str) {
         ['liveClawnchPrice', 'creditsLivePrice'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.textContent = '$' + clawnchPrice.toFixed(6);
+        });
+
+        // Dynamic rate displays
+        ['sidebarTokensPerCredit', 'creditsTokensPerCredit', 'lbTokensPerCredit'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = roundedTpc.toLocaleString();
+        });
+        ['sidebarTpcLabel', 'creditsTpcLabel', 'lbTpcLabel'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = roundedTpc.toLocaleString() + ' INCLAWNCH per Credit';
         });
     } else {
         ['liveClawnchPrice', 'creditsLivePrice'].forEach(function(id) {
