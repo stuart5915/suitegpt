@@ -66,6 +66,8 @@
             dropdown.className = 'nav-dropdown';
             dropdown.innerHTML = `
                 <a href="/u/${encodeURIComponent(profile.x_handle)}" class="nav-dropdown-item">Profile</a>
+                <a href="/dashboard" class="nav-dropdown-item nav-inbox-link">Inbox</a>
+                <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="nav-dropdown-item">Chat</a>
                 <button type="button" class="nav-dropdown-item nav-disconnect">Disconnect</button>
             `;
 
@@ -96,7 +98,7 @@
         // Check for unread conversations
         if (!token) return;
 
-        const inboxLink = navLinks.querySelector('a[href="/dashboard"]');
+        const inboxLink = dropdown.querySelector('.nav-inbox-link');
         if (!inboxLink) return;
 
         inboxLink.style.position = 'relative';
