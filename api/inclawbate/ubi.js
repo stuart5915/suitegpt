@@ -737,23 +737,28 @@ export default async function handler(req, res) {
 
             const { data: curr } = await supabase
                 .from('inclawbate_ubi_treasury')
-                .select('distribution_count, total_distributed, total_distributed_clawnch, total_distributed_inclawnch, weekly_rate')
+                .select('*')
                 .eq('id', 1)
                 .single();
 
             const dailyAmount = Math.round((Number(curr?.weekly_rate) || 0) / 7);
             const newTotal = (Number(curr?.total_distributed) || 0) + dailyAmount;
-            const newPerToken = (Number(curr?.[perTokenCol]) || 0) + dailyAmount;
+
+            const updateObj = {
+                last_distribution_at: new Date().toISOString(),
+                distribution_count: (Number(curr?.distribution_count) || 0) + 1,
+                total_distributed: newTotal,
+                updated_at: new Date().toISOString()
+            };
+
+            // Per-token column (only if migration has been run)
+            if (curr && curr[perTokenCol] !== undefined) {
+                updateObj[perTokenCol] = (Number(curr[perTokenCol]) || 0) + dailyAmount;
+            }
 
             const { error: updateErr } = await supabase
                 .from('inclawbate_ubi_treasury')
-                .update({
-                    last_distribution_at: new Date().toISOString(),
-                    distribution_count: (Number(curr?.distribution_count) || 0) + 1,
-                    total_distributed: newTotal,
-                    [perTokenCol]: newPerToken,
-                    updated_at: new Date().toISOString()
-                })
+                .update(updateObj)
                 .eq('id', 1);
 
             if (updateErr) {
