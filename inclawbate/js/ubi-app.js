@@ -276,14 +276,16 @@ function daysSince(dateStr) {
         document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
         var totalDistributed = Number(ubiData.total_distributed) || 0;
-        var distClawnch = Number(ubiData.total_distributed_clawnch) || 0;
-        var distInclawnch = Number(ubiData.total_distributed_inclawnch) || 0;
         var distEl = document.getElementById('statTotalDistributed');
         if (distEl) distEl.textContent = fmt(totalDistributed);
+        // First 3 distros (23,142,858 tokens) cost $2,047 USD at time of distribution
+        var HISTORICAL_USD = 2047;
+        var HISTORICAL_TOKENS = 23142858;
+        var newInclawnch = Math.max(0, totalDistributed - HISTORICAL_TOKENS);
+        var distUsdTotal = HISTORICAL_USD + (newInclawnch * inclawnchPrice);
         var distUsdEl = document.getElementById('statTotalDistUsd');
         if (distUsdEl && totalDistributed > 0) {
-            var distUsdTotal = (distClawnch * clawnchPrice) + (distInclawnch * inclawnchPrice);
-            distUsdEl.textContent = distUsdTotal > 0 ? '~$' + distUsdTotal.toFixed(2) : '';
+            distUsdEl.textContent = '~$' + fmtUsd(distUsdTotal);
         }
 
         // APY calculation + card APYs
@@ -379,11 +381,10 @@ function daysSince(dateStr) {
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
         if (cdTotalDistEl) {
             var td = Number(ubiData?.total_distributed) || 0;
-            var tdClawnch = Number(ubiData?.total_distributed_clawnch) || 0;
-            var tdInclawnch = Number(ubiData?.total_distributed_inclawnch) || 0;
             if (td > 0) {
-                var cdDistUsd = (tdClawnch * clawnchPrice) + (tdInclawnch * inclawnchPrice);
-                var distUsd = cdDistUsd > 0 ? ' ($' + cdDistUsd.toFixed(2) + ')' : '';
+                var cdNewInclawnch = Math.max(0, td - HISTORICAL_TOKENS);
+                var cdDistUsd = HISTORICAL_USD + (cdNewInclawnch * inclawnchPrice);
+                var distUsd = ' ($' + fmtUsd(cdDistUsd) + ')';
                 cdTotalDistEl.innerHTML = fmt(td) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;">' + distUsd + '</span>';
             } else {
                 cdTotalDistEl.textContent = '--';
