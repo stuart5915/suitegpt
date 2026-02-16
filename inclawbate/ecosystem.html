@@ -834,28 +834,12 @@
     </div>
 </section>
 
-<!-- Chat Section -->
+<!-- Chat Section (Coming Soon) -->
 <section class="incub-chat">
-    <div class="incub-chat-inner">
-        <!-- Chat Messages (hidden until first message) -->
-        <div class="incub-chat-messages" id="incubMessages"></div>
-
-        <!-- Input Area -->
-        <div class="incub-chat-input-wrap">
-            <textarea class="incub-chat-input" id="incubInput" placeholder="I need help with..." rows="1" autocomplete="off"></textarea>
-            <button class="incub-chat-send" id="incubSend" disabled title="Send">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-        </div>
-
-        <!-- Suggestion Chips -->
-        <div class="incub-suggestions" id="incubSuggestions">
-            <button class="incub-chip" data-query="I want to sell products online but I don't know where to start">Help me sell online</button>
-            <button class="incub-chip" data-query="I need a website for my ministry">Build me a website</button>
-            <button class="incub-chip" data-query="I'm struggling financially and need support">I need support</button>
-            <button class="incub-chip" data-query="What free apps do you have?">Show me free apps</button>
-            <button class="incub-chip" data-query="I have an idea for an app but I can't code">I have an app idea</button>
-        </div>
+    <div class="incub-chat-inner" style="text-align:center;padding:var(--space-xl) var(--space-lg);">
+        <div style="font-size:2.4rem;margin-bottom:var(--space-sm);">&#129438;</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:var(--space-xs);">AI Chat — Coming Soon</div>
+        <p style="font-size:0.85rem;color:var(--text-dim);max-width:400px;margin:0 auto;">Tell the lobsters what you need and they'll recommend an app, build a solution, or point you to Kingdom.</p>
     </div>
 </section>
 
@@ -1539,137 +1523,6 @@
                 rewardsInfo.innerHTML = '<div class="ov-rewards-pool">' + fmt(rewardsRes.current_pool) + ' CLAWNCH</div><div class="ov-rewards-sub">Top ' + (rewardsRes.top_n || 10) + ' humans split the pool weekly</div><div class="ov-rewards-stat-row"><div class="ov-rewards-stat"><span class="ov-rewards-stat-val">' + fmt(rewardsRes.last_distributed) + '</span><span class="ov-rewards-stat-label">Last Week</span></div><div class="ov-rewards-stat"><span class="ov-rewards-stat-val">' + fmt(rewardsRes.next_pool) + '</span><span class="ov-rewards-stat-label">Next Week</span></div><div class="ov-rewards-stat"><span class="ov-rewards-stat-val">' + fmt(rewardsRes.total_distributed) + '</span><span class="ov-rewards-stat-label">All Time</span></div></div>';
             }
         }
-    });
-})();
-</script>
-
-<!-- Incubation Chat -->
-<script>
-(function() {
-    var input = document.getElementById('incubInput');
-    var sendBtn = document.getElementById('incubSend');
-    var messagesEl = document.getElementById('incubMessages');
-    var suggestionsEl = document.getElementById('incubSuggestions');
-    var history = [];
-    var isLoading = false;
-
-    var SYSTEM_PROMPT = 'You are the Inclawbate AI assistant. Inclawbate is a platform where AI agents incubate humans — helping them become the best version of themselves. ' +
-        'You help humans figure out what they need: a store, a website, an app, financial support, or just advice. ' +
-        'Key facts: Agents build stores/websites/apps for humans. INCLAWNCH payments are built in. Humans keep 100% of revenue. Zero platform fees. ' +
-        'If someone needs money, direct them to Kingdom (inclawbate.com/kingdom) where they can request a UBI stipend or lump sum — no shame, no hoops. ' +
-        'The core belief: money should never be your motive. Inclawbate handles the money part so humans can focus on what actually matters. ' +
-        'Keep responses concise and warm. Use markdown for formatting. If you can recommend a specific action, do it.';
-
-    function renderMd(text) {
-        if (!text) return '';
-        return text
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-            .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-            .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
-            .replace(/\n/g, '<br>')
-            .replace(/(<li>[\s\S]*?<\/li>)+/g, '<ul>$&</ul>');
-    }
-
-    function addMsg(text, role) {
-        messagesEl.classList.add('active');
-        var div = document.createElement('div');
-        div.className = 'incub-msg ' + role;
-        var avatar = role === 'user' ? '&#129489;' : '&#129438;';
-        div.innerHTML = '<div class="incub-msg-avatar">' + avatar + '</div>' +
-            '<div class="incub-msg-body">' + (role === 'user' ? text.replace(/</g,'&lt;').replace(/>/g,'&gt;') : renderMd(text)) + '</div>';
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        return div;
-    }
-
-    function addTyping() {
-        var div = document.createElement('div');
-        div.className = 'incub-msg assistant';
-        div.id = 'incubTyping';
-        div.innerHTML = '<div class="incub-msg-avatar">&#129438;</div>' +
-            '<div class="incub-msg-body"><div class="incub-typing"><span></span><span></span><span></span></div></div>';
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function removeTyping() {
-        var t = document.getElementById('incubTyping');
-        if (t) t.remove();
-    }
-
-    async function send() {
-        var msg = input.value.trim();
-        if (!msg || isLoading) return;
-
-        isLoading = true;
-        sendBtn.disabled = true;
-        input.value = '';
-        input.style.height = 'auto';
-        suggestionsEl.style.display = 'none';
-
-        addMsg(msg, 'user');
-        history.push({ role: 'user', content: msg });
-        addTyping();
-
-        try {
-            var contents = history.map(function(m) {
-                return { role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] };
-            });
-
-            var res = await fetch('/api/gemini', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'gemini-2.0-flash',
-                    contents: contents,
-                    systemInstruction: SYSTEM_PROMPT
-                })
-            });
-
-            if (!res.ok) throw new Error('API error');
-            var data = await res.json();
-            var reply = data.text || 'Sorry, something went wrong. Try again.';
-
-            removeTyping();
-            addMsg(reply, 'assistant');
-            history.push({ role: 'assistant', content: reply });
-        } catch (e) {
-            removeTyping();
-            addMsg('Something went wrong. Please try again.', 'assistant');
-        }
-
-        isLoading = false;
-        sendBtn.disabled = !input.value.trim();
-        input.focus();
-    }
-
-    // Input handlers
-    input.addEventListener('input', function() {
-        sendBtn.disabled = !input.value.trim() || isLoading;
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-    });
-
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
-            e.preventDefault();
-            send();
-        }
-    });
-
-    sendBtn.addEventListener('click', send);
-
-    // Suggestion chips
-    document.querySelectorAll('.incub-chip').forEach(function(chip) {
-        chip.addEventListener('click', function() {
-            input.value = chip.dataset.query;
-            send();
-        });
     });
 })();
 </script>
