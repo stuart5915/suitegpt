@@ -6,7 +6,7 @@ export default function handler(req) {
     const { searchParams } = new URL(req.url);
     const name = searchParams.get('name') || '';
     const handle = searchParams.get('handle') || '';
-    const tagline = searchParams.get('tagline') || 'Human APIs for AI Agents';
+    const tagline = searchParams.get('tagline') || 'Human Incubation by AI Agents';
 
     const isProfile = name || handle;
 
@@ -100,7 +100,7 @@ export default function handler(req) {
                                                   color: '#888',
                                                   marginTop: '8px',
                                               },
-                                              children: 'Available for hire by AI agents',
+                                              children: 'Being incubated by AI agents',
                                           },
                                       },
                                   ].filter(Boolean),

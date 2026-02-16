@@ -27,7 +27,7 @@
         return '<div class="phil-req-progress">' +
             '<div class="phil-req-progress-bar"><div class="phil-req-progress-fill" style="width:' + pct + '%"></div></div>' +
             '<div class="phil-req-progress-text">' +
-                '<span>' + fmt(f) + ' / ' + fmt(r) + ' CLAWNCH</span>' +
+                '<span>' + fmt(f) + ' / ' + fmt(r) + ' INCLAWNCH</span>' +
                 '<span class="phil-req-progress-pct">' + pct + '% funded</span>' +
             '</div></div>';
     }
@@ -37,7 +37,7 @@
     }
 
     function toHexWei(amount) {
-        // Convert CLAWNCH amount to hex wei (18 decimals)
+        // Convert INCLAWNCH amount to hex wei (18 decimals)
         var wei = BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
         return '0x' + wei.toString(16);
     }
@@ -84,7 +84,7 @@
         var el = document.getElementById('kingdomDestination');
         if (!el) return;
 
-        var amtHtml = kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' CLAWNCH</div>' : '';
+        var amtHtml = kingdomAmt > 0 ? '<div style="font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--seafoam-300);white-space:nowrap;">~' + fmt(kingdomAmt) + ' INCLAWNCH</div>' : '';
         var header = '<div style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;">Going to</div>';
 
         // Check if targeting a request
@@ -189,7 +189,7 @@
                 if (labelEl) {
                     labelEl.textContent = 'of your UBI goes to Kingdom';
                     if (kingdomAmt > 0) {
-                        labelEl.textContent += ' (~' + fmt(kingdomAmt) + ' CLAWNCH per distribution)';
+                        labelEl.textContent += ' (~' + fmt(kingdomAmt) + ' INCLAWNCH per distribution)';
                     }
                 }
                 if (statusEl) statusEl.style.display = 'block';
@@ -409,13 +409,13 @@
             if (!/^0x[a-fA-F0-9]{40}$/.test(orgWallet)) { philToast('Enter a valid wallet address (0x...)', 'error'); return; }
 
             orgSubmitBtn.disabled = true;
-            orgSubmitBtn.textContent = 'Sending 10,000 CLAWNCH...';
+            orgSubmitBtn.textContent = 'Sending 10,000 INCLAWNCH...';
 
             try {
                 var provider = getProvider();
                 if (!provider) throw new Error('No wallet connected');
 
-                // ERC-20 transfer: 10,000 CLAWNCH to UBI treasury
+                // ERC-20 transfer: 10,000 INCLAWNCH to UBI treasury
                 var transferData = '0xa9059cbb' + pad32(UBI_TREASURY) + pad32(toHexWei(ORG_LISTING_FEE));
 
                 var txHash = await provider.request({
@@ -474,7 +474,7 @@
             }
 
             orgSubmitBtn.disabled = false;
-            orgSubmitBtn.textContent = 'Pay 10,000 CLAWNCH & List';
+            orgSubmitBtn.textContent = 'Pay 10,000 INCLAWNCH & List';
         });
     }
 
@@ -707,9 +707,9 @@
 
             var amountHtml;
             if (cfg.showProgress) {
-                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' CLAWNCH</div>';
+                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' INCLAWNCH</div>';
             } else {
-                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' CLAWNCH/mo</div>';
+                amountHtml = '<div class="phil-req-card-amount">' + fmt(r.amount_requested) + ' INCLAWNCH/mo</div>';
             }
 
             var cardBodyHtml =
@@ -726,7 +726,7 @@
             if (cfg.showProgress) {
                 cardBodyHtml += progressHtml(r.total_funded, r.amount_requested);
             } else {
-                cardBodyHtml += '<div style="margin-top:8px;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--sand-300);">' + fmt(r.amount_requested) + ' CLAWNCH/month requested</div>';
+                cardBodyHtml += '<div style="margin-top:8px;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;color:var(--sand-300);">' + fmt(r.amount_requested) + ' INCLAWNCH/month requested</div>';
             }
 
             cardBodyHtml +=
@@ -842,7 +842,7 @@
             html += progressHtml(request.total_funded, request.amount_requested);
         } else {
             // UBI: show monthly label instead
-            html += '<div style="margin:12px 0;font-family:var(--font-mono);font-size:0.75rem;font-weight:700;color:var(--sand-300);">' + fmt(request.amount_requested) + ' CLAWNCH/month requested</div>';
+            html += '<div style="margin:12px 0;font-family:var(--font-mono);font-size:0.75rem;font-weight:700;color:var(--sand-300);">' + fmt(request.amount_requested) + ' INCLAWNCH/month requested</div>';
         }
 
         // "Direct Kingdom Here" button (if connected and not own request)
@@ -862,7 +862,7 @@
         // Fund UI (only for GCM, if connected and not own request)
         if (cfg.showFund && connectedWallet && request.wallet_address !== connectedWallet.toLowerCase()) {
             html += '<div class="phil-req-fund">' +
-                '<span class="phil-req-fund-label">Send CLAWNCH</span>' +
+                '<span class="phil-req-fund-label">Send INCLAWNCH</span>' +
                 '<input type="number" class="phil-req-fund-input" id="fundInput' + request.id + '" placeholder="Amount" min="1" step="1">' +
                 '<button class="phil-req-fund-btn" id="fundBtn' + request.id + '" onclick="window._fundRequest(' + request.id + ', \'' + request.wallet_address + '\')">Fund</button>' +
             '</div>';
@@ -881,7 +881,7 @@
                 '<input type="text" id="editTitle' + request.id + '" value="' + escHtml(request.title).replace(/"/g, '&quot;') + '" maxlength="100" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-display);font-size:0.85rem;outline:none;box-sizing:border-box;"></div>' +
                 '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Description</label>' +
                 '<textarea id="editDesc' + request.id + '" maxlength="5000" rows="8" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-display);font-size:0.85rem;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6;">' + escHtml(request.description) + '</textarea></div>' +
-                '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Amount' + (cfg.showProgress ? '' : ' (CLAWNCH/month)') + '</label>' +
+                '<div style="margin-bottom:12px;"><label style="display:block;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;">Amount' + (cfg.showProgress ? '' : ' (INCLAWNCH/month)') + '</label>' +
                 '<input type="number" id="editAmount' + request.id + '" value="' + request.amount_requested + '" min="1" step="1" style="width:100%;padding:8px 12px;border-radius:var(--radius-lg);border:1px solid var(--border-default);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:0.85rem;outline:none;box-sizing:border-box;"></div>' +
                 '<div style="display:flex;gap:8px;">' +
                     '<button onclick="window._saveEdit(' + request.id + ', \'' + type + '\')" style="flex:1;padding:10px;border-radius:var(--radius-full);border:none;background:var(--accent-gradient);color:#fff;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;cursor:pointer;">Save Changes</button>' +
@@ -1043,7 +1043,7 @@
             });
             var data = await res.json();
             if (data.success) {
-                philToast('Funded ' + fmt(amount) + ' CLAWNCH!', 'success');
+                philToast('Funded ' + fmt(amount) + ' INCLAWNCH!', 'success');
                 input.value = '';
                 // Refresh the expanded view
                 typeConfig.gcm.expandedId = null;

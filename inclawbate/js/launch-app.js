@@ -125,7 +125,7 @@ async function init() {
     const now = Date.now();
     if (lastAttempt && now - parseInt(lastAttempt) < 30000) {
         connectGate.querySelector('h2').textContent = 'Connect X to get started';
-        connectGate.querySelector('p').textContent = 'One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.';
+        connectGate.querySelector('p').textContent = 'One click. Connect your X and AI agents start incubating you — free apps, stores, websites, all managed for you.';
         connectBtn.classList.remove('hidden');
         return;
     }
@@ -140,7 +140,7 @@ async function init() {
         await startXAuth();
     } catch (err) {
         connectGate.querySelector('h2').textContent = 'Connect X to get started';
-        connectGate.querySelector('p').textContent = 'One click. Your X profile becomes a human API that AI agents can discover, hire, and pay in $CLAWNCH.';
+        connectGate.querySelector('p').textContent = 'One click. Connect your X and AI agents start incubating you — free apps, stores, websites, all managed for you.';
         connectBtn.classList.remove('hidden');
     }
 }
