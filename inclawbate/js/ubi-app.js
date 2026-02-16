@@ -377,7 +377,7 @@ function daysSince(dateStr) {
         if (cdTotalDistEl) {
             var td = Number(ubiData?.total_distributed) || 0;
             if (td > 0) {
-                var distUsd = inclawnchPrice > 0 ? ' ($' + (td * inclawnchPrice).toFixed(2) + ')' : '';
+                var distUsd = clawnchPrice > 0 ? ' ($' + (td * clawnchPrice).toFixed(2) + ')' : '';
                 cdTotalDistEl.innerHTML = fmt(td) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;">' + distUsd + '</span>';
             } else {
                 cdTotalDistEl.textContent = '--';
