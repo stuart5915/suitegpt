@@ -1378,7 +1378,7 @@ function daysSince(dateStr) {
     }
 
     async function recordStakeWithRetry(txHash, wallet, token, retries) {
-        retries = retries || 3;
+        retries = retries || 5;
         for (var attempt = 0; attempt < retries; attempt++) {
             try {
                 var res = await fetch('/api/inclawbate/ubi', {
@@ -1393,7 +1393,7 @@ function daysSince(dateStr) {
                 // Other error — retry
             } catch (e) { /* network error — retry */ }
             if (attempt < retries - 1) {
-                await new Promise(function(r) { setTimeout(r, 2000 * (attempt + 1)); });
+                await new Promise(function(r) { setTimeout(r, 3000 * (attempt + 1)); });
             }
         }
         return null;
@@ -1404,7 +1404,7 @@ function daysSince(dateStr) {
             var pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
             if (pending.length === 0) return;
             // Only try stakes less than 24h old
-            var cutoff = Date.now() - (24 * 60 * 60 * 1000);
+            var cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
             for (var i = 0; i < pending.length; i++) {
                 var p = pending[i];
                 if (p.ts < cutoff) { clearPendingStake(p.tx); continue; }

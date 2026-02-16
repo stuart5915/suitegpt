@@ -69,7 +69,13 @@ async function rpcCall(method, params) {
 }
 
 async function verifyTokenTransfer(txHash, tokenAddress) {
-    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+    // Retry with delays — receipt may not be indexed immediately after confirmation
+    let receipt = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+        receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+        if (receipt) break;
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+    }
     if (!receipt || receipt.status !== '0x1') {
         return { valid: false, reason: 'Transaction failed or not found' };
     }
