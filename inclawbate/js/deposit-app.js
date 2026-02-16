@@ -206,7 +206,7 @@
             // Success
             document.getElementById('successCredits').textContent = '+' + data.credits_added;
             document.getElementById('successDetail').textContent =
-                Math.floor(data.clawnch_deposited).toLocaleString() + ' CLAWNCH deposited \u00B7 ' +
+                Math.floor(data.clawnch_deposited).toLocaleString() + ' INCLAWNCH deposited \u00B7 ' +
                 data.credits_total + ' total credits';
             document.getElementById('txLink').href = 'https://basescan.org/tx/' + txHash;
             showStep('success');
