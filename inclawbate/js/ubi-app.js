@@ -276,11 +276,14 @@ function daysSince(dateStr) {
         document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
 
         var totalDistributed = Number(ubiData.total_distributed) || 0;
+        var distClawnch = Number(ubiData.total_distributed_clawnch) || 0;
+        var distInclawnch = Number(ubiData.total_distributed_inclawnch) || 0;
         var distEl = document.getElementById('statTotalDistributed');
         if (distEl) distEl.textContent = fmt(totalDistributed);
         var distUsdEl = document.getElementById('statTotalDistUsd');
-        if (distUsdEl && inclawnchPrice > 0 && totalDistributed > 0) {
-            distUsdEl.textContent = '~$' + (totalDistributed * inclawnchPrice).toFixed(2);
+        if (distUsdEl && totalDistributed > 0) {
+            var distUsdTotal = (distClawnch * clawnchPrice) + (distInclawnch * inclawnchPrice);
+            distUsdEl.textContent = distUsdTotal > 0 ? '~$' + distUsdTotal.toFixed(2) : '';
         }
 
         // APY calculation + card APYs
@@ -376,8 +379,11 @@ function daysSince(dateStr) {
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
         if (cdTotalDistEl) {
             var td = Number(ubiData?.total_distributed) || 0;
+            var tdClawnch = Number(ubiData?.total_distributed_clawnch) || 0;
+            var tdInclawnch = Number(ubiData?.total_distributed_inclawnch) || 0;
             if (td > 0) {
-                var distUsd = clawnchPrice > 0 ? ' ($' + (td * clawnchPrice).toFixed(2) + ')' : '';
+                var cdDistUsd = (tdClawnch * clawnchPrice) + (tdInclawnch * inclawnchPrice);
+                var distUsd = cdDistUsd > 0 ? ' ($' + cdDistUsd.toFixed(2) + ')' : '';
                 cdTotalDistEl.innerHTML = fmt(td) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;">' + distUsd + '</span>';
             } else {
                 cdTotalDistEl.textContent = '--';
@@ -838,6 +844,22 @@ function daysSince(dateStr) {
     }
 
     // Shared wallet connection — uses AppKit modal if available, else injected wallet
+    var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    function showMobileDeepLinks() {
+        var dappUrl = encodeURIComponent(window.location.href);
+        var rawUrl = window.location.href;
+        document.querySelectorAll('.stake-status').forEach(function(el) {
+            el.innerHTML = 'Open this page in your wallet app:<br>' +
+                '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">MetaMask</a>' +
+                ' &middot; ' +
+                '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Coinbase Wallet</a>' +
+                ' &middot; ' +
+                '<a href="https://link.trustwallet.com/open_url?coin_id=8453&url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Trust Wallet</a>';
+            el.className = 'ubi-stake-status stake-status';
+        });
+    }
+
     async function connectWallet() {
         if (stakeWallet) return stakeWallet;
 
@@ -846,9 +868,11 @@ function daysSince(dateStr) {
             try {
                 await window.WalletKit.open();
                 // Connection completes asynchronously via WalletKit.onConnect callback
+                // On mobile, also show deep links as a fallback in case modal doesn't work
+                if (isMobile) showMobileDeepLinks();
                 return null;
             } catch (err) {
-                // Fall through to injected wallet
+                // Fall through to injected wallet / deep links
             }
         }
 
@@ -881,19 +905,8 @@ function daysSince(dateStr) {
         }
 
         // No wallet available — on mobile, offer deep links to open in wallet app browser
-        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-            var dappUrl = encodeURIComponent(window.location.href);
-            var rawUrl = window.location.href;
-            document.querySelectorAll('.stake-status').forEach(function(el) {
-                el.innerHTML = 'Open this page in your wallet app:<br>' +
-                    '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">MetaMask</a>' +
-                    ' &middot; ' +
-                    '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Coinbase Wallet</a>' +
-                    ' &middot; ' +
-                    '<a href="https://link.trustwallet.com/open_url?coin_id=8453&url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Trust Wallet</a>';
-                el.className = 'ubi-stake-status stake-status';
-            });
+            showMobileDeepLinks();
         } else {
             document.querySelectorAll('.stake-status').forEach(function(el) {
                 el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet extension.';

@@ -515,7 +515,24 @@
             }
         }
 
-        philToast('No wallet found. Install MetaMask or Coinbase Wallet.', 'error');
+        var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            var dappUrl = encodeURIComponent(window.location.href);
+            var rawUrl = window.location.href;
+            philToast('Open in your wallet app: MetaMask, Coinbase Wallet, or Trust Wallet', 'error');
+            // Show deep links in the connect area
+            var statusEls = document.querySelectorAll('.stake-status, .phil-status');
+            statusEls.forEach(function(el) {
+                el.innerHTML = 'Open this page in your wallet app:<br>' +
+                    '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">MetaMask</a>' +
+                    ' &middot; ' +
+                    '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Coinbase Wallet</a>' +
+                    ' &middot; ' +
+                    '<a href="https://link.trustwallet.com/open_url?coin_id=8453&url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Trust Wallet</a>';
+            });
+        } else {
+            philToast('No wallet found. Install MetaMask or Coinbase Wallet.', 'error');
+        }
         return null;
     }
 

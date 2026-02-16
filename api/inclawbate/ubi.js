@@ -693,8 +693,18 @@ export default async function handler(req, res) {
                 if (!isNaN(td) && td >= 0) updateObj.total_distributed = td;
             }
 
+            if (req.body.total_distributed_clawnch !== undefined) {
+                const tdc = Number(req.body.total_distributed_clawnch);
+                if (!isNaN(tdc) && tdc >= 0) updateObj.total_distributed_clawnch = tdc;
+            }
+
+            if (req.body.total_distributed_inclawnch !== undefined) {
+                const tdi = Number(req.body.total_distributed_inclawnch);
+                if (!isNaN(tdi) && tdi >= 0) updateObj.total_distributed_inclawnch = tdi;
+            }
+
             if (Object.keys(updateObj).length <= 1) {
-                return res.status(400).json({ error: 'Provide weekly_rate, daily_rate, reward_split_pct, wallet_cap_pct, or total_distributed' });
+                return res.status(400).json({ error: 'Provide weekly_rate, daily_rate, reward_split_pct, wallet_cap_pct, total_distributed, total_distributed_clawnch, or total_distributed_inclawnch' });
             }
 
             const { error: updateErr } = await supabase
@@ -717,19 +727,23 @@ export default async function handler(req, res) {
 
         // ── Mark Distribution Complete (admin only) ──
         if (action === 'mark-distributed') {
-            const { wallet_address } = req.body;
+            const { wallet_address, token } = req.body;
             if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
+            const distToken = (token === 'clawnch') ? 'clawnch' : 'inclawnch';
+            const perTokenCol = distToken === 'clawnch' ? 'total_distributed_clawnch' : 'total_distributed_inclawnch';
+
             const { data: curr } = await supabase
                 .from('inclawbate_ubi_treasury')
-                .select('distribution_count, total_distributed, weekly_rate')
+                .select('distribution_count, total_distributed, total_distributed_clawnch, total_distributed_inclawnch, weekly_rate')
                 .eq('id', 1)
                 .single();
 
             const dailyAmount = Math.round((Number(curr?.weekly_rate) || 0) / 7);
             const newTotal = (Number(curr?.total_distributed) || 0) + dailyAmount;
+            const newPerToken = (Number(curr?.[perTokenCol]) || 0) + dailyAmount;
 
             const { error: updateErr } = await supabase
                 .from('inclawbate_ubi_treasury')
@@ -737,6 +751,7 @@ export default async function handler(req, res) {
                     last_distribution_at: new Date().toISOString(),
                     distribution_count: (Number(curr?.distribution_count) || 0) + 1,
                     total_distributed: newTotal,
+                    [perTokenCol]: newPerToken,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', 1);

@@ -56,8 +56,21 @@ const selectPanel = document.getElementById('selectPanel');
 
 connectBtn.addEventListener('click', async () => {
     if (!window.ethereum) {
-        walletStatus.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
-        walletStatus.className = 'airdrop-status error';
+        var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            var dappUrl = encodeURIComponent(window.location.href);
+            var rawUrl = window.location.href;
+            walletStatus.innerHTML = 'Open this page in your wallet app:<br>' +
+                '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">MetaMask</a>' +
+                ' &middot; ' +
+                '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Coinbase Wallet</a>' +
+                ' &middot; ' +
+                '<a href="https://link.trustwallet.com/open_url?coin_id=8453&url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;font-weight:600;">Trust Wallet</a>';
+            walletStatus.className = 'airdrop-status';
+        } else {
+            walletStatus.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
+            walletStatus.className = 'airdrop-status error';
+        }
         return;
     }
     try {
