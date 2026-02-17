@@ -936,20 +936,8 @@ function daysSince(dateStr) {
     async function connectWallet() {
         if (stakeWallet) return stakeWallet;
 
-        // Path A: WalletKit (AppKit) — opens modal with WalletConnect QR, MetaMask, etc.
-        if (window.WalletKit) {
-            try {
-                await window.WalletKit.open();
-                // Connection completes asynchronously via WalletKit.onConnect callback
-                // On mobile, also show deep links as a fallback in case modal doesn't work
-                if (isMobile) showMobileDeepLinks();
-                return null;
-            } catch (err) {
-                // Fall through to injected wallet / deep links
-            }
-        }
-
-        // Path B: Injected wallet (MetaMask extension, Coinbase Wallet, etc.)
+        // Path A: Injected wallet (MetaMask extension, Coinbase Wallet, etc.)
+        // Prefer direct injected provider over WalletKit modal for better UX
         if (window.ethereum) {
             try {
                 var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -977,18 +965,29 @@ function daysSince(dateStr) {
             }
         }
 
+        // Path B: WalletKit (AppKit) — opens modal with WalletConnect QR
+        if (window.WalletKit) {
+            try {
+                await window.WalletKit.open();
+                if (isMobile) showMobileDeepLinks();
+                return null;
+            } catch (err) {
+                // Fall through to no-wallet prompt
+            }
+        }
+
         // No wallet available — on mobile, offer deep links to open in wallet app browser
         if (isMobile) {
             showMobileDeepLinks();
         } else {
-            ubiModal({
+            var confirmed = await ubiModal({
                 icon: '\uD83E\uDD8A',
                 title: 'No Wallet Found',
                 msg: 'Install a wallet extension like MetaMask or Coinbase Wallet to connect.',
                 confirmLabel: 'Get MetaMask',
                 cancelLabel: 'Close',
-                onConfirm: function() { window.open('https://metamask.io/download/', '_blank'); }
             });
+            if (confirmed) window.open('https://metamask.io/download/', '_blank');
         }
         return null;
     }
