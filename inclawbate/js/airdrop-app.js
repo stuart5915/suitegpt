@@ -18,6 +18,7 @@ let provider = null;
 let userAddress = null;
 let allProfiles = [];
 let clawnchPrice = 0;
+let inclawnchPriceGlobal = 0;
 let currentFilter = 'no-hires';
 let showBanned = false;
 let distData = null; // UBI distribution data
@@ -535,6 +536,7 @@ async function loadDistribution() {
     try {
         const ipData = await inclawnchPriceResp?.json();
         inclawnchPrice = bestDexPrice(ipData, INCLAWNCH_ADDRESS);
+        inclawnchPriceGlobal = inclawnchPrice;
     } catch (e) {}
     // CoinGecko fallback
     if (!clawnchPrice || !inclawnchPrice) {
@@ -574,8 +576,9 @@ async function loadDistribution() {
     const totalDistributed = Number(data.total_distributed) || 0;
     document.getElementById('distTotalDistributed').textContent = fmtNum(totalDistributed);
     document.getElementById('distDistCount').textContent = data.distribution_count || 0;
-    if (inclawnchPrice > 0 && totalDistributed > 0) {
-        document.getElementById('distTotalDistUsd').textContent = '$' + (totalDistributed * inclawnchPrice).toFixed(2);
+    const totalDistUsd = Number(data.total_distributed_usd) || 0;
+    if (totalDistUsd > 0) {
+        document.getElementById('distTotalDistUsd').textContent = '$' + totalDistUsd.toFixed(2);
     }
 
     // Distribution countdown timer
@@ -988,12 +991,15 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
         // Mark distribution complete for ALL recipients (both groups)
         distStatus.textContent = 'Recording distribution...';
         try {
+            const totalDistTokens = allStakers.reduce((sum, s) => sum + Math.floor(s.share_amount), 0);
+            const distributionUsd = inclawnchPriceGlobal > 0 ? totalDistTokens * inclawnchPriceGlobal : 0;
             await fetch(API_BASE + '/ubi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'mark-distributed',
                     wallet_address: userAddress,
+                    distribution_usd: Math.round(distributionUsd * 100) / 100,
                     recipients: allStakers.map(s => ({ wallet: s.wallet, amount: Math.floor(s.share_amount) }))
                 })
             });

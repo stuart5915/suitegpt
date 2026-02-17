@@ -285,6 +285,7 @@ export default async function handler(req, res) {
             total_balance: 0,
             inclawnch_staked: 0,
             total_distributed: 0,
+            total_distributed_usd: 0,
             distribution_count: 0,
             verified_humans: 0,
             weekly_rate: 0,
@@ -760,6 +761,12 @@ export default async function handler(req, res) {
             // Per-token column (only if migration has been run)
             if (curr && curr[perTokenCol] !== undefined) {
                 updateObj[perTokenCol] = (Number(curr[perTokenCol]) || 0) + dailyAmount;
+            }
+
+            // Lock in USD value at distribution time (only goes up)
+            const distributionUsd = Number(req.body.distribution_usd) || 0;
+            if (distributionUsd > 0 && curr?.total_distributed_usd !== undefined) {
+                updateObj.total_distributed_usd = (Number(curr.total_distributed_usd) || 0) + distributionUsd;
             }
 
             const { error: updateErr } = await supabase
