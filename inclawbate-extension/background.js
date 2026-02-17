@@ -13,7 +13,7 @@ async function updateBadge() {
         }
         let resp;
         if (data.apiKey) {
-            resp = await fetch(`${CREDITS_URL}?key=${encodeURIComponent(data.apiKey)}`);
+            resp = await fetch(CREDITS_URL, { headers: { 'X-API-Key': data.apiKey } });
         } else {
             resp = await fetch(CREDITS_URL, { headers: { 'Authorization': `Bearer ${data.token}` } });
         }

@@ -275,7 +275,7 @@ deleteProfileBtn.addEventListener('click', () => {
 
 function fetchCredits(key) {
     if (!key) return;
-    fetch(`https://inclawbate.com/api/inclawbate/credits?key=${encodeURIComponent(key)}`)
+    fetch('https://inclawbate.com/api/inclawbate/credits', { headers: { 'X-API-Key': key } })
         .then(r => r.json())
         .then(data => {
             if (data.credits !== undefined) {

@@ -107,7 +107,7 @@ export default async function handler(req, res) {
 
     // GET — check balance
     if (req.method === 'GET') {
-        const apiKey = req.query.key;
+        const apiKey = req.headers['x-api-key'] || req.query.key;
 
         if (apiKey) {
             // Extension flow: lookup by API key
