@@ -736,22 +736,6 @@ function daysSince(dateStr) {
         });
     });
 
-    function buildSplitHtml(dailyAmt, price, keepPct, kingdomPct, reinvestPct) {
-        function splitLine(label, pct) {
-            var amt = Math.round(dailyAmt * pct / 100);
-            var usd = price > 0 ? ' ($' + (amt * price).toFixed(2) + ')' : '';
-            return '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
-                + '<span>' + label + '</span>'
-                + '<span style="font-family:var(--font-mono);color:var(--text-secondary);">' + fmt(amt) + ' inCLAWNCH' + usd + ' <span style="color:var(--text-dim);">' + pct + '%</span></span>'
-                + '</div>';
-        }
-        return '<div class="ubi-pc-split" id="posCountdownSplit" style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;display:flex;flex-direction:column;gap:2px;" data-daily="' + dailyAmt + '" data-price="' + price + '">'
-            + splitLine('Keep', keepPct)
-            + splitLine('Kingdom', kingdomPct)
-            + splitLine('UBI Fund', reinvestPct)
-            + '</div>';
-    }
-
     // ── Protocol Revenue Logic ──
     function updateRevenueSection(wethBal, clPrice) {
         var rewardPct = Number(ubiData?.reward_split_pct) || 80;
@@ -1115,133 +1099,6 @@ function daysSince(dateStr) {
         }
     }
 
-    // ── Render Redirect Widget into Step 3 ──
-    function renderRedirectWidget(data) {
-        var container = document.getElementById('redirectStepContent');
-        if (!container) return;
-
-        var savedKeep = data.split_keep_pct ?? 34;
-        var savedKingdom = data.split_kingdom_pct ?? 33;
-        var savedReinvest = data.split_reinvest_pct ?? 33;
-
-        var rh = '';
-
-        // Split sliders directly (no pill selection needed)
-        rh += '<div class="ubi-split-sliders" id="splitSliders">';
-        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF3F Keep</span><input type="range" min="0" max="100" step="1" value="' + savedKeep + '" class="ubi-split-range" id="splitKeep"><span class="ubi-split-val" id="splitKeepVal">' + savedKeep + '%</span></div>';
-        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\u271D\uFE0F Kingdom</span><input type="range" min="0" max="100" step="1" value="' + savedKingdom + '" class="ubi-split-range" id="splitKingdom"><span class="ubi-split-val" id="splitKingdomVal">' + savedKingdom + '%</span></div>';
-        rh += '<div class="ubi-split-row"><span class="ubi-split-label">\uD83C\uDF31 UBI Fund</span><input type="range" min="0" max="100" step="1" value="' + savedReinvest + '" class="ubi-split-range" id="splitReinvest"><span class="ubi-split-val" id="splitReinvestVal">' + savedReinvest + '%</span></div>';
-        rh += '</div>';
-
-        rh += '<p class="ubi-split-blurb" id="splitBlurb"></p>';
-        rh += '<button class="ubi-redirect-save" id="giveBackSaveBtn">Save</button>';
-        rh += '<span class="ubi-redirect-status" id="giveBackStatus"></span>';
-
-        // Show the Kingdom info section below the layout
-        var kingdomEl = document.getElementById('kingdomInfo');
-        if (kingdomEl) kingdomEl.style.display = '';
-
-        container.innerHTML = rh;
-
-        // Wire up split sliders
-        var splitKeep = document.getElementById('splitKeep');
-        var splitKingdom = document.getElementById('splitKingdom');
-        var splitReinvest = document.getElementById('splitReinvest');
-        if (splitKeep && splitKingdom && splitReinvest) {
-            function updateSplitBlurb() {
-                var k = Number(splitKeep.value), g = Number(splitKingdom.value), r = Number(splitReinvest.value);
-                var parts = [];
-                if (k > 0) parts.push(k + '% for myself');
-                if (g > 0) parts.push(g + '% to the Kingdom');
-                if (r > 0) parts.push(r + '% back to the Inclawbate UBI fund for higher distributions');
-                var blurb = document.getElementById('splitBlurb');
-                if (blurb) blurb.textContent = parts.length ? 'I\'m giving ' + parts.join(', ') + '.' : '';
-            }
-            function updateSplitDisplay() {
-                document.getElementById('splitKeepVal').textContent = splitKeep.value + '%';
-                document.getElementById('splitKingdomVal').textContent = splitKingdom.value + '%';
-                document.getElementById('splitReinvestVal').textContent = splitReinvest.value + '%';
-                updateSplitBlurb();
-            }
-            function balanceSliders(changed, others) {
-                var val = Number(changed.value);
-                var remaining = 100 - val;
-                var o1 = Number(others[0].value);
-                var o2 = Number(others[1].value);
-                var sum = o1 + o2;
-                if (sum === 0) {
-                    others[0].value = Math.round(remaining / 2);
-                    others[1].value = remaining - Math.round(remaining / 2);
-                } else {
-                    others[0].value = Math.max(0, Math.round((o1 / sum) * remaining));
-                    others[1].value = remaining - Number(others[0].value);
-                }
-                updateSplitDisplay();
-            }
-            splitKeep.addEventListener('input', function() { balanceSliders(splitKeep, [splitKingdom, splitReinvest]); });
-            splitKingdom.addEventListener('input', function() { balanceSliders(splitKingdom, [splitKeep, splitReinvest]); });
-            splitReinvest.addEventListener('input', function() { balanceSliders(splitReinvest, [splitKeep, splitKingdom]); });
-            updateSplitBlurb();
-        }
-
-        // Wire up save button
-        var saveBtn = document.getElementById('giveBackSaveBtn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', async function() {
-                var statusEl = document.getElementById('giveBackStatus');
-                saveBtn.disabled = true;
-                if (statusEl) statusEl.textContent = 'Saving...';
-
-                var k = Number(document.getElementById('splitKeep').value) || 0;
-                var g = Number(document.getElementById('splitKingdom').value) || 0;
-                var r = Number(document.getElementById('splitReinvest').value) || 0;
-                if (k + g + r !== 100) {
-                    ubiToast('Split must total 100%', 'error');
-                    saveBtn.disabled = false;
-                    return;
-                }
-
-                var body = {
-                    action: 'update-whale-redirect',
-                    wallet_address: stakeWallet,
-                    redirect_target: 'split',
-                    split_keep_pct: k,
-                    split_kingdom_pct: g,
-                    split_reinvest_pct: r
-                };
-                var firstOrg = (ubiData?.philanthropy_orgs || [])[0];
-                if (firstOrg) body.org_id = firstOrg.id;
-
-                try {
-                    var resp = await fetch('/api/inclawbate/ubi', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                    var rData = await resp.json();
-                    if (resp.ok && rData.success) {
-                        if (statusEl) statusEl.textContent = '';
-                        ubiToast('Saved', 'success');
-                        // Update countdown split display
-                        var splitEl = document.getElementById('posCountdownSplit');
-                        if (splitEl) {
-                            var da = parseFloat(splitEl.dataset.daily) || 0;
-                            var dp = parseFloat(splitEl.dataset.price) || 0;
-                            splitEl.outerHTML = buildSplitHtml(da, dp, k, g, r);
-                        }
-                    } else {
-                        if (statusEl) statusEl.textContent = '';
-                        ubiToast((rData.error || 'Failed to save') + (rData.detail ? ' — ' + rData.detail : ''), 'error');
-                    }
-                } catch (e) {
-                    if (statusEl) statusEl.textContent = '';
-                    ubiToast('Failed to save', 'error');
-                }
-                saveBtn.disabled = false;
-            });
-        }
-    }
-
     // ── Your Stakes ──
     async function loadMyStakes() {
         if (!stakeWallet) return;
@@ -1268,8 +1125,7 @@ function daysSince(dateStr) {
 
             var hasAnyStake = userClawnch > 0 || userInclawnch > 0;
             if (!hasAnyStake && pendingUnstakes.length === 0) {
-                list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning.</div>';
-                renderRedirectWidget(data);
+                list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake inCLAWNCH above to start earning.</div>';
                 return;
             }
 
@@ -1396,9 +1252,6 @@ function daysSince(dateStr) {
                     autoToggle.disabled = false;
                 });
             }
-
-            // Render Redirect Your Energy widget
-            renderRedirectWidget(data);
 
             // Personalized countdown timer
             if (_posCountdownInterval) clearInterval(_posCountdownInterval);
@@ -1923,14 +1776,6 @@ function daysSince(dateStr) {
         var step2 = document.getElementById('ubiStep2');
         if (step1) step1.classList.remove('ubi-step--done');
         if (step2) step2.classList.add('ubi-step--dimmed');
-
-        // Restore redirect static content
-        var redirectContent = document.getElementById('redirectStepContent');
-        if (redirectContent) {
-            redirectContent.innerHTML = '<p class="ubi-giveback-connect-hint">Connect your wallet to set your split.</p>';
-        }
-        var kingdomEl = document.getElementById('kingdomInfo');
-        if (kingdomEl) kingdomEl.style.display = 'none';
 
         // Reset connect buttons
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
