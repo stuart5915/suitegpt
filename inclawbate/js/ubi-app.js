@@ -981,9 +981,13 @@ function daysSince(dateStr) {
         if (isMobile) {
             showMobileDeepLinks();
         } else {
-            document.querySelectorAll('.stake-status').forEach(function(el) {
-                el.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet extension.';
-                el.className = 'ubi-stake-status stake-status error';
+            ubiModal({
+                icon: '\uD83E\uDD8A',
+                title: 'No Wallet Found',
+                msg: 'Install a wallet extension like MetaMask or Coinbase Wallet to connect.',
+                confirmLabel: 'Get MetaMask',
+                cancelLabel: 'Close',
+                onConfirm: function() { window.open('https://metamask.io/download/', '_blank'); }
             });
         }
         return null;
@@ -1743,7 +1747,7 @@ function daysSince(dateStr) {
 
         // Reset connect buttons
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
-            btn.textContent = 'Connect Wallet to Stake';
+            btn.textContent = 'Connect Wallet';
             btn.classList.remove('connected');
         });
         // Hide forms + fund button
