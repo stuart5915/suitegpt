@@ -553,31 +553,43 @@ function updateDistTimer(lastDistAt, distCount) {
     distTimerInterval = setInterval(tick, 1000);
 }
 
+let _distLoading = false;
 async function loadDistribution() {
+    if (_distLoading) return;
+    _distLoading = true;
+    const refreshBtn = document.getElementById('refreshDistBtn');
+    if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = 'Loading...'; }
+
+  try {
     // Fetch distribution data, prices, and wallet balances in parallel
     const balCalldata = BALANCE_SELECTOR + pad32(userAddress);
-    const [ubiResp, clawnchPriceResp, inclawnchPriceResp, clawnchBalResp, inclawnchBalResp, onChainTotalRes, onChainCountRes] = await Promise.all([
-        fetch(API_BASE + '/ubi?distribution=true'),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS).catch(() => null),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).catch(() => null),
-        provider.request({ method: 'eth_call', params: [{ to: CLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0'),
-        provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0'),
-        contractRead(STAKING_PROXY, SC.totalStaked).catch(() => '0x0'),
-        contractRead(STAKING_PROXY, SC.stakerCount).catch(() => '0x0')
+    const results = await Promise.allSettled([
+        fetch(API_BASE + '/ubi?distribution=true').then(r => r.json()),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS).then(r => r.json()),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).then(r => r.json()),
+        provider.request({ method: 'eth_call', params: [{ to: CLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }),
+        provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }),
+        contractRead(STAKING_PROXY, SC.totalStaked),
+        contractRead(STAKING_PROXY, SC.stakerCount)
     ]);
 
-    const data = await ubiResp.json();
+    const data = results[0].status === 'fulfilled' ? results[0].value : null;
+    if (!data) { console.error('UBI API failed'); return; }
     distData = data;
+    const clawnchPriceData = results[1].status === 'fulfilled' ? results[1].value : null;
+    const inclawnchPriceData = results[2].status === 'fulfilled' ? results[2].value : null;
+    const clawnchBalResp = results[3].status === 'fulfilled' ? results[3].value : '0x0';
+    const inclawnchBalResp = results[4].status === 'fulfilled' ? results[4].value : '0x0';
+    const onChainTotalRes = results[5].status === 'fulfilled' ? results[5].value : '0x0';
+    const onChainCountRes = results[6].status === 'fulfilled' ? results[6].value : '0x0';
 
     // Parse prices (use bestDexPrice for robust pair selection)
     let inclawnchPrice = 0;
     try {
-        const cpData = await clawnchPriceResp?.json();
-        clawnchPrice = bestDexPrice(cpData, CLAWNCH_ADDRESS);
+        clawnchPrice = bestDexPrice(clawnchPriceData, CLAWNCH_ADDRESS);
     } catch (e) {}
     try {
-        const ipData = await inclawnchPriceResp?.json();
-        inclawnchPrice = bestDexPrice(ipData, INCLAWNCH_ADDRESS);
+        inclawnchPrice = bestDexPrice(inclawnchPriceData, INCLAWNCH_ADDRESS);
         inclawnchPriceGlobal = inclawnchPrice;
     } catch (e) {}
     // CoinGecko fallback
@@ -808,6 +820,14 @@ async function loadDistribution() {
     document.getElementById('airdropUbiBtn').disabled = stakers.length === 0 || weeklyRate <= 0;
     document.getElementById('returnUnstakedBtn').disabled = pendingUnstakes.length === 0;
     document.getElementById('retryUnstakeBtn').disabled = pendingUnstakes.length === 0;
+
+  } catch (err) {
+    console.error('loadDistribution error:', err);
+  } finally {
+    _distLoading = false;
+    const refreshBtn = document.getElementById('refreshDistBtn');
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = 'Refresh'; }
+  }
 }
 
 // Set daily rate
