@@ -326,11 +326,15 @@ function daysSince(dateStr) {
             { to: WETH_ADDRESS, data: wethBalCalldata },
             { to: STAKING_PROXY, data: SEL.totalStaked },
             { to: STAKING_PROXY, data: SEL.stakerCount },
-        ]).catch(() => ['0x0', '0x0', '0x0']),
+            { to: STAKING_PROXY, data: SEL.rewardRate },
+            { to: STAKING_PROXY, data: SEL.periodEnd },
+        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
     var onChainStakerCount = rpcBatchRes[2];
+    var onChainRewardRate = fromWei(rpcBatchRes[3]);
+    var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
 
     // DexScreener (primary)
     clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);
@@ -461,61 +465,33 @@ function daysSince(dateStr) {
     }
 
     // ── APY Logic ──
-    // Reads current staked amounts from the stat elements so it stays in sync after stake/unstake
+    // Simple on-chain APY: (rewardRate * 86400 * 365 / totalStaked) * 100
     function updateAllApys() {
-        var clawnchStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
         var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
-        var weeklyRate = Number(ubiData?.weekly_rate) || 0;
-        var dailyRate = weeklyRate / 7;
-        // USD-weighted total: (tokens × price × multiplier) for each vault
-        var clawnchUsdWeighted = clawnchPrice > 0 ? clawnchStaked * clawnchPrice * 1 : clawnchStaked;
-        var inclawnchUsdWeighted = inclawnchPrice > 0 ? inclawnchStaked * inclawnchPrice * 2 : inclawnchStaked * 2;
-        var totalWeightedStake = clawnchUsdWeighted + inclawnchUsdWeighted;
 
-        // Per-card APYs (USD-denominated)
-        // With USD-weighted pool, per $1 staked: CLAWNCH gets 1x share, inCLAWNCH gets 2x share
-        // So inCLAWNCH APY is exactly 2× CLAWNCH APY
-        var clawnchApy = 0;
-        var inclawnchApy = 0;
-        if (totalWeightedStake > 0 && dailyRate > 0 && inclawnchPrice > 0) {
-            var annualRewardUsd = dailyRate * 365 * inclawnchPrice;
-            clawnchApy = annualRewardUsd / totalWeightedStake * 100;
-            inclawnchApy = annualRewardUsd * 2 / totalWeightedStake * 100;
+        var apyNum = 0;
+        if (inclawnchStaked > 0 && onChainRewardRate > 0 && onChainPeriodEnd > Date.now() / 1000) {
+            var annualTokens = onChainRewardRate * 86400 * 365;
+            apyNum = (annualTokens / inclawnchStaked) * 100;
         }
 
-        var apyClawnchEl = document.getElementById('apyValClawnch');
+        var apyStr = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
+
         var apyInclawnchEl = document.getElementById('apyValInclawnch');
-        var weeklyClawnchEl = document.getElementById('weeklyClawnch');
-        var weeklyInclawnchEl = document.getElementById('weeklyInclawnch');
+        if (apyInclawnchEl) apyInclawnchEl.textContent = apyStr;
 
-        var clawnchApyStr = clawnchApy > 0 ? clawnchApy.toFixed(1) + '%' : '--';
-        var inclawnchApyStr = inclawnchApy > 0 ? inclawnchApy.toFixed(1) + '%' : '--';
-
-        if (apyClawnchEl) apyClawnchEl.textContent = clawnchApyStr;
-        if (apyInclawnchEl) apyInclawnchEl.textContent = inclawnchApyStr;
-
-        // Also update vault card APY badges
-        var vaultApyC = document.getElementById('vaultApyClawnch');
+        // Vault card APY badge
         var vaultApyI = document.getElementById('vaultApyInclawnch');
-        if (vaultApyC) vaultApyC.textContent = clawnchApyStr + ' APY';
-        if (vaultApyI) vaultApyI.textContent = inclawnchApyStr + ' APY';
+        if (vaultApyI) vaultApyI.textContent = apyStr + ' APY';
 
-        // Countdown KPIs: total staked value + blended APY
+        // Countdown KPIs: total staked value + APY
         var cdTotalStakedUsdEl = document.getElementById('cdTotalStakedUsd');
         var cdBlendedApyEl = document.getElementById('cdBlendedApy');
         if (cdTotalStakedUsdEl) {
-            var stakedUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
+            var stakedUsd = inclawnchStaked * inclawnchPrice;
             cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
         }
         if (cdBlendedApyEl) {
-            // Blended APY = weighted average of each vault's APY by USD value
-            var blendedApy = 0;
-            var clawnchUsd = clawnchStaked * clawnchPrice;
-            var inclawnchUsd = inclawnchStaked * inclawnchPrice;
-            var totalUsd = clawnchUsd + inclawnchUsd;
-            if (totalUsd > 0 && clawnchApy > 0) {
-                blendedApy = (clawnchUsd / totalUsd) * clawnchApy + (inclawnchUsd / totalUsd) * inclawnchApy;
-            }
             cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
         }
 
@@ -533,42 +509,32 @@ function daysSince(dateStr) {
         }
 
         // Countdown KPI: annual UBI rate in USD
+        var dailyTokens = onChainRewardRate * 86400;
+        var annualTokens = dailyTokens * 365;
         var cdAnnualEl = document.getElementById('cdAnnualUbiUsd');
         if (cdAnnualEl) {
-            if (dailyRate > 0 && inclawnchPrice > 0) {
-                var annualUsdKpi = dailyRate * 365 * inclawnchPrice;
-                cdAnnualEl.textContent = '$' + fmt(Math.round(annualUsdKpi));
+            if (annualTokens > 0 && inclawnchPrice > 0) {
+                cdAnnualEl.textContent = '$' + fmt(Math.round(annualTokens * inclawnchPrice));
             } else {
                 cdAnnualEl.textContent = '--';
             }
         }
 
         // Daily earnings per 100k staked
-        if (weeklyClawnchEl) {
-            if (totalWeightedStake > 0 && dailyRate > 0) {
-                var per100k = (100000 / totalWeightedStake) * dailyRate;
-                weeklyClawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' inCLAWNCH/day</span> per 100k staked';
-            } else {
-                weeklyClawnchEl.textContent = '';
-            }
-        }
+        var weeklyInclawnchEl = document.getElementById('weeklyInclawnch');
         if (weeklyInclawnchEl) {
-            if (totalWeightedStake > 0 && dailyRate > 0) {
-                var per100k2x = (200000 / totalWeightedStake) * dailyRate;
-                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k2x) + ' inCLAWNCH/day</span> per 100k staked';
+            if (inclawnchStaked > 0 && dailyTokens > 0) {
+                var per100k = (100000 / inclawnchStaked) * dailyTokens;
+                weeklyInclawnchEl.innerHTML = 'Earn <span>' + fmt(per100k) + ' inCLAWNCH/day</span> per 100k staked';
             } else {
                 weeklyInclawnchEl.textContent = '';
             }
         }
 
         // ── UBI Income Banner ──
-        var annualInclawnch = dailyRate * 365;
-        var annualUsd = annualInclawnch * inclawnchPrice;
-        var totalStakers = Number(ubiData?.total_stakers) || 0;
-
-        // Pool value = total staked value in USD (CLAWNCH + inCLAWNCH at market prices)
-        var poolTokens = clawnchStaked + (inclawnchStaked * 2);
-        var poolUsd = (clawnchStaked * clawnchPrice) + (inclawnchStaked * inclawnchPrice);
+        var annualUsd = annualTokens * inclawnchPrice;
+        var poolUsd = inclawnchStaked * inclawnchPrice;
+        var stakersNum = Number((document.getElementById('statStakers').textContent || '0').replace(/,/g, '')) || 0;
 
         var incomeValEl = document.getElementById('ubiIncomeValue');
         var incomeSubEl = document.getElementById('ubiIncomeSub');
@@ -577,43 +543,37 @@ function daysSince(dateStr) {
         var incomeStakersEl = document.getElementById('ubiIncomeStakers');
 
         if (incomeValEl) {
-            if (weeklyRate > 0 && inclawnchPrice > 0) {
+            if (annualUsd > 0) {
                 incomeValEl.textContent = '$' + fmtUsd(annualUsd) + ' / year';
-            } else if (weeklyRate > 0) {
-                incomeValEl.textContent = fmt(annualInclawnch) + ' inCLAWNCH / year';
+            } else if (annualTokens > 0) {
+                incomeValEl.textContent = fmt(annualTokens) + ' inCLAWNCH / year';
             } else if (poolUsd > 0) {
                 incomeValEl.textContent = '$' + fmtUsd(poolUsd) + ' Pool';
-            } else if (poolTokens > 0) {
-                incomeValEl.textContent = fmt(poolTokens) + ' tokens staked';
             } else {
                 incomeValEl.textContent = 'Coming Soon';
             }
         }
         if (incomeSubEl) {
-            if (weeklyRate > 0) {
-                incomeSubEl.innerHTML = '<strong>' + fmt(annualInclawnch) + ' inCLAWNCH</strong> distributed annually to all stakers';
-            } else if (poolTokens > 0) {
-                incomeSubEl.textContent = fmt(poolTokens) + ' weighted tokens staked — set daily rate from admin to activate distributions';
+            if (annualTokens > 0) {
+                incomeSubEl.innerHTML = '<strong>' + fmt(annualTokens) + ' inCLAWNCH</strong> distributed annually to all stakers';
             } else {
-                incomeSubEl.textContent = 'Stake CLAWNCH or inCLAWNCH to grow the UBI pool';
+                incomeSubEl.textContent = 'Stake inCLAWNCH to start earning UBI rewards';
             }
         }
         if (incomeWeeklyEl) {
-            incomeWeeklyEl.textContent = dailyRate > 0 ? fmt(dailyRate) : '--';
+            incomeWeeklyEl.textContent = dailyTokens > 0 ? fmt(dailyTokens) : '--';
         }
         if (incomePerStakerEl) {
-            if (totalStakers > 0 && annualUsd > 0) {
-                incomePerStakerEl.textContent = '~$' + fmtUsd(annualUsd / totalStakers);
-            } else if (totalStakers > 0 && annualInclawnch > 0) {
-                incomePerStakerEl.textContent = '~' + fmt(annualInclawnch / totalStakers) + ' inCLAWNCH';
-            } else if (totalStakers > 0 && poolUsd > 0) {
-                incomePerStakerEl.textContent = '~$' + fmtUsd(poolUsd / totalStakers);
+            if (stakersNum > 0 && annualUsd > 0) {
+                incomePerStakerEl.textContent = '~$' + fmtUsd(annualUsd / stakersNum);
+            } else if (stakersNum > 0 && annualTokens > 0) {
+                incomePerStakerEl.textContent = '~' + fmt(annualTokens / stakersNum) + ' inCLAWNCH';
             } else {
                 incomePerStakerEl.textContent = '--';
             }
         }
         if (incomeStakersEl) {
-            incomeStakersEl.textContent = totalStakers;
+            incomeStakersEl.textContent = stakersNum;
         }
     }
 
@@ -655,35 +615,23 @@ function daysSince(dateStr) {
             return;
         }
 
-        var weeklyRate = Number(ubiData.weekly_rate) || 0;
-        var dailyRate = weeklyRate / 7;
-        var clawnchStaked = Number(ubiData.total_balance) || 0;
-        var inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
-        // USD-weighted totals
-        var clawnchUsdW = clawnchPrice > 0 ? clawnchStaked * clawnchPrice : clawnchStaked;
-        var inclawnchUsdW = inclawnchPrice > 0 ? inclawnchStaked * inclawnchPrice * 2 : inclawnchStaked * 2;
-        var totalWeightedStake = clawnchUsdW + inclawnchUsdW;
-
-        // Combined dilution from both inputs (USD-weighted)
-        var addClawnchW = clawnchPrice > 0 ? clawnchAmt * clawnchPrice : clawnchAmt;
-        var addInclawnchW = inclawnchPrice > 0 ? inclawnchAmt * inclawnchPrice * 2 : inclawnchAmt * 2;
-        var newTotalWeighted = totalWeightedStake + addClawnchW + addInclawnchW;
+        // On-chain data for calculator
+        var dailyRate = onChainRewardRate * 86400;
+        var currentStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var newTotalStaked = currentStaked + inclawnchAmt;
 
         function renderCol(amount, mult, label) {
-            var tokenPrice = mult === 2 ? inclawnchPrice : clawnchPrice;
-            var weightedAmount = tokenPrice > 0 ? amount * tokenPrice * mult : amount * mult;
             if (amount <= 0) {
                 return '<div class="ubi-calc-col-title">' + label + '</div><div class="ubi-calc-empty">Enter an amount above</div>';
             }
-            var daily = newTotalWeighted > 0 ? (weightedAmount / newTotalWeighted) * dailyRate : 0;
+            // Simple share: your tokens / new total pool * daily rate
+            var daily = newTotalStaked > 0 ? (amount / newTotalStaked) * dailyRate : 0;
             var weekly = daily * 7;
             var monthly = daily * 30;
             var annual = daily * 365;
-            // USD APY: with USD-weighted pool, inCLAWNCH gets exactly 2× CLAWNCH APY
             var apy = 0;
-            if (newTotalWeighted > 0 && dailyRate > 0 && inclawnchPrice > 0) {
-                var annualRewardUsd = dailyRate * 365 * inclawnchPrice;
-                apy = annualRewardUsd * mult / newTotalWeighted * 100;
+            if (newTotalStaked > 0 && dailyRate > 0) {
+                apy = (onChainRewardRate * 86400 * 365 / newTotalStaked) * 100;
             }
 
             function valWithUsd(tokens) {
@@ -701,8 +649,8 @@ function daysSince(dateStr) {
             return html;
         }
 
-        colC.innerHTML = renderCol(clawnchAmt, 1, 'CLAWNCH (1x)');
-        colI.innerHTML = renderCol(inclawnchAmt, 2, 'inCLAWNCH (2x)');
+        colC.innerHTML = '';
+        colI.innerHTML = renderCol(inclawnchAmt, 1, 'inCLAWNCH');
     }
 
     // Format calc inputs with commas on every keystroke
@@ -880,10 +828,9 @@ function daysSince(dateStr) {
             var barFill = document.getElementById('cdBarFill');
             if (barFill) barFill.style.width = progress + '%';
 
-            // Accumulating daily distribution number
+            // Accumulating daily distribution number (from on-chain rewardRate)
             var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
-            var weeklyRate = Number(ubiData?.weekly_rate) || 0;
-            var dailyRateTick = weeklyRate / 7;
+            var dailyRateTick = onChainRewardRate * 86400;
             if (cdWeeklyEl && dailyRateTick > 0) {
                 var accumPct = Math.min(1, elapsed / ONE_DAY);
                 var accumulated = Math.round(dailyRateTick * accumPct);
