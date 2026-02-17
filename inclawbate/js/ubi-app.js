@@ -207,24 +207,31 @@ async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
     throw new Error('Transaction timed out');
 }
 
-// Read multiple contract values — split into two small batches to avoid RPC limits
+// Read a single contract value via wallet provider (MetaMask's own RPC — no public rate limit)
+async function walletRead(provider, to, data) {
+    var res = await provider.request({
+        method: 'eth_call',
+        params: [{ to: to, data: data }, 'latest']
+    });
+    return res || '0x0';
+}
+
+// Read multiple contract values via wallet provider to avoid public RPC rate limits
 async function readContractState(wallet) {
+    var provider = window.ethereum;
+    if (!provider) throw new Error('No wallet provider');
     var addrPadded = pad32(wallet);
-    // Batch 1: user-specific (3 calls)
-    var [balRes, earnedRes, autoRes] = await contractReadBatch([
-        { to: STAKING_PROXY, data: SEL.balanceOf + addrPadded },
-        { to: STAKING_PROXY, data: SEL.earned + addrPadded },
-        { to: STAKING_PROXY, data: SEL.autoRestake + addrPadded },
-    ]);
-    // Batch 2: global contract state (7 calls)
-    var [totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await contractReadBatch([
-        { to: STAKING_PROXY, data: SEL.totalStaked },
-        { to: STAKING_PROXY, data: SEL.stakerCount },
-        { to: STAKING_PROXY, data: SEL.rewardRate },
-        { to: STAKING_PROXY, data: SEL.periodEnd },
-        { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
-        { to: STAKING_PROXY, data: SEL.admin },
-        { to: STAKING_PROXY, data: SEL.paused },
+    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await Promise.all([
+        walletRead(provider, STAKING_PROXY, SEL.balanceOf + addrPadded),
+        walletRead(provider, STAKING_PROXY, SEL.earned + addrPadded),
+        walletRead(provider, STAKING_PROXY, SEL.autoRestake + addrPadded),
+        walletRead(provider, STAKING_PROXY, SEL.totalStaked),
+        walletRead(provider, STAKING_PROXY, SEL.stakerCount),
+        walletRead(provider, STAKING_PROXY, SEL.rewardRate),
+        walletRead(provider, STAKING_PROXY, SEL.periodEnd),
+        walletRead(provider, STAKING_PROXY, SEL.rewardPoolBalance),
+        walletRead(provider, STAKING_PROXY, SEL.admin),
+        walletRead(provider, STAKING_PROXY, SEL.paused),
     ]);
     return {
         staked: fromWei(balRes),
