@@ -1,4 +1,4 @@
-// Inclawbate — UBI Treasury Page (Dual Staking: CLAWNCH 1x / inCLAWNCH 2x)
+// Inclawbate — UBI Treasury Page (On-Chain inCLAWNCH Staking)
 
 // ── MIGRATION MODE ──
 // Set to true while migrating stakers to the new on-chain InclawnchStaking contract.
@@ -625,7 +625,7 @@ function daysSince(dateStr) {
 
         if ((clawnchAmt <= 0 && inclawnchAmt <= 0) || !ubiData) {
             colC.innerHTML = '<div class="ubi-calc-col-title">CLAWNCH (1x)</div><div class="ubi-calc-empty">Enter an amount above</div>';
-            colI.innerHTML = '<div class="ubi-calc-col-title">inCLAWNCH (2x)</div><div class="ubi-calc-empty">Enter an amount above</div>';
+            colI.innerHTML = '<div class="ubi-calc-col-title">inCLAWNCH</div><div class="ubi-calc-empty">Enter an amount above</div>';
             return;
         }
 
