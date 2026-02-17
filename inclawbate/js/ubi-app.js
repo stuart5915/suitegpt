@@ -1148,7 +1148,6 @@ function daysSince(dateStr) {
                     html += '</div>';
                     html += '<div class="ubi-rewards-actions">';
                     html += '<button class="btn-claim" id="btnClaim">Claim</button>';
-                    html += '<button class="btn-compound" id="btnCompound">Compound</button>';
                     html += '</div>';
                     html += '</div>';
                 }
