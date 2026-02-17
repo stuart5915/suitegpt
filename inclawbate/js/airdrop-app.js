@@ -1650,29 +1650,41 @@ async function refreshContractStats() {
     }
 }
 
-// Default end time to tomorrow 6am EST (11am UTC)
+// Parse EST date+time inputs into a UTC timestamp
+// EST = UTC-5, EDT = UTC-4. We always use EST (UTC-5) for simplicity.
+function getEndTimeMs() {
+    var dateVal = document.getElementById('scDepositEndDate').value; // YYYY-MM-DD
+    var timeVal = document.getElementById('scDepositEndTime').value; // HH:MM
+    if (!dateVal || !timeVal) return NaN;
+    // Build UTC time: EST is UTC-5, so add 5 hours
+    var utcMs = new Date(dateVal + 'T' + timeVal + ':00Z').getTime() + (5 * 3600000);
+    return utcMs;
+}
+
+// Default end time to tomorrow 6:00 AM EST
 function setDefaultEndTime() {
     var now = new Date();
+    // Tomorrow 6am EST = tomorrow 11am UTC
     var next6am = new Date(now);
     next6am.setUTCHours(11, 0, 0, 0);
-    if (now >= next6am) next6am.setUTCDate(next6am.getUTCDate() + 1);
-    // Format for datetime-local input (local timezone)
-    var y = next6am.getFullYear();
-    var mo = String(next6am.getMonth() + 1).padStart(2, '0');
-    var d = String(next6am.getDate()).padStart(2, '0');
-    var h = String(next6am.getHours()).padStart(2, '0');
-    var mi = String(next6am.getMinutes()).padStart(2, '0');
-    document.getElementById('scDepositEndTime').value = y + '-' + mo + '-' + d + 'T' + h + ':' + mi;
+    if (now.getTime() >= next6am.getTime()) next6am.setUTCDate(next6am.getUTCDate() + 1);
+    // Convert to EST for display (UTC - 5h)
+    var estDate = new Date(next6am.getTime() - 5 * 3600000);
+    var y = estDate.getUTCFullYear();
+    var mo = String(estDate.getUTCMonth() + 1).padStart(2, '0');
+    var d = String(estDate.getUTCDate()).padStart(2, '0');
+    document.getElementById('scDepositEndDate').value = y + '-' + mo + '-' + d;
+    document.getElementById('scDepositEndTime').value = '06:00';
 }
 
 // Live duration preview
 function updateDurationPreview() {
     var el = document.getElementById('scDurationPreview');
-    var endTime = new Date(document.getElementById('scDepositEndTime').value).getTime();
+    var endTime = getEndTimeMs();
     var now = Date.now();
     var secs = Math.floor((endTime - now) / 1000);
     if (isNaN(secs) || secs <= 0) {
-        el.textContent = '';
+        el.textContent = secs === 0 || isNaN(secs) ? '' : 'in the past';
         return;
     }
     var hrs = Math.floor(secs / 3600);
@@ -1702,10 +1714,8 @@ if (scDepAmtInput) {
     });
 }
 
-var scEndTimeInput = document.getElementById('scDepositEndTime');
-if (scEndTimeInput) {
-    scEndTimeInput.addEventListener('input', updateDurationPreview);
-}
+document.getElementById('scDepositEndDate').addEventListener('input', updateDurationPreview);
+document.getElementById('scDepositEndTime').addEventListener('input', updateDurationPreview);
 
 // Refresh
 document.getElementById('scRefreshBtn').addEventListener('click', refreshContractStats);
@@ -1718,10 +1728,10 @@ document.getElementById('scDepositBtn').addEventListener('click', async function
     var amount = parseInt(rawAmt) || 0;
     if (amount <= 0) { alert('Enter a valid amount'); return; }
 
-    var endTime = new Date(document.getElementById('scDepositEndTime').value).getTime();
+    var endTime = getEndTimeMs();
     var now = Date.now();
     var durationSecs = Math.floor((endTime - now) / 1000);
-    if (durationSecs <= 0) { alert('End time must be in the future'); return; }
+    if (isNaN(durationSecs) || durationSecs <= 0) { alert('End time must be in the future'); return; }
 
     var hrs = Math.floor(durationSecs / 3600);
     var mins = Math.floor((durationSecs % 3600) / 60);
