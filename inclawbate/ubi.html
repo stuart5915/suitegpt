@@ -2298,7 +2298,14 @@
     <div class="dash-countdown hidden" id="ubiCountdown">
         <div class="dash-countdown-hero">
             <div class="dash-countdown-hero-amount" id="cdWeeklyAmount">--</div>
-            <div class="dash-countdown-hero-sub">inCLAWNCH being distributed to stakers</div>
+            <div class="dash-countdown-hero-sub">inCLAWNCH being distributed to stakers <button class="dash-vault-apy-info" id="dripInfoBtn" aria-label="Distribution info">i</button></div>
+            <div class="dash-vault-apy-tooltip" id="dripTooltip">
+                <button class="dash-vault-apy-tooltip-close" id="dripTooltipClose">&times;</button>
+                <strong>How the reward pool works</strong>
+                <p>The number above is the remaining inCLAWNCH in the on-chain reward pool. It drips to all stakers every second, proportional to their share of the pool.</p>
+                <p>When the pool runs low, it gets topped up by the founder (<a href="https://x.com/artstu" target="_blank" style="color:var(--gold-400);">@artstu</a>) via the <code>depositRewards</code> function on the staking contract. This is a public, verifiable on-chain transaction.</p>
+                <p><strong>20% APY minimum guarantee:</strong> Regardless of inCLAWNCH trading volume or buyback fees, the reward pool will always be funded to maintain at least 20% APY for stakers. If trading fees alone don't cover it, the founder backstops the difference from the treasury.</p>
+            </div>
         </div>
         <div class="dash-countdown-kpis">
             <div class="dash-countdown-kpi">
@@ -2537,16 +2544,17 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
     });
 });
 
-// APY info tooltip toggle
-(function() {
-    var btn = document.getElementById('apyInfoBtn');
-    var tip = document.getElementById('apyTooltip');
-    var close = document.getElementById('apyTooltipClose');
+// Tooltip toggles
+[['apyInfoBtn', 'apyTooltip', 'apyTooltipClose'],
+ ['dripInfoBtn', 'dripTooltip', 'dripTooltipClose']].forEach(function(ids) {
+    var btn = document.getElementById(ids[0]);
+    var tip = document.getElementById(ids[1]);
+    var close = document.getElementById(ids[2]);
     if (btn && tip) {
         btn.addEventListener('click', function() { tip.classList.toggle('visible'); });
         if (close) close.addEventListener('click', function() { tip.classList.remove('visible'); });
     }
-})();
+});
 </script>
 
 <!-- Calculator Modal -->
