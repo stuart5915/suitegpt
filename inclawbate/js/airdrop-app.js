@@ -14,6 +14,25 @@ const DISPERSE_TOKEN_SELECTOR = '0xc73a2d60';          // disperseToken(address,
 const ALLOWANCE_SELECTOR = '0xdd62ed3e';               // allowance(address,address)
 const BALANCE_SELECTOR = '0x70a08231';                  // balanceOf(address)
 
+// ── On-Chain InclawnchStaking Contract ──
+const STAKING_PROXY = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const MAX_UINT256 = '0x' + 'f'.repeat(64);
+const SC = {
+    depositRewards:   '0xbdd071fb', // depositRewards(uint256,uint256)
+    transferAdmin:    '0x75829def', // transferAdmin(address)
+    pause:            '0x8456cb59', // pause()
+    unpause:          '0x3f4ba83a', // unpause()
+    totalStaked:      '0x817b1cd2', // totalStaked()
+    stakerCount:      '0xdff69787', // stakerCount()
+    rewardRate:       '0x7b0a47ee', // rewardRate()
+    periodEnd:        '0x506ec095', // periodEnd()
+    rewardPoolBalance:'0x7a5c08ae', // rewardPoolBalance()
+    admin:            '0xf851a440', // admin()
+    paused:           '0x5c975abb', // paused()
+    totalDeposited:   '0x1f4c74fd', // totalRewardsDeposited()
+    totalClaimed:     '0xa34b0f76', // totalRewardsClaimed()
+};
+
 let provider = null;
 let userAddress = null;
 let allProfiles = [];
@@ -39,6 +58,21 @@ function shortAddr(a) {
 function fmtNum(n) {
     return Math.round(Number(n) || 0).toLocaleString();
 }
+function fromWei(hex) {
+    if (!hex || hex === '0x' || hex === '0x0') return 0;
+    return Number(BigInt(hex)) / 1e18;
+}
+async function contractRead(to, data) {
+    var res = await fetch('https://mainnet.base.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{ to: to, data: data }, 'latest'] })
+    });
+    var json = await res.json();
+    return json.result || '0x0';
+}
+
 function timeSinceStr(dateStr) {
     const ms = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(ms / 60000);
@@ -104,16 +138,22 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.disabled = true;
         selectPanel.style.display = '';
 
-        // Show UBI distribution panel and philanthropy panel
+        // Show UBI distribution panel, philanthropy panel, and staking contract panel
         document.getElementById('ubiDistPanel').style.display = '';
         document.getElementById('philPanel').style.display = '';
+        document.getElementById('stakingContractPanel').style.display = '';
 
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
 
+        // Set default end time for deposit rewards (tomorrow 6am EST)
+        setDefaultEndTime();
+        updateDurationPreview();
+
         loadProfiles();
         loadDistribution();
         loadPhilanthropy();
+        refreshContractStats();
     } catch (err) {
         walletStatus.textContent = err.message || 'Connection failed';
         walletStatus.className = 'airdrop-status error';
@@ -1568,4 +1608,225 @@ document.getElementById('bulkWelcomeBtn').addEventListener('click', async () => 
     }
 
     btn.disabled = false;
+});
+
+// ══════════════════════════════════════════════════
+//  ON-CHAIN STAKING CONTRACT ADMIN
+// ══════════════════════════════════════════════════
+
+async function refreshContractStats() {
+    try {
+        var [totalRes, countRes, rateRes, endRes, poolRes, depRes, claimedRes, pausedRes] = await Promise.all([
+            contractRead(STAKING_PROXY, SC.totalStaked),
+            contractRead(STAKING_PROXY, SC.stakerCount),
+            contractRead(STAKING_PROXY, SC.rewardRate),
+            contractRead(STAKING_PROXY, SC.periodEnd),
+            contractRead(STAKING_PROXY, SC.rewardPoolBalance),
+            contractRead(STAKING_PROXY, SC.totalDeposited),
+            contractRead(STAKING_PROXY, SC.totalClaimed),
+            contractRead(STAKING_PROXY, SC.paused),
+        ]);
+
+        var totalStaked = fromWei(totalRes);
+        var stakerCnt = Number(BigInt(countRes || '0x0'));
+        var rate = fromWei(rateRes);
+        var end = Number(BigInt(endRes || '0x0'));
+        var pool = fromWei(poolRes);
+        var deposited = fromWei(depRes);
+        var claimed = fromWei(claimedRes);
+        var isPaused = BigInt(pausedRes || '0x0') > 0n;
+
+        document.getElementById('scTotalStaked').textContent = fmtNum(Math.round(totalStaked)) + ' inCLAWNCH';
+        document.getElementById('scStakerCount').textContent = stakerCnt;
+        document.getElementById('scRewardRate').textContent = fmtNum(Math.round(rate * 86400)) + '/day';
+        document.getElementById('scPeriodEnd').textContent = end > 0 ? new Date(end * 1000).toLocaleString() : 'Not set';
+        document.getElementById('scRewardPool').textContent = fmtNum(Math.round(pool)) + ' inCLAWNCH';
+        document.getElementById('scTotalDeposited').textContent = fmtNum(Math.round(deposited)) + ' inCLAWNCH';
+        document.getElementById('scTotalClaimed').textContent = fmtNum(Math.round(claimed)) + ' inCLAWNCH';
+        document.getElementById('scPaused').textContent = isPaused ? 'PAUSED' : 'Active';
+        document.getElementById('scPaused').style.color = isPaused ? 'var(--lobster-300)' : 'var(--seafoam-300)';
+    } catch (e) {
+        console.error('Failed to load contract stats:', e);
+    }
+}
+
+// Default end time to tomorrow 6am EST (11am UTC)
+function setDefaultEndTime() {
+    var now = new Date();
+    var next6am = new Date(now);
+    next6am.setUTCHours(11, 0, 0, 0);
+    if (now >= next6am) next6am.setUTCDate(next6am.getUTCDate() + 1);
+    // Format for datetime-local input (local timezone)
+    var y = next6am.getFullYear();
+    var mo = String(next6am.getMonth() + 1).padStart(2, '0');
+    var d = String(next6am.getDate()).padStart(2, '0');
+    var h = String(next6am.getHours()).padStart(2, '0');
+    var mi = String(next6am.getMinutes()).padStart(2, '0');
+    document.getElementById('scDepositEndTime').value = y + '-' + mo + '-' + d + 'T' + h + ':' + mi;
+}
+
+// Live duration preview
+function updateDurationPreview() {
+    var el = document.getElementById('scDurationPreview');
+    var endTime = new Date(document.getElementById('scDepositEndTime').value).getTime();
+    var now = Date.now();
+    var secs = Math.floor((endTime - now) / 1000);
+    if (isNaN(secs) || secs <= 0) {
+        el.textContent = '';
+        return;
+    }
+    var hrs = Math.floor(secs / 3600);
+    var mins = Math.floor((secs % 3600) / 60);
+    el.textContent = hrs + 'h ' + mins + 'm from now';
+}
+
+// Live USD preview beside deposit amount
+function updateDepositUsd() {
+    var raw = (document.getElementById('scDepositAmount').value || '').replace(/,/g, '');
+    var amt = parseInt(raw) || 0;
+    var el = document.getElementById('scDepositUsd');
+    if (amt > 0 && inclawnchPriceGlobal > 0) {
+        el.textContent = '~$' + (amt * inclawnchPriceGlobal).toFixed(2) + ' USD';
+    } else {
+        el.textContent = '';
+    }
+}
+
+// Format deposit amount input with commas
+var scDepAmtInput = document.getElementById('scDepositAmount');
+if (scDepAmtInput) {
+    scDepAmtInput.addEventListener('input', function() {
+        var raw = scDepAmtInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        if (raw) scDepAmtInput.value = parseInt(raw, 10).toLocaleString();
+        updateDepositUsd();
+    });
+}
+
+var scEndTimeInput = document.getElementById('scDepositEndTime');
+if (scEndTimeInput) {
+    scEndTimeInput.addEventListener('input', updateDurationPreview);
+}
+
+// Refresh
+document.getElementById('scRefreshBtn').addEventListener('click', refreshContractStats);
+
+// Deposit Rewards
+document.getElementById('scDepositBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+
+    var rawAmt = (document.getElementById('scDepositAmount').value || '').replace(/,/g, '');
+    var amount = parseInt(rawAmt) || 0;
+    if (amount <= 0) { alert('Enter a valid amount'); return; }
+
+    var endTime = new Date(document.getElementById('scDepositEndTime').value).getTime();
+    var now = Date.now();
+    var durationSecs = Math.floor((endTime - now) / 1000);
+    if (durationSecs <= 0) { alert('End time must be in the future'); return; }
+
+    var hrs = Math.floor(durationSecs / 3600);
+    var mins = Math.floor((durationSecs % 3600) / 60);
+    if (!confirm('Deposit ' + fmtNum(amount) + ' inCLAWNCH to drip over ' + hrs + 'h ' + mins + 'm?')) return;
+
+    var statusEl = document.getElementById('scDepositStatus');
+    var btn = document.getElementById('scDepositBtn');
+    btn.disabled = true;
+    statusEl.textContent = 'Checking approval...';
+    statusEl.className = 'airdrop-status';
+
+    try {
+        var amountWei = toWei(amount);
+
+        // Check allowance
+        var allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(STAKING_PROXY);
+        var allowResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: INCLAWNCH_ADDRESS, data: allowData }, 'latest']
+        });
+        if (BigInt(allowResult || '0x0') < amountWei) {
+            statusEl.textContent = 'Requesting approval...';
+            var approveData = APPROVE_SELECTOR + pad32(STAKING_PROXY) + pad32(MAX_UINT256);
+            var approveTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: INCLAWNCH_ADDRESS, data: approveData }]
+            });
+            statusEl.textContent = 'Waiting for approval...';
+            await waitForReceipt(approveTx);
+        }
+
+        // depositRewards(amount, duration)
+        statusEl.textContent = 'Depositing rewards...';
+        var depositData = SC.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSecs));
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: STAKING_PROXY, data: depositData }]
+        });
+        statusEl.textContent = 'Confirming...';
+        await waitForReceipt(txHash);
+
+        statusEl.innerHTML = 'Rewards deposited! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+        statusEl.className = 'airdrop-status success';
+        refreshContractStats();
+    } catch (err) {
+        statusEl.textContent = err.message || 'Deposit failed';
+        statusEl.className = 'airdrop-status error';
+    }
+    btn.disabled = false;
+});
+
+// Pause
+document.getElementById('scPauseBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+    try {
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: STAKING_PROXY, data: SC.pause }]
+        });
+        await waitForReceipt(txHash);
+        refreshContractStats();
+    } catch (err) { alert(err.message || 'Pause failed'); }
+});
+
+// Unpause
+document.getElementById('scUnpauseBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+    try {
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: STAKING_PROXY, data: SC.unpause }]
+        });
+        await waitForReceipt(txHash);
+        refreshContractStats();
+    } catch (err) { alert(err.message || 'Unpause failed'); }
+});
+
+// Transfer Admin
+document.getElementById('scTransferBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+
+    var newAddr = (document.getElementById('scNewAdmin').value || '').trim();
+    if (!newAddr || newAddr.length !== 42 || !newAddr.startsWith('0x')) {
+        alert('Enter a valid address');
+        return;
+    }
+
+    if (!confirm('Transfer admin to ' + shortAddr(newAddr) + '? This cannot be undone from this wallet.')) return;
+
+    var statusEl = document.getElementById('scTransferStatus');
+    try {
+        statusEl.textContent = 'Transferring admin...';
+        statusEl.className = 'airdrop-status';
+        var data = SC.transferAdmin + pad32(newAddr);
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: STAKING_PROXY, data: data }]
+        });
+        statusEl.textContent = 'Confirming...';
+        await waitForReceipt(txHash);
+        statusEl.innerHTML = 'Admin transferred! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+        statusEl.className = 'airdrop-status success';
+        refreshContractStats();
+    } catch (err) {
+        statusEl.textContent = err.message || 'Transfer failed';
+        statusEl.className = 'airdrop-status error';
+    }
 });
