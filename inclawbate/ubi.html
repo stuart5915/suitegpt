@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UBI — Inclawbate</title>
-    <meta name="description" content="Stake CLAWNCH or inCLAWNCH to earn passive UBI from the agent economy. 2x rewards for inCLAWNCH stakers.">
+    <meta name="description" content="Stake inCLAWNCH to earn passive UBI from the agent economy. On-chain staking contract. No lock. No tiers.">
     <meta property="og:title" content="UBI — Inclawbate">
-    <meta property="og:description" content="Stake CLAWNCH for 1x rewards. Stake inCLAWNCH for 2x rewards. No tiers. No lock. Just yield.">
+    <meta property="og:description" content="Stake inCLAWNCH on-chain. Real yield from the agent economy. No tiers. No lock. Just yield.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/ubi">
     <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?tagline=Stake+to+Earn+CLAWNCH+UBI">
@@ -2457,11 +2457,6 @@
             </div>
             <div class="dash-countdown-kpi-divider"></div>
             <div class="dash-countdown-kpi">
-                <span class="dash-countdown-kpi-value" id="cdBlendedApy">--</span>
-                <span class="dash-countdown-kpi-label">Blended APY</span>
-            </div>
-            <div class="dash-countdown-kpi-divider"></div>
-            <div class="dash-countdown-kpi">
                 <span class="dash-countdown-kpi-value" id="cdTotalDistributed">--</span>
                 <span class="dash-countdown-kpi-label">UBI Distributed</span>
             </div>
@@ -2471,6 +2466,8 @@
                 <span class="dash-countdown-kpi-label">Annual UBI Rate</span>
             </div>
         </div>
+        <!-- Hidden for JS compat -->
+        <span id="cdBlendedApy" style="display:none;">--</span>
         <div class="dash-countdown-label">&#129438; Next UBI Distribution &#129438;</div>
         <div class="dash-countdown-time" id="countdownTime">
             <div class="dash-countdown-seg">
@@ -2508,20 +2505,20 @@
     <!-- ═══ Section 1: APY Hero ═══ -->
     <section class="dash-hero">
         <div class="dash-hero-top">
-            <h1>CLAWNCH <span>UBI</span></h1>
-            <p>Real yield from the agent economy. No lock. No tiers. Just stake.</p>
+            <h1>inCLAWNCH <span>UBI</span></h1>
+            <p>Real yield from the agent economy. Stake inCLAWNCH on-chain. No lock. No tiers. Just stake.</p>
         </div>
 
         <div class="dash-stats-row dash-stats-row--trio">
-            <div class="dash-stat dash-stat--seafoam">
-                <span class="dash-stat-label">CLAWNCH Staked</span>
-                <span class="dash-stat-val" id="statClawnchStaked">0</span>
-                <span class="dash-stat-sub" id="tvlClawnchUsd"></span>
-            </div>
             <div class="dash-stat dash-stat--gold">
                 <span class="dash-stat-label">inCLAWNCH Staked</span>
                 <span class="dash-stat-val" id="statInclawnchStaked">0</span>
                 <span class="dash-stat-sub" id="tvlInclawnchUsd"></span>
+            </div>
+            <!-- Hidden for JS compat -->
+            <div style="display:none;">
+                <span id="statClawnchStaked">0</span>
+                <span id="tvlClawnchUsd"></span>
             </div>
             <div class="dash-stat">
                 <span class="dash-stat-label">Stakers</span>
@@ -2573,30 +2570,22 @@
     <div id="ubiStep2">
     <section class="dash-vaults" id="stake">
         <div class="dash-vault-grid">
-            <!-- CLAWNCH Vault -->
-            <div class="dash-vault dash-vault--clawnch">
+            <!-- CLAWNCH Vault (retired) -->
+            <div class="dash-vault dash-vault--clawnch" style="opacity: 0.7;">
                 <div class="dash-vault-header">
                     <div class="dash-vault-token">CLAWNCH</div>
-                    <div class="dash-vault-apy dash-vault-apy--seafoam" id="vaultApyClawnch">-- APY</div>
-                    <div class="dash-vault-mult">1x</div>
+                    <div class="dash-vault-apy dash-vault-apy--seafoam" style="background: hsla(0,0%,50%,0.15); color: var(--text-dim);">Retired</div>
                 </div>
-                <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base" target="_blank" rel="noopener" class="dash-vault-buy">Buy on Uniswap <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>
-                <div class="dash-vault-balance" id="balanceClawnch">Available: <span class="bal-val" id="balValClawnch">--</span><span class="bal-max" data-token="clawnch">MAX</span></div>
-                <div class="dash-vault-form stake-form" data-token="clawnch" style="display:none;">
-                    <div class="dash-vault-input-row">
-                        <div class="dash-vault-input-wrap">
-                            <input type="text" inputmode="numeric" class="input stake-amount" data-token="clawnch" placeholder="CLAWNCH amount" value="50000">
-                        </div>
-                        <span class="dash-vault-hint stake-hint" data-token="clawnch"></span>
-                        <button class="btn btn-primary btn-sm stake-deposit-btn" data-token="clawnch" disabled>Stake</button>
-                    </div>
-                    <input type="range" class="dash-vault-slider stake-slider" data-token="clawnch" min="0" max="100" value="0">
-                    <div class="dash-vault-pct-row stake-pct-row" data-token="clawnch">
-                        <button class="ubi-stake-pct-btn" data-pct="25">25%</button>
-                        <button class="ubi-stake-pct-btn" data-pct="50">50%</button>
-                        <button class="ubi-stake-pct-btn" data-pct="75">75%</button>
-                        <button class="ubi-stake-pct-btn" data-pct="100">MAX</button>
-                    </div>
+                <div style="padding: var(--space-md) var(--space-sm); font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                    <p style="margin: 0 0 var(--space-sm);">CLAWNCH staking has been retired. All UBI rewards now go through the <strong style="color: var(--text-primary);">on-chain inCLAWNCH staking contract</strong>.</p>
+                    <p style="margin: 0 0 var(--space-sm);">If you have CLAWNCH staked, withdraw it and <a href="https://app.uniswap.org/swap?inputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base" target="_blank" rel="noopener" style="color: var(--seafoam-300); text-decoration: underline;">swap to inCLAWNCH</a> to continue earning.</p>
+                </div>
+                <!-- Hidden elements for JS compatibility -->
+                <div style="display:none;">
+                    <span id="balValClawnch">--</span>
+                    <span id="vaultApyClawnch">--</span>
+                    <div id="balanceClawnch"></div>
+                    <div class="stake-form" data-token="clawnch"></div>
                 </div>
                 <div class="ubi-stake-status stake-status" data-token="clawnch"></div>
             </div>
@@ -2798,20 +2787,10 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
             <span class="ubi-calc-modal-title">Estimate Your Returns</span>
             <button class="ubi-calc-modal-close" id="calcCloseBtn">&times;</button>
         </div>
-        <div class="ubi-calc-input-group">
-            <label class="ubi-calc-input-label">CLAWNCH</label>
-            <div class="ubi-calc-input-row">
-                <div class="ubi-calc-input-wrap">
-                    <input type="text" id="calcAmountClawnch" class="ubi-calc-input" placeholder="0" inputmode="numeric" autocomplete="off">
-                    <span class="ubi-calc-usd" id="calcUsdClawnch"></span>
-                </div>
-                <div class="ubi-calc-pct-row" id="calcPctRowClawnch" style="display:none">
-                    <button class="ubi-calc-pct-btn" data-pct="25" data-token="clawnch">25%</button>
-                    <button class="ubi-calc-pct-btn" data-pct="50" data-token="clawnch">50%</button>
-                    <button class="ubi-calc-pct-btn" data-pct="75" data-token="clawnch">75%</button>
-                    <button class="ubi-calc-pct-btn" data-pct="100" data-token="clawnch">100%</button>
-                </div>
-            </div>
+        <!-- CLAWNCH calc hidden (retired) -->
+        <div style="display:none;">
+            <input type="text" id="calcAmountClawnch" value="0">
+            <span id="calcUsdClawnch"></span>
         </div>
         <div class="ubi-calc-input-group">
             <label class="ubi-calc-input-label ubi-calc-input-label--gold">inCLAWNCH</label>
@@ -2829,12 +2808,9 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
             </div>
         </div>
         <div class="ubi-calc-results">
-            <div class="ubi-calc-col ubi-calc-col--clawnch" id="calcColClawnch">
-                <div class="ubi-calc-col-title">CLAWNCH (1x)</div>
-                <div class="ubi-calc-empty">Enter an amount above</div>
-            </div>
+            <div class="ubi-calc-col ubi-calc-col--clawnch" id="calcColClawnch" style="display:none;"></div>
             <div class="ubi-calc-col ubi-calc-col--inclawnch" id="calcColInclawnch">
-                <div class="ubi-calc-col-title">inCLAWNCH (2x)</div>
+                <div class="ubi-calc-col-title">inCLAWNCH</div>
                 <div class="ubi-calc-empty">Enter an amount above</div>
             </div>
         </div>

@@ -1750,21 +1750,21 @@ function daysSince(dateStr) {
 
         var config = TOKEN_CONFIG[token];
 
-        // inCLAWNCH uses on-chain contract, CLAWNCH uses old API
+        // inCLAWNCH uses on-chain contract
         if (token === 'inclawnch') {
             return doDepositOnChain(amount, config, depositBtn, status);
         }
 
-        // ── CLAWNCH: Old flow (ERC20 transfer + API recording) ──
-        var confirmed = await ubiModal({
-            icon: '\u26A0\uFE0F',
-            title: 'Staking Disclaimer',
-            msg: 'By staking your ' + config.label + ', you acknowledge that your funds may be locked until the next distribution cycle, depending on available liquidity and other factors.',
-            confirmLabel: 'I Understand \u2014 Stake',
-            cancelLabel: 'Cancel',
+        // ── CLAWNCH staking retired — redirect to inCLAWNCH ──
+        ubiModal({
+            icon: '\uD83D\uDEAB',
+            title: 'CLAWNCH Staking Retired',
+            msg: 'CLAWNCH staking is no longer active. All UBI rewards now go through the on-chain inCLAWNCH staking contract. Swap your CLAWNCH to inCLAWNCH on Uniswap and stake it in the inCLAWNCH vault.',
+            confirmLabel: 'Got it',
+            cancelLabel: false,
             confirmClass: 'ubi-modal-btn--confirm'
         });
-        if (!confirmed) return;
+        return;
 
         depositBtn.disabled = true;
         status.textContent = 'Sending ' + config.label + ' to UBI treasury...';

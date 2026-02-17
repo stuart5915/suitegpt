@@ -147,7 +147,9 @@ async function calculateStakerDays(weeklyRate, walletCapPct) {
         .eq('airdrop_banned', true)
         .not('wallet_address', 'is', null);
     const bannedWallets = new Set((bannedRows || []).map(r => r.wallet_address.toLowerCase()));
-    const filteredStakes = activeStakes.filter(s => !bannedWallets.has(s.wallet_address.toLowerCase()));
+    const filteredStakes = activeStakes
+        .filter(s => !bannedWallets.has(s.wallet_address.toLowerCase()))
+        .filter(s => (s.token || 'clawnch') === 'clawnch'); // Exclude inCLAWNCH — on-chain contract handles their rewards
 
     if (filteredStakes.length === 0) {
         return { stakers: [], total_weighted_days: 0, prices };

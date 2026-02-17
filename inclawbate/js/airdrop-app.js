@@ -556,12 +556,14 @@ function updateDistTimer(lastDistAt, distCount) {
 async function loadDistribution() {
     // Fetch distribution data, prices, and wallet balances in parallel
     const balCalldata = BALANCE_SELECTOR + pad32(userAddress);
-    const [ubiResp, clawnchPriceResp, inclawnchPriceResp, clawnchBalResp, inclawnchBalResp] = await Promise.all([
+    const [ubiResp, clawnchPriceResp, inclawnchPriceResp, clawnchBalResp, inclawnchBalResp, onChainTotalRes, onChainCountRes] = await Promise.all([
         fetch(API_BASE + '/ubi?distribution=true'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).catch(() => null),
         provider.request({ method: 'eth_call', params: [{ to: CLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0'),
-        provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0')
+        provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }).catch(() => '0x0'),
+        contractRead(STAKING_PROXY, SC.totalStaked).catch(() => '0x0'),
+        contractRead(STAKING_PROXY, SC.stakerCount).catch(() => '0x0')
     ]);
 
     const data = await ubiResp.json();
@@ -592,6 +594,20 @@ async function loadDistribution() {
     const walletClawnch = Number(BigInt(clawnchBalResp || '0x0')) / 1e18;
     const walletInclawnch = Number(BigInt(inclawnchBalResp || '0x0')) / 1e18;
     const walletUsd = (walletClawnch * clawnchPrice) + (walletInclawnch * inclawnchPrice);
+
+    // On-chain inCLAWNCH staker info
+    var onChainTotal = fromWei(onChainTotalRes || '0x0');
+    var onChainCount = Number(BigInt(onChainCountRes || '0x0'));
+    var onChainInfoEl = document.getElementById('onChainStakerInfo');
+    if (onChainInfoEl) {
+        if (onChainCount > 0) {
+            onChainInfoEl.style.display = '';
+            document.getElementById('onChainStakerCount').textContent = onChainCount;
+            document.getElementById('onChainTotalStaked').textContent = fmtNum(Math.round(onChainTotal));
+        } else {
+            onChainInfoEl.style.display = 'none';
+        }
+    }
 
     // Update wallet stats
     document.getElementById('distWalletClawnch').textContent = fmtNum(walletClawnch);
