@@ -534,7 +534,7 @@
             background-clip: text;
         }
         .numbers-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr);
+            display: grid; grid-template-columns: repeat(5, 1fr);
             gap: var(--space-lg);
             margin-bottom: var(--space-2xl);
         }
@@ -876,7 +876,11 @@
             </div>
             <div class="number-card">
                 <div class="number-value number-value-coral" id="numStakers">--</div>
-                <div class="number-label">Stakers</div>
+                <div class="number-label">Stakes</div>
+            </div>
+            <div class="number-card">
+                <div class="number-value number-value-seafoam" id="numDistUsd">--</div>
+                <div class="number-label">Total Value Distributed</div>
             </div>
         </div>
         <p class="numbers-tagline">Every incubation fuels the economy. <span>Forever.</span></p>
@@ -1065,6 +1069,16 @@ function copyCA(id) {
             setText('numDaily', '$' + fmtUsd(dailyUsd));
         } else if (dailyRate > 0) {
             setText('numDaily', fmtNum(Math.round(dailyRate)) + ' INCLAWNCH');
+        }
+
+        // Total Value Distributed (USD)
+        var totalDistributed = Number(ubi.total_distributed) || 0;
+        if (totalDistributed > 0 && inPrice > 0) {
+            var HISTORICAL_USD = 2047;
+            var HISTORICAL_TOKENS = 23142858;
+            var newInclawnch = Math.max(0, totalDistributed - HISTORICAL_TOKENS);
+            var distUsd = HISTORICAL_USD + (newInclawnch * inPrice);
+            setText('numDistUsd', '$' + fmtUsd(distUsd));
         }
 
         // Token card prices & mcaps
