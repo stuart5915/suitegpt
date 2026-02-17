@@ -492,7 +492,7 @@ function daysSince(dateStr) {
             cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
         }
         if (cdBlendedApyEl) {
-            cdBlendedApyEl.textContent = blendedApy > 0 ? blendedApy.toFixed(1) + '%' : '--';
+            cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
         // Countdown KPI: total UBI distributed
