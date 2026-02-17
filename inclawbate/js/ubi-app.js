@@ -1093,6 +1093,8 @@ function daysSince(dateStr) {
             var earnedInclawnch = contractState.earned;
             var autoRestakeOn = contractState.autoRestake;
 
+            console.log('[loadMyStakes] wallet:', stakeWallet, 'inclawnch:', userInclawnch, 'clawnch:', userClawnch, 'contractState:', contractState);
+
             var hasAnyStake = userClawnch > 0 || userInclawnch > 0;
             if (!hasAnyStake && pendingUnstakes.length === 0) {
                 list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake inCLAWNCH above to start earning.</div>';
