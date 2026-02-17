@@ -169,15 +169,11 @@ async function contractReadBatch(calls) {
     });
     var results = await res.json();
     if (!Array.isArray(results)) {
-        console.warn('[RPC batch] non-array response:', results);
         return calls.map(function() { return '0x0'; });
     }
     // Sort by id to match input order
     results.sort(function(a, b) { return a.id - b.id; });
-    return results.map(function(r) {
-        if (r.error) console.warn('[RPC batch] error in result:', r.error);
-        return r.result || '0x0';
-    });
+    return results.map(function(r) { return r.result || '0x0'; });
 }
 
 // Send tx via connected wallet and wait for receipt
@@ -1110,8 +1106,6 @@ function daysSince(dateStr) {
             var userInclawnch = contractState.staked;
             var earnedInclawnch = contractState.earned;
             var autoRestakeOn = contractState.autoRestake;
-
-            console.log('[loadMyStakes] wallet:', stakeWallet, 'inclawnch:', userInclawnch, 'clawnch:', userClawnch, 'contractState:', contractState);
 
             var hasAnyStake = userClawnch > 0 || userInclawnch > 0;
             if (!hasAnyStake && pendingUnstakes.length === 0) {
