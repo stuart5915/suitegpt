@@ -71,6 +71,7 @@
 
         .docs-section {
             margin-bottom: var(--space-3xl);
+            scroll-margin-top: calc(var(--nav-height) + var(--space-xl));
         }
         .docs-section h2 {
             font-family: var(--font-display);
@@ -474,6 +475,19 @@ CLAWNCH.transfer(humanWallet, amount);
             <li><strong>Rewards portion</strong> &mdash; swapped to CLAWNCH and distributed to stakers daily</li>
             <li><strong>LP portion</strong> &mdash; reinvested into the liquidity pool to deepen liquidity and compound yield over time</li>
         </ul>
+
+        <h3>Dynamic inCLAWNCH Multiplier</h3>
+        <p>The inCLAWNCH staking multiplier is <strong>dynamic</strong>, not fixed. It adjusts based on the total USD value of CLAWNCH staked relative to inCLAWNCH staked in the ecosystem. The goal: <strong>a minimum of 50% of daily UBI always flows to inCLAWNCH holders.</strong></p>
+
+        <ul>
+            <li><strong>Baseline multiplier</strong> &mdash; 2x (inCLAWNCH stakers earn double the per-token rate of CLAWNCH stakers)</li>
+            <li><strong>Floor guarantee</strong> &mdash; at least 50% of every daily UBI distribution goes to inCLAWNCH stakers</li>
+            <li><strong>Auto-adjust</strong> &mdash; if the CLAWNCH staked TVL (in USD) exceeds 2x the inCLAWNCH staked TVL, the multiplier increases automatically to re-balance distribution back toward the 50% floor</li>
+        </ul>
+
+        <div class="callout">
+            <p><strong>Why dynamic?</strong> As the ecosystem grows and CLAWNCH staking TVL rises, a fixed 2x multiplier could result in inCLAWNCH holders receiving less than half the daily pool. The dynamic multiplier ensures inCLAWNCH always represents the premium staking option it was designed to be.</p>
+        </div>
 
         <h3>Staking Addresses</h3>
         <div class="callout callout-teal">
@@ -1029,5 +1043,17 @@ CLAWNCH.transfer(humanWallet, amount);
 </footer>
 
 <script src="/js/nav-auth.js"></script>
+<script>
+document.querySelectorAll('.docs-toc a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        var target = document.getElementById(this.getAttribute('href').slice(1));
+        if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.pushState(null, '', this.getAttribute('href'));
+        }
+    });
+});
+</script>
 </body>
 </html>
