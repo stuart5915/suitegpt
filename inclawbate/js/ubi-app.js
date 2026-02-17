@@ -14,6 +14,44 @@ const TRANSFER_SELECTOR = '0xa9059cbb';
 const BALANCE_SELECTOR = '0x70a08231'; // balanceOf(address)
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006';
 
+// ── On-Chain Staking Contract (InclawnchStaking) ──
+const STAKING_PROXY = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+
+// Function selectors (first 4 bytes of keccak256 of signature)
+const SEL = {
+    // User actions
+    stake:            '0xa694fc3a', // stake(uint256)
+    unstake:          '0x2e17de78', // unstake(uint256)
+    claim:            '0x4e71d92d', // claim()
+    claimAndRestake:  '0xf755d8c3', // claimAndRestake()
+    exit:             '0xe9fad8ee', // exit()
+    setAutoRestake:   '0x501cdba4', // setAutoRestake(bool)
+    // Admin actions
+    depositRewards:   '0xbdd071fb', // depositRewards(uint256,uint256)
+    transferAdmin:    '0x75829def', // transferAdmin(address)
+    pause:            '0x8456cb59', // pause()
+    unpause:          '0x3f4ba83a', // unpause()
+    // View functions
+    balanceOf:        '0x70a08231', // balanceOf(address)
+    earned:           '0x008cc262', // earned(address)
+    totalStaked:      '0x817b1cd2', // totalStaked()
+    stakerCount:      '0xdff69787', // stakerCount()
+    rewardRate:       '0x7b0a47ee', // rewardRate()
+    periodEnd:        '0x506ec095', // periodEnd()
+    rewardPoolBalance:'0x7a5c08ae', // rewardPoolBalance()
+    timeUntilEnd:     '0xecf30c98', // timeUntilPeriodEnd()
+    admin:            '0xf851a440', // admin()
+    paused:           '0x5c975abb', // paused()
+    autoRestake:      '0x5ccba116', // autoRestake(address)
+    totalDeposited:   '0x1f4c74fd', // totalRewardsDeposited()
+    totalClaimed:     '0xa34b0f76', // totalRewardsClaimed()
+    // ERC20
+    approve:          '0x095ea7b3', // approve(address,uint256)
+    allowance:        '0xdd62ed3e', // allowance(address,address)
+};
+
+const MAX_UINT256 = '0x' + 'f'.repeat(64);
+
 const TOKEN_CONFIG = {
     clawnch: { address: CLAWNCH_ADDRESS, label: 'CLAWNCH' },
     inclawnch: { address: INCLAWNCH_ADDRESS, label: 'inCLAWNCH' }
@@ -100,6 +138,81 @@ function toWei(amount) {
     return BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
 }
 
+function fromWei(hex) {
+    if (!hex || hex === '0x' || hex === '0x0') return 0;
+    return Number(BigInt(hex)) / 1e18;
+}
+
+// Read from contract via public RPC (no wallet needed)
+async function contractRead(to, data) {
+    var res = await fetch('https://mainnet.base.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{ to: to, data: data }, 'latest'] })
+    });
+    var json = await res.json();
+    return json.result || '0x0';
+}
+
+// Send tx via connected wallet and wait for receipt
+async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
+    if (statusEl && statusMsg) {
+        statusEl.textContent = statusMsg;
+        statusEl.className = 'ubi-stake-status stake-status';
+    }
+    var txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: from, to: to, data: data }]
+    });
+    if (statusEl) {
+        statusEl.textContent = 'Confirming transaction...';
+    }
+    for (var i = 0; i < 90; i++) {
+        await new Promise(function(r) { setTimeout(r, 2000); });
+        var receipt = await provider.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash]
+        });
+        if (receipt) {
+            if (receipt.status !== '0x1') throw new Error('Transaction reverted');
+            return txHash;
+        }
+    }
+    throw new Error('Transaction timed out');
+}
+
+// Read multiple contract values in parallel
+async function readContractState(wallet) {
+    var addrPadded = pad32(wallet);
+    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await Promise.all([
+        contractRead(STAKING_PROXY, SEL.balanceOf + addrPadded),
+        contractRead(STAKING_PROXY, SEL.earned + addrPadded),
+        contractRead(STAKING_PROXY, SEL.autoRestake + addrPadded),
+        contractRead(STAKING_PROXY, SEL.totalStaked),
+        contractRead(STAKING_PROXY, SEL.stakerCount),
+        contractRead(STAKING_PROXY, SEL.rewardRate),
+        contractRead(STAKING_PROXY, SEL.periodEnd),
+        contractRead(STAKING_PROXY, SEL.rewardPoolBalance),
+        contractRead(STAKING_PROXY, SEL.admin),
+        contractRead(STAKING_PROXY, SEL.paused),
+    ]);
+    return {
+        staked: fromWei(balRes),
+        stakedRaw: BigInt(balRes || '0x0'),
+        earned: fromWei(earnedRes),
+        earnedRaw: BigInt(earnedRes || '0x0'),
+        autoRestake: BigInt(autoRes || '0x0') > 0n,
+        totalStaked: fromWei(totalRes),
+        stakerCount: Number(BigInt(countRes || '0x0')),
+        rewardRate: fromWei(rateRes),
+        periodEnd: Number(BigInt(endRes || '0x0')),
+        rewardPool: fromWei(poolRes),
+        admin: '0x' + (adminRes || '').slice(-40),
+        paused: BigInt(pausedRes || '0x0') > 0n,
+    };
+}
+
 function timeAgo(dateStr) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -179,9 +292,9 @@ function daysSince(dateStr) {
         return null;
     }
 
-    // Fetch UBI data, prices, and protocol WETH balance in parallel
+    // Fetch UBI data, prices, WETH balance, and on-chain staking stats in parallel
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, wethBalRes] = await Promise.all([
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, wethBalRes, onChainTotalStaked, onChainStakerCount] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -195,7 +308,9 @@ function daysSince(dateStr) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
                 params: [{ to: WETH_ADDRESS, data: wethBalCalldata }, 'latest'] })
-        }).then(r => r.json()).catch(() => null)
+        }).then(r => r.json()).catch(() => null),
+        contractRead(STAKING_PROXY, SEL.totalStaked).catch(() => '0x0'),
+        contractRead(STAKING_PROXY, SEL.stakerCount).catch(() => '0x0'),
     ]);
 
     // DexScreener (primary)
@@ -250,12 +365,17 @@ function daysSince(dateStr) {
     }
     updateRevenueSection(protocolWeth, clawnchPrice);
 
+    // Use on-chain data for inCLAWNCH staked amount
+    var onChainInclawnchStaked = fromWei(onChainTotalStaked);
+    var onChainStakers = Number(BigInt(onChainStakerCount || '0x0'));
+
     if (ubiData) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
-        const inclawnchStaked = Number(ubiData.inclawnch_staked) || 0;
+        // Prefer on-chain data for inCLAWNCH, fallback to API
+        const inclawnchStaked = onChainInclawnchStaked > 0 ? onChainInclawnchStaked : (Number(ubiData.inclawnch_staked) || 0);
 
         // Treasury display (hidden, for JS compat)
-        document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH + ' + fmt(inclawnchStaked) + ' inCLAWNCH';
+        document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH + ' + fmt(Math.round(inclawnchStaked)) + ' inCLAWNCH';
 
         // USD value per token
         const clawnchUsd = clawnchStaked * clawnchPrice;
@@ -275,10 +395,12 @@ function daysSince(dateStr) {
             priceEl.textContent = 'CLAWNCH: $' + clawnchPrice.toFixed(7) + ' (' + src + ')';
         }
 
-        // Stats
+        // Stats — inCLAWNCH from contract, CLAWNCH from API
         document.getElementById('statClawnchStaked').textContent = fmt(clawnchStaked);
-        document.getElementById('statInclawnchStaked').textContent = fmt(inclawnchStaked);
-        document.getElementById('statStakers').textContent = fmt(ubiData.total_stakers);
+        document.getElementById('statInclawnchStaked').textContent = fmt(Math.round(inclawnchStaked));
+        // Staker count: on-chain inCLAWNCH stakers (CLAWNCH stakers counted separately in API)
+        var totalStakers = onChainStakers > 0 ? onChainStakers : (Number(ubiData.total_stakers) || 0);
+        document.getElementById('statStakers').textContent = fmt(totalStakers);
 
         var totalDistributed = Number(ubiData.total_distributed) || 0;
         var distEl = document.getElementById('statTotalDistributed');
@@ -1129,225 +1251,181 @@ function daysSince(dateStr) {
         section.classList.add('visible');
 
         try {
-            const resp = await fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase());
-            const data = await resp.json();
-            const stakes = data.my_stakes || [];
-            const autoStakeOn = data.auto_stake || false;
+            // Fetch CLAWNCH from API and inCLAWNCH from contract in parallel
+            var [apiResp, contractState] = await Promise.all([
+                fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase()).then(r => r.json()).catch(() => ({})),
+                readContractState(stakeWallet)
+            ]);
 
-            const activeStakes = stakes.filter(function(s) { return s.active; });
-            const pendingUnstakes = stakes.filter(function(s) { return !s.active && s.unstaked_at && s.withdrawal_status !== 'completed'; });
+            var data = apiResp || {};
+            var clawnchStakes = (data.my_stakes || []).filter(function(s) { return s.active && (s.token || 'clawnch') === 'clawnch'; });
+            var pendingUnstakes = (data.my_stakes || []).filter(function(s) { return !s.active && s.unstaked_at && s.withdrawal_status !== 'completed' && (s.token || 'clawnch') === 'clawnch'; });
 
-            if (activeStakes.length === 0 && pendingUnstakes.length === 0) {
-                list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning UBI.</div>';
-                // Still render redirect widget in Step 3 even with no stakes
+            var userClawnch = clawnchStakes.reduce(function(sum, s) { return sum + s.clawnch_amount; }, 0);
+            var userInclawnch = contractState.staked;
+            var earnedInclawnch = contractState.earned;
+            var autoRestakeOn = contractState.autoRestake;
+
+            var hasAnyStake = userClawnch > 0 || userInclawnch > 0;
+            if (!hasAnyStake && pendingUnstakes.length === 0) {
+                list.innerHTML = '<div class="ubi-no-stakes">No active stakes yet. Stake CLAWNCH or inCLAWNCH above to start earning.</div>';
                 renderRedirectWidget(data);
                 return;
             }
 
-            // Group active stakes by token
-            var grouped = {};
-            activeStakes.forEach(function(s) {
-                var token = s.token || 'clawnch';
-                if (!grouped[token]) grouped[token] = { amount: 0, earliest: s.created_at };
-                grouped[token].amount += s.clawnch_amount;
-                if (new Date(s.created_at) < new Date(grouped[token].earliest)) {
-                    grouped[token].earliest = s.created_at;
-                }
-            });
+            // Update on-chain inCLAWNCH stat
+            var statIncEl = document.getElementById('statInclawnchStaked');
+            if (statIncEl && contractState.totalStaked > 0) {
+                statIncEl.textContent = fmt(Math.round(contractState.totalStaked));
+            }
 
-            // Calculate user's estimated daily UBI
-            var userClawnch = grouped.clawnch ? grouped.clawnch.amount : 0;
-            var userInclawnch = grouped.inclawnch ? grouped.inclawnch.amount : 0;
-            // USD-weighted to match backend calculateStakerDays (amount × price × multiplier)
-            var userWeighted = (userClawnch * clawnchPrice * 1) + (userInclawnch * inclawnchPrice * 2);
-            var totalClawnchStaked = Number(ubiData?.total_balance) || 0;
-            var totalInclawnchStaked = Number(ubiData?.inclawnch_staked) || 0;
-            var totalWeightedAll = (totalClawnchStaked * clawnchPrice * 1) + (totalInclawnchStaked * inclawnchPrice * 2);
-            var weeklyRateVal = Number(ubiData?.weekly_rate) || 0;
-            var dailyRateVal = weeklyRateVal / 7;
+            // Check if this wallet is admin
+            var isAdmin = contractState.admin.toLowerCase() === stakeWallet.toLowerCase();
+            var adminPanel = document.getElementById('stakingAdminPanel');
+            if (adminPanel) {
+                adminPanel.style.display = isAdmin ? '' : 'none';
+                if (isAdmin) refreshAdminStats();
+            }
 
             var html = '';
 
-            // Show personalized countdown + earnings widget
-            if (userWeighted > 0 && totalWeightedAll > 0 && dailyRateVal > 0) {
-                var sharePct = (userWeighted / totalWeightedAll) * 100;
-                var dailyAllocation = (userWeighted / totalWeightedAll) * dailyRateVal;
+            // ── inCLAWNCH on-chain position ──
+            if (userInclawnch > 0 || earnedInclawnch > 0) {
+                var earnedUsd = earnedInclawnch * inclawnchPrice;
+                var stakedUsd = userInclawnch * inclawnchPrice;
 
-                var dailyUsdVal = dailyAllocation * inclawnchPrice;
-                var yearlyAllocation = dailyAllocation * 365;
-                var yearlyUsdVal = yearlyAllocation * inclawnchPrice;
-
-                html += '<div class="ubi-position-countdown" id="posCountdownWidget">';
-                html += '<div class="ubi-pc-label" id="posCountdownLabel">NEXT DISTRIBUTION</div>';
-                var dailyUsdStr = dailyUsdVal > 0 ? ' ($' + dailyUsdVal.toFixed(2) + ')' : '';
-                html += '<div class="ubi-pc-amount" id="posCountdownAmount">~' + fmt(Math.round(dailyAllocation)) + ' inCLAWNCH' + dailyUsdStr + '</div>';
-                var sKeep = data.split_keep_pct ?? 100;
-                var sKingdom = data.split_kingdom_pct ?? 0;
-                var sReinvest = data.split_reinvest_pct ?? 0;
-                html += buildSplitHtml(dailyAllocation, inclawnchPrice, sKeep, sKingdom, sReinvest);
-                html += '<div class="ubi-pc-timer-row">';
-                html += '<div class="ubi-pc-bar"><div class="ubi-pc-bar-fill" id="posCountdownBarFill"></div></div>';
-                html += '<div class="ubi-pc-time" id="posCountdownTime">--</div>';
+                html += '<div class="ubi-stake-row ubi-stake-row--onchain">';
+                html += '<div class="ubi-stake-row-info">';
+                html += '<span class="ubi-contrib-token ubi-contrib-token--inclawnch">inCLAWNCH</span>';
+                html += '<span class="ubi-stake-row-amount">' + fmt(Math.round(userInclawnch)) + '</span>';
+                if (stakedUsd > 0) html += '<span class="ubi-stake-row-usd">~$' + fmtUsd(stakedUsd) + '</span>';
+                html += '<span class="ubi-stake-row-days ubi-onchain-badge">on-chain</span>';
                 html += '</div>';
-                html += '<div class="ubi-pc-footer">';
-                if (inclawnchPrice > 0 && dailyUsdVal >= 0.01) {
-                    html += '<span class="ubi-pc-usd">~$' + fmtUsd(dailyUsdVal) + '/day &middot; ~$' + fmtUsd(yearlyUsdVal) + '/year</span>';
+                html += '<div class="ubi-stake-row-actions">';
+                html += '<button class="btn-unstake" data-token="inclawnch">Unstake</button>';
+                html += '</div>';
+                html += '</div>';
+
+                // Pending rewards
+                if (earnedInclawnch >= 1) {
+                    html += '<div class="ubi-rewards-row">';
+                    html += '<div class="ubi-rewards-info">';
+                    html += '<span class="ubi-rewards-label">Pending Rewards</span>';
+                    html += '<span class="ubi-rewards-amount">' + fmt(Math.round(earnedInclawnch)) + ' inCLAWNCH</span>';
+                    if (earnedUsd > 0.01) html += '<span class="ubi-rewards-usd">~$' + fmtUsd(earnedUsd) + '</span>';
+                    html += '</div>';
+                    html += '<div class="ubi-rewards-actions">';
+                    html += '<button class="btn-claim" id="btnClaim">Claim</button>';
+                    html += '<button class="btn-compound" id="btnCompound">Compound</button>';
+                    html += '</div>';
+                    html += '</div>';
                 }
-                html += '<span class="ubi-pc-share">' + sharePct.toFixed(2) + '% of pool</span>';
-                html += '</div>';
-                html += '</div>';
 
-            } else if (userWeighted > 0 && totalWeightedAll > 0) {
-                var sharePctOnly = (userWeighted / totalWeightedAll) * 100;
-                html += '<div class="ubi-pending-allocation">';
-                html += '<div class="ubi-pending-label">Your Pool Share</div>';
-                html += '<div class="ubi-pending-value">' + sharePctOnly.toFixed(2) + '%</div>';
-                html += '<div class="ubi-pending-detail">' + fmt(userWeighted) + ' weighted stake out of ' + fmt(totalWeightedAll) + ' total. Weekly rate not yet set.</div>';
-                html += '</div>';
-            }
-
-            Object.keys(grouped).forEach(function(token) {
-                var g = grouped[token];
-                var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
-                var tokenClass = 'ubi-contrib-token--' + token;
-                html += '<div class="ubi-stake-row">' +
-                    '<div class="ubi-stake-row-info">' +
-                        '<span class="ubi-contrib-token ' + tokenClass + '">' + tokenLabel + '</span>' +
-                        '<span class="ubi-stake-row-amount">' + fmt(g.amount) + '</span>' +
-                        '<span class="ubi-stake-row-days">staking for ' + daysSince(g.earliest) + '</span>' +
-                    '</div>' +
-                    '<div class="ubi-stake-row-actions">' +
-                        '<button class="btn-unstake" data-token="' + token + '">Unstake</button>' +
-                    '</div>' +
-                '</div>';
-            });
-
-            // Auto-stake toggle (only when user has active stakes)
-            if (activeStakes.length > 0) {
-                var checkedAttr = autoStakeOn ? ' checked' : '';
+                // Auto-restake toggle (on-chain)
+                var checkedAttr = autoRestakeOn ? ' checked' : '';
                 html += '<div class="ubi-autostake-row">';
                 html += '<label class="ubi-autostake-toggle">';
                 html += '<input type="checkbox" id="autoStakeToggle"' + checkedAttr + '>';
                 html += '<span class="ubi-autostake-slider"></span>';
                 html += '</label>';
                 html += '<div class="ubi-autostake-info">';
-                html += '<div class="ubi-autostake-label">Auto-stake rewards</div>';
-                html += '<div class="ubi-autostake-desc">Rewards automatically compound into your staked position instead of being sent to your wallet.</div>';
+                html += '<div class="ubi-autostake-label">Auto-compound rewards</div>';
+                html += '<div class="ubi-autostake-desc">When you claim, rewards automatically compound into your staked position.</div>';
+                html += '</div>';
+                html += '</div>';
+
+                // Reward period info
+                if (contractState.periodEnd > 0) {
+                    var now = Math.floor(Date.now() / 1000);
+                    var timeLeft = contractState.periodEnd - now;
+                    var ratePerDay = contractState.rewardRate * 86400;
+                    if (timeLeft > 0) {
+                        html += '<div class="ubi-reward-period">';
+                        var h = Math.floor(timeLeft / 3600);
+                        var m = Math.floor((timeLeft % 3600) / 60);
+                        html += 'Reward drip: ' + fmt(Math.round(ratePerDay)) + ' inCLAWNCH/day';
+                        html += ' &middot; ' + h + 'h ' + m + 'm remaining';
+                        html += '</div>';
+                    }
+                }
+            }
+
+            // ── CLAWNCH position (old API) ──
+            if (userClawnch > 0) {
+                var earliest = clawnchStakes.reduce(function(min, s) { return new Date(s.created_at) < new Date(min) ? s.created_at : min; }, clawnchStakes[0].created_at);
+                html += '<div class="ubi-stake-row">';
+                html += '<div class="ubi-stake-row-info">';
+                html += '<span class="ubi-contrib-token ubi-contrib-token--clawnch">CLAWNCH</span>';
+                html += '<span class="ubi-stake-row-amount">' + fmt(userClawnch) + '</span>';
+                html += '<span class="ubi-stake-row-days">staking for ' + daysSince(earliest) + '</span>';
+                html += '</div>';
+                html += '<div class="ubi-stake-row-actions">';
+                html += '<button class="btn-unstake" data-token="clawnch">Unstake</button>';
                 html += '</div>';
                 html += '</div>';
             }
 
+            // CLAWNCH pending unstakes
             if (pendingUnstakes.length > 0) {
-                var pendingTotal = {};
-                pendingUnstakes.forEach(function(s) {
-                    var t = s.token || 'clawnch';
-                    if (!pendingTotal[t]) pendingTotal[t] = 0;
-                    pendingTotal[t] += s.clawnch_amount;
-                });
-                var parts = [];
-                Object.keys(pendingTotal).forEach(function(t) {
-                    var label = t === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
-                    parts.push(fmt(pendingTotal[t]) + ' ' + label);
-                });
-                html += '<div class="ubi-unstake-pending">Withdrawal requested: ' + parts.join(', ') + '. Your tokens will be sent to your wallet shortly.</div>';
+                var pendingAmt = pendingUnstakes.reduce(function(s, u) { return s + u.clawnch_amount; }, 0);
+                html += '<div class="ubi-unstake-pending">CLAWNCH withdrawal requested: ' + fmt(pendingAmt) + '. Tokens will be sent to your wallet shortly.</div>';
             }
 
             list.innerHTML = html;
 
-            // Wire up unstake buttons
+            // Wire up buttons
             list.querySelectorAll('.btn-unstake').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     handleUnstake(btn.getAttribute('data-token'));
                 });
             });
 
-            // Wire up auto-stake toggle
+            var btnClaim = document.getElementById('btnClaim');
+            var btnCompound = document.getElementById('btnCompound');
+            if (btnClaim) btnClaim.addEventListener('click', function() { handleClaim(false); });
+            if (btnCompound) btnCompound.addEventListener('click', function() { handleClaim(true); });
+
+            // Wire up auto-stake toggle (on-chain)
             var autoToggle = document.getElementById('autoStakeToggle');
             if (autoToggle) {
                 autoToggle.addEventListener('change', async function() {
                     autoToggle.disabled = true;
+                    var newVal = autoToggle.checked;
                     try {
-                        var tResp = await fetch('/api/inclawbate/ubi', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'toggle-auto-stake', wallet_address: stakeWallet })
-                        });
-                        var tData = await tResp.json();
-                        if (tResp.ok && tData.success) {
-                            autoToggle.checked = tData.auto_stake;
-                            ubiToast(tData.auto_stake ? 'Auto-stake enabled — rewards will compound' : 'Auto-stake disabled — rewards sent to wallet', 'success');
-                            // Update countdown text
-                            var amountEl = document.getElementById('posCountdownAmount');
-                            if (amountEl) {
-                                amountEl.innerHTML = amountEl.innerHTML.replace(/\u2192 (auto-staked|your wallet)/, '\u2192 ' + (tData.auto_stake ? 'auto-staked' : 'your wallet'));
-                            }
-                        } else {
-                            autoToggle.checked = !autoToggle.checked; // revert
-                            ubiToast(tData.error || 'Failed to update', 'error');
-                        }
+                        var provider = getProvider();
+                        if (!provider) throw new Error('No wallet');
+                        var boolPadded = pad32(newVal ? '0x1' : '0x0');
+                        await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, SEL.setAutoRestake + boolPadded, null, null);
+                        ubiToast(newVal ? 'Auto-compound enabled' : 'Auto-compound disabled', 'success');
                     } catch (e) {
-                        autoToggle.checked = !autoToggle.checked;
-                        ubiToast('Failed to update auto-stake', 'error');
+                        autoToggle.checked = !newVal;
+                        ubiToast('Failed to update: ' + (e.message || 'Unknown error'), 'error');
                     }
                     autoToggle.disabled = false;
                 });
             }
 
-            // Render Redirect Your Energy widget into Step 3
+            // Render Redirect Your Energy widget
             renderRedirectWidget(data);
 
-            // Start personalized countdown timer
+            // Personalized countdown timer
             if (_posCountdownInterval) clearInterval(_posCountdownInterval);
-            var pcWidget = document.getElementById('posCountdownWidget');
-            if (pcWidget) {
-                var ONE_DAY_PC = 24 * 60 * 60 * 1000;
-
-                function getPcDaily8am(dir) {
-                    var now = new Date();
-                    var t = new Date(now);
-                    t.setUTCHours(11, 0, 0, 0);
-                    if (dir === 'next') {
-                        if (now >= t) t.setUTCDate(t.getUTCDate() + 1);
-                    } else {
-                        if (now < t) t.setUTCDate(t.getUTCDate() - 1);
-                    }
-                    return t;
-                }
-
-                var pcNext = getPcDaily8am('next').getTime();
-                var pcLast = getPcDaily8am('last').getTime();
-
+            if (contractState.periodEnd > 0 && userInclawnch > 0) {
+                var periodEndMs = contractState.periodEnd * 1000;
                 function pcTick() {
                     var now = Date.now();
-                    var diff = pcNext - now;
-                    var elapsed = now - pcLast;
-                    var progress = Math.min(100, Math.max(0, (elapsed / ONE_DAY_PC) * 100));
-
-                    var barFill = document.getElementById('posCountdownBarFill');
+                    var diff = periodEndMs - now;
                     var timeEl = document.getElementById('posCountdownTime');
-                    var labelEl = document.getElementById('posCountdownLabel');
-                    var amountEl = document.getElementById('posCountdownAmount');
-
-                    if (barFill) barFill.style.width = progress + '%';
-
                     if (diff <= 0) {
-                        // Overdue
-                        if (!pcWidget.classList.contains('ubi-pc-overdue')) {
-                            pcWidget.classList.add('ubi-pc-overdue');
-                            if (labelEl) labelEl.textContent = 'DISTRIBUTION READY';
-                            if (amountEl) amountEl.innerHTML = amountEl.innerHTML.replace('\u2192 your wallet', '\u2192 your wallet soon!');
-                        }
-                        if (timeEl) timeEl.textContent = 'Incoming\u2026';
+                        if (timeEl) timeEl.textContent = 'Reward period ended';
                     } else {
-                        pcWidget.classList.remove('ubi-pc-overdue');
                         var h = Math.floor(diff / 3600000);
                         var m = Math.floor((diff % 3600000) / 60000);
-                        if (timeEl) timeEl.textContent = '$INCLAWNCH sending in ' + h + 'h ' + m + 'm';
+                        if (timeEl) timeEl.textContent = 'Rewards dripping \u2014 ' + h + 'h ' + m + 'm left';
                     }
                 }
-
                 pcTick();
-                _posCountdownInterval = setInterval(pcTick, 1000);
+                _posCountdownInterval = setInterval(pcTick, 30000);
             }
         } catch (e) {
             list.innerHTML = '<div class="ubi-no-stakes">Could not load stakes.</div>';
@@ -1446,24 +1524,23 @@ function daysSince(dateStr) {
             ubiModal({
                 icon: '\uD83D\uDD27',
                 title: 'Migration In Progress',
-                msg: 'Staking is temporarily paused while we migrate to a new on-chain contract. This makes staking fully trustless — no more middleman wallet. Will be back live in a few minutes! Check our Telegram for the announcement.',
+                msg: 'Staking is temporarily paused while we migrate to a new on-chain contract. Will be back live shortly!',
                 confirmLabel: 'Got it',
                 confirmClass: 'ubi-modal-btn--confirm'
             });
             return;
         }
-        var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
 
-        // Check if enough available
-        var userAmount = 0;
-        var grouped = {};
-        var section = document.getElementById('yourStakesList');
-        // Re-read from stakes data
+        // inCLAWNCH uses on-chain contract
+        if (token === 'inclawnch') {
+            return handleUnstakeOnChain();
+        }
+
+        // ── CLAWNCH: Old API flow ──
+        var tokenLabel = 'CLAWNCH';
         try {
             var resp0 = await fetch('/api/inclawbate/ubi?wallet=' + stakeWallet.toLowerCase());
             var data0 = await resp0.json();
-            var activeForToken = (data0.my_stakes || []).filter(function(s) { return s.active && (s.token || 'clawnch') === token; });
-            userAmount = activeForToken.reduce(function(sum, s) { return sum + s.clawnch_amount; }, 0);
         } catch(e) {}
 
         var confirmed = await ubiModal({
@@ -1475,75 +1552,140 @@ function daysSince(dateStr) {
         });
         if (!confirmed) return;
 
-        var btn = document.querySelector('.btn-unstake[data-token="' + token + '"]');
-        var statusEl = document.querySelector('.stake-status[data-token="' + token + '"]');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'Sending tokens...';
-        }
-        if (statusEl) {
-            statusEl.textContent = 'Sending ' + tokenLabel + ' back to your wallet...';
-            statusEl.className = 'ubi-stake-status stake-status';
-        }
+        var btn = document.querySelector('.btn-unstake[data-token="clawnch"]');
+        var statusEl = document.querySelector('.stake-status[data-token="clawnch"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Sending tokens...'; }
+        if (statusEl) { statusEl.textContent = 'Sending CLAWNCH back to your wallet...'; statusEl.className = 'ubi-stake-status stake-status'; }
 
         try {
             var resp = await fetch('/api/inclawbate/ubi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'unstake',
-                    wallet_address: stakeWallet,
-                    token: token
-                })
+                body: JSON.stringify({ action: 'unstake', wallet_address: stakeWallet, token: 'clawnch' })
             });
             var data = await resp.json();
 
             if (resp.ok && data.success) {
-                // Update treasury display
-                if (token === 'clawnch') {
-                    var newBal = Math.max(0, (Number(ubiData?.total_balance) || 0) - data.amount);
-                    document.getElementById('statClawnchStaked').textContent = fmt(newBal);
-                } else {
-                    var newInc = Math.max(0, (Number(ubiData?.inclawnch_staked) || 0) - data.amount);
-                    document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
-                }
-                var cStaked = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
-                var iStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
-                document.getElementById('treasuryValue').textContent = fmt(cStaked) + ' CLAWNCH + ' + fmt(iStaked) + ' inCLAWNCH';
+                var newBal = Math.max(0, (Number(ubiData?.total_balance) || 0) - data.amount);
+                document.getElementById('statClawnchStaked').textContent = fmt(newBal);
+                refreshTreasuryDisplay();
 
                 if (statusEl) {
-                    var msg = fmt(data.amount) + ' ' + tokenLabel + ' returned to your wallet.';
-                    if (data.tx_hash) {
-                        msg += ' <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
-                    }
+                    var msg = fmt(data.amount) + ' CLAWNCH returned to your wallet.';
+                    if (data.tx_hash) msg += ' <a href="https://basescan.org/tx/' + data.tx_hash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
                     statusEl.innerHTML = msg;
                     statusEl.className = 'ubi-stake-status stake-status success';
                 }
-
-                fetchBalances();
-                fetchUnstakeBalance();
-                loadMyStakes();
-                updateAllApys();
-                updateCalc();
+                fetchBalances(); fetchUnstakeBalance(); loadMyStakes(); updateAllApys(); updateCalc();
             } else {
                 var errMsg = data.error || 'Unstake failed';
-                if (statusEl) {
-                    statusEl.textContent = errMsg;
-                    statusEl.className = 'ubi-stake-status stake-status error';
-                } else {
-                    ubiToast(errMsg, 'error');
-                }
+                if (statusEl) { statusEl.textContent = errMsg; statusEl.className = 'ubi-stake-status stake-status error'; }
+                else ubiToast(errMsg, 'error');
                 if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
             }
         } catch (err) {
-            var errText = 'Unstake failed: ' + (err.message || 'Unknown error');
-            if (statusEl) {
-                statusEl.textContent = errText;
-                statusEl.className = 'ubi-stake-status stake-status error';
-            } else {
-                ubiToast(errText, 'error');
-            }
+            if (statusEl) { statusEl.textContent = 'Unstake failed: ' + (err.message || 'Unknown error'); statusEl.className = 'ubi-stake-status stake-status error'; }
             if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
+        }
+    }
+
+    // ── inCLAWNCH: On-chain unstake ──
+    async function handleUnstakeOnChain() {
+        var provider = getProvider();
+        if (!provider || !stakeWallet) return;
+
+        // Read staked balance from contract
+        var balRes = await contractRead(STAKING_PROXY, SEL.balanceOf + pad32(stakeWallet));
+        var stakedRaw = BigInt(balRes || '0x0');
+        var stakedAmount = fromWei(balRes);
+
+        if (stakedRaw === 0n) {
+            ubiToast('No inCLAWNCH staked on-chain', 'error');
+            return;
+        }
+
+        var confirmed = await ubiModal({
+            icon: '\uD83E\uDD9E',
+            title: 'Unstake inCLAWNCH',
+            msg: 'Unstake ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH? Tokens will be sent directly to your wallet from the contract.',
+            confirmLabel: 'Unstake',
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
+
+        var btn = document.querySelector('.btn-unstake[data-token="inclawnch"]');
+        var statusEl = document.querySelector('.stake-status[data-token="inclawnch"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Unstaking...'; }
+
+        try {
+            var unstakeData = SEL.unstake + pad32(toHex(stakedRaw));
+            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, unstakeData, statusEl, 'Unstaking inCLAWNCH...');
+
+            if (statusEl) {
+                statusEl.innerHTML = fmt(Math.round(stakedAmount)) + ' inCLAWNCH returned to your wallet. <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+                statusEl.className = 'ubi-stake-status stake-status success';
+            }
+            ubiToast('Unstaked ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH', 'success');
+            refreshTreasuryDisplay();
+            fetchBalances(); loadMyStakes(); updateAllApys(); updateCalc();
+        } catch (err) {
+            if (statusEl) { statusEl.textContent = err.message || 'Unstake failed'; statusEl.className = 'ubi-stake-status stake-status error'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Unstake'; }
+        }
+    }
+
+    // ── On-chain claim rewards ──
+    async function handleClaim(compound) {
+        var provider = getProvider();
+        if (!provider || !stakeWallet) return;
+
+        var earnedRes = await contractRead(STAKING_PROXY, SEL.earned + pad32(stakeWallet));
+        var earnedAmount = fromWei(earnedRes);
+        if (earnedAmount < 1) {
+            ubiToast('No rewards to claim yet', 'error');
+            return;
+        }
+
+        var action = compound ? 'Compound' : 'Claim';
+        var confirmed = await ubiModal({
+            icon: compound ? '\uD83C\uDF31' : '\uD83E\uDD9E',
+            title: action + ' Rewards',
+            msg: action + ' ' + fmt(Math.round(earnedAmount)) + ' inCLAWNCH' + (compound ? ' (adds to your staked balance)' : ' (sends to your wallet)') + '?',
+            confirmLabel: action,
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
+
+        try {
+            var selector = compound ? SEL.claimAndRestake : SEL.claim;
+            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, selector, null, null);
+            ubiToast((compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' inCLAWNCH', 'success');
+            fetchBalances(); loadMyStakes(); updateAllApys(); updateCalc();
+        } catch (err) {
+            ubiToast(err.message || (action + ' failed'), 'error');
+        }
+    }
+
+    // ── On-chain exit (unstake all + claim all) ──
+    async function handleExit() {
+        var provider = getProvider();
+        if (!provider || !stakeWallet) return;
+
+        var confirmed = await ubiModal({
+            icon: '\uD83D\uDEAA',
+            title: 'Exit All',
+            msg: 'This will unstake all your inCLAWNCH and claim all pending rewards in a single transaction.',
+            confirmLabel: 'Exit All',
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
+
+        try {
+            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, SEL.exit, null, null);
+            ubiToast('Exited! All tokens and rewards sent to your wallet.', 'success');
+            fetchBalances(); loadMyStakes(); updateAllApys(); updateCalc();
+        } catch (err) {
+            ubiToast(err.message || 'Exit failed', 'error');
         }
     }
 
@@ -1616,7 +1758,12 @@ function daysSince(dateStr) {
 
         var config = TOKEN_CONFIG[token];
 
-        // Staking disclaimer
+        // inCLAWNCH uses on-chain contract, CLAWNCH uses old API
+        if (token === 'inclawnch') {
+            return doDepositOnChain(amount, config, depositBtn, status);
+        }
+
+        // ── CLAWNCH: Old flow (ERC20 transfer + API recording) ──
         var confirmed = await ubiModal({
             icon: '\u26A0\uFE0F',
             title: 'Staking Disclaimer',
@@ -1644,11 +1791,7 @@ function daysSince(dateStr) {
 
             var txHash = await provider.request({
                 method: 'eth_sendTransaction',
-                params: [{
-                    from: stakeWallet,
-                    to: config.address,
-                    data: data
-                }]
+                params: [{ from: stakeWallet, to: config.address, data: data }]
             });
 
             status.textContent = 'Confirming transaction...';
@@ -1657,8 +1800,7 @@ function daysSince(dateStr) {
             for (var i = 0; i < 60; i++) {
                 await new Promise(function(r) { setTimeout(r, 2000); });
                 receipt = await provider.request({
-                    method: 'eth_getTransactionReceipt',
-                    params: [txHash]
+                    method: 'eth_getTransactionReceipt', params: [txHash]
                 });
                 if (receipt) break;
             }
@@ -1667,9 +1809,7 @@ function daysSince(dateStr) {
                 throw new Error('Transaction failed or timed out');
             }
 
-            // Save to localStorage immediately so we can recover if API call fails
             savePendingStake(txHash, stakeWallet, token);
-
             status.textContent = 'Recording stake...';
 
             var apiData = await recordStakeWithRetry(txHash, stakeWallet, token);
@@ -1679,26 +1819,9 @@ function daysSince(dateStr) {
                 status.textContent = 'Staked ' + apiData.amount.toLocaleString() + ' ' + config.label + ' in the UBI treasury!';
                 status.className = 'ubi-stake-status stake-status success';
 
-                // Update treasury display
-                if (token === 'clawnch') {
-                    var newBal = (Number(ubiData?.total_balance) || 0) + apiData.amount;
-                    document.getElementById('statClawnchStaked').textContent = fmt(newBal);
-                } else {
-                    var newInc = (Number(ubiData?.inclawnch_staked) || 0) + apiData.amount;
-                    document.getElementById('statInclawnchStaked').textContent = fmt(newInc);
-                }
-
-                // Recalculate USD + roadmap + TVL subtitle
-                var clawnchBal = Number(document.getElementById('statClawnchStaked').textContent.replace(/,/g, '')) || 0;
-                var inclawnchBal = Number(document.getElementById('statInclawnchStaked').textContent.replace(/,/g, '')) || 0;
-                document.getElementById('treasuryValue').textContent = fmt(clawnchBal) + ' CLAWNCH + ' + fmt(inclawnchBal) + ' inCLAWNCH';
-                var newUsd = (clawnchBal * clawnchPrice) + (inclawnchBal * inclawnchPrice);
-                if (clawnchPrice > 0 || inclawnchPrice > 0) {
-                    document.getElementById('treasuryUsd').textContent = '~$' + newUsd.toFixed(2) + ' USD';
-                    updateRoadmap(newUsd);
-                }
-
-                // Reload user's stakes + balance + APY
+                var newBal = (Number(ubiData?.total_balance) || 0) + apiData.amount;
+                document.getElementById('statClawnchStaked').textContent = fmt(newBal);
+                refreshTreasuryDisplay();
                 loadMyStakes();
                 fetchBalances();
                 updateAllApys();
@@ -1706,16 +1829,12 @@ function daysSince(dateStr) {
             } else if (apiData && apiData.duplicate) {
                 status.textContent = 'Stake already recorded!';
                 status.className = 'ubi-stake-status stake-status success';
-                loadMyStakes();
-                fetchBalances();
-                updateAllApys();
-                updateCalc();
+                loadMyStakes(); fetchBalances(); updateAllApys(); updateCalc();
             } else {
                 status.textContent = 'Transaction confirmed on-chain but recording failed. It will be recovered automatically on next page load.';
                 status.className = 'ubi-stake-status stake-status error';
             }
         } catch (err) {
-            // If we have a txHash, the on-chain tx may have succeeded
             if (typeof txHash === 'string' && txHash.length > 0) {
                 status.textContent = 'Transaction may have succeeded. Refresh the page — your stake will be recovered automatically.';
             } else {
@@ -1725,6 +1844,80 @@ function daysSince(dateStr) {
         }
 
         depositBtn.disabled = false;
+    }
+
+    // ── inCLAWNCH: On-chain staking via InclawnchStaking contract ──
+    async function doDepositOnChain(amount, config, depositBtn, status) {
+        var confirmed = await ubiModal({
+            icon: '\u26A0\uFE0F',
+            title: 'Stake inCLAWNCH On-Chain',
+            msg: 'Your inCLAWNCH will be staked in the on-chain contract. You can unstake anytime — no lock, no middleman. You\'ll need to approve the contract to spend your tokens first.',
+            confirmLabel: 'Approve & Stake',
+            cancelLabel: 'Cancel',
+            confirmClass: 'ubi-modal-btn--confirm'
+        });
+        if (!confirmed) return;
+
+        depositBtn.disabled = true;
+        var provider = getProvider();
+        if (!provider) {
+            status.textContent = 'No wallet connected';
+            status.className = 'ubi-stake-status stake-status error';
+            depositBtn.disabled = false;
+            return;
+        }
+
+        var amountWei = toWei(amount);
+
+        try {
+            // Step 1: Check allowance
+            status.textContent = 'Checking approval...';
+            status.className = 'ubi-stake-status stake-status';
+
+            var allowanceData = SEL.allowance + pad32(stakeWallet) + pad32(STAKING_PROXY);
+            var allowanceRes = await provider.request({
+                method: 'eth_call',
+                params: [{ to: INCLAWNCH_ADDRESS, data: allowanceData }, 'latest']
+            });
+            var currentAllowance = BigInt(allowanceRes || '0x0');
+
+            // Step 2: Approve if needed
+            if (currentAllowance < amountWei) {
+                status.textContent = 'Requesting token approval...';
+                var approveData = SEL.approve + pad32(STAKING_PROXY) + pad32(MAX_UINT256);
+                await sendTxAndWait(provider, stakeWallet, INCLAWNCH_ADDRESS, approveData, status, 'Approving contract...');
+            }
+
+            // Step 3: Stake
+            var stakeData = SEL.stake + pad32(toHex(amountWei));
+            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, stakeData, status, 'Staking ' + fmt(amount) + ' inCLAWNCH...');
+
+            status.innerHTML = 'Staked ' + fmt(amount) + ' inCLAWNCH on-chain! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+            status.className = 'ubi-stake-status stake-status success';
+
+            // Refresh everything
+            refreshTreasuryDisplay();
+            loadMyStakes();
+            fetchBalances();
+            updateAllApys();
+            updateCalc();
+        } catch (err) {
+            status.textContent = err.message || 'Stake failed';
+            status.className = 'ubi-stake-status stake-status error';
+        }
+
+        depositBtn.disabled = false;
+    }
+
+    function refreshTreasuryDisplay() {
+        var clawnchBal = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var inclawnchBal = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        document.getElementById('treasuryValue').textContent = fmt(clawnchBal) + ' CLAWNCH + ' + fmt(inclawnchBal) + ' inCLAWNCH';
+        var newUsd = (clawnchBal * clawnchPrice) + (inclawnchBal * inclawnchPrice);
+        if (clawnchPrice > 0 || inclawnchPrice > 0) {
+            document.getElementById('treasuryUsd').textContent = '~$' + fmtUsd(newUsd) + ' USD';
+            updateRoadmap(newUsd);
+        }
     }
 
     function disconnectWallet() {
@@ -1764,6 +1957,9 @@ function daysSince(dateStr) {
         // Hide your stakes
         var stakesSection = document.getElementById('yourStakesSection');
         if (stakesSection) stakesSection.classList.remove('visible');
+        // Hide admin panel
+        var adminPanel = document.getElementById('stakingAdminPanel');
+        if (adminPanel) adminPanel.style.display = 'none';
         // Clear statuses
         document.querySelectorAll('.stake-status').forEach(function(el) {
             el.textContent = '';
@@ -1851,4 +2047,211 @@ function daysSince(dateStr) {
         }
     }
     // If WalletKit isn't loaded, connectWallet() falls back to window.ethereum
+
+    // ══════════════════════════════════════════════════════════════
+    //  ADMIN PANEL
+    // ══════════════════════════════════════════════════════════════
+
+    // Set default deposit end time to 6:00 AM tomorrow (local)
+    var endTimeInput = document.getElementById('adminDepositEndTime');
+    if (endTimeInput) {
+        var tomorrow6am = new Date();
+        tomorrow6am.setDate(tomorrow6am.getDate() + 1);
+        tomorrow6am.setHours(6, 0, 0, 0);
+        // Format as YYYY-MM-DDTHH:MM for datetime-local input
+        var y = tomorrow6am.getFullYear();
+        var mo = String(tomorrow6am.getMonth() + 1).padStart(2, '0');
+        var d = String(tomorrow6am.getDate()).padStart(2, '0');
+        endTimeInput.value = y + '-' + mo + '-' + d + 'T06:00';
+
+        // Update duration preview on change
+        function updateDurationPreview() {
+            var endMs = new Date(endTimeInput.value).getTime();
+            var nowMs = Date.now();
+            var diff = endMs - nowMs;
+            var preview = document.getElementById('adminDurationPreview');
+            if (diff <= 0) {
+                if (preview) preview.textContent = 'End time must be in the future';
+                return;
+            }
+            var hrs = Math.floor(diff / 3600000);
+            var mins = Math.floor((diff % 3600000) / 60000);
+            var secs = Math.floor(diff / 1000);
+            if (preview) preview.textContent = 'Duration: ' + hrs + 'h ' + mins + 'm (' + secs.toLocaleString() + ' seconds)';
+        }
+        endTimeInput.addEventListener('change', updateDurationPreview);
+        updateDurationPreview();
+    }
+
+    // Format admin deposit amount input with commas
+    var adminAmtInput = document.getElementById('adminDepositAmount');
+    if (adminAmtInput) {
+        adminAmtInput.addEventListener('input', function() {
+            var raw = adminAmtInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+            if (raw) adminAmtInput.value = parseInt(raw, 10).toLocaleString();
+        });
+    }
+
+    // Refresh admin stats
+    async function refreshAdminStats() {
+        try {
+            var [totalRes, countRes, rateRes, endRes, poolRes, depRes, claimedRes, pausedRes] = await Promise.all([
+                contractRead(STAKING_PROXY, SEL.totalStaked),
+                contractRead(STAKING_PROXY, SEL.stakerCount),
+                contractRead(STAKING_PROXY, SEL.rewardRate),
+                contractRead(STAKING_PROXY, SEL.periodEnd),
+                contractRead(STAKING_PROXY, SEL.rewardPoolBalance),
+                contractRead(STAKING_PROXY, SEL.totalDeposited),
+                contractRead(STAKING_PROXY, SEL.totalClaimed),
+                contractRead(STAKING_PROXY, SEL.paused),
+            ]);
+
+            var totalStaked = fromWei(totalRes);
+            var stakerCnt = Number(BigInt(countRes || '0x0'));
+            var rate = fromWei(rateRes);
+            var end = Number(BigInt(endRes || '0x0'));
+            var pool = fromWei(poolRes);
+            var deposited = fromWei(depRes);
+            var claimed = fromWei(claimedRes);
+            var isPaused = BigInt(pausedRes || '0x0') > 0n;
+
+            document.getElementById('adminTotalStaked').textContent = fmt(Math.round(totalStaked)) + ' inCLAWNCH';
+            document.getElementById('adminStakerCount').textContent = stakerCnt;
+            document.getElementById('adminRewardRate').textContent = fmt(Math.round(rate * 86400)) + '/day (' + rate.toFixed(4) + '/sec)';
+            document.getElementById('adminPeriodEnd').textContent = end > 0 ? new Date(end * 1000).toLocaleString() : 'Not set';
+            document.getElementById('adminRewardPool').textContent = fmt(Math.round(pool)) + ' inCLAWNCH';
+            document.getElementById('adminTotalDeposited').textContent = fmt(Math.round(deposited)) + ' inCLAWNCH';
+            document.getElementById('adminTotalClaimed').textContent = fmt(Math.round(claimed)) + ' inCLAWNCH';
+            document.getElementById('adminPaused').textContent = isPaused ? 'PAUSED' : 'Active';
+            document.getElementById('adminPaused').style.color = isPaused ? 'var(--lobster-300)' : 'var(--seafoam-300)';
+        } catch (e) {
+            ubiToast('Failed to load admin stats', 'error');
+        }
+    }
+
+    var adminRefreshBtn = document.getElementById('adminRefreshBtn');
+    if (adminRefreshBtn) adminRefreshBtn.addEventListener('click', refreshAdminStats);
+
+    // Deposit Rewards
+    var adminDepositBtn = document.getElementById('adminDepositBtn');
+    if (adminDepositBtn) {
+        adminDepositBtn.addEventListener('click', async function() {
+            var provider = getProvider();
+            if (!provider || !stakeWallet) return;
+
+            var rawAmt = (document.getElementById('adminDepositAmount').value || '').replace(/,/g, '');
+            var amount = parseInt(rawAmt) || 0;
+            if (amount <= 0) { ubiToast('Enter a valid amount', 'error'); return; }
+
+            var endTime = new Date(document.getElementById('adminDepositEndTime').value).getTime();
+            var now = Date.now();
+            var durationSecs = Math.floor((endTime - now) / 1000);
+            if (durationSecs <= 0) { ubiToast('End time must be in the future', 'error'); return; }
+
+            var confirmed = await ubiModal({
+                icon: '\uD83C\uDF31',
+                title: 'Deposit Rewards',
+                msg: 'Deposit ' + fmt(amount) + ' inCLAWNCH to drip over ' + Math.floor(durationSecs / 3600) + 'h ' + Math.floor((durationSecs % 3600) / 60) + 'm?',
+                confirmLabel: 'Deposit',
+                confirmClass: 'ubi-modal-btn--confirm'
+            });
+            if (!confirmed) return;
+
+            var statusEl = document.getElementById('adminDepositStatus');
+            adminDepositBtn.disabled = true;
+
+            try {
+                var amountWei = toWei(amount);
+
+                // Check allowance
+                statusEl.textContent = 'Checking approval...';
+                var allowanceData = SEL.allowance + pad32(stakeWallet) + pad32(STAKING_PROXY);
+                var allowanceRes = await provider.request({
+                    method: 'eth_call',
+                    params: [{ to: INCLAWNCH_ADDRESS, data: allowanceData }, 'latest']
+                });
+                if (BigInt(allowanceRes || '0x0') < amountWei) {
+                    statusEl.textContent = 'Requesting approval...';
+                    var approveData = SEL.approve + pad32(STAKING_PROXY) + pad32(MAX_UINT256);
+                    await sendTxAndWait(provider, stakeWallet, INCLAWNCH_ADDRESS, approveData, statusEl, 'Approving...');
+                }
+
+                // depositRewards(amount, duration)
+                var depositData = SEL.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSecs));
+                var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, depositData, statusEl, 'Depositing rewards...');
+
+                statusEl.innerHTML = 'Rewards deposited! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+                statusEl.style.color = 'var(--seafoam-300)';
+                ubiToast('Deposited ' + fmt(amount) + ' inCLAWNCH rewards', 'success');
+                refreshAdminStats();
+            } catch (err) {
+                statusEl.textContent = err.message || 'Deposit failed';
+                statusEl.style.color = 'var(--lobster-300)';
+            }
+            adminDepositBtn.disabled = false;
+        });
+    }
+
+    // Pause / Unpause
+    var adminPauseBtn = document.getElementById('adminPauseBtn');
+    var adminUnpauseBtn = document.getElementById('adminUnpauseBtn');
+    if (adminPauseBtn) {
+        adminPauseBtn.addEventListener('click', async function() {
+            var provider = getProvider();
+            if (!provider || !stakeWallet) return;
+            try {
+                await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, SEL.pause, null, null);
+                ubiToast('Contract paused', 'success');
+                refreshAdminStats();
+            } catch (err) { ubiToast(err.message || 'Pause failed', 'error'); }
+        });
+    }
+    if (adminUnpauseBtn) {
+        adminUnpauseBtn.addEventListener('click', async function() {
+            var provider = getProvider();
+            if (!provider || !stakeWallet) return;
+            try {
+                await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, SEL.unpause, null, null);
+                ubiToast('Contract unpaused', 'success');
+                refreshAdminStats();
+            } catch (err) { ubiToast(err.message || 'Unpause failed', 'error'); }
+        });
+    }
+
+    // Transfer Admin
+    var adminTransferBtn = document.getElementById('adminTransferBtn');
+    if (adminTransferBtn) {
+        adminTransferBtn.addEventListener('click', async function() {
+            var provider = getProvider();
+            if (!provider || !stakeWallet) return;
+
+            var newAddr = (document.getElementById('adminNewAddress').value || '').trim();
+            if (!newAddr || newAddr.length !== 42 || !newAddr.startsWith('0x')) {
+                ubiToast('Enter a valid address', 'error');
+                return;
+            }
+
+            var confirmed = await ubiModal({
+                icon: '\u26A0\uFE0F',
+                title: 'Transfer Admin',
+                msg: 'Transfer admin to ' + shortAddr(newAddr) + '? This cannot be undone from this wallet.',
+                confirmLabel: 'Transfer',
+                confirmClass: 'ubi-modal-btn--confirm'
+            });
+            if (!confirmed) return;
+
+            var statusEl = document.getElementById('adminTransferStatus');
+            try {
+                var data = SEL.transferAdmin + pad32(newAddr);
+                var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, data, statusEl, 'Transferring admin...');
+                statusEl.innerHTML = 'Admin transferred! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+                statusEl.style.color = 'var(--seafoam-300)';
+                ubiToast('Admin transferred to ' + shortAddr(newAddr), 'success');
+                refreshAdminStats();
+            } catch (err) {
+                statusEl.textContent = err.message || 'Transfer failed';
+                statusEl.style.color = 'var(--lobster-300)';
+            }
+        });
+    }
 })();
