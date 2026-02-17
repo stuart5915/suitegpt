@@ -1737,15 +1737,13 @@ function daysSince(dateStr) {
         walletBalances = { clawnch: 0, inclawnch: 0 };
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
-        // Step flow: undo Step 1 done, re-dim Step 2
+        // Step flow: undo Step 1 done
         var step1 = document.getElementById('ubiStep1');
-        var step2 = document.getElementById('ubiStep2');
         if (step1) step1.classList.remove('ubi-step--done');
-        if (step2) step2.classList.add('ubi-step--dimmed');
 
         // Reset connect buttons
         document.querySelectorAll('.stake-connect-btn').forEach(function(btn) {
-            btn.textContent = 'Connect Wallet';
+            btn.textContent = 'Connect Wallet to Stake';
             btn.classList.remove('connected');
         });
         // Hide forms + fund button

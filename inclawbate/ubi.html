@@ -311,8 +311,9 @@
             color: var(--text-secondary);
         }
         .dash-hero-connect {
-            margin-top: var(--space-md);
+            margin-top: var(--space-sm);
             padding: 10px 32px;
+            width: 100%;
             font-family: var(--font-display);
             font-size: 0.9rem;
             font-weight: 700;
@@ -536,6 +537,78 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+        .dash-vault-apy-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dash-vault-apy-info {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-style: italic;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .dash-vault-apy-info:hover {
+            border-color: hsl(43, 70%, 55%);
+            color: hsl(43, 70%, 65%);
+        }
+        .dash-vault-apy-tooltip {
+            display: none;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            margin-top: var(--space-sm);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            position: relative;
+            animation: tooltipFadeIn 0.15s ease;
+        }
+        .dash-vault-apy-tooltip.visible { display: block; }
+        .dash-vault-apy-tooltip strong {
+            color: var(--text-primary);
+            font-size: 0.82rem;
+        }
+        .dash-vault-apy-tooltip p {
+            margin: var(--space-xs) 0;
+        }
+        .dash-vault-apy-tooltip ul {
+            margin: var(--space-xs) 0;
+            padding-left: 16px;
+        }
+        .dash-vault-apy-tooltip li {
+            margin-bottom: 4px;
+        }
+        .dash-vault-apy-tooltip-close {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .dash-vault-apy-tooltip-close:hover { color: var(--text-secondary); }
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .dash-vault-mult {
             font-family: var(--font-mono);
@@ -2318,9 +2391,7 @@
     </section>
 
     <!-- ═══ Connect + Stake ═══ -->
-    <div class="ubi-step" id="ubiStep1">
-        <button class="dash-hero-connect stake-connect-btn" data-token="inclawnch">Connect Wallet to Stake</button>
-    </div>
+    <div class="ubi-step" id="ubiStep1" style="display:none;"></div>
 
     <!-- ═══ Stake Vault ═══ -->
     <div id="ubiStep2">
@@ -2330,8 +2401,24 @@
             <div class="dash-vault dash-vault--inclawnch">
                 <div class="dash-vault-header">
                     <div class="dash-vault-token">inCLAWNCH</div>
-                    <div class="dash-vault-apy dash-vault-apy--gold" id="vaultApyInclawnch">-- APY</div>
+                    <div class="dash-vault-apy-wrap">
+                        <div class="dash-vault-apy dash-vault-apy--gold" id="vaultApyInclawnch">-- APY</div>
+                        <button class="dash-vault-apy-info" id="apyInfoBtn" aria-label="APY info">i</button>
+                    </div>
                 </div>
+                <div class="dash-vault-apy-tooltip" id="apyTooltip">
+                    <button class="dash-vault-apy-tooltip-close" id="apyTooltipClose">&times;</button>
+                    <strong>Where does the yield come from?</strong>
+                    <p>inCLAWNCH UBI is funded by an external treasury &mdash; not from inflation or token minting. Revenue sources include:</p>
+                    <ul>
+                        <li><strong>inCLAWNCH buybacks</strong> &mdash; every inCLAWNCH purchase triggers an automatic CLAWNCH buyback on-chain, generating protocol revenue</li>
+                        <li><strong>NFT sales</strong> &mdash; proceeds from the "Connecting the Dots" collection go directly to the UBI treasury</li>
+                        <li><strong>Community contributions</strong> &mdash; anyone can fund the treasury</li>
+                        <li><strong>Founder backstop</strong> &mdash; <a href="https://x.com/artstu" target="_blank" style="color:var(--gold-400);">@artstu</a> personally funds the difference if revenue dips</li>
+                    </ul>
+                    <p>Rewards are deposited into the on-chain staking contract and drip to stakers every second. No lock. No middleman. Withdraw anytime.</p>
+                </div>
+                <button class="dash-hero-connect stake-connect-btn" data-token="inclawnch">Connect Wallet to Stake</button>
                 <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base" target="_blank" rel="noopener" class="dash-vault-buy">Buy on Uniswap <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>
                 <div class="dash-vault-balance" id="balanceInclawnch">Available: <span class="bal-val" id="balValInclawnch">--</span><span class="bal-max" data-token="inclawnch">MAX</span></div>
                 <div class="dash-vault-form stake-form" data-token="inclawnch" style="display:none;">
@@ -2499,6 +2586,16 @@ document.querySelectorAll('.dash-tab-btn').forEach(function(btn) {
     });
 });
 
+// APY info tooltip toggle
+(function() {
+    var btn = document.getElementById('apyInfoBtn');
+    var tip = document.getElementById('apyTooltip');
+    var close = document.getElementById('apyTooltipClose');
+    if (btn && tip) {
+        btn.addEventListener('click', function() { tip.classList.toggle('visible'); });
+        if (close) close.addEventListener('click', function() { tip.classList.remove('visible'); });
+    }
+})();
 </script>
 
 <!-- Calculator Modal -->
