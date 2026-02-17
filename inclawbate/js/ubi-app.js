@@ -144,8 +144,9 @@ function fromWei(hex) {
 }
 
 // Read from contract via public RPC (no wallet needed)
+var BASE_RPC = 'https://mainnet.base.org';
 async function contractRead(to, data) {
-    var res = await fetch('https://mainnet.base.org', {
+    var res = await fetch(BASE_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
@@ -153,6 +154,23 @@ async function contractRead(to, data) {
     });
     var json = await res.json();
     return json.result || '0x0';
+}
+
+// Batch multiple eth_call reads into a single HTTP request
+async function contractReadBatch(calls) {
+    var batch = calls.map(function(c, i) {
+        return { jsonrpc: '2.0', id: i + 1, method: 'eth_call',
+            params: [{ to: c.to, data: c.data }, 'latest'] };
+    });
+    var res = await fetch(BASE_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch)
+    });
+    var results = await res.json();
+    // Sort by id to match input order
+    results.sort(function(a, b) { return a.id - b.id; });
+    return results.map(function(r) { return r.result || '0x0'; });
 }
 
 // Send tx via connected wallet and wait for receipt
@@ -185,17 +203,17 @@ async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
 // Read multiple contract values in parallel
 async function readContractState(wallet) {
     var addrPadded = pad32(wallet);
-    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await Promise.all([
-        contractRead(STAKING_PROXY, SEL.balanceOf + addrPadded),
-        contractRead(STAKING_PROXY, SEL.earned + addrPadded),
-        contractRead(STAKING_PROXY, SEL.autoRestake + addrPadded),
-        contractRead(STAKING_PROXY, SEL.totalStaked),
-        contractRead(STAKING_PROXY, SEL.stakerCount),
-        contractRead(STAKING_PROXY, SEL.rewardRate),
-        contractRead(STAKING_PROXY, SEL.periodEnd),
-        contractRead(STAKING_PROXY, SEL.rewardPoolBalance),
-        contractRead(STAKING_PROXY, SEL.admin),
-        contractRead(STAKING_PROXY, SEL.paused),
+    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await contractReadBatch([
+        { to: STAKING_PROXY, data: SEL.balanceOf + addrPadded },
+        { to: STAKING_PROXY, data: SEL.earned + addrPadded },
+        { to: STAKING_PROXY, data: SEL.autoRestake + addrPadded },
+        { to: STAKING_PROXY, data: SEL.totalStaked },
+        { to: STAKING_PROXY, data: SEL.stakerCount },
+        { to: STAKING_PROXY, data: SEL.rewardRate },
+        { to: STAKING_PROXY, data: SEL.periodEnd },
+        { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
+        { to: STAKING_PROXY, data: SEL.admin },
+        { to: STAKING_PROXY, data: SEL.paused },
     ]);
     return {
         staked: fromWei(balRes),
@@ -292,9 +310,10 @@ function daysSince(dateStr) {
         return null;
     }
 
-    // Fetch UBI data, prices, WETH balance, and on-chain staking stats in parallel
+    // Fetch UBI data, prices, and on-chain stats in parallel
+    // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, wethBalRes, onChainTotalStaked, onChainStakerCount] = await Promise.all([
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -303,15 +322,15 @@ function daysSince(dateStr) {
         fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' +
             CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null),
-        fetch('https://mainnet.base.org', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
-                params: [{ to: WETH_ADDRESS, data: wethBalCalldata }, 'latest'] })
-        }).then(r => r.json()).catch(() => null),
-        contractRead(STAKING_PROXY, SEL.totalStaked).catch(() => '0x0'),
-        contractRead(STAKING_PROXY, SEL.stakerCount).catch(() => '0x0'),
+        contractReadBatch([
+            { to: WETH_ADDRESS, data: wethBalCalldata },
+            { to: STAKING_PROXY, data: SEL.totalStaked },
+            { to: STAKING_PROXY, data: SEL.stakerCount },
+        ]).catch(() => ['0x0', '0x0', '0x0']),
     ]);
+    var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
+    var onChainTotalStaked = rpcBatchRes[1];
+    var onChainStakerCount = rpcBatchRes[2];
 
     // DexScreener (primary)
     clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);

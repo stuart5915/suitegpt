@@ -62,8 +62,9 @@ function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
     return Number(BigInt(hex)) / 1e18;
 }
+var BASE_RPC = 'https://mainnet.base.org';
 async function contractRead(to, data) {
-    var res = await fetch('https://mainnet.base.org', {
+    var res = await fetch(BASE_RPC, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
@@ -71,6 +72,22 @@ async function contractRead(to, data) {
     });
     var json = await res.json();
     return json.result || '0x0';
+}
+
+// Batch multiple eth_call reads into a single HTTP request
+async function contractReadBatch(calls) {
+    var batch = calls.map(function(c, i) {
+        return { jsonrpc: '2.0', id: i + 1, method: 'eth_call',
+            params: [{ to: c.to, data: c.data }, 'latest'] };
+    });
+    var res = await fetch(BASE_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch)
+    });
+    var results = await res.json();
+    results.sort(function(a, b) { return a.id - b.id; });
+    return results.map(function(r) { return r.result || '0x0'; });
 }
 
 function timeSinceStr(dateStr) {
@@ -569,8 +586,10 @@ async function loadDistribution() {
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS).then(r => r.json()),
         provider.request({ method: 'eth_call', params: [{ to: CLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }),
         provider.request({ method: 'eth_call', params: [{ to: INCLAWNCH_ADDRESS, data: balCalldata }, 'latest'] }),
-        contractRead(STAKING_PROXY, SC.totalStaked),
-        contractRead(STAKING_PROXY, SC.stakerCount)
+        contractReadBatch([
+            { to: STAKING_PROXY, data: SC.totalStaked },
+            { to: STAKING_PROXY, data: SC.stakerCount },
+        ])
     ]);
 
     const data = results[0].status === 'fulfilled' ? results[0].value : null;
@@ -580,8 +599,9 @@ async function loadDistribution() {
     const inclawnchPriceData = results[2].status === 'fulfilled' ? results[2].value : null;
     const clawnchBalResp = results[3].status === 'fulfilled' ? results[3].value : '0x0';
     const inclawnchBalResp = results[4].status === 'fulfilled' ? results[4].value : '0x0';
-    const onChainTotalRes = results[5].status === 'fulfilled' ? results[5].value : '0x0';
-    const onChainCountRes = results[6].status === 'fulfilled' ? results[6].value : '0x0';
+    const onChainBatch = results[5].status === 'fulfilled' ? results[5].value : ['0x0', '0x0'];
+    const onChainTotalRes = onChainBatch[0] || '0x0';
+    const onChainCountRes = onChainBatch[1] || '0x0';
 
     // Parse prices (use bestDexPrice for robust pair selection)
     let inclawnchPrice = 0;
@@ -1652,15 +1672,15 @@ document.getElementById('bulkWelcomeBtn').addEventListener('click', async () => 
 
 async function refreshContractStats() {
     try {
-        var [totalRes, countRes, rateRes, endRes, poolRes, depRes, claimedRes, pausedRes] = await Promise.all([
-            contractRead(STAKING_PROXY, SC.totalStaked),
-            contractRead(STAKING_PROXY, SC.stakerCount),
-            contractRead(STAKING_PROXY, SC.rewardRate),
-            contractRead(STAKING_PROXY, SC.periodEnd),
-            contractRead(STAKING_PROXY, SC.rewardPoolBalance),
-            contractRead(STAKING_PROXY, SC.totalDeposited),
-            contractRead(STAKING_PROXY, SC.totalClaimed),
-            contractRead(STAKING_PROXY, SC.paused),
+        var [totalRes, countRes, rateRes, endRes, poolRes, depRes, claimedRes, pausedRes] = await contractReadBatch([
+            { to: STAKING_PROXY, data: SC.totalStaked },
+            { to: STAKING_PROXY, data: SC.stakerCount },
+            { to: STAKING_PROXY, data: SC.rewardRate },
+            { to: STAKING_PROXY, data: SC.periodEnd },
+            { to: STAKING_PROXY, data: SC.rewardPoolBalance },
+            { to: STAKING_PROXY, data: SC.totalDeposited },
+            { to: STAKING_PROXY, data: SC.totalClaimed },
+            { to: STAKING_PROXY, data: SC.paused },
         ]);
 
         var totalStaked = fromWei(totalRes);
