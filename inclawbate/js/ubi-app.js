@@ -995,6 +995,7 @@ function daysSince(dateStr) {
     // Called when wallet successfully connects (via WalletKit callback or auto-reconnect)
     function onWalletConnected(address) {
         stakeWallet = address;
+        try { localStorage.setItem('_ubi_wallet', address); } catch (e) {}
 
         // Step flow: mark Step 1 done, activate Step 2
         var step1 = document.getElementById('ubiStep1');
@@ -1738,6 +1739,7 @@ function daysSince(dateStr) {
         if (!stakeWallet) return; // already disconnected
         stakeWallet = null;
         walletBalances = { clawnch: 0, inclawnch: 0 };
+        try { localStorage.removeItem('_ubi_wallet'); } catch (e) {}
         if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
 
         // Step flow: undo Step 1 done
@@ -1834,19 +1836,20 @@ function daysSince(dateStr) {
         });
     });
 
-    // ── WalletKit Integration (when wallet-bundle.js is loaded) ──
-    if (window.WalletKit) {
-        window.WalletKit.onConnect(function(address) {
-            onWalletConnected(address);
-        });
-        window.WalletKit.onDisconnect(function() {
-            disconnectWallet();
-        });
-        // Auto-reconnect from previous session
-        if (window.WalletKit.isConnected()) {
-            onWalletConnected(window.WalletKit.getAddress());
+    // ── Auto-reconnect from previous session ──
+    (async function() {
+        var saved = null;
+        try { saved = localStorage.getItem('_ubi_wallet'); } catch (e) {}
+        if (saved && window.ethereum) {
+            try {
+                var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                var match = accounts.find(function(a) { return a.toLowerCase() === saved.toLowerCase(); });
+                if (match) onWalletConnected(match);
+                else localStorage.removeItem('_ubi_wallet');
+            } catch (e) {
+                localStorage.removeItem('_ubi_wallet');
+            }
         }
-    }
-    // If WalletKit isn't loaded, connectWallet() falls back to window.ethereum
+    })();
 
 })();
