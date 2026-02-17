@@ -1418,26 +1418,32 @@ function daysSince(dateStr) {
         }
     }
 
-    // ── inCLAWNCH: On-chain unstake ──
+    // ── inCLAWNCH: On-chain unstake (uses exit() to unstake + claim rewards in one tx) ──
     async function handleUnstakeOnChain() {
         var provider = getProvider();
         if (!provider || !stakeWallet) return;
 
-        // Read staked balance from contract
-        var balRes = await contractRead(STAKING_PROXY, SEL.balanceOf + pad32(stakeWallet));
+        // Read staked balance + pending rewards from contract
+        var addrPadded = pad32(stakeWallet);
+        var [balRes, earnedRes] = await Promise.all([
+            walletRead(provider, STAKING_PROXY, SEL.balanceOf + addrPadded),
+            walletRead(provider, STAKING_PROXY, SEL.earned + addrPadded),
+        ]);
         var stakedRaw = BigInt(balRes || '0x0');
         var stakedAmount = fromWei(balRes);
+        var earnedAmount = fromWei(earnedRes);
 
         if (stakedRaw === 0n) {
             ubiToast('No inCLAWNCH staked on-chain', 'error');
             return;
         }
 
+        var rewardsNote = earnedAmount >= 1 ? ' + ' + fmt(Math.round(earnedAmount)) + ' rewards' : '';
         var confirmed = await ubiModal({
             icon: '\uD83E\uDD9E',
             title: 'Unstake inCLAWNCH',
-            msg: 'Unstake ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH? Tokens will be sent directly to your wallet from the contract.',
-            confirmLabel: 'Unstake',
+            msg: 'Withdraw ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH' + rewardsNote + '? Everything goes directly to your wallet in one transaction.',
+            confirmLabel: 'Unstake & Claim',
             confirmClass: 'ubi-modal-btn--confirm'
         });
         if (!confirmed) return;
@@ -1447,14 +1453,15 @@ function daysSince(dateStr) {
         if (btn) { btn.disabled = true; btn.textContent = 'Unstaking...'; }
 
         try {
-            var unstakeData = SEL.unstake + pad32(toHex(stakedRaw));
-            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, unstakeData, statusEl, 'Unstaking inCLAWNCH...');
+            // exit() = unstake all + claim all in one transaction
+            var txHash = await sendTxAndWait(provider, stakeWallet, STAKING_PROXY, SEL.exit, statusEl, 'Unstaking & claiming rewards...');
 
+            var successMsg = fmt(Math.round(stakedAmount)) + ' inCLAWNCH' + rewardsNote + ' returned to your wallet.';
             if (statusEl) {
-                statusEl.innerHTML = fmt(Math.round(stakedAmount)) + ' inCLAWNCH returned to your wallet. <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+                statusEl.innerHTML = successMsg + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
                 statusEl.className = 'ubi-stake-status stake-status success';
             }
-            ubiToast('Unstaked ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH', 'success');
+            ubiToast('Unstaked ' + fmt(Math.round(stakedAmount)) + ' inCLAWNCH' + rewardsNote, 'success');
             refreshTreasuryDisplay();
             fetchBalances(); loadMyStakes(); updateAllApys(); updateCalc();
         } catch (err) {
