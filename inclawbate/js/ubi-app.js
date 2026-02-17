@@ -794,91 +794,17 @@ function daysSince(dateStr) {
         var container = document.getElementById('ubiCountdown');
         if (!container) return;
 
-        var ONE_DAY = 24 * 60 * 60 * 1000;
-
-        function getDaily8am(direction) {
-            // direction: 'next' or 'last' — targets 6am EST (11am UTC)
-            var now = new Date();
-            var target = new Date(now);
-            target.setUTCHours(11, 0, 0, 0);
-
-            if (direction === 'next') {
-                if (now >= target) {
-                    // Already past 8am UTC today — next is tomorrow
-                    target.setUTCDate(target.getUTCDate() + 1);
-                }
-            } else {
-                // last 8am UTC
-                if (now < target) {
-                    // Before 8am UTC today — last was yesterday
-                    target.setUTCDate(target.getUTCDate() - 1);
-                }
-            }
-            return target;
-        }
-
-        var nextDist = getDaily8am('next').getTime();
-        var lastDist = getDaily8am('last').getTime();
-
-        // Show the countdown
         container.classList.remove('hidden');
 
-        // Date labels
-        var lastLabel = document.getElementById('cdLastDist');
-        var nextLabel = document.getElementById('cdNextDist');
-        var fmtDate = function(ts) {
-            return new Date(ts).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        };
-        if (lastLabel) lastLabel.textContent = 'Last: ' + fmtDate(lastDist);
-        if (nextLabel) nextLabel.textContent = 'Next: ' + fmtDate(nextDist);
-
+        // Live decreasing reward pool: remaining = rewardRate * (periodEnd - now)
+        var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
         function tick() {
-            var now = Date.now();
-            var diff = nextDist - now;
-            var elapsed = now - lastDist;
-            var progress = Math.min(100, Math.max(0, (elapsed / ONE_DAY) * 100));
-
-            // Update progress bar
-            var barFill = document.getElementById('cdBarFill');
-            if (barFill) barFill.style.width = progress + '%';
-
-            // Accumulating daily distribution number (from on-chain rewardRate)
-            var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
-            var dailyRateTick = onChainRewardRate * 86400;
-            if (cdWeeklyEl && dailyRateTick > 0) {
-                var accumPct = Math.min(1, elapsed / ONE_DAY);
-                var accumulated = Math.round(dailyRateTick * accumPct);
-                cdWeeklyEl.textContent = fmt(accumulated);
-            }
-
-            var daysEl = document.getElementById('cdDays');
-            var hoursEl = document.getElementById('cdHours');
-            var minsEl = document.getElementById('cdMins');
-            var secsEl = document.getElementById('cdSecs');
-
-            if (diff <= 0) {
-                // Overdue — past 8am today
-                container.classList.add('overdue');
-                var over = Math.abs(diff);
-                var oH = Math.floor(over / 3600000);
-                var oM = Math.floor((over % 3600000) / 60000);
-                if (daysEl) daysEl.textContent = '00';
-                if (hoursEl) hoursEl.textContent = '00';
-                if (minsEl) minsEl.textContent = '00';
-                if (secsEl) secsEl.textContent = '00';
-                var label = document.querySelector('.dash-countdown-label');
-                if (label) label.textContent = '\uD83E\uDD9E Distribution Overdue by ' + oH + 'h ' + oM + 'm \uD83E\uDD9E';
-            } else {
-                container.classList.remove('overdue');
-                var d = Math.floor(diff / 86400000);
-                var h = Math.floor((diff % 86400000) / 3600000);
-                var m = Math.floor((diff % 3600000) / 60000);
-                var s = Math.floor((diff % 60000) / 1000);
-                if (daysEl) daysEl.textContent = d < 10 ? '0' + d : d;
-                if (hoursEl) hoursEl.textContent = h < 10 ? '0' + h : h;
-                if (minsEl) minsEl.textContent = m < 10 ? '0' + m : m;
-                if (secsEl) secsEl.textContent = s < 10 ? '0' + s : s;
-            }
+            if (!cdWeeklyEl || onChainRewardRate <= 0 || onChainPeriodEnd <= 0) return;
+            var nowSec = Date.now() / 1000;
+            var remaining = onChainPeriodEnd > nowSec
+                ? Math.round(onChainRewardRate * (onChainPeriodEnd - nowSec))
+                : 0;
+            cdWeeklyEl.textContent = fmt(remaining);
         }
 
         tick();
