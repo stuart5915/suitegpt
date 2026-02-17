@@ -1,5 +1,10 @@
 // Inclawbate — UBI Treasury Page (Dual Staking: CLAWNCH 1x / inCLAWNCH 2x)
 
+// ── MIGRATION MODE ──
+// Set to true while migrating stakers to the new on-chain InclawnchStaking contract.
+// Disables staking and unstaking with a maintenance banner.
+const MIGRATION_MODE = true;
+
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
 const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
@@ -1437,6 +1442,16 @@ function daysSince(dateStr) {
     fetchUnstakeBalance();
 
     async function handleUnstake(token) {
+        if (MIGRATION_MODE) {
+            ubiModal({
+                icon: '\uD83D\uDD27',
+                title: 'Migration In Progress',
+                msg: 'Staking is temporarily paused while we migrate to a new on-chain contract. This makes staking fully trustless — no more middleman wallet. Will be back live in a few minutes! Check our Telegram for the announcement.',
+                confirmLabel: 'Got it',
+                confirmClass: 'ubi-modal-btn--confirm'
+            });
+            return;
+        }
         var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
 
         // Check if enough available
@@ -1582,6 +1597,16 @@ function daysSince(dateStr) {
     }
 
     async function doDeposit(token) {
+        if (MIGRATION_MODE) {
+            ubiModal({
+                icon: '\uD83D\uDD27',
+                title: 'Migration In Progress',
+                msg: 'Staking is temporarily paused while we migrate to a new on-chain contract. This makes staking fully trustless — no more middleman wallet. Will be back live in a few minutes! Check our Telegram for the announcement.',
+                confirmLabel: 'Got it',
+                confirmClass: 'ubi-modal-btn--confirm'
+            });
+            return;
+        }
         var depositBtn = document.querySelector('.stake-deposit-btn[data-token="' + token + '"]');
         var status = document.querySelector('.stake-status[data-token="' + token + '"]');
         if (!depositBtn || !status) return;
