@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Calendar — Inclawbate</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .content-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
+        }
+
+        /* Gate */
+        .gate {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 60vh; gap: var(--space-lg); text-align: center;
+        }
+        .gate h2 {
+            font-family: var(--font-display); font-size: 1.6rem; font-weight: 800;
+            background: var(--title-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .gate-status {
+            font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary);
+        }
+        .gate-status.error { color: var(--red); }
+
+        /* Header bar */
+        .cal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: var(--space-xl);
+            animation: fadeUp 0.4s var(--ease-smooth) both;
+        }
+        .cal-date {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+            background: var(--title-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .cal-day {
+            font-family: var(--font-mono); font-size: 0.78rem;
+            color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em;
+            margin-top: 2px;
+        }
+        .streak {
+            display: flex; align-items: center; gap: var(--space-sm);
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-sm) var(--space-lg);
+        }
+        .streak-num {
+            font-family: var(--font-display); font-size: 1.8rem; font-weight: 900;
+            color: var(--lobster-300);
+        }
+        .streak-label {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        /* Columns */
+        .cal-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);
+        }
+        @media (max-width: 700px) {
+            .cal-grid { grid-template-columns: 1fr; }
+        }
+
+        .cal-col {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl); padding: var(--space-xl);
+            position: relative; overflow: hidden;
+            animation: fadeUp 0.5s var(--ease-smooth) both;
+        }
+        .cal-col:nth-child(2) { animation-delay: 0.08s; }
+        .cal-col::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .col-artstu::before {
+            background: linear-gradient(90deg, var(--seafoam-400), var(--blue-400));
+        }
+        .col-inclawbate::before {
+            background: var(--accent-gradient);
+        }
+
+        .col-header {
+            display: flex; align-items: center; gap: var(--space-md);
+            margin-bottom: var(--space-lg); padding-bottom: var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .col-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--bg-card); display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+        .col-name {
+            font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600;
+            color: var(--text-primary);
+        }
+        .col-handle {
+            font-family: var(--font-mono); font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+
+        /* Pillar */
+        .pillar {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .pillar-label {
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim); margin-bottom: var(--space-xs);
+        }
+        .pillar-name {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 800;
+            color: var(--text-primary); margin-bottom: var(--space-xs);
+        }
+        .pillar-desc {
+            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;
+        }
+
+        /* Generate */
+        .gen-row {
+            display: flex; gap: var(--space-sm); margin-bottom: var(--space-md);
+        }
+        .gen-btn {
+            flex: 1;
+        }
+        .gen-btn.loading {
+            pointer-events: none; opacity: 0.7;
+        }
+        .draft-area {
+            width: 100%; min-height: 100px; resize: vertical;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); padding: var(--space-md);
+            font-family: var(--font-body); font-size: 0.88rem;
+            color: var(--text-primary); line-height: 1.55;
+            transition: border-color 0.2s;
+        }
+        .draft-area:focus {
+            outline: none; border-color: var(--lobster-400);
+        }
+        .draft-area::placeholder { color: var(--text-dim); }
+
+        .copy-btn {
+            margin-top: var(--space-sm); margin-bottom: var(--space-lg);
+        }
+        .copy-btn.copied {
+            border-color: var(--seafoam-400) !important;
+            color: var(--seafoam-300) !important;
+        }
+
+        /* Char count */
+        .char-count {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--text-dim); text-align: right; margin-top: 4px;
+        }
+        .char-count.over { color: var(--red); }
+
+        /* Checklist */
+        .checklist-title {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-dim); margin-bottom: var(--space-md);
+        }
+        .check-item {
+            display: flex; align-items: center; gap: var(--space-md);
+            padding: var(--space-sm) 0;
+        }
+        .check-item + .check-item {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.4);
+        }
+        .check-item input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none;
+            width: 20px; height: 20px; border-radius: var(--radius-sm);
+            border: 2px solid var(--border-default); background: var(--bg-card);
+            cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+        }
+        .check-item input[type="checkbox"]:checked {
+            background: var(--accent-gradient); border-color: var(--lobster-400);
+        }
+        .check-item input[type="checkbox"]:checked::after {
+            content: '\2713'; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 0.7rem; font-weight: 700;
+            width: 100%; height: 100%;
+        }
+        .check-label {
+            font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;
+        }
+        .check-item input[type="checkbox"]:checked + .check-label {
+            text-decoration: line-through; color: var(--text-dim);
+        }
+
+        /* All-done banner */
+        .all-done {
+            display: none; text-align: center; margin-top: var(--space-xl);
+            padding: var(--space-lg); background: var(--bg-elevated);
+            border: 1px solid var(--seafoam-400); border-radius: var(--radius-xl);
+            animation: fadeUp 0.3s var(--ease-smooth) both;
+        }
+        .all-done.show { display: block; }
+        .all-done-text {
+            font-family: var(--font-display); font-size: 1.2rem; font-weight: 800;
+            color: var(--seafoam-300);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/ubi" class="nav-link">UBI</a>
+        <a href="/kingdom" class="nav-link">Kingdom</a>
+        <a href="/ecosystem" class="nav-link">Ecosystem</a>
+        <a href="/store" class="nav-link">Store</a>
+        <a href="/launch" class="btn btn-x btn-sm"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Connect X</a>
+    </div>
+</nav>
+
+<!-- Gate -->
+<div id="gate" class="content-page">
+    <div class="gate">
+        <h2>Content Command Center</h2>
+        <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+        <p id="gateStatus" class="gate-status"></p>
+    </div>
+</div>
+
+<!-- Dashboard (hidden until admin) -->
+<main id="dashboard" class="content-page" style="display:none;">
+
+    <div class="cal-header">
+        <div>
+            <div class="cal-date" id="todayDate"></div>
+            <div class="cal-day" id="todayDay"></div>
+        </div>
+        <div class="streak">
+            <span style="font-size:1.4rem;">&#128293;</span>
+            <div>
+                <div class="streak-num" id="streakNum">0</div>
+                <div class="streak-label">day streak</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cal-grid">
+
+        <!-- @artstu column -->
+        <div class="cal-col col-artstu">
+            <div class="col-header">
+                <div class="col-avatar">&#128104;&#8205;&#128187;</div>
+                <div>
+                    <div class="col-name">@artstu</div>
+                    <div class="col-handle">Personal brand</div>
+                </div>
+            </div>
+
+            <div class="pillar">
+                <div class="pillar-label">Today's Content Pillar</div>
+                <div class="pillar-name" id="artstu-pillar-name"></div>
+                <div class="pillar-desc" id="artstu-pillar-desc"></div>
+            </div>
+
+            <div class="gen-row">
+                <button class="btn btn-primary gen-btn" id="artstu-gen" onclick="generateDraft('artstu')">Generate Draft</button>
+            </div>
+            <textarea class="draft-area" id="artstu-draft" placeholder="AI draft will appear here..."></textarea>
+            <div class="char-count" id="artstu-chars"></div>
+            <button class="btn btn-secondary copy-btn" id="artstu-copy" onclick="copyDraft('artstu')">Copy to Clipboard</button>
+
+            <div class="checklist-title">Daily Tasks</div>
+            <div class="check-item">
+                <input type="checkbox" id="artstu-1" data-account="artstu" onchange="checkProgress()">
+                <label class="check-label" for="artstu-1">Morning tweet</label>
+            </div>
+            <div class="check-item">
+                <input type="checkbox" id="artstu-2" data-account="artstu" onchange="checkProgress()">
+                <label class="check-label" for="artstu-2">Midday replies (15)</label>
+            </div>
+            <div class="check-item">
+                <input type="checkbox" id="artstu-3" data-account="artstu" onchange="checkProgress()">
+                <label class="check-label" for="artstu-3">Afternoon tweet</label>
+            </div>
+            <div class="check-item">
+                <input type="checkbox" id="artstu-4" data-account="artstu" onchange="checkProgress()">
+                <label class="check-label" for="artstu-4">Evening tweet</label>
+            </div>
+        </div>
+
+        <!-- @inclawbate column -->
+        <div class="cal-col col-inclawbate">
+            <div class="col-header">
+                <div class="col-avatar">&#129438;</div>
+                <div>
+                    <div class="col-name">@inclawbate</div>
+                    <div class="col-handle">Project brand</div>
+                </div>
+            </div>
+
+            <div class="pillar">
+                <div class="pillar-label">Today's Content Pillar</div>
+                <div class="pillar-name" id="inclawbate-pillar-name"></div>
+                <div class="pillar-desc" id="inclawbate-pillar-desc"></div>
+            </div>
+
+            <div class="gen-row">
+                <button class="btn btn-primary gen-btn" id="inclawbate-gen" onclick="generateDraft('inclawbate')">Generate Draft</button>
+            </div>
+            <textarea class="draft-area" id="inclawbate-draft" placeholder="AI draft will appear here..."></textarea>
+            <div class="char-count" id="inclawbate-chars"></div>
+            <button class="btn btn-secondary copy-btn" id="inclawbate-copy" onclick="copyDraft('inclawbate')">Copy to Clipboard</button>
+
+            <div class="checklist-title">Daily Tasks</div>
+            <div class="check-item">
+                <input type="checkbox" id="inclawbate-1" data-account="inclawbate" onchange="checkProgress()">
+                <label class="check-label" for="inclawbate-1">Morning tweet</label>
+            </div>
+            <div class="check-item">
+                <input type="checkbox" id="inclawbate-2" data-account="inclawbate" onchange="checkProgress()">
+                <label class="check-label" for="inclawbate-2">Afternoon tweet</label>
+            </div>
+            <div class="check-item">
+                <input type="checkbox" id="inclawbate-3" data-account="inclawbate" onchange="checkProgress()">
+                <label class="check-label" for="inclawbate-3">Reply session (8)</label>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="all-done" id="allDone">
+        <div class="all-done-text">&#128293; All tasks complete! Streak updated.</div>
+    </div>
+
+</main>
+
+<script>
+const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+
+// ── Content Pillars ──
+const PILLARS = {
+    artstu: {
+        1: { name: 'Build Goals', desc: 'Share what you\'re building this week. Set the tone — what are you shipping?' },
+        2: { name: 'Hot Take', desc: 'Drop an opinion on AI, crypto, or builder culture. Be provocative.' },
+        3: { name: 'Build Log', desc: 'Screenshot + what you shipped today. Show the work.' },
+        4: { name: 'Behind the Scenes', desc: 'Struggles, process, the messy stuff. Be real.' },
+        5: { name: 'Reflection', desc: 'What you learned this week. Lessons, wins, things you\'d change.' },
+        6: { name: 'Personal', desc: 'Lighter content — personality, humor, life outside building.' },
+        0: { name: 'Personal', desc: 'Lighter content — personality, humor, life outside building.' }
+    },
+    inclawbate: {
+        1: { name: 'Feature Spotlight', desc: 'Highlight a feature or recent update. Show what\'s new.' },
+        2: { name: 'User Spotlight', desc: 'Feature an incubated human — tag them, celebrate their work.' },
+        3: { name: 'Ecosystem', desc: 'Engage with Base/crypto projects. Build bridges.' },
+        4: { name: 'Meme / Fun', desc: 'Lobster humor, crypto memes. Keep it light and shareable.' },
+        5: { name: 'Community Update', desc: 'Metrics, milestones, what\'s next. Keep the community informed.' },
+        6: { name: 'Engagement Only', desc: 'No original posts — just replies and engagement.' },
+        0: { name: 'Engagement Only', desc: 'No original posts — just replies and engagement.' }
+    }
+};
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function yesterdayKey() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ── Wallet Gate ──
+document.getElementById('connectBtn').addEventListener('click', async () => {
+    const status = document.getElementById('gateStatus');
+    if (!window.ethereum) {
+        const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            const rawUrl = window.location.href;
+            const dappUrl = encodeURIComponent(rawUrl);
+            status.innerHTML = 'Open in your wallet app:<br>' +
+                '<a href="https://metamask.app.link/dapp/' + rawUrl.replace('https://', '') + '" style="color:var(--seafoam-300);text-decoration:underline;">MetaMask</a>' +
+                ' &middot; ' +
+                '<a href="https://go.cb-w.com/dapp?cb_url=' + dappUrl + '" style="color:var(--seafoam-300);text-decoration:underline;">Coinbase Wallet</a>';
+        } else {
+            status.textContent = 'No wallet found. Install MetaMask or Coinbase Wallet.';
+            status.className = 'gate-status error';
+        }
+        return;
+    }
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const addr = accounts[0];
+        if (addr.toLowerCase() !== ADMIN_WALLET) {
+            status.textContent = 'Unauthorized wallet. Admin only.';
+            status.className = 'gate-status error';
+            return;
+        }
+        // Admin — show dashboard
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('dashboard').style.display = '';
+        initDashboard();
+    } catch (err) {
+        status.textContent = err.message || 'Connection failed';
+        status.className = 'gate-status error';
+    }
+});
+
+// ── Dashboard Init ──
+function initDashboard() {
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun
+
+    document.getElementById('todayDate').textContent = MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+    document.getElementById('todayDay').textContent = DAYS[dow];
+
+    // Pillars
+    const ap = PILLARS.artstu[dow];
+    document.getElementById('artstu-pillar-name').textContent = ap.name;
+    document.getElementById('artstu-pillar-desc').textContent = ap.desc;
+
+    const ip = PILLARS.inclawbate[dow];
+    document.getElementById('inclawbate-pillar-name').textContent = ip.name;
+    document.getElementById('inclawbate-pillar-desc').textContent = ip.desc;
+
+    // Streak
+    loadStreak();
+
+    // Char count listeners
+    document.getElementById('artstu-draft').addEventListener('input', () => updateCharCount('artstu'));
+    document.getElementById('inclawbate-draft').addEventListener('input', () => updateCharCount('inclawbate'));
+}
+
+// ── Streak ──
+function loadStreak() {
+    const last = localStorage.getItem('content_streak_last');
+    let count = parseInt(localStorage.getItem('content_streak_count') || '0', 10);
+
+    if (last === todayKey()) {
+        // Already completed today — show current streak
+    } else if (last === yesterdayKey()) {
+        // Yesterday was done — streak continues (but not yet incremented for today)
+    } else if (last) {
+        // Missed a day — reset
+        count = 0;
+        localStorage.setItem('content_streak_count', '0');
+    }
+
+    document.getElementById('streakNum').textContent = count;
+}
+
+// ── Generate Draft ──
+async function generateDraft(account) {
+    const btn = document.getElementById(account + '-gen');
+    const textarea = document.getElementById(account + '-draft');
+    const dow = new Date().getDay();
+    const pillar = PILLARS[account][dow];
+
+    btn.textContent = 'Generating...';
+    btn.classList.add('loading');
+
+    try {
+        const resp = await fetch('/api/inclawbate/generate-content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                account: account === 'inclawbate' ? 'inclawbate' : 'artstu',
+                pillar: pillar.name,
+                context: pillar.desc
+            })
+        });
+        const data = await resp.json();
+        if (data.draft) {
+            textarea.value = data.draft;
+            updateCharCount(account);
+        } else {
+            textarea.value = 'Error: ' + (data.error || 'Unknown error');
+        }
+    } catch (err) {
+        textarea.value = 'Error: ' + err.message;
+    }
+
+    btn.textContent = 'Generate Draft';
+    btn.classList.remove('loading');
+}
+
+// ── Char Count ──
+function updateCharCount(account) {
+    const textarea = document.getElementById(account + '-draft');
+    const counter = document.getElementById(account + '-chars');
+    const len = textarea.value.length;
+    counter.textContent = len + ' / 280';
+    counter.className = len > 280 ? 'char-count over' : 'char-count';
+}
+
+// ── Copy ──
+function copyDraft(account) {
+    const textarea = document.getElementById(account + '-draft');
+    const btn = document.getElementById(account + '-copy');
+    if (!textarea.value) return;
+
+    navigator.clipboard.writeText(textarea.value).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = 'Copy to Clipboard';
+            btn.classList.remove('copied');
+        }, 2000);
+    });
+}
+
+// ── Checklist Progress ──
+function checkProgress() {
+    const allBoxes = document.querySelectorAll('.check-item input[type="checkbox"]');
+    const allChecked = Array.from(allBoxes).every(cb => cb.checked);
+
+    const banner = document.getElementById('allDone');
+    if (allChecked) {
+        banner.classList.add('show');
+        // Update streak
+        const last = localStorage.getItem('content_streak_last');
+        if (last !== todayKey()) {
+            let count = parseInt(localStorage.getItem('content_streak_count') || '0', 10);
+            count++;
+            localStorage.setItem('content_streak_count', String(count));
+            localStorage.setItem('content_streak_last', todayKey());
+            document.getElementById('streakNum').textContent = count;
+        }
+    } else {
+        banner.classList.remove('show');
+    }
+}
+</script>
+
+</body>
+</html>
