@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
         schema: 'inclawbate/skill/v1',
         name: 'UBI Staking',
-        description: 'Read-only access to the Inclawbate UBI staking system on Base. Get treasury stats (TVL, APY, distribution rates), top stakers leaderboard, and any wallet\'s staking position including rewards history. Powered by INCLAWNCH token staking with daily UBI distributions.',
+        description: 'Full access to the Inclawbate UBI staking system on Base. Read treasury stats, wallet positions, and leaderboards. Stake and unstake INCLAWNCH tokens. Toggle auto-compounding. Powered by daily UBI distributions to all stakers.',
         url: 'https://inclawbate.com/ubi',
         category: 'defi-staking',
         status: 'live',
@@ -45,6 +45,46 @@ export default async function handler(req, res) {
                 },
                 cache: '60 seconds',
                 example: 'GET /api/inclawbate/staking?wallet=0x91b5c0d07859cfeafeb67d9694121cd741f049bd'
+            },
+            {
+                name: 'stake_inclawnch',
+                description: 'Stake INCLAWNCH tokens into the UBI pool. First transfer INCLAWNCH to the deposit wallet on Base via ERC20 transfer, then call this endpoint with the transaction hash. The API verifies the on-chain transfer and records the stake. Stakers earn daily UBI distributions proportional to their stake.',
+                method: 'POST',
+                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                parameters: {
+                    action: { type: 'string', required: true, value: 'fund', description: 'Must be "fund"' },
+                    tx_hash: { type: 'string', required: true, description: 'Transaction hash of the ERC20 transfer to the deposit wallet (0x + 64 hex chars)' },
+                    wallet_address: { type: 'string', required: true, description: 'Your wallet address (must match the tx sender)' }
+                },
+                workflow: [
+                    '1. Call transfer(deposit_wallet, amount) on the INCLAWNCH contract (0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be) on Base',
+                    '2. Wait for transaction confirmation',
+                    '3. POST to this endpoint with the tx_hash and your wallet_address'
+                ],
+                example: 'POST /api/inclawbate/ubi { "action": "fund", "tx_hash": "0x...", "wallet_address": "0x..." }'
+            },
+            {
+                name: 'unstake_inclawnch',
+                description: 'Unstake all INCLAWNCH tokens. No lock period — request anytime. Tokens are returned to your wallet within 24 hours (instantly if the unstake wallet has sufficient balance).',
+                method: 'POST',
+                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                parameters: {
+                    action: { type: 'string', required: true, value: 'unstake', description: 'Must be "unstake"' },
+                    wallet_address: { type: 'string', required: true, description: 'Your wallet address' },
+                    token: { type: 'string', required: true, description: 'Token to unstake: "clawnch"' }
+                },
+                example: 'POST /api/inclawbate/ubi { "action": "unstake", "wallet_address": "0x...", "token": "clawnch" }'
+            },
+            {
+                name: 'toggle_auto_stake',
+                description: 'Toggle auto-compounding of UBI rewards. When enabled, daily reward distributions are automatically re-staked instead of sent to your wallet — compounding your position over time.',
+                method: 'POST',
+                endpoint: 'https://inclawbate.com/api/inclawbate/ubi',
+                parameters: {
+                    action: { type: 'string', required: true, value: 'toggle-auto-stake', description: 'Must be "toggle-auto-stake"' },
+                    wallet_address: { type: 'string', required: true, description: 'Your wallet address' }
+                },
+                example: 'POST /api/inclawbate/ubi { "action": "toggle-auto-stake", "wallet_address": "0x..." }'
             }
         ],
         response_shape: {
@@ -63,6 +103,9 @@ export default async function handler(req, res) {
             wallet_cap: 'No single wallet can receive more than wallet_cap_pct of daily distribution.'
         },
         use_cases: [
+            'Stake INCLAWNCH tokens into the UBI pool on behalf of a user',
+            'Unstake tokens and return them to the user\'s wallet',
+            'Enable auto-compounding to grow staking position over time',
             'Report a user\'s staking position and estimated rewards',
             'Show UBI treasury health — TVL, APY, staker count',
             'Display top stakers leaderboard',
