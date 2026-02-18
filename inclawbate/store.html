@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Store — Inclawbate</title>
-    <meta name="description" content="The Inclawbate Store. Lobster gear, custom goods, and everything in between — every dollar ends up as $INCLAWNCH.">
+    <meta name="description" content="The Inclawbate Store. Custom lobster putters and gear — pay with $INCLAWNCH.">
     <meta property="og:title" content="Store — Inclawbate">
-    <meta property="og:description" content="Lobster gear, custom goods, and everything in between. Pay with card or $INCLAWNCH.">
+    <meta property="og:description" content="Custom lobster putters and gear. Pay with $INCLAWNCH on Base.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/store">
     <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=store">
@@ -19,9 +19,6 @@
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
     <style>
-        /* ══════════════════════════════════════
-           STORE — 2-TAB LAYOUT
-           ══════════════════════════════════════ */
         .store {
             max-width: 780px;
             margin: 0 auto;
@@ -31,7 +28,6 @@
                 radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
         }
 
-        /* ── Hero ── */
         .store-hero {
             text-align: center;
             margin-bottom: var(--space-xl);
@@ -55,411 +51,445 @@
             max-width: 520px;
             margin: 0 auto var(--space-sm);
         }
-        .store-hero-note {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            letter-spacing: 0.03em;
-        }
 
-        /* ── Pricing Banner ── */
-        .pricing-banner {
+        /* ── Product Detail ── */
+        .pdp {
+            animation: storeFadeIn 0.5s 0.08s var(--ease-smooth) both;
+        }
+        .pdp-card {
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-2xl);
-            padding: var(--space-lg) var(--space-xl);
-            margin-bottom: var(--space-xl);
-            position: relative;
             overflow: hidden;
-            animation: storeFadeIn 0.5s 0.06s var(--ease-smooth) both;
-        }
-        .pricing-banner::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--lobster-400), hsl(43, 65%, 55%), var(--seafoam-400));
-        }
-        .pricing-banner-title {
-            font-family: var(--font-display);
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: var(--space-md);
-            text-align: center;
-        }
-        .pricing-rows {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-md);
-            margin-bottom: var(--space-md);
-        }
-        .pricing-row {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            padding: var(--space-sm) var(--space-md);
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border-subtle);
-        }
-        .pricing-row-icon {
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-        .pricing-row-text {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-        .pricing-row-text strong {
-            color: var(--text-primary);
-            font-weight: 700;
-        }
-        .pricing-banner-tagline {
-            text-align: center;
-            font-family: var(--font-display);
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: var(--lobster-300);
-        }
-
-        /* ── Tabs ── */
-        .store-tabs {
-            position: sticky;
-            top: var(--nav-height);
-            z-index: 90;
-            background: var(--bg-primary);
-            border-bottom: 1px solid var(--border-subtle);
-            margin: 0 calc(-1 * var(--space-lg));
-            padding: 0 var(--space-lg);
-            animation: storeFadeIn 0.5s 0.1s var(--ease-smooth) both;
-        }
-        .store-tabs-inner {
-            display: flex;
-            gap: var(--space-xl);
-            justify-content: center;
-        }
-        .store-tab {
-            display: inline-flex;
-            align-items: center;
-            padding: var(--space-md) 0;
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-dim);
-            background: none;
-            border: none;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: color 0.25s, border-color 0.25s;
-        }
-        .store-tab:hover {
-            color: var(--text-secondary);
-        }
-        .store-tab.active {
-            color: var(--lobster-400);
-            border-bottom-color: var(--lobster-400);
-        }
-
-        /* ── Section Transitions ── */
-        .store-section {
-            display: none;
-            opacity: 0;
-            transform: translateY(12px);
-            transition: opacity 0.35s var(--ease-smooth), transform 0.35s var(--ease-smooth);
-            padding-top: var(--space-xl);
-        }
-        .store-section.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ── Section intro ── */
-        .store-intro {
-            font-size: 0.88rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: var(--space-xl);
-            text-align: center;
-            max-width: 560px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* ── Product Grid (Amazon) ── */
-        .merch-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: var(--space-lg);
-            margin-bottom: var(--space-xl);
-        }
-        .merch-card {
-            display: block;
-            text-decoration: none;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: var(--space-xl);
-            text-align: center;
-            transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
-        }
-        .merch-card:hover {
-            border-color: var(--border-default);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-        .merch-card-icon {
-            font-size: 2.2rem;
-            margin-bottom: var(--space-sm);
-            line-height: 1;
-        }
-        .merch-card-name {
-            font-family: var(--font-display);
-            font-size: 0.92rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: var(--space-sm);
-        }
-        .merch-card-link {
-            display: inline-block;
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--seafoam-300);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .merch-card-link:hover {
-            color: var(--seafoam-200, hsl(172, 50%, 70%));
-        }
-        .merch-affiliate-note {
-            text-align: center;
-            font-family: var(--font-mono);
-            font-size: 0.68rem;
-            color: var(--text-dim);
-            letter-spacing: 0.02em;
-        }
-
-        /* ── Merch card animations ── */
-        .merch-grid .merch-card {
-            animation: storeFadeIn 0.5s var(--ease-smooth) both;
-        }
-        .merch-grid .merch-card:nth-child(1) { animation-delay: 0.05s; }
-        .merch-grid .merch-card:nth-child(2) { animation-delay: 0.1s; }
-        .merch-grid .merch-card:nth-child(3) { animation-delay: 0.15s; }
-        .merch-grid .merch-card:nth-child(4) { animation-delay: 0.2s; }
-        .merch-grid .merch-card:nth-child(5) { animation-delay: 0.25s; }
-        .merch-grid .merch-card:nth-child(6) { animation-delay: 0.3s; }
-
-        /* ══════════════════════════════════════
-           ORIGINALS TAB
-           ══════════════════════════════════════ */
-
-        /* ── The Claw Flagship ── */
-        .claw-card {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-2xl);
-            padding: var(--space-2xl);
-            margin-bottom: var(--space-3xl);
             position: relative;
-            overflow: hidden;
-            text-align: center;
-            animation: storeFadeIn 0.5s 0.04s var(--ease-smooth) both;
         }
-        .claw-card::before {
+        .pdp-card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 4px;
-            background: linear-gradient(90deg, hsl(43, 80%, 55%), hsl(38, 70%, 60%), hsl(43, 80%, 55%));
+            background: linear-gradient(90deg, var(--lobster-400), hsl(43, 65%, 55%), var(--seafoam-400));
         }
-        .claw-card .product-badge--flagship {
+
+        /* Image gallery */
+        .pdp-gallery {
+            position: relative;
+            background: var(--bg-card);
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .pdp-gallery img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .pdp-gallery img.active { display: block; }
+        .pdp-gallery-placeholder {
+            font-size: 4rem;
+            opacity: 0.3;
+        }
+        .pdp-gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: hsla(0, 0%, 0%, 0.5);
+            border: 1px solid hsla(255, 255%, 255%, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .pdp-gallery-nav:hover { background: hsla(0, 0%, 0%, 0.7); }
+        .pdp-gallery-nav--prev { left: 12px; }
+        .pdp-gallery-nav--next { right: 12px; }
+        .pdp-gallery-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+        .pdp-gallery-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: hsla(0, 0%, 100%, 0.3);
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .pdp-gallery-dot.active { background: var(--lobster-400); }
+
+        .pdp-info {
+            padding: var(--space-2xl);
+        }
+        .pdp-badge {
             display: inline-block;
             font-family: var(--font-mono);
             font-size: 0.6rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.12em;
-            color: hsl(43, 80%, 60%);
-            background: hsla(43, 80%, 55%, 0.12);
-            border: 1px solid hsla(43, 80%, 55%, 0.3);
+            color: var(--lobster-300);
+            background: hsla(9, 52%, 56%, 0.1);
+            border: 1px solid hsla(9, 52%, 56%, 0.25);
             padding: 4px 14px;
             border-radius: var(--radius-full);
             margin-bottom: var(--space-md);
         }
-        .claw-card-icon {
-            font-size: 3.2rem;
-            margin-bottom: var(--space-sm);
-            line-height: 1;
-        }
-        .claw-card-title {
+        .pdp-title {
             font-family: var(--font-display);
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 900;
             color: var(--text-primary);
-            margin-bottom: var(--space-xs);
+            margin-bottom: var(--space-sm);
         }
-        .claw-card-type {
+        .pdp-subtitle {
             font-family: var(--font-mono);
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: hsl(43, 70%, 55%);
-            margin-bottom: var(--space-md);
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
         }
-        .claw-card-desc {
+        .pdp-desc {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: var(--space-xl);
+        }
+        .pdp-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+        }
+        .pdp-feature {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+        }
+        .pdp-feature-icon { font-size: 1rem; flex-shrink: 0; }
+
+        /* Pricing */
+        .pdp-pricing {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        .pdp-pricing-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-sm);
+        }
+        .pdp-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xs);
+        }
+        .pdp-price-inclawnch {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--lobster-300);
+        }
+        .pdp-price-usd {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+        .pdp-price-note {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-top: var(--space-xs);
+        }
+
+        /* Shipping tier selector */
+        .pdp-tiers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+        .pdp-tier {
+            padding: var(--space-md);
+            background: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .pdp-tier:hover { border-color: var(--border-default); }
+        .pdp-tier.active {
+            border-color: var(--lobster-400);
+            background: hsla(9, 52%, 56%, 0.06);
+        }
+        .pdp-tier-name {
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .pdp-tier-price {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+
+        /* Buy button */
+        .pdp-buy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(135deg, var(--lobster-400), hsl(18, 60%, 52%));
+            color: #fff;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .pdp-buy-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .pdp-buy-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        /* ── Checkout Panel ── */
+        .checkout {
+            display: none;
+            animation: storeFadeIn 0.3s var(--ease-smooth) both;
+            margin-top: var(--space-xl);
+        }
+        .checkout.active { display: block; }
+        .checkout-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-2xl);
+            position: relative;
+        }
+        .checkout-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--seafoam-400), var(--lobster-400));
+        }
+        .checkout-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
+        }
+        .checkout-step {
+            margin-bottom: var(--space-xl);
+        }
+        .checkout-step-header {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--lobster-300);
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        .checkout-step-num {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: hsla(9, 52%, 56%, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+        .form-row--full { grid-template-columns: 1fr; }
+        .form-row--3col { grid-template-columns: 2fr 1fr 1fr; }
+        .form-field label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            transition: border-color 0.2s;
+        }
+        .form-field input:focus, .form-field select:focus {
+            outline: none;
+            border-color: var(--lobster-400);
+        }
+        .form-field select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* Payment summary */
+        .pay-summary {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        .pay-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-xs) 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .pay-line--total {
+            border-top: 1px solid var(--border-subtle);
+            margin-top: var(--space-sm);
+            padding-top: var(--space-sm);
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .pay-line--total .pay-val {
+            color: var(--lobster-300);
+            font-family: var(--font-mono);
+        }
+        .pay-line .pay-val {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+        }
+        .pay-burn {
+            font-size: 0.72rem;
+            color: var(--seafoam-300);
+            margin-top: var(--space-sm);
+            text-align: center;
+        }
+
+        .checkout-pay-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(135deg, var(--seafoam-400), var(--seafoam-500));
+            color: #fff;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .checkout-pay-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .checkout-pay-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .checkout-status {
+            text-align: center;
+            margin-top: var(--space-md);
+            font-size: 0.82rem;
+            min-height: 20px;
+        }
+        .checkout-status.error { color: hsl(0, 70%, 60%); }
+        .checkout-status.success { color: var(--seafoam-300); }
+        .checkout-status.pending { color: var(--sand-300); }
+
+        /* ── Order Success ── */
+        .order-success {
+            display: none;
+            text-align: center;
+            padding: var(--space-3xl) var(--space-xl);
+            animation: storeFadeIn 0.4s var(--ease-smooth) both;
+        }
+        .order-success.active { display: block; }
+        .order-success-icon { font-size: 3rem; margin-bottom: var(--space-md); }
+        .order-success-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .order-success-msg {
             font-size: 0.92rem;
             color: var(--text-secondary);
             line-height: 1.6;
             max-width: 420px;
-            margin: 0 auto var(--space-lg);
-        }
-        .claw-card .dual-price {
-            margin: 0 auto var(--space-lg);
-            max-width: 360px;
-        }
-        .claw-card .product-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 12px 32px;
-            border-radius: var(--radius-full);
-            font-family: var(--font-mono);
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            border: 1px solid hsla(43, 80%, 55%, 0.4);
-            background: hsla(43, 80%, 55%, 0.08);
-            color: hsl(43, 80%, 65%);
-            transition: all 0.25s var(--ease-smooth);
-        }
-        .claw-card .product-btn:hover {
-            background: hsla(43, 80%, 55%, 0.15);
-            border-color: hsla(43, 80%, 55%, 0.6);
-            transform: translateY(-1px);
+            margin: 0 auto;
         }
 
-        /* ── Category Header ── */
-        .category-header {
-            font-family: var(--font-display);
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: var(--space-lg);
-            padding-bottom: var(--space-sm);
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .category-header span {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-dim);
-            margin-left: 8px;
-        }
-
-        /* ── Product Card (Originals) ── */
-        .product-grid {
-            display: grid;
-            gap: var(--space-lg);
-            margin-bottom: var(--space-3xl);
-        }
-        .product-grid--2x2 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .product-grid--3col {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .product-card {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
+        /* ── Made to Order Notice ── */
+        .mto-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
             padding: var(--space-lg);
-            text-align: center;
-            transition: border-color var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
-            position: relative;
-        }
-        .product-card:hover {
-            border-color: var(--border-default);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-        .product-badge {
-            display: inline-block;
-            font-family: var(--font-mono);
-            font-size: 0.58rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--sand-300);
-            background: hsla(32, 32%, 66%, 0.12);
-            border: 1px solid hsla(32, 32%, 66%, 0.25);
-            padding: 3px 10px;
-            border-radius: var(--radius-full);
-            margin-bottom: var(--space-sm);
-        }
-        .product-card-icon {
-            font-size: 1.8rem;
-            margin-bottom: var(--space-xs);
-            line-height: 1;
-        }
-        .product-card-name {
-            font-family: var(--font-display);
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: var(--space-sm);
-        }
-
-        /* ── Dual Price Display ── */
-        .dual-price {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            background: var(--bg-card);
+            background: hsla(43, 80%, 55%, 0.06);
+            border: 1px solid hsla(43, 80%, 55%, 0.15);
             border-radius: var(--radius-lg);
-            border: 1px solid var(--border-subtle);
-            padding: 8px;
+            margin-top: var(--space-lg);
         }
-        .dual-price-item {
-            text-align: center;
-            padding: 4px 6px;
-        }
-        .dual-price-label {
-            font-family: var(--font-mono);
-            font-size: 0.56rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-dim);
-            margin-bottom: 2px;
-        }
-        .dual-price-value {
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            font-weight: 700;
+        .mto-notice-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+        .mto-notice-text {
+            font-size: 0.82rem;
             color: var(--text-secondary);
+            line-height: 1.6;
         }
-        .dual-price-item--inclawnch .dual-price-value {
-            color: var(--lobster-300);
+        .mto-notice-text strong {
+            color: hsl(43, 70%, 60%);
         }
 
-        /* ── Footer ── */
         .store-footer {
             text-align: center;
             padding: var(--space-xl) 0;
+            margin-top: var(--space-2xl);
             border-top: 1px solid var(--border-subtle);
         }
         .store-footer p {
@@ -469,26 +499,18 @@
             letter-spacing: 0.03em;
         }
 
-        /* ── Animations ── */
         @keyframes storeFadeIn {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Responsive ── */
         @media (max-width: 640px) {
             .store-hero h1 { font-size: 2rem; }
-            .pricing-rows { grid-template-columns: 1fr; }
-            .merch-grid { grid-template-columns: repeat(2, 1fr); }
-            .product-grid--2x2 { grid-template-columns: repeat(2, 1fr); }
-            .product-grid--3col { grid-template-columns: repeat(2, 1fr); }
-            .claw-card { padding: var(--space-xl); }
-        }
-        @media (max-width: 400px) {
-            .store-hero h1 { font-size: 1.6rem; }
-            .merch-grid { grid-template-columns: 1fr; }
-            .product-grid--2x2 { grid-template-columns: 1fr; }
-            .product-grid--3col { grid-template-columns: 1fr; }
+            .pdp-features { grid-template-columns: 1fr; }
+            .pdp-tiers { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-row--3col { grid-template-columns: 1fr; }
+            .pdp-info { padding: var(--space-xl); }
         }
     </style>
 </head>
@@ -511,14 +533,193 @@
 
     <section class="store-hero">
         <h1>The Inclawbate Store <span style="-webkit-text-fill-color:initial;background:none;">&#129438;</span></h1>
-        <p class="store-hero-sub">Lobster gear, custom goods, and everything in between.</p>
+        <p class="store-hero-sub">Custom lobster gear. Pay with $INCLAWNCH on Base.</p>
     </section>
 
-    <section style="text-align:center;padding:var(--space-3xl) var(--space-xl);animation:storeFadeIn 0.5s 0.1s var(--ease-smooth) both;">
-        <div style="font-size:3.5rem;margin-bottom:var(--space-md);">&#129438;</div>
-        <div style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:var(--space-sm);">Coming Soon</div>
-        <p style="font-size:0.92rem;color:var(--text-secondary);max-width:420px;margin:0 auto var(--space-xl);line-height:1.6;">Card payments &amp; $INCLAWNCH accepted. Lobster gear, originals, and custom goods &mdash; all dropping soon.</p>
-        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="font-family:var(--font-mono);">Join Telegram for updates</a>
+    <!-- ═══ Product Detail ═══ -->
+    <section class="pdp" id="productSection">
+        <div class="pdp-card">
+
+            <!-- Image Gallery -->
+            <div class="pdp-gallery" id="gallery">
+                <div class="pdp-gallery-placeholder" id="galleryPlaceholder">&#129438;</div>
+                <!-- Images loaded from /inclawbate/assets/store/ if available -->
+                <button class="pdp-gallery-nav pdp-gallery-nav--prev" id="galleryPrev" style="display:none;">&#8249;</button>
+                <button class="pdp-gallery-nav pdp-gallery-nav--next" id="galleryNext" style="display:none;">&#8250;</button>
+                <div class="pdp-gallery-dots" id="galleryDots"></div>
+            </div>
+
+            <div class="pdp-info">
+                <span class="pdp-badge">Made to Order</span>
+                <h1 class="pdp-title">The Lobster Putter</h1>
+                <div class="pdp-subtitle">Custom Golf Putter &middot; Inclawbate Edition</div>
+
+                <p class="pdp-desc">
+                    A fully custom putter built for the lobster community. Each one is made to order and shipped directly to you. Premium build quality with the inclawbate lobster design.
+                </p>
+
+                <div class="pdp-features">
+                    <div class="pdp-feature">
+                        <span class="pdp-feature-icon">&#9971;</span>
+                        Custom putter head
+                    </div>
+                    <div class="pdp-feature">
+                        <span class="pdp-feature-icon">&#129438;</span>
+                        Lobster engraving
+                    </div>
+                    <div class="pdp-feature">
+                        <span class="pdp-feature-icon">&#128230;</span>
+                        Ships worldwide
+                    </div>
+                    <div class="pdp-feature">
+                        <span class="pdp-feature-icon">&#128293;</span>
+                        Portion burned
+                    </div>
+                </div>
+
+                <!-- Shipping Tier -->
+                <div class="pdp-pricing-label">Select Shipping Region</div>
+                <div class="pdp-tiers" id="tierSelect">
+                    <div class="pdp-tier active" data-tier="us">
+                        <div class="pdp-tier-name">United States</div>
+                        <div class="pdp-tier-price">$249 USD equiv.</div>
+                    </div>
+                    <div class="pdp-tier" data-tier="canada">
+                        <div class="pdp-tier-name">Canada</div>
+                        <div class="pdp-tier-price">$269 USD equiv.</div>
+                    </div>
+                    <div class="pdp-tier" data-tier="international">
+                        <div class="pdp-tier-name">International</div>
+                        <div class="pdp-tier-price">$299 USD equiv.</div>
+                    </div>
+                </div>
+
+                <!-- Live Price -->
+                <div class="pdp-pricing" id="pricingDisplay">
+                    <div class="pdp-pricing-label">Price in INCLAWNCH</div>
+                    <div class="pdp-price-row">
+                        <span class="pdp-price-inclawnch" id="priceInclawnch">Loading...</span>
+                        <span class="pdp-price-usd" id="priceUsd"></span>
+                    </div>
+                    <div class="pdp-price-note">Live price &middot; updates every 30s &middot; includes shipping</div>
+                </div>
+
+                <button class="pdp-buy-btn" id="buyBtn" disabled style="opacity:0.5;cursor:not-allowed;">
+                    &#129438; Coming Soon
+                </button>
+
+                <div class="mto-notice">
+                    <span class="mto-notice-icon">&#128197;</span>
+                    <div class="mto-notice-text">
+                        <strong>Made to order &mdash; 2-3 week fulfillment.</strong>
+                        Each putter is custom-built after purchase. You'll receive a confirmation with tracking once it ships.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ Checkout ═══ -->
+    <section class="checkout" id="checkoutSection">
+        <div class="checkout-card">
+            <h2 class="checkout-title">Checkout</h2>
+
+            <!-- Step 1: Shipping -->
+            <div class="checkout-step">
+                <div class="checkout-step-header">
+                    <span class="checkout-step-num">1</span>
+                    Shipping Address
+                </div>
+                <div class="form-row form-row--full">
+                    <div class="form-field">
+                        <label for="shipName">Full Name</label>
+                        <input type="text" id="shipName" placeholder="Your full name" autocomplete="name">
+                    </div>
+                </div>
+                <div class="form-row form-row--full">
+                    <div class="form-field">
+                        <label for="shipAddress">Street Address</label>
+                        <input type="text" id="shipAddress" placeholder="123 Main St, Apt 4" autocomplete="street-address">
+                    </div>
+                </div>
+                <div class="form-row--3col form-row">
+                    <div class="form-field">
+                        <label for="shipCity">City</label>
+                        <input type="text" id="shipCity" placeholder="City" autocomplete="address-level2">
+                    </div>
+                    <div class="form-field">
+                        <label for="shipState">State / Province</label>
+                        <input type="text" id="shipState" placeholder="NY" autocomplete="address-level1">
+                    </div>
+                    <div class="form-field">
+                        <label for="shipZip">Zip / Postal</label>
+                        <input type="text" id="shipZip" placeholder="10001" autocomplete="postal-code">
+                    </div>
+                </div>
+                <div class="form-row form-row--full">
+                    <div class="form-field">
+                        <label for="shipCountry">Country</label>
+                        <select id="shipCountry">
+                            <option value="US">United States</option>
+                            <option value="CA">Canada</option>
+                            <option value="">-- Other (International) --</option>
+                            <option value="GB">United Kingdom</option>
+                            <option value="AU">Australia</option>
+                            <option value="DE">Germany</option>
+                            <option value="FR">France</option>
+                            <option value="JP">Japan</option>
+                            <option value="KR">South Korea</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Payment Summary -->
+            <div class="checkout-step">
+                <div class="checkout-step-header">
+                    <span class="checkout-step-num">2</span>
+                    Payment
+                </div>
+                <div class="pay-summary">
+                    <div class="pay-line">
+                        <span>The Lobster Putter</span>
+                        <span class="pay-val" id="payProduct">$145</span>
+                    </div>
+                    <div class="pay-line">
+                        <span>Shipping (<span id="payTierLabel">US</span>)</span>
+                        <span class="pay-val" id="payShipping">$20</span>
+                    </div>
+                    <div class="pay-line">
+                        <span>Burn + slippage buffer</span>
+                        <span class="pay-val" id="payBurn">$84</span>
+                    </div>
+                    <div class="pay-line pay-line--total">
+                        <span>Total</span>
+                        <span class="pay-val" id="payTotal">Loading...</span>
+                    </div>
+                    <div class="pay-burn" id="payBurnNote">~30% of payment will be burned</div>
+                </div>
+
+                <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:var(--space-lg);line-height:1.5;">
+                    Send <strong id="payInclawnchAmount" style="color:var(--lobster-300);">—</strong> INCLAWNCH to the protocol wallet. Your wallet will prompt you to confirm the transfer on Base.
+                </div>
+
+                <button class="checkout-pay-btn" id="payBtn" disabled>
+                    &#128274; Connect Wallet &amp; Pay
+                </button>
+                <div class="checkout-status" id="checkoutStatus"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ Order Success ═══ -->
+    <section class="order-success" id="orderSuccess">
+        <div class="order-success-icon">&#127881;</div>
+        <div class="order-success-title">Order Confirmed!</div>
+        <div class="order-success-msg" id="orderSuccessMsg">
+            Your Lobster Putter is being made. You'll hear from us when it ships. Made to order — expect 2-3 weeks.
+        </div>
     </section>
 
     <footer class="store-footer">
@@ -526,6 +727,326 @@
     </footer>
 
 </main>
+
+<script>
+(function() {
+    var API = '/api/inclawbate/orders';
+    var INCLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+    var PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+    var ERC20_ABI_TRANSFER = [{
+        name: 'transfer',
+        type: 'function',
+        inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
+        outputs: [{ name: '', type: 'bool' }]
+    }];
+
+    var currentTier = 'us';
+    var priceData = null;
+    var refreshTimer = null;
+
+    // ── Image Gallery ──
+    var galleryImages = [];
+    var galleryIdx = 0;
+    var imagePaths = [
+        '/inclawbate/assets/store/lobster-putter-1.jpg',
+        '/inclawbate/assets/store/lobster-putter-2.jpg',
+        '/inclawbate/assets/store/lobster-putter-3.jpg'
+    ];
+
+    function initGallery() {
+        var gallery = document.getElementById('gallery');
+        var loaded = 0;
+        imagePaths.forEach(function(src, i) {
+            var img = new Image();
+            img.src = src;
+            img.alt = 'The Lobster Putter - Image ' + (i + 1);
+            img.onload = function() {
+                galleryImages.push({ el: img, idx: i });
+                gallery.insertBefore(img, gallery.querySelector('.pdp-gallery-nav--prev'));
+                if (i === 0) {
+                    img.classList.add('active');
+                    document.getElementById('galleryPlaceholder').style.display = 'none';
+                }
+                loaded++;
+                if (loaded > 1) {
+                    document.getElementById('galleryPrev').style.display = '';
+                    document.getElementById('galleryNext').style.display = '';
+                    buildDots();
+                }
+            };
+        });
+    }
+
+    function buildDots() {
+        var dots = document.getElementById('galleryDots');
+        dots.innerHTML = '';
+        var imgs = document.querySelectorAll('#gallery img');
+        for (var i = 0; i < imgs.length; i++) {
+            var dot = document.createElement('button');
+            dot.className = 'pdp-gallery-dot' + (i === 0 ? ' active' : '');
+            dot.dataset.idx = i;
+            dots.appendChild(dot);
+        }
+    }
+
+    function showSlide(idx) {
+        var imgs = document.querySelectorAll('#gallery img');
+        if (imgs.length === 0) return;
+        galleryIdx = ((idx % imgs.length) + imgs.length) % imgs.length;
+        imgs.forEach(function(img, i) { img.classList.toggle('active', i === galleryIdx); });
+        document.querySelectorAll('.pdp-gallery-dot').forEach(function(d, i) {
+            d.classList.toggle('active', i === galleryIdx);
+        });
+    }
+
+    document.getElementById('galleryPrev').addEventListener('click', function() { showSlide(galleryIdx - 1); });
+    document.getElementById('galleryNext').addEventListener('click', function() { showSlide(galleryIdx + 1); });
+    document.getElementById('galleryDots').addEventListener('click', function(e) {
+        if (e.target.dataset.idx !== undefined) showSlide(parseInt(e.target.dataset.idx));
+    });
+
+    initGallery();
+
+    // ── Tier Selection ──
+    document.getElementById('tierSelect').addEventListener('click', function(e) {
+        var tier = e.target.closest('.pdp-tier');
+        if (!tier) return;
+        document.querySelectorAll('.pdp-tier').forEach(function(t) { t.classList.remove('active'); });
+        tier.classList.add('active');
+        currentTier = tier.dataset.tier;
+        updatePrice();
+    });
+
+    // ── Country → Tier sync ──
+    document.getElementById('shipCountry').addEventListener('change', function() {
+        var val = this.value;
+        var tier = val === 'US' ? 'us' : val === 'CA' ? 'canada' : 'international';
+        currentTier = tier;
+        document.querySelectorAll('.pdp-tier').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.tier === tier);
+        });
+        updatePrice();
+    });
+
+    // ── Fetch Price ──
+    async function fetchPrice() {
+        try {
+            var resp = await fetch(API + '?product=lobster-putter&tier=' + currentTier);
+            if (!resp.ok) throw new Error('Price fetch failed');
+            priceData = await resp.json();
+            updatePrice();
+            document.getElementById('buyBtn').disabled = false;
+        } catch (e) {
+            document.getElementById('priceInclawnch').textContent = 'Price unavailable';
+        }
+    }
+
+    function updatePrice() {
+        if (!priceData) return;
+        var tier = priceData.tiers[currentTier];
+        if (!tier) return;
+
+        document.getElementById('priceInclawnch').textContent = Number(tier.inclawnch).toLocaleString() + ' INCLAWNCH';
+        document.getElementById('priceUsd').textContent = '~$' + tier.usd + ' USD';
+
+        // Update tier price labels
+        Object.keys(priceData.tiers).forEach(function(k) {
+            var el = document.querySelector('[data-tier="' + k + '"] .pdp-tier-price');
+            if (el) el.textContent = '$' + priceData.tiers[k].usd + ' USD equiv.';
+        });
+
+        // Update checkout summary
+        var usd = tier.usd;
+        var shipping = currentTier === 'us' ? 20 : currentTier === 'canada' ? 30 : 60;
+        var base = 145;
+        var burnAmt = usd - base - shipping;
+        document.getElementById('payProduct').textContent = '$' + base;
+        document.getElementById('payShipping').textContent = '$' + shipping;
+        document.getElementById('payTierLabel').textContent = currentTier === 'us' ? 'US' : currentTier === 'canada' ? 'Canada' : 'International';
+        document.getElementById('payBurn').textContent = '$' + burnAmt;
+        document.getElementById('payTotal').textContent = Number(tier.inclawnch).toLocaleString() + ' INCLAWNCH (~$' + usd + ')';
+        document.getElementById('payInclawnchAmount').textContent = Number(tier.inclawnch).toLocaleString();
+        document.getElementById('payBtn').disabled = false;
+    }
+
+    fetchPrice();
+    refreshTimer = setInterval(fetchPrice, 30000);
+
+    // ── Buy Button → Open Checkout (disabled until launch) ──
+    document.getElementById('buyBtn').addEventListener('click', function() {
+        // TODO: remove this guard when store is live
+        if (this.textContent.includes('Coming Soon')) return;
+        document.getElementById('checkoutSection').classList.add('active');
+        document.getElementById('checkoutSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // ── Pay Button ──
+    document.getElementById('payBtn').addEventListener('click', async function() {
+        var statusEl = document.getElementById('checkoutStatus');
+        statusEl.className = 'checkout-status';
+        statusEl.textContent = '';
+
+        // Validate shipping
+        var fields = ['shipName', 'shipAddress', 'shipCity', 'shipState', 'shipZip', 'shipCountry'];
+        var vals = {};
+        for (var i = 0; i < fields.length; i++) {
+            vals[fields[i]] = document.getElementById(fields[i]).value.trim();
+            if (!vals[fields[i]]) {
+                statusEl.className = 'checkout-status error';
+                statusEl.textContent = 'Please fill in all shipping fields.';
+                document.getElementById(fields[i]).focus();
+                return;
+            }
+        }
+
+        // Check JWT
+        var jwt = localStorage.getItem('inclawbate_jwt');
+        if (!jwt) {
+            statusEl.className = 'checkout-status error';
+            statusEl.textContent = 'Please log in at inclawbate.com/launch first.';
+            return;
+        }
+
+        // Check wallet
+        if (typeof window.ethereum === 'undefined') {
+            statusEl.className = 'checkout-status error';
+            statusEl.textContent = 'No wallet detected. Install MetaMask or Coinbase Wallet.';
+            return;
+        }
+
+        var tier = priceData.tiers[currentTier];
+        if (!tier) return;
+
+        var btn = document.getElementById('payBtn');
+        btn.disabled = true;
+        btn.textContent = 'Connecting wallet...';
+        statusEl.className = 'checkout-status pending';
+        statusEl.textContent = 'Waiting for wallet connection...';
+
+        try {
+            // Connect wallet
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (!accounts || accounts.length === 0) throw new Error('No account selected');
+
+            // Switch to Base (chain 8453)
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x2105' }]
+                });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x2105',
+                            chainName: 'Base',
+                            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                            rpcUrls: ['https://mainnet.base.org'],
+                            blockExplorerUrls: ['https://basescan.org']
+                        }]
+                    });
+                } else {
+                    throw switchErr;
+                }
+            }
+
+            // Build ERC-20 transfer
+            var amount = BigInt(Math.ceil(tier.inclawnch)) * BigInt('1000000000000000000');
+            var amountHex = '0x' + amount.toString(16);
+            // transfer(address,uint256)
+            var sig = '0xa9059cbb';
+            var paddedTo = PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0');
+            var paddedAmt = amount.toString(16).padStart(64, '0');
+            var data = sig + paddedTo + paddedAmt;
+
+            btn.textContent = 'Confirm in wallet...';
+            statusEl.textContent = 'Please confirm the INCLAWNCH transfer in your wallet...';
+
+            var txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{
+                    from: accounts[0],
+                    to: INCLAWNCH_ADDRESS,
+                    data: data,
+                    value: '0x0'
+                }]
+            });
+
+            btn.textContent = 'Confirming on-chain...';
+            statusEl.textContent = 'Transaction sent! Waiting for confirmation...';
+
+            // Poll for receipt
+            var confirmed = false;
+            for (var attempt = 0; attempt < 60; attempt++) {
+                await new Promise(function(r) { setTimeout(r, 3000); });
+                try {
+                    var receipt = await window.ethereum.request({
+                        method: 'eth_getTransactionReceipt',
+                        params: [txHash]
+                    });
+                    if (receipt && receipt.status === '0x1') {
+                        confirmed = true;
+                        break;
+                    } else if (receipt && receipt.status === '0x0') {
+                        throw new Error('Transaction failed on-chain');
+                    }
+                } catch (e) {
+                    if (e.message.includes('failed on-chain')) throw e;
+                }
+            }
+
+            if (!confirmed) throw new Error('Transaction not confirmed after 3 minutes');
+
+            // Submit order to API
+            btn.textContent = 'Recording order...';
+            statusEl.textContent = 'Payment confirmed! Recording your order...';
+
+            var orderResp = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + jwt
+                },
+                body: JSON.stringify({
+                    action: 'create',
+                    tx_hash: txHash,
+                    product: 'lobster-putter',
+                    shipping: {
+                        name: vals.shipName,
+                        address: vals.shipAddress,
+                        city: vals.shipCity,
+                        state: vals.shipState,
+                        zip: vals.shipZip,
+                        country: vals.shipCountry,
+                        tier: currentTier
+                    }
+                })
+            });
+
+            var orderData = await orderResp.json();
+            if (!orderResp.ok) throw new Error(orderData.error || 'Order failed');
+
+            // Success!
+            document.getElementById('productSection').style.display = 'none';
+            document.getElementById('checkoutSection').style.display = 'none';
+            var success = document.getElementById('orderSuccess');
+            success.classList.add('active');
+            document.getElementById('orderSuccessMsg').innerHTML =
+                'Your Lobster Putter is being made! Order <strong>' + orderData.order_id.slice(0, 8) + '...</strong><br>' +
+                'Paid <strong>' + Number(orderData.inclawnch_paid).toLocaleString() + ' INCLAWNCH</strong> (~$' + orderData.usd_equivalent + ')<br><br>' +
+                'Made to order — expect 2-3 weeks. We\'ll send tracking when it ships.';
+            success.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            statusEl.className = 'checkout-status error';
+            statusEl.textContent = err.message || 'Payment failed. Please try again.';
+            btn.disabled = false;
+            btn.innerHTML = '&#128274; Connect Wallet &amp; Pay';
+        }
+    });
+})();
+</script>
 
 </body>
 </html>
