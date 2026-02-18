@@ -499,13 +499,146 @@
             letter-spacing: 0.03em;
         }
 
+        /* ── Store Grid ── */
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+            animation: storeFadeIn 0.5s 0.08s var(--ease-smooth) both;
+        }
+        .store-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.25s var(--ease-smooth), border-color 0.25s, box-shadow 0.25s;
+            position: relative;
+        }
+        .store-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--lobster-400), hsl(43, 65%, 55%), var(--seafoam-400));
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .store-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--lobster-400);
+            box-shadow: 0 8px 30px hsla(9, 52%, 56%, 0.1);
+        }
+        .store-card:hover::before { opacity: 1; }
+        .store-card-img {
+            aspect-ratio: 4/3;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .store-card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .store-card-emoji {
+            font-size: 3rem;
+            opacity: 0.4;
+        }
+        .store-card-body {
+            padding: var(--space-lg);
+        }
+        .store-card-badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--lobster-300);
+            background: hsla(9, 52%, 56%, 0.1);
+            border: 1px solid hsla(9, 52%, 56%, 0.2);
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            margin-bottom: var(--space-sm);
+        }
+        .store-card-name {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .store-card-sub {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+        .store-card-price {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--lobster-300);
+        }
+        .store-card-cta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            margin-top: var(--space-md);
+            padding: 10px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            background: hsla(9, 52%, 56%, 0.08);
+            border: 1px solid hsla(9, 52%, 56%, 0.2);
+            color: var(--lobster-300);
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .store-card:hover .store-card-cta {
+            background: hsla(9, 52%, 56%, 0.15);
+            border-color: var(--lobster-400);
+        }
+
+        /* Back to store */
+        .pdp-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: var(--space-sm) 0;
+            margin-bottom: var(--space-md);
+            transition: color 0.2s;
+        }
+        .pdp-back:hover { color: var(--lobster-300); }
+
         @keyframes storeFadeIn {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @media (max-width: 900px) {
+            .store-grid { grid-template-columns: repeat(2, 1fr); }
+        }
         @media (max-width: 640px) {
             .store-hero h1 { font-size: 2rem; }
+            .store-grid { grid-template-columns: 1fr; }
             .pdp-features { grid-template-columns: 1fr; }
             .pdp-tiers { grid-template-columns: 1fr; }
             .form-row { grid-template-columns: 1fr; }
@@ -536,8 +669,12 @@
         <p class="store-hero-sub">Custom lobster gear. Pay with $INCLAWNCH on Base.</p>
     </section>
 
+    <!-- ═══ Product Grid ═══ -->
+    <section class="store-grid" id="storeGrid"></section>
+
     <!-- ═══ Product Detail ═══ -->
-    <section class="pdp" id="productSection">
+    <section class="pdp" id="productSection" style="display:none;">
+        <button class="pdp-back" id="backToGrid">&larr; Back to Store</button>
         <div class="pdp-card">
 
             <!-- Image Gallery -->
@@ -683,7 +820,7 @@
                 </div>
                 <div class="pay-summary">
                     <div class="pay-line">
-                        <span>The Lobster Putter</span>
+                        <span id="payProductName">The Lobster Putter</span>
                         <span class="pay-val" id="payProduct">$145</span>
                     </div>
                     <div class="pay-line">
@@ -740,26 +877,167 @@
         outputs: [{ name: '', type: 'bool' }]
     }];
 
+    // ── Product Data ──
+    var PRODUCTS = [{
+        id: 'lobster-putter',
+        name: 'The Lobster Putter',
+        subtitle: 'Custom Golf Putter',
+        badge: 'Made to Order',
+        basePrice: 145,
+        emoji: '&#129438;',
+        images: [
+            '/inclawbate/assets/store/lobster-putter-1.jpg',
+            '/inclawbate/assets/store/lobster-putter-2.jpg',
+            '/inclawbate/assets/store/lobster-putter-3.jpg'
+        ],
+        features: [
+            { icon: '&#9971;', text: 'Custom putter head' },
+            { icon: '&#129438;', text: 'Lobster engraving' },
+            { icon: '&#128230;', text: 'Ships worldwide' },
+            { icon: '&#128293;', text: 'Portion burned' }
+        ],
+        description: 'A fully custom putter built for the lobster community. Each one is made to order and shipped directly to you. Premium build quality with the inclawbate lobster design.',
+        shipping: { us: 20, canada: 30, international: 60 },
+        tiers: [
+            { id: 'us', name: 'United States' },
+            { id: 'canada', name: 'Canada' },
+            { id: 'international', name: 'International' }
+        ],
+        mtoNotice: 'Made to order &mdash; 2-3 week fulfillment.',
+        mtoDetail: 'Each putter is custom-built after purchase. You\'ll receive a confirmation with tracking once it ships.',
+        comingSoon: true
+    }];
+
+    var activeProduct = null;
     var currentTier = 'us';
     var priceData = null;
     var refreshTimer = null;
 
+    // ── Store Grid ──
+    function renderGrid() {
+        var grid = document.getElementById('storeGrid');
+        grid.innerHTML = PRODUCTS.map(function(p) {
+            return '<div class="store-card" data-product="' + p.id + '">' +
+                '<div class="store-card-img">' +
+                    '<img src="' + p.images[0] + '" alt="' + p.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\'">' +
+                    '<span class="store-card-emoji" style="display:none">' + p.emoji + '</span>' +
+                '</div>' +
+                '<div class="store-card-body">' +
+                    '<span class="store-card-badge">' + p.badge + '</span>' +
+                    '<div class="store-card-name">' + p.name + '</div>' +
+                    '<div class="store-card-sub">' + p.subtitle + '</div>' +
+                    '<div class="store-card-price">From $' + p.basePrice + '</div>' +
+                    '<div class="store-card-cta">' + p.emoji + ' View Details</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    document.getElementById('storeGrid').addEventListener('click', function(e) {
+        var card = e.target.closest('.store-card');
+        if (!card) return;
+        openProduct(card.dataset.product);
+    });
+
+    // ── Open Product Detail ──
+    function openProduct(id) {
+        var product = PRODUCTS.find(function(p) { return p.id === id; });
+        if (!product) return;
+        activeProduct = product;
+        currentTier = product.tiers[0].id;
+
+        // Populate PDP
+        document.querySelector('.pdp-badge').textContent = product.badge;
+        document.querySelector('.pdp-title').textContent = product.name;
+        document.querySelector('.pdp-subtitle').innerHTML = product.subtitle + ' &middot; Inclawbate Edition';
+        document.querySelector('.pdp-desc').textContent = product.description;
+
+        // Features
+        document.querySelector('.pdp-features').innerHTML = product.features.map(function(f) {
+            return '<div class="pdp-feature"><span class="pdp-feature-icon">' + f.icon + '</span>' + f.text + '</div>';
+        }).join('');
+
+        // Tiers
+        document.getElementById('tierSelect').innerHTML = product.tiers.map(function(t, i) {
+            var total = product.basePrice + product.shipping[t.id];
+            return '<div class="pdp-tier' + (i === 0 ? ' active' : '') + '" data-tier="' + t.id + '">' +
+                '<div class="pdp-tier-name">' + t.name + '</div>' +
+                '<div class="pdp-tier-price">$' + total + ' USD equiv.</div>' +
+            '</div>';
+        }).join('');
+
+        // MTO notice
+        document.querySelector('.mto-notice-text').innerHTML =
+            '<strong>' + product.mtoNotice + '</strong> ' + product.mtoDetail;
+
+        // Buy button
+        var buyBtn = document.getElementById('buyBtn');
+        if (product.comingSoon) {
+            buyBtn.disabled = true;
+            buyBtn.style.opacity = '0.5';
+            buyBtn.style.cursor = 'not-allowed';
+            buyBtn.innerHTML = product.emoji + ' Coming Soon';
+        } else {
+            buyBtn.disabled = true;
+            buyBtn.style.opacity = '';
+            buyBtn.style.cursor = '';
+            buyBtn.innerHTML = product.emoji + ' Buy Now';
+        }
+
+        // Checkout product name
+        document.getElementById('payProductName').textContent = product.name;
+
+        // Reset checkout
+        document.getElementById('checkoutSection').classList.remove('active');
+
+        // Gallery
+        initGallery(product.images, product.name);
+
+        // Show PDP, hide grid
+        document.getElementById('storeGrid').style.display = 'none';
+        document.getElementById('productSection').style.display = '';
+
+        // Fetch live price
+        priceData = null;
+        document.getElementById('priceInclawnch').textContent = 'Loading...';
+        document.getElementById('priceUsd').textContent = '';
+        if (refreshTimer) clearInterval(refreshTimer);
+        fetchPrice();
+        refreshTimer = setInterval(fetchPrice, 30000);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── Back to Grid ──
+    document.getElementById('backToGrid').addEventListener('click', function() {
+        document.getElementById('productSection').style.display = 'none';
+        document.getElementById('checkoutSection').classList.remove('active');
+        document.getElementById('orderSuccess').classList.remove('active');
+        document.getElementById('storeGrid').style.display = '';
+        activeProduct = null;
+        if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     // ── Image Gallery ──
     var galleryImages = [];
     var galleryIdx = 0;
-    var imagePaths = [
-        '/inclawbate/assets/store/lobster-putter-1.jpg',
-        '/inclawbate/assets/store/lobster-putter-2.jpg',
-        '/inclawbate/assets/store/lobster-putter-3.jpg'
-    ];
 
-    function initGallery() {
+    function initGallery(imagePaths, productName) {
         var gallery = document.getElementById('gallery');
+        gallery.querySelectorAll('img').forEach(function(img) { img.remove(); });
+        galleryImages = [];
+        galleryIdx = 0;
+        document.getElementById('galleryPlaceholder').style.display = '';
+        document.getElementById('galleryPrev').style.display = 'none';
+        document.getElementById('galleryNext').style.display = 'none';
+        document.getElementById('galleryDots').innerHTML = '';
+
         var loaded = 0;
         imagePaths.forEach(function(src, i) {
             var img = new Image();
             img.src = src;
-            img.alt = 'The Lobster Putter - Image ' + (i + 1);
+            img.alt = productName + ' - Image ' + (i + 1);
             img.onload = function() {
                 galleryImages.push({ el: img, idx: i });
                 gallery.insertBefore(img, gallery.querySelector('.pdp-gallery-nav--prev'));
@@ -805,8 +1083,6 @@
         if (e.target.dataset.idx !== undefined) showSlide(parseInt(e.target.dataset.idx));
     });
 
-    initGallery();
-
     // ── Tier Selection ──
     document.getElementById('tierSelect').addEventListener('click', function(e) {
         var tier = e.target.closest('.pdp-tier');
@@ -830,19 +1106,22 @@
 
     // ── Fetch Price ──
     async function fetchPrice() {
+        if (!activeProduct) return;
         try {
-            var resp = await fetch(API + '?product=lobster-putter&tier=' + currentTier);
+            var resp = await fetch(API + '?product=' + activeProduct.id + '&tier=' + currentTier);
             if (!resp.ok) throw new Error('Price fetch failed');
             priceData = await resp.json();
             updatePrice();
-            document.getElementById('buyBtn').disabled = false;
+            if (!activeProduct.comingSoon) {
+                document.getElementById('buyBtn').disabled = false;
+            }
         } catch (e) {
             document.getElementById('priceInclawnch').textContent = 'Price unavailable';
         }
     }
 
     function updatePrice() {
-        if (!priceData) return;
+        if (!priceData || !activeProduct) return;
         var tier = priceData.tiers[currentTier];
         if (!tier) return;
 
@@ -857,8 +1136,8 @@
 
         // Update checkout summary
         var usd = tier.usd;
-        var shipping = currentTier === 'us' ? 20 : currentTier === 'canada' ? 30 : 60;
-        var base = 145;
+        var shipping = activeProduct.shipping[currentTier] || 20;
+        var base = activeProduct.basePrice;
         var burnAmt = usd - base - shipping;
         document.getElementById('payProduct').textContent = '$' + base;
         document.getElementById('payShipping').textContent = '$' + shipping;
@@ -869,12 +1148,9 @@
         document.getElementById('payBtn').disabled = false;
     }
 
-    fetchPrice();
-    refreshTimer = setInterval(fetchPrice, 30000);
-
-    // ── Buy Button → Open Checkout (disabled until launch) ──
+    // ── Buy Button → Open Checkout ──
     document.getElementById('buyBtn').addEventListener('click', function() {
-        // TODO: remove this guard when store is live
+        if (activeProduct && activeProduct.comingSoon) return;
         if (this.textContent.includes('Coming Soon')) return;
         document.getElementById('checkoutSection').classList.add('active');
         document.getElementById('checkoutSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1011,7 +1287,7 @@
                 body: JSON.stringify({
                     action: 'create',
                     tx_hash: txHash,
-                    product: 'lobster-putter',
+                    product: activeProduct.id,
                     shipping: {
                         name: vals.shipName,
                         address: vals.shipAddress,
@@ -1033,7 +1309,7 @@
             var success = document.getElementById('orderSuccess');
             success.classList.add('active');
             document.getElementById('orderSuccessMsg').innerHTML =
-                'Your Lobster Putter is being made! Order <strong>' + orderData.order_id.slice(0, 8) + '...</strong><br>' +
+                'Your ' + activeProduct.name + ' is being made! Order <strong>' + orderData.order_id.slice(0, 8) + '...</strong><br>' +
                 'Paid <strong>' + Number(orderData.inclawnch_paid).toLocaleString() + ' INCLAWNCH</strong> (~$' + orderData.usd_equivalent + ')<br><br>' +
                 'Made to order — expect 2-3 weeks. We\'ll send tracking when it ships.';
             success.scrollIntoView({ behavior: 'smooth' });
@@ -1045,6 +1321,9 @@
             btn.innerHTML = '&#128274; Connect Wallet &amp; Pay';
         }
     });
+
+    // ── Init ──
+    renderGrid();
 })();
 </script>
 
