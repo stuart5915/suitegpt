@@ -53,9 +53,9 @@ export default async function handler(req, res) {
         ],
         related_skills: [
             {
-                name: 'Inclawbate Human Hiring',
-                endpoint: 'https://inclawbate.com/api/inclawbate/skill',
-                description: 'Find and hire humans by skill, pay in $INCLAWNCH'
+                name: 'UBI Staking',
+                endpoint: 'https://inclawbate.com/api/inclawbate/skill/staking',
+                description: 'Staking positions, APY, treasury stats, and distribution history'
             }
         ]
     });
