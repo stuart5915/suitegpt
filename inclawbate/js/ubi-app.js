@@ -144,16 +144,34 @@ function fromWei(hex) {
 }
 
 // Read from contract via public RPC (no wallet needed)
-var BASE_RPC = 'https://mainnet.base.org';
+// Multiple RPCs for reliability — browser requests to mainnet.base.org often get rate-limited
+var BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org',
+    'https://1rpc.io/base'
+];
+
+async function rpcFetch(body) {
+    for (var i = 0; i < BASE_RPCS.length; i++) {
+        try {
+            var res = await fetch(BASE_RPCS[i], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            var json = await res.json();
+            if (json.error) continue;
+            return json;
+        } catch (e) { continue; }
+    }
+    return null;
+}
+
 async function contractRead(to, data) {
-    var res = await fetch(BASE_RPC, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
-            params: [{ to: to, data: data }, 'latest'] })
-    });
-    var json = await res.json();
-    return json.result || '0x0';
+    var json = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_call',
+        params: [{ to: to, data: data }, 'latest'] });
+    return (json && json.result) || '0x0';
 }
 
 // Batch multiple eth_call reads into a single HTTP request
@@ -162,18 +180,13 @@ async function contractReadBatch(calls) {
         return { jsonrpc: '2.0', id: i + 1, method: 'eth_call',
             params: [{ to: c.to, data: c.data }, 'latest'] };
     });
-    var res = await fetch(BASE_RPC, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(batch)
-    });
-    var results = await res.json();
-    if (!Array.isArray(results)) {
+    var json = await rpcFetch(batch);
+    if (!json || !Array.isArray(json)) {
         return calls.map(function() { return '0x0'; });
     }
     // Sort by id to match input order
-    results.sort(function(a, b) { return a.id - b.id; });
-    return results.map(function(r) { return r.result || '0x0'; });
+    json.sort(function(a, b) { return a.id - b.id; });
+    return json.map(function(r) { return r.result || '0x0'; });
 }
 
 // Send tx via connected wallet and wait for receipt
