@@ -50,14 +50,16 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Authentication required. Provide a JWT token or X-API-Key header.' });
     }
 
-    // Check credits before generating (admin wallet bypasses)
+    // Check credits before generating (admin wallet or @artstu bypasses)
     const { data: profile } = await supabase
         .from('human_profiles')
-        .select('credits, wallet_address')
+        .select('credits, wallet_address, x_handle')
         .eq('id', profileId)
         .single();
 
-    const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET;
+    const FREE_HANDLES = ['artstu'];
+    const isAdmin = profile?.wallet_address?.toLowerCase() === ADMIN_WALLET
+        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
 
     if (!isAdmin && (!profile || profile.credits <= 0)) {
         return res.status(402).json({

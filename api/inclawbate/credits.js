@@ -142,7 +142,9 @@ export default async function handler(req, res) {
                 }
             } catch (e) { /* non-critical */ }
 
-            return res.status(200).json({ credits: data.credits, handle: data.x_handle, unread });
+            const FREE_HANDLES = ['artstu'];
+            const isFree = FREE_HANDLES.includes(data.x_handle?.toLowerCase());
+            return res.status(200).json({ credits: isFree ? 999999 : data.credits, handle: data.x_handle, unread });
         }
 
         // Dashboard flow: JWT auth
