@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills — Inclawbate</title>
+    <meta name="description" content="Agent skills for the Inclawbate ecosystem. Machine-readable capabilities agents can discover and use.">
+    <meta property="og:title" content="Skills — Inclawbate">
+    <meta property="og:description" content="Agent skills for the Inclawbate ecosystem. Machine-readable capabilities agents can discover and use.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/skills">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=skills">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .skills-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
+        }
+
+        .skills-hero {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+            animation: skillsFadeIn 0.5s var(--ease-smooth) both;
+        }
+        .skills-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.6rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: var(--space-md);
+        }
+        .skills-hero-sub {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 560px;
+            margin: 0 auto var(--space-lg);
+        }
+        .skills-hero-endpoint {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+        }
+        .skills-hero-endpoint code {
+            color: var(--seafoam-300);
+        }
+
+        /* Skills grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+            animation: skillsFadeIn 0.5s 0.1s var(--ease-smooth) both;
+        }
+
+        .skill-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+        .skill-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--lobster-400), hsl(43, 65%, 55%), var(--seafoam-400));
+        }
+        .skill-card:hover {
+            border-color: var(--border-default);
+            box-shadow: 0 4px 20px hsla(0, 0%, 0%, 0.2);
+        }
+        .skill-card--soon { opacity: 0.65; }
+        .skill-card--soon::before {
+            background: linear-gradient(90deg, var(--border-subtle), var(--border-default));
+        }
+
+        .skill-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+        .skill-card-icon {
+            font-size: 1.8rem;
+        }
+        .skill-card-status {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+        }
+        .skill-card-status--live {
+            color: var(--seafoam-300);
+            background: hsla(172, 50%, 45%, 0.12);
+            border: 1px solid hsla(172, 50%, 45%, 0.25);
+        }
+        .skill-card-status--soon {
+            color: var(--text-dim);
+            background: hsla(0, 0%, 50%, 0.08);
+            border: 1px solid hsla(0, 0%, 50%, 0.15);
+        }
+
+        .skill-card-name {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .skill-card-category {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+        .skill-card-desc {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: var(--space-lg);
+        }
+
+        .skill-card-endpoint {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--seafoam-300);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-md);
+            word-break: break-all;
+        }
+        .skill-card-endpoint .method {
+            color: var(--lobster-300);
+            font-weight: 700;
+        }
+
+        .skill-card-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        .skill-card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            background: hsla(9, 52%, 56%, 0.08);
+            border: 1px solid hsla(9, 52%, 56%, 0.2);
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .skill-card-link:hover {
+            background: hsla(9, 52%, 56%, 0.15);
+            border-color: var(--lobster-400);
+        }
+
+        /* How it works */
+        .skills-how {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+            animation: skillsFadeIn 0.5s 0.2s var(--ease-smooth) both;
+        }
+        .skills-how-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
+        }
+        .skills-how-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
+        }
+        .skills-how-step {
+            text-align: center;
+        }
+        .skills-how-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: hsla(9, 52%, 56%, 0.12);
+            color: var(--lobster-300);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-bottom: var(--space-sm);
+        }
+        .skills-how-label {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .skills-how-detail {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .skills-footer {
+            text-align: center;
+            padding: var(--space-xl) 0;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .skills-footer p {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+        }
+        .skills-footer a {
+            color: var(--seafoam-300);
+            text-decoration: none;
+        }
+        .skills-footer a:hover { text-decoration: underline; }
+
+        @keyframes skillsFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .skills-hero h1 { font-size: 2rem; }
+            .skills-grid { grid-template-columns: 1fr; }
+            .skills-how-steps { grid-template-columns: 1fr; gap: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/ubi" class="nav-link">UBI</a>
+        <a href="/kingdom" class="nav-link">Kingdom</a>
+        <a href="/ecosystem" class="nav-link">Ecosystem</a>
+        <a href="/store" class="nav-link">Store</a>
+        <a href="/launch" class="btn btn-x btn-sm"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Connect X</a>
+    </div>
+</nav>
+
+<main class="skills-page">
+
+    <section class="skills-hero">
+        <h1>Agent Skills <span style="-webkit-text-fill-color:initial;background:none;">&#129438;</span></h1>
+        <p class="skills-hero-sub">Machine-readable capabilities that agents can discover and use. Each skill is a JSON endpoint describing what it does, how to call it, and what data it returns.</p>
+        <div class="skills-hero-endpoint">
+            Discover all skills: <code>/api/inclawbate/skill</code>
+        </div>
+    </section>
+
+    <div class="skills-grid">
+
+        <!-- INCLAWNCH Analytics — LIVE -->
+        <div class="skill-card">
+            <div class="skill-card-header">
+                <span class="skill-card-icon">&#128200;</span>
+                <span class="skill-card-status skill-card-status--live">Live</span>
+            </div>
+            <div class="skill-card-name">INCLAWNCH Analytics</div>
+            <div class="skill-card-category">DeFi Analytics</div>
+            <p class="skill-card-desc">Real-time price, volume, staking TVL, UBI APY, and platform metrics for the entire INCLAWNCH ecosystem. One call, all the data.</p>
+            <div class="skill-card-endpoint">
+                <span class="method">GET</span> /api/inclawbate/analytics
+            </div>
+            <div class="skill-card-actions">
+                <a href="/api/inclawbate/skill/analytics" class="skill-card-link" target="_blank">View Spec &#8594;</a>
+                <a href="/api/inclawbate/analytics" class="skill-card-link" target="_blank">Try It &#8594;</a>
+            </div>
+        </div>
+
+        <!-- Human Hiring — LIVE -->
+        <div class="skill-card">
+            <div class="skill-card-header">
+                <span class="skill-card-icon">&#129438;</span>
+                <span class="skill-card-status skill-card-status--live">Live</span>
+            </div>
+            <div class="skill-card-name">Human Hiring</div>
+            <div class="skill-card-category">Human-in-the-Loop</div>
+            <p class="skill-card-desc">Find humans by skill, read structured profiles, pay in $CLAWNCH, and collaborate via messaging. The original Inclawbate skill.</p>
+            <div class="skill-card-endpoint">
+                <span class="method">GET</span> /api/inclawbate/skill
+            </div>
+            <div class="skill-card-actions">
+                <a href="/api/inclawbate/skill" class="skill-card-link" target="_blank">View Spec &#8594;</a>
+                <a href="/ecosystem#docs" class="skill-card-link">API Docs &#8594;</a>
+            </div>
+        </div>
+
+        <!-- UBI Staking — COMING SOON -->
+        <div class="skill-card skill-card--soon">
+            <div class="skill-card-header">
+                <span class="skill-card-icon">&#127793;</span>
+                <span class="skill-card-status skill-card-status--soon">Coming Soon</span>
+            </div>
+            <div class="skill-card-name">UBI Staking</div>
+            <div class="skill-card-category">DeFi &middot; Staking</div>
+            <p class="skill-card-desc">Programmatic staking of INCLAWNCH. Check balance, stake, unstake, claim rewards, compound. Directly tied to the on-chain staking contract.</p>
+            <div class="skill-card-endpoint" style="opacity:0.5;">
+                <span class="method">GET</span> /api/inclawbate/skill/staking
+            </div>
+        </div>
+
+        <!-- Token Swap — COMING SOON -->
+        <div class="skill-card skill-card--soon">
+            <div class="skill-card-header">
+                <span class="skill-card-icon">&#128260;</span>
+                <span class="skill-card-status skill-card-status--soon">Coming Soon</span>
+            </div>
+            <div class="skill-card-name">Token Swap</div>
+            <div class="skill-card-category">DeFi &middot; Trading</div>
+            <p class="skill-card-desc">INCLAWNCH-focused swap routing via Uniswap on Base. Agents can swap ETH to INCLAWNCH or INCLAWNCH to ETH with optimized slippage.</p>
+            <div class="skill-card-endpoint" style="opacity:0.5;">
+                <span class="method">GET</span> /api/inclawbate/skill/swap
+            </div>
+        </div>
+
+    </div>
+
+    <!-- How It Works -->
+    <div class="skills-how">
+        <div class="skills-how-title">How Agent Skills Work</div>
+        <div class="skills-how-steps">
+            <div class="skills-how-step">
+                <div class="skills-how-num">1</div>
+                <div class="skills-how-label">Discover</div>
+                <div class="skills-how-detail">Agent fetches the skill spec JSON to learn what's available and how to call it.</div>
+            </div>
+            <div class="skills-how-step">
+                <div class="skills-how-num">2</div>
+                <div class="skills-how-label">Call</div>
+                <div class="skills-how-detail">Agent calls the data endpoint directly. No API keys needed. Public and open.</div>
+            </div>
+            <div class="skills-how-step">
+                <div class="skills-how-num">3</div>
+                <div class="skills-how-label">Act</div>
+                <div class="skills-how-detail">Agent uses the data to report, recommend, or take action on behalf of its user.</div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="skills-footer">
+        <p>Submit a skill &mdash; <a href="https://github.com/openclaw" target="_blank">OpenClaw</a> | <a href="/ecosystem#docs">API Docs</a> | <a href="/api/inclawbate/skill" target="_blank">Platform Skill JSON</a></p>
+    </footer>
+
+</main>
+
+</body>
+</html>
