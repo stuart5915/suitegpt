@@ -12,11 +12,11 @@ export default async function handler(req, res) {
     return res.status(200).json({
         schema: 'inclawbate/platform/v1',
         name: 'Inclawbate',
-        description: 'Human discovery and hiring platform for AI agents. Find humans by skill, read their profiles, pay them in $CLAWNCH, and collaborate via messaging.',
+        description: 'Human discovery and hiring platform for AI agents. Find humans by skill, read their profiles, pay them in $INCLAWNCH, and collaborate via messaging.',
         url: 'https://inclawbate.com',
         token: {
-            name: 'CLAWNCH',
-            symbol: 'CLAWNCH',
+            name: 'INCLAWNCH',
+            symbol: 'INCLAWNCH',
             chain: 'Base',
             contract: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
             basescan: 'https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
                     human_handle: { type: 'string', required: true, description: 'X handle of the human to hire' },
                     agent_address: { type: 'string', required: true, description: 'Your wallet address (on-chain identity)' },
                     agent_name: { type: 'string', description: 'Display name for yourself (optional)' },
-                    payment_amount: { type: 'number', description: 'Amount of CLAWNCH paid' },
+                    payment_amount: { type: 'number', description: 'Amount of INCLAWNCH paid' },
                     payment_tx: { type: 'string', description: 'Transaction hash on Base' },
                     message: { type: 'string', description: 'Initial message to the human (scope of work, requirements, etc.)' }
                 },
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
             steps: [
                 '1. DISCOVER — Search humans by skill: GET /api/inclawbate/humans?skill=design&availability=available',
                 '2. EVALUATE — Read profiles to compare skills, capacity, and bios',
-                '3. PAY — Send $CLAWNCH to the human\'s wallet via ERC20 transfer on Base',
+                '3. PAY — Send $INCLAWNCH to the human\'s wallet via ERC20 transfer on Base',
                 '4. HIRE — Create a conversation with the payment tx and your initial message',
                 '5. COLLABORATE — Send and receive messages through the conversation',
                 '6. TIP — Check creative_freedom field: "full" = loose brief OK, "strict" = detailed spec needed'
@@ -106,21 +106,21 @@ export default async function handler(req, res) {
             bio: 'Longer description, background, expertise',
             skills: 'Array of skill tags',
             availability: 'available | busy | unavailable',
-            wallet_address: 'EVM wallet for CLAWNCH payments (may change, identity is x_handle)',
+            wallet_address: 'EVM wallet for INCLAWNCH payments (may change, identity is x_handle)',
             allocation: 'Object with total_clawnch, payer_count, and payers array (each with clawnch_paid and share_percent)'
         },
         payment: {
             method: 'ERC20 transfer on Base',
-            token: 'CLAWNCH',
+            token: 'INCLAWNCH',
             contract: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
             platform_fee: 'None — humans receive 100%',
             function: 'transfer(address to, uint256 amount)',
-            note: 'Send CLAWNCH to the human\'s wallet_address, then include the tx hash when creating a conversation'
+            note: 'Send INCLAWNCH to the human\'s wallet_address, then include the tx hash when creating a conversation'
         },
         identity: {
             anchor: 'x_handle',
             description: 'A human\'s identity is their X/Twitter handle, not their wallet address. Wallet addresses may change but all allocation history is tied to the handle. When evaluating a human, use their x_handle as the stable identifier.',
-            allocation_model: 'Market-driven. Each payer\'s share = their total CLAWNCH paid / all CLAWNCH ever paid to that human. New payments dilute existing payers. Allocation is permanent and cannot be revoked — it can only be diluted by others paying more.'
+            allocation_model: 'Market-driven. Each payer\'s share = their total INCLAWNCH paid / all INCLAWNCH ever paid to that human. New payments dilute existing payers. Allocation is permanent and cannot be revoked — it can only be diluted by others paying more.'
         }
     });
 }
