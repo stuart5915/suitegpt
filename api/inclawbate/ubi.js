@@ -396,10 +396,9 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { action } = req.body;
 
+        // ── Fund/Stake — DISABLED: use on-chain staking contract 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6 ──
         if (action === 'fund') {
-            const { tx_hash, wallet_address, token } = req.body;
-            const tokenType = (token === 'inclawnch') ? 'inclawnch' : 'clawnch';
-            const tokenAddress = TOKEN_ADDRESSES[tokenType];
+            return res.status(410).json({ error: 'API staking is disabled. Use the on-chain staking contract at 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6 on Base.' });
 
             if (!tx_hash || typeof tx_hash !== 'string' || !/^0x[a-fA-F0-9]{64}$/.test(tx_hash)) {
                 return res.status(400).json({ error: 'Valid tx_hash required' });
@@ -483,11 +482,9 @@ export default async function handler(req, res) {
             });
         }
 
-        // ── Unstake (instant via unstake wallet, or request if insufficient) ──
+        // ── Unstake — DISABLED: use on-chain staking contract 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6 ──
         if (action === 'unstake') {
-            const { wallet_address, token } = req.body;
-            if (!wallet_address) {
-                return res.status(400).json({ error: 'wallet_address required' });
+            return res.status(410).json({ error: 'API unstaking is disabled. Use the on-chain staking contract at 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6 on Base.' });
             }
             if (!/^0x[a-fA-F0-9]{40}$/.test(wallet_address)) {
                 return res.status(400).json({ error: 'Invalid wallet address' });
