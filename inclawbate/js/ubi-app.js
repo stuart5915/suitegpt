@@ -1005,8 +1005,13 @@ function daysSince(dateStr) {
                 onWalletConnected(addr);
                 return addr;
             } catch (err) {
+                var msg = err.message || 'Connection failed';
+                // Friendly message for Phantom / wallet rejection
+                if (msg.indexOf('not been authorized') !== -1 || msg.indexOf('User rejected') !== -1 || err.code === 4001) {
+                    msg = 'Wallet rejected connection. Please approve the request in your wallet and try again.';
+                }
                 document.querySelectorAll('.stake-status').forEach(function(el) {
-                    el.textContent = err.message || 'Connection failed';
+                    el.textContent = msg;
                     el.className = 'ubi-stake-status stake-status error';
                 });
                 return null;
@@ -1117,6 +1122,19 @@ function daysSince(dateStr) {
         const list = document.getElementById('yourStakesList');
         section.classList.add('visible');
 
+        // Show cached position immediately while loading fresh data
+        var cacheKey = '_ubi_pos_' + stakeWallet.toLowerCase();
+        var cachedPos = null;
+        try { cachedPos = JSON.parse(localStorage.getItem(cacheKey)); } catch (e) {}
+        if (cachedPos && cachedPos.staked > 0) {
+            list.innerHTML = '<div class="ubi-stake-row ubi-stake-row--onchain" style="opacity:0.6">' +
+                '<div class="ubi-stake-row-info">' +
+                '<span class="ubi-contrib-token ubi-contrib-token--inclawnch">inCLAWNCH</span>' +
+                '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString() + '</span>' +
+                '<span class="ubi-onchain-badge" style="opacity:0.5">loading...</span>' +
+                '</div></div>';
+        }
+
         try {
             // Fetch CLAWNCH from API and inCLAWNCH from contract in parallel
             var [apiResp, contractState] = await Promise.all([
@@ -1132,6 +1150,18 @@ function daysSince(dateStr) {
             var userInclawnch = contractState.staked;
             var earnedInclawnch = contractState.earned;
             var autoRestakeOn = contractState.autoRestake;
+
+            // Cache position when RPC returns real data
+            if (userInclawnch > 0) {
+                try { localStorage.setItem(cacheKey, JSON.stringify({ staked: userInclawnch, earned: earnedInclawnch, t: Date.now() })); } catch (e) {}
+            }
+
+            // RPC returned 0 but we have a cached position — RPC likely failed
+            var rpcLikelyFailed = userInclawnch === 0 && cachedPos && cachedPos.staked > 0 && Date.now() - cachedPos.t < 86400000;
+            if (rpcLikelyFailed) {
+                userInclawnch = cachedPos.staked;
+                earnedInclawnch = cachedPos.earned || 0;
+            }
 
             var hasAnyStake = userClawnch > 0 || userInclawnch > 0;
             if (!hasAnyStake && pendingUnstakes.length === 0) {
@@ -1282,7 +1312,17 @@ function daysSince(dateStr) {
                 _posCountdownInterval = setInterval(pcTick, 30000);
             }
         } catch (e) {
-            list.innerHTML = '<div class="ubi-no-stakes">Could not load stakes.</div>';
+            // If we have a cached position, keep showing it instead of error
+            if (cachedPos && cachedPos.staked > 0) {
+                list.innerHTML = '<div class="ubi-stake-row ubi-stake-row--onchain">' +
+                    '<div class="ubi-stake-row-info">' +
+                    '<span class="ubi-contrib-token ubi-contrib-token--inclawnch">inCLAWNCH</span>' +
+                    '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString() + '</span>' +
+                    '<span class="ubi-onchain-badge">on-chain</span>' +
+                    '</div></div>';
+            } else {
+                list.innerHTML = '<div class="ubi-no-stakes">Could not load stakes. Please refresh to try again.</div>';
+            }
         }
     }
 
