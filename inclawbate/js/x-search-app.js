@@ -661,6 +661,10 @@ modalDepositBtn.addEventListener('click', async () => {
             PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0') +
             amountWei.toString(16).padStart(64, '0');
 
+        // Ensure wallet is on Base before sending
+        try { await modalProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }); }
+        catch (e) { if (e.code === 4902) await modalProvider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); }
+
         const txHash = await modalProvider.request({
             method: 'eth_sendTransaction',
             params: [{ from: modalAccount, to: CLAWNCH_ADDRESS, data: transferData }]

@@ -599,6 +599,8 @@ async function executeSend(provider) {
             amountWei.toString(16).padStart(64, '0');
 
         btn.textContent = 'Confirm in wallet...';
+        // Re-enforce Base chain right before sending
+        try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] }); } catch (e) {}
         const tx = await provider.request({
             method: 'eth_sendTransaction',
             params: [{

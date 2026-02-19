@@ -8,6 +8,11 @@ const BASE_CHAIN_ID = '0x2105';
 const API_BASE = '/api/inclawbate';
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
+async function ensureBase(p) {
+    try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }); }
+    catch (e) { if (e.code === 4902) await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); }
+}
+
 // ABI function selectors
 const APPROVE_SELECTOR = '0x095ea7b3';                 // approve(address,uint256)
 const DISPERSE_TOKEN_SELECTOR = '0xc73a2d60';          // disperseToken(address,address[],uint256[])
@@ -155,10 +160,11 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.disabled = true;
         selectPanel.style.display = '';
 
-        // Show UBI distribution panel, philanthropy panel, and staking contract panel
+        // Show UBI distribution panel, philanthropy panel, staking contract panel, and quick send
         document.getElementById('ubiDistPanel').style.display = '';
         document.getElementById('philPanel').style.display = '';
         document.getElementById('stakingContractPanel').style.display = '';
+        document.getElementById('quickSendPanel').style.display = '';
 
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
@@ -412,6 +418,7 @@ sendBtn.addEventListener('click', async () => {
     sendStatus.className = 'airdrop-status';
 
     try {
+        await ensureBase(provider);
         // Check CLAWNCH balance
         const balanceData = BALANCE_SELECTOR + pad32(userAddress);
         const balResult = await provider.request({
@@ -955,6 +962,7 @@ document.getElementById('airdropUbiBtn').addEventListener('click', async () => {
     distStatus.className = 'airdrop-status';
 
     try {
+        await ensureBase(provider);
         // Look up philanthropy org wallets for Kingdom routing
         const orgWalletMap = {};
         (distData.philanthropy_orgs || []).forEach(o => {
@@ -1261,6 +1269,7 @@ document.getElementById('retryUnstakeBtn').addEventListener('click', async () =>
 });
 
 async function disperseReturn(tokenAddress, returns, statusEl) {
+    await ensureBase(provider);
     const recipients = returns.map(r => r.wallet);
     const amounts = returns.map(r => toWei(Math.floor(r.total)));
     const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
@@ -1538,6 +1547,7 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
     status.className = 'airdrop-status';
 
     try {
+        await ensureBase(provider);
         const recipients = selected.map(r => r.wallet_address);
         const amounts = selected.map(r => toWei(r.amount));
         const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
@@ -1796,6 +1806,8 @@ document.getElementById('scDepositBtn').addEventListener('click', async function
     var statusEl = document.getElementById('scDepositStatus');
     var btn = document.getElementById('scDepositBtn');
     btn.disabled = true;
+    statusEl.textContent = 'Switching to Base...';
+    await ensureBase(provider);
     statusEl.textContent = 'Checking approval...';
     statusEl.className = 'airdrop-status';
 
@@ -1843,6 +1855,7 @@ document.getElementById('scDepositBtn').addEventListener('click', async function
 document.getElementById('scPauseBtn').addEventListener('click', async function() {
     if (!provider || !userAddress) return;
     try {
+        await ensureBase(provider);
         var txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{ from: userAddress, to: STAKING_PROXY, data: SC.pause }]
@@ -1856,6 +1869,7 @@ document.getElementById('scPauseBtn').addEventListener('click', async function()
 document.getElementById('scUnpauseBtn').addEventListener('click', async function() {
     if (!provider || !userAddress) return;
     try {
+        await ensureBase(provider);
         var txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{ from: userAddress, to: STAKING_PROXY, data: SC.unpause }]
@@ -1881,6 +1895,7 @@ document.getElementById('scTransferBtn').addEventListener('click', async functio
     try {
         statusEl.textContent = 'Transferring admin...';
         statusEl.className = 'airdrop-status';
+        await ensureBase(provider);
         var data = SC.transferAdmin + pad32(newAddr);
         var txHash = await provider.request({
             method: 'eth_sendTransaction',

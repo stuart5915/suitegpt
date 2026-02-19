@@ -2,6 +2,12 @@
 
 (function() {
     var BASE_CHAIN_ID = '0x2105';
+
+    async function ensureBase(p) {
+        try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }); }
+        catch (e) { if (e.code === 4902) await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); }
+    }
+
     var connectedWallet = null;
 
     var CLAWNCH_TOKEN = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
@@ -414,6 +420,7 @@
             try {
                 var provider = getProvider();
                 if (!provider) throw new Error('No wallet connected');
+                await ensureBase(provider);
 
                 // ERC-20 transfer: 10,000 INCLAWNCH to UBI treasury
                 var transferData = '0xa9059cbb' + pad32(UBI_TREASURY) + pad32(toHexWei(ORG_LISTING_FEE));
@@ -1014,6 +1021,7 @@
         try {
             var provider = getProvider();
             if (!provider) throw new Error('No wallet connected');
+            await ensureBase(provider);
 
             // ERC-20 transfer: transfer(address,uint256)
             var transferData = '0xa9059cbb' + pad32(recipientWallet) + pad32(toHexWei(amount));

@@ -9,6 +9,11 @@
     const MAX_TOKENS_PER_CREDIT = 10000;
     const BASE_CHAIN_ID = '0x2105';
 
+    async function ensureBase(p) {
+        try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }); }
+        catch (e) { if (e.code === 4902) await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] }); }
+    }
+
     let jwt = null;
     let connectedAccount = null;
     let provider = null;
@@ -184,6 +189,7 @@
                 PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0') +
                 amountWei.toString(16).padStart(64, '0');
 
+            await ensureBase(provider);
             const txHash = await provider.request({
                 method: 'eth_sendTransaction',
                 params: [{
