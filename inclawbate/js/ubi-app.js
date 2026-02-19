@@ -518,7 +518,11 @@ function daysSince(dateStr) {
         var cdBlendedApyEl = document.getElementById('cdBlendedApy');
         if (cdTotalStakedUsdEl) {
             var stakedUsd = inclawnchStaked * inclawnchPrice;
-            cdTotalStakedUsdEl.textContent = stakedUsd > 0 ? '$' + stakedUsd.toFixed(2) : '--';
+            if (stakedUsd > 0) {
+                cdTotalStakedUsdEl.textContent = '$' + fmtUsd(stakedUsd);
+            } else if (inclawnchStaked > 0) {
+                cdTotalStakedUsdEl.textContent = fmt(Math.round(inclawnchStaked)) + ' inCLAWNCH';
+            }
         }
         if (cdBlendedApyEl) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
@@ -529,12 +533,20 @@ function daysSince(dateStr) {
         var CLAWNCH_LEGACY_USD = 3150; // historical CLAWNCH distributions
         window._ubiTotalDeposited = onChainTotalDeposited;
         window._ubiClawnchUsd = CLAWNCH_LEGACY_USD;
-        // Initial render (will be overwritten by tick)
+        // Initial render (will be overwritten by tick when on-chain data is available)
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        if (cdTotalDistEl && onChainTotalDeposited > 0) {
-            var drippedInclawnch = onChainTotalDeposited - onChainRewardPoolBalance;
-            var totalUbiUsd = (drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD;
-            cdTotalDistEl.textContent = '$' + fmtUsd(totalUbiUsd);
+        if (cdTotalDistEl) {
+            var drippedInclawnch = onChainTotalDeposited > 0 ? onChainTotalDeposited - onChainRewardPoolBalance : 0;
+            if (drippedInclawnch > 0 && inclawnchPrice > 0) {
+                // Best case: full USD value
+                cdTotalDistEl.textContent = '$' + fmtUsd((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD);
+            } else if (drippedInclawnch > 0) {
+                // On-chain data but no price — show legacy USD + token count
+                cdTotalDistEl.innerHTML = '$' + fmtUsd(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
+            } else {
+                // No on-chain data — at least show legacy amount
+                cdTotalDistEl.textContent = '$' + fmtUsd(CLAWNCH_LEGACY_USD);
+            }
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -544,6 +556,8 @@ function daysSince(dateStr) {
         if (cdAnnualEl) {
             if (annualTokens > 0 && inclawnchPrice > 0) {
                 cdAnnualEl.textContent = '$' + fmt(Math.round(annualTokens * inclawnchPrice));
+            } else if (annualTokens > 0) {
+                cdAnnualEl.textContent = fmt(Math.round(annualTokens)) + ' inCLAWNCH/yr';
             } else {
                 cdAnnualEl.textContent = '--';
             }
@@ -815,19 +829,27 @@ function daysSince(dateStr) {
         var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
         var cdTotalDistEl2 = document.getElementById('cdTotalDistributed');
         function tick() {
-            if (!cdWeeklyEl || onChainRewardRate <= 0 || onChainPeriodEnd <= 0) return;
             var nowSec = Date.now() / 1000;
-            var remaining = onChainPeriodEnd > nowSec
-                ? Math.round(onChainRewardRate * (onChainPeriodEnd - nowSec))
-                : 0;
-            cdWeeklyEl.textContent = fmt(remaining);
+            var remaining = 0;
 
-            // Live increasing distributed USD counter
-            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0 && inclawnchPrice > 0) {
+            // Update reward pool remaining (if on-chain data available)
+            if (cdWeeklyEl && onChainRewardRate > 0 && onChainPeriodEnd > 0) {
+                remaining = onChainPeriodEnd > nowSec
+                    ? Math.round(onChainRewardRate * (onChainPeriodEnd - nowSec))
+                    : 0;
+                cdWeeklyEl.textContent = fmt(remaining);
+            }
+
+            // Live increasing distributed counter (independent of pool display)
+            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0) {
                 var drippedLive = window._ubiTotalDeposited - remaining;
                 if (drippedLive < 0) drippedLive = 0;
-                var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
-                cdTotalDistEl2.textContent = '$' + fmtUsd(totalUbiUsdLive);
+                if (inclawnchPrice > 0) {
+                    var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
+                    cdTotalDistEl2.textContent = '$' + fmtUsd(totalUbiUsdLive);
+                } else {
+                    cdTotalDistEl2.innerHTML = '$' + fmtUsd(window._ubiClawnchUsd || 0) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedLive)) + ' inCLAWNCH</span>';
+                }
             }
         }
 
