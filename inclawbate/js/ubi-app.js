@@ -338,7 +338,7 @@ function daysSince(dateStr) {
     // Fetch UBI data, prices, and on-chain stats in parallel
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcTokenRes] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -355,9 +355,12 @@ function daysSince(dateStr) {
             { to: STAKING_PROXY, data: SEL.periodEnd },
             { to: STAKING_PROXY, data: SEL.totalDeposited },
             { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
+        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
+        // Separate batch for INCLAWNCH token calls (avoids overloading public RPC batch limits)
+        contractReadBatch([
             { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' }, // totalSupply()
-            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) }, // inclawbate.base.eth INCLAWNCH balance
-        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) }, // inclawbate.base.eth balance
+        ]).catch(() => ['0x0', '0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -366,8 +369,8 @@ function daysSince(dateStr) {
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
-    var onChainTotalSupply = fromWei(rpcBatchRes[7]);
-    var onChainTreasuryBalance = fromWei(rpcBatchRes[8]); // inclawbate.base.eth INCLAWNCH holdings
+    var onChainTotalSupply = fromWei(rpcTokenRes[0]);
+    var onChainTreasuryBalance = fromWei(rpcTokenRes[1]); // inclawbate.base.eth INCLAWNCH holdings
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
