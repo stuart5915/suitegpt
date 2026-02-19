@@ -12,7 +12,6 @@ let activeDrawer = null; // tweet id of open reply drawer
 
 // ── DOM refs ──
 const loginGate = document.getElementById('loginGate');
-const noCreditsGate = document.getElementById('noCreditsGate');
 const mainContent = document.getElementById('mainContent');
 const creditBadge = document.getElementById('creditBadge');
 const searchInput = document.getElementById('searchInput');
@@ -44,13 +43,6 @@ const minLikesVal = document.getElementById('minLikesVal');
     } catch (e) { /* credits stay 0 */ }
 
     creditBadge.textContent = credits;
-
-    if (credits <= 0) {
-        noCreditsGate.classList.remove('hidden');
-        document.body.style.opacity = '1';
-        return;
-    }
-
     mainContent.classList.remove('hidden');
     document.body.style.opacity = '1';
 })();
@@ -149,7 +141,9 @@ async function doSearch() {
     if (!query) return;
 
     if (credits <= 0) {
-        showToast('No credits remaining. Buy more to search.', 'error');
+        searchStatus.innerHTML = 'You need credits to search. <a href="/deposit" style="color:var(--lobster-300);">Buy credits</a> to get started.';
+        searchStatus.className = 'xs-status';
+        searchStatus.classList.remove('hidden');
         return;
     }
 
@@ -421,7 +415,7 @@ async function openReplyDrawer(tweetId, useAi) {
 // ── AI Reply ──
 async function handleAiReply(tweetId) {
     if (credits <= 0) {
-        showToast('No credits remaining.', 'error');
+        showToast('No credits. Buy more at /deposit', 'error');
         return;
     }
 
