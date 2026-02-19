@@ -451,11 +451,12 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // API provides a high-water mark (never decreases) for Total UBI Distributed
+    // Floor = max(API high-water mark, localStorage high-water mark)
+    // This means reloads never lose progress — you pick up where you left off
     var apiFloorUsd = Number(ubiData && ubiData.total_distributed_usd) || 3150;
-    // Snapshot pool balance at load time so tick can compute incremental drip
+    var localHwm = Number(localStorage.getItem('_ubi_dist_hwm')) || 0;
     var poolAtLoad = onChainRewardPoolBalance || 0;
-    window._ubiFloorUsd = apiFloorUsd;
+    window._ubiFloorUsd = Math.max(apiFloorUsd, localHwm);
     window._ubiPoolAtLoad = poolAtLoad;
     window._ubiTotalDeposited = onChainTotalDeposited;
 
@@ -887,7 +888,10 @@ function daysSince(dateStr) {
                 var drippedSinceLoad = (window._ubiPoolAtLoad || 0) - remaining;
                 if (drippedSinceLoad < 0) drippedSinceLoad = 0;
                 var incrementUsd = inclawnchPrice > 0 ? drippedSinceLoad * inclawnchPrice : 0;
-                cdTotalDistEl2.textContent = '$' + fmtUsdFull(window._ubiFloorUsd + incrementUsd);
+                var displayVal = window._ubiFloorUsd + incrementUsd;
+                cdTotalDistEl2.textContent = '$' + fmtUsdFull(displayVal);
+                // Persist so reloads never lose progress
+                try { localStorage.setItem('_ubi_dist_hwm', displayVal.toString()); } catch (e) {}
             }
         }
 
