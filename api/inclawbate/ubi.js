@@ -347,19 +347,21 @@ export default async function handler(req, res) {
         if (stakingOnChain) result.staking_onchain = stakingOnChain;
 
         // High-water mark for Total UBI Distributed (USD) — only goes up
-        // Formula: (dripped tokens × inclawnchPrice) + $3,150 legacy CLAWNCH distributions
+        // Seeded with known historical total as of 2026-02-19
         const LEGACY_USD = 3150;
+        const KNOWN_FLOOR = 3800;
+        let bestUsd = Math.max(Number(result.total_distributed_usd) || 0, KNOWN_FLOOR);
         if (stakingOnChain && prices.inclawnchPrice > 0) {
             const dripped = stakingOnChain.total_deposited - stakingOnChain.reward_pool_balance;
             const currentTotalUsd = (dripped * prices.inclawnchPrice) + LEGACY_USD;
-            const storedHwm = Number(result.total_distributed_usd) || 0;
-            if (currentTotalUsd > storedHwm) {
-                result.total_distributed_usd = currentTotalUsd;
-                // Fire-and-forget Supabase update (don't slow down response)
-                supabase.from('inclawbate_ubi_treasury')
-                    .update({ total_distributed_usd: currentTotalUsd })
-                    .eq('id', 1).then(() => {});
-            }
+            bestUsd = Math.max(bestUsd, currentTotalUsd);
+        }
+        result.total_distributed_usd = bestUsd;
+        // Persist new high-water mark to Supabase (fire-and-forget)
+        if (bestUsd > (Number(treasury?.total_distributed_usd) || 0)) {
+            supabase.from('inclawbate_ubi_treasury')
+                .update({ total_distributed_usd: bestUsd })
+                .eq('id', 1).then(() => {});
         }
         // Per-wallet cap percentage (default 10)
         if (result.wallet_cap_pct === undefined || result.wallet_cap_pct === null) {
