@@ -155,11 +155,15 @@ var BASE_RPCS = [
 async function rpcFetch(body) {
     for (var i = 0; i < BASE_RPCS.length; i++) {
         try {
+            var controller = new AbortController();
+            var timeout = setTimeout(function() { controller.abort(); }, 5000);
             var res = await fetch(BASE_RPCS[i], {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
+                signal: controller.signal
             });
+            clearTimeout(timeout);
             var json = await res.json();
             if (json.error) continue;
             // Detect partial batch failures: if >half of results are missing, try next RPC
@@ -346,8 +350,9 @@ function daysSince(dateStr) {
     // Fetch UBI data, prices, and on-chain stats in parallel
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    // Single batch for ALL on-chain reads (1 HTTP request, retries on partial failures)
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
+    // Staking contract batch (7 calls to same contract — reliable as a batch)
+    // INCLAWNCH token calls as individual requests (each retries all RPCs independently)
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcSupplyHex, rpcTreasuryHex, rpcStakingBalHex] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -357,17 +362,18 @@ function daysSince(dateStr) {
             CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null),
         contractReadBatch([
-            { to: WETH_ADDRESS, data: wethBalCalldata },                             // [0] WETH balance
-            { to: STAKING_PROXY, data: SEL.totalStaked },                            // [1]
-            { to: STAKING_PROXY, data: SEL.stakerCount },                            // [2]
-            { to: STAKING_PROXY, data: SEL.rewardRate },                             // [3]
-            { to: STAKING_PROXY, data: SEL.periodEnd },                              // [4]
-            { to: STAKING_PROXY, data: SEL.totalDeposited },                         // [5]
-            { to: STAKING_PROXY, data: SEL.rewardPoolBalance },                      // [6]
-            { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' },                           // [7] totalSupply()
-            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) }, // [8] treasury balance
-            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(STAKING_PROXY) },   // [9] staking contract balance
-        ]).catch(() => ['0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0']),
+            { to: WETH_ADDRESS, data: wethBalCalldata },      // [0] WETH balance
+            { to: STAKING_PROXY, data: SEL.totalStaked },     // [1]
+            { to: STAKING_PROXY, data: SEL.stakerCount },     // [2]
+            { to: STAKING_PROXY, data: SEL.rewardRate },      // [3]
+            { to: STAKING_PROXY, data: SEL.periodEnd },       // [4]
+            { to: STAKING_PROXY, data: SEL.totalDeposited },  // [5]
+            { to: STAKING_PROXY, data: SEL.rewardPoolBalance }, // [6]
+        ]).catch(() => ['0x0','0x0','0x0','0x0','0x0','0x0','0x0']),
+        // Individual calls for INCLAWNCH token — each retries all 4 RPCs on failure
+        contractRead(INCLAWNCH_ADDRESS, '0x18160ddd'),                                  // totalSupply()
+        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(PROTOCOL_WALLET)),      // treasury balance
+        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(STAKING_PROXY)),         // staking contract balance
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -376,9 +382,9 @@ function daysSince(dateStr) {
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
-    var onChainTotalSupply = fromWei(rpcBatchRes[7]);
-    var onChainTreasuryBalance = fromWei(rpcBatchRes[8]); // inclawbate.base.eth INCLAWNCH holdings
-    var onChainStakingContractBalance = fromWei(rpcBatchRes[9]); // all tokens in staking contract
+    var onChainTotalSupply = fromWei(rpcSupplyHex);
+    var onChainTreasuryBalance = fromWei(rpcTreasuryHex);
+    var onChainStakingContractBalance = fromWei(rpcStakingBalHex);
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     var onChainStakedNum = fromWei(onChainTotalStaked);
@@ -430,16 +436,20 @@ function daysSince(dateStr) {
     }
 
     // Cache / fallback for Supply Locked data (totalSupply + balances)
+    // v2 key invalidates stale caches from before the balanceOf formula fix
+    var SUPPLY_CACHE_KEY = '_ubi_supply_v2';
     if (onChainTotalSupply > 0 && onChainStakingContractBalance > 0) {
         try {
-            localStorage.setItem('_ubi_supply', JSON.stringify({
+            localStorage.setItem(SUPPLY_CACHE_KEY, JSON.stringify({
                 ts: onChainTotalSupply, tb: onChainTreasuryBalance,
                 sb: onChainStakingContractBalance, t: Date.now()
             }));
+            // Clean up old cache key
+            localStorage.removeItem('_ubi_supply');
         } catch (e) {}
     } else {
         try {
-            var cachedSup = JSON.parse(localStorage.getItem('_ubi_supply'));
+            var cachedSup = JSON.parse(localStorage.getItem(SUPPLY_CACHE_KEY));
             if (cachedSup && Date.now() - cachedSup.t < 3600000) {
                 if (!onChainTotalSupply) onChainTotalSupply = cachedSup.ts;
                 if (!onChainTreasuryBalance) onChainTreasuryBalance = cachedSup.tb;
