@@ -338,7 +338,7 @@ function daysSince(dateStr) {
     // Fetch UBI data, prices, and on-chain stats in parallel
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcSupplyHex, rpcTreasuryHex] = await Promise.all([
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcSupplyHex, rpcTreasuryHex, rpcStakingBalHex] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -359,6 +359,7 @@ function daysSince(dateStr) {
         // Individual calls for INCLAWNCH token (more reliable than batch on public RPCs)
         contractRead(INCLAWNCH_ADDRESS, '0x18160ddd'), // totalSupply()
         contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(PROTOCOL_WALLET)), // inclawbate.base.eth balance
+        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(STAKING_PROXY)), // staking contract token balance
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -369,6 +370,7 @@ function daysSince(dateStr) {
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
     var onChainTotalSupply = fromWei(rpcSupplyHex);
     var onChainTreasuryBalance = fromWei(rpcTreasuryHex); // inclawbate.base.eth INCLAWNCH holdings
+    var onChainStakingContractBalance = fromWei(rpcStakingBalHex); // all tokens in staking contract
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
@@ -413,11 +415,12 @@ function daysSince(dateStr) {
         }
     }
 
-    // Cache / fallback for Supply Locked data (totalSupply + treasury balance)
-    if (onChainTotalSupply > 0 && onChainTreasuryBalance > 0) {
+    // Cache / fallback for Supply Locked data (totalSupply + balances)
+    if (onChainTotalSupply > 0 && onChainStakingContractBalance > 0) {
         try {
             localStorage.setItem('_ubi_supply', JSON.stringify({
-                ts: onChainTotalSupply, tb: onChainTreasuryBalance, t: Date.now()
+                ts: onChainTotalSupply, tb: onChainTreasuryBalance,
+                sb: onChainStakingContractBalance, t: Date.now()
             }));
         } catch (e) {}
     } else {
@@ -426,6 +429,7 @@ function daysSince(dateStr) {
             if (cachedSup && Date.now() - cachedSup.t < 3600000) {
                 if (!onChainTotalSupply) onChainTotalSupply = cachedSup.ts;
                 if (!onChainTreasuryBalance) onChainTreasuryBalance = cachedSup.tb;
+                if (!onChainStakingContractBalance) onChainStakingContractBalance = cachedSup.sb || 0;
             }
         } catch (e) {}
     }
@@ -474,7 +478,6 @@ function daysSince(dateStr) {
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
     window._ubiTotalDeposited = onChainTotalDeposited;
-    window._ubiTotalSupply = onChainTotalSupply;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -597,10 +600,11 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: % of inCLAWNCH supply locked (treasury + reward pool + staked)
+        // Countdown KPI: % of inCLAWNCH supply locked (staking contract balance + treasury wallet)
+        // Uses actual token balances (balanceOf) — most accurate, avoids reconstructing from multiple sources
         var cdSupplyLockedEl = document.getElementById('cdTotalDistributed');
-        if (cdSupplyLockedEl && onChainTotalSupply > 0) {
-            var locked = onChainTreasuryBalance + onChainRewardPoolBalance + inclawnchStaked;
+        if (cdSupplyLockedEl && onChainTotalSupply > 0 && (onChainStakingContractBalance > 0 || onChainTreasuryBalance > 0)) {
+            var locked = onChainStakingContractBalance + onChainTreasuryBalance;
             var pct = (locked / onChainTotalSupply) * 100;
             cdSupplyLockedEl.textContent = pct.toFixed(1) + '%';
         }
