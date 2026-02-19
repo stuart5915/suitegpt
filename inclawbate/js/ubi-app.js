@@ -507,10 +507,24 @@ function daysSince(dateStr) {
     var onChainInclawnchStaked = onChainStakedNum;
     var onChainStakers = onChainStakersNum;
 
+    // ── On-chain KPIs (render even if API fails — uses RPC + cache) ──
+    var inclawnchStaked = onChainInclawnchStaked > 0 ? onChainInclawnchStaked : (ubiData ? (Number(ubiData.inclawnch_staked) || 0) : 0);
+    if (inclawnchStaked > 0) {
+        var statIncEl = document.getElementById('statInclawnchStaked');
+        if (statIncEl) statIncEl.textContent = fmt(Math.round(inclawnchStaked));
+    }
+    var totalStakers = onChainStakers > 0 ? onChainStakers : (ubiData ? (Number(ubiData.total_stakers) || 0) : 0);
+    if (totalStakers > 0) {
+        var statStkEl = document.getElementById('statStakers');
+        if (statStkEl) statStkEl.textContent = fmt(totalStakers);
+    }
+
+    // APY + banner KPIs (work from on-chain data, don't need API)
+    updateAllApys();
+    updateCalc();
+
     if (ubiData) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
-        // Prefer on-chain data for inCLAWNCH, fallback to API
-        const inclawnchStaked = onChainInclawnchStaked > 0 ? onChainInclawnchStaked : (Number(ubiData.inclawnch_staked) || 0);
 
         // Treasury display (hidden, for JS compat)
         document.getElementById('treasuryValue').textContent = fmt(clawnchStaked) + ' CLAWNCH + ' + fmt(Math.round(inclawnchStaked)) + ' inCLAWNCH';
@@ -533,12 +547,8 @@ function daysSince(dateStr) {
             priceEl.textContent = 'CLAWNCH: $' + clawnchPrice.toFixed(7) + ' (' + src + ')';
         }
 
-        // Stats — inCLAWNCH from contract, CLAWNCH from API
+        // Stats — CLAWNCH from API
         document.getElementById('statClawnchStaked').textContent = fmt(clawnchStaked);
-        document.getElementById('statInclawnchStaked').textContent = fmt(Math.round(inclawnchStaked));
-        // Staker count: on-chain inCLAWNCH stakers (CLAWNCH stakers counted separately in API)
-        var totalStakers = onChainStakers > 0 ? onChainStakers : (Number(ubiData.total_stakers) || 0);
-        document.getElementById('statStakers').textContent = fmt(totalStakers);
 
         var totalDistributed = Number(ubiData.total_distributed) || 0;
         var distEl = document.getElementById('statTotalDistributed');
@@ -548,10 +558,6 @@ function daysSince(dateStr) {
         if (distUsdEl && distUsdTotal > 0) {
             distUsdEl.textContent = '~$' + fmtUsd(distUsdTotal);
         }
-
-        // APY calculation + card APYs
-        updateAllApys();
-        updateCalc();
 
         // Roadmap
         updateRoadmap(totalUsd);
@@ -582,7 +588,7 @@ function daysSince(dateStr) {
     // ── APY Logic ──
     // Simple on-chain APY: (rewardRate * 86400 * 365 / totalStaked) * 100
     function updateAllApys() {
-        var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || onChainInclawnchStaked || 0;
 
         var apyNum = 0;
         if (inclawnchStaked > 0 && onChainRewardRate > 0 && onChainPeriodEnd > Date.now() / 1000) {
