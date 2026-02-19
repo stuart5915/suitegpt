@@ -203,6 +203,17 @@ async function contractReadBatch(calls) {
 
 // Send tx via connected wallet and wait for receipt
 async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
+    // Ensure wallet is on Base before every transaction
+    try {
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+    } catch (switchErr) {
+        if (switchErr.code === 4902) {
+            await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+            });
+        }
+    }
     if (statusEl && statusMsg) {
         statusEl.textContent = statusMsg;
         statusEl.className = 'ubi-stake-status stake-status';
