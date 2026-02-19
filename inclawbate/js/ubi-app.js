@@ -355,7 +355,8 @@ function daysSince(dateStr) {
             { to: STAKING_PROXY, data: SEL.periodEnd },
             { to: STAKING_PROXY, data: SEL.totalDeposited },
             { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
-        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
+            { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' }, // totalSupply()
+        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -364,6 +365,7 @@ function daysSince(dateStr) {
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
+    var onChainTotalSupply = fromWei(rpcBatchRes[7]);
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
@@ -451,11 +453,8 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // API returns high-water mark USD (never goes below $3,800 floor).
-    // Live tick: max(apiFloor, $3,150 + drip × price) — never goes backwards.
     window._ubiTotalDeposited = onChainTotalDeposited;
-    window._ubiFloorUsd = Number(ubiData && ubiData.total_distributed_usd) || 3800;
-    window._ubiInclawnchPrice = inclawnchPrice;
+    window._ubiTotalSupply = onChainTotalSupply;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -578,15 +577,12 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: Total UBI Distributed = max(apiFloor, $3,150 + drip × price)
-        var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        var apiFloor = window._ubiFloorUsd || 3800;
-        if (cdTotalDistEl && onChainTotalDeposited > 0 && inclawnchPrice > 0) {
-            var onChainDrip = onChainTotalDeposited - onChainRewardPoolBalance;
-            var liveUsd = 3150 + (onChainDrip * inclawnchPrice);
-            cdTotalDistEl.textContent = '$' + fmtUsdFull(Math.max(apiFloor, liveUsd));
-        } else if (cdTotalDistEl) {
-            cdTotalDistEl.textContent = '$' + fmtUsdFull(apiFloor);
+        // Countdown KPI: % of inCLAWNCH supply locked (staked + reward pool)
+        var cdSupplyLockedEl = document.getElementById('cdTotalDistributed');
+        if (cdSupplyLockedEl && onChainTotalSupply > 0) {
+            var locked = inclawnchStaked + onChainRewardPoolBalance;
+            var pct = (locked / onChainTotalSupply) * 100;
+            cdSupplyLockedEl.textContent = pct.toFixed(1) + '%';
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -667,11 +663,6 @@ function daysSince(dateStr) {
         if (n >= 1) return n.toFixed(2);
         return n.toFixed(2);
     }
-    // Full USD with cents and commas: $3,847.52 (for live ticking display)
-    function fmtUsdFull(n) {
-        return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
     // ── Staking Calculator ──
     function updateCalc() {
         var rawC = (document.getElementById('calcAmountClawnch').value || '').replace(/,/g, '');
@@ -871,7 +862,6 @@ function daysSince(dateStr) {
 
         // Live decreasing reward pool: remaining = rewardRate * (periodEnd - now)
         var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
-        var cdTotalDistEl2 = document.getElementById('cdTotalDistributed');
         function tick() {
             var nowSec = Date.now() / 1000;
             var remaining = 0;
@@ -884,14 +874,7 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing total: max(apiFloor, $3,150 + drip × price) — never goes backwards
-            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0 && window._ubiInclawnchPrice > 0) {
-                var drippedLive = window._ubiTotalDeposited - remaining;
-                if (drippedLive < 0) drippedLive = 0;
-                var liveUsd = 3150 + (drippedLive * window._ubiInclawnchPrice);
-                var floor = window._ubiFloorUsd || 3800;
-                cdTotalDistEl2.textContent = '$' + fmtUsdFull(Math.max(floor, liveUsd));
-            }
+            // % Supply Locked updates on stake/claim events, not per-second — no tick needed
         }
 
         tick();
