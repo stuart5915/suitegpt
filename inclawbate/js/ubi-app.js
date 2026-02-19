@@ -162,6 +162,14 @@ async function rpcFetch(body) {
             });
             var json = await res.json();
             if (json.error) continue;
+            // Detect partial batch failures: if >half of results are missing, try next RPC
+            if (Array.isArray(json)) {
+                var fails = 0;
+                for (var j = 0; j < json.length; j++) {
+                    if (!json[j].result || json[j].error) fails++;
+                }
+                if (fails > json.length / 2) continue;
+            }
             return json;
         } catch (e) { continue; }
     }
@@ -338,7 +346,8 @@ function daysSince(dateStr) {
     // Fetch UBI data, prices, and on-chain stats in parallel
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcSupplyHex, rpcTreasuryHex, rpcStakingBalHex] = await Promise.all([
+    // Single batch for ALL on-chain reads (1 HTTP request, retries on partial failures)
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -348,18 +357,17 @@ function daysSince(dateStr) {
             CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null),
         contractReadBatch([
-            { to: WETH_ADDRESS, data: wethBalCalldata },
-            { to: STAKING_PROXY, data: SEL.totalStaked },
-            { to: STAKING_PROXY, data: SEL.stakerCount },
-            { to: STAKING_PROXY, data: SEL.rewardRate },
-            { to: STAKING_PROXY, data: SEL.periodEnd },
-            { to: STAKING_PROXY, data: SEL.totalDeposited },
-            { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
-        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
-        // Individual calls for INCLAWNCH token (more reliable than batch on public RPCs)
-        contractRead(INCLAWNCH_ADDRESS, '0x18160ddd'), // totalSupply()
-        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(PROTOCOL_WALLET)), // inclawbate.base.eth balance
-        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(STAKING_PROXY)), // staking contract token balance
+            { to: WETH_ADDRESS, data: wethBalCalldata },                             // [0] WETH balance
+            { to: STAKING_PROXY, data: SEL.totalStaked },                            // [1]
+            { to: STAKING_PROXY, data: SEL.stakerCount },                            // [2]
+            { to: STAKING_PROXY, data: SEL.rewardRate },                             // [3]
+            { to: STAKING_PROXY, data: SEL.periodEnd },                              // [4]
+            { to: STAKING_PROXY, data: SEL.totalDeposited },                         // [5]
+            { to: STAKING_PROXY, data: SEL.rewardPoolBalance },                      // [6]
+            { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' },                           // [7] totalSupply()
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) }, // [8] treasury balance
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(STAKING_PROXY) },   // [9] staking contract balance
+        ]).catch(() => ['0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -368,17 +376,20 @@ function daysSince(dateStr) {
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
-    var onChainTotalSupply = fromWei(rpcSupplyHex);
-    var onChainTreasuryBalance = fromWei(rpcTreasuryHex); // inclawbate.base.eth INCLAWNCH holdings
-    var onChainStakingContractBalance = fromWei(rpcStakingBalHex); // all tokens in staking contract
+    var onChainTotalSupply = fromWei(rpcBatchRes[7]);
+    var onChainTreasuryBalance = fromWei(rpcBatchRes[8]); // inclawbate.base.eth INCLAWNCH holdings
+    var onChainStakingContractBalance = fromWei(rpcBatchRes[9]); // all tokens in staking contract
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
+    var onChainStakedNum = fromWei(onChainTotalStaked);
+    var onChainStakersNum = Number(BigInt(onChainStakerCount || '0x0'));
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
         // Client RPC succeeded — cache for future fallback
         try {
             localStorage.setItem('_ubi_onchain', JSON.stringify({
                 td: onChainTotalDeposited, rr: onChainRewardRate,
-                pe: onChainPeriodEnd, t: Date.now()
+                pe: onChainPeriodEnd, ts: onChainStakedNum,
+                sc: onChainStakersNum, t: Date.now()
             }));
         } catch (e) {}
     } else {
@@ -398,6 +409,8 @@ function daysSince(dateStr) {
                     if (!onChainTotalDeposited) onChainTotalDeposited = cachedOC.td;
                     if (!onChainRewardRate) onChainRewardRate = cachedOC.rr;
                     if (!onChainPeriodEnd) onChainPeriodEnd = cachedOC.pe;
+                    if (!onChainStakedNum && cachedOC.ts) onChainStakedNum = cachedOC.ts;
+                    if (!onChainStakersNum && cachedOC.sc) onChainStakersNum = cachedOC.sc;
                     if (!onChainRewardPoolBalance && onChainPeriodEnd > Date.now() / 1000) {
                         onChainRewardPoolBalance = onChainRewardRate * (onChainPeriodEnd - Date.now() / 1000);
                     }
@@ -409,7 +422,8 @@ function daysSince(dateStr) {
             try {
                 localStorage.setItem('_ubi_onchain', JSON.stringify({
                     td: onChainTotalDeposited, rr: onChainRewardRate,
-                    pe: onChainPeriodEnd, t: Date.now()
+                    pe: onChainPeriodEnd, ts: onChainStakedNum,
+                    sc: onChainStakersNum, t: Date.now()
                 }));
             } catch (e) {}
         }
@@ -489,9 +503,9 @@ function daysSince(dateStr) {
     }
     updateRevenueSection(protocolWeth, clawnchPrice);
 
-    // Use on-chain data for inCLAWNCH staked amount
-    var onChainInclawnchStaked = fromWei(onChainTotalStaked);
-    var onChainStakers = Number(BigInt(onChainStakerCount || '0x0'));
+    // Use on-chain data for inCLAWNCH staked amount (with cache fallback from above)
+    var onChainInclawnchStaked = onChainStakedNum;
+    var onChainStakers = onChainStakersNum;
 
     if (ubiData) {
         const clawnchStaked = Number(ubiData.total_balance) || 0;
