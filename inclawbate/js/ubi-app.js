@@ -146,10 +146,10 @@ function fromWei(hex) {
 // Read from contract via public RPC (no wallet needed)
 // Multiple RPCs for reliability — browser requests to mainnet.base.org often get rate-limited
 var BASE_RPCS = [
-    'https://mainnet.base.org',
-    'https://base.llamarpc.com',
     'https://base.drpc.org',
-    'https://1rpc.io/base'
+    'https://1rpc.io/base',
+    'https://base-mainnet.public.blastapi.io',
+    'https://mainnet.base.org'
 ];
 
 async function rpcFetch(body) {
@@ -350,9 +350,8 @@ function daysSince(dateStr) {
     // Fetch UBI data, prices, and on-chain stats in parallel
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
-    // Staking contract batch (7 calls to same contract — reliable as a batch)
-    // INCLAWNCH token calls as individual requests (each retries all RPCs independently)
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes, rpcSupplyHex, rpcTreasuryHex, rpcStakingBalHex] = await Promise.all([
+    // All on-chain reads in ONE batch (1 HTTP request — avoids rate limiting)
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
@@ -362,18 +361,17 @@ function daysSince(dateStr) {
             CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null),
         contractReadBatch([
-            { to: WETH_ADDRESS, data: wethBalCalldata },      // [0] WETH balance
-            { to: STAKING_PROXY, data: SEL.totalStaked },     // [1]
-            { to: STAKING_PROXY, data: SEL.stakerCount },     // [2]
-            { to: STAKING_PROXY, data: SEL.rewardRate },      // [3]
-            { to: STAKING_PROXY, data: SEL.periodEnd },       // [4]
-            { to: STAKING_PROXY, data: SEL.totalDeposited },  // [5]
-            { to: STAKING_PROXY, data: SEL.rewardPoolBalance }, // [6]
-        ]).catch(() => ['0x0','0x0','0x0','0x0','0x0','0x0','0x0']),
-        // Individual calls for INCLAWNCH token — each retries all 4 RPCs on failure
-        contractRead(INCLAWNCH_ADDRESS, '0x18160ddd'),                                  // totalSupply()
-        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(PROTOCOL_WALLET)),      // treasury balance
-        contractRead(INCLAWNCH_ADDRESS, BALANCE_SELECTOR + pad32(STAKING_PROXY)),         // staking contract balance
+            { to: WETH_ADDRESS, data: wethBalCalldata },                                 // [0] WETH balance
+            { to: STAKING_PROXY, data: SEL.totalStaked },                                // [1]
+            { to: STAKING_PROXY, data: SEL.stakerCount },                                // [2]
+            { to: STAKING_PROXY, data: SEL.rewardRate },                                 // [3]
+            { to: STAKING_PROXY, data: SEL.periodEnd },                                  // [4]
+            { to: STAKING_PROXY, data: SEL.totalDeposited },                             // [5]
+            { to: STAKING_PROXY, data: SEL.rewardPoolBalance },                          // [6]
+            { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' },                               // [7] totalSupply()
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) },  // [8] treasury balance
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(STAKING_PROXY) },    // [9] staking contract balance
+        ]).catch(() => ['0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -382,9 +380,25 @@ function daysSince(dateStr) {
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
-    var onChainTotalSupply = fromWei(rpcSupplyHex);
-    var onChainTreasuryBalance = fromWei(rpcTreasuryHex);
-    var onChainStakingContractBalance = fromWei(rpcStakingBalHex);
+    var onChainTotalSupply = fromWei(rpcBatchRes[7]);
+    var onChainTreasuryBalance = fromWei(rpcBatchRes[8]);
+    var onChainStakingContractBalance = fromWei(rpcBatchRes[9]);
+
+    // If staking data loaded but supply data didn't (partial batch failure), retry supply only
+    if (onChainTotalDeposited > 0 && onChainTotalSupply === 0) {
+        try {
+            var supplyRetry = await contractReadBatch([
+                { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' },
+                { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) },
+                { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(STAKING_PROXY) },
+            ]);
+            if (fromWei(supplyRetry[0]) > 0) {
+                onChainTotalSupply = fromWei(supplyRetry[0]);
+                onChainTreasuryBalance = fromWei(supplyRetry[1]);
+                onChainStakingContractBalance = fromWei(supplyRetry[2]);
+            }
+        } catch (e) {}
+    }
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     var onChainStakedNum = fromWei(onChainTotalStaked);
