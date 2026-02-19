@@ -365,6 +365,30 @@ function daysSince(dateStr) {
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
 
+    // Cache on-chain UBI data so reloads survive RPC failures
+    if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
+        try {
+            localStorage.setItem('_ubi_onchain', JSON.stringify({
+                td: onChainTotalDeposited, rr: onChainRewardRate,
+                pe: onChainPeriodEnd, t: Date.now()
+            }));
+        } catch (e) {}
+    } else {
+        // RPC failed — restore cached on-chain data (up to 1 hour old)
+        try {
+            var cachedOC = JSON.parse(localStorage.getItem('_ubi_onchain'));
+            if (cachedOC && Date.now() - cachedOC.t < 3600000) {
+                if (!onChainTotalDeposited) onChainTotalDeposited = cachedOC.td;
+                if (!onChainRewardRate) onChainRewardRate = cachedOC.rr;
+                if (!onChainPeriodEnd) onChainPeriodEnd = cachedOC.pe;
+                // Recompute pool balance from cached rate + time
+                if (!onChainRewardPoolBalance && onChainPeriodEnd > Date.now() / 1000) {
+                    onChainRewardPoolBalance = onChainRewardRate * (onChainPeriodEnd - Date.now() / 1000);
+                }
+            }
+        } catch (e) {}
+    }
+
     // DexScreener (primary)
     clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);
     inclawnchPrice = bestPrice(inclawnchDexRes, INCLAWNCH_ADDRESS);
@@ -406,6 +430,11 @@ function daysSince(dateStr) {
     if (ubiData && ubiData.deposit_address) {
         DEPOSIT_WALLET = ubiData.deposit_address.toLowerCase();
     }
+
+    // ── Set up globals for the live tick BEFORE starting countdown ──
+    var CLAWNCH_LEGACY_USD = 3150; // historical CLAWNCH distributions
+    window._ubiTotalDeposited = onChainTotalDeposited;
+    window._ubiClawnchUsd = CLAWNCH_LEGACY_USD;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -528,23 +557,16 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total UBI distributed — on-chain dripped tokens + historical CLAWNCH USD
-        // Formula: dripped = totalRewardsDeposited - rewardPoolBalance; total = (dripped × price) + $3,150
-        var CLAWNCH_LEGACY_USD = 3150; // historical CLAWNCH distributions
-        window._ubiTotalDeposited = onChainTotalDeposited;
-        window._ubiClawnchUsd = CLAWNCH_LEGACY_USD;
-        // Initial render (will be overwritten by tick when on-chain data is available)
+        // Countdown KPI: total UBI distributed — tick handles live updates,
+        // but set initial value here in case tick hasn't fired yet
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
         if (cdTotalDistEl) {
             var drippedInclawnch = onChainTotalDeposited > 0 ? onChainTotalDeposited - onChainRewardPoolBalance : 0;
             if (drippedInclawnch > 0 && inclawnchPrice > 0) {
-                // Best case: full USD value
                 cdTotalDistEl.textContent = '$' + fmtUsd((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD);
             } else if (drippedInclawnch > 0) {
-                // On-chain data but no price — show legacy USD + token count
                 cdTotalDistEl.innerHTML = '$' + fmtUsd(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
             } else {
-                // No on-chain data — at least show legacy amount
                 cdTotalDistEl.textContent = '$' + fmtUsd(CLAWNCH_LEGACY_USD);
             }
         }
