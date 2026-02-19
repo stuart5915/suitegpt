@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Studio — Inclawbate</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .studio-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
+            background:
+                radial-gradient(ellipse 80% 50% at 50% 0%, hsla(9, 50%, 45%, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, hsla(172, 30%, 40%, 0.04) 0%, transparent 50%);
+        }
+
+        /* ── Header ── */
+        .studio-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: var(--space-xl);
+            animation: fadeUp 0.4s var(--ease-smooth) both;
+        }
+        .studio-date {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+            background: var(--title-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .studio-day {
+            font-family: var(--font-mono); font-size: 0.78rem;
+            color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em;
+            margin-top: 2px;
+        }
+        .pillar-badge {
+            display: inline-flex; align-items: center; gap: var(--space-sm);
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl); padding: var(--space-sm) var(--space-lg);
+        }
+        .pillar-emoji { font-size: 1.3rem; }
+        .pillar-text {
+            font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
+            color: var(--text-primary);
+        }
+        .pillar-sub {
+            font-family: var(--font-mono); font-size: 0.68rem;
+            color: var(--text-dim); margin-top: 1px;
+        }
+
+        /* ── Live Ticker ── */
+        .ticker {
+            display: flex; gap: var(--space-md); overflow-x: auto;
+            padding: var(--space-md) 0; margin-bottom: var(--space-xl);
+            animation: fadeUp 0.45s var(--ease-smooth) both;
+            scrollbar-width: none;
+        }
+        .ticker::-webkit-scrollbar { display: none; }
+        .tick {
+            flex: 0 0 auto; min-width: 120px;
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg);
+            text-align: center;
+        }
+        .tick-label {
+            font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim); margin-bottom: 4px;
+        }
+        .tick-value {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 800;
+            color: var(--text-primary);
+        }
+        .tick-value.positive { color: var(--seafoam-300); }
+        .tick-value.negative { color: var(--red); }
+        .tick-value .shimmer {
+            display: inline-block; width: 50px; height: 1.15rem;
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--border-subtle) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;
+        }
+
+        /* ── Post Ideas ── */
+        .ideas-section {
+            margin-bottom: var(--space-xl);
+        }
+        .section-title {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-dim); margin-bottom: var(--space-lg);
+        }
+        .idea-card {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl); padding: var(--space-xl);
+            margin-bottom: var(--space-lg); position: relative; overflow: hidden;
+            animation: fadeUp 0.5s var(--ease-smooth) both;
+        }
+        .idea-card:nth-child(2) { animation-delay: 0.06s; }
+        .idea-card:nth-child(3) { animation-delay: 0.12s; }
+        .idea-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--accent-gradient);
+        }
+        .idea-top {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+        .idea-type {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 4px 10px; border-radius: var(--radius-full);
+            background: var(--accent-glow); color: var(--lobster-300);
+        }
+        .idea-type.carousel { background: hsla(210, 28%, 54%, 0.12); color: var(--blue-400); }
+        .idea-type.reel { background: hsla(280, 40%, 54%, 0.12); color: hsl(280, 40%, 68%); }
+        .idea-refresh {
+            background: none; border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full); width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-dim); transition: all var(--transition-fast);
+            font-size: 0.9rem;
+        }
+        .idea-refresh:hover {
+            border-color: var(--lobster-400); color: var(--lobster-300);
+            transform: rotate(90deg);
+        }
+        .idea-caption {
+            font-size: 0.92rem; color: var(--text-primary); line-height: 1.65;
+            margin-bottom: var(--space-md); white-space: pre-wrap;
+        }
+        .idea-hashtags {
+            display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-md);
+        }
+        .hashtag-chip {
+            font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+            padding: 3px 10px; border-radius: var(--radius-full);
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            color: var(--seafoam-300);
+        }
+        .idea-copy {
+            background: none; border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+            color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast);
+        }
+        .idea-copy:hover {
+            border-color: var(--lobster-400); color: var(--lobster-300);
+        }
+        .idea-copy.copied {
+            border-color: var(--seafoam-400); color: var(--seafoam-300);
+        }
+
+        /* ── Engagement Zone ── */
+        .engage-section {
+            margin-bottom: var(--space-xl);
+        }
+        .engage-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);
+        }
+        @media (max-width: 640px) {
+            .engage-grid { grid-template-columns: 1fr; }
+        }
+        .engage-col {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl); padding: var(--space-xl);
+            animation: fadeUp 0.5s var(--ease-smooth) both;
+        }
+        .engage-col:nth-child(2) { animation-delay: 0.06s; }
+        .engage-col-title {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-dim); margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-subtle);
+        }
+        .ig-account {
+            display: flex; align-items: center; gap: var(--space-md);
+            padding: var(--space-sm) 0;
+        }
+        .ig-account + .ig-account {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.4);
+        }
+        .ig-cat {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 2px 8px; border-radius: var(--radius-full);
+            flex-shrink: 0;
+        }
+        .ig-cat.crypto { background: hsla(32, 32%, 66%, 0.12); color: var(--sand-300); }
+        .ig-cat.ai { background: hsla(280, 40%, 54%, 0.12); color: hsl(280, 40%, 68%); }
+        .ig-cat.builder { background: hsla(172, 30%, 56%, 0.12); color: var(--seafoam-300); }
+        .ig-handle {
+            font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-primary);
+        }
+        .ig-handle a {
+            color: var(--text-primary); text-decoration: none;
+        }
+        .ig-handle a:hover { color: var(--lobster-300); }
+
+        .hashtag-set {
+            margin-bottom: var(--space-lg);
+        }
+        .hashtag-set:last-child { margin-bottom: 0; }
+        .hashtag-set-label {
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+            color: var(--text-dim); margin-bottom: var(--space-xs);
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .hashtag-set-tags {
+            font-size: 0.82rem; color: var(--seafoam-300); line-height: 1.6;
+            margin-bottom: var(--space-sm);
+        }
+        .copy-all-btn {
+            background: none; border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); padding: 3px 10px;
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+            color: var(--text-dim); cursor: pointer; transition: all var(--transition-fast);
+        }
+        .copy-all-btn:hover {
+            border-color: var(--lobster-400); color: var(--lobster-300);
+        }
+        .copy-all-btn.copied {
+            border-color: var(--seafoam-400); color: var(--seafoam-300);
+        }
+
+        /* ── Daily Checklist ── */
+        .checklist-section {
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-2xl); padding: var(--space-xl);
+            animation: fadeUp 0.55s var(--ease-smooth) both;
+        }
+        .checklist-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: var(--space-lg); padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .checklist-title {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-dim);
+        }
+        .checklist-progress {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+            color: var(--text-dim);
+        }
+        .checklist-progress .done { color: var(--seafoam-300); }
+        .check-item {
+            display: flex; align-items: center; gap: var(--space-md);
+            padding: var(--space-sm) 0;
+        }
+        .check-item + .check-item {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.4);
+        }
+        .check-item input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none;
+            width: 20px; height: 20px; border-radius: var(--radius-sm);
+            border: 2px solid var(--border-default); background: var(--bg-card);
+            cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+        }
+        .check-item input[type="checkbox"]:checked {
+            background: var(--accent-gradient); border-color: var(--lobster-400);
+        }
+        .check-item input[type="checkbox"]:checked::after {
+            content: '\2713'; display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 0.7rem; font-weight: 700;
+            width: 100%; height: 100%;
+        }
+        .check-label {
+            font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;
+        }
+        .check-item input[type="checkbox"]:checked + .check-label {
+            text-decoration: line-through; color: var(--text-dim);
+        }
+
+        .all-done {
+            display: none; text-align: center; margin-top: var(--space-xl);
+            padding: var(--space-lg); background: var(--bg-elevated);
+            border: 1px solid var(--seafoam-400); border-radius: var(--radius-xl);
+            animation: fadeUp 0.3s var(--ease-smooth) both;
+        }
+        .all-done.show { display: block; }
+        .all-done-text {
+            font-family: var(--font-display); font-size: 1.2rem; font-weight: 800;
+            color: var(--seafoam-300);
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .studio-header { flex-direction: column; align-items: flex-start; gap: var(--space-md); }
+            .tick { min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/ubi" class="nav-link">UBI</a>
+        <a href="/kingdom" class="nav-link">Kingdom</a>
+        <a href="/ecosystem" class="nav-link">Ecosystem</a>
+    </div>
+</nav>
+
+<main class="studio-page">
+
+    <!-- 1. Header -->
+    <div class="studio-header">
+        <div>
+            <div class="studio-date" id="studioDate"></div>
+            <div class="studio-day" id="studioDay"></div>
+        </div>
+        <div class="pillar-badge">
+            <span class="pillar-emoji" id="pillarEmoji"></span>
+            <div>
+                <div class="pillar-text" id="pillarName"></div>
+                <div class="pillar-sub" id="pillarSub"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Live Data Ticker -->
+    <div class="ticker" id="ticker">
+        <div class="tick">
+            <div class="tick-label">INCLAWNCH</div>
+            <div class="tick-value" id="tickPrice"><span class="shimmer"></span></div>
+        </div>
+        <div class="tick">
+            <div class="tick-label">24h Change</div>
+            <div class="tick-value" id="tickChange"><span class="shimmer"></span></div>
+        </div>
+        <div class="tick">
+            <div class="tick-label">Stakers</div>
+            <div class="tick-value" id="tickStakers"><span class="shimmer"></span></div>
+        </div>
+        <div class="tick">
+            <div class="tick-label">Humans</div>
+            <div class="tick-value" id="tickHumans"><span class="shimmer"></span></div>
+        </div>
+        <div class="tick">
+            <div class="tick-label">APY</div>
+            <div class="tick-value" id="tickApy"><span class="shimmer"></span></div>
+        </div>
+        <div class="tick">
+            <div class="tick-label">Reward Pool</div>
+            <div class="tick-value" id="tickPool"><span class="shimmer"></span></div>
+        </div>
+    </div>
+
+    <!-- 3. Post Ideas -->
+    <div class="ideas-section">
+        <div class="section-title">Post Ideas</div>
+        <div id="ideaCards"></div>
+    </div>
+
+    <!-- 4. Engagement Zone -->
+    <div class="engage-section">
+        <div class="section-title">Engagement Zone</div>
+        <div class="engage-grid">
+            <div class="engage-col" id="engageAccounts">
+                <div class="engage-col-title">Accounts to Engage</div>
+            </div>
+            <div class="engage-col" id="engageHashtags">
+                <div class="engage-col-title">Hashtag Sets</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Daily Checklist -->
+    <div class="checklist-section">
+        <div class="checklist-header">
+            <div class="checklist-title">Daily Checklist</div>
+            <div class="checklist-progress" id="checkProgress">0 / 5</div>
+        </div>
+        <div class="check-item">
+            <input type="checkbox" id="chk-posted" onchange="window.StudioApp.updateChecklist()">
+            <label class="check-label" for="chk-posted">Posted content to feed</label>
+        </div>
+        <div class="check-item">
+            <input type="checkbox" id="chk-engaged" onchange="window.StudioApp.updateChecklist()">
+            <label class="check-label" for="chk-engaged">Engaged with 5+ accounts</label>
+        </div>
+        <div class="check-item">
+            <input type="checkbox" id="chk-dms" onchange="window.StudioApp.updateChecklist()">
+            <label class="check-label" for="chk-dms">Replied to DMs</label>
+        </div>
+        <div class="check-item">
+            <input type="checkbox" id="chk-stories" onchange="window.StudioApp.updateChecklist()">
+            <label class="check-label" for="chk-stories">Posted stories</label>
+        </div>
+        <div class="check-item">
+            <input type="checkbox" id="chk-shared" onchange="window.StudioApp.updateChecklist()">
+            <label class="check-label" for="chk-shared">Shared post to story</label>
+        </div>
+    </div>
+
+    <div class="all-done" id="allDone">
+        <div class="all-done-text">All tasks done for today!</div>
+    </div>
+
+</main>
+
+<script src="/js/studio-app.js"></script>
+
+</body>
+</html>
