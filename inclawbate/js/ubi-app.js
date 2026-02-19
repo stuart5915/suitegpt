@@ -451,13 +451,7 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // Floor = max(API high-water mark, localStorage high-water mark)
-    // This means reloads never lose progress — you pick up where you left off
-    var apiFloorUsd = Number(ubiData && ubiData.total_distributed_usd) || 3150;
-    var localHwm = Number(localStorage.getItem('_ubi_dist_hwm')) || 0;
-    var poolAtLoad = onChainRewardPoolBalance || 0;
-    window._ubiFloorUsd = Math.max(apiFloorUsd, localHwm);
-    window._ubiPoolAtLoad = poolAtLoad;
+    // Total INCLAWNCH distributed = totalDeposited - rewardPoolRemaining (on-chain, always increasing)
     window._ubiTotalDeposited = onChainTotalDeposited;
 
     // ── Distribution Countdown Timer ──
@@ -581,11 +575,11 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total UBI distributed — uses API high-water mark as floor
-        // Tick adds incremental drip since page load on top of floor
+        // Countdown KPI: total inCLAWNCH distributed (pure on-chain, ticks every second)
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        if (cdTotalDistEl) {
-            cdTotalDistEl.textContent = '$' + fmtUsdFull(apiFloorUsd);
+        if (cdTotalDistEl && onChainTotalDeposited > 0) {
+            var drippedNow = Math.round(onChainTotalDeposited - onChainRewardPoolBalance);
+            cdTotalDistEl.innerHTML = fmt(drippedNow) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -883,15 +877,11 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing distributed counter: floor + incremental drip since page load
-            if (cdTotalDistEl2 && window._ubiFloorUsd > 0) {
-                var drippedSinceLoad = (window._ubiPoolAtLoad || 0) - remaining;
-                if (drippedSinceLoad < 0) drippedSinceLoad = 0;
-                var incrementUsd = inclawnchPrice > 0 ? drippedSinceLoad * inclawnchPrice : 0;
-                var displayVal = window._ubiFloorUsd + incrementUsd;
-                cdTotalDistEl2.textContent = '$' + fmtUsdFull(displayVal);
-                // Persist so reloads never lose progress
-                try { localStorage.setItem('_ubi_dist_hwm', displayVal.toString()); } catch (e) {}
+            // Live increasing total inCLAWNCH distributed: totalDeposited - remaining
+            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0) {
+                var drippedLive = Math.round(window._ubiTotalDeposited - remaining);
+                if (drippedLive < 0) drippedLive = 0;
+                cdTotalDistEl2.innerHTML = fmt(drippedLive) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
             }
         }
 
