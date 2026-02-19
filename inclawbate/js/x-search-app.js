@@ -135,6 +135,14 @@ minLikesSlider.addEventListener('input', () => {
     minLikesVal.textContent = minLikesSlider.value;
 });
 
+// Suggestion pills
+document.querySelectorAll('.xs-suggest-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+        searchInput.value = pill.dataset.query;
+        doSearch();
+    });
+});
+
 // ── Search ──
 async function doSearch() {
     const query = searchInput.value.trim();
