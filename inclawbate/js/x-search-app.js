@@ -21,6 +21,7 @@ const searchLoading = document.getElementById('searchLoading');
 const searchFeed = document.getElementById('searchFeed');
 const minLikesSlider = document.getElementById('filterMinLikes');
 const minLikesVal = document.getElementById('minLikesVal');
+const buyModal = document.getElementById('buyModal');
 
 // ── Init ──
 (async function init() {
@@ -149,9 +150,14 @@ async function doSearch() {
     if (!query) return;
 
     if (credits <= 0) {
-        searchStatus.innerHTML = 'You need credits to search. <a href="/deposit" style="color:var(--lobster-300);">Buy credits</a> to get started.';
+        searchStatus.innerHTML = 'You need credits to search. <a href="#" id="inlineBuyLink" style="color:var(--lobster-300);">Buy credits</a> to get started.';
         searchStatus.className = 'xs-status';
         searchStatus.classList.remove('hidden');
+        document.getElementById('inlineBuyLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            buyModal.classList.add('open');
+            if (!clawnchPrice) fetchPrice();
+        });
         return;
     }
 
@@ -503,4 +509,241 @@ async function handleSendReply(tweetId) {
 
     sendBtn.disabled = false;
     sendBtn.textContent = 'Send Reply';
+}
+
+// ══════════════════════════════════════
+// BUY CREDITS MODAL
+// ══════════════════════════════════════
+const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
+const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+const TARGET_USD_PER_CREDIT = 0.005;
+const BASE_CHAIN_ID = '0x2105';
+
+let modalProvider = null;
+let modalAccount = null;
+let clawnchPrice = 0;
+
+function getTokensPerCredit() {
+    if (clawnchPrice <= 0) return 0;
+    const raw = TARGET_USD_PER_CREDIT / clawnchPrice;
+    return Math.max(1, Math.min(10000, raw));
+}
+
+// Fetch price
+async function fetchPrice() {
+    try {
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
+        const data = await resp.json();
+        if (data.pairs && data.pairs.length > 0) {
+            clawnchPrice = parseFloat(data.pairs[0].priceUsd) || 0;
+        }
+    } catch (e) { /* price stays 0 */ }
+    modalUpdateEstimates();
+}
+
+// Modal refs
+const modalAmountInput = document.getElementById('modalAmountInput');
+const modalDepositBtn = document.getElementById('modalDepositBtn');
+
+// Open/close modal
+document.getElementById('openBuyBtn').addEventListener('click', () => {
+    buyModal.classList.add('open');
+    if (!clawnchPrice) fetchPrice();
+});
+
+document.getElementById('closeBuyModal').addEventListener('click', closeModal);
+buyModal.addEventListener('click', (e) => {
+    if (e.target === buyModal) closeModal();
+});
+
+function closeModal() {
+    buyModal.classList.remove('open');
+}
+
+// Estimates
+function modalUpdateEstimates() {
+    const amount = parseInt(modalAmountInput.value) || 0;
+    const tpc = getTokensPerCredit();
+    const modalCredits = tpc > 0 ? Math.floor(amount / tpc) : 0;
+    const usdEl = document.getElementById('modalUsd');
+    const creditsEl = document.getElementById('modalCreditsEst');
+    const rateEl = document.getElementById('modalRate');
+
+    if (amount > 0 && clawnchPrice > 0) {
+        usdEl.textContent = '$' + (amount * clawnchPrice).toFixed(2);
+    } else {
+        usdEl.textContent = '\u2014';
+    }
+
+    creditsEl.textContent = modalCredits > 0 ? modalCredits.toLocaleString() + ' credits' : '\u2014';
+    modalDepositBtn.disabled = !(modalAccount && modalCredits > 0);
+
+    if (tpc > 0) {
+        rateEl.innerHTML = '<strong>~' + Math.round(tpc).toLocaleString() + ' INCLAWNCH = 1 credit</strong>';
+    } else {
+        rateEl.innerHTML = '<strong>Loading rate...</strong>';
+    }
+}
+
+modalAmountInput.addEventListener('input', modalUpdateEstimates);
+
+// Presets
+document.querySelectorAll('.xs-modal-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+        modalAmountInput.value = btn.dataset.amount;
+        modalUpdateEstimates();
+    });
+});
+
+// Wallet connect
+document.getElementById('modalConnectBtn').addEventListener('click', async () => {
+    if (!window.ethereum) {
+        modalShowError('No wallet detected. Install MetaMask or Coinbase Wallet.');
+        return;
+    }
+    modalProvider = window.ethereum;
+
+    try {
+        const accounts = await modalProvider.request({ method: 'eth_requestAccounts' });
+        modalAccount = accounts[0];
+
+        try {
+            await modalProvider.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: BASE_CHAIN_ID }]
+            });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await modalProvider.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: BASE_CHAIN_ID,
+                        chainName: 'Base',
+                        rpcUrls: ['https://mainnet.base.org'],
+                        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                        blockExplorerUrls: ['https://basescan.org']
+                    }]
+                });
+            } else throw switchErr;
+        }
+
+        document.getElementById('modalWalletConnect').classList.add('hidden');
+        document.getElementById('modalWalletConnected').classList.remove('hidden');
+        document.getElementById('modalWalletAddr').textContent = modalAccount.slice(0, 6) + '...' + modalAccount.slice(-4);
+        modalUpdateEstimates();
+    } catch (err) {
+        if (err.code !== 4001) modalShowError('Wallet connection failed');
+    }
+});
+
+document.getElementById('modalDisconnectBtn').addEventListener('click', () => {
+    modalAccount = null;
+    modalProvider = null;
+    document.getElementById('modalWalletConnect').classList.remove('hidden');
+    document.getElementById('modalWalletConnected').classList.add('hidden');
+    modalUpdateEstimates();
+});
+
+// Deposit
+modalDepositBtn.addEventListener('click', async () => {
+    const amount = parseInt(modalAmountInput.value) || 0;
+    const tpc = getTokensPerCredit();
+    const estCredits = tpc > 0 ? Math.floor(amount / tpc) : 0;
+    if (!modalAccount || !modalProvider || estCredits <= 0) return;
+
+    modalHideError();
+    modalShowStep('progress');
+    modalSetProgress('Confirm in your wallet...', '');
+
+    try {
+        const amountWei = BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
+        const transferData = '0xa9059cbb' +
+            PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0') +
+            amountWei.toString(16).padStart(64, '0');
+
+        const txHash = await modalProvider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: modalAccount, to: CLAWNCH_ADDRESS, data: transferData }]
+        });
+
+        modalSetProgress('Waiting for confirmation...', txHash.slice(0, 10) + '...');
+
+        const receipt = await modalWaitReceipt(modalProvider, txHash);
+        if (!receipt || receipt.status === '0x0') {
+            modalShowStep('form');
+            modalShowError('Transaction failed on-chain.');
+            return;
+        }
+
+        modalSetProgress('Adding credits...', '');
+
+        const jwt = localStorage.getItem('inclawbate_token');
+        const resp = await fetch('/api/inclawbate/credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt },
+            body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            modalShowStep('form');
+            modalShowError(data.error || 'Failed to credit deposit');
+            return;
+        }
+
+        // Success
+        document.getElementById('modalSuccessCredits').textContent = '+' + data.credits_added;
+        document.getElementById('modalSuccessDetail').textContent =
+            Math.floor(data.clawnch_deposited).toLocaleString() + ' INCLAWNCH deposited';
+        document.getElementById('modalTxLink').href = 'https://basescan.org/tx/' + txHash;
+
+        // Update credit badge on the page
+        updateCredits(data.credits_total);
+
+        modalShowStep('success');
+    } catch (err) {
+        modalShowStep('form');
+        if (err.code !== 4001) modalShowError('Deposit failed: ' + (err.message || 'Unknown error'));
+    }
+});
+
+async function modalWaitReceipt(p, txHash) {
+    for (let i = 0; i < 30; i++) {
+        const receipt = await p.request({ method: 'eth_getTransactionReceipt', params: [txHash] });
+        if (receipt) return receipt;
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    return null;
+}
+
+// Deposit again
+document.getElementById('modalDepositAgain').addEventListener('click', () => {
+    modalAmountInput.value = '';
+    modalUpdateEstimates();
+    modalShowStep('form');
+});
+
+// Done
+document.getElementById('modalDone').addEventListener('click', closeModal);
+
+// Modal UI helpers
+function modalShowStep(step) {
+    document.getElementById('modalForm').classList.toggle('hidden', step !== 'form');
+    document.getElementById('modalProgress').classList.toggle('hidden', step !== 'progress');
+    document.getElementById('modalSuccess').classList.toggle('hidden', step !== 'success');
+}
+
+function modalSetProgress(text, sub) {
+    document.getElementById('modalProgressText').textContent = text;
+    document.getElementById('modalProgressSub').textContent = sub;
+}
+
+function modalShowError(msg) {
+    const el = document.getElementById('modalError');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+function modalHideError() {
+    document.getElementById('modalError').classList.add('hidden');
 }
