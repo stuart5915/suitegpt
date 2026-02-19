@@ -353,13 +353,17 @@ function daysSince(dateStr) {
             { to: STAKING_PROXY, data: SEL.stakerCount },
             { to: STAKING_PROXY, data: SEL.rewardRate },
             { to: STAKING_PROXY, data: SEL.periodEnd },
-        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0']),
+            { to: STAKING_PROXY, data: SEL.totalDeposited },
+            { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
+        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
     var onChainStakerCount = rpcBatchRes[2];
     var onChainRewardRate = fromWei(rpcBatchRes[3]);
     var onChainPeriodEnd = Number(BigInt(rpcBatchRes[4] || '0x0'));
+    var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
+    var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
 
     // DexScreener (primary)
     clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);
@@ -520,18 +524,17 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total UBI distributed — now updated live in tick()
-        // Store base values for the live ticker
-        window._ubiDistUsd = Number(ubiData?.total_distributed_usd) || 0;
-        window._ubiDistInclawnchBase = Number(ubiData?.total_distributed_inclawnch) || Number(ubiData?.total_distributed) || 0;
-        // Snapshot the reward pool remaining at load time so we can add live drip
-        if (onChainRewardRate > 0 && onChainPeriodEnd > Date.now() / 1000) {
-            window._ubiPoolSnapshot = Math.round(onChainRewardRate * (onChainPeriodEnd - Date.now() / 1000));
-        }
+        // Countdown KPI: total UBI distributed — on-chain dripped tokens + historical CLAWNCH USD
+        // Formula: dripped = totalRewardsDeposited - rewardPoolBalance; total = (dripped × price) + $3,150
+        var CLAWNCH_LEGACY_USD = 3150; // historical CLAWNCH distributions
+        window._ubiTotalDeposited = onChainTotalDeposited;
+        window._ubiClawnchUsd = CLAWNCH_LEGACY_USD;
         // Initial render (will be overwritten by tick)
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        if (cdTotalDistEl && window._ubiDistUsd > 0) {
-            cdTotalDistEl.innerHTML = '$' + fmtUsd(window._ubiDistUsd) + '<span style="font-size:0.7em;color:var(--text-dim);font-weight:600;"> + ' + fmt(window._ubiDistInclawnchBase) + ' inCLAWNCH</span>';
+        if (cdTotalDistEl && onChainTotalDeposited > 0) {
+            var drippedInclawnch = onChainTotalDeposited - onChainRewardPoolBalance;
+            var totalUbiUsd = (drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD;
+            cdTotalDistEl.textContent = '$' + fmtUsd(totalUbiUsd);
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -819,13 +822,12 @@ function daysSince(dateStr) {
                 : 0;
             cdWeeklyEl.textContent = fmt(remaining);
 
-            // Live increasing distributed counter (inverse of pool)
-            if (cdTotalDistEl2 && window._ubiPoolSnapshot > 0) {
-                var drippedSinceLoad = window._ubiPoolSnapshot - remaining;
-                if (drippedSinceLoad < 0) drippedSinceLoad = 0;
-                var totalInclawnch = Math.round((window._ubiDistInclawnchBase || 0) + drippedSinceLoad);
-                var usdPart = (window._ubiDistUsd || 0) > 0 ? '$' + fmtUsd(window._ubiDistUsd) + ' + ' : '';
-                cdTotalDistEl2.innerHTML = usdPart + '<span style="color:var(--lobster-300);">' + fmt(totalInclawnch) + '</span><span style="font-size:0.7em;color:var(--text-dim);font-weight:600;"> inCLAWNCH</span>';
+            // Live increasing distributed USD counter
+            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0 && inclawnchPrice > 0) {
+                var drippedLive = window._ubiTotalDeposited - remaining;
+                if (drippedLive < 0) drippedLive = 0;
+                var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
+                cdTotalDistEl2.textContent = '$' + fmtUsd(totalUbiUsdLive);
             }
         }
 
