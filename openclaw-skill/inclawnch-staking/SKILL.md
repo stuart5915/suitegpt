@@ -1,11 +1,13 @@
 ---
 name: inclawnch-staking
 description: >
-  Stake and unstake INCLAWNCH tokens in the UBI pool on Base. Query treasury stats, wallet
-  positions, APY estimates, and top stakers. Toggle auto-compounding. No API key needed.
+  Stake and unstake INCLAWNCH tokens in the on-chain UBI staking contract on Base.
+  Query treasury stats, wallet positions, APY estimates, and top stakers.
+  All write operations require wallet signatures (on-chain transactions).
+  Read operations use a public API — no API key needed.
   Use when: (1) user wants to stake INCLAWNCH, (2) checking staking positions or rewards,
-  (3) unstaking tokens, (4) enabling auto-compound, (5) comparing staking yields.
-version: 1.0.0
+  (3) unstaking tokens, (4) claiming rewards, (5) enabling auto-compound, (6) comparing staking yields.
+version: 1.1.0
 metadata:
   openclaw:
     emoji: "🌱"
@@ -14,11 +16,11 @@ metadata:
       bins: ["curl"]
 ---
 
-# INCLAWNCH UBI Staking — Stake, Unstake, and Query for AI Agents
+# INCLAWNCH UBI Staking — On-Chain Staking for AI Agents
 
-Full access to the Inclawbate Universal Basic Income staking system on Base. Stake INCLAWNCH tokens, unstake anytime, toggle auto-compounding, and query treasury stats, wallet positions, and the top stakers leaderboard.
+Stake INCLAWNCH tokens in the InclawnchStaking smart contract on Base. Unstake anytime, claim rewards, toggle auto-compounding, and query treasury stats via a public read API.
 
-No API key. No auth. Public and open.
+**All write operations are on-chain transactions** that require the caller to sign with their wallet. No API key needed for reads.
 
 ## Quick Start
 
@@ -29,80 +31,112 @@ curl "https://inclawbate.com/api/inclawbate/staking"
 # Get a specific wallet's staking position
 curl "https://inclawbate.com/api/inclawbate/staking?wallet=0x91b5c0d07859cfeafeb67d9694121cd741f049bd"
 
-# Stake tokens (after sending ERC20 transfer on Base)
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{"action":"fund","tx_hash":"0x...","wallet_address":"0x..."}'
-
-# Unstake all tokens
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{"action":"unstake","wallet_address":"0x...","token":"clawnch"}'
-
-# Toggle auto-compounding
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{"action":"toggle-auto-stake","wallet_address":"0x..."}'
-
 # Read the machine-readable skill spec
 curl "https://inclawbate.com/api/inclawbate/skill/staking"
 ```
 
-## Write Capabilities
+## Write Capabilities (On-Chain Transactions)
+
+All write operations are signed transactions sent to the InclawnchStaking contract on Base. Each requires the caller's wallet to sign, ensuring only the token owner can modify their position.
+
+### Staking Contract
+
+```
+Chain:    Base (chainId 8453)
+Contract: 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking proxy)
+Token:    0xB0b6e0E9da530f68D713cC03a813B506205aC808  (INCLAWNCH ERC-20)
+```
 
 ### Stake INCLAWNCH
 
-Two-step process: transfer tokens on-chain, then register the stake via API.
+Two-step process — both are on-chain transactions signed by the wallet:
 
-**Step 1:** Transfer INCLAWNCH to the deposit wallet on Base:
+**Step 1: Approve** the staking contract to spend your INCLAWNCH:
 ```
-Token contract: 0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be
-Deposit wallet: 0xa4d6f012003fe6ad2774a874c8c98ee69d17f286
-Function: transfer(address to, uint256 amount)
-Chain: Base
-```
-
-**Step 2:** Register the stake:
-```bash
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "action": "fund",
-    "tx_hash": "0x<64-hex-char-tx-hash>",
-    "wallet_address": "0xYourWallet"
-  }'
+To:       0xB0b6e0E9da530f68D713cC03a813B506205aC808  (INCLAWNCH token)
+Function: approve(address spender, uint256 amount)
+Selector: 0x095ea7b3
+Args:     spender = 0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6, amount = tokens in wei
 ```
 
-The API verifies the on-chain transfer (correct token, correct recipient, amount > 0) and records the stake. Stakers begin earning UBI distributions immediately.
+**Step 2: Stake** into the contract:
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: stake(uint256 amount)
+Selector: 0xa694fc3a
+Args:     amount = tokens in wei (1 INCLAWNCH = 1e18 wei)
+```
+
+Stakers begin earning rewards immediately. Rewards accrue continuously (per-second drip).
 
 ### Unstake INCLAWNCH
 
-No lock period. Request anytime — tokens returned to your wallet within 24 hours (instantly if the unstake wallet has sufficient balance).
+No lock period. Tokens returned to your wallet in the same transaction.
 
-```bash
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "action": "unstake",
-    "wallet_address": "0xYourWallet",
-    "token": "clawnch"
-  }'
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: unstake(uint256 amount)
+Selector: 0x2e17de78
+Args:     amount = tokens in wei to withdraw
+```
+
+### Claim Rewards
+
+Withdraw accrued rewards to your wallet:
+
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: claim()
+Selector: 0x4e71d92d
+```
+
+### Claim and Restake
+
+Claim accrued rewards and immediately restake them (compound):
+
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: claimAndRestake()
+Selector: 0xf755d8c3
 ```
 
 ### Toggle Auto-Compound
 
-When enabled, daily UBI reward distributions are automatically re-staked instead of sent to your wallet — compounding your position over time.
+When enabled, rewards are automatically restaked on claim events:
 
-```bash
-curl -X POST "https://inclawbate.com/api/inclawbate/ubi" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "action": "toggle-auto-stake",
-    "wallet_address": "0xYourWallet"
-  }'
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: setAutoRestake(bool enabled)
+Selector: 0x501cdba4
+Args:     enabled = true (1) or false (0)
 ```
 
-## Read Capabilities
+### Exit (Unstake All + Claim)
+
+Withdraw entire staked balance and all accrued rewards in one transaction:
+
+```
+To:       0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6  (InclawnchStaking)
+Function: exit()
+Selector: 0xe9fad8ee
+```
+
+### View Functions (On-Chain Reads)
+
+Query the contract directly for real-time data:
+
+| Function | Selector | Returns |
+|----------|----------|---------|
+| `balanceOf(address)` | `0x70a08231` | User's staked balance (wei) |
+| `earned(address)` | `0x008cc262` | User's unclaimed rewards (wei) |
+| `autoRestake(address)` | `0x5ccb a116` | Whether auto-compound is on |
+| `totalStaked()` | `0x817b1cd2` | Total INCLAWNCH staked (wei) |
+| `stakerCount()` | `0xdff69787` | Number of stakers |
+| `rewardRate()` | `0x7b0a47ee` | Rewards per second (wei) |
+| `rewardPoolBalance()` | `0x7a5c08ae` | Remaining reward pool (wei) |
+| `periodEnd()` | `0x506ec095` | Reward period end (unix timestamp) |
+
+## Read Capabilities (Public API)
 
 ### Get Treasury Stats (no params)
 
@@ -123,10 +157,8 @@ curl "https://inclawbate.com/api/inclawbate/staking"
 | `daily_distribution_rate` | INCLAWNCH distributed per day |
 | `total_distributed` | All-time INCLAWNCH distributed |
 | `total_distributed_usd` | All-time USD value distributed |
-| `distribution_count` | Number of distributions executed |
 | `estimated_apy` | Current estimated staking APY % |
 | `wallet_cap_pct` | Max % any single wallet receives per distribution |
-| `last_distribution_at` | Timestamp of most recent distribution |
 
 **Top stakers fields:**
 
@@ -158,34 +190,32 @@ curl "https://inclawbate.com/api/inclawbate/staking?wallet=0xYourWallet"
 | `estimated_weekly_reward` | Estimated INCLAWNCH received per week |
 | `auto_stake_enabled` | Whether rewards auto-compound |
 | `total_rewards_received` | All-time INCLAWNCH rewards earned |
-| `give_back_target` | Where overflow rewards go (null/philanthropy/reinvest/split) |
 | `active_stakes` | Array of individual stake records |
-| `pending_unstakes` | Array of pending withdrawal requests |
 
 ## How UBI Staking Works
 
-1. **Stake** — Transfer INCLAWNCH to the deposit wallet on Base, then register via API with the tx hash.
-2. **Earn** — Treasury yield from LP fees is distributed daily at 6am EST, proportional to your stake.
-3. **Compound** — Enable auto-stake to reinvest rewards automatically.
-4. **Unstake** — No lock period. Request anytime, tokens returned within 24 hours.
-5. **Give back** — Optionally redirect a portion of rewards to philanthropy orgs via Kingdom.
+1. **Approve** — Approve the staking contract to spend your INCLAWNCH (on-chain tx, signed by wallet).
+2. **Stake** — Call `stake(amount)` on the contract (on-chain tx, signed by wallet).
+3. **Earn** — Rewards drip continuously per-second from the reward pool, proportional to your stake.
+4. **Claim** — Call `claim()` to withdraw rewards, or `claimAndRestake()` to compound.
+5. **Auto-compound** — Call `setAutoRestake(true)` so rewards automatically restake.
+6. **Unstake** — Call `unstake(amount)` anytime. No lock period, instant withdrawal.
 
 ## Token Info
 
 | Detail | Value |
 |--------|-------|
 | Token | INCLAWNCH |
-| Chain | Base |
-| Contract | `0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be` |
+| Chain | Base (chainId 8453) |
+| Token Contract | `0xB0b6e0E9da530f68D713cC03a813B506205aC808` |
 | Staking Contract | `0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6` |
-| Deposit Wallet | `0xa4d6f012003fe6ad2774a874c8c98ee69d17f286` |
-| BaseScan | https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be |
+| BaseScan (Token) | https://basescan.org/token/0xB0b6e0E9da530f68D713cC03a813B506205aC808 |
+| BaseScan (Staking) | https://basescan.org/address/0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6 |
 
 ## Links
 
 - **Skill Spec (JSON):** https://inclawbate.com/api/inclawbate/skill/staking
 - **Read Endpoint:** https://inclawbate.com/api/inclawbate/staking
-- **Write Endpoint:** https://inclawbate.com/api/inclawbate/ubi
 - **UBI Dashboard:** https://inclawbate.com/ubi
 - **Skills Directory:** https://inclawbate.com/skills
 - **Homepage:** https://inclawbate.com
