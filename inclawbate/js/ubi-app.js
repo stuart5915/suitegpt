@@ -451,8 +451,9 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // Total INCLAWNCH distributed = totalDeposited - rewardPoolRemaining (on-chain, always increasing)
+    // Historical pre-contract distributions (CLAWNCH + INCLAWNCH via API) + on-chain drip
     window._ubiTotalDeposited = onChainTotalDeposited;
+    window._ubiHistoricalTokens = Number(ubiData && ubiData.total_distributed) || 0;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -575,11 +576,12 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total inCLAWNCH distributed (pure on-chain, ticks every second)
+        // Countdown KPI: total inCLAWNCH distributed (historical + on-chain drip, ticks every second)
+        var historicalTokens = window._ubiHistoricalTokens || 0;
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        if (cdTotalDistEl && onChainTotalDeposited > 0) {
-            var drippedNow = Math.round(onChainTotalDeposited - onChainRewardPoolBalance);
-            cdTotalDistEl.innerHTML = fmt(drippedNow) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
+        if (cdTotalDistEl) {
+            var onChainDrip = onChainTotalDeposited > 0 ? Math.round(onChainTotalDeposited - onChainRewardPoolBalance) : 0;
+            cdTotalDistEl.innerHTML = fmt(historicalTokens + onChainDrip) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -877,11 +879,12 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing total inCLAWNCH distributed: totalDeposited - remaining
+            // Live increasing total: historical + on-chain drip (ticking)
             if (cdTotalDistEl2 && window._ubiTotalDeposited > 0) {
                 var drippedLive = Math.round(window._ubiTotalDeposited - remaining);
                 if (drippedLive < 0) drippedLive = 0;
-                cdTotalDistEl2.innerHTML = fmt(drippedLive) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
+                var totalTokens = (window._ubiHistoricalTokens || 0) + drippedLive;
+                cdTotalDistEl2.innerHTML = fmt(totalTokens) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
             }
         }
 
