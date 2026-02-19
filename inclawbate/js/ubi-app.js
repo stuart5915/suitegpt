@@ -356,7 +356,8 @@ function daysSince(dateStr) {
             { to: STAKING_PROXY, data: SEL.totalDeposited },
             { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
             { to: INCLAWNCH_ADDRESS, data: '0x18160ddd' }, // totalSupply()
-        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(PROTOCOL_WALLET) }, // inclawbate.base.eth INCLAWNCH balance
+        ]).catch(() => ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']),
     ]);
     var wethBalRes = rpcBatchRes[0] !== '0x0' ? { result: rpcBatchRes[0] } : null;
     var onChainTotalStaked = rpcBatchRes[1];
@@ -366,6 +367,7 @@ function daysSince(dateStr) {
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
     var onChainTotalSupply = fromWei(rpcBatchRes[7]);
+    var onChainTreasuryBalance = fromWei(rpcBatchRes[8]); // inclawbate.base.eth INCLAWNCH holdings
 
     // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
@@ -577,10 +579,10 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: % of inCLAWNCH supply locked (staked + reward pool)
+        // Countdown KPI: % of inCLAWNCH supply locked (treasury + reward pool + staked)
         var cdSupplyLockedEl = document.getElementById('cdTotalDistributed');
         if (cdSupplyLockedEl && onChainTotalSupply > 0) {
-            var locked = inclawnchStaked + onChainRewardPoolBalance;
+            var locked = onChainTreasuryBalance + onChainRewardPoolBalance + inclawnchStaked;
             var pct = (locked / onChainTotalSupply) * 100;
             cdSupplyLockedEl.textContent = pct.toFixed(1) + '%';
         }
