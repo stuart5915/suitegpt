@@ -451,9 +451,11 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // Historical pre-contract distributions (CLAWNCH + INCLAWNCH via API) + on-chain drip
+    // $3,150 = locked-in USD from historical CLAWNCH distributions (at distribution-time prices)
+    // On-chain drip = (totalDeposited - remaining) × current INCLAWNCH price (ticks every second)
     window._ubiTotalDeposited = onChainTotalDeposited;
-    window._ubiHistoricalTokens = Number(ubiData && ubiData.total_distributed) || 0;
+    window._ubiHistoricalUsd = 3150;
+    window._ubiInclawnchPrice = inclawnchPrice;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -576,12 +578,14 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total inCLAWNCH distributed (historical + on-chain drip, ticks every second)
-        var historicalTokens = window._ubiHistoricalTokens || 0;
+        // Countdown KPI: Total UBI Distributed = $3,150 (historical) + on-chain drip × price
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
-        if (cdTotalDistEl) {
-            var onChainDrip = onChainTotalDeposited > 0 ? Math.round(onChainTotalDeposited - onChainRewardPoolBalance) : 0;
-            cdTotalDistEl.innerHTML = fmt(historicalTokens + onChainDrip) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
+        if (cdTotalDistEl && onChainTotalDeposited > 0 && inclawnchPrice > 0) {
+            var onChainDrip = onChainTotalDeposited - onChainRewardPoolBalance;
+            var totalUsd = 3150 + (onChainDrip * inclawnchPrice);
+            cdTotalDistEl.textContent = '$' + fmtUsdFull(totalUsd);
+        } else if (cdTotalDistEl) {
+            cdTotalDistEl.textContent = '$3,150';
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -879,12 +883,12 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing total: historical + on-chain drip (ticking)
-            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0) {
-                var drippedLive = Math.round(window._ubiTotalDeposited - remaining);
+            // Live increasing total: $3,150 historical + on-chain drip × price (ticking USD)
+            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0 && window._ubiInclawnchPrice > 0) {
+                var drippedLive = window._ubiTotalDeposited - remaining;
                 if (drippedLive < 0) drippedLive = 0;
-                var totalTokens = (window._ubiHistoricalTokens || 0) + drippedLive;
-                cdTotalDistEl2.innerHTML = fmt(totalTokens) + ' <span style="font-size:0.7em;font-weight:600;">inCLAWNCH</span>';
+                var totalUsd = (window._ubiHistoricalUsd || 3150) + (drippedLive * window._ubiInclawnchPrice);
+                cdTotalDistEl2.textContent = '$' + fmtUsdFull(totalUsd);
             }
         }
 
