@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         response_type: 'code',
         client_id: X_CLIENT_ID,
         redirect_uri: REDIRECT_URI,
-        scope: 'tweet.read users.read offline.access',
+        scope: 'tweet.read tweet.write users.read like.read like.write offline.access',
         state: state || '',
         code_challenge: code_challenge,
         code_challenge_method: 'S256'

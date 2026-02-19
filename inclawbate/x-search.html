@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Search — Inclawbate</title>
+    <meta name="description" content="Search tweets, engage, and grow your presence on X. AI-powered replies optional.">
+    <meta property="og:title" content="X Search — Inclawbate">
+    <meta property="og:description" content="Search tweets, engage, and grow your presence on X. AI-powered replies optional.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/x-search">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=x-search">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="X Search — Inclawbate">
+    <meta name="twitter:description" content="Search tweets, engage, and grow your presence on X. AI-powered replies optional.">
+    <meta name="twitter:image" content="https://www.inclawbate.com/api/inclawbate/og?page=x-search">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* ══════════════════════════════════════
+           X SEARCH PAGE
+           ══════════════════════════════════════ */
+        .xs-page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-xl) var(--space-4xl);
+        }
+
+        /* Header */
+        .xs-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-xl);
+        }
+        .xs-title {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .xs-credits {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--seafoam-300);
+            background: hsla(172,30%,48%,0.1);
+            border: 1px solid hsla(172,30%,48%,0.2);
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+        }
+        .xs-credits-num { color: var(--text-primary); font-weight: 700; }
+
+        /* Search bar */
+        .xs-search {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+        .xs-search-input {
+            flex: 1;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            padding: 12px 18px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .xs-search-input:focus {
+            border-color: var(--lobster-400);
+            box-shadow: 0 0 0 3px hsla(9,52%,56%,0.15);
+        }
+        .xs-search-input::placeholder { color: var(--text-dim); }
+        .xs-search-btn {
+            white-space: nowrap;
+        }
+        .xs-search-cost {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            opacity: 0.7;
+            margin-left: 6px;
+        }
+
+        /* Filters */
+        .xs-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+            align-items: center;
+        }
+        .xs-filter-group {
+            display: flex;
+            gap: 2px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 2px;
+        }
+        .xs-filter-pill {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .xs-filter-pill:hover { color: var(--text-secondary); }
+        .xs-filter-pill.active {
+            background: var(--lobster-400);
+            color: var(--text-on-accent);
+        }
+        .xs-toggle {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .xs-toggle:hover { color: var(--text-secondary); border-color: var(--border-default); }
+        .xs-toggle.active {
+            background: hsla(9,52%,56%,0.12);
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+        .xs-filter-slider {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+        .xs-filter-slider input[type="range"] {
+            width: 80px;
+            accent-color: var(--lobster-400);
+        }
+        .xs-filter-slider .xs-slider-val {
+            color: var(--text-secondary);
+            font-weight: 600;
+            min-width: 24px;
+        }
+
+        /* Status */
+        .xs-status {
+            text-align: center;
+            padding: var(--space-2xl) 0;
+            color: var(--text-dim);
+            font-size: 0.88rem;
+        }
+        .xs-status.error { color: hsl(0,60%,60%); }
+
+        /* Tweet card */
+        .xs-feed { display: flex; flex-direction: column; gap: var(--space-md); }
+        .xs-tweet {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            transition: border-color 0.2s;
+        }
+        .xs-tweet:hover { border-color: var(--border-default); }
+
+        /* Tweet author row */
+        .xs-tweet-author {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .xs-tweet-avatar {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--bg-card);
+        }
+        .xs-tweet-author-info { flex: 1; min-width: 0; }
+        .xs-tweet-name {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .xs-tweet-verified {
+            display: inline-flex;
+            color: hsl(210,80%,60%);
+            font-size: 0.8rem;
+        }
+        .xs-tweet-handle {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+        .xs-tweet-followers {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        .xs-tweet-time {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+
+        /* Tweet text */
+        .xs-tweet-text {
+            font-size: 0.9rem;
+            line-height: 1.65;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+            cursor: pointer;
+            word-break: break-word;
+        }
+        .xs-tweet-text:hover { color: var(--lobster-300); }
+        .xs-tweet-text a, .xs-tweet-text .xs-mention, .xs-tweet-text .xs-hashtag {
+            color: var(--lobster-300);
+            text-decoration: none;
+        }
+
+        /* Tweet metrics */
+        .xs-tweet-metrics {
+            display: flex;
+            gap: var(--space-lg);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .xs-metric { display: flex; align-items: center; gap: 4px; }
+
+        /* Action buttons */
+        .xs-tweet-actions {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+        .xs-action-btn {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .xs-action-btn:hover {
+            border-color: var(--border-default);
+            color: var(--text-primary);
+        }
+        .xs-action-btn.liked {
+            border-color: hsl(350,70%,50%);
+            color: hsl(350,70%,60%);
+            background: hsla(350,70%,50%,0.1);
+        }
+        .xs-action-btn.retweeted {
+            border-color: hsl(150,60%,40%);
+            color: hsl(150,60%,50%);
+            background: hsla(150,60%,40%,0.1);
+        }
+        .xs-action-btn.ai-reply-btn {
+            border-color: hsla(9,52%,56%,0.3);
+            color: var(--lobster-300);
+        }
+        .xs-action-btn.ai-reply-btn:hover {
+            border-color: var(--lobster-400);
+            background: hsla(9,52%,56%,0.08);
+        }
+        .xs-action-cost {
+            font-size: 0.58rem;
+            opacity: 0.6;
+        }
+
+        /* Reply drawer */
+        .xs-reply-drawer {
+            display: none;
+            margin-top: var(--space-md);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-subtle);
+            animation: drawerSlide 0.2s ease-out;
+        }
+        .xs-reply-drawer.open { display: block; }
+        @keyframes drawerSlide {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .xs-reply-textarea {
+            width: 100%;
+            min-height: 80px;
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            padding: 12px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .xs-reply-textarea:focus {
+            border-color: var(--lobster-400);
+            box-shadow: 0 0 0 3px hsla(9,52%,56%,0.15);
+        }
+        .xs-reply-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: var(--space-sm);
+        }
+        .xs-reply-charcount {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+        .xs-reply-charcount.over { color: hsl(0,60%,60%); }
+        .xs-reply-btns { display: flex; gap: var(--space-sm); }
+
+        /* Login gate */
+        .xs-gate {
+            text-align: center;
+            padding: var(--space-4xl) var(--space-xl);
+        }
+        .xs-gate-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .xs-gate-sub {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-xl);
+        }
+        .xs-gate .btn-x svg {
+            width: 16px; height: 16px; fill: currentColor;
+        }
+
+        /* Loading spinner in feed */
+        .xs-loading {
+            display: flex;
+            justify-content: center;
+            padding: var(--space-2xl) 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .xs-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .xs-header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+            .xs-search { flex-direction: column; }
+            .xs-search-btn { width: 100%; }
+            .xs-tweet-metrics { gap: var(--space-md); }
+            .xs-tweet-actions { gap: 4px; }
+            .xs-action-btn { font-size: 0.65rem; padding: 4px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate 🦞</span>
+    </a>
+    <div class="nav-links">
+        <a href="/ubi" class="nav-link">UBI</a>
+        <a href="/kingdom" class="nav-link">Kingdom</a>
+        <a href="/ecosystem" class="nav-link">Ecosystem</a>
+        <a href="/store" class="nav-link">Store</a>
+        <a href="/x-search" class="nav-link active">X Search</a>
+        <a href="/launch" class="btn btn-x btn-sm">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Connect X
+        </a>
+    </div>
+</nav>
+
+<!-- Login gate (shown when not logged in) -->
+<div id="loginGate" class="xs-gate hidden">
+    <div class="xs-gate-title">Connect X to start searching</div>
+    <p class="xs-gate-sub">Search tweets, engage with your audience, and get AI-powered reply suggestions.</p>
+    <a href="/launch" class="btn btn-x">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Connect X
+    </a>
+</div>
+
+<!-- No credits gate -->
+<div id="noCreditsGate" class="xs-gate hidden">
+    <div class="xs-gate-title">You need credits to search</div>
+    <p class="xs-gate-sub">Each search costs 1 credit. Likes, retweets, and manual replies are free.</p>
+    <a href="/deposit" class="btn btn-primary">Buy Credits</a>
+</div>
+
+<!-- Main content (shown when logged in) -->
+<div id="mainContent" class="xs-page hidden">
+    <!-- Header -->
+    <div class="xs-header">
+        <h1 class="xs-title">X Search</h1>
+        <div class="xs-credits">
+            Credits: <span class="xs-credits-num" id="creditBadge">—</span>
+            <a href="/deposit" style="color:var(--lobster-300);font-size:0.65rem;text-decoration:none;">+ Buy</a>
+        </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="xs-search">
+        <input type="text" class="xs-search-input" id="searchInput" placeholder="Search tweets... e.g. AI agents, crypto, staking" autocomplete="off">
+        <button class="btn btn-primary xs-search-btn" id="searchBtn">
+            Fetch Posts<span class="xs-search-cost">(1 credit)</span>
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="xs-filters">
+        <!-- Time range -->
+        <div class="xs-filter-group" data-filter="time">
+            <button class="xs-filter-pill" data-value="1h">1h</button>
+            <button class="xs-filter-pill" data-value="6h">6h</button>
+            <button class="xs-filter-pill active" data-value="24h">24h</button>
+            <button class="xs-filter-pill" data-value="7d">7d</button>
+        </div>
+
+        <!-- Toggles -->
+        <button class="xs-toggle" id="filterVerified">Verified</button>
+        <button class="xs-toggle" id="filterMedia">Has media</button>
+        <button class="xs-toggle active" id="filterNoReplies">No replies</button>
+        <button class="xs-toggle active" id="filterNoRTs">No RTs</button>
+
+        <!-- Min likes slider -->
+        <div class="xs-filter-slider">
+            <span>Min likes:</span>
+            <input type="range" id="filterMinLikes" min="0" max="1000" step="10" value="0">
+            <span class="xs-slider-val" id="minLikesVal">0</span>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="searchStatus" class="xs-status">Enter a search query to find tweets</div>
+    <div id="searchLoading" class="xs-loading hidden"><div class="spinner-lg"></div></div>
+    <div id="searchFeed" class="xs-feed"></div>
+</div>
+
+<footer class="footer" style="margin-top:var(--space-4xl);">
+    <div class="footer-text">inclawbate.com — where humans get incubated</div>
+    <div class="footer-links">
+        <a href="/ubi" class="footer-link">UBI</a>
+        <a href="/store" class="footer-link">Store</a>
+        <a href="/kingdom" class="footer-link">Kingdom</a>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Chat</a>
+    </div>
+</footer>
+
+<script src="/js/nav-auth.js"></script>
+<script type="module" src="/js/x-search-app.js"></script>
+</body>
+</html>
