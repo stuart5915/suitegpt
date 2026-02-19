@@ -365,8 +365,9 @@ function daysSince(dateStr) {
     var onChainTotalDeposited = fromWei(rpcBatchRes[5]);
     var onChainRewardPoolBalance = fromWei(rpcBatchRes[6]);
 
-    // Cache on-chain UBI data so reloads survive RPC failures
+    // Fallback chain for on-chain UBI data: client RPC → API (server-side RPC) → localStorage cache
     if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
+        // Client RPC succeeded — cache for future fallback
         try {
             localStorage.setItem('_ubi_onchain', JSON.stringify({
                 td: onChainTotalDeposited, rr: onChainRewardRate,
@@ -374,19 +375,37 @@ function daysSince(dateStr) {
             }));
         } catch (e) {}
     } else {
-        // RPC failed — restore cached on-chain data (up to 1 hour old)
-        try {
-            var cachedOC = JSON.parse(localStorage.getItem('_ubi_onchain'));
-            if (cachedOC && Date.now() - cachedOC.t < 3600000) {
-                if (!onChainTotalDeposited) onChainTotalDeposited = cachedOC.td;
-                if (!onChainRewardRate) onChainRewardRate = cachedOC.rr;
-                if (!onChainPeriodEnd) onChainPeriodEnd = cachedOC.pe;
-                // Recompute pool balance from cached rate + time
-                if (!onChainRewardPoolBalance && onChainPeriodEnd > Date.now() / 1000) {
-                    onChainRewardPoolBalance = onChainRewardRate * (onChainPeriodEnd - Date.now() / 1000);
+        // Client RPC failed — try API (server-side RPC) first
+        var apiOC = ubiRes && ubiRes.staking_onchain;
+        if (apiOC && apiOC.total_deposited > 0) {
+            if (!onChainTotalDeposited) onChainTotalDeposited = apiOC.total_deposited;
+            if (!onChainRewardRate) onChainRewardRate = apiOC.reward_rate;
+            if (!onChainPeriodEnd) onChainPeriodEnd = apiOC.period_end;
+            if (!onChainRewardPoolBalance) onChainRewardPoolBalance = apiOC.reward_pool_balance;
+        }
+        // Then try localStorage cache (up to 1 hour old)
+        if (!onChainTotalDeposited || !onChainRewardRate) {
+            try {
+                var cachedOC = JSON.parse(localStorage.getItem('_ubi_onchain'));
+                if (cachedOC && Date.now() - cachedOC.t < 3600000) {
+                    if (!onChainTotalDeposited) onChainTotalDeposited = cachedOC.td;
+                    if (!onChainRewardRate) onChainRewardRate = cachedOC.rr;
+                    if (!onChainPeriodEnd) onChainPeriodEnd = cachedOC.pe;
+                    if (!onChainRewardPoolBalance && onChainPeriodEnd > Date.now() / 1000) {
+                        onChainRewardPoolBalance = onChainRewardRate * (onChainPeriodEnd - Date.now() / 1000);
+                    }
                 }
-            }
-        } catch (e) {}
+            } catch (e) {}
+        }
+        // Cache whatever we got for next time
+        if (onChainTotalDeposited > 0 && onChainRewardRate > 0) {
+            try {
+                localStorage.setItem('_ubi_onchain', JSON.stringify({
+                    td: onChainTotalDeposited, rr: onChainRewardRate,
+                    pe: onChainPeriodEnd, t: Date.now()
+                }));
+            } catch (e) {}
+        }
     }
 
     // DexScreener (primary)

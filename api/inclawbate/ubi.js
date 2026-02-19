@@ -68,6 +68,46 @@ async function rpcCall(method, params) {
     return null;
 }
 
+// On-chain staking contract reads for UBI distributed calculation
+const STAKING_PROXY = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const STAKING_SELS = {
+    rewardRate:       '0x7b0a47ee',
+    periodEnd:        '0x506ec095',
+    rewardPoolBalance:'0x7a5c08ae',
+    totalDeposited:   '0x1f4c74fd',
+};
+
+async function fetchStakingOnChain() {
+    try {
+        // Batch all reads into one RPC call
+        const batch = Object.entries(STAKING_SELS).map(([key, sel], i) => ({
+            jsonrpc: '2.0', id: i + 1, method: 'eth_call',
+            params: [{ to: STAKING_PROXY, data: sel }, 'latest']
+        }));
+        for (let i = 0; i < BASE_RPCS.length; i++) {
+            try {
+                const resp = await fetch(BASE_RPCS[i], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(batch)
+                });
+                if (resp.status === 429) continue;
+                const data = await resp.json();
+                if (!Array.isArray(data)) continue;
+                data.sort((a, b) => a.id - b.id);
+                const vals = data.map(r => r.result || '0x0');
+                return {
+                    reward_rate: Number(BigInt(vals[0])) / 1e18,
+                    period_end: Number(BigInt(vals[1])),
+                    reward_pool_balance: Number(BigInt(vals[2])) / 1e18,
+                    total_deposited: Number(BigInt(vals[3])) / 1e18,
+                };
+            } catch (e) { continue; }
+        }
+    } catch (e) {}
+    return null;
+}
+
 async function verifyTokenTransfer(txHash, tokenAddress) {
     // Retry with delays — receipt may not be indexed immediately after confirmation
     let receipt = null;
@@ -245,18 +285,12 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     if (req.method === 'GET') {
-        // Get treasury config
-        const { data: treasury } = await supabase
-            .from('inclawbate_ubi_treasury')
-            .select('*')
-            .eq('id', 1)
-            .single();
-
-        // Get all active stakes to compute real TVL + staker count
-        const { data: activeStakes } = await supabase
-            .from('inclawbate_ubi_contributions')
-            .select('wallet_address, clawnch_amount, token')
-            .eq('active', true);
+        // Get treasury config, active stakes, and on-chain staking data in parallel
+        const [{ data: treasury }, { data: activeStakes }, stakingOnChain] = await Promise.all([
+            supabase.from('inclawbate_ubi_treasury').select('*').eq('id', 1).single(),
+            supabase.from('inclawbate_ubi_contributions').select('wallet_address, clawnch_amount, token').eq('active', true),
+            fetchStakingOnChain(),
+        ]);
 
         const uniqueWallets = new Set((activeStakes || []).map(r => r.wallet_address));
         const totalStakers = uniqueWallets.size;
@@ -308,6 +342,8 @@ export default async function handler(req, res) {
         result.daily_rate = (Number(result.weekly_rate) || 0) / 7;
         // Deposit address — stakes go to the unstake wallet so it self-funds withdrawals
         result.deposit_address = DEPOSIT_WALLET;
+        // On-chain staking data for live UBI distributed calculation
+        if (stakingOnChain) result.staking_onchain = stakingOnChain;
         // Per-wallet cap percentage (default 10)
         if (result.wallet_cap_pct === undefined || result.wallet_cap_pct === null) {
             result.wallet_cap_pct = 10;
