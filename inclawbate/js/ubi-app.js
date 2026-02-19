@@ -225,22 +225,20 @@ async function walletRead(provider, to, data) {
     return res || '0x0';
 }
 
-// Read multiple contract values via wallet provider to avoid public RPC rate limits
+// Read contract state via public Base RPC (works regardless of wallet's current chain)
 async function readContractState(wallet) {
-    var provider = window.ethereum;
-    if (!provider) throw new Error('No wallet provider');
     var addrPadded = pad32(wallet);
-    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await Promise.all([
-        walletRead(provider, STAKING_PROXY, SEL.balanceOf + addrPadded),
-        walletRead(provider, STAKING_PROXY, SEL.earned + addrPadded),
-        walletRead(provider, STAKING_PROXY, SEL.autoRestake + addrPadded),
-        walletRead(provider, STAKING_PROXY, SEL.totalStaked),
-        walletRead(provider, STAKING_PROXY, SEL.stakerCount),
-        walletRead(provider, STAKING_PROXY, SEL.rewardRate),
-        walletRead(provider, STAKING_PROXY, SEL.periodEnd),
-        walletRead(provider, STAKING_PROXY, SEL.rewardPoolBalance),
-        walletRead(provider, STAKING_PROXY, SEL.admin),
-        walletRead(provider, STAKING_PROXY, SEL.paused),
+    var [balRes, earnedRes, autoRes, totalRes, countRes, rateRes, endRes, poolRes, adminRes, pausedRes] = await contractReadBatch([
+        { to: STAKING_PROXY, data: SEL.balanceOf + addrPadded },
+        { to: STAKING_PROXY, data: SEL.earned + addrPadded },
+        { to: STAKING_PROXY, data: SEL.autoRestake + addrPadded },
+        { to: STAKING_PROXY, data: SEL.totalStaked },
+        { to: STAKING_PROXY, data: SEL.stakerCount },
+        { to: STAKING_PROXY, data: SEL.rewardRate },
+        { to: STAKING_PROXY, data: SEL.periodEnd },
+        { to: STAKING_PROXY, data: SEL.rewardPoolBalance },
+        { to: STAKING_PROXY, data: SEL.admin },
+        { to: STAKING_PROXY, data: SEL.paused },
     ]);
     return {
         staked: fromWei(balRes),
@@ -998,20 +996,12 @@ function daysSince(dateStr) {
 
     async function fetchBalances() {
         if (!stakeWallet) return;
-        var provider = getProvider();
-        if (!provider) return;
         var callData = BALANCE_SELECTOR + pad32(stakeWallet);
 
         try {
-            var [clawnchResult, inclawnchResult] = await Promise.all([
-                provider.request({
-                    method: 'eth_call',
-                    params: [{ to: CLAWNCH_ADDRESS, data: callData }, 'latest']
-                }),
-                provider.request({
-                    method: 'eth_call',
-                    params: [{ to: INCLAWNCH_ADDRESS, data: callData }, 'latest']
-                })
+            var [clawnchResult, inclawnchResult] = await contractReadBatch([
+                { to: CLAWNCH_ADDRESS, data: callData },
+                { to: INCLAWNCH_ADDRESS, data: callData },
             ]);
 
             walletBalances.clawnch = Number(BigInt(clawnchResult)) / 1e18;
@@ -1372,11 +1362,11 @@ function daysSince(dateStr) {
         var provider = getProvider();
         if (!provider || !stakeWallet) return;
 
-        // Read staked balance + pending rewards from contract
+        // Read staked balance + pending rewards via public RPC (works regardless of wallet chain)
         var addrPadded = pad32(stakeWallet);
-        var [balRes, earnedRes] = await Promise.all([
-            walletRead(provider, STAKING_PROXY, SEL.balanceOf + addrPadded),
-            walletRead(provider, STAKING_PROXY, SEL.earned + addrPadded),
+        var [balRes, earnedRes] = await contractReadBatch([
+            { to: STAKING_PROXY, data: SEL.balanceOf + addrPadded },
+            { to: STAKING_PROXY, data: SEL.earned + addrPadded },
         ]);
         var stakedRaw = BigInt(balRes || '0x0');
         var stakedAmount = fromWei(balRes);
