@@ -451,10 +451,10 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    // $3,150 = locked-in USD from historical CLAWNCH distributions (at distribution-time prices)
-    // On-chain drip = (totalDeposited - remaining) × current INCLAWNCH price (ticks every second)
+    // API returns high-water mark USD (never goes below $3,800 floor).
+    // Live tick: max(apiFloor, $3,150 + drip × price) — never goes backwards.
     window._ubiTotalDeposited = onChainTotalDeposited;
-    window._ubiHistoricalUsd = 3150;
+    window._ubiFloorUsd = Number(ubiData && ubiData.total_distributed_usd) || 3800;
     window._ubiInclawnchPrice = inclawnchPrice;
 
     // ── Distribution Countdown Timer ──
@@ -578,14 +578,15 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: Total UBI Distributed = $3,150 (historical) + on-chain drip × price
+        // Countdown KPI: Total UBI Distributed = max(apiFloor, $3,150 + drip × price)
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
+        var apiFloor = window._ubiFloorUsd || 3800;
         if (cdTotalDistEl && onChainTotalDeposited > 0 && inclawnchPrice > 0) {
             var onChainDrip = onChainTotalDeposited - onChainRewardPoolBalance;
-            var totalUsd = 3150 + (onChainDrip * inclawnchPrice);
-            cdTotalDistEl.textContent = '$' + fmtUsdFull(totalUsd);
+            var liveUsd = 3150 + (onChainDrip * inclawnchPrice);
+            cdTotalDistEl.textContent = '$' + fmtUsdFull(Math.max(apiFloor, liveUsd));
         } else if (cdTotalDistEl) {
-            cdTotalDistEl.textContent = '$3,150';
+            cdTotalDistEl.textContent = '$' + fmtUsdFull(apiFloor);
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -883,12 +884,13 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing total: $3,150 historical + on-chain drip × price (ticking USD)
+            // Live increasing total: max(apiFloor, $3,150 + drip × price) — never goes backwards
             if (cdTotalDistEl2 && window._ubiTotalDeposited > 0 && window._ubiInclawnchPrice > 0) {
                 var drippedLive = window._ubiTotalDeposited - remaining;
                 if (drippedLive < 0) drippedLive = 0;
-                var totalUsd = (window._ubiHistoricalUsd || 3150) + (drippedLive * window._ubiInclawnchPrice);
-                cdTotalDistEl2.textContent = '$' + fmtUsdFull(totalUsd);
+                var liveUsd = 3150 + (drippedLive * window._ubiInclawnchPrice);
+                var floor = window._ubiFloorUsd || 3800;
+                cdTotalDistEl2.textContent = '$' + fmtUsdFull(Math.max(floor, liveUsd));
             }
         }
 
