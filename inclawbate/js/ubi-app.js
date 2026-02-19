@@ -351,14 +351,11 @@ function daysSince(dateStr) {
     // Batch all RPC reads into a single HTTP request to avoid rate-limiting
     var wethBalCalldata = BALANCE_SELECTOR + pad32(PROTOCOL_WALLET);
     // All on-chain reads in ONE batch (1 HTTP request — avoids rate limiting)
-    const [ubiRes, clawnchDexRes, inclawnchDexRes, geckoRes, rpcBatchRes] = await Promise.all([
+    const [ubiRes, clawnchDexRes, inclawnchDexRes, rpcBatchRes] = await Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS)
             .then(r => r.json()).catch(() => null),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH_ADDRESS)
-            .then(r => r.json()).catch(() => null),
-        fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' +
-            CLAWNCH_ADDRESS.toLowerCase() + ',' + INCLAWNCH_ADDRESS.toLowerCase() + '&vs_currencies=usd')
             .then(r => r.json()).catch(() => null),
         contractReadBatch([
             { to: WETH_ADDRESS, data: wethBalCalldata },                                 // [0] WETH balance
@@ -475,18 +472,6 @@ function daysSince(dateStr) {
     // DexScreener (primary)
     clawnchPrice = bestPrice(clawnchDexRes, CLAWNCH_ADDRESS);
     inclawnchPrice = bestPrice(inclawnchDexRes, INCLAWNCH_ADDRESS);
-
-    // CoinGecko fallback
-    if (geckoRes) {
-        var clKey = CLAWNCH_ADDRESS.toLowerCase();
-        var iKey = INCLAWNCH_ADDRESS.toLowerCase();
-        if (!clawnchPrice && geckoRes[clKey] && geckoRes[clKey].usd) {
-            clawnchPrice = geckoRes[clKey].usd;
-        }
-        if (!inclawnchPrice && geckoRes[iKey] && geckoRes[iKey].usd) {
-            inclawnchPrice = geckoRes[iKey].usd;
-        }
-    }
 
     // localStorage fallback: use cached prices if all APIs failed
     if (!clawnchPrice || !inclawnchPrice) {
