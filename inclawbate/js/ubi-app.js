@@ -582,11 +582,11 @@ function daysSince(dateStr) {
         if (cdTotalDistEl) {
             var drippedInclawnch = onChainTotalDeposited > 0 ? onChainTotalDeposited - onChainRewardPoolBalance : 0;
             if (drippedInclawnch > 0 && inclawnchPrice > 0) {
-                cdTotalDistEl.textContent = '$' + fmtUsd((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD);
+                cdTotalDistEl.textContent = '$' + fmt(Math.round((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD));
             } else if (drippedInclawnch > 0) {
-                cdTotalDistEl.innerHTML = '$' + fmtUsd(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
+                cdTotalDistEl.innerHTML = '$' + fmt(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
             } else {
-                cdTotalDistEl.textContent = '$' + fmtUsd(CLAWNCH_LEGACY_USD);
+                cdTotalDistEl.textContent = '$' + fmt(CLAWNCH_LEGACY_USD);
             }
         }
 
@@ -887,9 +887,9 @@ function daysSince(dateStr) {
                 if (drippedLive < 0) drippedLive = 0;
                 if (inclawnchPrice > 0) {
                     var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
-                    cdTotalDistEl2.textContent = '$' + fmtUsd(totalUbiUsdLive);
+                    cdTotalDistEl2.textContent = '$' + fmt(Math.round(totalUbiUsdLive));
                 } else {
-                    cdTotalDistEl2.innerHTML = '$' + fmtUsd(window._ubiClawnchUsd || 0) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedLive)) + ' inCLAWNCH</span>';
+                    cdTotalDistEl2.innerHTML = '$' + fmt(window._ubiClawnchUsd || 0) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedLive)) + ' inCLAWNCH</span>';
                 }
             }
         }
