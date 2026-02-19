@@ -582,7 +582,7 @@ function daysSince(dateStr) {
         if (cdTotalDistEl) {
             var drippedInclawnch = onChainTotalDeposited > 0 ? onChainTotalDeposited - onChainRewardPoolBalance : 0;
             if (drippedInclawnch > 0 && inclawnchPrice > 0) {
-                cdTotalDistEl.textContent = '$' + fmt(Math.round((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD));
+                cdTotalDistEl.textContent = '$' + fmtUsdFull((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD);
             } else if (drippedInclawnch > 0) {
                 cdTotalDistEl.innerHTML = '$' + fmt(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
             } else {
@@ -667,6 +667,10 @@ function daysSince(dateStr) {
         if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
         if (n >= 1) return n.toFixed(2);
         return n.toFixed(2);
+    }
+    // Full USD with cents and commas: $3,847.52 (for live ticking display)
+    function fmtUsdFull(n) {
+        return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     // ── Staking Calculator ──
@@ -887,7 +891,7 @@ function daysSince(dateStr) {
                 if (drippedLive < 0) drippedLive = 0;
                 if (inclawnchPrice > 0) {
                     var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
-                    cdTotalDistEl2.textContent = '$' + fmt(Math.round(totalUbiUsdLive));
+                    cdTotalDistEl2.textContent = '$' + fmtUsdFull(totalUbiUsdLive);
                 } else {
                     cdTotalDistEl2.innerHTML = '$' + fmt(window._ubiClawnchUsd || 0) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedLive)) + ' inCLAWNCH</span>';
                 }
