@@ -285,11 +285,12 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     if (req.method === 'GET') {
-        // Get treasury config, active stakes, and on-chain staking data in parallel
-        const [{ data: treasury }, { data: activeStakes }, stakingOnChain] = await Promise.all([
+        // Get treasury config, active stakes, on-chain staking data, and prices in parallel
+        const [{ data: treasury }, { data: activeStakes }, stakingOnChain, prices] = await Promise.all([
             supabase.from('inclawbate_ubi_treasury').select('*').eq('id', 1).single(),
             supabase.from('inclawbate_ubi_contributions').select('wallet_address, clawnch_amount, token').eq('active', true),
             fetchStakingOnChain(),
+            fetchTokenPrices(),
         ]);
 
         const uniqueWallets = new Set((activeStakes || []).map(r => r.wallet_address));
@@ -344,6 +345,22 @@ export default async function handler(req, res) {
         result.deposit_address = DEPOSIT_WALLET;
         // On-chain staking data for live UBI distributed calculation
         if (stakingOnChain) result.staking_onchain = stakingOnChain;
+
+        // High-water mark for Total UBI Distributed (USD) — only goes up
+        // Formula: (dripped tokens × inclawnchPrice) + $3,150 legacy CLAWNCH distributions
+        const LEGACY_USD = 3150;
+        if (stakingOnChain && prices.inclawnchPrice > 0) {
+            const dripped = stakingOnChain.total_deposited - stakingOnChain.reward_pool_balance;
+            const currentTotalUsd = (dripped * prices.inclawnchPrice) + LEGACY_USD;
+            const storedHwm = Number(result.total_distributed_usd) || 0;
+            if (currentTotalUsd > storedHwm) {
+                result.total_distributed_usd = currentTotalUsd;
+                // Fire-and-forget Supabase update (don't slow down response)
+                supabase.from('inclawbate_ubi_treasury')
+                    .update({ total_distributed_usd: currentTotalUsd })
+                    .eq('id', 1).then(() => {});
+            }
+        }
         // Per-wallet cap percentage (default 10)
         if (result.wallet_cap_pct === undefined || result.wallet_cap_pct === null) {
             result.wallet_cap_pct = 10;

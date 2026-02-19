@@ -451,9 +451,13 @@ function daysSince(dateStr) {
     }
 
     // ── Set up globals for the live tick BEFORE starting countdown ──
-    var CLAWNCH_LEGACY_USD = 3150; // historical CLAWNCH distributions
+    // API provides a high-water mark (never decreases) for Total UBI Distributed
+    var apiFloorUsd = Number(ubiData && ubiData.total_distributed_usd) || 3150;
+    // Snapshot pool balance at load time so tick can compute incremental drip
+    var poolAtLoad = onChainRewardPoolBalance || 0;
+    window._ubiFloorUsd = apiFloorUsd;
+    window._ubiPoolAtLoad = poolAtLoad;
     window._ubiTotalDeposited = onChainTotalDeposited;
-    window._ubiClawnchUsd = CLAWNCH_LEGACY_USD;
 
     // ── Distribution Countdown Timer ──
     startCountdown();
@@ -576,18 +580,11 @@ function daysSince(dateStr) {
             cdBlendedApyEl.textContent = apyNum > 0 ? apyNum.toFixed(1) + '%' : '--';
         }
 
-        // Countdown KPI: total UBI distributed — tick handles live updates,
-        // but set initial value here in case tick hasn't fired yet
+        // Countdown KPI: total UBI distributed — uses API high-water mark as floor
+        // Tick adds incremental drip since page load on top of floor
         var cdTotalDistEl = document.getElementById('cdTotalDistributed');
         if (cdTotalDistEl) {
-            var drippedInclawnch = onChainTotalDeposited > 0 ? onChainTotalDeposited - onChainRewardPoolBalance : 0;
-            if (drippedInclawnch > 0 && inclawnchPrice > 0) {
-                cdTotalDistEl.textContent = '$' + fmtUsdFull((drippedInclawnch * inclawnchPrice) + CLAWNCH_LEGACY_USD);
-            } else if (drippedInclawnch > 0) {
-                cdTotalDistEl.innerHTML = '$' + fmt(CLAWNCH_LEGACY_USD) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedInclawnch)) + ' inCLAWNCH</span>';
-            } else {
-                cdTotalDistEl.textContent = '$' + fmt(CLAWNCH_LEGACY_USD);
-            }
+            cdTotalDistEl.textContent = '$' + fmtUsdFull(apiFloorUsd);
         }
 
         // Countdown KPI: annual UBI rate in USD
@@ -885,16 +882,12 @@ function daysSince(dateStr) {
                 cdWeeklyEl.textContent = fmt(remaining);
             }
 
-            // Live increasing distributed counter (independent of pool display)
-            if (cdTotalDistEl2 && window._ubiTotalDeposited > 0) {
-                var drippedLive = window._ubiTotalDeposited - remaining;
-                if (drippedLive < 0) drippedLive = 0;
-                if (inclawnchPrice > 0) {
-                    var totalUbiUsdLive = (drippedLive * inclawnchPrice) + (window._ubiClawnchUsd || 0);
-                    cdTotalDistEl2.textContent = '$' + fmtUsdFull(totalUbiUsdLive);
-                } else {
-                    cdTotalDistEl2.innerHTML = '$' + fmt(window._ubiClawnchUsd || 0) + ' <span style="font-size:0.7em;color:var(--text-dim);">+ ' + fmt(Math.round(drippedLive)) + ' inCLAWNCH</span>';
-                }
+            // Live increasing distributed counter: floor + incremental drip since page load
+            if (cdTotalDistEl2 && window._ubiFloorUsd > 0) {
+                var drippedSinceLoad = (window._ubiPoolAtLoad || 0) - remaining;
+                if (drippedSinceLoad < 0) drippedSinceLoad = 0;
+                var incrementUsd = inclawnchPrice > 0 ? drippedSinceLoad * inclawnchPrice : 0;
+                cdTotalDistEl2.textContent = '$' + fmtUsdFull(window._ubiFloorUsd + incrementUsd);
             }
         }
 
