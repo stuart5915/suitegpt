@@ -924,8 +924,11 @@ function daysSince(dateStr) {
 
         container.classList.remove('hidden');
 
-        // Live decreasing reward pool: remaining = rewardRate * (periodEnd - now)
+        // Clear loading state
         var cdWeeklyEl = document.getElementById('cdWeeklyAmount');
+        cdWeeklyEl.style.opacity = '1';
+
+        // Live decreasing reward pool: remaining = rewardRate * (periodEnd - now)
         function tick() {
             var nowSec = Date.now() / 1000;
             var remaining = 0;
