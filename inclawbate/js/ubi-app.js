@@ -729,8 +729,8 @@ function daysSince(dateStr) {
     }
     // ── Staking Calculator ──
     function updateCalc() {
-        var rawC = (document.getElementById('calcAmountClawnch').value || '').replace(/,/g, '');
-        var rawI = (document.getElementById('calcAmountInclawnch').value || '').replace(/,/g, '');
+        var rawC = (document.getElementById('calcAmountClawnch').value || '').replace(/[.,]/g, '');
+        var rawI = (document.getElementById('calcAmountInclawnch').value || '').replace(/[.,]/g, '');
         var clawnchAmt = Number(rawC) || 0;
         var inclawnchAmt = Number(rawI) || 0;
         var colC = document.getElementById('calcColClawnch');
@@ -800,10 +800,10 @@ function daysSince(dateStr) {
         var el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('input', function() {
-            var raw = el.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+            var raw = el.value.replace(/[.,]/g, '').replace(/[^0-9]/g, '');
             if (raw) {
                 var num = parseInt(raw, 10);
-                el.value = num.toLocaleString();
+                el.value = num.toLocaleString('en-US');
             }
             updateCalc();
         });
@@ -839,7 +839,7 @@ function daysSince(dateStr) {
             var inputId = (token === 'inclawnch') ? 'calcAmountInclawnch' : 'calcAmountClawnch';
             var inputEl = document.getElementById(inputId);
             if (inputEl) {
-                inputEl.value = amount.toLocaleString();
+                inputEl.value = amount.toLocaleString('en-US');
                 updateCalc();
             }
         });
@@ -1619,13 +1619,13 @@ function daysSince(dateStr) {
     function getInputAmount(token) {
         var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
         if (!input) return 0;
-        return parseInt(input.value.replace(/,/g, '')) || 0;
+        return parseInt(input.value.replace(/[.,]/g, '')) || 0;
     }
 
     function setInputAmount(token, amount) {
         var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
         if (!input) return;
-        input.value = Math.floor(amount).toLocaleString();
+        input.value = Math.floor(amount).toLocaleString('en-US');
         updateHint(token);
         updateSliderFromInput(token);
         updatePctButtons(token);
@@ -1942,7 +1942,7 @@ function daysSince(dateStr) {
             if (bal <= 0) return;
             var amount = Math.floor(bal * pct / 100);
             var input = document.querySelector('.stake-amount[data-token="' + token + '"]');
-            if (input) input.value = amount.toLocaleString();
+            if (input) input.value = amount.toLocaleString('en-US');
             updateHint(token);
             updatePctButtons(token);
         });
