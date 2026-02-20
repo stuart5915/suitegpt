@@ -503,7 +503,7 @@ function daysSince(dateStr) {
     if (ubiData && ubiData.philanthropy_orgs) {
         window._ubiOrgsLoaded = ubiData.philanthropy_orgs;
     }
-    const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
+    const fmt = (n) => Math.round(Number(n) || 0).toLocaleString('en-US');
 
     // Use deposit address from API (unstake wallet) for new stakes
     if (ubiData && ubiData.deposit_address) {
@@ -608,7 +608,7 @@ function daysSince(dateStr) {
     // ── APY Logic ──
     // Simple on-chain APY: (rewardRate * 86400 * 365 / totalStaked) * 100
     function updateAllApys() {
-        var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || onChainInclawnchStaked || 0;
+        var inclawnchStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/[.,]/g, '')) || onChainInclawnchStaked || 0;
 
         var apyNum = 0;
         if (inclawnchStaked > 0 && onChainRewardRate > 0 && onChainPeriodEnd > Date.now() / 1000) {
@@ -677,7 +677,7 @@ function daysSince(dateStr) {
         // ── UBI Income Banner ──
         var annualUsd = annualTokens * inclawnchPrice;
         var poolUsd = inclawnchStaked * inclawnchPrice;
-        var stakersNum = Number((document.getElementById('statStakers').textContent || '0').replace(/,/g, '')) || 0;
+        var stakersNum = Number((document.getElementById('statStakers').textContent || '0').replace(/[.,]/g, '')) || 0;
 
         var incomeValEl = document.getElementById('ubiIncomeValue');
         var incomeSubEl = document.getElementById('ubiIncomeSub');
@@ -759,7 +759,7 @@ function daysSince(dateStr) {
 
         // On-chain data for calculator
         var dailyRate = onChainRewardRate * 86400;
-        var currentStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var currentStaked = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/[.,]/g, '')) || 0;
         var newTotalStaked = currentStaked + inclawnchAmt;
 
         function renderCol(amount, mult, label) {
@@ -901,7 +901,7 @@ function daysSince(dateStr) {
 
         if (rewardValEl) {
             if (rewardClawnch > 0) {
-                rewardValEl.textContent = '~' + Math.round(rewardClawnch).toLocaleString() + ' CLAWNCH ($' + fmtUsd(rewardUsd) + ')';
+                rewardValEl.textContent = '~' + Math.round(rewardClawnch).toLocaleString('en-US') + ' CLAWNCH ($' + fmtUsd(rewardUsd) + ')';
             } else if (rewardWeth > 0) {
                 rewardValEl.textContent = rewardWeth.toFixed(4) + ' WETH';
             } else {
@@ -1159,7 +1159,7 @@ function daysSince(dateStr) {
             list.innerHTML = '<div class="ubi-stake-row ubi-stake-row--onchain" style="opacity:0.6">' +
                 '<div class="ubi-stake-row-info">' +
                 '<span class="ubi-contrib-token ubi-contrib-token--inclawnch">inCLAWNCH</span>' +
-                '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString() + '</span>' +
+                '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString('en-US') + '</span>' +
                 '<span class="ubi-onchain-badge" style="opacity:0.5">loading...</span>' +
                 '</div></div>';
         }
@@ -1346,7 +1346,7 @@ function daysSince(dateStr) {
                 list.innerHTML = '<div class="ubi-stake-row ubi-stake-row--onchain">' +
                     '<div class="ubi-stake-row-info">' +
                     '<span class="ubi-contrib-token ubi-contrib-token--inclawnch">inCLAWNCH</span>' +
-                    '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString() + '</span>' +
+                    '<span class="ubi-stake-row-amount">' + Math.round(cachedPos.staked).toLocaleString('en-US') + '</span>' +
                     '<span class="ubi-onchain-badge">on-chain</span>' +
                     '</div></div>';
             } else {
@@ -1746,7 +1746,7 @@ function daysSince(dateStr) {
 
             if (apiData && apiData.success) {
                 clearPendingStake(txHash);
-                status.textContent = 'Staked ' + apiData.amount.toLocaleString() + ' ' + config.label + ' in the UBI treasury!';
+                status.textContent = 'Staked ' + apiData.amount.toLocaleString('en-US') + ' ' + config.label + ' in the UBI treasury!';
                 status.className = 'ubi-stake-status stake-status success';
 
                 var newBal = (Number(ubiData?.total_balance) || 0) + apiData.amount;
@@ -1840,8 +1840,8 @@ function daysSince(dateStr) {
     }
 
     function refreshTreasuryDisplay() {
-        var clawnchBal = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
-        var inclawnchBal = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/,/g, '')) || 0;
+        var clawnchBal = Number((document.getElementById('statClawnchStaked').textContent || '0').replace(/[.,]/g, '')) || 0;
+        var inclawnchBal = Number((document.getElementById('statInclawnchStaked').textContent || '0').replace(/[.,]/g, '')) || 0;
         document.getElementById('treasuryValue').textContent = fmt(clawnchBal) + ' CLAWNCH + ' + fmt(inclawnchBal) + ' inCLAWNCH';
         var newUsd = (clawnchBal * clawnchPrice) + (inclawnchBal * inclawnchPrice);
         if (clawnchPrice > 0 || inclawnchPrice > 0) {
