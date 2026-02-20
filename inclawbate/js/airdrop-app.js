@@ -1911,3 +1911,93 @@ document.getElementById('scTransferBtn').addEventListener('click', async functio
         statusEl.className = 'airdrop-status error';
     }
 });
+
+// ══════════════════════════════════════════════════
+//  QUICK SEND (single address via Disperse)
+// ══════════════════════════════════════════════════
+
+var qsSendBtn = document.getElementById('qsSendBtn');
+if (qsSendBtn) {
+    qsSendBtn.addEventListener('click', async function() {
+        if (!provider || !userAddress) return;
+
+        var addrInput = document.getElementById('qsAddress');
+        var amtInput = document.getElementById('qsAmount');
+        var tokenSelect = document.getElementById('qsToken');
+        var statusEl = document.getElementById('qsStatus');
+        var recipient = (addrInput.value || '').trim().toLowerCase();
+        var amount = parseInt(amtInput.value) || 0;
+        var token = tokenSelect.value; // 'clawnch' or 'inclawnch'
+        var tokenAddress = token === 'inclawnch' ? INCLAWNCH_ADDRESS : CLAWNCH_ADDRESS;
+        var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+
+        if (!recipient || recipient.length !== 42 || !recipient.startsWith('0x')) {
+            statusEl.textContent = 'Enter a valid address';
+            statusEl.className = 'airdrop-status error';
+            return;
+        }
+        if (amount <= 0) {
+            statusEl.textContent = 'Enter a valid amount';
+            statusEl.className = 'airdrop-status error';
+            return;
+        }
+
+        qsSendBtn.disabled = true;
+        statusEl.textContent = 'Preparing...';
+        statusEl.className = 'airdrop-status';
+
+        try {
+            await ensureBase(provider);
+            var amountWei = toWei(amount);
+
+            // Check balance
+            var balData = BALANCE_SELECTOR + pad32(userAddress);
+            var balResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: tokenAddress, data: balData }, 'latest']
+            });
+            if (BigInt(balResult || '0x0') < amountWei) {
+                statusEl.textContent = 'Insufficient ' + tokenLabel + ' balance';
+                statusEl.className = 'airdrop-status error';
+                qsSendBtn.disabled = false;
+                return;
+            }
+
+            // Check allowance
+            var allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+            var allowResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: tokenAddress, data: allowData }, 'latest']
+            });
+            if (BigInt(allowResult || '0x0') < amountWei) {
+                statusEl.textContent = 'Approving ' + tokenLabel + '...';
+                var approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(MAX_UINT256);
+                var approveTx = await provider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{ from: userAddress, to: tokenAddress, data: approveData }]
+                });
+                statusEl.textContent = 'Waiting for approval...';
+                await waitForReceipt(approveTx);
+            }
+
+            // Disperse to single address
+            statusEl.textContent = 'Sending ' + fmtNum(amount) + ' ' + tokenLabel + '...';
+            var calldata = buildDisperseTokenCalldata(tokenAddress, [recipient], [amountWei]);
+            var txHash = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+            });
+            statusEl.textContent = 'Confirming...';
+            await waitForReceipt(txHash);
+
+            statusEl.innerHTML = 'Sent ' + fmtNum(amount) + ' ' + tokenLabel + '! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+            statusEl.className = 'airdrop-status success';
+            addrInput.value = '';
+            amtInput.value = '';
+        } catch (err) {
+            statusEl.textContent = err.message || 'Send failed';
+            statusEl.className = 'airdrop-status error';
+        }
+        qsSendBtn.disabled = false;
+    });
+}
