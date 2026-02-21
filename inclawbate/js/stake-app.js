@@ -461,7 +461,7 @@ function renderOverview() {
     });
 
     // CTA card for partners
-    html += '<a href="https://t.me/stuart_DEFI" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
+    html += '<a href="https://t.me/StuartDeFi" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
         'style="--pool-accent:var(--lobster-400);--pool-accent-dim:hsla(9,52%,56%,0.08);--pool-glow:hsla(9,52%,56%,0.12);border-style:dashed;">' +
         '<div class="stake-card-cta-plus">+</div>' +
         '<div class="stake-card-name">Your Token Here</div>' +
@@ -471,7 +471,7 @@ function renderOverview() {
                 '<span class="stake-card-stat-value" style="font-size:0.75rem;color:var(--text-secondary);">Non-custodial &middot; Branded page &middot; Free for founding partners</span>' +
             '</div>' +
         '</div>' +
-        '<div class="stake-card-cta">Message @stuart_DEFI on Telegram &rarr;</div>' +
+        '<div class="stake-card-cta">Message @StuartDeFi on Telegram &rarr;</div>' +
     '</a>';
 
     grid.innerHTML = html;
