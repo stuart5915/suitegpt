@@ -435,9 +435,13 @@ function renderOverview() {
 
         html += '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
             'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
-            '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
-            '<div class="stake-card-name">' + pool.name + '</div>' +
-            '<div class="stake-card-desc">' + pool.description + '</div>' +
+            '<div class="stake-card-identity">' +
+                '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
+                '<div>' +
+                    '<div class="stake-card-name">' + pool.name + '</div>' +
+                    '<div class="stake-card-desc">' + pool.description + '</div>' +
+                '</div>' +
+            '</div>' +
             '<div class="stake-card-stats">' +
                 '<div class="stake-card-stat">' +
                     '<span class="stake-card-stat-value apy">' + apyStr + '</span>' +
