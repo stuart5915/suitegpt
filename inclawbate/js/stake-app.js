@@ -897,6 +897,7 @@ function renderAdminPage(pool, key) {
     document.getElementById('adminDepositInput').value = '';
     document.getElementById('adminDepositStatus').textContent = '';
     document.getElementById('adminDepositBtn').disabled = true;
+    setAdminEndFromDays(30); // default to 30 days out
 
     // If wallet already connected, try admin check
     if (walletAddr) {
@@ -1017,6 +1018,50 @@ async function fetchAdminStats(pool, key) {
     pausedEl.className = 'admin-stat-value ' + (isPaused ? 'paused-yes' : 'paused-no');
 }
 
+function getAdminDurationSec() {
+    var dateVal = document.getElementById('adminEndDate').value;
+    var timeVal = document.getElementById('adminEndTime').value || '12:00';
+    if (!dateVal) return 0;
+    var endMs = new Date(dateVal + 'T' + timeVal).getTime();
+    var nowMs = Date.now();
+    return Math.max(0, Math.floor((endMs - nowMs) / 1000));
+}
+
+function formatDurationLabel(sec) {
+    var days = Math.floor(sec / 86400);
+    var hours = Math.floor((sec % 86400) / 3600);
+    if (days > 0 && hours > 0) return days + 'd ' + hours + 'h';
+    if (days > 0) return days + ' day' + (days !== 1 ? 's' : '');
+    return hours + ' hour' + (hours !== 1 ? 's' : '');
+}
+
+function updateAdminDurationPreview() {
+    var preview = document.getElementById('adminDurationPreview');
+    var sec = getAdminDurationSec();
+    if (sec < 60) {
+        preview.innerHTML = '';
+        return;
+    }
+    preview.innerHTML = 'Duration: <span class="dur-value">' + formatDurationLabel(sec) + '</span>';
+}
+
+function setAdminEndFromDays(days) {
+    var end = new Date(Date.now() + days * 86400000);
+    var y = end.getFullYear();
+    var m = String(end.getMonth() + 1).padStart(2, '0');
+    var d = String(end.getDate()).padStart(2, '0');
+    document.getElementById('adminEndDate').value = y + '-' + m + '-' + d;
+    document.getElementById('adminEndTime').value = '12:00';
+    updateAdminDurationPreview();
+    updateAdminDepositBtn();
+}
+
+function updateAdminDepositBtn() {
+    var amount = parseInt((document.getElementById('adminDepositInput').value || '').replace(/[.,]/g, '')) || 0;
+    var sec = getAdminDurationSec();
+    document.getElementById('adminDepositBtn').disabled = amount <= 0 || sec < 3600;
+}
+
 async function doDepositRewards() {
     if (!walletAddr || !adminPoolKey) return;
     var pool = POOLS[adminPoolKey];
@@ -1024,13 +1069,17 @@ async function doDepositRewards() {
     var amount = parseInt(input.value.replace(/[.,]/g, '')) || 0;
     if (amount <= 0) return;
 
-    var durationSec = parseInt(document.getElementById('adminDurationSelect').value);
-    var durationDays = Math.round(durationSec / 86400);
+    var durationSec = getAdminDurationSec();
+    if (durationSec < 3600) {
+        stakeToast('Pick an end date at least 1 hour from now', 'error');
+        return;
+    }
+    var durationLabel = formatDurationLabel(durationSec);
 
     var confirmed = await stakeModal({
         icon: '\u26A0\uFE0F',
         title: 'Deposit Rewards',
-        msg: 'Deposit ' + fmt(amount) + ' ' + pool.ticker + ' as rewards over ' + durationDays + ' days. This will set the reward rate and period end.',
+        msg: 'Deposit ' + fmt(amount) + ' ' + pool.ticker + ' as rewards over ' + durationLabel + '. This will set the reward rate and period end.',
         confirmLabel: 'Approve & Deposit',
         cancelLabel: 'Cancel',
     });
@@ -1074,7 +1123,7 @@ async function doDepositRewards() {
         var depositData = SEL.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSec));
         var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, depositData, status, 'Depositing ' + fmt(amount) + ' ' + pool.ticker + '...');
 
-        status.innerHTML = 'Deposited ' + fmt(amount) + ' ' + pool.ticker + ' over ' + durationDays + ' days! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.innerHTML = 'Deposited ' + fmt(amount) + ' ' + pool.ticker + ' over ' + durationLabel + '! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
         status.className = 'pool-status success';
         stakeToast('Deposited ' + fmt(amount) + ' ' + pool.ticker + ' rewards', 'success');
 
@@ -1239,7 +1288,24 @@ function wirePoolEvents() {
         if (num > 0) {
             adminInput.value = num.toLocaleString('en-US');
         }
-        document.getElementById('adminDepositBtn').disabled = num <= 0;
+        updateAdminDepositBtn();
+    });
+
+    // Date/time pickers
+    document.getElementById('adminEndDate').addEventListener('change', function() {
+        updateAdminDurationPreview();
+        updateAdminDepositBtn();
+    });
+    document.getElementById('adminEndTime').addEventListener('change', function() {
+        updateAdminDurationPreview();
+        updateAdminDepositBtn();
+    });
+
+    // Quick duration buttons
+    document.querySelectorAll('.admin-quick-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setAdminEndFromDays(parseInt(btn.getAttribute('data-days')));
+        });
     });
 
     document.getElementById('adminDepositBtn').addEventListener('click', doDepositRewards);

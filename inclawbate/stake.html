@@ -875,15 +875,71 @@
             margin-bottom: var(--space-md);
         }
         .admin-deposit-row .pool-input-wrap { flex: 1; }
-        .admin-deposit-row select {
-            padding: 10px 12px;
+
+        .admin-date-row {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-bottom: var(--space-xs);
+        }
+        .admin-date-row label {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+        .admin-date-row input[type="date"],
+        .admin-date-row input[type="time"] {
+            padding: 9px 12px;
             border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
             background: var(--bg-card);
             color: var(--text-primary);
             font-family: var(--font-mono);
             font-size: 0.82rem;
+            flex: 1;
+        }
+        .admin-date-row input[type="date"]::-webkit-calendar-picker-indicator,
+        .admin-date-row input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.7);
             cursor: pointer;
+        }
+        .admin-duration-preview {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-md);
+            min-height: 1.2em;
+        }
+        .admin-duration-preview .dur-value {
+            color: var(--pool-accent, var(--seafoam-300));
+            font-weight: 700;
+        }
+        .admin-quick-btns {
+            display: flex;
+            gap: 5px;
+            margin-bottom: var(--space-sm);
+        }
+        .admin-quick-btn {
+            flex: 1;
+            padding: 5px 0;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-default);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .admin-quick-btn:hover {
+            border-color: var(--pool-accent, var(--seafoam-400));
+            color: var(--pool-accent, var(--seafoam-300));
         }
     </style>
 </head>
@@ -1077,13 +1133,19 @@
                     <div class="pool-input-wrap">
                         <input type="text" inputmode="numeric" class="input" id="adminDepositInput" placeholder="Token amount">
                     </div>
-                    <select id="adminDurationSelect">
-                        <option value="604800">7 days</option>
-                        <option value="1209600">14 days</option>
-                        <option value="2592000" selected>30 days</option>
-                        <option value="7776000">90 days</option>
-                    </select>
                 </div>
+                <div class="admin-quick-btns">
+                    <button class="admin-quick-btn" data-days="7">7d</button>
+                    <button class="admin-quick-btn" data-days="14">14d</button>
+                    <button class="admin-quick-btn" data-days="30">30d</button>
+                    <button class="admin-quick-btn" data-days="90">90d</button>
+                </div>
+                <div class="admin-date-row">
+                    <label>End</label>
+                    <input type="date" id="adminEndDate">
+                    <input type="time" id="adminEndTime" value="12:00">
+                </div>
+                <div class="admin-duration-preview" id="adminDurationPreview"></div>
                 <button class="pool-stake-btn" id="adminDepositBtn" disabled>Deposit Rewards</button>
                 <div class="pool-status" id="adminDepositStatus"></div>
             </div>
