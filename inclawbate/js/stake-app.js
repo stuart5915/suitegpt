@@ -448,6 +448,20 @@ function renderOverview() {
         '</a>';
     });
 
+    // CTA card for partners
+    html += '<a href="https://t.me/stuart_DEFI" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
+        'style="--pool-accent:var(--lobster-400);--pool-accent-dim:hsla(9,52%,56%,0.08);--pool-glow:hsla(9,52%,56%,0.12);border-style:dashed;">' +
+        '<div class="stake-card-cta-plus">+</div>' +
+        '<div class="stake-card-name">Your Token Here</div>' +
+        '<div class="stake-card-desc">Launch a staking pool for your token on Base. No code required. Live in 48 hours.</div>' +
+        '<div class="stake-card-stats" style="grid-template-columns:1fr;">' +
+            '<div class="stake-card-stat" style="align-items:center;">' +
+                '<span class="stake-card-stat-value" style="font-size:0.75rem;color:var(--text-secondary);">Non-custodial &middot; Branded page &middot; Free for founding partners</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="stake-card-cta">Message @stuart_DEFI on Telegram &rarr;</div>' +
+    '</a>';
+
     grid.innerHTML = html;
 
     // Update header
