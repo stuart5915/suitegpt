@@ -766,14 +766,22 @@ async function doPoolClaim(compound) {
     });
     if (!confirmed) return;
 
+    var claimBtn = compound ? document.getElementById('posCompoundBtn') : document.getElementById('posClaimBtn');
+    var status = document.getElementById('poolStakeStatus');
+    if (claimBtn) { claimBtn.disabled = true; claimBtn.textContent = (compound ? 'Compounding...' : 'Claiming...'); }
+
     try {
         var selector = compound ? SEL.claimAndRestake : SEL.claim;
-        await sendTxAndWait(provider, walletAddr, pool.staking, selector, null, null);
+        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, selector, status, 'Confirm in wallet...');
+        status.innerHTML = (compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.className = 'pool-status success';
         stakeToast((compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker, 'success');
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
     } catch (err) {
+        if (status) { status.textContent = err.message || (action + ' failed'); status.className = 'pool-status error'; }
         stakeToast(err.message || (action + ' failed'), 'error');
     }
+    if (claimBtn) { claimBtn.disabled = false; claimBtn.textContent = compound ? 'Compound' : 'Claim'; }
 }
 
 async function doPoolUnstake() {
@@ -805,13 +813,21 @@ async function doPoolUnstake() {
     });
     if (!confirmed) return;
 
+    var unstakeBtn = document.getElementById('posUnstakeBtn');
+    var status = document.getElementById('poolStakeStatus');
+    if (unstakeBtn) { unstakeBtn.disabled = true; unstakeBtn.textContent = 'Unstaking...'; }
+
     try {
-        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, SEL.exit, null, null);
+        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, SEL.exit, status, 'Confirm in wallet...');
+        status.innerHTML = 'Unstaked ' + fmt(Math.round(stakedAmount)) + ' ' + pool.ticker + rewardsNote + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.className = 'pool-status success';
         stakeToast('Unstaked ' + fmt(Math.round(stakedAmount)) + ' ' + pool.ticker + rewardsNote, 'success');
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
     } catch (err) {
+        if (status) { status.textContent = err.message || 'Unstake failed'; status.className = 'pool-status error'; }
         stakeToast(err.message || 'Unstake failed', 'error');
     }
+    if (unstakeBtn) { unstakeBtn.disabled = false; unstakeBtn.textContent = 'Unstake All'; }
 }
 
 // ══════════════════════════════════════
