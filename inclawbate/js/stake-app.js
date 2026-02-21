@@ -111,6 +111,12 @@ var SEL = {
     // ERC20
     approve:          '0x095ea7b3', // approve(address,uint256)
     allowance:        '0xdd62ed3e', // allowance(address,address)
+    // Admin
+    depositRewards:   '0xbdd071fb', // depositRewards(uint256, uint256)
+    admin:            '0xf851a440', // admin()
+    paused:           '0x5c975abb', // paused()
+    totalDeposited:   '0x1f4c74fd', // totalRewardsDeposited()
+    totalClaimed:     '0xa34b0f76', // totalRewardsClaimed()
 };
 
 var BALANCE_SELECTOR = '0x70a08231';
@@ -143,10 +149,10 @@ function fmtUsd(n) {
 // ══════════════════════════════════════
 
 var BASE_RPCS = [
-    'https://base.drpc.org',
+    'https://mainnet.base.org',
     'https://1rpc.io/base',
     'https://base-mainnet.public.blastapi.io',
-    'https://mainnet.base.org'
+    'https://base.drpc.org'
 ];
 
 async function rpcFetch(body) {
@@ -382,6 +388,12 @@ async function fetchAllPoolStats() {
 function getCurrentPool() {
     var path = window.location.pathname.replace(/\/$/, '');
     var parts = path.split('/');
+    // /stake/ticker/admin → parts = ['', 'stake', 'ticker', 'admin']
+    if (parts.length >= 4 && parts[1] === 'stake' && parts[3] === 'admin') {
+        var ticker = parts[2].toLowerCase();
+        if (POOLS[ticker]) return 'admin:' + ticker;
+        return 'not_found';
+    }
     // /stake/ticker → parts = ['', 'stake', 'ticker']
     if (parts.length >= 3 && parts[1] === 'stake' && parts[2]) {
         var ticker = parts[2].toLowerCase();
@@ -854,6 +866,232 @@ async function doPoolUnstake() {
 }
 
 // ══════════════════════════════════════
+// ADMIN PANEL
+// ══════════════════════════════════════
+
+var adminPoolKey = null;
+
+function renderAdminPage(pool, key) {
+    adminPoolKey = key;
+
+    // Set CSS variables
+    var adminEl = document.getElementById('stakeAdmin');
+    adminEl.style.setProperty('--pool-accent', pool.color);
+    adminEl.style.setProperty('--pool-accent-dim', pool.colorDim);
+    adminEl.style.setProperty('--pool-glow', pool.glow);
+
+    // Header
+    document.getElementById('adminLogo').src = pool.logo;
+    document.getElementById('adminLogo').alt = pool.name;
+    document.getElementById('adminPoolName').textContent = pool.name;
+
+    // Back link
+    document.getElementById('adminBack').href = '/stake/' + key;
+
+    // Reset state
+    var btn = document.getElementById('adminConnectBtn');
+    btn.textContent = 'Connect Wallet';
+    btn.classList.remove('connected');
+    document.getElementById('adminDenied').textContent = '';
+    document.getElementById('adminPanel').classList.remove('visible');
+    document.getElementById('adminDepositInput').value = '';
+    document.getElementById('adminDepositStatus').textContent = '';
+    document.getElementById('adminDepositBtn').disabled = true;
+
+    // If wallet already connected, try admin check
+    if (walletAddr) {
+        checkAdminAccess(walletAddr, pool, key);
+    }
+}
+
+async function checkAdminAccess(addr, pool, key) {
+    var btn = document.getElementById('adminConnectBtn');
+    var denied = document.getElementById('adminDenied');
+
+    btn.textContent = 'Checking...';
+    btn.classList.add('connected');
+
+    try {
+        // Read contract's admin() on-chain
+        var adminResult = await contractRead(pool.staking, SEL.admin);
+        // admin() returns an address — last 40 hex chars
+        var contractAdmin = '0x' + adminResult.slice(-40).toLowerCase();
+        var connectedAddr = addr.toLowerCase();
+
+        if (contractAdmin === connectedAddr) {
+            btn.textContent = '\u2713 ' + shortAddr(addr);
+            denied.textContent = '';
+            document.getElementById('adminPanel').classList.add('visible');
+            fetchAdminStats(pool, key);
+        } else {
+            btn.textContent = '\u2713 ' + shortAddr(addr);
+            denied.textContent = 'Access denied. Only the contract admin can manage this pool.';
+            document.getElementById('adminPanel').classList.remove('visible');
+        }
+    } catch (err) {
+        btn.textContent = '\u2713 ' + shortAddr(addr);
+        denied.textContent = 'Failed to verify admin access.';
+    }
+}
+
+async function connectAdminWallet() {
+    if (!window.ethereum) {
+        var confirmed = await stakeModal({
+            icon: '\uD83E\uDD8A',
+            title: 'No Wallet Found',
+            msg: 'Install a wallet extension like MetaMask or Coinbase Wallet to connect.',
+            confirmLabel: 'Get MetaMask',
+            cancelLabel: 'Close',
+        });
+        if (confirmed) window.open('https://metamask.io/download/', '_blank');
+        return;
+    }
+
+    try {
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        var addr = accounts[0];
+        try {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                });
+            }
+        }
+        walletAddr = addr;
+        try { localStorage.setItem('_stake_wallet', addr); } catch (e) {}
+
+        if (adminPoolKey && POOLS[adminPoolKey]) {
+            checkAdminAccess(addr, POOLS[adminPoolKey], adminPoolKey);
+        }
+    } catch (err) {
+        var msg = err.message || 'Connection failed';
+        if (err.code === 4001) msg = '';
+        document.getElementById('adminDenied').textContent = msg;
+    }
+}
+
+async function fetchAdminStats(pool, key) {
+    var results = await contractReadBatch([
+        { to: pool.staking, data: SEL.rewardRate },
+        { to: pool.staking, data: SEL.periodEnd },
+        { to: pool.staking, data: SEL.rewardPoolBalance },
+        { to: pool.staking, data: SEL.totalDeposited },
+        { to: pool.staking, data: SEL.totalClaimed },
+        { to: pool.staking, data: SEL.paused },
+    ]);
+
+    var rewardRate = fromWei(results[0]);
+    var periodEnd = Number(BigInt(results[1] || '0x0'));
+    var rewardsLeft = fromWei(results[2]);
+    var totalDeposited = fromWei(results[3]);
+    var totalClaimed = fromWei(results[4]);
+    var isPaused = BigInt(results[5] || '0x0') !== 0n;
+
+    // Reward rate as tokens/day
+    var tokensPerDay = rewardRate * 86400;
+    document.getElementById('adminRewardRate').textContent = fmt(tokensPerDay) + ' / day';
+
+    // Period end
+    if (periodEnd > 0) {
+        var endDate = new Date(periodEnd * 1000);
+        var now = Date.now();
+        if (periodEnd * 1000 > now) {
+            var daysLeft = Math.ceil((periodEnd * 1000 - now) / 86400000);
+            document.getElementById('adminPeriodEnd').textContent = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' (' + daysLeft + 'd left)';
+        } else {
+            document.getElementById('adminPeriodEnd').textContent = 'Ended ' + endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+    } else {
+        document.getElementById('adminPeriodEnd').textContent = 'Not started';
+    }
+
+    document.getElementById('adminRewardsLeft').textContent = fmt(rewardsLeft) + ' ' + pool.ticker;
+    document.getElementById('adminTotalDeposited').textContent = fmt(totalDeposited) + ' ' + pool.ticker;
+    document.getElementById('adminTotalClaimed').textContent = fmt(totalClaimed) + ' ' + pool.ticker;
+
+    var pausedEl = document.getElementById('adminPaused');
+    pausedEl.textContent = isPaused ? 'Yes' : 'No';
+    pausedEl.className = 'admin-stat-value ' + (isPaused ? 'paused-yes' : 'paused-no');
+}
+
+async function doDepositRewards() {
+    if (!walletAddr || !adminPoolKey) return;
+    var pool = POOLS[adminPoolKey];
+    var input = document.getElementById('adminDepositInput');
+    var amount = parseInt(input.value.replace(/[.,]/g, '')) || 0;
+    if (amount <= 0) return;
+
+    var durationSec = parseInt(document.getElementById('adminDurationSelect').value);
+    var durationDays = Math.round(durationSec / 86400);
+
+    var confirmed = await stakeModal({
+        icon: '\u26A0\uFE0F',
+        title: 'Deposit Rewards',
+        msg: 'Deposit ' + fmt(amount) + ' ' + pool.ticker + ' as rewards over ' + durationDays + ' days. This will set the reward rate and period end.',
+        confirmLabel: 'Approve & Deposit',
+        cancelLabel: 'Cancel',
+    });
+    if (!confirmed) return;
+
+    var btn = document.getElementById('adminDepositBtn');
+    var status = document.getElementById('adminDepositStatus');
+    btn.disabled = true;
+    btn.textContent = 'Depositing...';
+
+    var provider = getProvider();
+    if (!provider) {
+        status.textContent = 'No wallet connected';
+        status.className = 'pool-status error';
+        btn.disabled = false;
+        btn.textContent = 'Deposit Rewards';
+        return;
+    }
+
+    var amountWei = toWei(amount);
+
+    try {
+        // Check allowance
+        status.textContent = 'Checking approval...';
+        status.className = 'pool-status';
+
+        var allowanceData = SEL.allowance + pad32(walletAddr) + pad32(pool.staking);
+        var allowanceRes = await provider.request({
+            method: 'eth_call',
+            params: [{ to: pool.token, data: allowanceData }, 'latest']
+        });
+        var currentAllowance = BigInt(allowanceRes || '0x0');
+
+        if (currentAllowance < amountWei) {
+            status.textContent = 'Requesting token approval...';
+            var approveData = SEL.approve + pad32(pool.staking) + pad32(MAX_UINT256);
+            await sendTxAndWait(provider, walletAddr, pool.token, approveData, status, 'Approving contract...');
+        }
+
+        // depositRewards(uint256 amount, uint256 duration)
+        var depositData = SEL.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSec));
+        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, depositData, status, 'Depositing ' + fmt(amount) + ' ' + pool.ticker + '...');
+
+        status.innerHTML = 'Deposited ' + fmt(amount) + ' ' + pool.ticker + ' over ' + durationDays + ' days! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.className = 'pool-status success';
+        stakeToast('Deposited ' + fmt(amount) + ' ' + pool.ticker + ' rewards', 'success');
+
+        input.value = '';
+        btn.disabled = true;
+        await new Promise(function(r) { setTimeout(r, 3000); });
+        fetchAdminStats(pool, adminPoolKey);
+    } catch (err) {
+        status.textContent = err.message || 'Deposit failed';
+        status.className = 'pool-status error';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Deposit Rewards';
+}
+
+// ══════════════════════════════════════
 // INPUT HELPERS
 // ══════════════════════════════════════
 
@@ -969,6 +1207,42 @@ function wirePoolEvents() {
     document.getElementById('posClaimBtn').addEventListener('click', function() { doPoolClaim(false); });
     document.getElementById('posCompoundBtn').addEventListener('click', function() { doPoolClaim(true); });
     document.getElementById('posUnstakeBtn').addEventListener('click', doPoolUnstake);
+
+    // ── Admin panel events ──
+    document.getElementById('adminConnectBtn').addEventListener('click', function() {
+        if (walletAddr && adminPoolKey) {
+            // Already connected — disconnect
+            walletAddr = null;
+            try { localStorage.removeItem('_stake_wallet'); } catch (e) {}
+            var btn = document.getElementById('adminConnectBtn');
+            btn.textContent = 'Connect Wallet';
+            btn.classList.remove('connected');
+            document.getElementById('adminDenied').textContent = '';
+            document.getElementById('adminPanel').classList.remove('visible');
+        } else {
+            connectAdminWallet();
+        }
+    });
+
+    document.getElementById('adminBack').addEventListener('click', function(e) {
+        e.preventDefault();
+        var key = adminPoolKey || 'inclawnch';
+        history.pushState(null, '', '/stake/' + key);
+        routeApp();
+    });
+
+    // Admin deposit input — enable/disable button
+    var adminInput = document.getElementById('adminDepositInput');
+    adminInput.addEventListener('input', function() {
+        var raw = adminInput.value.replace(/[^0-9]/g, '');
+        var num = parseInt(raw) || 0;
+        if (num > 0) {
+            adminInput.value = num.toLocaleString('en-US');
+        }
+        document.getElementById('adminDepositBtn').disabled = num <= 0;
+    });
+
+    document.getElementById('adminDepositBtn').addEventListener('click', doDepositRewards);
 }
 
 // ══════════════════════════════════════
@@ -979,10 +1253,12 @@ function routeApp() {
     var overviewEl = document.getElementById('stakeOverview');
     var poolEl = document.getElementById('stakePool');
     var notFoundEl = document.getElementById('stakeNotFound');
+    var adminEl = document.getElementById('stakeAdmin');
 
     overviewEl.style.display = 'none';
     poolEl.classList.remove('visible');
     notFoundEl.style.display = 'none';
+    adminEl.classList.remove('visible');
 
     var pool = getCurrentPool();
 
@@ -994,6 +1270,12 @@ function routeApp() {
     } else if (pool === 'not_found') {
         notFoundEl.style.display = '';
         document.title = 'Pool Not Found \u2014 Inclawbate';
+    } else if (typeof pool === 'string' && pool.indexOf('admin:') === 0) {
+        // Admin panel
+        var key = pool.split(':')[1];
+        adminEl.classList.add('visible');
+        renderAdminPage(POOLS[key], key);
+        document.title = POOLS[key].name + ' Admin \u2014 Inclawbate';
     } else {
         // Individual pool
         var key = window.location.pathname.split('/')[2].toLowerCase();

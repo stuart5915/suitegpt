@@ -755,6 +755,136 @@
             min-height: 1.2em;
         }
         .stake-page.gated { display: none; }
+
+        /* ── Admin Panel ── */
+        .admin-page { display: none; }
+        .admin-page.visible { display: block; }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-sm);
+        }
+        .admin-header-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--bg-card);
+        }
+        .admin-header-text h1 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .admin-header-text .admin-subtitle {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .admin-connect-btn {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: var(--space-xl) auto;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius-full);
+            background: var(--pool-accent, var(--seafoam-400));
+            color: var(--text-on-accent);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .admin-connect-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .admin-connect-btn.connected {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .admin-denied {
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--red);
+            margin-top: var(--space-sm);
+            min-height: 1.2em;
+        }
+
+        .admin-panel { display: none; }
+        .admin-panel.visible { display: block; }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+        @media (max-width: 640px) {
+            .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .admin-stat-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+        }
+        .admin-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .admin-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .admin-stat-value.paused-yes { color: var(--red); }
+        .admin-stat-value.paused-no { color: var(--seafoam-400); }
+
+        .admin-deposit-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            max-width: 480px;
+        }
+        .admin-deposit-section .pool-section-title {
+            margin-bottom: var(--space-md);
+        }
+        .admin-deposit-row {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-bottom: var(--space-md);
+        }
+        .admin-deposit-row .pool-input-wrap { flex: 1; }
+        .admin-deposit-row select {
+            padding: 10px 12px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -890,6 +1020,73 @@
             <div class="pool-not-found-title">Pool Not Found</div>
             <div class="pool-not-found-msg">That staking pool doesn't exist yet.</div>
             <a href="/stake" class="btn btn-primary">View All Pools</a>
+        </div>
+    </div>
+
+    <!-- ═══ Admin Panel ═══ -->
+    <div id="stakeAdmin" class="admin-page">
+        <a href="/stake" class="pool-back" id="adminBack">&larr; Back to Pool</a>
+
+        <div class="admin-header">
+            <img class="admin-header-logo" id="adminLogo" src="" alt="">
+            <div class="admin-header-text">
+                <h1 id="adminPoolName"></h1>
+                <span class="admin-subtitle">Admin Panel</span>
+            </div>
+        </div>
+
+        <!-- Connect wallet -->
+        <button class="admin-connect-btn" id="adminConnectBtn">Connect Wallet</button>
+        <div class="admin-denied" id="adminDenied"></div>
+
+        <!-- Admin panel — shown only after admin wallet verified -->
+        <div class="admin-panel" id="adminPanel">
+            <!-- Pool Stats -->
+            <div class="pool-section-title" style="margin-top:var(--space-xl)">Pool Stats</div>
+            <div class="admin-stats-grid">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Reward Rate</div>
+                    <div class="admin-stat-value" id="adminRewardRate">--</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Period End</div>
+                    <div class="admin-stat-value" id="adminPeriodEnd">--</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Rewards Remaining</div>
+                    <div class="admin-stat-value" id="adminRewardsLeft">--</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Total Deposited</div>
+                    <div class="admin-stat-value" id="adminTotalDeposited">--</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Total Claimed</div>
+                    <div class="admin-stat-value" id="adminTotalClaimed">--</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-label">Paused</div>
+                    <div class="admin-stat-value" id="adminPaused">--</div>
+                </div>
+            </div>
+
+            <!-- Deposit Rewards -->
+            <div class="admin-deposit-section">
+                <div class="pool-section-title">Deposit Rewards</div>
+                <div class="admin-deposit-row">
+                    <div class="pool-input-wrap">
+                        <input type="text" inputmode="numeric" class="input" id="adminDepositInput" placeholder="Token amount">
+                    </div>
+                    <select id="adminDurationSelect">
+                        <option value="604800">7 days</option>
+                        <option value="1209600">14 days</option>
+                        <option value="2592000" selected>30 days</option>
+                        <option value="7776000">90 days</option>
+                    </select>
+                </div>
+                <button class="pool-stake-btn" id="adminDepositBtn" disabled>Deposit Rewards</button>
+                <div class="pool-status" id="adminDepositStatus"></div>
+            </div>
         </div>
     </div>
 
