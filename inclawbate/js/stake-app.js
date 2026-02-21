@@ -729,11 +729,14 @@ async function doPoolStake() {
         status.className = 'pool-status success';
         stakeToast('Staked ' + fmt(amount) + ' ' + pool.ticker, 'success');
 
-        // Refresh
+        // Refresh — delay to let public RPCs catch up to latest block
         input.value = '';
         document.getElementById('poolSlider').value = 0;
         document.getElementById('poolHint').textContent = '';
+        await new Promise(function(r) { setTimeout(r, 3000); });
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
+        // Retry once more after 5s in case first read was stale
+        setTimeout(function() { fetchPoolUserData(walletAddr, pool, currentPoolKey); }, 5000);
     } catch (err) {
         status.textContent = err.message || 'Stake failed';
         status.className = 'pool-status error';
@@ -776,7 +779,9 @@ async function doPoolClaim(compound) {
         status.innerHTML = (compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
         status.className = 'pool-status success';
         stakeToast((compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker, 'success');
+        await new Promise(function(r) { setTimeout(r, 3000); });
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
+        setTimeout(function() { fetchPoolUserData(walletAddr, pool, currentPoolKey); }, 5000);
     } catch (err) {
         if (status) { status.textContent = err.message || (action + ' failed'); status.className = 'pool-status error'; }
         stakeToast(err.message || (action + ' failed'), 'error');
@@ -822,7 +827,9 @@ async function doPoolUnstake() {
         status.innerHTML = 'Unstaked ' + fmt(Math.round(stakedAmount)) + ' ' + pool.ticker + rewardsNote + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
         status.className = 'pool-status success';
         stakeToast('Unstaked ' + fmt(Math.round(stakedAmount)) + ' ' + pool.ticker + rewardsNote, 'success');
+        await new Promise(function(r) { setTimeout(r, 3000); });
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
+        setTimeout(function() { fetchPoolUserData(walletAddr, pool, currentPoolKey); }, 5000);
     } catch (err) {
         if (status) { status.textContent = err.message || 'Unstake failed'; status.className = 'pool-status error'; }
         stakeToast(err.message || 'Unstake failed', 'error');
