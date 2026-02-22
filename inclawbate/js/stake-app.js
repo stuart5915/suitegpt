@@ -82,9 +82,22 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: true
+    },
+    clawnstr: {
+        name: 'ClawnStrategy',
+        ticker: 'CLAWNSTR',
+        token: '0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
+        staking: '0x9f7cD1C3e4526937736629a400acBdcA50836848',
+        decimals: 18,
+        logo: '/inclawbate/assets/clawnstr-logo.jpg',
+        color: 'hsl(0, 68%, 42%)',
+        colorDim: 'hsla(0, 68%, 42%, 0.12)',
+        glow: 'hsla(0, 68%, 42%, 0.18)',
+        description: 'Web4 AI strategic treasury company.',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1&chain=base',
+        chartLink: 'https://dexscreener.com/base/0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
+        featured: false
     }
-    // Partners added here as they onboard:
-    // cos: { name: 'COS', ticker: 'COS', token: '0x...', staking: '0x...', ... },
 };
 
 var POOL_KEYS = Object.keys(POOLS);

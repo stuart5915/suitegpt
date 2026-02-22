@@ -1,11 +1,13 @@
 const { ethers, upgrades } = require("hardhat");
 
-const INCLAWNCH = "0xB0b6e0E9da530f68D713cC03a813B506205aC808";
+// Pass TOKEN_ADDRESS env var to deploy for any ERC-20, defaults to INCLAWNCH
+const TOKEN = process.env.TOKEN_ADDRESS || "0xB0b6e0E9da530f68D713cC03a813B506205aC808";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying with:", deployer.address);
   console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH");
+  console.log("Staking token:", TOKEN);
 
   console.log("\n--- Deploying InclawnchStaking (UUPS Proxy) ---");
 
@@ -13,7 +15,7 @@ async function main() {
 
   const proxy = await upgrades.deployProxy(
     InclawnchStaking,
-    [INCLAWNCH, deployer.address],
+    [TOKEN, deployer.address],
     { kind: "uups" }
   );
 
