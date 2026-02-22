@@ -4,66 +4,6 @@
 'use strict';
 
 // ══════════════════════════════════════
-// ADMIN GATE — hide page until admin wallet connects
-// ══════════════════════════════════════
-
-var ADMIN_WALLETS = [
-    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // protocol wallet
-];
-
-function isAdmin(addr) {
-    return addr && ADMIN_WALLETS.indexOf(addr.toLowerCase()) !== -1;
-}
-
-async function tryAdminGate() {
-    var gate = document.getElementById('constructionGate');
-    var page = document.querySelector('.stake-page');
-    if (!gate || !page) return true; // no gate in DOM, skip
-
-    // Auto-check: if wallet already connected and is admin, bypass
-    try {
-        var saved = localStorage.getItem('_stake_wallet');
-        if (saved && window.ethereum) {
-            var accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === saved.toLowerCase() && isAdmin(saved)) {
-                gate.style.display = 'none';
-                page.classList.remove('gated');
-                return true;
-            }
-        }
-    } catch (e) {}
-
-    // Wire up the connect button on the gate
-    var btn = document.getElementById('constructionConnectBtn');
-    var denied = document.getElementById('constructionDenied');
-
-    return new Promise(function(resolve) {
-        btn.addEventListener('click', async function() {
-            if (!window.ethereum) {
-                denied.textContent = 'No wallet found. Install MetaMask.';
-                return;
-            }
-            try {
-                btn.textContent = 'Connecting...';
-                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                var addr = accounts[0];
-                if (isAdmin(addr)) {
-                    gate.style.display = 'none';
-                    page.classList.remove('gated');
-                    resolve(true);
-                } else {
-                    btn.textContent = 'Connect Wallet';
-                    denied.textContent = 'Access denied. This page is under construction.';
-                }
-            } catch (err) {
-                btn.textContent = 'Connect Wallet';
-                denied.textContent = err.code === 4001 ? '' : (err.message || 'Connection failed');
-            }
-        });
-    });
-}
-
-// ══════════════════════════════════════
 // POOL CONFIG
 // ══════════════════════════════════════
 
@@ -1373,9 +1313,6 @@ function routeApp() {
 // ══════════════════════════════════════
 
 async function init() {
-    // Admin gate — blocks until admin wallet connects (or auto-bypasses)
-    await tryAdminGate();
-
     wirePoolEvents();
 
     // Listen for popstate
