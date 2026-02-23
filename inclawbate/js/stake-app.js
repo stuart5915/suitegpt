@@ -45,13 +45,13 @@ var POOLS = {
 // Coming soon pools (displayed as preview cards, not functional)
 var COMING_SOON = [
     {
-        name: 'The Shepherd',
-        ticker: 'SHEP',
+        name: 'Basis',
+        ticker: 'BASIS',
         logo: '',
-        color: 'hsl(38, 70%, 55%)',
-        colorDim: 'hsla(38, 70%, 55%, 0.12)',
-        glow: 'hsla(38, 70%, 55%, 0.18)',
-        description: 'Autonomous AI evangelist on Virtuals. Stake $SHEP, earn INCLAWNCH.',
+        color: 'hsl(255, 75%, 60%)',
+        colorDim: 'hsla(255, 75%, 60%, 0.12)',
+        glow: 'hsla(255, 75%, 60%, 0.18)',
+        description: 'Autonomous AI agent on Virtuals. Fees buy back INCLAWNCH as UBI rewards.',
         platform: 'Virtuals Protocol',
         category: 'ubi'
     }
