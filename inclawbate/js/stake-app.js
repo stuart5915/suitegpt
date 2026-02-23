@@ -21,7 +21,8 @@ var POOLS = {
         description: 'The original. Stake inCLAWNCH, earn inCLAWNCH.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-        featured: true
+        featured: true,
+        category: 'ubi'
     },
     clawnstr: {
         name: 'ClawnStrategy',
@@ -36,9 +37,25 @@ var POOLS = {
         description: 'Web4 AI strategic treasury company.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1&chain=base',
         chartLink: 'https://dexscreener.com/base/0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
-        featured: false
+        featured: false,
+        category: 'partner'
     }
 };
+
+// Coming soon pools (displayed as preview cards, not functional)
+var COMING_SOON = [
+    {
+        name: 'The Shepherd',
+        ticker: 'SHEP',
+        logo: '',
+        color: 'hsl(38, 70%, 55%)',
+        colorDim: 'hsla(38, 70%, 55%, 0.12)',
+        glow: 'hsla(38, 70%, 55%, 0.18)',
+        description: 'Autonomous AI evangelist on Virtuals. Stake $SHEP, earn INCLAWNCH.',
+        platform: 'Virtuals Protocol',
+        category: 'ubi'
+    }
+];
 
 var POOL_KEYS = Object.keys(POOLS);
 
@@ -360,8 +377,70 @@ function getCurrentPool() {
 // OVERVIEW RENDERING
 // ══════════════════════════════════════
 
+function buildPoolCard(key, pool) {
+    var stats = poolStats[key] || {};
+    var price = poolPrices[key] || 0;
+    var tvl = (stats.totalStaked || 0) * price;
+
+    var apyStr = stats.apy ? Math.round(stats.apy) + '%' : '--';
+    var stakedStr = stats.totalStaked ? fmt(stats.totalStaked) : '--';
+    var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
+    var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
+
+    return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
+        'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
+        '<div class="stake-card-identity">' +
+            '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
+            '<div>' +
+                '<div class="stake-card-name">' + pool.name + '</div>' +
+                '<div class="stake-card-desc">' + pool.description + '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="stake-card-stats">' +
+            '<div class="stake-card-stat">' +
+                '<span class="stake-card-stat-value apy">' + apyStr + '</span>' +
+                '<span class="stake-card-stat-label">APY</span>' +
+            '</div>' +
+            '<div class="stake-card-stat">' +
+                '<span class="stake-card-stat-value">' + tvlStr + '</span>' +
+                '<span class="stake-card-stat-label">TVL</span>' +
+            '</div>' +
+            '<div class="stake-card-stat">' +
+                '<span class="stake-card-stat-value">' + stakedStr + '</span>' +
+                '<span class="stake-card-stat-label">Tokens Staked</span>' +
+            '</div>' +
+            '<div class="stake-card-stat">' +
+                '<span class="stake-card-stat-value">' + stakersStr + '</span>' +
+                '<span class="stake-card-stat-label">Stakers</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="stake-card-cta">Stake &rarr;</div>' +
+    '</a>' };
+}
+
+function buildComingSoonCard(pool) {
+    return '<div class="stake-card stake-card--coming-soon" ' +
+        'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
+        '<div class="stake-card-coming-badge">Coming Soon</div>' +
+        '<div class="stake-card-identity">' +
+            (pool.logo ? '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' :
+                '<div class="stake-card-logo stake-card-logo--placeholder" style="background:' + pool.color + ';color:#000;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:0.7rem;">' + pool.ticker + '</div>') +
+            '<div>' +
+                '<div class="stake-card-name">' + pool.name + '</div>' +
+                '<div class="stake-card-desc">' + pool.description + '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="stake-card-stats" style="grid-template-columns:1fr;">' +
+            '<div class="stake-card-stat" style="align-items:center;">' +
+                '<span class="stake-card-stat-value" style="font-size:0.78rem;color:var(--text-secondary);">' + pool.platform + '</span>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+
 function renderOverview() {
-    var grid = document.getElementById('stakeGrid');
+    var ubiGrid = document.getElementById('stakeGridUbi');
+    var partnerGrid = document.getElementById('stakeGridPartner');
     var totalTvl = 0;
 
     // Sort: featured first, then by TVL descending
@@ -373,52 +452,31 @@ function renderOverview() {
         return tvlB - tvlA;
     });
 
-    var html = '';
+    var ubiHtml = '';
+    var partnerHtml = '';
+
     sorted.forEach(function(key) {
         var pool = POOLS[key];
-        var stats = poolStats[key] || {};
-        var price = poolPrices[key] || 0;
-        var tvl = (stats.totalStaked || 0) * price;
-        totalTvl += tvl;
+        var result = buildPoolCard(key, pool);
+        totalTvl += result.tvl;
+        if (pool.category === 'partner') {
+            partnerHtml += result.html;
+        } else {
+            ubiHtml += result.html;
+        }
+    });
 
-        var apyStr = stats.apy ? Math.round(stats.apy) + '%' : '--';
-        var stakedStr = stats.totalStaked ? fmt(stats.totalStaked) : '--';
-        var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
-        var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
-
-        html += '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
-            'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
-            '<div class="stake-card-identity">' +
-                '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
-                '<div>' +
-                    '<div class="stake-card-name">' + pool.name + '</div>' +
-                    '<div class="stake-card-desc">' + pool.description + '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="stake-card-stats">' +
-                '<div class="stake-card-stat">' +
-                    '<span class="stake-card-stat-value apy">' + apyStr + '</span>' +
-                    '<span class="stake-card-stat-label">APY</span>' +
-                '</div>' +
-                '<div class="stake-card-stat">' +
-                    '<span class="stake-card-stat-value">' + tvlStr + '</span>' +
-                    '<span class="stake-card-stat-label">TVL</span>' +
-                '</div>' +
-                '<div class="stake-card-stat">' +
-                    '<span class="stake-card-stat-value">' + stakedStr + '</span>' +
-                    '<span class="stake-card-stat-label">Tokens Staked</span>' +
-                '</div>' +
-                '<div class="stake-card-stat">' +
-                    '<span class="stake-card-stat-value">' + stakersStr + '</span>' +
-                    '<span class="stake-card-stat-label">Stakers</span>' +
-                '</div>' +
-            '</div>' +
-            '<div class="stake-card-cta">Stake &rarr;</div>' +
-        '</a>';
+    // Coming soon pools in UBI section
+    COMING_SOON.forEach(function(pool) {
+        if (pool.category === 'partner') {
+            partnerHtml += buildComingSoonCard(pool);
+        } else {
+            ubiHtml += buildComingSoonCard(pool);
+        }
     });
 
     // CTA card for partners
-    html += '<a href="https://t.me/StuartDeFi" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
+    partnerHtml += '<a href="https://t.me/StuartDeFi" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
         'style="--pool-accent:var(--lobster-400);--pool-accent-dim:hsla(9,52%,56%,0.08);--pool-glow:hsla(9,52%,56%,0.12);border-style:dashed;">' +
         '<div class="stake-card-cta-plus">+</div>' +
         '<div class="stake-card-name">Your Token Here</div>' +
@@ -431,21 +489,23 @@ function renderOverview() {
         '<div class="stake-card-cta">Message @StuartDeFi on Telegram &rarr;</div>' +
     '</a>';
 
-    grid.innerHTML = html;
+    ubiGrid.innerHTML = ubiHtml;
+    partnerGrid.innerHTML = partnerHtml;
 
     // Update header
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    grid.querySelectorAll('.stake-card').forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            var href = card.getAttribute('href');
-            // External links (CTA card) — let browser handle normally
-            if (href.indexOf('http') === 0) return;
-            e.preventDefault();
-            history.pushState(null, '', href);
-            routeApp();
+    [ubiGrid, partnerGrid].forEach(function(grid) {
+        grid.querySelectorAll('.stake-card').forEach(function(card) {
+            card.addEventListener('click', function(e) {
+                var href = card.getAttribute('href');
+                if (!href || href.indexOf('http') === 0) return;
+                e.preventDefault();
+                history.pushState(null, '', href);
+                routeApp();
+            });
         });
     });
 }
