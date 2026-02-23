@@ -119,26 +119,41 @@
             background: var(--bg-secondary);
             overflow: hidden;
         }
-        .ubi-explainer-header {
+        .ubi-explainer-toggle {
+            width: 100%;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-primary);
+            padding: 14px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
         }
+        .ubi-explainer-toggle:hover .ubi-explainer-title { color: var(--text-primary); }
         .ubi-explainer-icon {
             color: var(--seafoam-400);
             font-size: 1rem;
         }
         .ubi-explainer-title {
-            font-family: var(--font-display);
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: color 0.2s;
         }
+        .ubi-explainer-chevron {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.3s;
+        }
+        .ubi-explainer.open .ubi-explainer-chevron { transform: rotate(180deg); }
         .ubi-explainer-body {
-            padding: 20px;
+            display: none;
+            padding: 0 20px 20px;
         }
+        .ubi-explainer.open .ubi-explainer-body { display: block; }
         .ubi-explainer-body p {
             font-size: 0.84rem;
             line-height: 1.65;
@@ -1193,11 +1208,12 @@
         </div>
 
         <!-- How It Works -->
-        <div class="ubi-explainer">
-            <div class="ubi-explainer-header">
-                <span class="ubi-explainer-icon">&#9830;</span>
-                <h3 class="ubi-explainer-title">How It Works</h3>
-            </div>
+        <div class="ubi-explainer" id="ubiExplainer">
+            <button class="ubi-explainer-toggle" id="ubiExplainerToggle">
+                <span class="ubi-explainer-icon">&#9432;</span>
+                <span class="ubi-explainer-title">How It Works</span>
+                <span class="ubi-explainer-chevron">&#9662;</span>
+            </button>
             <div class="ubi-explainer-body">
                 <!-- Flywheel steps -->
                 <div class="flywheel-diagram">
@@ -1462,6 +1478,11 @@
 
 <script src="/js/nav-auth.js"></script>
 <script src="/js/stake-app.js"></script>
+<script>
+    document.getElementById('ubiExplainerToggle').addEventListener('click', function() {
+        document.getElementById('ubiExplainer').classList.toggle('open');
+    });
+</script>
 
 </body>
 </html>
