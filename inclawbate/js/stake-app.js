@@ -48,12 +48,23 @@ var COMING_SOON = [
         name: 'Basis',
         ticker: 'BASIS',
         logo: '',
-        color: 'hsl(255, 75%, 60%)',
-        colorDim: 'hsla(255, 75%, 60%, 0.12)',
-        glow: 'hsla(255, 75%, 60%, 0.18)',
+        color: 'hsl(210, 100%, 50%)',
+        colorDim: 'hsla(210, 100%, 50%, 0.12)',
+        glow: 'hsla(210, 100%, 50%, 0.18)',
         description: 'Autonomous AI agent on Virtuals. Fees buy back INCLAWNCH as UBI rewards.',
         platform: 'Virtuals Protocol',
         category: 'ubi'
+    },
+    {
+        name: 'Salvation 4 Humanity',
+        ticker: 'S4H',
+        logo: '',
+        color: 'hsl(35, 38%, 38%)',
+        colorDim: 'hsla(35, 38%, 38%, 0.12)',
+        glow: 'hsla(35, 38%, 38%, 0.18)',
+        description: 'AI-powered online church community. Faith meets Web4.',
+        platform: 'Base',
+        category: 'partner'
     }
 ];
 
