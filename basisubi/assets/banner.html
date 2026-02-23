@@ -43,20 +43,20 @@
         .orb-1 {
             width: 500px; height: 500px;
             background: hsl(255, 75%, 55%);
-            opacity: 0.2;
-            top: -200px; left: -50px;
+            opacity: 0.15;
+            top: -200px; right: 200px;
         }
         .orb-2 {
             width: 400px; height: 400px;
             background: hsl(185, 80%, 50%);
-            opacity: 0.12;
-            bottom: -180px; right: 50px;
+            opacity: 0.1;
+            bottom: -180px; left: 300px;
         }
         .orb-3 {
-            width: 350px; height: 350px;
+            width: 300px; height: 300px;
             background: hsl(255, 85%, 65%);
-            opacity: 0.08;
-            top: 50%; left: 55%;
+            opacity: 0.06;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
         }
 
@@ -65,52 +65,117 @@
             position: absolute;
             inset: 0;
             z-index: 2;
-            opacity: 0.04;
+            opacity: 0.03;
             background-image:
                 linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
             background-size: 60px 60px;
         }
 
-        /* Horizontal accent line */
-        .accent-line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent 0%, hsla(255, 75%, 60%, 0.3) 20%, hsla(185, 80%, 55%, 0.3) 80%, transparent 100%);
-            z-index: 3;
-        }
-
-        /* Content */
+        /* Content layout */
         .content {
             position: absolute;
             inset: 0;
             z-index: 5;
             display: flex;
-            flex-direction: row-reverse;
             align-items: center;
-            padding: 0 120px 0 80px;
+            padding: 0 100px;
         }
 
-        .left {
+        /* Left spacer — profile pic covers this area */
+        .spacer {
+            flex: 0 0 100px;
+        }
+
+        /* Flywheel in center */
+        .flywheel-wrap {
+            flex: 0 0 420px;
+            height: 380px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flywheel-svg {
+            width: 380px;
+            height: 380px;
+        }
+
+        /* Rotating ring animation */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Flywheel node labels */
+        .fw-node {
+            position: absolute;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid;
+        }
+        .fw-node-1 {
+            top: 8px; left: 50%;
+            transform: translateX(-50%);
+            color: hsl(185, 80%, 65%);
+            border-color: hsla(185, 80%, 55%, 0.3);
+            background: hsla(185, 80%, 55%, 0.08);
+        }
+        .fw-node-2 {
+            right: -40px; top: 50%;
+            transform: translateY(-50%);
+            color: hsl(255, 85%, 75%);
+            border-color: hsla(255, 75%, 60%, 0.3);
+            background: hsla(255, 75%, 60%, 0.08);
+        }
+        .fw-node-3 {
+            bottom: 8px; left: 50%;
+            transform: translateX(-50%);
+            color: hsl(160, 70%, 60%);
+            border-color: hsla(160, 70%, 50%, 0.3);
+            background: hsla(160, 70%, 50%, 0.08);
+        }
+        .fw-node-4 {
+            left: -30px; top: 50%;
+            transform: translateY(-50%);
+            color: hsl(40, 80%, 65%);
+            border-color: hsla(40, 80%, 55%, 0.3);
+            background: hsla(40, 80%, 55%, 0.08);
+        }
+
+        /* Text — right side */
+        .text-side {
             flex: 1;
-            text-align: right;
+            padding-left: 60px;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 22px;
+            padding: 7px 18px;
             border-radius: 100px;
             border: 1px solid hsla(255, 75%, 60%, 0.25);
             background: hsla(255, 75%, 60%, 0.08);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
+            font-size: 13px;
             color: hsl(255, 85%, 75%);
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             letter-spacing: 0.03em;
         }
         .badge .dot {
@@ -121,11 +186,11 @@
         }
 
         .title {
-            font-size: 120px;
+            font-size: 110px;
             font-weight: 700;
             letter-spacing: -0.04em;
             line-height: 1;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             background: linear-gradient(135deg, #f0f0f5 0%, hsl(255, 85%, 70%) 60%, hsl(185, 80%, 55%) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -134,79 +199,19 @@
 
         .ticker {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 36px;
+            font-size: 34px;
             font-weight: 500;
             color: hsl(255, 85%, 70%);
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
         .tagline {
-            font-size: 24px;
-            color: rgba(240, 240, 245, 0.6);
+            font-size: 22px;
+            color: rgba(240, 240, 245, 0.55);
             font-weight: 400;
-            max-width: 600px;
+            max-width: 500px;
             line-height: 1.4;
-            margin-left: auto;
         }
-
-        /* Left side — logo (will be behind profile pic, that's fine) */
-        .right {
-            flex: 0 0 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .symbol-ring {
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            border: 2px solid hsla(255, 75%, 60%, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .symbol-ring::before {
-            content: '';
-            position: absolute;
-            inset: -20px;
-            border-radius: 50%;
-            border: 1px solid hsla(185, 80%, 55%, 0.1);
-        }
-        .symbol-ring::after {
-            content: '';
-            position: absolute;
-            inset: 15px;
-            border-radius: 50%;
-            border: 1px solid hsla(255, 75%, 60%, 0.12);
-        }
-
-        .logo-img {
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            object-fit: cover;
-            display: block;
-            box-shadow:
-                0 0 40px hsla(200, 90%, 50%, 0.35),
-                0 0 80px hsla(220, 80%, 50%, 0.2),
-                0 0 120px hsla(255, 75%, 55%, 0.12);
-        }
-
-        /* Orbiting dots */
-        .orbit-dot {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: hsl(255, 85%, 70%);
-            box-shadow: 0 0 12px hsl(255, 85%, 70%);
-        }
-        .orbit-dot:nth-child(1) { top: 0; left: 50%; transform: translate(-50%, -50%); }
-        .orbit-dot:nth-child(2) { bottom: 0; left: 50%; transform: translate(-50%, 50%); background: hsl(185, 80%, 55%); box-shadow: 0 0 12px hsl(185, 80%, 55%); }
-        .orbit-dot:nth-child(3) { top: 50%; right: 0; transform: translate(50%, -50%); }
-        .orbit-dot:nth-child(4) { top: 50%; left: 0; transform: translate(-50%, -50%); background: hsl(185, 80%, 55%); box-shadow: 0 0 12px hsl(185, 80%, 55%); }
 
         /* Corner accents */
         .corner {
@@ -228,7 +233,6 @@
         <div class="orb orb-2"></div>
         <div class="orb orb-3"></div>
         <div class="grid-overlay"></div>
-        <div class="accent-line"></div>
 
         <!-- Corner accents -->
         <div class="corner corner-tl"></div>
@@ -238,23 +242,77 @@
 
         <!-- Content -->
         <div class="content">
-            <div class="left">
+            <!-- Empty space where profile pic sits -->
+            <div class="spacer"></div>
+
+            <!-- Flywheel diagram -->
+            <div class="flywheel-wrap">
+                <svg class="flywheel-svg" viewBox="0 0 380 380">
+                    <defs>
+                        <!-- Arrow markers -->
+                        <marker id="arrow-cyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="hsl(185, 80%, 55%)" opacity="0.8"/>
+                        </marker>
+                        <marker id="arrow-violet" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="hsl(255, 75%, 65%)" opacity="0.8"/>
+                        </marker>
+                        <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="hsl(160, 70%, 50%)" opacity="0.8"/>
+                        </marker>
+                        <marker id="arrow-gold" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="hsl(40, 80%, 55%)" opacity="0.8"/>
+                        </marker>
+
+                        <!-- Glow filter -->
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="blur"/>
+                            <feMerge>
+                                <feMergeNode in="blur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- Outer ring -->
+                    <circle cx="190" cy="190" r="155" fill="none" stroke="hsla(255, 75%, 60%, 0.08)" stroke-width="1"/>
+                    <circle cx="190" cy="190" r="130" fill="none" stroke="hsla(255, 75%, 60%, 0.05)" stroke-width="1"/>
+
+                    <!-- Curved arrow paths (clockwise: top→right→bottom→left→top) -->
+                    <!-- Top to Right -->
+                    <path d="M 245,60 A 140,140 0 0,1 330,150" fill="none" stroke="hsl(185, 80%, 55%)" stroke-width="2" stroke-opacity="0.5" marker-end="url(#arrow-cyan)" filter="url(#glow)"/>
+                    <!-- Right to Bottom -->
+                    <path d="M 335,220 A 140,140 0 0,1 250,320" fill="none" stroke="hsl(255, 75%, 65%)" stroke-width="2" stroke-opacity="0.5" marker-end="url(#arrow-violet)" filter="url(#glow)"/>
+                    <!-- Bottom to Left -->
+                    <path d="M 140,325 A 140,140 0 0,1 50,230" fill="none" stroke="hsl(160, 70%, 50%)" stroke-width="2" stroke-opacity="0.5" marker-end="url(#arrow-green)" filter="url(#glow)"/>
+                    <!-- Left to Top -->
+                    <path d="M 48,155 A 140,140 0 0,1 135,58" fill="none" stroke="hsl(40, 80%, 55%)" stroke-width="2" stroke-opacity="0.5" marker-end="url(#arrow-gold)" filter="url(#glow)"/>
+
+                    <!-- Node dots -->
+                    <circle cx="190" cy="42" r="6" fill="hsl(185, 80%, 55%)" filter="url(#glow)"/>
+                    <circle cx="345" cy="190" r="6" fill="hsl(255, 75%, 65%)" filter="url(#glow)"/>
+                    <circle cx="190" cy="340" r="6" fill="hsl(160, 70%, 50%)" filter="url(#glow)"/>
+                    <circle cx="38" cy="190" r="6" fill="hsl(40, 80%, 55%)" filter="url(#glow)"/>
+
+                    <!-- Center icon — infinity/cycle symbol -->
+                    <text x="190" y="198" text-anchor="middle" font-size="40" fill="hsla(255, 85%, 75%, 0.3)" font-family="system-ui">&#x267E;</text>
+                </svg>
+
+                <!-- Node labels -->
+                <div class="fw-node fw-node-1">Agent Earns</div>
+                <div class="fw-node fw-node-2">Buys INCLAWNCH</div>
+                <div class="fw-node fw-node-3">UBI Distributed</div>
+                <div class="fw-node fw-node-4">Restake</div>
+            </div>
+
+            <!-- Text -->
+            <div class="text-side">
                 <div class="badge">
                     <span class="dot"></span>
                     Autonomous on Virtuals Protocol
                 </div>
                 <div class="title">Basis</div>
                 <div class="ticker">$BASIS</div>
-                <div class="tagline">The autonomous AI agent powering universal income</div>
-            </div>
-            <div class="right">
-                <div class="symbol-ring">
-                    <span class="orbit-dot"></span>
-                    <span class="orbit-dot"></span>
-                    <span class="orbit-dot"></span>
-                    <span class="orbit-dot"></span>
-                    <img src="../basistoken.jpg" alt="Basis" class="logo-img">
-                </div>
+                <div class="tagline">The autonomous AI agent powering universal basic income</div>
             </div>
         </div>
     </div>
