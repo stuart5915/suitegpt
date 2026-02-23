@@ -342,6 +342,10 @@ async function fetchAllPoolStats() {
 
     for (var i = 0; i < POOL_KEYS.length; i++) {
         var base = i * 5;
+        // Skip update if all 5 results are '0x0' (RPC failure — not real data)
+        var allFailed = results[base] === '0x0' && results[base+1] === '0x0' && results[base+2] === '0x0' && results[base+3] === '0x0' && results[base+4] === '0x0';
+        if (allFailed && poolStats[POOL_KEYS[i]]) continue;
+
         var totalStaked = fromWei(results[base]);
         var stakerCount = Number(BigInt(results[base + 1] || '0x0'));
         var rewardRate = fromWei(results[base + 2]);
@@ -706,6 +710,10 @@ async function refreshPoolStats(key) {
         { to: pool.staking, data: SEL.periodEnd },
         { to: pool.staking, data: SEL.rewardPoolBalance },
     ]);
+
+    // Skip update if all results are '0x0' (RPC failure) and we have existing data
+    var allFailed = results[0] === '0x0' && results[1] === '0x0' && results[2] === '0x0' && results[3] === '0x0' && results[4] === '0x0';
+    if (allFailed && poolStats[key]) return;
 
     var totalStaked = fromWei(results[0]);
     var stakerCount = Number(BigInt(results[1] || '0x0'));
