@@ -11,7 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
 
-        /* X/Twitter banner: 1500x500 */
         .banner {
             width: 1500px;
             height: 500px;
@@ -28,183 +27,204 @@
             inset: 0;
             z-index: 10;
             pointer-events: none;
-            opacity: 0.03;
+            opacity: 0.025;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
             background-repeat: repeat;
             background-size: 256px;
         }
 
-        /* Dot grid pattern */
-        .dot-grid {
+        /* Central radial glow */
+        .glow-center {
             position: absolute;
-            inset: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 900px;
+            height: 500px;
+            background: radial-gradient(ellipse at center, hsla(260, 100%, 50%, 0.08) 0%, hsla(260, 100%, 50%, 0.03) 40%, transparent 70%);
             z-index: 1;
-            opacity: 0.35;
-            background-image: radial-gradient(circle, rgba(130, 100, 255, 0.08) 1px, transparent 1px);
-            background-size: 28px 28px;
+            pointer-events: none;
         }
 
-        /* Ambient orbs — shifted right */
+        /* Ambient orbs */
         .orb {
             position: absolute;
             border-radius: 50%;
-            filter: blur(120px);
+            filter: blur(100px);
+            z-index: 1;
         }
         .orb-1 {
-            width: 550px; height: 550px;
-            background: hsl(260, 100%, 60%);
-            opacity: 0.1;
-            top: -280px; right: 250px;
+            width: 400px; height: 400px;
+            background: hsl(260, 100%, 55%);
+            opacity: 0.12;
+            top: -180px; left: 50%;
+            transform: translateX(-50%);
         }
         .orb-2 {
-            width: 400px; height: 400px;
-            background: hsl(175, 100%, 50%);
-            opacity: 0.06;
-            bottom: -220px; right: 80px;
-        }
-        .orb-3 {
             width: 300px; height: 300px;
-            background: hsl(280, 100%, 70%);
-            opacity: 0.04;
-            top: 50%; left: 500px;
-            transform: translateY(-50%);
+            background: hsl(175, 100%, 45%);
+            opacity: 0.05;
+            bottom: -150px; right: 200px;
         }
 
-        /* Orbital ring SVG — positioned behind content */
-        .orbital-ring {
+        /* Large orbital rings — centered on banner */
+        .orbital-bg {
             position: absolute;
             top: 50%;
-            left: 780px;
+            left: 50%;
             transform: translate(-50%, -50%);
-            width: 480px;
-            height: 480px;
+            width: 600px;
+            height: 600px;
             z-index: 2;
             pointer-events: none;
         }
-        .orbital-ring .ring {
-            fill: none;
+        .orbital-bg .ring { fill: none; }
+        .orbital-bg .ring-outer {
+            stroke: rgba(130, 100, 255, 0.07);
             stroke-width: 1;
         }
-        .orbital-ring .ring-1 {
-            stroke: rgba(130, 100, 255, 0.12);
+        .orbital-bg .ring-mid {
+            stroke: rgba(130, 100, 255, 0.1);
+            stroke-width: 0.8;
+            stroke-dasharray: 8 14;
         }
-        .orbital-ring .ring-2 {
-            stroke: rgba(0, 255, 200, 0.06);
-            stroke-dasharray: 6 12;
+        .orbital-bg .ring-inner {
+            stroke: rgba(0, 255, 200, 0.05);
+            stroke-width: 0.6;
+            stroke-dasharray: 4 10;
         }
-        .orbital-ring .ring-3 {
-            stroke: rgba(200, 120, 255, 0.05);
-            stroke-dasharray: 4 16;
+        /* Small glowing nodes on the orbit */
+        .orbital-bg .node {
+            fill: hsl(260, 100%, 72%);
+            opacity: 0.5;
+        }
+        .orbital-bg .node-cyan {
+            fill: hsl(175, 100%, 55%);
+            opacity: 0.4;
         }
 
-        /* All content centered in the right 2/3 */
+        /* Content — offset right to avoid profile pic, vertically centered */
         .content {
             position: absolute;
             top: 0;
             right: 0;
             bottom: 0;
-            left: 380px;
+            left: 340px;
             z-index: 5;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 0 80px 24px 0;
+            padding: 0 60px 0 0;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 7px 22px;
+            padding: 8px 24px;
             border-radius: 100px;
-            border: 1px solid hsla(260, 100%, 67%, 0.2);
-            background: hsla(260, 100%, 67%, 0.06);
+            border: 1px solid hsla(260, 100%, 67%, 0.18);
+            background: hsla(260, 100%, 67%, 0.05);
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 12px;
-            color: hsl(260, 90%, 78%);
-            margin-bottom: 24px;
-            letter-spacing: 0.05em;
+            font-size: 13px;
+            color: hsl(260, 85%, 76%);
+            margin-bottom: 20px;
+            letter-spacing: 0.04em;
         }
         .badge .dot {
             width: 7px; height: 7px;
             border-radius: 50%;
-            background: hsl(260, 100%, 75%);
-            box-shadow: 0 0 12px hsl(260, 100%, 70%);
+            background: hsl(260, 100%, 72%);
+            box-shadow: 0 0 14px hsl(260, 100%, 65%);
         }
 
         .title {
             font-family: 'Syne', sans-serif;
-            font-size: 140px;
+            font-size: 154px;
             font-weight: 800;
             letter-spacing: -0.05em;
-            line-height: 1;
-            margin-bottom: 6px;
-            background: linear-gradient(135deg, hsl(260, 90%, 78%) 0%, #fff 45%, hsl(175, 100%, 55%) 100%);
+            line-height: 0.9;
+            margin-bottom: 4px;
+            background: linear-gradient(145deg, hsl(260, 80%, 80%) 0%, #ffffff 35%, #ffffff 55%, hsl(175, 100%, 60%) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            filter: drop-shadow(0 0 60px hsla(260, 100%, 60%, 0.2));
         }
 
         .ticker {
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 36px;
+            font-size: 32px;
             font-weight: 500;
-            color: hsl(260, 90%, 75%);
-            margin-bottom: 20px;
-            letter-spacing: 0.06em;
+            color: hsl(260, 85%, 73%);
+            margin-bottom: 18px;
+            letter-spacing: 0.1em;
         }
 
         .tagline {
             font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            color: rgba(240, 240, 248, 0.45);
-            font-weight: 400;
-            max-width: 620px;
-            line-height: 1.35;
+            font-size: 21px;
+            color: rgba(240, 240, 248, 0.4);
+            font-weight: 500;
+            max-width: 560px;
+            line-height: 1.4;
             letter-spacing: -0.01em;
         }
 
-        /* Corner accents — refined */
+        /* Thin horizontal accent lines */
+        .h-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 1px;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .h-line-top {
+            top: 80px;
+            background: linear-gradient(90deg, transparent 10%, hsla(260, 100%, 67%, 0.06) 40%, hsla(260, 100%, 67%, 0.06) 60%, transparent 90%);
+        }
+        .h-line-bot {
+            bottom: 80px;
+            background: linear-gradient(90deg, transparent 10%, hsla(175, 100%, 50%, 0.04) 40%, hsla(175, 100%, 50%, 0.04) 60%, transparent 90%);
+        }
+
+        /* Corner accents */
         .corner {
             position: absolute;
             z-index: 4;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
         }
-        .corner-tl { top: 28px; left: 28px; border-top: 1px solid hsla(260, 100%, 67%, 0.2); border-left: 1px solid hsla(260, 100%, 67%, 0.2); }
-        .corner-tr { top: 28px; right: 28px; border-top: 1px solid hsla(260, 100%, 67%, 0.2); border-right: 1px solid hsla(260, 100%, 67%, 0.2); }
-        .corner-bl { bottom: 28px; left: 28px; border-bottom: 1px solid hsla(260, 100%, 67%, 0.2); border-left: 1px solid hsla(260, 100%, 67%, 0.2); }
-        .corner-br { bottom: 28px; right: 28px; border-bottom: 1px solid hsla(260, 100%, 67%, 0.2); border-right: 1px solid hsla(260, 100%, 67%, 0.2); }
-
-        /* Accent line — horizontal, subtler */
-        .accent-line {
-            position: absolute;
-            top: 50%;
-            left: 380px;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent 0%, hsla(260, 100%, 67%, 0.1) 30%, hsla(175, 100%, 50%, 0.1) 70%, transparent 100%);
-            z-index: 3;
-        }
+        .corner-tl { top: 24px; left: 24px; border-top: 1px solid hsla(260, 100%, 67%, 0.15); border-left: 1px solid hsla(260, 100%, 67%, 0.15); }
+        .corner-tr { top: 24px; right: 24px; border-top: 1px solid hsla(260, 100%, 67%, 0.15); border-right: 1px solid hsla(260, 100%, 67%, 0.15); }
+        .corner-bl { bottom: 24px; left: 24px; border-bottom: 1px solid hsla(260, 100%, 67%, 0.15); border-left: 1px solid hsla(260, 100%, 67%, 0.15); }
+        .corner-br { bottom: 24px; right: 24px; border-bottom: 1px solid hsla(260, 100%, 67%, 0.15); border-right: 1px solid hsla(260, 100%, 67%, 0.15); }
     </style>
 </head>
 <body>
     <div class="banner">
-        <!-- Background effects -->
+        <!-- Background layers -->
+        <div class="glow-center"></div>
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-        <div class="dot-grid"></div>
-        <div class="accent-line"></div>
 
-        <!-- Orbital ring SVG -->
-        <svg class="orbital-ring" viewBox="0 0 480 480">
-            <circle class="ring ring-1" cx="240" cy="240" r="200"/>
-            <circle class="ring ring-2" cx="240" cy="240" r="160"/>
-            <circle class="ring ring-3" cx="240" cy="240" r="230"/>
+        <!-- Orbital rings -->
+        <svg class="orbital-bg" viewBox="0 0 600 600">
+            <circle class="ring ring-outer" cx="300" cy="300" r="260"/>
+            <circle class="ring ring-mid" cx="300" cy="300" r="200"/>
+            <circle class="ring ring-inner" cx="300" cy="300" r="140"/>
+            <!-- Orbital nodes -->
+            <circle class="node" cx="300" cy="40" r="3"/>
+            <circle class="node-cyan" cx="560" cy="300" r="2.5"/>
+            <circle class="node" cx="300" cy="560" r="2.5"/>
+            <circle class="node-cyan" cx="40" cy="300" r="2"/>
         </svg>
+
+        <!-- Accent lines -->
+        <div class="h-line h-line-top"></div>
+        <div class="h-line h-line-bot"></div>
 
         <!-- Corner accents -->
         <div class="corner corner-tl"></div>
@@ -212,7 +232,7 @@
         <div class="corner corner-bl"></div>
         <div class="corner corner-br"></div>
 
-        <!-- Content — all in the right 2/3, safe from profile pic -->
+        <!-- Content -->
         <div class="content">
             <div class="badge">
                 <span class="dot"></span>
