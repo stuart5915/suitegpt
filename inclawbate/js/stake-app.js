@@ -64,7 +64,7 @@ var COMING_SOON = [
         glow: 'hsla(35, 38%, 38%, 0.18)',
         description: 'AI-powered online church community. Faith meets Web4.',
         platform: 'Base',
-        category: 'partner'
+        category: 'ubi'
     }
 ];
 
