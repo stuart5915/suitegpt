@@ -542,6 +542,35 @@ if (window.ethereum) {
     });
 }
 
+// ── SERVER CONFIG ──
+let serverConfig = {};
+
+async function loadServerConfig() {
+    try {
+        const res = await fetch(RELAY_URL.replace('wss://', 'https://') + '/config');
+        serverConfig = await res.json();
+        console.log('[config] loaded from server:', serverConfig);
+
+        // Pre-fill fields from server config (don't overwrite local values)
+        if (serverConfig.twitchChannel && !document.getElementById('tw-channel').value) {
+            document.getElementById('tw-channel').value = serverConfig.twitchChannel;
+        }
+        if (serverConfig.youtubeVideoId && !document.getElementById('yt-video-id').value) {
+            document.getElementById('yt-video-id').value = serverConfig.youtubeVideoId;
+        }
+
+        // Show which keys are configured server-side
+        const info = [];
+        if (serverConfig.hasTwitchKey) info.push('Twitch key');
+        if (serverConfig.hasYoutubeKey) info.push('YouTube key');
+        if (info.length) {
+            showStatus('Server has: ' + info.join(', '));
+        }
+    } catch (err) {
+        console.error('[config] failed to load:', err);
+    }
+}
+
 // ── SETTINGS ──
 function loadSettings() {
     document.getElementById('yt-key').value = localStorage.getItem('s4h_yt_key') || '';
@@ -549,6 +578,8 @@ function loadSettings() {
     document.getElementById('tw-channel').value = localStorage.getItem('s4h_tw_channel') || '';
     document.getElementById('yt-api-key').value = localStorage.getItem('s4h_yt_api_key') || '';
     document.getElementById('yt-video-id').value = localStorage.getItem('s4h_yt_video_id') || '';
+    // Then load server config (fills in anything missing)
+    loadServerConfig();
 }
 
 function saveSettings() {
@@ -751,7 +782,7 @@ function updateTimer() {
 
 // ── TWITCH CHAT (Anonymous IRC over WSS) ──
 function startTwitchChat() {
-    const channel = document.getElementById('tw-channel').value.trim() || localStorage.getItem('s4h_tw_channel');
+    const channel = document.getElementById('tw-channel').value.trim() || localStorage.getItem('s4h_tw_channel') || serverConfig.twitchChannel;
     if (!channel) return;
 
     twitchWs = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
@@ -795,8 +826,8 @@ function stopTwitchChat() {
 
 // ── YOUTUBE LIVE CHAT (Data API v3 polling) ──
 function startYouTubeChat() {
-    const apiKey = document.getElementById('yt-api-key').value.trim() || localStorage.getItem('s4h_yt_api_key');
-    const videoId = document.getElementById('yt-video-id').value.trim() || localStorage.getItem('s4h_yt_video_id');
+    const apiKey = document.getElementById('yt-api-key').value.trim() || localStorage.getItem('s4h_yt_api_key') || '';
+    const videoId = document.getElementById('yt-video-id').value.trim() || localStorage.getItem('s4h_yt_video_id') || serverConfig.youtubeVideoId || '';
     if (!apiKey || !videoId) return;
 
     ytNextPageToken = null;

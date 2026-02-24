@@ -25,6 +25,16 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', live: streamState.live });
 });
 
+// ── Config (public, non-secret settings for admin page) ──
+app.get('/config', (_req, res) => {
+  res.json({
+    twitchChannel: process.env.TWITCH_CHANNEL || '',
+    youtubeVideoId: process.env.YOUTUBE_VIDEO_ID || '',
+    hasYoutubeKey: !!process.env.YOUTUBE_RTMP_KEY,
+    hasTwitchKey: !!process.env.TWITCH_RTMP_KEY
+  });
+});
+
 // ── Stream status ──
 app.get('/status', (_req, res) => {
   res.json({
