@@ -359,9 +359,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
     // --- Supabase Clients ---
+    const SUITE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU2MTk0MjgsImV4cCI6MjAzMTE5NTQyOH0.mvH0HqkU9YXKM6e0-vOFn-6FjOEkSlTJCbo1o03JRWI';
+
     const cheshbonSb = supabase.createClient(
         'https://zbrkexdandknnsuprbxu.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicmtleGRhbmRrbm5zdXByYnh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUwNzQ4MDcsImV4cCI6MjA1MDY1MDgwN30.pCNdDKbPnIjJiGUaSE0yd_kW3sUFqBkNfKBexcMiqMg'
+    );
+
+    const suiteSb = supabase.createClient(
+        'https://rdsmdywbdiskxknluiym.supabase.co',
+        SUITE_ANON_KEY
     );
 
     // State
@@ -459,12 +466,12 @@
 
     async function loadPrayers() {
         try {
-            const resp = await fetch('https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/prayer_requests?select=*&order=created_at.desc&limit=50', {
-                headers: {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU2MTk0MjgsImV4cCI6MjAzMTE5NTQyOH0.mvH0HqkU9YXKM6e0-vOFn-6FjOEkSlTJCbo1o03JRWI'
-                }
-            });
-            const data = await resp.json();
+            const { data, error } = await suiteSb
+                .from('prayer_requests')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
             return (data || []).map(p => ({ ...p, _type: 'prayer' }));
         } catch (e) {
             console.error('Failed to load prayers:', e);
@@ -475,15 +482,16 @@
     async function loadUserPrays() {
         if (!walletAddress) return;
         try {
-            const resp = await fetch(`https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/prayer_prays?select=prayer_id&wallet_address=eq.${walletAddress}`, {
-                headers: {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU2MTk0MjgsImV4cCI6MjAzMTE5NTQyOH0.mvH0HqkU9YXKM6e0-vOFn-6FjOEkSlTJCbo1o03JRWI'
-                }
-            });
-            const data = await resp.json();
+            const { data, error } = await suiteSb
+                .from('prayer_prays')
+                .select('prayer_id')
+                .eq('wallet_address', walletAddress);
+            if (error) throw error;
             userPrays = new Set((data || []).map(p => p.prayer_id));
             renderFeed();
-        } catch (e) {}
+        } catch (e) {
+            console.error('Failed to load user prays:', e);
+        }
     }
 
     function renderFeed() {
