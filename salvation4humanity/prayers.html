@@ -198,6 +198,14 @@
         }
         .feed-card:hover { transform: translateY(-2px); border-color: var(--gold-border-hover); }
         .feed-card:hover::before { opacity: 1; }
+        .feed-delete {
+            position: absolute; top: 0.75rem; right: 0.75rem; width: 28px; height: 28px;
+            border-radius: 50%; background: transparent; border: 1px solid var(--gold-border);
+            color: var(--text-muted); font-size: 0.85rem; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: all 0.25s; z-index: 2;
+            line-height: 1;
+        }
+        .feed-delete:hover { background: hsla(0, 40%, 30%, 0.2); border-color: hsla(0, 40%, 40%, 0.4); color: hsl(0, 50%, 60%); }
 
         .feed-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
         .feed-avatar {
@@ -371,6 +379,8 @@
         SUITE_ANON_KEY
     );
 
+    const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+
     // State
     let walletAddress = null;
     let allItems = [];
@@ -542,8 +552,10 @@
         const short = addr.slice(0, 6) + '...' + addr.slice(-4);
         const initials = addr.slice(2, 4).toUpperCase();
         const hasPrayed = userPrays.has(p.id);
+        const canDelete = walletAddress && (addr === walletAddress || ADMIN_WALLETS.includes(walletAddress));
         return `
             <div class="feed-card" data-type="prayer">
+                ${canDelete ? `<button class="feed-delete" onclick="deletePrayer('${p.id}')" title="Delete prayer">&times;</button>` : ''}
                 <div class="feed-card-header">
                     <div class="feed-avatar prayer">${initials}</div>
                     <div>
@@ -591,6 +603,25 @@
             renderFeed();
         } catch (e) {
             showToast(e.message || 'Failed');
+        }
+    }
+
+    async function deletePrayer(prayerId) {
+        if (!walletAddress) return;
+        if (!confirm('Delete this prayer?')) return;
+        try {
+            const resp = await fetch('/api/s4h/prayer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', wallet_address: walletAddress, prayer_id: prayerId })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error);
+            allItems = allItems.filter(i => i.id !== prayerId);
+            renderFeed();
+            showToast('Prayer deleted');
+        } catch (e) {
+            showToast(e.message || 'Failed to delete');
         }
     }
 

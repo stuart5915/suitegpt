@@ -91,5 +91,31 @@ export default async function handler(req, res) {
         }
     }
 
-    return res.status(400).json({ error: 'Invalid action. Use "submit" or "pray".' });
+    if (action === 'delete') {
+        if (!prayer_id) return res.status(400).json({ error: 'prayer_id required' });
+
+        const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+        const isAdmin = ADMIN_WALLETS.includes(addr);
+
+        // Fetch the prayer to check ownership
+        const { data: prayer } = await supabase
+            .from('prayer_requests')
+            .select('wallet_address')
+            .eq('id', prayer_id)
+            .maybeSingle();
+
+        if (!prayer) return res.status(404).json({ error: 'Prayer not found' });
+
+        if (prayer.wallet_address !== addr && !isAdmin) {
+            return res.status(403).json({ error: 'Not authorized to delete this prayer' });
+        }
+
+        // Delete associated prays first (cascade should handle it, but be safe)
+        await supabase.from('prayer_prays').delete().eq('prayer_id', prayer_id);
+        const { error } = await supabase.from('prayer_requests').delete().eq('id', prayer_id);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ deleted: true });
+    }
+
+    return res.status(400).json({ error: 'Invalid action. Use "submit", "pray", or "delete".' });
 }
