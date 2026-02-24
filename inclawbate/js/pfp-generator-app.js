@@ -1,116 +1,39 @@
-/* Inclawbate PFP Generator — App Logic */
+/* Inclawbate PFP Generator — Duotone Canvas Effects */
 (function () {
     'use strict';
 
     // ── Stickers ──
     const STICKERS = [
-        // Faith
-        { id: 'cross', emoji: '\u271D\uFE0F', cat: 'faith', label: 'Cross' },
-        { id: 'pray', emoji: '\uD83D\uDE4F', cat: 'faith', label: 'Pray' },
-        { id: 'dove', emoji: '\uD83D\uDD4A\uFE0F', cat: 'faith', label: 'Dove' },
-        { id: 'heart', emoji: '\u2764\uFE0F', cat: 'faith', label: 'Heart' },
-        { id: 'star', emoji: '\u2B50', cat: 'faith', label: 'Star' },
-        // Hustle
-        { id: 'money', emoji: '\uD83D\uDCB0', cat: 'hustle', label: 'Money' },
-        { id: 'rocket', emoji: '\uD83D\uDE80', cat: 'hustle', label: 'Rocket' },
-        { id: 'fire', emoji: '\uD83D\uDD25', cat: 'hustle', label: 'Fire' },
-        { id: 'chart', emoji: '\uD83D\uDCC8', cat: 'hustle', label: 'Chart' },
-        // Tech
-        { id: 'robot', emoji: '\uD83E\uDD16', cat: 'tech', label: 'Robot' },
-        { id: 'laptop', emoji: '\uD83D\uDCBB', cat: 'tech', label: 'Laptop' },
-        { id: 'gear', emoji: '\u2699\uFE0F', cat: 'tech', label: 'Gear' },
-        { id: 'lightning', emoji: '\u26A1', cat: 'tech', label: 'Lightning' },
-        // Creator
-        { id: 'palette', emoji: '\uD83C\uDFA8', cat: 'creator', label: 'Palette' },
-        { id: 'camera', emoji: '\uD83D\uDCF7', cat: 'creator', label: 'Camera' },
-        { id: 'mic', emoji: '\uD83C\uDFA4', cat: 'creator', label: 'Mic' },
-        { id: 'sparkle', emoji: '\u2728', cat: 'creator', label: 'Sparkle' },
-        { id: 'pen', emoji: '\uD83D\uDD8A\uFE0F', cat: 'creator', label: 'Pen' },
-        // Nature
-        { id: 'leaf', emoji: '\uD83C\uDF3F', cat: 'nature', label: 'Leaf' },
-        { id: 'sun', emoji: '\u2600\uFE0F', cat: 'nature', label: 'Sun' },
-        { id: 'mountain', emoji: '\u26F0\uFE0F', cat: 'nature', label: 'Mountain' },
-        { id: 'wave', emoji: '\uD83C\uDF0A', cat: 'nature', label: 'Wave' },
-        // Lobster
-        { id: 'lobster', emoji: '\uD83E\uDD9E', cat: 'lobster', label: 'Lobster' },
-        { id: 'crab', emoji: '\uD83E\uDD80', cat: 'lobster', label: 'Crab' },
-        { id: 'shrimp', emoji: '\uD83E\uDD90', cat: 'lobster', label: 'Shrimp' },
-        { id: 'trident', emoji: '\uD83D\uDD31', cat: 'lobster', label: 'Trident' },
-        { id: 'shell', emoji: '\uD83D\uDC1A', cat: 'lobster', label: 'Shell' },
+        { id: 'lobster', emoji: '\uD83E\uDD9E', label: 'Lobster' },
+        { id: 'crab', emoji: '\uD83E\uDD80', label: 'Crab' },
+        { id: 'shrimp', emoji: '\uD83E\uDD90', label: 'Shrimp' },
+        { id: 'trident', emoji: '\uD83D\uDD31', label: 'Trident' },
+        { id: 'shell', emoji: '\uD83D\uDC1A', label: 'Shell' },
+        { id: 'cross', emoji: '\u271D\uFE0F', label: 'Cross' },
+        { id: 'pray', emoji: '\uD83D\uDE4F', label: 'Pray' },
+        { id: 'fire', emoji: '\uD83D\uDD25', label: 'Fire' },
+        { id: 'rocket', emoji: '\uD83D\uDE80', label: 'Rocket' },
+        { id: 'money', emoji: '\uD83D\uDCB0', label: 'Money' },
+        { id: 'chart', emoji: '\uD83D\uDCC8', label: 'Chart' },
+        { id: 'robot', emoji: '\uD83E\uDD16', label: 'Robot' },
+        { id: 'lightning', emoji: '\u26A1', label: 'Lightning' },
+        { id: 'sparkle', emoji: '\u2728', label: 'Sparkle' },
+        { id: 'palette', emoji: '\uD83C\uDFA8', label: 'Palette' },
+        { id: 'camera', emoji: '\uD83D\uDCF7', label: 'Camera' },
+        { id: 'heart', emoji: '\u2764\uFE0F', label: 'Heart' },
+        { id: 'star', emoji: '\u2B50', label: 'Star' },
+        { id: 'dove', emoji: '\uD83D\uDD4A\uFE0F', label: 'Dove' },
+        { id: 'wave', emoji: '\uD83C\uDF0A', label: 'Wave' },
     ];
 
-    // ── Vibe Presets ──
+    // ── Vibes (Duotone Presets) ──
     const VIBES = [
-        {
-            id: 'faith', name: 'Faith', emoji: '\u271D\uFE0F',
-            stickers: [
-                { sid: 'cross', x: 8, y: 12, rot: -12, size: 2.2 },
-                { sid: 'pray', x: 82, y: 8, rot: 10, size: 2 },
-                { sid: 'dove', x: 6, y: 78, rot: -8, size: 1.8 },
-                { sid: 'heart', x: 85, y: 75, rot: 15, size: 2 },
-                { sid: 'star', x: 45, y: 85, rot: 5, size: 1.6 },
-            ]
-        },
-        {
-            id: 'hustle', name: 'Hustle', emoji: '\uD83D\uDCB0',
-            stickers: [
-                { sid: 'money', x: 6, y: 10, rot: -10, size: 2.2 },
-                { sid: 'rocket', x: 80, y: 6, rot: 20, size: 2.4 },
-                { sid: 'fire', x: 5, y: 80, rot: -5, size: 2 },
-                { sid: 'chart', x: 84, y: 78, rot: 8, size: 1.8 },
-                { sid: 'lightning', x: 50, y: 5, rot: 0, size: 1.6 },
-            ]
-        },
-        {
-            id: 'tech', name: 'Tech', emoji: '\uD83E\uDD16',
-            stickers: [
-                { sid: 'robot', x: 5, y: 8, rot: -8, size: 2.4 },
-                { sid: 'laptop', x: 78, y: 10, rot: 12, size: 2 },
-                { sid: 'gear', x: 8, y: 82, rot: -15, size: 1.8 },
-                { sid: 'lightning', x: 85, y: 80, rot: 10, size: 2 },
-                { sid: 'sparkle', x: 48, y: 6, rot: 0, size: 1.6 },
-            ]
-        },
-        {
-            id: 'creator', name: 'Creator', emoji: '\uD83C\uDFA8',
-            stickers: [
-                { sid: 'palette', x: 6, y: 10, rot: -12, size: 2.2 },
-                { sid: 'camera', x: 82, y: 8, rot: 14, size: 2 },
-                { sid: 'mic', x: 5, y: 78, rot: -6, size: 2 },
-                { sid: 'pen', x: 86, y: 82, rot: 10, size: 1.8 },
-                { sid: 'sparkle', x: 50, y: 4, rot: 5, size: 1.6 },
-            ]
-        },
-        {
-            id: 'nature', name: 'Nature', emoji: '\uD83C\uDF3F',
-            stickers: [
-                { sid: 'leaf', x: 8, y: 8, rot: -10, size: 2.2 },
-                { sid: 'sun', x: 80, y: 6, rot: 8, size: 2.4 },
-                { sid: 'mountain', x: 4, y: 80, rot: -5, size: 2 },
-                { sid: 'wave', x: 84, y: 82, rot: 12, size: 2 },
-                { sid: 'shell', x: 46, y: 86, rot: 0, size: 1.6 },
-            ]
-        },
-        {
-            id: 'lobster', name: 'Lobster', emoji: '\uD83E\uDD9E',
-            stickers: [
-                { sid: 'lobster', x: 6, y: 6, rot: -15, size: 2.6 },
-                { sid: 'crab', x: 82, y: 8, rot: 12, size: 2.2 },
-                { sid: 'shrimp', x: 5, y: 82, rot: -8, size: 2 },
-                { sid: 'trident', x: 85, y: 80, rot: 10, size: 2 },
-                { sid: 'shell', x: 48, y: 4, rot: 5, size: 1.8 },
-            ]
-        },
-    ];
-
-    // ── Background Colors ──
-    const BG_COLORS = [
-        { id: 'cream', hex: '#f5f0e8', label: 'Cream' },
-        { id: 'kraft', hex: '#c9a96e', label: 'Kraft' },
-        { id: 'dark', hex: '#1a1a24', label: 'Dark' },
-        { id: 'coral', hex: '#c75b3f', label: 'Coral' },
-        { id: 'seafoam', hex: '#5a9e95', label: 'Seafoam' },
-        { id: 'midnight', hex: '#0a0a14', label: 'Midnight' },
+        { id: 'ember',   name: 'Ember',   dark: [45, 27, 18],  light: [232, 131, 107], bg: '#1a1410' },
+        { id: 'ocean',   name: 'Ocean',   dark: [10, 22, 40],  light: [116, 185, 255], bg: '#0d1520' },
+        { id: 'moss',    name: 'Moss',    dark: [13, 31, 13],  light: [123, 198, 126], bg: '#0f170f' },
+        { id: 'gilded',  name: 'Gilded',  dark: [26, 20, 8],   light: [212, 165, 116], bg: '#15120d' },
+        { id: 'infrared',name: 'Infrared',dark: [10, 5, 5],    light: [255, 71, 87],   bg: '#150a0a' },
+        { id: 'claw',    name: 'Claw',    dark: [26, 8, 8],    light: [199, 91, 63],   bg: '#120a08' },
     ];
 
     // ── Ransom Letters Config ──
@@ -127,9 +50,9 @@
     ];
 
     // ── State ──
-    let userPhotoUrl = null;
-    let activeVibe = null;
-    let activeBgColor = BG_COLORS[0];
+    let userPhoto = null;        // HTMLImageElement (original)
+    let activeVibe = VIBES[5];   // Default: Claw
+    let duotoneCache = null;     // { vibeId, dataUrl } — cached processed result
     let canvasStickers = [];
     let stickerIdCounter = 0;
 
@@ -140,7 +63,7 @@
     const uploadZone = $('.pfp-upload-zone');
     const uploadInput = $('#pfp-file-input');
     const uploadThumb = $('.upload-thumb');
-    const canvas = $('.pfp-canvas');
+    const canvasEl = $('.pfp-canvas');
     const emptyState = $('.pfp-empty-state');
     const ransomText = $('.pfp-ransom-text');
     const photoFrame = $('.pfp-photo-frame');
@@ -151,16 +74,26 @@
     const btnDownloadSquare = $('#btn-download-square');
     const btnDownloadCircle = $('#btn-download-circle');
 
+    // ── Offscreen canvas for duotone processing ──
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = 540;
+    offCanvas.height = 540;
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
     // ── Init ──
     function init() {
         renderRansomText();
         renderVibes();
-        renderColors();
         renderStickerTray();
         bindUpload();
         bindNameInput();
         bindDownload();
         updateCanvasVisibility();
+        // Set default vibe active
+        $$('.pfp-vibe-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.vibe === activeVibe.id);
+        });
+        canvasEl.style.background = activeVibe.bg;
     }
 
     // ── Ransom Text ──
@@ -172,9 +105,9 @@
             span.textContent = l.ch;
             span.style.background = l.bg;
             span.style.color = l.color || '#fff';
-            span.style.fontFamily = `'${l.font}', cursive`;
-            span.style.transform = `rotate(${l.rot}deg)`;
-            span.style.fontSize = `${l.sz}rem`;
+            span.style.fontFamily = "'" + l.font + "', cursive";
+            span.style.transform = 'rotate(' + l.rot + 'deg)';
+            span.style.fontSize = l.sz + 'rem';
             ransomText.appendChild(span);
         });
     }
@@ -186,48 +119,121 @@
             const card = document.createElement('div');
             card.className = 'pfp-vibe-card';
             card.dataset.vibe = v.id;
-            card.innerHTML = `<div class="vibe-emoji">${v.emoji}</div><div class="vibe-name">${v.name}</div>`;
+
+            // Gradient swatch
+            const swatch = document.createElement('div');
+            swatch.className = 'pfp-vibe-swatch';
+            const darkHex = rgbToHex(v.dark);
+            const lightHex = rgbToHex(v.light);
+            swatch.style.background = 'linear-gradient(135deg, ' + darkHex + ', ' + lightHex + ')';
+
+            const name = document.createElement('div');
+            name.className = 'vibe-name';
+            name.textContent = v.name;
+
+            card.appendChild(swatch);
+            card.appendChild(name);
             card.addEventListener('click', () => selectVibe(v));
             grid.appendChild(card);
         });
     }
 
     function selectVibe(v) {
-        // Toggle off if same vibe clicked
-        if (activeVibe && activeVibe.id === v.id) {
-            activeVibe = null;
-            $$('.pfp-vibe-card').forEach(c => c.classList.remove('active'));
-            clearCanvasStickers();
-            return;
-        }
         activeVibe = v;
         $$('.pfp-vibe-card').forEach(c => {
             c.classList.toggle('active', c.dataset.vibe === v.id);
         });
-        clearCanvasStickers();
-        v.stickers.forEach(s => {
-            const sticker = STICKERS.find(st => st.id === s.sid);
-            if (sticker) placeSticker(sticker.emoji, s.x, s.y, s.rot, s.size);
-        });
+        canvasEl.style.background = v.bg;
+        // Re-process photo with new vibe
+        if (userPhoto) {
+            duotoneCache = null; // invalidate
+            processAndDisplay();
+        }
     }
 
-    // ── Colors ──
-    function renderColors() {
-        const wrap = $('.pfp-colors');
-        BG_COLORS.forEach(c => {
-            const swatch = document.createElement('div');
-            swatch.className = 'pfp-color-swatch' + (c.id === activeBgColor.id ? ' active' : '');
-            swatch.style.background = c.hex;
-            swatch.title = c.label;
-            swatch.addEventListener('click', () => {
-                activeBgColor = c;
-                $$('.pfp-color-swatch').forEach(s => s.classList.remove('active'));
-                swatch.classList.add('active');
-                canvas.style.background = c.hex;
-            });
-            wrap.appendChild(swatch);
-        });
-        canvas.style.background = activeBgColor.hex;
+    // ── Duotone Processing ──
+    function processAndDisplay() {
+        if (!userPhoto || !activeVibe) return;
+
+        // Check cache
+        if (duotoneCache && duotoneCache.vibeId === activeVibe.id) {
+            photoImg.src = duotoneCache.dataUrl;
+            return;
+        }
+
+        const img = userPhoto;
+        const size = 540;
+
+        // Clear
+        offCtx.clearRect(0, 0, size, size);
+
+        // Draw cover-fit (center crop)
+        const iw = img.naturalWidth;
+        const ih = img.naturalHeight;
+        const scale = Math.max(size / iw, size / ih);
+        const sw = iw * scale;
+        const sh = ih * scale;
+        const sx = (size - sw) / 2;
+        const sy = (size - sh) / 2;
+        offCtx.drawImage(img, sx, sy, sw, sh);
+
+        // Get pixel data
+        const imageData = offCtx.getImageData(0, 0, size, size);
+        const data = imageData.data;
+        const dark = activeVibe.dark;
+        const light = activeVibe.light;
+
+        // Duotone + grain + vignette in one pass
+        const cx = size / 2;
+        const cy = size / 2;
+        const maxDist = Math.sqrt(cx * cx + cy * cy);
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // Grayscale luminance
+            const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+            // Lerp between dark and light
+            let nr = dark[0] + (light[0] - dark[0]) * lum;
+            let ng = dark[1] + (light[1] - dark[1]) * lum;
+            let nb = dark[2] + (light[2] - dark[2]) * lum;
+
+            // Grain — random ±25 per channel
+            nr += (Math.random() - 0.5) * 50;
+            ng += (Math.random() - 0.5) * 50;
+            nb += (Math.random() - 0.5) * 50;
+
+            // Vignette — darken edges
+            const px = (i / 4) % size;
+            const py = Math.floor((i / 4) / size);
+            const dist = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+            const vignette = 1 - 0.35 * Math.pow(dist / maxDist, 2);
+
+            data[i]     = clamp(nr * vignette);
+            data[i + 1] = clamp(ng * vignette);
+            data[i + 2] = clamp(nb * vignette);
+            // Alpha stays 255
+        }
+
+        offCtx.putImageData(imageData, 0, 0);
+
+        const dataUrl = offCanvas.toDataURL('image/png');
+        duotoneCache = { vibeId: activeVibe.id, dataUrl: dataUrl };
+        photoImg.src = dataUrl;
+    }
+
+    function clamp(v) {
+        return v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+    }
+
+    function rgbToHex(rgb) {
+        return '#' + rgb.map(function(c) {
+            var hex = c.toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+        }).join('');
     }
 
     // ── Sticker Tray ──
@@ -256,26 +262,18 @@
         el.dataset.stickerId = id;
         el.style.left = xPct + '%';
         el.style.top = yPct + '%';
-        el.style.transform = `rotate(${rot}deg)`;
-        el.innerHTML = `<span class="sticker-emoji" style="font-size:${size}rem">${emoji}</span><button class="sticker-delete">&times;</button>`;
+        el.style.transform = 'rotate(' + rot + 'deg)';
+        el.innerHTML = '<span class="sticker-emoji" style="font-size:' + size + 'rem">' + emoji + '</span><button class="sticker-delete">&times;</button>';
 
-        // Delete
         el.querySelector('.sticker-delete').addEventListener('click', e => {
             e.stopPropagation();
             el.remove();
             canvasStickers = canvasStickers.filter(s => s.id !== id);
         });
 
-        // Drag
         makeDraggable(el);
-
-        canvas.appendChild(el);
+        canvasEl.appendChild(el);
         canvasStickers.push({ id, el });
-    }
-
-    function clearCanvasStickers() {
-        canvasStickers.forEach(s => s.el.remove());
-        canvasStickers = [];
     }
 
     // ── Drag ──
@@ -286,18 +284,17 @@
             if (e.target.classList.contains('sticker-delete')) return;
             e.preventDefault();
             el.setPointerCapture(e.pointerId);
-            const rect = canvas.getBoundingClientRect();
             startX = e.clientX;
             startY = e.clientY;
             elX = el.offsetLeft;
             elY = el.offsetTop;
 
             const onMove = ev => {
+                const rect = canvasEl.getBoundingClientRect();
                 const dx = ev.clientX - startX;
                 const dy = ev.clientY - startY;
                 let nx = elX + dx;
                 let ny = elY + dy;
-                // Clamp
                 nx = Math.max(-10, Math.min(rect.width - 10, nx));
                 ny = Math.max(-10, Math.min(rect.height - 10, ny));
                 el.style.left = nx + 'px';
@@ -340,17 +337,26 @@
         if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
         reader.onload = e => {
-            userPhotoUrl = e.target.result;
-            uploadThumb.src = userPhotoUrl;
+            const dataUrl = e.target.result;
+            // Show thumbnail
+            uploadThumb.src = dataUrl;
             uploadZone.classList.add('has-photo');
-            photoImg.src = userPhotoUrl;
-            updateCanvasVisibility();
+
+            // Load into Image for canvas processing
+            const img = new Image();
+            img.onload = () => {
+                userPhoto = img;
+                duotoneCache = null;
+                processAndDisplay();
+                updateCanvasVisibility();
+            };
+            img.src = dataUrl;
         };
         reader.readAsDataURL(file);
     }
 
     function updateCanvasVisibility() {
-        const hasPhoto = !!userPhotoUrl;
+        const hasPhoto = !!userPhoto;
         emptyState.style.display = hasPhoto ? 'none' : 'flex';
         photoFrame.style.display = hasPhoto ? 'block' : 'none';
         ransomText.style.display = hasPhoto ? 'flex' : 'none';
@@ -372,30 +378,28 @@
     }
 
     function exportPFP(circle) {
-        // Disable button during render
         const btn = circle ? btnDownloadCircle : btnDownloadSquare;
         const origText = btn.textContent;
         btn.disabled = true;
         btn.textContent = 'Rendering...';
 
         // Hide delete buttons during render
-        const deleteBtns = $$('.sticker-delete', canvas);
+        const deleteBtns = $$('.sticker-delete', canvasEl);
         deleteBtns.forEach(b => b.style.display = 'none');
 
-        html2canvas(canvas, {
+        html2canvas(canvasEl, {
             scale: 2,
             useCORS: true,
             backgroundColor: null,
-            width: canvas.offsetWidth,
-            height: canvas.offsetHeight,
+            width: canvasEl.offsetWidth,
+            height: canvasEl.offsetHeight,
         }).then(rendered => {
             deleteBtns.forEach(b => b.style.display = '');
             btn.disabled = false;
             btn.textContent = origText;
 
             if (circle) {
-                // Circle crop
-                const size = rendered.width; // already 2x
+                const size = rendered.width;
                 const out = document.createElement('canvas');
                 out.width = size;
                 out.height = size;

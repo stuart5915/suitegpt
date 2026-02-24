@@ -591,118 +591,116 @@
         }
         .pfp-teaser-copy .btn { display: inline-flex; }
 
-        /* Mock collage preview */
-        .pfp-mock {
-            width: 340px; height: 340px;
+        /* Stacked duotone cards */
+        .pfp-stack {
+            width: 300px; height: 300px;
             margin: 0 auto;
             position: relative;
-            border-radius: var(--radius-xl);
-            overflow: visible;
+            perspective: 600px;
         }
-        /* The "card" */
-        .pfp-mock-card {
+        .pfp-stack-card {
+            position: absolute;
             width: 100%; height: 100%;
-            background: #f5f0e8;
             border-radius: var(--radius-xl);
-            position: relative;
             overflow: hidden;
-            box-shadow: var(--shadow-xl), 0 0 40px hsla(9, 60%, 54%, 0.08);
-            transition: transform 0.4s var(--ease-smooth);
+            transition: transform 0.5s var(--ease-smooth), opacity 0.5s ease;
         }
-        .pfp-mock:hover .pfp-mock-card {
-            transform: rotate(-1deg) scale(1.02);
+        /* Back card — Ocean */
+        .pfp-stack-card--back {
+            background: linear-gradient(135deg, #0a1628, #74b9ff);
+            opacity: 0.5;
+            transform: rotate(8deg) translateX(16px) translateY(-10px) scale(0.92);
         }
-        /* Grain overlay */
-        .pfp-mock-card::after {
+        /* Middle card — Gilded */
+        .pfp-stack-card--mid {
+            background: linear-gradient(135deg, #1a1408, #d4a574);
+            opacity: 0.65;
+            transform: rotate(-5deg) translateX(-12px) translateY(-6px) scale(0.96);
+        }
+        /* Front card — Claw (main) */
+        .pfp-stack-card--front {
+            background: #120a08;
+            box-shadow: var(--shadow-xl), 0 0 40px hsla(9, 60%, 54%, 0.12);
+            z-index: 2;
+        }
+        /* Grain on front card */
+        .pfp-stack-card--front::after {
             content: '';
             position: absolute; inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
             background-size: 128px 128px;
             pointer-events: none; z-index: 8;
-            mix-blend-mode: multiply;
+            mix-blend-mode: overlay;
         }
-        /* Ransom header inside mock */
-        .pfp-mock-ransom {
+        /* Duotone photo gradient inside front card */
+        .pfp-stack-photo {
             position: absolute;
-            top: 16px; left: 0; right: 0;
+            top: 8%; left: 8%; width: 84%; height: 84%;
+            background: linear-gradient(135deg, #1a0808, #c75b3f);
+            z-index: 3;
+            filter: drop-shadow(3px 4px 10px rgba(0,0,0,0.5));
+            clip-path: polygon(
+                2% 0%, 5% 1%, 8% 0%, 12% 2%, 15% 0%, 18% 1%, 22% 0%, 25% 2%, 28% 0%, 32% 1%,
+                35% 0%, 38% 2%, 42% 0%, 45% 1%, 48% 0%, 52% 2%, 55% 0%, 58% 1%, 62% 0%, 65% 2%,
+                68% 0%, 72% 1%, 75% 0%, 78% 2%, 82% 0%, 85% 1%, 88% 0%, 92% 2%, 95% 0%, 98% 1%,
+                100% 3%, 99% 6%, 100% 10%, 98% 14%, 100% 18%, 99% 22%, 100% 26%, 98% 30%,
+                100% 34%, 99% 38%, 100% 42%, 98% 46%, 100% 50%, 99% 54%, 100% 58%, 98% 62%,
+                100% 66%, 99% 70%, 100% 74%, 98% 78%, 100% 82%, 99% 86%, 100% 90%, 98% 94%, 100% 97%,
+                98% 100%, 95% 99%, 92% 100%, 88% 98%, 85% 100%, 82% 99%, 78% 100%, 75% 98%,
+                72% 100%, 68% 99%, 65% 100%, 62% 98%, 58% 100%, 55% 99%, 52% 100%, 48% 98%,
+                45% 100%, 42% 99%, 38% 100%, 35% 98%, 32% 100%, 28% 99%, 25% 100%, 22% 98%,
+                18% 100%, 15% 99%, 12% 100%, 8% 98%, 5% 100%, 2% 99%,
+                0% 97%, 1% 94%, 0% 90%, 2% 86%, 0% 82%, 1% 78%, 0% 74%, 2% 70%,
+                0% 66%, 1% 62%, 0% 58%, 2% 54%, 0% 50%, 1% 46%, 0% 42%, 2% 38%,
+                0% 34%, 1% 30%, 0% 26%, 2% 22%, 0% 18%, 1% 14%, 0% 10%, 2% 6%, 0% 3%
+            );
+        }
+        /* Ransom header inside front card */
+        .pfp-stack-ransom {
+            position: absolute;
+            top: 12px; left: 0; right: 0;
             display: flex; justify-content: center; gap: 2px;
             z-index: 5;
         }
-        .pfp-mock-ransom span {
+        .pfp-stack-ransom span {
             display: inline-block;
             padding: 2px 4px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             line-height: 1.2;
             border-radius: 2px;
             color: #fff;
         }
-        /* Photo placeholder */
-        .pfp-mock-photo {
+        .pfp-stack-name {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 160px; height: 160px;
-            background: linear-gradient(135deg, #d4a574, #c75b3f);
-            border-radius: 50%;
-            z-index: 3;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3.5rem;
-            filter: drop-shadow(3px 4px 8px rgba(0,0,0,0.3));
-            clip-path: polygon(
-                2% 0%, 6% 2%, 10% 0%, 15% 2%, 20% 0%, 25% 2%, 30% 0%, 35% 2%, 40% 0%, 45% 1%,
-                50% 0%, 55% 2%, 60% 0%, 65% 1%, 70% 0%, 75% 2%, 80% 0%, 85% 2%, 90% 0%, 95% 1%,
-                100% 2%, 99% 8%, 100% 15%, 98% 22%, 100% 30%, 99% 38%,
-                100% 45%, 98% 52%, 100% 60%, 99% 68%, 100% 75%, 98% 82%, 100% 90%, 99% 95%,
-                98% 100%, 92% 99%, 85% 100%, 78% 98%, 70% 100%, 62% 99%, 55% 100%, 48% 98%,
-                40% 100%, 32% 99%, 25% 100%, 18% 98%, 10% 100%, 5% 99%,
-                0% 98%, 1% 90%, 0% 82%, 2% 75%, 0% 68%, 1% 60%,
-                0% 52%, 2% 45%, 0% 38%, 1% 30%, 0% 22%, 2% 15%, 0% 8%
-            );
-        }
-        /* Floating stickers */
-        .pfp-mock-sticker {
-            position: absolute;
-            z-index: 6;
-            font-size: 1.6rem;
-            animation: float 5s ease-in-out infinite;
-            filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.15));
-        }
-        .pfp-mock-sticker:nth-child(1) { top: 8%; left: 8%; transform: rotate(-12deg); animation-delay: 0s; }
-        .pfp-mock-sticker:nth-child(2) { top: 6%; right: 10%; transform: rotate(10deg); animation-delay: -1.2s; font-size: 1.4rem; }
-        .pfp-mock-sticker:nth-child(3) { bottom: 12%; left: 10%; transform: rotate(-8deg); animation-delay: -2.5s; }
-        .pfp-mock-sticker:nth-child(4) { bottom: 10%; right: 8%; transform: rotate(15deg); animation-delay: -0.8s; font-size: 1.8rem; }
-        .pfp-mock-sticker:nth-child(5) { bottom: 40%; right: 5%; transform: rotate(5deg); animation-delay: -3.1s; font-size: 1.3rem; }
-        /* Name + watermark */
-        .pfp-mock-name {
-            position: absolute;
-            bottom: 36px; left: 0; right: 0;
+            bottom: 28px; left: 0; right: 0;
             text-align: center; z-index: 5;
             font-family: 'Permanent Marker', cursive;
-            font-size: 0.95rem;
-            color: #2a2a2a;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            color: #fff;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.5);
         }
-        .pfp-mock-watermark {
+        .pfp-stack-watermark {
             position: absolute;
-            bottom: 14px; left: 0; right: 0;
+            bottom: 10px; left: 0; right: 0;
             text-align: center; z-index: 5;
             font-family: var(--font-mono);
-            font-size: 0.5rem;
-            color: rgba(0,0,0,0.2);
+            font-size: 0.45rem;
+            color: rgba(255,255,255,0.25);
             letter-spacing: 0.06em;
         }
-
-        /* Tape strips */
-        .pfp-mock-tape {
-            position: absolute;
-            width: 60px; height: 18px;
-            background: rgba(255, 255, 220, 0.5);
-            z-index: 7;
-            border-radius: 1px;
+        /* Hover: fan out */
+        .pfp-stack:hover .pfp-stack-card--back {
+            transform: rotate(12deg) translateX(30px) translateY(-18px) scale(0.92);
+            opacity: 0.65;
         }
-        .pfp-mock-tape-tl { top: -6px; left: 20px; transform: rotate(-8deg); }
-        .pfp-mock-tape-br { bottom: -4px; right: 24px; transform: rotate(5deg); }
+        .pfp-stack:hover .pfp-stack-card--mid {
+            transform: rotate(-9deg) translateX(-24px) translateY(-14px) scale(0.96);
+            opacity: 0.8;
+        }
+        .pfp-stack:hover .pfp-stack-card--front {
+            transform: rotate(1deg) scale(1.02);
+        }
 
         /* ── The Numbers ── */
         .the-numbers {
@@ -1002,8 +1000,7 @@
             .path-card { padding: var(--space-2xl) var(--space-lg); }
             .pfp-teaser { padding: var(--space-2xl) var(--space-md); }
             .pfp-teaser-inner { grid-template-columns: 1fr; text-align: center; gap: var(--space-xl); }
-            .pfp-mock { width: 280px; height: 280px; }
-            .pfp-mock-photo { width: 130px; height: 130px; font-size: 2.8rem; }
+            .pfp-stack { width: 240px; height: 240px; }
             .the-numbers { padding: var(--space-2xl) var(--space-md); }
             .numbers-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
             .number-value { font-size: 1.6rem; }
@@ -1218,15 +1215,18 @@
     <div class="pfp-teaser-inner">
         <div class="pfp-teaser-copy">
             <h2>Rep the Lobster</h2>
-            <p>Make a torn-paper collage PFP for X and socials. Upload your photo, pick a vibe, slap on some stickers, download. Takes about 30 seconds. Looks like you spent way longer.</p>
+            <p>Upload any photo. Pick a duotone style. Get a stylized torn-paper PFP for X and socials. Six color vibes, grain texture, and instant canvas effects. Takes 30 seconds.</p>
             <a href="/pfp" class="btn btn-primary btn-lg">Make Your PFP</a>
         </div>
 
-        <div class="pfp-mock">
-            <div class="pfp-mock-tape pfp-mock-tape-tl"></div>
-            <div class="pfp-mock-tape pfp-mock-tape-br"></div>
-            <div class="pfp-mock-card">
-                <div class="pfp-mock-ransom">
+        <div class="pfp-stack">
+            <!-- Back card — Ocean gradient -->
+            <div class="pfp-stack-card pfp-stack-card--back"></div>
+            <!-- Middle card — Gilded gradient -->
+            <div class="pfp-stack-card pfp-stack-card--mid"></div>
+            <!-- Front card — Claw vibe -->
+            <div class="pfp-stack-card pfp-stack-card--front">
+                <div class="pfp-stack-ransom">
                     <span style="background:#d63031;font-family:'Special Elite',cursive;transform:rotate(-3deg)">I</span>
                     <span style="background:#0984e3;font-family:'Permanent Marker',cursive;transform:rotate(2deg)">n</span>
                     <span style="background:#00b894;font-family:'Special Elite',cursive;transform:rotate(-2deg)">C</span>
@@ -1237,17 +1237,9 @@
                     <span style="background:#d63031;font-family:'Permanent Marker',cursive;transform:rotate(4deg)">c</span>
                     <span style="background:#0984e3;font-family:'Special Elite',cursive;transform:rotate(-2deg)">h</span>
                 </div>
-
-                <div class="pfp-mock-sticker">&#129438;</div>
-                <div class="pfp-mock-sticker">&#128640;</div>
-                <div class="pfp-mock-sticker">&#10013;&#65039;</div>
-                <div class="pfp-mock-sticker">&#128293;</div>
-                <div class="pfp-mock-sticker">&#10024;</div>
-
-                <div class="pfp-mock-photo">&#129438;</div>
-
-                <div class="pfp-mock-name">yourname</div>
-                <div class="pfp-mock-watermark">inclawbate.com</div>
+                <div class="pfp-stack-photo"></div>
+                <div class="pfp-stack-name">yourname</div>
+                <div class="pfp-stack-watermark">inclawbate.com</div>
             </div>
         </div>
     </div>
