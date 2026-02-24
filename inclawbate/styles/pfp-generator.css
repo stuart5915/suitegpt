@@ -1,4 +1,4 @@
-/* Inclawbate PFP Generator — Duotone Redesign */
+/* Inclawbate PFP Generator — Collage Style */
 
 /* ── Layout: Preview LEFT, Controls RIGHT ── */
 .pfp-workspace {
@@ -35,8 +35,9 @@
     box-shadow: var(--shadow-xl), 0 0 60px hsla(9, 60%, 54%, 0.1);
     user-select: none;
     touch-action: none;
-    background: #120a08; /* Claw bg default */
-    transition: background 0.4s ease;
+    /* Default: collage background */
+    background: #0a0a0f url('/assets/logo-banner.jpg') center center / cover no-repeat;
+    transition: background-color 0.4s ease;
 }
 
 /* Paper grain overlay */
@@ -61,11 +62,12 @@
     justify-content: center;
     gap: var(--space-md);
     z-index: 5;
+    background: rgba(6, 6, 11, 0.6);
 }
-.pfp-empty-state .empty-icon { font-size: 3.2rem; opacity: 0.35; }
+.pfp-empty-state .empty-icon { font-size: 3.2rem; opacity: 0.5; }
 .pfp-empty-state .empty-text {
     font-size: 0.85rem;
-    color: var(--text-dim);
+    color: var(--text-secondary);
     text-align: center;
     max-width: 240px;
     line-height: 1.6;
@@ -74,7 +76,7 @@
 /* Ransom text */
 .pfp-ransom-text {
     position: absolute;
-    top: 18px;
+    top: 14px;
     left: 0;
     right: 0;
     text-align: center;
@@ -93,22 +95,17 @@
     border-radius: 2px;
 }
 
-/* Duotone photo */
+/* Photo cutout with paper border (sticker effect) */
 .pfp-photo-frame {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -46%);
     z-index: 10;
-    width: 84%;
-    height: 84%;
-    filter: drop-shadow(3px 4px 10px rgba(0,0,0,0.55));
-}
-.pfp-photo-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+    width: 58%;
+    aspect-ratio: 1;
+    background: #f0ebe3; /* creamy paper border */
+    filter: drop-shadow(4px 5px 12px rgba(0,0,0,0.5));
     clip-path: polygon(
         2% 0%, 5% 1%, 8% 0%, 12% 2%, 15% 0%, 18% 1%, 22% 0%, 25% 2%, 28% 0%, 32% 1%,
         35% 0%, 38% 2%, 42% 0%, 45% 1%, 48% 0%, 52% 2%, 55% 0%, 58% 1%, 62% 0%, 65% 2%,
@@ -125,32 +122,42 @@
         0% 34%, 1% 30%, 0% 26%, 2% 22%, 0% 18%, 1% 14%, 0% 10%, 2% 6%, 0% 3%
     );
 }
+.pfp-photo-frame img {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: calc(100% - 12px);
+    height: calc(100% - 12px);
+    object-fit: cover;
+    display: block;
+}
 
 /* Display name + watermark */
 .pfp-display-name {
     position: absolute;
-    bottom: 42px;
+    bottom: 36px;
     left: 0;
     right: 0;
     text-align: center;
     z-index: 20;
     font-family: 'Permanent Marker', var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     color: #fff;
-    text-shadow: 1px 2px 6px rgba(0,0,0,0.6);
+    text-shadow: 1px 2px 6px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.4);
     pointer-events: none;
 }
 .pfp-watermark {
     position: absolute;
-    bottom: 16px;
+    bottom: 14px;
     left: 0;
     right: 0;
     text-align: center;
     z-index: 20;
     font-family: var(--font-mono);
     font-size: 0.6rem;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.35);
     letter-spacing: 0.06em;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
     pointer-events: none;
 }
 
@@ -168,6 +175,7 @@
     font-size: 2rem;
     display: block;
     line-height: 1;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
 }
 .pfp-sticker .sticker-delete {
     position: absolute;
@@ -296,53 +304,38 @@
 }
 .pfp-upload-zone.has-photo .upload-thumb { display: block; }
 
-/* Vibe grid — 3x2 gradient cards */
-.pfp-vibes-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-sm);
-}
-.pfp-vibe-card {
-    background: var(--bg-card);
-    border: 2px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: var(--space-sm);
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    user-select: none;
+/* Background picker */
+.pfp-bg-grid {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
 }
-.pfp-vibe-card:hover {
-    border-color: var(--border-bright);
-    background: var(--bg-card-hover);
-    transform: translateY(-1px);
-}
-.pfp-vibe-card.active {
-    border-color: var(--lobster-400);
-    box-shadow: 0 0 16px hsla(9, 60%, 54%, 0.2), 0 0 4px hsla(9, 60%, 54%, 0.15);
-}
-
-/* Gradient swatch preview inside vibe card */
-.pfp-vibe-swatch {
-    width: 100%;
-    height: 32px;
+.pfp-bg-swatch {
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-sm);
-    margin-bottom: 2px;
+    border: 2px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    background-size: cover;
+    background-position: center;
 }
-
-.pfp-vibe-card .vibe-name {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-secondary);
+.pfp-bg-swatch:hover {
+    border-color: var(--border-bright);
+    transform: scale(1.1);
 }
-.pfp-vibe-card.active .vibe-name { color: var(--lobster-300); }
+.pfp-bg-swatch.active {
+    border-color: var(--lobster-400);
+    box-shadow: 0 0 10px hsla(9, 60%, 54%, 0.3);
+}
+.pfp-bg-swatch.active::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 2px solid var(--bg-deepest);
+    border-radius: 3px;
+}
 
 /* Name input */
 .pfp-name-input {
@@ -403,8 +396,5 @@
     }
     .pfp-download-row {
         flex-direction: column;
-    }
-    .pfp-vibes-grid {
-        grid-template-columns: repeat(3, 1fr);
     }
 }
