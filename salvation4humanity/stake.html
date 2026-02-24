@@ -82,11 +82,47 @@
             width: 500px; height: 500px;
             background: var(--gold);
             top: -200px; right: -100px;
+            animation: orbFloat1 25s ease-in-out infinite;
         }
         .ambient-bg .orb-2 {
             width: 400px; height: 400px;
             background: var(--crimson);
             bottom: -150px; left: -100px;
+            animation: orbFloat2 30s ease-in-out infinite;
+        }
+        .ambient-bg .orb-3 {
+            width: 350px; height: 350px;
+            background: var(--gold);
+            top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.04;
+            animation: orbFloat3 20s ease-in-out infinite;
+        }
+        @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, 40px) scale(1.1); }
+            66% { transform: translate(30px, -20px) scale(0.95); }
+        }
+        @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, -30px) scale(1.08); }
+        }
+        @keyframes orbFloat3 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.04; }
+            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.07; }
+        }
+
+        /* Particles */
+        .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .particle {
+            position: absolute; border-radius: 50%; background: var(--crimson); opacity: 0;
+            animation: drift linear infinite;
+        }
+        @keyframes drift {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10vh) scale(1); }
         }
 
         /* Nav */
@@ -466,7 +502,9 @@
 <div class="ambient-bg">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
 </div>
+<div class="particles" id="particles"></div>
 
 <nav>
     <div class="nav-inner">
@@ -568,6 +606,20 @@
     </ul>
     <p>&copy; 2026 Salvation 4 Humanity</p>
 </footer>
+
+<script>
+(function() {
+    var c = document.getElementById('particles');
+    var n = window.innerWidth < 600 ? 8 : 18;
+    for (var i = 0; i < n; i++) {
+        var p = document.createElement('div');
+        p.className = 'particle';
+        var s = Math.random() * 2.5 + 0.5;
+        p.style.cssText = 'width:'+s+'px;height:'+s+'px;left:'+Math.random()*100+'%;animation-duration:'+(Math.random()*25+20)+'s;animation-delay:-'+(Math.random()*30)+'s;opacity:'+(Math.random()*0.15+0.03);
+        c.appendChild(p);
+    }
+})();
+</script>
 
 </body>
 </html>
