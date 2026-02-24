@@ -571,7 +571,23 @@ async function startWebcam() {
             video: { width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: true
         });
-        document.getElementById('preview').srcObject = mediaStream;
+        const preview = document.getElementById('preview');
+        preview.srcObject = mediaStream;
+
+        // Recover from tab-switch / browser throttle
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                if (!preview.srcObject || preview.paused) {
+                    preview.srcObject = mediaStream;
+                    preview.play().catch(() => {});
+                }
+            }
+        });
+
+        // Keep video alive when window loses focus
+        preview.addEventListener('pause', () => {
+            preview.play().catch(() => {});
+        });
     } catch (err) {
         console.error('Webcam error:', err);
     }
