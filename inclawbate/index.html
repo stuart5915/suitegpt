@@ -398,12 +398,10 @@
         .token-icon {
             width: 52px; height: 52px;
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem;
+            object-fit: cover;
             flex-shrink: 0;
         }
         .token-icon-inclawnch {
-            background: linear-gradient(135deg, hsla(172, 50%, 45%, 0.15), hsla(172, 50%, 45%, 0.05));
             border: 1px solid hsla(172, 50%, 45%, 0.2);
         }
         .token-name-group { flex: 1; }
@@ -1204,7 +1202,7 @@
     <div style="max-width: 480px; margin: 0 auto;">
         <div class="token-card token-card-inclawnch">
             <div class="token-header">
-                <div class="token-icon token-icon-inclawnch">&#129438;</div>
+                <img src="/inclawbate/assets/inclawnch-logo.png" alt="INCLAWNCH" class="token-icon token-icon-inclawnch">
                 <div class="token-name-group">
                     <div class="token-name">INCLAWNCH</div>
                     <div class="token-ticker">$INCLAWNCH &middot; Base</div>
@@ -1568,9 +1566,15 @@ function copyCA(id) {
 
         // Token card prices & mcaps
         function fmtPrice(p) {
+            if (p >= 1) return '$' + p.toFixed(2);
             if (p >= 0.01) return '$' + p.toFixed(4);
             if (p >= 0.0001) return '$' + p.toFixed(6);
-            return '$' + p.toExponential(2);
+            // Count leading zeros after decimal, then show 2 sig digits
+            var s = p.toFixed(20);
+            var dec = s.split('.')[1] || '';
+            var zeros = 0;
+            for (var i = 0; i < dec.length; i++) { if (dec[i] === '0') zeros++; else break; }
+            return '$0.0' + '\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089'.charAt(zeros) + dec.substring(zeros, zeros + 3);
         }
         function fmtMcap(m) {
             if (m >= 1e9) return '$' + (m / 1e9).toFixed(2) + 'B';
