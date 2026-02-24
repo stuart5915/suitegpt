@@ -429,6 +429,7 @@
                     <span class="platform-badge badge-youtube">YT</span>
                     <span class="platform-badge badge-twitch">TW</span>
                 </div>
+                <div id="stream-status" style="font-size:0.85rem;color:var(--text-dim);"></div>
             </div>
 
             <!-- Settings -->
@@ -607,7 +608,8 @@ function startStream() {
     relayWs = new WebSocket(RELAY_URL + '/stream');
 
     relayWs.onopen = () => {
-        // Send start command with stream keys
+        console.log('[relay] connected');
+        showStatus('Connected to relay, starting stream...');
         relayWs.send(JSON.stringify({
             type: 'start',
             youtubeKey: ytKey,
@@ -618,24 +620,32 @@ function startStream() {
     relayWs.onmessage = (evt) => {
         try {
             const msg = JSON.parse(evt.data);
+            console.log('[relay] message:', msg);
             if (msg.type === 'started') {
+                showStatus('');
                 onStreamStarted();
             } else if (msg.type === 'error') {
-                alert('Stream error: ' + msg.message);
-                endStream();
+                showStatus('Error: ' + msg.message, true);
+                onStreamStopped();
             } else if (msg.type === 'stopped') {
+                showStatus('Stream ended.');
                 onStreamStopped();
             }
-        } catch (e) {}
+        } catch (e) { console.error('[relay] parse error:', e); }
     };
 
-    relayWs.onerror = () => {
-        alert('Could not connect to stream relay. Check that the server is running.');
-        endStream();
+    relayWs.onerror = (err) => {
+        console.error('[relay] ws error:', err);
+        showStatus('Could not connect to relay server.', true);
+        onStreamStopped();
     };
 
-    relayWs.onclose = () => {
-        if (isLive) onStreamStopped();
+    relayWs.onclose = (evt) => {
+        console.log('[relay] ws closed, code:', evt.code, 'reason:', evt.reason);
+        if (isLive) {
+            showStatus('Relay connection lost.', true);
+            onStreamStopped();
+        }
     };
 }
 
@@ -688,12 +698,24 @@ function endStream() {
     onStreamStopped();
 }
 
+function showStatus(msg, isError) {
+    const el = document.getElementById('stream-status');
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--live-red)' : 'var(--text-dim)';
+}
+
 function onStreamStopped() {
     isLive = false;
     streamStart = null;
 
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = null;
+
+    // Re-ensure webcam preview is still showing
+    const preview = document.getElementById('preview');
+    if (mediaStream && !preview.srcObject) {
+        preview.srcObject = mediaStream;
+    }
 
     // Update UI
     const btn = document.getElementById('live-btn');
