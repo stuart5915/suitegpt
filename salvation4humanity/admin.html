@@ -785,9 +785,11 @@ function startTwitchChat() {
     const channel = document.getElementById('tw-channel').value.trim() || localStorage.getItem('s4h_tw_channel') || serverConfig.twitchChannel;
     if (!channel) return;
 
+    console.log('[twitch chat] connecting to channel:', channel);
     twitchWs = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
 
     twitchWs.onopen = () => {
+        console.log('[twitch chat] connected, joining #' + channel.toLowerCase());
         twitchWs.send('CAP REQ :twitch.tv/tags');
         twitchWs.send('NICK justinfan12345');
         twitchWs.send(`JOIN #${channel.toLowerCase()}`);
@@ -796,6 +798,9 @@ function startTwitchChat() {
     twitchWs.onmessage = (evt) => {
         const lines = evt.data.split('\r\n');
         for (const line of lines) {
+            if (!line) continue;
+            console.log('[twitch irc]', line);
+
             if (line.startsWith('PING')) {
                 twitchWs.send('PONG :tmi.twitch.tv');
                 continue;
@@ -804,17 +809,18 @@ function startTwitchChat() {
             // Parse PRIVMSG
             const privmsgMatch = line.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.+)/);
             if (privmsgMatch) {
-                // Try to get display name from tags
                 let displayName = privmsgMatch[1];
                 const tagMatch = line.match(/display-name=([^;]*)/);
                 if (tagMatch && tagMatch[1]) displayName = tagMatch[1];
 
+                console.log('[twitch chat] message from', displayName, ':', privmsgMatch[2]);
                 addChatMessage('twitch', displayName, privmsgMatch[2]);
             }
         }
     };
 
-    twitchWs.onerror = (err) => console.error('[twitch chat]', err);
+    twitchWs.onerror = (err) => console.error('[twitch chat] error:', err);
+    twitchWs.onclose = (evt) => console.log('[twitch chat] closed, code:', evt.code, 'reason:', evt.reason);
 }
 
 function stopTwitchChat() {
