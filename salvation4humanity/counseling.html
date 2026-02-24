@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counseling — Salvation 4 Humanity</title>
+    <meta name="description" content="Free faith-based counseling for anyone in crisis. Sharing hope when life falls apart. Led by Pastor Clay.">
+    <meta property="og:title" content="Counseling — Salvation 4 Humanity">
+    <meta property="og:description" content="Free faith-based counseling for anyone in crisis. Sharing hope when life falls apart.">
+    <meta property="og:url" content="https://salvation4humanity.com/counseling">
+    <link rel="icon" type="image/jpeg" href="/assets/salvation4humanity.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #131210;
+            --bg-warm: #161513;
+            --surface: rgba(180, 160, 130, 0.03);
+            --surface-hover: rgba(180, 160, 130, 0.06);
+            --gold: hsl(35, 38%, 38%);
+            --gold-light: hsl(35, 42%, 48%);
+            --gold-dim: hsl(35, 30%, 24%);
+            --gold-glow: hsla(35, 38%, 38%, 0.15);
+            --gold-border: hsla(35, 30%, 30%, 0.12);
+            --gold-border-hover: hsla(35, 35%, 35%, 0.25);
+            --crimson: hsl(0, 30%, 24%);
+            --crimson-light: hsl(0, 28%, 32%);
+            --crimson-glow: hsla(0, 30%, 22%, 0.2);
+            --text: #c8bfb4;
+            --text-dim: rgba(200, 191, 180, 0.5);
+            --text-muted: rgba(200, 191, 180, 0.25);
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Grain */
+        .grain {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat; background-size: 180px;
+        }
+
+        /* Ambient particles */
+        .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+        .particle {
+            position: absolute; border-radius: 50%; background: var(--crimson); opacity: 0;
+            animation: drift linear infinite;
+        }
+        @keyframes drift {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10vh) scale(1); }
+        }
+
+        /* Ambient orbs */
+        .ambient-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .ambient-orb { position: absolute; border-radius: 50%; filter: blur(80px); }
+        .ambient-orb-1 {
+            width: 600px; height: 600px; top: -200px; right: -100px;
+            background: radial-gradient(circle, hsla(0, 25%, 20%, 0.07) 0%, transparent 70%);
+            animation: orbDrift1 25s ease-in-out infinite;
+        }
+        .ambient-orb-2 {
+            width: 500px; height: 500px; bottom: -150px; left: -100px;
+            background: radial-gradient(circle, hsla(35, 30%, 22%, 0.06) 0%, transparent 70%);
+            animation: orbDrift2 30s ease-in-out infinite;
+        }
+        .ambient-orb-3 {
+            width: 400px; height: 400px; top: 40%; left: 50%;
+            background: radial-gradient(circle, hsla(0, 20%, 18%, 0.04) 0%, transparent 70%);
+            animation: orbDrift3 20s ease-in-out infinite;
+        }
+        @keyframes orbDrift1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, 40px) scale(1.1); }
+            66% { transform: translate(30px, -20px) scale(0.95); }
+        }
+        @keyframes orbDrift2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, -30px) scale(1.08); }
+        }
+        @keyframes orbDrift3 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+        }
+
+        /* Nav */
+        nav {
+            position: sticky; top: 0; z-index: 100; padding: 16px 24px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(19, 18, 16, 0.85); border-bottom: 1px solid var(--gold-border);
+        }
+        .nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; color: var(--gold); text-decoration: none; font-style: italic; }
+        .nav-links { display: flex; gap: 24px; list-style: none; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--gold-light); }
+        .nav-links a.active { color: var(--gold-light); }
+
+        /* Hero */
+        .hero {
+            position: relative; z-index: 2;
+            text-align: center; padding: 6rem 2rem 4rem;
+            max-width: 800px; margin: 0 auto;
+        }
+        .hero-label {
+            font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--gold); margin-bottom: 1.5rem; opacity: 0.8;
+        }
+        .hero-title {
+            font-family: var(--font-serif); font-size: 3.8rem; font-weight: 500;
+            line-height: 1.1; margin-bottom: 1rem; letter-spacing: -0.5px;
+        }
+        .hero-title .hope {
+            color: var(--gold-light);
+            text-shadow: 0 0 40px var(--gold-glow), 0 0 80px hsla(35, 38%, 38%, 0.08);
+        }
+        .hero-subtitle {
+            font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400;
+            color: var(--text-dim); font-style: italic; margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .hero-sub2 {
+            font-size: 1.15rem; color: var(--text-dim); max-width: 480px;
+            margin: 0 auto; line-height: 1.7;
+        }
+        .hero-divider {
+            width: 60px; height: 1px; background: var(--gold-dim);
+            margin: 2rem auto;
+        }
+
+        /* Free badge */
+        .free-badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.12), hsla(0, 20%, 18%, 0.08));
+            border: 1px solid var(--gold-border); border-radius: 100px;
+            padding: 0.5rem 1.25rem; margin-bottom: 2rem;
+            font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--gold-light);
+        }
+        .free-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--gold-light);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+
+        /* Content sections */
+        .content { position: relative; z-index: 2; max-width: 800px; margin: 0 auto; padding: 0 2rem; }
+
+        /* Pastor card */
+        .pastor-section {
+            margin-bottom: 4rem;
+        }
+        .pastor-card {
+            background: linear-gradient(135deg, var(--surface), hsla(35, 20%, 18%, 0.04));
+            border: 1px solid var(--gold-border); border-radius: 24px;
+            padding: 2.5rem; display: flex; gap: 2rem; align-items: center;
+            transition: border-color 0.3s;
+        }
+        .pastor-card:hover { border-color: var(--gold-border-hover); }
+        .pastor-photo {
+            width: 140px; height: 140px; border-radius: 20px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--gold-dim), var(--crimson));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; overflow: hidden;
+            border: 2px solid var(--gold-border);
+        }
+        .pastor-photo img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .pastor-info { flex: 1; }
+        .pastor-role {
+            font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem;
+        }
+        .pastor-name {
+            font-family: var(--font-serif); font-size: 2rem; font-weight: 500;
+            margin-bottom: 0.75rem; line-height: 1.2;
+        }
+        .pastor-bio {
+            color: var(--text-dim); font-size: 0.9rem; line-height: 1.7;
+        }
+
+        /* What we offer */
+        .offerings {
+            margin-bottom: 4rem;
+        }
+        .offerings-title {
+            font-family: var(--font-serif); font-size: 2rem; font-weight: 500;
+            text-align: center; margin-bottom: 2rem;
+        }
+        .offering-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
+        }
+        .offering-card {
+            background: var(--surface); border: 1px solid var(--gold-border);
+            border-radius: 20px; padding: 1.75rem; transition: all 0.3s var(--ease-out);
+            position: relative; overflow: hidden;
+        }
+        .offering-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .offering-card:hover { border-color: var(--gold-border-hover); transform: translateY(-3px); }
+        .offering-card:hover::before { opacity: 1; }
+        .offering-icon {
+            font-size: 1.75rem; margin-bottom: 1rem;
+        }
+        .offering-label {
+            font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .offering-desc {
+            color: var(--text-dim); font-size: 0.85rem; line-height: 1.65;
+        }
+
+        /* Verse highlight */
+        .verse-highlight {
+            text-align: center; margin: 3rem 0 4rem; padding: 2.5rem 2rem;
+            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.06), hsla(0, 20%, 18%, 0.04));
+            border: 1px solid var(--gold-border); border-radius: 20px;
+            position: relative;
+        }
+        .verse-highlight::before {
+            content: '\201C'; position: absolute; top: -0.3rem; left: 1.5rem;
+            font-family: var(--font-serif); font-size: 5rem; color: var(--gold-dim); opacity: 0.3;
+            line-height: 1;
+        }
+        .verse-text {
+            font-family: var(--font-serif); font-size: 1.35rem; font-style: italic;
+            line-height: 1.6; max-width: 550px; margin: 0 auto 1rem;
+            color: var(--text);
+        }
+        .verse-ref {
+            font-family: var(--font-mono); font-size: 0.72rem; color: var(--gold);
+            letter-spacing: 1px;
+        }
+
+        /* How it works */
+        .how-section {
+            margin-bottom: 4rem;
+        }
+        .how-title {
+            font-family: var(--font-serif); font-size: 2rem; font-weight: 500;
+            text-align: center; margin-bottom: 0.75rem;
+        }
+        .how-subtitle {
+            text-align: center; color: var(--text-dim); font-size: 0.92rem;
+            max-width: 500px; margin: 0 auto 2.5rem;
+        }
+        .steps {
+            display: flex; flex-direction: column; gap: 1.25rem;
+        }
+        .step {
+            display: flex; gap: 1.25rem; align-items: flex-start;
+            background: var(--surface); border: 1px solid var(--gold-border);
+            border-radius: 16px; padding: 1.5rem;
+            transition: border-color 0.3s;
+        }
+        .step:hover { border-color: var(--gold-border-hover); }
+        .step-num {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;
+            color: var(--bg);
+        }
+        .step-text { flex: 1; }
+        .step-label {
+            font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem;
+        }
+        .step-desc {
+            color: var(--text-dim); font-size: 0.85rem; line-height: 1.6;
+        }
+
+        /* Donation note */
+        .donation-note {
+            text-align: center; margin-bottom: 4rem; padding: 2rem;
+            background: linear-gradient(135deg, hsla(0, 20%, 20%, 0.06), hsla(35, 25%, 20%, 0.04));
+            border: 1px solid var(--gold-border); border-radius: 20px;
+        }
+        .donation-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+        .donation-title {
+            font-family: var(--font-serif); font-size: 1.4rem; font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .donation-text {
+            color: var(--text-dim); font-size: 0.88rem; line-height: 1.7;
+            max-width: 480px; margin: 0 auto 1.25rem;
+        }
+        .donate-btn {
+            display: inline-block; background: var(--gold); color: var(--bg);
+            border: none; padding: 0.7rem 2rem; border-radius: 100px;
+            font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            font-family: var(--font-body); text-decoration: none;
+            transition: all 0.3s var(--ease-out);
+        }
+        .donate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--gold-glow); }
+
+        /* CTA */
+        .cta-section {
+            text-align: center; padding: 3rem 2rem 5rem;
+        }
+        .cta-title {
+            font-family: var(--font-serif); font-size: 2.2rem; font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .cta-text {
+            color: var(--text-dim); font-size: 0.95rem; max-width: 440px;
+            margin: 0 auto 1.5rem; line-height: 1.7;
+        }
+        .cta-btn {
+            display: inline-block; background: var(--gold); color: var(--bg);
+            padding: 0.85rem 2.5rem; border-radius: 100px; font-weight: 700;
+            font-size: 0.92rem; text-decoration: none;
+            transition: all 0.3s var(--ease-out);
+            font-family: var(--font-body);
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px var(--gold-glow); }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem; text-align: center; border-top: 1px solid var(--gold-border);
+            color: var(--text-muted); font-size: 0.82rem; position: relative; z-index: 2;
+        }
+        .footer-links {
+            display: flex; gap: 2.5rem; justify-content: center; list-style: none; margin-bottom: 1.5rem;
+        }
+        .footer-links a {
+            color: var(--text-muted); text-decoration: none; font-size: 0.78rem; font-weight: 500;
+            letter-spacing: 0.5px; text-transform: uppercase; transition: color 0.25s;
+        }
+        .footer-links a:hover { color: var(--gold); }
+        footer > p { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.5px; }
+
+        /* Fade-in animation */
+        .fade-up {
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+        }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .nav-links { display: none; }
+            .hero-title { font-size: 2.5rem; }
+            .hero-subtitle { font-size: 1.2rem; }
+            .pastor-card { flex-direction: column; text-align: center; padding: 2rem 1.5rem; }
+            .pastor-photo { width: 120px; height: 120px; margin: 0 auto; }
+            .offering-grid { grid-template-columns: 1fr; }
+            .content { padding: 0 1.25rem; }
+            .footer-links { flex-wrap: wrap; gap: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="ambient-orbs">
+    <div class="ambient-orb ambient-orb-1"></div>
+    <div class="ambient-orb ambient-orb-2"></div>
+    <div class="ambient-orb ambient-orb-3"></div>
+</div>
+<div class="particles" id="particles"></div>
+
+<!-- Nav -->
+<nav>
+    <div class="nav-inner">
+        <a href="/" class="nav-brand">Salvation 4 Humanity</a>
+        <ul class="nav-links">
+            <li><a href="/counseling" class="active">Counseling</a></li>
+            <li><a href="/prayers">Prayers</a></li>
+            <li><a href="/edification">Edification</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/stake">Stake</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="free-badge fade-up">
+        <span class="dot"></span>
+        Free for everyone
+    </div>
+    <div class="hero-label fade-up">Counseling</div>
+    <h1 class="hero-title fade-up">
+        Sharing <span class="hope">HOPE</span> in Crisis
+    </h1>
+    <p class="hero-subtitle fade-up">When life falls apart</p>
+    <p class="hero-sub2 fade-up">We're prepared to offer hope.</p>
+    <div class="hero-divider fade-up"></div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+    <!-- Pastor Card -->
+    <div class="pastor-section fade-up">
+        <div class="pastor-card">
+            <div class="pastor-photo" id="pastor-photo">
+                <!-- Replace with <img src="/assets/pastor-clay.jpg" alt="Pastor Clay"> when image is provided -->
+                &#9769;
+            </div>
+            <div class="pastor-info">
+                <div class="pastor-role">Lead Pastor</div>
+                <h2 class="pastor-name">Clay</h2>
+                <p class="pastor-bio">
+                    Pastor Clay leads our counseling ministry with compassion and conviction.
+                    Whether you're facing grief, addiction, broken relationships, doubt, or just
+                    need someone to listen &mdash; Clay is here. No judgment, no strings attached.
+                    Just genuine care rooted in faith.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verse -->
+    <div class="verse-highlight fade-up">
+        <p class="verse-text">
+            Come to me, all who labor and are heavy laden, and I will give you rest.
+        </p>
+        <span class="verse-ref">Matthew 11:28</span>
+    </div>
+
+    <!-- What We Offer -->
+    <div class="offerings fade-up">
+        <h2 class="offerings-title">How We Can Help</h2>
+        <div class="offering-grid">
+            <div class="offering-card">
+                <div class="offering-icon">&#128172;</div>
+                <div class="offering-label">One-on-One Counseling</div>
+                <p class="offering-desc">Private, confidential conversations with Pastor Clay. Talk through whatever you're carrying.</p>
+            </div>
+            <div class="offering-card">
+                <div class="offering-icon">&#128150;</div>
+                <div class="offering-label">Crisis Support</div>
+                <p class="offering-desc">In your darkest moment, you're not alone. Reach out anytime &mdash; we respond with urgency and care.</p>
+            </div>
+            <div class="offering-card">
+                <div class="offering-icon">&#128218;</div>
+                <div class="offering-label">Scripture-Based Guidance</div>
+                <p class="offering-desc">Rooted in the Word. We walk through challenges using Biblical wisdom and practical application.</p>
+            </div>
+            <div class="offering-card">
+                <div class="offering-icon">&#129309;</div>
+                <div class="offering-label">Community Prayer</div>
+                <p class="offering-desc">You don't have to carry it alone. Our community lifts each other up through prayer and fellowship.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-section fade-up">
+        <h2 class="how-title">Getting Started</h2>
+        <p class="how-subtitle">It's simple. No hoops, no waiting lists, no cost.</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <div class="step-label">Reach Out</div>
+                    <p class="step-desc">Send a message through our community channels or use the contact form below. Say as much or as little as you want.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <div class="step-label">We'll Connect You</div>
+                    <p class="step-desc">Pastor Clay will reach out personally to schedule a conversation &mdash; voice, video, or text. Whatever you're comfortable with.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <div class="step-label">Walk Forward Together</div>
+                    <p class="step-desc">This isn't a one-time thing. We walk with you as long as you need. Ongoing support, ongoing hope.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donation note -->
+    <div class="donation-note fade-up">
+        <div class="donation-icon">&#10084;&#65039;</div>
+        <h3 class="donation-title">Always Free. Donations Welcome.</h3>
+        <p class="donation-text">
+            Our counseling is completely free for anyone who needs it &mdash; no exceptions.
+            If you'd like to support this mission so we can keep helping others, donations
+            are always appreciated but never required.
+        </p>
+        <a href="/#give" class="donate-btn">Support the Mission</a>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section fade-up">
+        <h2 class="cta-title">You Don't Have to Face It Alone</h2>
+        <p class="cta-text">
+            Whatever you're going through &mdash; reach out. We're here because we believe
+            every person matters and every life is worth fighting for.
+        </p>
+        <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="cta-btn">
+            Reach Out Now
+        </a>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer>
+    <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/counseling">Counseling</a></li>
+        <li><a href="/prayers">Prayers</a></li>
+        <li><a href="/edification">Edification</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/stake">Stake</a></li>
+    </ul>
+    <p>&copy; 2026 Salvation 4 Humanity</p>
+</footer>
+
+<script>
+    // Scroll fade-in
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // Ambient particles
+    (function() {
+        var c = document.getElementById('particles');
+        var n = window.innerWidth < 600 ? 8 : 18;
+        for (var i = 0; i < n; i++) {
+            var p = document.createElement('div');
+            p.className = 'particle';
+            var s = Math.random() * 2.5 + 0.5;
+            p.style.cssText = 'width:'+s+'px;height:'+s+'px;left:'+Math.random()*100+'%;animation-duration:'+(Math.random()*25+20)+'s;animation-delay:-'+(Math.random()*30)+'s;opacity:'+(Math.random()*0.15+0.03);
+            c.appendChild(p);
+        }
+    })();
+</script>
+
+</body>
+</html>
