@@ -405,8 +405,6 @@
 
 <script>
 (function() {
-    var APP_ID = '718eac64-10e0-4398-9b66-a882bf2da6be';
-    var WALLET = '0xA00e81ECEDD4D007965997C6cC64D9372beC397E';
     var selectedAmount = 25;
 
     // Amount button selection
@@ -437,18 +435,33 @@
         }
     });
 
-    // Open Coinbase Onramp
-    giveBtn.addEventListener('click', function() {
-        var addresses = JSON.stringify({ [WALLET]: ['base'] });
-        var assets = JSON.stringify(['USDC']);
-        var url = 'https://pay.coinbase.com/buy/select-asset'
-            + '?appId=' + encodeURIComponent(APP_ID)
-            + '&addresses=' + encodeURIComponent(addresses)
-            + '&assets=' + encodeURIComponent(assets)
-            + '&defaultAsset=USDC'
-            + '&defaultNetwork=base'
-            + '&presetFiatAmount=' + selectedAmount;
-        window.open(url, '_blank');
+    // Open Coinbase Onramp with session token
+    giveBtn.addEventListener('click', async function() {
+        giveBtn.disabled = true;
+        giveBtn.textContent = 'Connecting to Coinbase\u2026';
+
+        try {
+            var resp = await fetch('/api/s4h/onramp-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!resp.ok) throw new Error('Failed to start session');
+
+            var data = await resp.json();
+            var url = 'https://pay.coinbase.com/buy/select-asset'
+                + '?sessionToken=' + encodeURIComponent(data.token)
+                + '&defaultAsset=USDC'
+                + '&defaultNetwork=base'
+                + '&presetFiatAmount=' + selectedAmount;
+            window.open(url, '_blank');
+        } catch (e) {
+            alert('Something went wrong connecting to Coinbase. Please try again.');
+            console.error(e);
+        }
+
+        giveBtn.disabled = false;
+        updateGiveBtn();
     });
 
     // Copy wallet address
