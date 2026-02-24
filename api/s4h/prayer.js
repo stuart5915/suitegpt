@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     if (action === 'delete') {
         if (!prayer_id) return res.status(400).json({ error: 'prayer_id required' });
 
-        const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+        const ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd', '0x612abfe54269515f0cc63b4a12fee32d48889ff2'];
         const isAdmin = ADMIN_WALLETS.includes(addr);
 
         // Fetch the prayer to check ownership
