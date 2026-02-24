@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Wall — Salvation 4 Humanity</title>
+    <meta name="description" content="Share prayer requests and reflections with the S4H community. Every prayer is seen and prayed over.">
+    <meta property="og:title" content="Prayer Wall — Salvation 4 Humanity">
+    <meta property="og:description" content="Share prayer requests and reflections with the S4H community.">
+    <meta property="og:url" content="https://salvation4humanity.com/prayers">
+    <link rel="icon" type="image/jpeg" href="/assets/salvation4humanity.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #131210;
+            --bg-warm: #161513;
+            --surface: rgba(180, 160, 130, 0.03);
+            --surface-hover: rgba(180, 160, 130, 0.06);
+            --gold: hsl(35, 38%, 38%);
+            --gold-light: hsl(35, 42%, 48%);
+            --gold-dim: hsl(35, 30%, 24%);
+            --gold-glow: hsla(35, 38%, 38%, 0.15);
+            --gold-border: hsla(35, 30%, 30%, 0.12);
+            --gold-border-hover: hsla(35, 35%, 35%, 0.25);
+            --crimson: hsl(0, 30%, 24%);
+            --crimson-light: hsl(0, 28%, 32%);
+            --crimson-glow: hsla(0, 30%, 22%, 0.2);
+            --text: #c8bfb4;
+            --text-dim: rgba(200, 191, 180, 0.5);
+            --text-muted: rgba(200, 191, 180, 0.25);
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Grain */
+        .grain {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat; background-size: 180px;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky; top: 0; z-index: 100; padding: 16px 24px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(19, 18, 16, 0.85); border-bottom: 1px solid var(--gold-border);
+        }
+        .nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; color: var(--gold); text-decoration: none; font-style: italic; }
+        .nav-links { display: flex; gap: 28px; list-style: none; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--gold-light); }
+        .nav-links a.active { color: var(--gold-light); }
+
+        /* Page layout */
+        .page-header {
+            text-align: center; padding: 5rem 2rem 2rem; max-width: 700px; margin: 0 auto;
+            position: relative; z-index: 2;
+        }
+        .section-label {
+            font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; opacity: 0.8;
+        }
+        .section-title {
+            font-family: var(--font-serif); font-size: 3.2rem; font-weight: 500;
+            margin-bottom: 1rem; line-height: 1.15; letter-spacing: -0.5px;
+        }
+        .section-subtitle {
+            color: var(--text-dim); font-size: 1.05rem; max-width: 520px;
+            margin: 0 auto 2rem; line-height: 1.7;
+        }
+
+        /* Cheshbon banner */
+        .cheshbon-banner {
+            max-width: 700px; margin: 0 auto 2rem; padding: 1.25rem 1.75rem;
+            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.08), hsla(0, 20%, 18%, 0.05));
+            border: 1px solid var(--gold-border); border-radius: 16px;
+            display: flex; align-items: center; gap: 1.25rem;
+            transition: border-color 0.3s; position: relative; z-index: 2;
+        }
+        .cheshbon-banner:hover { border-color: var(--gold-border-hover); }
+        .cheshbon-banner-icon {
+            width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+        }
+        .cheshbon-banner-text { flex: 1; }
+        .cheshbon-banner-text strong { font-family: var(--font-serif); font-size: 1.1rem; display: block; margin-bottom: 0.15rem; }
+        .cheshbon-banner-text span { color: var(--text-dim); font-size: 0.82rem; }
+        .cheshbon-banner-btn {
+            background: var(--gold); color: var(--bg); border: none; padding: 0.6rem 1.25rem;
+            border-radius: 100px; font-weight: 600; font-size: 0.8rem; cursor: pointer;
+            font-family: var(--font-body); text-decoration: none; white-space: nowrap;
+            transition: all 0.3s var(--ease-out);
+        }
+        .cheshbon-banner-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--gold-glow); }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 2rem;
+            max-width: 700px; margin-left: auto; margin-right: auto; position: relative; z-index: 2;
+        }
+        .filter-tab {
+            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 100px;
+            padding: 0.5rem 1.25rem; font-size: 0.82rem; font-weight: 500; color: var(--text-dim);
+            cursor: pointer; transition: all 0.25s var(--ease-out); font-family: var(--font-body);
+        }
+        .filter-tab:hover { border-color: var(--gold-border-hover); color: var(--text); }
+        .filter-tab.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+
+        /* Compose */
+        .compose-section {
+            max-width: 700px; margin: 0 auto 2.5rem; padding: 0 2rem; position: relative; z-index: 2;
+        }
+        .compose-card {
+            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 20px;
+            padding: 1.5rem; transition: border-color 0.3s;
+        }
+        .compose-card:focus-within { border-color: var(--gold-border-hover); }
+        .compose-header {
+            display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+        }
+        .compose-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--crimson), var(--gold-dim));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700; color: var(--text); font-family: var(--font-mono);
+        }
+        .compose-wallet {
+            font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+        }
+        .compose-textarea {
+            width: 100%; min-height: 80px; background: transparent; border: none; resize: vertical;
+            color: var(--text); font-family: var(--font-body); font-size: 0.92rem; line-height: 1.6;
+            outline: none;
+        }
+        .compose-textarea::placeholder { color: var(--text-muted); }
+        .compose-footer {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;
+            padding-top: 0.75rem; border-top: 1px solid var(--gold-border);
+        }
+        .compose-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+        .compose-submit {
+            background: var(--gold); color: var(--bg); border: none; padding: 0.55rem 1.5rem;
+            border-radius: 100px; font-weight: 600; font-size: 0.82rem; cursor: pointer;
+            font-family: var(--font-body); transition: all 0.3s var(--ease-out);
+        }
+        .compose-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px var(--gold-glow); }
+        .compose-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .connect-wallet-btn {
+            background: var(--gold); color: var(--bg); border: none; padding: 0.75rem 2rem;
+            border-radius: 100px; font-weight: 600; font-size: 0.88rem; cursor: pointer;
+            font-family: var(--font-body); display: flex; align-items: center; gap: 0.5rem;
+            margin: 0 auto; transition: all 0.3s var(--ease-out);
+        }
+        .connect-wallet-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px var(--gold-glow); }
+
+        /* Feed */
+        .feed {
+            max-width: 700px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; z-index: 2;
+        }
+        .feed-empty {
+            text-align: center; padding: 4rem 2rem; color: var(--text-muted);
+            font-family: var(--font-serif); font-size: 1.2rem; font-style: italic;
+        }
+        .feed-loading {
+            text-align: center; padding: 3rem; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;
+        }
+
+        /* Card shared */
+        .feed-card {
+            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 20px;
+            padding: 1.5rem; margin-bottom: 1rem; transition: all 0.4s var(--ease-out);
+            position: relative; overflow: hidden;
+        }
+        .feed-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+            background: linear-gradient(to bottom, var(--gold), transparent); opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .feed-card:hover { transform: translateY(-2px); border-color: var(--gold-border-hover); }
+        .feed-card:hover::before { opacity: 1; }
+
+        .feed-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .feed-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700; color: var(--bg); font-family: var(--font-mono);
+        }
+        .feed-avatar.reflection { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); }
+        .feed-avatar.prayer { background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); }
+        .feed-user { font-weight: 600; font-size: 0.85rem; }
+        .feed-meta { display: flex; align-items: center; gap: 0.5rem; }
+        .feed-time { font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .feed-type-badge {
+            font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 1px;
+            text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 100px;
+        }
+        .badge-reflection { background: var(--gold-glow); color: var(--gold-light); }
+        .badge-prayer { background: var(--crimson-glow); color: var(--crimson-light); }
+
+        /* Reflection verse block */
+        .verse-block {
+            background: hsla(35, 25%, 25%, 0.05); border-left: 2px solid var(--gold-dim);
+            padding: 0.85rem 1.15rem; border-radius: 0 12px 12px 0; margin-bottom: 0.85rem;
+            font-family: var(--font-serif); font-style: italic; color: var(--text-dim);
+            font-size: 1rem; line-height: 1.55;
+        }
+        .verse-block cite {
+            display: block; margin-top: 0.4rem; font-style: normal;
+            font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold); letter-spacing: 0.5px;
+        }
+
+        .feed-text { color: var(--text); font-size: 0.88rem; line-height: 1.65; margin-bottom: 0.75rem; }
+
+        .feed-actions {
+            display: flex; gap: 1.25rem; color: var(--text-muted); font-size: 0.75rem;
+            font-family: var(--font-mono);
+        }
+        .feed-action {
+            cursor: pointer; transition: color 0.25s; display: flex; align-items: center; gap: 0.35rem;
+            background: none; border: none; color: inherit; font: inherit; padding: 0;
+        }
+        .feed-action:hover { color: var(--gold); }
+        .feed-action.prayed { color: var(--gold-light); }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem; text-align: center; border-top: 1px solid var(--gold-border);
+            color: var(--text-muted); font-size: 0.82rem; position: relative; z-index: 2;
+        }
+        .footer-links {
+            display: flex; gap: 2.5rem; justify-content: center; list-style: none; margin-bottom: 1.5rem;
+        }
+        .footer-links a {
+            color: var(--text-muted); text-decoration: none; font-size: 0.78rem; font-weight: 500;
+            letter-spacing: 0.5px; text-transform: uppercase; transition: color 0.25s;
+        }
+        .footer-links a:hover { color: var(--gold); }
+        footer > p { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.5px; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--gold); color: var(--bg); padding: 0.75rem 1.5rem;
+            border-radius: 100px; font-weight: 600; font-size: 0.85rem; z-index: 1000;
+            transition: transform 0.4s var(--ease-out); pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .nav-links { display: none; }
+            .section-title { font-size: 2.2rem; }
+            .cheshbon-banner { flex-direction: column; text-align: center; }
+            .filter-tabs { flex-wrap: wrap; padding: 0 1rem; }
+            .compose-section, .feed { padding: 0 1.25rem; }
+            .feed-card { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- Nav -->
+<nav>
+    <div class="nav-inner">
+        <a href="/" class="nav-brand">Salvation 4 Humanity</a>
+        <ul class="nav-links">
+            <li><a href="/prayers" class="active">Prayers</a></li>
+            <li><a href="/stake">Stake</a></li>
+            <li><a href="https://t.me/inclawbate" target="_blank" rel="noopener">Community</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Header -->
+<div class="page-header">
+    <div class="section-label">Community</div>
+    <h1 class="section-title">Prayer Wall</h1>
+    <p class="section-subtitle">Share what's on your heart. Every prayer is seen and lifted up by real people in this community.</p>
+</div>
+
+<!-- Cheshbon Banner -->
+<div class="cheshbon-banner">
+    <div class="cheshbon-banner-icon">&#128214;</div>
+    <div class="cheshbon-banner-text">
+        <strong>Cheshbon Bible App</strong>
+        <span>Read scripture, share reflections, and grow with the community.</span>
+    </div>
+    <a href="https://suitegpt.app/cheshbon" class="cheshbon-banner-btn">Try It Free</a>
+</div>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs">
+    <button class="filter-tab active" data-filter="all">All</button>
+    <button class="filter-tab" data-filter="reflections">Reflections</button>
+    <button class="filter-tab" data-filter="prayers">Prayer Requests</button>
+</div>
+
+<!-- Compose Section -->
+<div class="compose-section">
+    <div id="compose-connect" style="text-align:center;">
+        <button class="connect-wallet-btn" onclick="connectWallet()">&#128274;&ensp;Connect Wallet to Post</button>
+    </div>
+    <div id="compose-form" style="display:none;">
+        <div class="compose-card">
+            <div class="compose-header">
+                <div class="compose-avatar" id="compose-avatar">?</div>
+                <span class="compose-wallet" id="compose-addr"></span>
+            </div>
+            <textarea class="compose-textarea" id="prayer-input" placeholder="Share your prayer request with the community..." maxlength="1000" oninput="updateCount()"></textarea>
+            <div class="compose-footer">
+                <span class="compose-count"><span id="char-count">0</span>/1000</span>
+                <button class="compose-submit" id="submit-btn" onclick="submitPrayer()" disabled>Submit Prayer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feed -->
+<div class="feed" id="feed">
+    <div class="feed-loading">Loading prayers &amp; reflections...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Footer -->
+<footer>
+    <ul class="footer-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prayers">Prayers</a></li>
+        <li><a href="/stake">Stake</a></li>
+        <li><a href="https://t.me/inclawbate" target="_blank" rel="noopener">Community</a></li>
+    </ul>
+    <p>&copy; 2026 Salvation 4 Humanity</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+    // --- Supabase Clients ---
+    const cheshbonSb = supabase.createClient(
+        'https://zbrkexdandknnsuprbxu.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicmtleGRhbmRrbm5zdXByYnh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUwNzQ4MDcsImV4cCI6MjA1MDY1MDgwN30.pCNdDKbPnIjJiGUaSE0yd_kW3sUFqBkNfKBexcMiqMg'
+    );
+
+    // State
+    let walletAddress = null;
+    let allItems = [];
+    let currentFilter = 'all';
+    let userPrays = new Set();
+
+    // --- Wallet ---
+    async function connectWallet() {
+        if (!window.ethereum) {
+            showToast('MetaMask not found. Install it to post prayers.');
+            return;
+        }
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            walletAddress = accounts[0].toLowerCase();
+            document.getElementById('compose-connect').style.display = 'none';
+            document.getElementById('compose-form').style.display = 'block';
+            const short = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+            document.getElementById('compose-addr').textContent = short;
+            document.getElementById('compose-avatar').textContent = walletAddress.slice(2, 4).toUpperCase();
+            loadUserPrays();
+        } catch (e) {
+            showToast('Wallet connection cancelled');
+        }
+    }
+
+    // --- Compose ---
+    function updateCount() {
+        const len = document.getElementById('prayer-input').value.trim().length;
+        document.getElementById('char-count').textContent = len;
+        document.getElementById('submit-btn').disabled = len === 0;
+    }
+
+    async function submitPrayer() {
+        const input = document.getElementById('prayer-input');
+        const text = input.value.trim();
+        if (!text || !walletAddress) return;
+
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        try {
+            const resp = await fetch('/api/s4h/prayer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'submit', wallet_address: walletAddress, prayer_text: text })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error);
+
+            input.value = '';
+            updateCount();
+            showToast('Prayer submitted');
+            loadFeed();
+        } catch (e) {
+            showToast(e.message || 'Failed to submit');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Submit Prayer';
+        }
+    }
+
+    // --- Feed ---
+    async function loadFeed() {
+        const feedEl = document.getElementById('feed');
+        feedEl.innerHTML = '<div class="feed-loading">Loading prayers &amp; reflections...</div>';
+
+        const [reflections, prayers] = await Promise.all([
+            loadReflections(),
+            loadPrayers()
+        ]);
+
+        allItems = [...reflections, ...prayers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        renderFeed();
+    }
+
+    async function loadReflections() {
+        try {
+            const { data, error } = await cheshbonSb
+                .from('public_reflections')
+                .select('id, verse_reference, verse_text, reflection, display_name, avatar_url, likes_count, created_at')
+                .is('parent_reflection_id', null)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            return (data || []).map(r => ({ ...r, _type: 'reflection' }));
+        } catch (e) {
+            console.error('Failed to load reflections:', e);
+            return [];
+        }
+    }
+
+    async function loadPrayers() {
+        try {
+            const resp = await fetch('https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/prayer_requests?select=*&order=created_at.desc&limit=50', {
+                headers: {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU2MTk0MjgsImV4cCI6MjAzMTE5NTQyOH0.mvH0HqkU9YXKM6e0-vOFn-6FjOEkSlTJCbo1o03JRWI'
+                }
+            });
+            const data = await resp.json();
+            return (data || []).map(p => ({ ...p, _type: 'prayer' }));
+        } catch (e) {
+            console.error('Failed to load prayers:', e);
+            return [];
+        }
+    }
+
+    async function loadUserPrays() {
+        if (!walletAddress) return;
+        try {
+            const resp = await fetch(`https://rdsmdywbdiskxknluiym.supabase.co/rest/v1/prayer_prays?select=prayer_id&wallet_address=eq.${walletAddress}`, {
+                headers: {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkc21keXdiZGlza3hrbmx1aXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTU2MTk0MjgsImV4cCI6MjAzMTE5NTQyOH0.mvH0HqkU9YXKM6e0-vOFn-6FjOEkSlTJCbo1o03JRWI'
+                }
+            });
+            const data = await resp.json();
+            userPrays = new Set((data || []).map(p => p.prayer_id));
+            renderFeed();
+        } catch (e) {}
+    }
+
+    function renderFeed() {
+        const feedEl = document.getElementById('feed');
+        let items = allItems;
+        if (currentFilter === 'reflections') items = items.filter(i => i._type === 'reflection');
+        if (currentFilter === 'prayers') items = items.filter(i => i._type === 'prayer');
+
+        if (items.length === 0) {
+            feedEl.innerHTML = '<div class="feed-empty">No prayers or reflections yet. Be the first.</div>';
+            return;
+        }
+
+        feedEl.innerHTML = items.map(item => item._type === 'reflection' ? renderReflection(item) : renderPrayer(item)).join('');
+    }
+
+    function renderReflection(r) {
+        const initials = (r.display_name || 'A').slice(0, 2).toUpperCase();
+        const name = r.display_name || 'Anonymous';
+        return `
+            <div class="feed-card" data-type="reflection">
+                <div class="feed-card-header">
+                    <div class="feed-avatar reflection">${initials}</div>
+                    <div>
+                        <div class="feed-user">${esc(name)}</div>
+                        <div class="feed-meta">
+                            <span class="feed-type-badge badge-reflection">Reflection</span>
+                            <span class="feed-time">${timeAgo(r.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+                ${r.verse_text ? `
+                    <div class="verse-block">
+                        &ldquo;${esc(r.verse_text)}&rdquo;
+                        ${r.verse_reference ? `<cite>${esc(r.verse_reference)}</cite>` : ''}
+                    </div>
+                ` : ''}
+                <div class="feed-text">${esc(r.reflection)}</div>
+                <div class="feed-actions">
+                    <span>&#9825; ${r.likes_count || 0}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPrayer(p) {
+        const addr = p.wallet_address || '';
+        const short = addr.slice(0, 6) + '...' + addr.slice(-4);
+        const initials = addr.slice(2, 4).toUpperCase();
+        const hasPrayed = userPrays.has(p.id);
+        return `
+            <div class="feed-card" data-type="prayer">
+                <div class="feed-card-header">
+                    <div class="feed-avatar prayer">${initials}</div>
+                    <div>
+                        <div class="feed-user">${short}</div>
+                        <div class="feed-meta">
+                            <span class="feed-type-badge badge-prayer">Prayer</span>
+                            <span class="feed-time">${timeAgo(p.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feed-text">${esc(p.prayer_text)}</div>
+                <div class="feed-actions">
+                    <button class="feed-action ${hasPrayed ? 'prayed' : ''}" onclick="togglePray('${p.id}', this)">
+                        &#128591; ${p.pray_count || 0} praying
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function togglePray(prayerId, btn) {
+        if (!walletAddress) {
+            showToast('Connect your wallet to pray');
+            return;
+        }
+        try {
+            const resp = await fetch('/api/s4h/prayer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'pray', wallet_address: walletAddress, prayer_id: prayerId })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error);
+
+            if (data.prayed) {
+                userPrays.add(prayerId);
+            } else {
+                userPrays.delete(prayerId);
+            }
+
+            // Update count in allItems
+            const item = allItems.find(i => i.id === prayerId);
+            if (item) item.pray_count = (item.pray_count || 0) + (data.prayed ? 1 : -1);
+
+            renderFeed();
+        } catch (e) {
+            showToast(e.message || 'Failed');
+        }
+    }
+
+    // --- Filter tabs ---
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.filter;
+            renderFeed();
+        });
+    });
+
+    // --- Utils ---
+    function esc(s) {
+        if (!s) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function timeAgo(dateStr) {
+        const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+        return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // --- Init ---
+    loadFeed();
+</script>
+
+</body>
+</html>
