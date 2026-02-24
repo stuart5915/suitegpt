@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Give | Salvation 4 Humanity</title>
+    <meta name="description" content="Support Salvation 4 Humanity. Give with your credit card — donations arrive as USDC on Base. 100% transparent.">
+    <link rel="icon" type="image/jpeg" href="/assets/salvation4humanity.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #131210;
+            --bg-warm: #161513;
+            --surface: rgba(180, 160, 130, 0.03);
+            --surface-hover: rgba(180, 160, 130, 0.06);
+            --gold: hsl(35, 38%, 38%);
+            --gold-light: hsl(35, 42%, 48%);
+            --gold-dim: hsl(35, 30%, 24%);
+            --gold-glow: hsla(35, 38%, 38%, 0.15);
+            --gold-border: hsla(35, 30%, 30%, 0.12);
+            --gold-border-hover: hsla(35, 35%, 35%, 0.25);
+            --crimson: hsl(0, 30%, 24%);
+            --crimson-light: hsl(0, 28%, 32%);
+            --crimson-glow: hsla(0, 30%, 22%, 0.2);
+            --text: #c8bfb4;
+            --text-dim: rgba(200, 191, 180, 0.5);
+            --text-muted: rgba(200, 191, 180, 0.25);
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .grain {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat; background-size: 180px;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            padding: 16px 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(19, 18, 16, 0.85);
+            border-bottom: 1px solid var(--gold-border);
+        }
+        .nav-inner {
+            max-width: 900px; margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem;
+            color: var(--gold); text-decoration: none; font-style: italic;
+        }
+        .nav-links { display: flex; gap: 28px; list-style: none; }
+        .nav-links a {
+            color: var(--text-dim); text-decoration: none;
+            font-size: 0.85rem; font-weight: 500; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--gold-light); }
+        .nav-links a.active { color: var(--gold-light); }
+
+        /* ── PAGE ── */
+        .page {
+            max-width: 640px; margin: 0 auto;
+            padding: 5rem 1.5rem 4rem;
+            position: relative; z-index: 2;
+        }
+
+        .page-label {
+            font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.14em;
+            color: var(--gold); margin-bottom: 0.75rem;
+        }
+
+        .page h1 {
+            font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600;
+            color: var(--text); line-height: 1.2; margin-bottom: 0.75rem;
+            font-style: italic;
+        }
+
+        .page-sub {
+            color: var(--text-dim); font-size: 0.95rem; line-height: 1.7;
+            margin-bottom: 3rem;
+        }
+
+        /* ── AMOUNT SELECTOR ── */
+        .amount-section { margin-bottom: 2.5rem; }
+        .amount-label {
+            font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--text-dim); margin-bottom: 1rem;
+        }
+
+        .amount-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin-bottom: 1rem;
+        }
+
+        .amount-btn {
+            background: var(--surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 10px;
+            padding: 14px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+            font-family: var(--font-body);
+            color: var(--text);
+            font-size: 1.05rem; font-weight: 600;
+        }
+        .amount-btn:hover {
+            border-color: var(--gold-border-hover);
+            background: var(--surface-hover);
+        }
+        .amount-btn.selected {
+            border-color: var(--gold);
+            background: var(--gold-glow);
+            color: var(--gold-light);
+            box-shadow: 0 0 16px hsla(35, 38%, 38%, 0.1);
+        }
+
+        .custom-amount-wrap {
+            position: relative;
+        }
+        .custom-amount-wrap span {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-dim); font-size: 1rem; font-weight: 600;
+            pointer-events: none;
+        }
+        .custom-amount {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 10px;
+            padding: 14px 14px 14px 28px;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 1.05rem; font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .custom-amount:focus {
+            border-color: var(--gold);
+        }
+        .custom-amount::placeholder { color: var(--text-muted); font-weight: 400; }
+
+        /* ── GIVE BUTTON ── */
+        .give-btn {
+            display: block; width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+            border: 1px solid hsla(0, 25%, 35%, 0.3);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 1rem; font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out);
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+        .give-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--crimson-glow);
+        }
+
+        /* ── INFO CARD ── */
+        .info-card {
+            background: var(--surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .info-card h3 {
+            font-family: var(--font-serif); font-size: 1.1rem; font-weight: 600;
+            color: var(--gold-light); margin-bottom: 0.5rem; font-style: italic;
+        }
+        .info-card p {
+            color: var(--text-dim); font-size: 0.85rem; line-height: 1.7;
+        }
+
+        /* ── DIRECT SEND ── */
+        .direct-send {
+            background: var(--surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-top: 2.5rem;
+        }
+        .direct-send h3 {
+            font-family: var(--font-serif); font-size: 1.1rem; font-weight: 600;
+            color: var(--text-dim); margin-bottom: 0.5rem; font-style: italic;
+        }
+        .direct-send p {
+            color: var(--text-muted); font-size: 0.82rem; line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        .wallet-row {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--gold-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        .wallet-addr {
+            font-family: var(--font-mono); font-size: 0.72rem;
+            color: var(--text-dim);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex: 1;
+        }
+        .wallet-copy {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 0.85rem; padding: 4px;
+            transition: color 0.2s; flex-shrink: 0;
+        }
+        .wallet-copy:hover { color: var(--gold-light); }
+        .wallet-network {
+            font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-muted); flex-shrink: 0;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            position: relative; z-index: 2;
+            border-top: 1px solid var(--gold-border);
+        }
+        footer a {
+            color: var(--text-dim); text-decoration: none;
+            transition: color 0.2s;
+        }
+        footer a:hover { color: var(--gold-light); }
+
+        @media (max-width: 480px) {
+            .page { padding: 3rem 1rem 3rem; }
+            .page h1 { font-size: 1.8rem; }
+            .amount-grid { grid-template-columns: repeat(2, 1fr); }
+            .nav-links { gap: 16px; }
+            .nav-links a { font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+    <div class="nav-inner">
+        <a href="/" class="nav-brand">Salvation 4 Humanity</a>
+        <ul class="nav-links">
+            <li><a href="/prayers">Prayers</a></li>
+            <li><a href="/give" class="active">Give</a></li>
+            <li><a href="/stake">Stake</a></li>
+            <li><a href="https://t.me/inclawbate" target="_blank" rel="noopener">Community</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- ═══ GIVE PAGE ═══ -->
+<div class="page">
+    <div class="page-label">Support the Mission</div>
+    <h1>Give to Salvation 4 Humanity</h1>
+    <p class="page-sub">Every gift fuels sermons, community, and kingdom work. Pay with your credit card &mdash; it arrives as USDC on the church wallet. Fully transparent, fully on-chain.</p>
+
+    <!-- Amount Selection -->
+    <div class="amount-section">
+        <div class="amount-label">Choose an amount</div>
+        <div class="amount-grid">
+            <button class="amount-btn" data-amount="10">$10</button>
+            <button class="amount-btn selected" data-amount="25">$25</button>
+            <button class="amount-btn" data-amount="50">$50</button>
+            <button class="amount-btn" data-amount="100">$100</button>
+        </div>
+        <div class="custom-amount-wrap">
+            <span>$</span>
+            <input type="number" class="custom-amount" id="customAmount" placeholder="Other amount" min="1" step="1">
+        </div>
+    </div>
+
+    <!-- Give Button -->
+    <button class="give-btn" id="giveBtn">Give $25 &rarr;</button>
+
+    <!-- How it works -->
+    <div class="info-card">
+        <h3>How does this work?</h3>
+        <p>You pay with your credit or debit card through Coinbase. The payment is converted to USDC (a stablecoin pegged 1:1 to USD) and sent directly to the church wallet on Base. No middlemen, no hidden fees. You can verify every donation on-chain.</p>
+    </div>
+
+    <!-- Direct crypto send -->
+    <div class="direct-send">
+        <h3>Already have crypto?</h3>
+        <p>Send USDC, ETH, or any token directly to the S4H donation wallet on Base.</p>
+        <div class="wallet-row">
+            <span class="wallet-network">Base</span>
+            <span class="wallet-addr" id="walletAddr">0xA00e81ECEDD4D007965997C6cC64D9372beC397E</span>
+            <button class="wallet-copy" id="copyBtn" title="Copy address">&#128203;</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+    <p><a href="/">Salvation 4 Humanity</a> &mdash; A church that meets you where you are.</p>
+</footer>
+
+<script>
+(function() {
+    var APP_ID = '718eac64-10e0-4398-9b66-a882bf2da6be';
+    var WALLET = '0xA00e81ECEDD4D007965997C6cC64D9372beC397E';
+    var selectedAmount = 25;
+
+    // Amount button selection
+    var btns = document.querySelectorAll('.amount-btn');
+    var customInput = document.getElementById('customAmount');
+    var giveBtn = document.getElementById('giveBtn');
+
+    function updateGiveBtn() {
+        giveBtn.textContent = 'Give $' + selectedAmount + ' \u2192';
+    }
+
+    btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            btns.forEach(function(b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            selectedAmount = parseInt(btn.dataset.amount);
+            customInput.value = '';
+            updateGiveBtn();
+        });
+    });
+
+    customInput.addEventListener('input', function() {
+        var val = parseInt(customInput.value);
+        if (val > 0) {
+            btns.forEach(function(b) { b.classList.remove('selected'); });
+            selectedAmount = val;
+            updateGiveBtn();
+        }
+    });
+
+    // Open Coinbase Onramp
+    giveBtn.addEventListener('click', function() {
+        var addresses = JSON.stringify({ [WALLET]: ['base'] });
+        var assets = JSON.stringify(['USDC']);
+        var url = 'https://pay.coinbase.com/buy/select-asset'
+            + '?appId=' + encodeURIComponent(APP_ID)
+            + '&addresses=' + encodeURIComponent(addresses)
+            + '&assets=' + encodeURIComponent(assets)
+            + '&defaultAsset=USDC'
+            + '&defaultNetwork=base'
+            + '&presetFiatAmount=' + selectedAmount;
+        window.open(url, '_blank');
+    });
+
+    // Copy wallet address
+    document.getElementById('copyBtn').addEventListener('click', function() {
+        var addr = document.getElementById('walletAddr').textContent.trim();
+        navigator.clipboard.writeText(addr).then(function() {
+            var btn = document.getElementById('copyBtn');
+            btn.textContent = '\u2713';
+            setTimeout(function() { btn.innerHTML = '&#128203;'; }, 1500);
+        });
+    });
+})();
+</script>
+
+</body>
+</html>
