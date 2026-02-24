@@ -850,11 +850,17 @@
             overflow: hidden;
         }
 
+        .sermon-thumb img {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; inset: 0;
+        }
+
         .sermon-thumb::before {
             content: '';
             position: absolute;
             inset: 0;
             background: linear-gradient(to bottom, transparent 50%, rgba(6, 6, 10, 0.4));
+            z-index: 1;
         }
 
         .sermon-thumb::after {
@@ -866,13 +872,22 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
-            z-index: 1;
+            z-index: 2;
             transition: all 0.3s var(--ease-out);
         }
 
         .sermon-card:hover .sermon-thumb::after {
             background: var(--gold);
             transform: scale(1.1);
+        }
+
+        .sermon-card a {
+            text-decoration: none; color: inherit; display: block;
+        }
+
+        .sermons-loading {
+            text-align: center; padding: 3rem; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;
         }
 
         .sermon-body { padding: 1.25rem 1.5rem; }
@@ -1683,59 +1698,12 @@
     <h2 class="section-title">Recent Messages</h2>
     <p class="section-subtitle">Missed a week? Catch up on recent sermons from our teaching team.</p>
 
-    <div class="sermon-grid">
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Feb 16, 2026</div>
-                <div class="sermon-title">Finding Light in the Noise (Part 3)</div>
-                <div class="sermon-speaker">Pastor James</div>
-            </div>
-        </div>
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Feb 9, 2026</div>
-                <div class="sermon-title">Finding Light in the Noise (Part 2)</div>
-                <div class="sermon-speaker">Pastor James</div>
-            </div>
-        </div>
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Feb 2, 2026</div>
-                <div class="sermon-title">Finding Light in the Noise (Part 1)</div>
-                <div class="sermon-speaker">Guest Speaker &mdash; Sarah Mitchell</div>
-            </div>
-        </div>
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Jan 26, 2026</div>
-                <div class="sermon-title">Anchored: Holding Steady in Uncertain Times</div>
-                <div class="sermon-speaker">Pastor James</div>
-            </div>
-        </div>
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Jan 19, 2026</div>
-                <div class="sermon-title">The Table Is Set</div>
-                <div class="sermon-speaker">Pastor James</div>
-            </div>
-        </div>
-        <div class="sermon-card">
-            <div class="sermon-thumb"></div>
-            <div class="sermon-body">
-                <div class="sermon-date">Jan 12, 2026</div>
-                <div class="sermon-title">New Year, Same God</div>
-                <div class="sermon-speaker">Pastor James</div>
-            </div>
-        </div>
+    <div class="sermon-grid" id="sermon-grid">
+        <div class="sermons-loading">Loading sermons...</div>
     </div>
 
     <div class="view-all">
-        <a href="#">View All Sermons &rarr;</a>
+        <a href="https://www.youtube.com/@S4H_Church" target="_blank" rel="noopener">View All Sermons &rarr;</a>
     </div>
 </section>
 
@@ -1908,6 +1876,71 @@
         });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // ── YouTube Sermons ──
+    (function loadSermons() {
+        const YOUTUBE_API_KEY = ''; // Paste your YouTube Data API v3 key here
+        const CHANNEL_HANDLE = '@S4H_Church';
+        const MAX_RESULTS = 6;
+        const grid = document.getElementById('sermon-grid');
+
+        if (!YOUTUBE_API_KEY) {
+            // No API key yet — show placeholder cards
+            grid.innerHTML = Array.from({ length: MAX_RESULTS }, (_, i) => `
+                <a href="https://www.youtube.com/${CHANNEL_HANDLE}" target="_blank" rel="noopener" class="sermon-card" style="transition-delay:${i * 0.06}s">
+                    <div class="sermon-thumb"></div>
+                    <div class="sermon-body">
+                        <div class="sermon-date">Coming Soon</div>
+                        <div class="sermon-title">Subscribe on YouTube to catch every message</div>
+                        <div class="sermon-speaker">S4H Church</div>
+                    </div>
+                </a>
+            `).join('');
+            return;
+        }
+
+        // Step 1: Resolve channel ID from handle
+        fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${CHANNEL_HANDLE}&key=${YOUTUBE_API_KEY}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.items || !data.items.length) throw new Error('Channel not found');
+                const uploadsPlaylistId = data.items[0].contentDetails.relatedPlaylists.uploads;
+                return fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=${MAX_RESULTS}&key=${YOUTUBE_API_KEY}`);
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.items || !data.items.length) {
+                    grid.innerHTML = '<div class="sermons-loading">No sermons yet — check back soon.</div>';
+                    return;
+                }
+                grid.innerHTML = data.items.map((item, i) => {
+                    const s = item.snippet;
+                    const videoId = s.resourceId.videoId;
+                    const thumb = s.thumbnails.high ? s.thumbnails.high.url
+                                : s.thumbnails.medium ? s.thumbnails.medium.url
+                                : s.thumbnails.default.url;
+                    const date = new Date(s.publishedAt).toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    });
+                    const title = s.title.length > 60 ? s.title.slice(0, 57) + '...' : s.title;
+                    const channel = s.channelTitle || 'S4H Church';
+                    return `
+                        <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" rel="noopener" class="sermon-card" style="transition-delay:${i * 0.06}s">
+                            <div class="sermon-thumb"><img src="${thumb}" alt="${title}" loading="lazy"></div>
+                            <div class="sermon-body">
+                                <div class="sermon-date">${date}</div>
+                                <div class="sermon-title">${title}</div>
+                                <div class="sermon-speaker">${channel}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            })
+            .catch(err => {
+                console.error('Failed to load sermons:', err);
+                grid.innerHTML = '<div class="sermons-loading">Could not load sermons. <a href="https://www.youtube.com/' + CHANNEL_HANDLE + '" target="_blank" rel="noopener" style="color:var(--gold)">Watch on YouTube &rarr;</a></div>';
+            });
+    })();
 
     // Ambient particles
     (function createParticles() {
