@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S4H Admin — Livestream</title>
+    <link rel="icon" type="image/jpeg" href="/assets/salvation4humanity.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #131210;
+            --bg-warm: #161513;
+            --surface: rgba(180, 160, 130, 0.03);
+            --surface-hover: rgba(180, 160, 130, 0.06);
+            --gold: hsl(35, 38%, 38%);
+            --gold-light: hsl(35, 42%, 48%);
+            --gold-dim: hsl(35, 30%, 24%);
+            --gold-glow: hsla(35, 38%, 38%, 0.15);
+            --gold-border: hsla(35, 30%, 30%, 0.12);
+            --gold-border-hover: hsla(35, 35%, 35%, 0.25);
+            --crimson: hsl(0, 30%, 24%);
+            --crimson-light: hsl(0, 28%, 32%);
+            --text: #c8bfb4;
+            --text-dim: rgba(200, 191, 180, 0.5);
+            --text-muted: rgba(200, 191, 180, 0.25);
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', sans-serif;
+            --live-red: #e53e3e;
+            --twitch: #9146ff;
+            --youtube: #ff0000;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── WALLET GATE ── */
+        #wallet-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        #wallet-gate h1 {
+            font-family: var(--font-serif);
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--gold-light);
+            margin-bottom: 0.5rem;
+        }
+
+        #wallet-gate p {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.75rem;
+            border: 1px solid var(--gold-border-hover);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--gold-light);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--gold-glow);
+            border-color: var(--gold);
+        }
+
+        .btn-live {
+            background: var(--crimson);
+            border-color: var(--live-red);
+            color: #fff;
+            font-size: 1.1rem;
+            padding: 0.85rem 2.5rem;
+        }
+
+        .btn-live:hover { background: hsl(0, 35%, 30%); }
+
+        .btn-live.is-live {
+            background: var(--live-red);
+            animation: pulse-live 2s infinite;
+        }
+
+        @keyframes pulse-live {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
+        }
+
+        #gate-status {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--live-red);
+        }
+
+        /* ── ADMIN PANEL ── */
+        #admin-panel { display: none; }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gold-border);
+            background: var(--bg-warm);
+        }
+
+        .admin-header h1 {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gold-light);
+        }
+
+        .admin-header .wallet-info {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .admin-body {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 0;
+            height: calc(100vh - 57px);
+        }
+
+        /* ── LEFT: VIDEO + CONTROLS ── */
+        .stream-col {
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--gold-border);
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .live-badge {
+            display: none;
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--live-red);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .live-badge.visible { display: block; }
+
+        .stream-timer {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stream-info {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-twitch { background: rgba(145, 70, 255, 0.15); color: var(--twitch); }
+        .badge-youtube { background: rgba(255, 0, 0, 0.12); color: var(--youtube); }
+
+        /* ── SETTINGS ── */
+        .settings-panel {
+            border: 1px solid var(--gold-border);
+            border-radius: 8px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        .settings-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .settings-toggle:hover { color: var(--text); }
+        .settings-toggle .arrow { transition: transform 0.2s; }
+        .settings-toggle.open .arrow { transform: rotate(180deg); }
+
+        .settings-body {
+            display: none;
+            padding: 0 1rem 1rem;
+        }
+
+        .settings-body.open { display: block; }
+
+        .field {
+            margin-bottom: 0.75rem;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid var(--gold-border);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .field input::placeholder { color: var(--text-muted); }
+
+        /* ── X REMINDER ── */
+        .x-reminder {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--gold-border);
+            border-radius: 8px;
+            background: var(--surface);
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .x-reminder a {
+            color: var(--gold-light);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .x-reminder a:hover { text-decoration: underline; }
+
+        /* ── RIGHT: CHAT ── */
+        .chat-col {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--gold-border);
+            background: var(--bg-warm);
+        }
+
+        .chat-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gold-border);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-counts {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-dim);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .chat-msg {
+            padding: 4px 8px;
+            font-size: 0.82rem;
+            line-height: 1.4;
+            border-radius: 4px;
+        }
+
+        .chat-msg:hover { background: var(--surface-hover); }
+
+        .chat-msg .platform {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 4px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 14px;
+            color: #fff;
+        }
+
+        .chat-msg .platform.tw { background: var(--twitch); }
+        .chat-msg .platform.yt { background: var(--youtube); }
+
+        .chat-msg .author {
+            font-weight: 600;
+            color: var(--gold-light);
+            margin-right: 4px;
+        }
+
+        .chat-msg .text { color: var(--text); }
+
+        .chat-empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 800px) {
+            .admin-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                height: auto;
+            }
+            .chat-col {
+                border-left: none;
+                border-top: 1px solid var(--gold-border);
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── WALLET GATE ── -->
+<div id="wallet-gate">
+    <h1>S4H Livestream</h1>
+    <p>Connect your wallet to access the admin panel.</p>
+    <button class="btn" id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    <div id="gate-status"></div>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div id="admin-panel">
+    <header class="admin-header">
+        <h1>S4H Livestream</h1>
+        <span class="wallet-info" id="wallet-display"></span>
+    </header>
+
+    <div class="admin-body">
+        <!-- LEFT: Video + Controls -->
+        <div class="stream-col">
+            <div class="video-container">
+                <video id="preview" autoplay muted playsinline></video>
+                <div class="live-badge" id="live-badge">LIVE</div>
+                <div class="stream-timer" id="stream-timer" style="display:none;">00:00:00</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-live" id="live-btn" onclick="toggleStream()">Go Live</button>
+                <div class="stream-info" id="stream-info" style="display:none;">
+                    <span class="platform-badge badge-youtube">YT</span>
+                    <span class="platform-badge badge-twitch">TW</span>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="settings-panel">
+                <button class="settings-toggle" onclick="toggleSettings(this)">
+                    Stream Settings <span class="arrow">&#9662;</span>
+                </button>
+                <div class="settings-body" id="settings-body">
+                    <div class="field">
+                        <label>YouTube Stream Key</label>
+                        <input type="password" id="yt-key" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label>Twitch Stream Key</label>
+                        <input type="password" id="tw-key" placeholder="live_xxxxxxxxxx" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label>Twitch Channel Name</label>
+                        <input type="text" id="tw-channel" placeholder="salvation4humanity" autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label>YouTube API Key (for chat)</label>
+                        <input type="password" id="yt-api-key" placeholder="AIzaSy..." autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label>YouTube Video/Broadcast ID (for chat)</label>
+                        <input type="text" id="yt-video-id" placeholder="dQw4w9WgXcQ" autocomplete="off">
+                    </div>
+                    <button class="btn" onclick="saveSettings()" style="margin-top:0.5rem;">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- X Spaces Reminder -->
+            <div class="x-reminder">
+                <span style="font-size:1.2rem;">𝕏</span>
+                <span>Don't forget to start your X Space! <a href="https://twitter.com/i/spaces/start" target="_blank" rel="noopener">Launch Space &rarr;</a></span>
+            </div>
+        </div>
+
+        <!-- RIGHT: Chat -->
+        <div class="chat-col">
+            <div class="chat-header">
+                <span>Unified Chat</span>
+                <span class="chat-counts" id="chat-counts"></span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-empty">Chat messages will appear here when you go live.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const ALLOWED_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0x0000000000000000000000000000000000000000'
+];
+
+const RELAY_URL = 'wss://stream.salvation4humanity.com';
+
+// ── STATE ──
+let mediaStream = null;
+let mediaRecorder = null;
+let relayWs = null;
+let isLive = false;
+let streamStart = null;
+let timerInterval = null;
+let twitchWs = null;
+let ytChatInterval = null;
+let ytNextPageToken = null;
+let chatMsgCount = { twitch: 0, youtube: 0 };
+
+// ── WALLET AUTH ──
+async function connectWallet() {
+    const status = document.getElementById('gate-status');
+
+    if (typeof window.ethereum === 'undefined') {
+        status.textContent = 'MetaMask not detected. Please install MetaMask.';
+        return;
+    }
+
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const addr = accounts[0].toLowerCase();
+
+        if (ALLOWED_WALLETS.includes(addr)) {
+            document.getElementById('wallet-gate').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+            document.getElementById('wallet-display').textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
+            loadSettings();
+            startWebcam();
+        } else {
+            status.textContent = 'Access denied — wallet not authorized.';
+        }
+    } catch (err) {
+        status.textContent = 'Connection cancelled.';
+    }
+}
+
+// Listen for account changes
+if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0 || !ALLOWED_WALLETS.includes(accounts[0].toLowerCase())) {
+            if (isLive) endStream();
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('wallet-gate').style.display = 'flex';
+            document.getElementById('gate-status').textContent = 'Wallet disconnected or unauthorized.';
+        }
+    });
+}
+
+// ── SETTINGS ──
+function loadSettings() {
+    document.getElementById('yt-key').value = localStorage.getItem('s4h_yt_key') || '';
+    document.getElementById('tw-key').value = localStorage.getItem('s4h_tw_key') || '';
+    document.getElementById('tw-channel').value = localStorage.getItem('s4h_tw_channel') || '';
+    document.getElementById('yt-api-key').value = localStorage.getItem('s4h_yt_api_key') || '';
+    document.getElementById('yt-video-id').value = localStorage.getItem('s4h_yt_video_id') || '';
+}
+
+function saveSettings() {
+    localStorage.setItem('s4h_yt_key', document.getElementById('yt-key').value.trim());
+    localStorage.setItem('s4h_tw_key', document.getElementById('tw-key').value.trim());
+    localStorage.setItem('s4h_tw_channel', document.getElementById('tw-channel').value.trim());
+    localStorage.setItem('s4h_yt_api_key', document.getElementById('yt-api-key').value.trim());
+    localStorage.setItem('s4h_yt_video_id', document.getElementById('yt-video-id').value.trim());
+}
+
+function toggleSettings(btn) {
+    btn.classList.toggle('open');
+    document.getElementById('settings-body').classList.toggle('open');
+}
+
+// ── WEBCAM ──
+async function startWebcam() {
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: true
+        });
+        document.getElementById('preview').srcObject = mediaStream;
+    } catch (err) {
+        console.error('Webcam error:', err);
+    }
+}
+
+// ── STREAMING ──
+function toggleStream() {
+    if (isLive) {
+        endStream();
+    } else {
+        startStream();
+    }
+}
+
+function startStream() {
+    if (!mediaStream) {
+        alert('No webcam connected.');
+        return;
+    }
+
+    const ytKey = document.getElementById('yt-key').value.trim() || localStorage.getItem('s4h_yt_key');
+    const twKey = document.getElementById('tw-key').value.trim() || localStorage.getItem('s4h_tw_key');
+
+    if (!ytKey && !twKey) {
+        alert('Enter at least one stream key in Settings.');
+        toggleSettings(document.querySelector('.settings-toggle'));
+        return;
+    }
+
+    // Save settings
+    saveSettings();
+
+    // Connect to relay server
+    relayWs = new WebSocket(RELAY_URL + '/stream');
+
+    relayWs.onopen = () => {
+        // Send start command with stream keys
+        relayWs.send(JSON.stringify({
+            type: 'start',
+            youtubeKey: ytKey,
+            twitchKey: twKey
+        }));
+    };
+
+    relayWs.onmessage = (evt) => {
+        try {
+            const msg = JSON.parse(evt.data);
+            if (msg.type === 'started') {
+                onStreamStarted();
+            } else if (msg.type === 'error') {
+                alert('Stream error: ' + msg.message);
+                endStream();
+            } else if (msg.type === 'stopped') {
+                onStreamStopped();
+            }
+        } catch (e) {}
+    };
+
+    relayWs.onerror = () => {
+        alert('Could not connect to stream relay. Check that the server is running.');
+        endStream();
+    };
+
+    relayWs.onclose = () => {
+        if (isLive) onStreamStopped();
+    };
+}
+
+function onStreamStarted() {
+    isLive = true;
+    streamStart = Date.now();
+
+    // Start MediaRecorder
+    mediaRecorder = new MediaRecorder(mediaStream, {
+        mimeType: 'video/webm;codecs=vp8,opus',
+        videoBitsPerSecond: 2500000
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0 && relayWs && relayWs.readyState === WebSocket.OPEN) {
+            relayWs.send(e.data);
+        }
+    };
+
+    mediaRecorder.start(1000); // 1s timeslice
+
+    // Update UI
+    const btn = document.getElementById('live-btn');
+    btn.textContent = 'End Stream';
+    btn.classList.add('is-live');
+    document.getElementById('live-badge').classList.add('visible');
+    document.getElementById('stream-timer').style.display = 'block';
+    document.getElementById('stream-info').style.display = 'flex';
+
+    // Start timer
+    timerInterval = setInterval(updateTimer, 1000);
+
+    // Start chat
+    startTwitchChat();
+    startYouTubeChat();
+}
+
+function endStream() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    mediaRecorder = null;
+
+    if (relayWs && relayWs.readyState === WebSocket.OPEN) {
+        relayWs.send(JSON.stringify({ type: 'stop' }));
+        relayWs.close();
+    }
+    relayWs = null;
+
+    onStreamStopped();
+}
+
+function onStreamStopped() {
+    isLive = false;
+    streamStart = null;
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = null;
+
+    // Update UI
+    const btn = document.getElementById('live-btn');
+    btn.textContent = 'Go Live';
+    btn.classList.remove('is-live');
+    document.getElementById('live-badge').classList.remove('visible');
+    document.getElementById('stream-timer').style.display = 'none';
+    document.getElementById('stream-info').style.display = 'none';
+
+    // Stop chat
+    stopTwitchChat();
+    stopYouTubeChat();
+}
+
+function updateTimer() {
+    if (!streamStart) return;
+    const elapsed = Math.floor((Date.now() - streamStart) / 1000);
+    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('stream-timer').textContent = `${h}:${m}:${s}`;
+}
+
+// ── TWITCH CHAT (Anonymous IRC over WSS) ──
+function startTwitchChat() {
+    const channel = document.getElementById('tw-channel').value.trim() || localStorage.getItem('s4h_tw_channel');
+    if (!channel) return;
+
+    twitchWs = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+
+    twitchWs.onopen = () => {
+        twitchWs.send('CAP REQ :twitch.tv/tags');
+        twitchWs.send('NICK justinfan12345');
+        twitchWs.send(`JOIN #${channel.toLowerCase()}`);
+    };
+
+    twitchWs.onmessage = (evt) => {
+        const lines = evt.data.split('\r\n');
+        for (const line of lines) {
+            if (line.startsWith('PING')) {
+                twitchWs.send('PONG :tmi.twitch.tv');
+                continue;
+            }
+
+            // Parse PRIVMSG
+            const privmsgMatch = line.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.+)/);
+            if (privmsgMatch) {
+                // Try to get display name from tags
+                let displayName = privmsgMatch[1];
+                const tagMatch = line.match(/display-name=([^;]*)/);
+                if (tagMatch && tagMatch[1]) displayName = tagMatch[1];
+
+                addChatMessage('twitch', displayName, privmsgMatch[2]);
+            }
+        }
+    };
+
+    twitchWs.onerror = (err) => console.error('[twitch chat]', err);
+}
+
+function stopTwitchChat() {
+    if (twitchWs) {
+        twitchWs.close();
+        twitchWs = null;
+    }
+}
+
+// ── YOUTUBE LIVE CHAT (Data API v3 polling) ──
+function startYouTubeChat() {
+    const apiKey = document.getElementById('yt-api-key').value.trim() || localStorage.getItem('s4h_yt_api_key');
+    const videoId = document.getElementById('yt-video-id').value.trim() || localStorage.getItem('s4h_yt_video_id');
+    if (!apiKey || !videoId) return;
+
+    ytNextPageToken = null;
+
+    // First, get the liveChatId from the video
+    fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${apiKey}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.items || !data.items[0]) {
+                console.error('[yt chat] video not found');
+                return;
+            }
+            const chatId = data.items[0].liveStreamingDetails?.activeLiveChatId;
+            if (!chatId) {
+                console.error('[yt chat] no active live chat');
+                return;
+            }
+            pollYouTubeChat(chatId, apiKey);
+        })
+        .catch(err => console.error('[yt chat]', err));
+}
+
+function pollYouTubeChat(chatId, apiKey) {
+    const url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${chatId}&part=snippet,authorDetails&key=${apiKey}`
+        + (ytNextPageToken ? `&pageToken=${ytNextPageToken}` : '');
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (!isLive) return;
+
+            if (data.items) {
+                // Only show new messages (skip initial batch on first poll)
+                const items = ytNextPageToken ? data.items : [];
+                for (const item of items) {
+                    const author = item.authorDetails?.displayName || 'Unknown';
+                    const text = item.snippet?.displayMessage || '';
+                    if (text) addChatMessage('youtube', author, text);
+                }
+            }
+
+            ytNextPageToken = data.nextPageToken;
+            const pollMs = data.pollingIntervalMillis || 5000;
+            ytChatInterval = setTimeout(() => pollYouTubeChat(chatId, apiKey), pollMs);
+        })
+        .catch(err => {
+            console.error('[yt chat poll]', err);
+            if (isLive) {
+                ytChatInterval = setTimeout(() => pollYouTubeChat(chatId, apiKey), 10000);
+            }
+        });
+}
+
+function stopYouTubeChat() {
+    if (ytChatInterval) {
+        clearTimeout(ytChatInterval);
+        ytChatInterval = null;
+    }
+    ytNextPageToken = null;
+}
+
+// ── CHAT UI ──
+function addChatMessage(platform, author, text) {
+    const container = document.getElementById('chat-messages');
+    const empty = container.querySelector('.chat-empty');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+
+    const badge = platform === 'twitch' ? 'tw' : 'yt';
+    const label = platform === 'twitch' ? 'T' : 'Y';
+
+    div.innerHTML = `<span class="platform ${badge}">${label}</span><span class="author">${escapeHtml(author)}</span><span class="text">${escapeHtml(text)}</span>`;
+    container.appendChild(div);
+
+    // Auto-scroll
+    container.scrollTop = container.scrollHeight;
+
+    // Update counts
+    chatMsgCount[platform]++;
+    document.getElementById('chat-counts').textContent =
+        `TW: ${chatMsgCount.twitch} | YT: ${chatMsgCount.youtube}`;
+
+    // Limit to 500 messages
+    while (container.children.length > 500) {
+        container.removeChild(container.firstChild);
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+</script>
+
+</body>
+</html>
