@@ -1885,17 +1885,33 @@
         const grid = document.getElementById('sermon-grid');
 
         if (!YOUTUBE_API_KEY) {
-            // No API key yet — show placeholder cards
-            grid.innerHTML = Array.from({ length: MAX_RESULTS }, (_, i) => `
-                <a href="https://www.youtube.com/${CHANNEL_HANDLE}" target="_blank" rel="noopener" class="sermon-card" style="transition-delay:${i * 0.06}s">
-                    <div class="sermon-thumb"></div>
-                    <div class="sermon-body">
-                        <div class="sermon-date">Coming Soon</div>
-                        <div class="sermon-title">Subscribe on YouTube to catch every message</div>
-                        <div class="sermon-speaker">S4H Church</div>
+            // No API key yet — show a single subscribe CTA
+            grid.innerHTML = `
+                <a href="https://www.youtube.com/${CHANNEL_HANDLE}" target="_blank" rel="noopener" style="grid-column: 1 / -1; text-decoration: none; display: block;">
+                    <div style="
+                        background: linear-gradient(135deg, hsla(0, 20%, 14%, 0.25), hsla(35, 15%, 12%, 0.3));
+                        border: 1px solid var(--gold-border);
+                        border-radius: 20px;
+                        padding: 3.5rem 2rem;
+                        text-align: center;
+                        transition: all 0.4s var(--ease-out);
+                    " onmouseover="this.style.borderColor='hsla(35, 35%, 35%, 0.25)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='';this.style.transform=''">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">&#9654;</div>
+                        <div style="font-family: var(--font-serif); font-size: 1.6rem; font-weight: 500; margin-bottom: 0.75rem; color: var(--text);">Sermons Coming to YouTube</div>
+                        <div style="color: var(--text-dim); font-size: 0.92rem; max-width: 400px; margin: 0 auto 1.5rem; line-height: 1.7;">Subscribe to our channel so you never miss a message. Live services and archives dropping soon.</div>
+                        <span style="
+                            display: inline-block;
+                            background: var(--gold);
+                            color: var(--bg);
+                            padding: 0.7rem 2rem;
+                            border-radius: 100px;
+                            font-weight: 700;
+                            font-size: 0.85rem;
+                            font-family: var(--font-body);
+                        ">Subscribe on YouTube</span>
                     </div>
                 </a>
-            `).join('');
+            `;
             return;
         }
 
