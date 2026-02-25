@@ -40,7 +40,8 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: true,
-        category: 'rewards'
+        category: 'rewards',
+        auditLink: '/audit/clawnch-rewards'
     },
     clawnstr: {
         name: 'ClawnStrategy',
@@ -619,6 +620,9 @@ function renderPoolPage(pool, key) {
         linksHtml += '<a href="' + pool.chartLink + '" target="_blank" rel="noopener" class="pool-link">Chart <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     }
     linksHtml += '<a href="https://basescan.org/address/' + pool.staking + '" target="_blank" rel="noopener" class="pool-link">Contract <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
+    if (pool.auditLink) {
+        linksHtml += '<a href="' + pool.auditLink + '" target="_blank" rel="noopener" class="pool-link pool-link--audit">&#128737; Audit Report</a>';
+    }
     document.getElementById('poolLinks').innerHTML = linksHtml;
 
     // Reset wallet state
