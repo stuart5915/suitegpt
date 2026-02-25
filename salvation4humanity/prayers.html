@@ -239,12 +239,10 @@
             position: relative; overflow: hidden;
         }
         .feed-card::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
-            background: linear-gradient(to bottom, var(--gold), transparent); opacity: 0;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
             transition: opacity 0.4s;
         }
-        .feed-card:hover { transform: translateY(-2px); border-color: var(--gold-border-hover); }
-        .feed-card:hover::before { opacity: 1; }
+        .feed-card:hover { transform: translateY(-2px); }
         .feed-delete {
             position: absolute; top: 0.75rem; right: 0.75rem; width: 28px; height: 28px;
             border-radius: 50%; background: transparent; border: 1px solid var(--gold-border);
@@ -253,6 +251,34 @@
             line-height: 1;
         }
         .feed-delete:hover { background: hsla(0, 40%, 30%, 0.2); border-color: hsla(0, 40%, 40%, 0.4); color: hsl(0, 50%, 60%); }
+
+        /* ── Reflection cards (Bible App) ── */
+        .feed-card[data-type="reflection"] {
+            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.06), hsla(35, 20%, 18%, 0.02));
+            border-color: hsla(35, 30%, 30%, 0.18);
+        }
+        .feed-card[data-type="reflection"]::before {
+            background: linear-gradient(to bottom, var(--gold), var(--gold-dim), transparent);
+            opacity: 0.7;
+        }
+        .feed-card[data-type="reflection"]:hover {
+            border-color: hsla(35, 35%, 38%, 0.3);
+            box-shadow: 0 4px 30px hsla(35, 30%, 25%, 0.08);
+        }
+
+        /* ── Prayer request cards ── */
+        .feed-card[data-type="prayer"] {
+            background: linear-gradient(135deg, hsla(0, 20%, 18%, 0.06), hsla(0, 15%, 16%, 0.02));
+            border-color: hsla(0, 22%, 24%, 0.18);
+        }
+        .feed-card[data-type="prayer"]::before {
+            background: linear-gradient(to bottom, var(--crimson-light), var(--crimson), transparent);
+            opacity: 0.7;
+        }
+        .feed-card[data-type="prayer"]:hover {
+            border-color: hsla(0, 25%, 30%, 0.3);
+            box-shadow: 0 4px 30px hsla(0, 20%, 20%, 0.08);
+        }
 
         .feed-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
         .feed-avatar {
@@ -267,24 +293,38 @@
         .feed-time { font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
         .feed-type-badge {
             font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 1px;
-            text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 100px;
+            text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px;
+            font-weight: 600;
         }
-        .badge-reflection { background: var(--gold-glow); color: var(--gold-light); }
-        .badge-prayer { background: var(--crimson-glow); color: var(--crimson-light); }
+        .badge-reflection {
+            background: hsla(35, 35%, 35%, 0.15); color: var(--gold-light);
+            border: 1px solid hsla(35, 30%, 35%, 0.2);
+        }
+        .badge-prayer {
+            background: hsla(0, 25%, 25%, 0.15); color: hsl(0, 35%, 55%);
+            border: 1px solid hsla(0, 25%, 30%, 0.2);
+        }
+
+        /* Source label under badge for reflections */
+        .feed-source {
+            font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-muted);
+            letter-spacing: 0.5px; margin-top: 1px;
+        }
 
         /* Reflection verse block */
         .verse-block {
-            background: hsla(35, 25%, 25%, 0.05); border-left: 2px solid var(--gold-dim);
-            padding: 0.85rem 1.15rem; border-radius: 0 12px 12px 0; margin-bottom: 0.85rem;
-            font-family: var(--font-serif); font-style: italic; color: var(--text-dim);
-            font-size: 1rem; line-height: 1.55;
+            background: hsla(35, 25%, 25%, 0.07); border-left: 3px solid var(--gold-dim);
+            padding: 1rem 1.25rem; border-radius: 0 14px 14px 0; margin-bottom: 0.85rem;
+            font-family: var(--font-serif); font-style: italic; color: var(--text);
+            font-size: 1.05rem; line-height: 1.6; opacity: 0.9;
         }
         .verse-block cite {
-            display: block; margin-top: 0.4rem; font-style: normal;
+            display: block; margin-top: 0.5rem; font-style: normal;
             font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold); letter-spacing: 0.5px;
         }
 
         .feed-text { color: var(--text); font-size: 0.88rem; line-height: 1.65; margin-bottom: 0.75rem; }
+        .feed-card[data-type="reflection"] .feed-text { color: var(--text-dim); font-size: 0.85rem; }
 
         .feed-actions {
             display: flex; gap: 1.25rem; color: var(--text-muted); font-size: 0.75rem;
@@ -296,6 +336,17 @@
         }
         .feed-action:hover { color: var(--gold); }
         .feed-action.prayed { color: var(--gold-light); }
+
+        /* Pray button for prayer cards — more prominent */
+        .pray-btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: hsla(0, 20%, 22%, 0.15); border: 1px solid hsla(0, 22%, 28%, 0.2);
+            border-radius: 100px; padding: 0.35rem 0.9rem; cursor: pointer;
+            color: var(--text-dim); font-family: var(--font-mono); font-size: 0.72rem;
+            font-weight: 500; transition: all 0.25s var(--ease-out);
+        }
+        .pray-btn:hover { background: hsla(0, 25%, 25%, 0.25); border-color: hsla(0, 25%, 32%, 0.3); color: var(--text); }
+        .pray-btn.prayed { background: hsla(35, 30%, 25%, 0.15); border-color: hsla(35, 30%, 35%, 0.25); color: var(--gold-light); }
 
         /* Footer */
         footer {
@@ -585,9 +636,10 @@
                     <div>
                         <div class="feed-user">${esc(name)}</div>
                         <div class="feed-meta">
-                            <span class="feed-type-badge badge-reflection">Reflection</span>
+                            <span class="feed-type-badge badge-reflection">&#128214; Reflection</span>
                             <span class="feed-time">${timeAgo(r.created_at)}</span>
                         </div>
+                        <div class="feed-source">via Cheshbon Bible App</div>
                     </div>
                 </div>
                 ${r.verse_text ? `
@@ -618,14 +670,14 @@
                     <div>
                         <div class="feed-user">${short}</div>
                         <div class="feed-meta">
-                            <span class="feed-type-badge badge-prayer">Prayer</span>
+                            <span class="feed-type-badge badge-prayer">&#128591; Prayer Request</span>
                             <span class="feed-time">${timeAgo(p.created_at)}</span>
                         </div>
                     </div>
                 </div>
                 <div class="feed-text">${esc(p.prayer_text)}</div>
                 <div class="feed-actions">
-                    <button class="feed-action ${hasPrayed ? 'prayed' : ''}" onclick="togglePray('${p.id}', this)">
+                    <button class="pray-btn ${hasPrayed ? 'prayed' : ''}" onclick="togglePray('${p.id}', this)">
                         &#128591; ${p.pray_count || 0} praying
                     </button>
                 </div>
