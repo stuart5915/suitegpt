@@ -24,6 +24,24 @@ var POOLS = {
         featured: true,
         category: 'ubi'
     },
+    clawnch: {
+        name: 'CLAWNCH',
+        ticker: 'CLAWNCH',
+        token: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
+        rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
+        rewardTicker: 'INCLAWNCH',
+        staking: '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9',
+        decimals: 18,
+        logo: '/inclawbate/assets/clawnch-logo.png',
+        color: 'hsl(32, 50%, 50%)',
+        colorDim: 'hsla(32, 50%, 50%, 0.12)',
+        glow: 'hsla(32, 50%, 50%, 0.18)',
+        description: 'Stake CLAWNCH, earn INCLAWNCH rewards. 1B INCLAWNCH over 30 days.',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
+        chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
+        featured: true,
+        category: 'rewards'
+    },
     clawnstr: {
         name: 'ClawnStrategy',
         ticker: 'CLAWNSTR',
@@ -402,6 +420,10 @@ function buildPoolCard(key, pool) {
     var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
 
+    var ctaText = pool.rewardToken
+        ? 'Stake ' + pool.ticker + ' &rarr; Earn ' + pool.rewardTicker
+        : 'Stake &rarr;';
+
     return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
         'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
         '<div class="stake-card-identity">' +
@@ -429,7 +451,7 @@ function buildPoolCard(key, pool) {
                 '<span class="stake-card-stat-label">Stakers</span>' +
             '</div>' +
         '</div>' +
-        '<div class="stake-card-cta">Stake &rarr;</div>' +
+        '<div class="stake-card-cta">' + ctaText + '</div>' +
     '</a>' };
 }
 
@@ -584,6 +606,17 @@ function renderPoolPage(pool, key) {
     document.getElementById('poolSlider').value = 0;
     document.getElementById('poolHint').textContent = '';
 
+    // Dual-token: hide compound button, update earned label
+    var compoundBtn = document.getElementById('posCompoundBtn');
+    var earnedLabel = document.getElementById('posEarnedLabel');
+    if (pool.rewardToken) {
+        compoundBtn.style.display = 'none';
+        if (earnedLabel) earnedLabel.textContent = pool.rewardTicker + ' Earned';
+    } else {
+        compoundBtn.style.display = '';
+        if (earnedLabel) earnedLabel.textContent = 'Earned';
+    }
+
     // Check if wallet already connected
     if (walletAddr) {
         onPoolWalletConnected(walletAddr, pool, key);
@@ -682,6 +715,7 @@ async function fetchPoolUserData(addr, pool, key) {
     var stakedAmount = fromWei(results[1]);
     var earnedAmount = fromWei(results[2]);
     var price = poolPrices[key] || 0;
+    var earnedTicker = pool.rewardTicker || pool.ticker;
 
     // Update balance display
     document.getElementById('poolWalletBal').textContent = fmt(walletBalance) + ' ' + pool.ticker;
@@ -690,9 +724,8 @@ async function fetchPoolUserData(addr, pool, key) {
     if (stakedAmount > 0 || earnedAmount > 0) {
         document.getElementById('poolPositionSection').classList.add('visible');
         var stakedUsd = price > 0 ? ' <span class="usd">(' + fmtUsd(stakedAmount * price) + ')</span>' : '';
-        var earnedUsd = price > 0 ? ' <span class="usd">(' + fmtUsd(earnedAmount * price) + ')</span>' : '';
         document.getElementById('posStaked').innerHTML = fmt(stakedAmount) + ' ' + pool.ticker + stakedUsd;
-        document.getElementById('posEarned').innerHTML = fmt(earnedAmount) + ' ' + pool.ticker + earnedUsd;
+        document.getElementById('posEarned').innerHTML = fmt(earnedAmount) + ' ' + earnedTicker;
     } else {
         document.getElementById('poolPositionSection').classList.remove('visible');
     }
@@ -816,6 +849,11 @@ async function doPoolClaim(compound) {
     var provider = getProvider();
     if (!provider) return;
 
+    // No compound for dual-token pools
+    if (compound && pool.rewardToken) return;
+
+    var earnedTicker = pool.rewardTicker || pool.ticker;
+
     var earnedRes = await contractRead(pool.staking, SEL.earned + pad32(walletAddr));
     var earnedAmount = fromWei(earnedRes);
     if (earnedAmount < 1) {
@@ -827,7 +865,7 @@ async function doPoolClaim(compound) {
     var confirmed = await stakeModal({
         icon: compound ? '\uD83C\uDF31' : '\uD83E\uDD9E',
         title: action + ' Rewards',
-        msg: action + ' ' + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker + (compound ? ' (adds to your staked balance)' : ' (sends to your wallet)') + '?',
+        msg: action + ' ' + fmt(Math.round(earnedAmount)) + ' ' + earnedTicker + (compound ? ' (adds to your staked balance)' : ' (sends to your wallet)') + '?',
         confirmLabel: action,
         confirmClass: 'stake-modal-btn--confirm'
     });
@@ -840,9 +878,9 @@ async function doPoolClaim(compound) {
     try {
         var selector = compound ? SEL.claimAndRestake : SEL.claim;
         var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, selector, status, 'Confirm in wallet...');
-        status.innerHTML = (compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.innerHTML = (compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + earnedTicker + ' <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
         status.className = 'pool-status success';
-        stakeToast((compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + pool.ticker, 'success');
+        stakeToast((compound ? 'Compounded ' : 'Claimed ') + fmt(Math.round(earnedAmount)) + ' ' + earnedTicker, 'success');
         await new Promise(function(r) { setTimeout(r, 3000); });
         await fetchPoolUserData(walletAddr, pool, currentPoolKey);
         setTimeout(function() { fetchPoolUserData(walletAddr, pool, currentPoolKey); }, 5000);
@@ -1045,9 +1083,10 @@ async function fetchAdminStats(pool, key) {
         document.getElementById('adminPeriodEnd').textContent = 'Not started';
     }
 
-    document.getElementById('adminRewardsLeft').textContent = fmt(rewardsLeft) + ' ' + pool.ticker;
-    document.getElementById('adminTotalDeposited').textContent = fmt(totalDeposited) + ' ' + pool.ticker;
-    document.getElementById('adminTotalClaimed').textContent = fmt(totalClaimed) + ' ' + pool.ticker;
+    var rewardTicker = pool.rewardTicker || pool.ticker;
+    document.getElementById('adminRewardsLeft').textContent = fmt(rewardsLeft) + ' ' + rewardTicker;
+    document.getElementById('adminTotalDeposited').textContent = fmt(totalDeposited) + ' ' + rewardTicker;
+    document.getElementById('adminTotalClaimed').textContent = fmt(totalClaimed) + ' ' + rewardTicker;
 
     var pausedEl = document.getElementById('adminPaused');
     pausedEl.textContent = isPaused ? 'Yes' : 'No';
@@ -1112,10 +1151,14 @@ async function doDepositRewards() {
     }
     var durationLabel = formatDurationLabel(durationSec);
 
+    // For dual-token pools, deposit reward token (e.g. INCLAWNCH), not staking token
+    var depositTokenAddr = pool.rewardToken || pool.token;
+    var depositTicker = pool.rewardTicker || pool.ticker;
+
     var confirmed = await stakeModal({
         icon: '\u26A0\uFE0F',
         title: 'Deposit Rewards',
-        msg: 'Deposit ' + fmt(amount) + ' ' + pool.ticker + ' as rewards over ' + durationLabel + '. This will set the reward rate and period end.',
+        msg: 'Deposit ' + fmt(amount) + ' ' + depositTicker + ' as rewards over ' + durationLabel + '. This will set the reward rate and period end.',
         confirmLabel: 'Approve & Deposit',
         cancelLabel: 'Cancel',
     });
@@ -1138,30 +1181,30 @@ async function doDepositRewards() {
     var amountWei = toWei(amount);
 
     try {
-        // Check allowance
+        // Check allowance on reward token (or staking token for single-token pools)
         status.textContent = 'Checking approval...';
         status.className = 'pool-status';
 
         var allowanceData = SEL.allowance + pad32(walletAddr) + pad32(pool.staking);
         var allowanceRes = await provider.request({
             method: 'eth_call',
-            params: [{ to: pool.token, data: allowanceData }, 'latest']
+            params: [{ to: depositTokenAddr, data: allowanceData }, 'latest']
         });
         var currentAllowance = BigInt(allowanceRes || '0x0');
 
         if (currentAllowance < amountWei) {
             status.textContent = 'Requesting token approval...';
             var approveData = SEL.approve + pad32(pool.staking) + pad32(MAX_UINT256);
-            await sendTxAndWait(provider, walletAddr, pool.token, approveData, status, 'Approving contract...');
+            await sendTxAndWait(provider, walletAddr, depositTokenAddr, approveData, status, 'Approving contract...');
         }
 
         // depositRewards(uint256 amount, uint256 duration)
         var depositData = SEL.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSec));
-        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, depositData, status, 'Depositing ' + fmt(amount) + ' ' + pool.ticker + '...');
+        var txHash = await sendTxAndWait(provider, walletAddr, pool.staking, depositData, status, 'Depositing ' + fmt(amount) + ' ' + depositTicker + '...');
 
-        status.innerHTML = 'Deposited ' + fmt(amount) + ' ' + pool.ticker + ' over ' + durationLabel + '! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
+        status.innerHTML = 'Deposited ' + fmt(amount) + ' ' + depositTicker + ' over ' + durationLabel + '! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--pool-accent);text-decoration:underline;">View tx</a>';
         status.className = 'pool-status success';
-        stakeToast('Deposited ' + fmt(amount) + ' ' + pool.ticker + ' rewards', 'success');
+        stakeToast('Deposited ' + fmt(amount) + ' ' + depositTicker + ' rewards', 'success');
 
         input.value = '';
         btn.disabled = true;
