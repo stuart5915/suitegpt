@@ -310,7 +310,7 @@ function bestPrice(dexRes, tokenAddr) {
 }
 
 async function fetchAllPrices() {
-    // Deduplicate token addresses across pools
+    // Deduplicate token addresses across pools (staking + reward tokens)
     var tokenAddrs = [];
     var seen = {};
     POOL_KEYS.forEach(function(key) {
@@ -318,6 +318,13 @@ async function fetchAllPrices() {
         if (!seen[addr]) {
             seen[addr] = true;
             tokenAddrs.push(POOLS[key].token);
+        }
+        if (POOLS[key].rewardToken) {
+            var rAddr = POOLS[key].rewardToken.toLowerCase();
+            if (!seen[rAddr]) {
+                seen[rAddr] = true;
+                tokenAddrs.push(POOLS[key].rewardToken);
+            }
         }
     });
 
@@ -328,15 +335,19 @@ async function fetchAllPrices() {
 
     var results = await Promise.all(promises);
 
+    // Build address → price lookup
+    var addrPrices = {};
     for (var i = 0; i < tokenAddrs.length; i++) {
-        var price = bestPrice(results[i], tokenAddrs[i]);
-        // Apply to all pools with this token
-        POOL_KEYS.forEach(function(key) {
-            if (POOLS[key].token.toLowerCase() === tokenAddrs[i].toLowerCase()) {
-                poolPrices[key] = price;
-            }
-        });
+        addrPrices[tokenAddrs[i].toLowerCase()] = bestPrice(results[i], tokenAddrs[i]);
     }
+
+    // Apply to pools
+    POOL_KEYS.forEach(function(key) {
+        poolPrices[key] = addrPrices[POOLS[key].token.toLowerCase()] || 0;
+        if (POOLS[key].rewardToken) {
+            poolPrices[key + '_reward'] = addrPrices[POOLS[key].rewardToken.toLowerCase()] || 0;
+        }
+    });
 }
 
 // ══════════════════════════════════════
@@ -371,7 +382,14 @@ async function fetchAllPoolStats() {
         var rewardPool = fromWei(results[base + 4]);
         var apy = 0;
         if (totalStaked > 0 && rewardRate > 0) {
-            apy = (rewardRate * 86400 * 365 / totalStaked) * 100;
+            var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
+            // For dual-token pools, adjust APY by price ratio (reward value / stake value)
+            var pk = POOL_KEYS[i];
+            if (POOLS[pk].rewardToken && poolPrices[pk] > 0 && poolPrices[pk + '_reward'] > 0) {
+                apy = rawApy * (poolPrices[pk + '_reward'] / poolPrices[pk]);
+            } else {
+                apy = rawApy;
+            }
         }
         poolStats[POOL_KEYS[i]] = {
             totalStaked: totalStaked,
@@ -415,7 +433,7 @@ function buildPoolCard(key, pool) {
     var price = poolPrices[key] || 0;
     var tvl = (stats.totalStaked || 0) * price;
 
-    var apyStr = stats.apy ? Math.round(stats.apy) + '%' : '--';
+    var apyStr = stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--';
     var stakedStr = stats.totalStaked ? fmt(stats.totalStaked) : '--';
     var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
@@ -587,7 +605,7 @@ function renderPoolPage(pool, key) {
     // Stats
     var stats = poolStats[key] || {};
     var price = poolPrices[key] || 0;
-    document.getElementById('poolApy').textContent = stats.apy ? Math.round(stats.apy) + '%' : '--';
+    document.getElementById('poolApy').textContent = stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--';
     document.getElementById('poolTotalStaked').textContent = stats.totalStaked ? fmt(stats.totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = stats.rewardPool ? fmt(stats.rewardPool) : '--';
@@ -759,11 +777,15 @@ async function refreshPoolStats(key) {
     var stakerCount = Number(BigInt(results[1] || '0x0'));
     var rewardRate = fromWei(results[2]);
     var rewardPool = fromWei(results[4]);
-    var apy = totalStaked > 0 && rewardRate > 0 ? (rewardRate * 86400 * 365 / totalStaked) * 100 : 0;
+    var rawApy = totalStaked > 0 && rewardRate > 0 ? (rewardRate * 86400 * 365 / totalStaked) * 100 : 0;
+    var apy = rawApy;
+    if (rawApy > 0 && POOLS[key].rewardToken && poolPrices[key] > 0 && poolPrices[key + '_reward'] > 0) {
+        apy = rawApy * (poolPrices[key + '_reward'] / poolPrices[key]);
+    }
 
     poolStats[key] = { totalStaked: totalStaked, stakerCount: stakerCount, rewardRate: rewardRate, periodEnd: Number(BigInt(results[3] || '0x0')), rewardPool: rewardPool, apy: apy };
 
-    document.getElementById('poolApy').textContent = apy > 0 ? Math.round(apy) + '%' : '--';
+    document.getElementById('poolApy').textContent = apy > 0 ? Math.round(apy).toLocaleString('en-US') + '%' : '--';
     document.getElementById('poolTotalStaked').textContent = totalStaked > 0 ? fmt(totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stakerCount > 0 ? stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = rewardPool > 0 ? fmt(rewardPool) : '--';
