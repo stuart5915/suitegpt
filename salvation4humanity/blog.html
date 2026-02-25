@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Salvation 4 Humanity</title>
+    <meta name="description" content="Articles, updates, and announcements from Salvation 4 Humanity.">
+    <link rel="icon" type="image/jpeg" href="/assets/salvation4humanity.jpg">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #131210;
+            --surface: rgba(180, 160, 130, 0.04);
+            --surface-hover: rgba(180, 160, 130, 0.08);
+            --gold: hsl(35, 38%, 38%);
+            --gold-light: hsl(35, 42%, 48%);
+            --gold-dim: hsl(35, 30%, 24%);
+            --gold-glow: hsla(35, 38%, 38%, 0.15);
+            --gold-border: hsla(35, 30%, 30%, 0.18);
+            --crimson: hsl(0, 30%, 24%);
+            --text: #c8bfb4;
+            --text-dim: rgba(200, 191, 180, 0.5);
+            --text-muted: rgba(200, 191, 180, 0.3);
+            --text-bright: #e0d8ce;
+            --font-serif: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Grain */
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 180px;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 16px 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(19, 18, 16, 0.85);
+            border-bottom: 1px solid var(--gold-border);
+        }
+
+        .nav-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            font-family: var(--font-serif);
+            font-weight: 600;
+            font-size: 1.15rem;
+            color: var(--gold);
+            text-decoration: none;
+            font-style: italic;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold-light);
+        }
+
+        /* Blog content */
+        .blog-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 80px 24px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .blog-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .blog-header h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(2.4rem, 5vw, 3.5rem);
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .blog-header p {
+            color: var(--text-dim);
+            font-size: 1.05rem;
+        }
+
+        .blog-divider {
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+            margin: 24px auto 0;
+        }
+
+        /* Article cards */
+        .article-card {
+            display: block;
+            background: var(--surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 16px;
+            padding: 36px 32px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s;
+            margin-bottom: 24px;
+        }
+
+        .article-card:hover {
+            border-color: var(--gold-dim);
+            background: var(--surface-hover);
+            transform: translateY(-2px);
+        }
+
+        .article-card-tag {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 14px;
+        }
+
+        .article-card h2 {
+            font-family: var(--font-serif);
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 12px;
+            line-height: 1.25;
+        }
+
+        .article-card p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .article-card-meta {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .article-card-arrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--gold-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 8px;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: all 0.3s;
+        }
+
+        .article-card:hover .article-card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            border-top: 1px solid var(--gold-border);
+            position: relative;
+            z-index: 1;
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--text-dim);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .blog-container {
+                padding: 60px 18px;
+            }
+
+            .article-card {
+                padding: 28px 22px;
+            }
+
+            .nav-links {
+                gap: 14px;
+            }
+
+            .nav-links a {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grain"></div>
+
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">Salvation 4 Humanity</a>
+            <ul class="nav-links">
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="/prayers">Prayers</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/stake">Stake</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="blog-container">
+        <header class="blog-header">
+            <h1>Blog</h1>
+            <p>Updates, articles, and announcements from the community.</p>
+            <div class="blog-divider"></div>
+        </header>
+
+        <a href="/blog/faith-meets-web4" class="article-card">
+            <div class="article-card-tag">Community &middot; Staking &middot; UBI</div>
+            <h2>Salvation 4 Humanity: Faith Meets Web4</h2>
+            <p>A church without walls meets decentralized finance. Stake S4H, earn INCLAWNCH, and help build the future
+                of faith-powered community.</p>
+            <div class="article-card-meta">February 25, 2026 &middot; 5 min read</div>
+            <div class="article-card-arrow">Read article &rarr;</div>
+        </a>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Salvation 4 Humanity &middot; Powered by <a href="https://inclawbate.com"
+                target="_blank">Inclawbate</a></p>
+    </footer>
+</body>
+
+</html>
