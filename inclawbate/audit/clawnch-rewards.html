@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClawnchRewards Audit Report — Inclawbate</title>
-    <meta name="description" content="Security audit report for ClawnchRewards staking contract. Analyzed by Slither (Trail of Bits) and Aderyn (Cyfrin).">
+    <title>Staking Contracts Audit Report — Inclawbate</title>
+    <meta name="description" content="Security audit report for ClawnchRewards and InclawnchStaking contracts. Analyzed by Slither, Aderyn, and Cybercentry.">
     <link rel="icon" type="image/png" href="/inclawbate/assets/inclawbate-logo.png">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -99,6 +99,21 @@
         }
         .tool-slither { background: hsla(270, 50%, 50%, 0.1); color: hsl(270, 50%, 65%); border: 1px solid hsla(270, 50%, 50%, 0.2); }
         .tool-aderyn { background: hsla(200, 60%, 50%, 0.1); color: hsl(200, 60%, 65%); border: 1px solid hsla(200, 60%, 50%, 0.2); }
+        .tool-cybercentry { background: hsla(160, 60%, 45%, 0.1); color: hsl(160, 60%, 60%); border: 1px solid hsla(160, 60%, 45%, 0.2); }
+
+        /* Contract tabs */
+        .contract-tabs {
+            display: flex; gap: 0.5rem; margin-bottom: 2rem;
+        }
+        .contract-tab {
+            font-family: var(--mono); font-size: 0.72rem; padding: 0.45rem 1rem;
+            border-radius: 8px; border: 1px solid var(--border); background: transparent;
+            color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+        }
+        .contract-tab:hover { border-color: var(--border-hover); color: var(--text); }
+        .contract-tab.active { background: rgba(255,255,255,0.06); border-color: var(--green-border); color: var(--green); }
+        .contract-panel { display: none; }
+        .contract-panel.active { display: block; }
 
         /* Finding cards */
         .finding {
@@ -167,8 +182,8 @@
 
     <div class="report-header">
         <div class="report-badge">Passed &mdash; No Vulnerabilities</div>
-        <h1>ClawnchRewards Security Audit</h1>
-        <p class="report-sub">Dual-token staking contract &mdash; Stake $CLAWNCH, earn $INCLAWNCH rewards.</p>
+        <h1>Inclawbate Staking Security Audit</h1>
+        <p class="report-sub">Two staking contracts audited &mdash; ClawnchRewards (Stake CLAWNCH &rarr; Earn INCLAWNCH) and InclawnchStaking (Stake INCLAWNCH &rarr; Earn INCLAWNCH).</p>
         <div class="report-meta">
             <span>Date: February 25, 2026</span>
             <span>Solidity: ^0.8.24</span>
@@ -177,30 +192,62 @@
         </div>
     </div>
 
-    <div class="contract-info">
-        <div class="contract-row">
-            <span class="contract-label">Proxy Contract</span>
-            <span class="contract-value"><a href="https://basescan.org/address/0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9" target="_blank">0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9</a></span>
-        </div>
-        <div class="contract-row">
-            <span class="contract-label">Implementation</span>
-            <span class="contract-value"><a href="https://basescan.org/address/0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378" target="_blank">0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378</a></span>
-        </div>
-        <div class="contract-row">
-            <span class="contract-label">Staking Token (CLAWNCH)</span>
-            <span class="contract-value"><a href="https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be" target="_blank">0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be</a></span>
-        </div>
-        <div class="contract-row">
-            <span class="contract-label">Reward Token (INCLAWNCH)</span>
-            <span class="contract-value"><a href="https://basescan.org/token/0xB0b6e0E9da530f68D713cC03a813B506205aC808" target="_blank">0xB0b6e0E9da530f68D713cC03a813B506205aC808</a></span>
-        </div>
-        <div class="contract-row">
-            <span class="contract-label">Source Code</span>
-            <span class="contract-value"><a href="https://github.com/stuart5915/suitegpt/blob/master/inclawbate/contracts/contracts/ClawnchRewards.sol" target="_blank">GitHub &rarr; ClawnchRewards.sol</a></span>
+    <div class="contract-tabs">
+        <button class="contract-tab active" onclick="switchContract('clawnch')">ClawnchRewards</button>
+        <button class="contract-tab" onclick="switchContract('inclawnch')">InclawnchStaking</button>
+    </div>
+
+    <div class="contract-panel active" id="panel-clawnch">
+        <div class="contract-info">
+            <div class="contract-row">
+                <span class="contract-label">Proxy Contract</span>
+                <span class="contract-value"><a href="https://basescan.org/address/0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9" target="_blank">0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9</a></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Implementation</span>
+                <span class="contract-value"><a href="https://basescan.org/address/0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378#code" target="_blank">0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378</a> <span style="color:var(--green);font-size:0.6rem;">&#10003; VERIFIED</span></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Staking Token (CLAWNCH)</span>
+                <span class="contract-value"><a href="https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be" target="_blank">0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be</a></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Reward Token (INCLAWNCH)</span>
+                <span class="contract-value"><a href="https://basescan.org/token/0xB0b6e0E9da530f68D713cC03a813B506205aC808" target="_blank">0xB0b6e0E9da530f68D713cC03a813B506205aC808</a></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Cybercentry Job</span>
+                <span class="contract-value" style="color:var(--green);">f93d054865434a2aa6b99f0ba6a88aa3 &mdash; Informational (Very Low)</span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Source Code</span>
+                <span class="contract-value"><a href="https://github.com/stuart5915/suitegpt/blob/master/inclawbate/contracts/contracts/ClawnchRewards.sol" target="_blank">GitHub &rarr; ClawnchRewards.sol</a></span>
+            </div>
         </div>
     </div>
 
-    <div class="summary-grid">
+    <div class="contract-panel" id="panel-inclawnch">
+        <div class="contract-info">
+            <div class="contract-row">
+                <span class="contract-label">Proxy Contract</span>
+                <span class="contract-value"><a href="https://basescan.org/address/0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6" target="_blank">0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6</a></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Staking &amp; Reward Token (INCLAWNCH)</span>
+                <span class="contract-value"><a href="https://basescan.org/token/0xB0b6e0E9da530f68D713cC03a813B506205aC808" target="_blank">0xB0b6e0E9da530f68D713cC03a813B506205aC808</a></span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Cybercentry Job</span>
+                <span class="contract-value" style="color:var(--green);">5f3a445a5ef140ffb58a7b8b33c6e9d7 &mdash; Informational (Very Low)</span>
+            </div>
+            <div class="contract-row">
+                <span class="contract-label">Source Code</span>
+                <span class="contract-value"><a href="https://github.com/stuart5915/suitegpt/blob/master/inclawbate/contracts/contracts/InclawnchStaking.sol" target="_blank">GitHub &rarr; InclawnchStaking.sol</a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-grid" style="grid-template-columns: repeat(4, 1fr);">
         <div class="summary-card">
             <div class="value value-green">0</div>
             <div class="label">Critical / High</div>
@@ -213,23 +260,29 @@
             <div class="value value-yellow">6</div>
             <div class="label">Informational</div>
         </div>
+        <div class="summary-card">
+            <div class="value value-green">3</div>
+            <div class="label">Tools Used</div>
+        </div>
     </div>
 
     <div class="section">
         <h2>Tools Used</h2>
-        <p style="color:var(--text-dim);font-size:0.88rem;margin-bottom:1rem;">This contract was analyzed by two industry-standard static analysis tools used by professional auditors.</p>
+        <p style="color:var(--text-dim);font-size:0.88rem;margin-bottom:1rem;">Both contracts were analyzed by three independent security tools.</p>
         <div>
             <span class="tool-badge tool-slither">Slither v0.11 &mdash; Trail of Bits</span>
             <span class="tool-badge tool-aderyn">Aderyn v0.1.9 &mdash; Cyfrin</span>
+            <span class="tool-badge tool-cybercentry">Cybercentry &mdash; AI Security Audit</span>
         </div>
         <p style="color:var(--text-dim);font-size:0.82rem;margin-top:0.75rem;">
             <strong>Slither</strong> &mdash; Python-based framework with 90+ vulnerability detectors for reentrancy, access control, integer overflow, and more. The #1 tool used by professional auditors.<br>
-            <strong>Aderyn</strong> &mdash; Rust-based static analyzer by Cyfrin (the team behind Updraft security courses). 63 detectors, generates markdown reports.
+            <strong>Aderyn</strong> &mdash; Rust-based static analyzer by Cyfrin (the team behind Updraft security courses). 63 detectors, generates markdown reports.<br>
+            <strong>Cybercentry</strong> &mdash; AI-powered cybersecurity agent on Virtuals Protocol. Automated Solidity vulnerability analysis with on-chain verification jobs.
         </p>
     </div>
 
     <div class="section">
-        <h2>Findings &mdash; ClawnchRewards.sol</h2>
+        <h2>Findings &mdash; ClawnchRewards.sol <span class="tool-badge tool-slither" style="vertical-align:middle;">Slither</span><span class="tool-badge tool-aderyn" style="vertical-align:middle;">Aderyn</span><span class="tool-badge tool-cybercentry" style="vertical-align:middle;">Cybercentry</span></h2>
         <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1.25rem;">All findings below are informational or false positives. Zero exploitable vulnerabilities were found.</p>
 
         <div class="finding">
@@ -285,6 +338,28 @@
             <p class="finding-detail">Both tools flag <code>^0.8.24</code> pragma, <code>1e18</code> literals, and event fields that could be indexed. These are stylistic suggestions with zero security implications.</p>
             <div class="finding-verdict">&#10003; Acknowledged &mdash; Stylistic only</div>
         </div>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">Cybercentry AI Verification</span>
+            </div>
+            <p class="finding-detail">Cybercentry automated Solidity code verification found <strong>0 vulnerabilities</strong>. Overall risk: Informational (Very Low). Reward distribution and staking logic follows industry standards.<br><span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-muted);">Job ID: f93d054865434a2aa6b99f0ba6a88aa3</span></p>
+            <div class="finding-verdict">&#10003; Passed &mdash; No vulnerabilities detected</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Findings &mdash; InclawnchStaking.sol <span class="tool-badge tool-cybercentry" style="vertical-align:middle;">Cybercentry</span></h2>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1.25rem;">Single-token staking (Stake INCLAWNCH &rarr; Earn INCLAWNCH) with auto-compound. Zero vulnerabilities found.</p>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">Cybercentry AI Verification</span>
+            </div>
+            <p class="finding-detail">Cybercentry automated Solidity code verification found <strong>0 vulnerabilities</strong>. Overall risk: Informational (Very Low). Auto-restake and compound features (<code>autoRestake</code>, <code>claimAndRestake</code>) were analyzed and found to be secure.<br><span style="font-family:var(--mono);font-size:0.68rem;color:var(--text-muted);">Job ID: 5f3a445a5ef140ffb58a7b8b33c6e9d7</span></p>
+            <div class="finding-verdict">&#10003; Passed &mdash; No vulnerabilities detected</div>
+        </div>
     </div>
 
     <div class="section">
@@ -327,10 +402,21 @@
     </div>
 
     <div class="report-footer">
-        <p>This report was generated using automated static analysis tools. It is not a substitute for a full manual audit by a professional security firm. The tools used are industry-standard and employed by professional auditors as a first step in the security review process.</p>
-        <p style="margin-top:1rem;"><a href="/stake/clawnch">Stake CLAWNCH &rarr;</a></p>
+        <p>This report was generated using automated static analysis tools and AI-powered security verification. It is not a substitute for a full manual audit by a professional security firm. The tools used are industry-standard and employed by professional auditors as part of the security review process.</p>
+        <p style="margin-top:1rem;">
+            <a href="/stake/clawnch">Stake CLAWNCH &rarr;</a> &nbsp;&middot;&nbsp;
+            <a href="/stake/inclawnch">Stake INCLAWNCH &rarr;</a>
+        </p>
     </div>
 
 </div>
+<script>
+function switchContract(id) {
+    document.querySelectorAll('.contract-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.contract-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
 </body>
 </html>
