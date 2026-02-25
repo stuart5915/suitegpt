@@ -78,6 +78,23 @@ var POOLS = {
         chartLink: 'https://dexscreener.com/base/0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
         featured: false,
         category: 'partner'
+    },
+    bv7x: {
+        name: 'BitVault Signal',
+        ticker: 'BV7X',
+        token: '0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC',
+        staking: '0x65Aec0C9fd455822F1cC0e3De7965B106d182017',
+        decimals: 18,
+        logo: '/inclawbate/assets/bv7x-logo.jpg',
+        color: 'hsl(220, 70%, 50%)',
+        colorDim: 'hsla(220, 70%, 50%, 0.12)',
+        glow: 'hsla(220, 70%, 50%, 0.18)',
+        description: 'BitVault Signal. Stake BV7X, earn BV7X.',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC&chain=base',
+        chartLink: 'https://dexscreener.com/base/0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC',
+        featured: false,
+        category: 'partner',
+        auditLink: '/audit/clawnch-rewards'
     }
 };
 
