@@ -32,7 +32,7 @@ var POOLS = {
         rewardTicker: 'INCLAWNCH',
         staking: '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9',
         decimals: 18,
-        logo: '/inclawbate/assets/clawnch-logo.png',
+        logo: '/inclawbate/assets/clawnchlogo.jpg',
         color: 'hsl(32, 50%, 50%)',
         colorDim: 'hsla(32, 50%, 50%, 0.12)',
         glow: 'hsla(32, 50%, 50%, 0.18)',
@@ -476,6 +476,8 @@ function buildComingSoonCard(pool) {
 }
 
 function renderOverview() {
+    var rewardsGrid = document.getElementById('stakeGridRewards');
+    var rewardsSection = document.getElementById('stakeRewardsSection');
     var ubiGrid = document.getElementById('stakeGridUbi');
     var partnerGrid = document.getElementById('stakeGridPartner');
     var totalTvl = 0;
@@ -489,6 +491,7 @@ function renderOverview() {
         return tvlB - tvlA;
     });
 
+    var rewardsHtml = '';
     var ubiHtml = '';
     var partnerHtml = '';
 
@@ -496,7 +499,9 @@ function renderOverview() {
         var pool = POOLS[key];
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
-        if (pool.category === 'partner') {
+        if (pool.category === 'rewards') {
+            rewardsHtml += result.html;
+        } else if (pool.category === 'partner') {
             partnerHtml += result.html;
         } else {
             ubiHtml += result.html;
@@ -526,6 +531,8 @@ function renderOverview() {
         '<div class="stake-card-cta">Message @StuartDeFi on Telegram &rarr;</div>' +
     '</a>';
 
+    rewardsGrid.innerHTML = rewardsHtml;
+    rewardsSection.style.display = rewardsHtml ? '' : 'none';
     ubiGrid.innerHTML = ubiHtml;
     partnerGrid.innerHTML = partnerHtml;
 
@@ -534,7 +541,7 @@ function renderOverview() {
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    [ubiGrid, partnerGrid].forEach(function(grid) {
+    [rewardsGrid, ubiGrid, partnerGrid].forEach(function(grid) {
         grid.querySelectorAll('.stake-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 var href = card.getAttribute('href');
