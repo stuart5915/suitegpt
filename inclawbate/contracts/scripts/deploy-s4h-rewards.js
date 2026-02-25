@@ -1,7 +1,7 @@
 const { ethers, upgrades } = require("hardhat");
 
 // ⚠️  REPLACE WITH ACTUAL S4H TOKEN ADDRESS AFTER CLANKER LAUNCH
-const S4H      = "0x0000000000000000000000000000000000000000";  // staking token (S4H)
+const S4H      = "0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07";  // staking token (S4H)
 const INCLAWNCH = "0xB0b6e0E9da530f68D713cC03a813B506205aC808"; // reward token
 
 async function main() {

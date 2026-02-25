@@ -44,6 +44,25 @@ var POOLS = {
         category: 'rewards',
         auditLink: '/audit/clawnch-rewards'
     },
+    s4h: {
+        name: 'Salvation 4 Humanity',
+        ticker: 'S4H',
+        token: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
+        rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
+        rewardTicker: 'INCLAWNCH',
+        staking: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
+        decimals: 18,
+        logo: '/salvation4humanity/assets/s4hlogo.png',
+        color: 'hsl(35, 38%, 38%)',
+        colorDim: 'hsla(35, 38%, 38%, 0.12)',
+        glow: 'hsla(35, 38%, 38%, 0.18)',
+        description: 'AI-powered online church community. Stake S4H, earn INCLAWNCH rewards.',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
+        chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
+        featured: false,
+        category: 'ubi',
+        auditLink: '/audit/clawnch-rewards'
+    },
     clawnstr: {
         name: 'ClawnStrategy',
         ticker: 'CLAWNSTR',
@@ -73,17 +92,6 @@ var COMING_SOON = [
         glow: 'hsla(210, 100%, 50%, 0.18)',
         description: 'Autonomous AI agent on Virtuals. Fees buy back INCLAWNCH as UBI rewards.',
         platform: 'Virtuals Protocol',
-        category: 'ubi'
-    },
-    {
-        name: 'Salvation 4 Humanity',
-        ticker: 'S4H',
-        logo: '',
-        color: 'hsl(35, 38%, 38%)',
-        colorDim: 'hsla(35, 38%, 38%, 0.12)',
-        glow: 'hsla(35, 38%, 38%, 0.18)',
-        description: 'AI-powered online church community. Faith meets Web4.',
-        platform: 'Base',
         category: 'ubi'
     }
 ];
