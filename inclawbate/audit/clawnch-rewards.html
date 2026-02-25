@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClawnchRewards Audit Report — Inclawbate</title>
+    <meta name="description" content="Security audit report for ClawnchRewards staking contract. Analyzed by Slither (Trail of Bits) and Aderyn (Cyfrin).">
+    <link rel="icon" type="image/png" href="/inclawbate/assets/inclawbate-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0a0f;
+            --surface: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(255,255,255,0.12);
+            --green: hsl(145, 60%, 45%);
+            --green-dim: hsla(145, 60%, 45%, 0.1);
+            --green-border: hsla(145, 60%, 45%, 0.2);
+            --yellow: hsl(45, 80%, 55%);
+            --yellow-dim: hsla(45, 80%, 55%, 0.1);
+            --yellow-border: hsla(45, 80%, 55%, 0.2);
+            --blue: hsl(220, 70%, 55%);
+            --blue-dim: hsla(220, 70%, 55%, 0.1);
+            --blue-border: hsla(220, 70%, 55%, 0.2);
+            --text: #e0e0e0;
+            --text-dim: rgba(224, 224, 224, 0.5);
+            --text-muted: rgba(224, 224, 224, 0.25);
+            --mono: 'JetBrains Mono', monospace;
+            --body: 'DM Sans', sans-serif;
+        }
+        body {
+            font-family: var(--body); background: var(--bg); color: var(--text);
+            line-height: 1.65; -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+
+        /* Header */
+        .back-link {
+            font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim);
+            text-decoration: none; display: inline-block; margin-bottom: 2rem;
+        }
+        .back-link:hover { color: var(--text); }
+        .report-header { margin-bottom: 3rem; }
+        .report-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            font-family: var(--mono); font-size: 0.65rem; letter-spacing: 1.5px;
+            text-transform: uppercase; padding: 0.35rem 0.85rem; border-radius: 100px;
+            background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border);
+            margin-bottom: 1.25rem;
+        }
+        .report-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+        h1 {
+            font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;
+            letter-spacing: -0.5px; line-height: 1.2;
+        }
+        .report-sub { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 1rem; }
+        .report-meta {
+            display: flex; flex-wrap: wrap; gap: 1.5rem;
+            font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted);
+        }
+        .report-meta a { color: var(--blue); text-decoration: none; }
+        .report-meta a:hover { text-decoration: underline; }
+
+        /* Summary cards */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 2.5rem 0;
+        }
+        .summary-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 1.25rem; text-align: center;
+        }
+        .summary-card .value {
+            font-size: 1.8rem; font-weight: 700; margin-bottom: 0.25rem;
+        }
+        .summary-card .label {
+            font-family: var(--mono); font-size: 0.65rem; color: var(--text-muted);
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .value-green { color: var(--green); }
+        .value-yellow { color: var(--yellow); }
+
+        /* Section */
+        .section { margin-bottom: 2.5rem; }
+        h2 {
+            font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+        }
+        h3 {
+            font-size: 0.92rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 1.5rem;
+        }
+
+        /* Tool badge */
+        .tool-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.5px;
+            padding: 0.2rem 0.6rem; border-radius: 6px; margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .tool-slither { background: hsla(270, 50%, 50%, 0.1); color: hsl(270, 50%, 65%); border: 1px solid hsla(270, 50%, 50%, 0.2); }
+        .tool-aderyn { background: hsla(200, 60%, 50%, 0.1); color: hsl(200, 60%, 65%); border: 1px solid hsla(200, 60%, 50%, 0.2); }
+
+        /* Finding cards */
+        .finding {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            padding: 1.15rem; margin-bottom: 0.75rem;
+        }
+        .finding-header {
+            display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;
+        }
+        .finding-severity {
+            font-family: var(--mono); font-size: 0.6rem; letter-spacing: 1px;
+            text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 100px;
+            font-weight: 600;
+        }
+        .sev-info { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-border); }
+        .sev-low { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-border); }
+        .sev-pass { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
+        .finding-title { font-weight: 600; font-size: 0.88rem; }
+        .finding-detail { color: var(--text-dim); font-size: 0.82rem; line-height: 1.6; }
+        .finding-verdict {
+            margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem;
+            color: var(--green); font-weight: 500;
+        }
+
+        code {
+            font-family: var(--mono); font-size: 0.78rem; background: rgba(255,255,255,0.05);
+            padding: 0.15rem 0.4rem; border-radius: 4px;
+        }
+
+        /* Contract info */
+        .contract-info {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 1.25rem; margin-bottom: 2rem;
+        }
+        .contract-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.4rem 0; font-size: 0.82rem;
+        }
+        .contract-row + .contract-row { border-top: 1px solid var(--border); }
+        .contract-label { color: var(--text-dim); font-size: 0.78rem; }
+        .contract-value { font-family: var(--mono); font-size: 0.72rem; word-break: break-all; }
+        .contract-value a { color: var(--blue); text-decoration: none; }
+        .contract-value a:hover { text-decoration: underline; }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);
+            text-align: center; color: var(--text-muted); font-size: 0.78rem;
+        }
+        .report-footer a { color: var(--text-dim); text-decoration: none; }
+        .report-footer a:hover { color: var(--text); }
+
+        @media (max-width: 600px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .container { padding: 2rem 1.25rem 3rem; }
+            h1 { font-size: 1.5rem; }
+            .report-meta { flex-direction: column; gap: 0.5rem; }
+            .contract-row { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <a href="/stake" class="back-link">&larr; Back to Staking</a>
+
+    <div class="report-header">
+        <div class="report-badge">Passed &mdash; No Vulnerabilities</div>
+        <h1>ClawnchRewards Security Audit</h1>
+        <p class="report-sub">Dual-token staking contract &mdash; Stake $CLAWNCH, earn $INCLAWNCH rewards.</p>
+        <div class="report-meta">
+            <span>Date: February 25, 2026</span>
+            <span>Solidity: ^0.8.24</span>
+            <span>Chain: Base (8453)</span>
+            <span>Pattern: Synthetix StakingRewards</span>
+        </div>
+    </div>
+
+    <div class="contract-info">
+        <div class="contract-row">
+            <span class="contract-label">Proxy Contract</span>
+            <span class="contract-value"><a href="https://basescan.org/address/0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9" target="_blank">0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9</a></span>
+        </div>
+        <div class="contract-row">
+            <span class="contract-label">Implementation</span>
+            <span class="contract-value"><a href="https://basescan.org/address/0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378" target="_blank">0x8ecB1B97B8CebA9f69cA430B46baA9b38eD7a378</a></span>
+        </div>
+        <div class="contract-row">
+            <span class="contract-label">Staking Token (CLAWNCH)</span>
+            <span class="contract-value"><a href="https://basescan.org/token/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be" target="_blank">0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be</a></span>
+        </div>
+        <div class="contract-row">
+            <span class="contract-label">Reward Token (INCLAWNCH)</span>
+            <span class="contract-value"><a href="https://basescan.org/token/0xB0b6e0E9da530f68D713cC03a813B506205aC808" target="_blank">0xB0b6e0E9da530f68D713cC03a813B506205aC808</a></span>
+        </div>
+        <div class="contract-row">
+            <span class="contract-label">Source Code</span>
+            <span class="contract-value"><a href="https://github.com/stuart5915/suitegpt/blob/master/inclawbate/contracts/contracts/ClawnchRewards.sol" target="_blank">GitHub &rarr; ClawnchRewards.sol</a></span>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="value value-green">0</div>
+            <div class="label">Critical / High</div>
+        </div>
+        <div class="summary-card">
+            <div class="value value-green">0</div>
+            <div class="label">Medium</div>
+        </div>
+        <div class="summary-card">
+            <div class="value value-yellow">6</div>
+            <div class="label">Informational</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Tools Used</h2>
+        <p style="color:var(--text-dim);font-size:0.88rem;margin-bottom:1rem;">This contract was analyzed by two industry-standard static analysis tools used by professional auditors.</p>
+        <div>
+            <span class="tool-badge tool-slither">Slither v0.11 &mdash; Trail of Bits</span>
+            <span class="tool-badge tool-aderyn">Aderyn v0.1.9 &mdash; Cyfrin</span>
+        </div>
+        <p style="color:var(--text-dim);font-size:0.82rem;margin-top:0.75rem;">
+            <strong>Slither</strong> &mdash; Python-based framework with 90+ vulnerability detectors for reentrancy, access control, integer overflow, and more. The #1 tool used by professional auditors.<br>
+            <strong>Aderyn</strong> &mdash; Rust-based static analyzer by Cyfrin (the team behind Updraft security courses). 63 detectors, generates markdown reports.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Findings &mdash; ClawnchRewards.sol</h2>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1.25rem;">All findings below are informational or false positives. Zero exploitable vulnerabilities were found.</p>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-info">Info</span>
+                <span class="finding-title">Strict equality check in claim()</span>
+            </div>
+            <p class="finding-detail">Slither flags <code>reward == 0</code> as a "dangerous strict equality." This is an intentional early-return to skip zero-value claims &mdash; a gas optimization, not a vulnerability.</p>
+            <div class="finding-verdict">&#10003; Safe &mdash; Intentional pattern</div>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-info">Info</span>
+                <span class="finding-title">block.timestamp comparisons</span>
+            </div>
+            <p class="finding-detail">Slither flags timestamp usage for reward period tracking. This is inherent to the Synthetix StakingRewards model &mdash; every staking contract uses <code>block.timestamp</code>. Miners can manipulate by ~15 seconds, negligible for a 30-day reward period.</p>
+            <div class="finding-verdict">&#10003; Safe &mdash; Standard staking pattern</div>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-info">Info</span>
+                <span class="finding-title">Uninitialized stakerCount</span>
+            </div>
+            <p class="finding-detail">Aderyn flags <code>stakerCount</code> as uninitialized (H-1). Solidity <code>uint256</code> defaults to 0, which is the correct initial value. It increments on first stake.</p>
+            <div class="finding-verdict">&#10003; Safe &mdash; False positive</div>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-low">Low</span>
+                <span class="finding-title">claim() could be external instead of public</span>
+            </div>
+            <p class="finding-detail">Aderyn suggests marking <code>claim()</code> as <code>external</code> since it's not called internally. Minor gas optimization &mdash; no security impact.</p>
+            <div class="finding-verdict">&#10003; Acknowledged &mdash; No security impact</div>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-low">Low</span>
+                <span class="finding-title">nonReentrant modifier ordering</span>
+            </div>
+            <p class="finding-detail">Aderyn recommends <code>nonReentrant</code> be the first modifier. Our ordering is safe because <code>updateReward</code> only reads/writes internal storage &mdash; no external calls.</p>
+            <div class="finding-verdict">&#10003; Safe &mdash; No external calls in prior modifiers</div>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-info">Info</span>
+                <span class="finding-title">Style: pragma, literals, event indexing</span>
+            </div>
+            <p class="finding-detail">Both tools flag <code>^0.8.24</code> pragma, <code>1e18</code> literals, and event fields that could be indexed. These are stylistic suggestions with zero security implications.</p>
+            <div class="finding-verdict">&#10003; Acknowledged &mdash; Stylistic only</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Security Features</h2>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">Reentrancy Protection</span>
+            </div>
+            <p class="finding-detail">All state-changing functions use <code>ReentrancyGuardUpgradeable</code>. State updates occur before external calls (CEI pattern).</p>
+        </div>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">Token Separation</span>
+            </div>
+            <p class="finding-detail"><code>recoverToken()</code> blocks both staking and reward tokens. Admin cannot drain user funds.</p>
+        </div>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">SafeERC20</span>
+            </div>
+            <p class="finding-detail">All token transfers use OpenZeppelin <code>SafeERC20</code> for safe transfer handling.</p>
+        </div>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">Pausable + Emergency Withdraw</span>
+            </div>
+            <p class="finding-detail">Admin can pause new stakes. Users can always unstake and claim, even when paused. Emergency withdraw available as last resort.</p>
+        </div>
+        <div class="finding">
+            <div class="finding-header">
+                <span class="finding-severity sev-pass">Pass</span>
+                <span class="finding-title">UUPS Upgradeable with Renounce</span>
+            </div>
+            <p class="finding-detail">Admin can push fixes via UUPS proxy. <code>renounceUpgradeability()</code> permanently locks the contract &mdash; no more upgrades ever.</p>
+        </div>
+    </div>
+
+    <div class="report-footer">
+        <p>This report was generated using automated static analysis tools. It is not a substitute for a full manual audit by a professional security firm. The tools used are industry-standard and employed by professional auditors as a first step in the security review process.</p>
+        <p style="margin-top:1rem;"><a href="/stake/clawnch">Stake CLAWNCH &rarr;</a></p>
+    </div>
+
+</div>
+</body>
+</html>
