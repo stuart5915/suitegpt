@@ -22,7 +22,8 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: true,
-        category: 'ubi'
+        category: 'ubi',
+        auditLink: '/audit/clawnch-rewards'
     },
     clawnch: {
         name: 'CLAWNCH',
