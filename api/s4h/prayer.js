@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, wallet_address, prayer_text, prayer_id } = req.body;
+    const { action, wallet_address, prayer_text, prayer_id, is_private } = req.body;
 
     if (!wallet_address || !/^0x[a-fA-F0-9]{40}$/.test(wallet_address)) {
         return res.status(400).json({ error: 'Valid wallet address required' });
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
         const { data, error } = await supabase
             .from('prayer_requests')
-            .insert({ wallet_address: addr, prayer_text: cleaned })
+            .insert({ wallet_address: addr, prayer_text: cleaned, is_private: !!is_private })
             .select()
             .single();
 

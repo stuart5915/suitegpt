@@ -69,9 +69,7 @@
 
         /* Ambient glow orbs */
         .ambient-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-        .ambient-orb {
-            position: absolute; border-radius: 50%; filter: blur(80px);
-        }
+        .ambient-orb { position: absolute; border-radius: 50%; filter: blur(80px); }
         .ambient-orb-1 {
             width: 600px; height: 600px; top: -200px; right: -100px;
             background: radial-gradient(circle, hsla(0, 25%, 20%, 0.07) 0%, transparent 70%);
@@ -132,217 +130,235 @@
             margin: 0 auto 2rem; line-height: 1.7;
         }
 
-        /* Cheshbon banner */
-        .cheshbon-banner {
-            max-width: 700px; margin: 0 auto 2rem; padding: 1.25rem 1.75rem;
-            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.08), hsla(0, 20%, 18%, 0.05));
-            border: 1px solid var(--gold-border); border-radius: 16px;
-            display: flex; align-items: center; gap: 1.25rem;
-            transition: border-color 0.3s; position: relative; z-index: 2;
+        /* ══════════════════════════════════════ */
+        /* TWO-PANEL LAYOUT                      */
+        /* ══════════════════════════════════════ */
+        .panels {
+            max-width: 960px; margin: 0 auto; padding: 0 2rem 4rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+            position: relative; z-index: 2;
         }
-        .cheshbon-banner:hover { border-color: var(--gold-border-hover); }
-        .cheshbon-banner-icon {
-            width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
-            background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+        @media (max-width: 768px) {
+            .panels { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            min-width: 0;
+        }
+        .panel-header {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--gold-border);
+        }
+        .panel-icon {
+            width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.1rem; flex-shrink: 0;
         }
-        .cheshbon-banner-text { flex: 1; }
-        .cheshbon-banner-text strong { font-family: var(--font-serif); font-size: 1.1rem; display: block; margin-bottom: 0.15rem; }
-        .cheshbon-banner-text span { color: var(--text-dim); font-size: 0.82rem; }
-        .cheshbon-banner-btn {
-            background: var(--gold); color: var(--bg); border: none; padding: 0.6rem 1.25rem;
-            border-radius: 100px; font-weight: 600; font-size: 0.8rem; cursor: pointer;
-            font-family: var(--font-body); text-decoration: none; white-space: nowrap;
-            transition: all 0.3s var(--ease-out);
+        .panel-icon--gold { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); }
+        .panel-icon--crimson { background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); }
+        .panel-title {
+            font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600;
         }
-        .cheshbon-banner-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--gold-glow); }
+        .panel-source {
+            font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+        .panel-count {
+            margin-left: auto; font-family: var(--font-mono); font-size: 0.65rem;
+            color: var(--text-muted); letter-spacing: 0.5px;
+        }
 
-        /* Filter tabs */
-        .filter-tabs {
-            display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 2rem;
-            max-width: 700px; margin-left: auto; margin-right: auto; position: relative; z-index: 2;
+        .panel-empty {
+            text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);
+            font-family: var(--font-serif); font-size: 1.05rem; font-style: italic;
         }
-        .filter-tab {
-            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 100px;
-            padding: 0.5rem 1.25rem; font-size: 0.82rem; font-weight: 500; color: var(--text-dim);
-            cursor: pointer; transition: all 0.25s var(--ease-out); font-family: var(--font-body);
+        .panel-loading {
+            text-align: center; padding: 2rem; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 1px;
         }
-        .filter-tab:hover { border-color: var(--gold-border-hover); color: var(--text); }
-        .filter-tab.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
 
-        /* Compose */
-        .compose-section {
-            max-width: 700px; margin: 0 auto 2.5rem; padding: 0 2rem; position: relative; z-index: 2;
-        }
+        /* ══════════════════════════════════════ */
+        /* COMPOSE (prayer requests panel)       */
+        /* ══════════════════════════════════════ */
         .compose-card {
-            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 20px;
-            padding: 1.5rem; transition: border-color 0.3s;
+            background: var(--surface); border: 1px solid hsla(0, 22%, 24%, 0.18);
+            border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem;
+            transition: border-color 0.3s;
         }
-        .compose-card:focus-within { border-color: var(--gold-border-hover); }
+        .compose-card:focus-within { border-color: hsla(0, 25%, 30%, 0.3); }
         .compose-header {
-            display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;
         }
         .compose-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--crimson), var(--gold-dim));
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.7rem; font-weight: 700; color: var(--text); font-family: var(--font-mono);
+            font-size: 0.6rem; font-weight: 700; color: var(--text); font-family: var(--font-mono);
         }
         .compose-wallet {
-            font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dim);
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);
         }
         .compose-textarea {
-            width: 100%; min-height: 80px; background: transparent; border: none; resize: vertical;
-            color: var(--text); font-family: var(--font-body); font-size: 0.92rem; line-height: 1.6;
+            width: 100%; min-height: 70px; background: transparent; border: none; resize: vertical;
+            color: var(--text); font-family: var(--font-body); font-size: 0.88rem; line-height: 1.6;
             outline: none;
         }
         .compose-textarea::placeholder { color: var(--text-muted); }
         .compose-footer {
             display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem;
             padding-top: 0.75rem; border-top: 1px solid var(--gold-border);
+            flex-wrap: wrap; gap: 0.5rem;
         }
-        .compose-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+        .compose-left { display: flex; align-items: center; gap: 1rem; }
+        .compose-count { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); }
+
+        /* Privacy toggle */
+        .privacy-toggle {
+            display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+            font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim);
+            user-select: none;
+        }
+        .privacy-toggle input { display: none; }
+        .privacy-switch {
+            width: 32px; height: 18px; border-radius: 100px; position: relative;
+            background: hsla(0, 22%, 24%, 0.25); border: 1px solid hsla(0, 22%, 28%, 0.3);
+            transition: all 0.25s var(--ease-out);
+        }
+        .privacy-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--text-dim); transition: all 0.25s var(--ease-out);
+        }
+        .privacy-toggle input:checked + .privacy-switch {
+            background: hsla(35, 30%, 30%, 0.3); border-color: var(--gold-dim);
+        }
+        .privacy-toggle input:checked + .privacy-switch::after {
+            transform: translateX(14px); background: var(--gold-light);
+        }
+        .privacy-label { transition: color 0.2s; }
+        .privacy-toggle input:checked ~ .privacy-label { color: var(--gold-light); }
+
         .compose-submit {
-            background: var(--gold); color: var(--bg); border: none; padding: 0.55rem 1.5rem;
-            border-radius: 100px; font-weight: 600; font-size: 0.82rem; cursor: pointer;
-            font-family: var(--font-body); transition: all 0.3s var(--ease-out);
+            background: var(--crimson-light); color: var(--text); border: none;
+            padding: 0.5rem 1.25rem; border-radius: 100px; font-weight: 600;
+            font-size: 0.78rem; cursor: pointer; font-family: var(--font-body);
+            transition: all 0.3s var(--ease-out);
         }
-        .compose-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px var(--gold-glow); }
+        .compose-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px var(--crimson-glow); background: hsl(0, 28%, 36%); }
         .compose-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .connect-wallet-btn {
-            background: var(--gold); color: var(--bg); border: none; padding: 0.75rem 2rem;
-            border-radius: 100px; font-weight: 600; font-size: 0.88rem; cursor: pointer;
-            font-family: var(--font-body); display: flex; align-items: center; gap: 0.5rem;
+            background: var(--crimson-light); color: var(--text); border: 1px solid hsla(0, 22%, 30%, 0.3);
+            padding: 0.65rem 1.5rem; border-radius: 100px; font-weight: 600; font-size: 0.82rem;
+            cursor: pointer; font-family: var(--font-body); display: flex; align-items: center; gap: 0.5rem;
             margin: 0 auto; transition: all 0.3s var(--ease-out);
         }
-        .connect-wallet-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px var(--gold-glow); }
+        .connect-wallet-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px var(--crimson-glow); }
 
-        /* Feed */
-        .feed {
-            max-width: 700px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; z-index: 2;
-        }
-        .feed-empty {
-            text-align: center; padding: 4rem 2rem; color: var(--text-muted);
-            font-family: var(--font-serif); font-size: 1.2rem; font-style: italic;
-        }
-        .feed-loading {
-            text-align: center; padding: 3rem; color: var(--text-muted);
-            font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1px;
-        }
-
-        /* Card shared */
+        /* ══════════════════════════════════════ */
+        /* CARD STYLES                           */
+        /* ══════════════════════════════════════ */
         .feed-card {
-            background: var(--surface); border: 1px solid var(--gold-border); border-radius: 20px;
-            padding: 1.5rem; margin-bottom: 1rem; transition: all 0.4s var(--ease-out);
-            position: relative; overflow: hidden;
+            border-radius: 16px; padding: 1.25rem; margin-bottom: 0.75rem;
+            transition: all 0.4s var(--ease-out); position: relative; overflow: hidden;
         }
         .feed-card::before {
             content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-            transition: opacity 0.4s;
         }
-        .feed-card:hover { transform: translateY(-2px); }
+        .feed-card:hover { transform: translateY(-1px); }
+
         .feed-delete {
-            position: absolute; top: 0.75rem; right: 0.75rem; width: 28px; height: 28px;
+            position: absolute; top: 0.6rem; right: 0.6rem; width: 24px; height: 24px;
             border-radius: 50%; background: transparent; border: 1px solid var(--gold-border);
-            color: var(--text-muted); font-size: 0.85rem; cursor: pointer; display: flex;
+            color: var(--text-muted); font-size: 0.8rem; cursor: pointer; display: flex;
             align-items: center; justify-content: center; transition: all 0.25s; z-index: 2;
             line-height: 1;
         }
         .feed-delete:hover { background: hsla(0, 40%, 30%, 0.2); border-color: hsla(0, 40%, 40%, 0.4); color: hsl(0, 50%, 60%); }
 
-        /* ── Reflection cards (Bible App) ── */
+        /* ── Reflection cards ── */
         .feed-card[data-type="reflection"] {
-            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.06), hsla(35, 20%, 18%, 0.02));
-            border-color: hsla(35, 30%, 30%, 0.18);
+            background: linear-gradient(135deg, hsla(35, 25%, 20%, 0.08), hsla(35, 20%, 18%, 0.03));
+            border: 1px solid hsla(35, 30%, 30%, 0.15);
         }
         .feed-card[data-type="reflection"]::before {
             background: linear-gradient(to bottom, var(--gold), var(--gold-dim), transparent);
             opacity: 0.7;
         }
         .feed-card[data-type="reflection"]:hover {
-            border-color: hsla(35, 35%, 38%, 0.3);
-            box-shadow: 0 4px 30px hsla(35, 30%, 25%, 0.08);
+            border-color: hsla(35, 35%, 38%, 0.25);
+            box-shadow: 0 4px 24px hsla(35, 30%, 25%, 0.06);
         }
 
         /* ── Prayer request cards ── */
         .feed-card[data-type="prayer"] {
-            background: linear-gradient(135deg, hsla(0, 20%, 18%, 0.06), hsla(0, 15%, 16%, 0.02));
-            border-color: hsla(0, 22%, 24%, 0.18);
+            background: linear-gradient(135deg, hsla(0, 20%, 18%, 0.08), hsla(0, 15%, 16%, 0.03));
+            border: 1px solid hsla(0, 22%, 24%, 0.15);
         }
         .feed-card[data-type="prayer"]::before {
             background: linear-gradient(to bottom, var(--crimson-light), var(--crimson), transparent);
             opacity: 0.7;
         }
         .feed-card[data-type="prayer"]:hover {
-            border-color: hsla(0, 25%, 30%, 0.3);
-            box-shadow: 0 4px 30px hsla(0, 20%, 20%, 0.08);
+            border-color: hsla(0, 25%, 30%, 0.25);
+            box-shadow: 0 4px 24px hsla(0, 20%, 20%, 0.06);
         }
 
-        .feed-card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        /* Private prayer indicator */
+        .feed-card.is-private {
+            border-style: dashed;
+        }
+        .private-badge {
+            font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 1px;
+            text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 100px;
+            background: hsla(35, 30%, 30%, 0.12); color: var(--gold);
+            border: 1px solid hsla(35, 30%, 30%, 0.15);
+        }
+
+        .feed-card-header { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.75rem; }
         .feed-avatar {
-            width: 34px; height: 34px; border-radius: 50%;
+            width: 30px; height: 30px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.7rem; font-weight: 700; color: var(--bg); font-family: var(--font-mono);
+            font-size: 0.6rem; font-weight: 700; color: var(--bg); font-family: var(--font-mono);
         }
         .feed-avatar.reflection { background: linear-gradient(135deg, var(--gold-dim), var(--gold)); }
         .feed-avatar.prayer { background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); }
-        .feed-user { font-weight: 600; font-size: 0.85rem; }
-        .feed-meta { display: flex; align-items: center; gap: 0.5rem; }
-        .feed-time { font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
-        .feed-type-badge {
-            font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 1px;
-            text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px;
-            font-weight: 600;
-        }
-        .badge-reflection {
-            background: hsla(35, 35%, 35%, 0.15); color: var(--gold-light);
-            border: 1px solid hsla(35, 30%, 35%, 0.2);
-        }
-        .badge-prayer {
-            background: hsla(0, 25%, 25%, 0.15); color: hsl(0, 35%, 55%);
-            border: 1px solid hsla(0, 25%, 30%, 0.2);
-        }
+        .feed-user { font-weight: 600; font-size: 0.82rem; }
+        .feed-meta { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .feed-time { font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); }
 
-        /* Source label under badge for reflections */
-        .feed-source {
-            font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-muted);
-            letter-spacing: 0.5px; margin-top: 1px;
-        }
-
-        /* Reflection verse block */
+        /* Verse block */
         .verse-block {
             background: hsla(35, 25%, 25%, 0.07); border-left: 3px solid var(--gold-dim);
-            padding: 1rem 1.25rem; border-radius: 0 14px 14px 0; margin-bottom: 0.85rem;
+            padding: 0.85rem 1.1rem; border-radius: 0 12px 12px 0; margin-bottom: 0.65rem;
             font-family: var(--font-serif); font-style: italic; color: var(--text);
-            font-size: 1.05rem; line-height: 1.6; opacity: 0.9;
+            font-size: 0.98rem; line-height: 1.55; opacity: 0.9;
         }
         .verse-block cite {
-            display: block; margin-top: 0.5rem; font-style: normal;
-            font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold); letter-spacing: 0.5px;
+            display: block; margin-top: 0.4rem; font-style: normal;
+            font-family: var(--font-mono); font-size: 0.62rem; color: var(--gold); letter-spacing: 0.5px;
         }
 
-        .feed-text { color: var(--text); font-size: 0.88rem; line-height: 1.65; margin-bottom: 0.75rem; }
-        .feed-card[data-type="reflection"] .feed-text { color: var(--text-dim); font-size: 0.85rem; }
+        .feed-text { color: var(--text); font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.6rem; }
+        .feed-card[data-type="reflection"] .feed-text { color: var(--text-dim); font-size: 0.82rem; }
 
         .feed-actions {
-            display: flex; gap: 1.25rem; color: var(--text-muted); font-size: 0.75rem;
+            display: flex; gap: 1rem; color: var(--text-muted); font-size: 0.7rem;
             font-family: var(--font-mono);
         }
         .feed-action {
-            cursor: pointer; transition: color 0.25s; display: flex; align-items: center; gap: 0.35rem;
+            cursor: pointer; transition: color 0.25s; display: flex; align-items: center; gap: 0.3rem;
             background: none; border: none; color: inherit; font: inherit; padding: 0;
         }
         .feed-action:hover { color: var(--gold); }
-        .feed-action.prayed { color: var(--gold-light); }
 
-        /* Pray button for prayer cards — more prominent */
+        /* Pray button */
         .pray-btn {
-            display: inline-flex; align-items: center; gap: 0.4rem;
+            display: inline-flex; align-items: center; gap: 0.35rem;
             background: hsla(0, 20%, 22%, 0.15); border: 1px solid hsla(0, 22%, 28%, 0.2);
-            border-radius: 100px; padding: 0.35rem 0.9rem; cursor: pointer;
-            color: var(--text-dim); font-family: var(--font-mono); font-size: 0.72rem;
+            border-radius: 100px; padding: 0.3rem 0.75rem; cursor: pointer;
+            color: var(--text-dim); font-family: var(--font-mono); font-size: 0.68rem;
             font-weight: 500; transition: all 0.25s var(--ease-out);
         }
         .pray-btn:hover { background: hsla(0, 25%, 25%, 0.25); border-color: hsla(0, 25%, 32%, 0.3); color: var(--text); }
@@ -373,13 +389,12 @@
         .toast.show { transform: translateX(-50%) translateY(0); }
 
         /* Responsive */
+        @media (max-width: 768px) {
+            .section-title { font-size: 2.2rem; }
+            .panels { padding: 0 1.25rem 3rem; }
+        }
         @media (max-width: 600px) {
             .nav-links { display: none; }
-            .section-title { font-size: 2.2rem; }
-            .cheshbon-banner { flex-direction: column; text-align: center; }
-            .filter-tabs { flex-wrap: wrap; padding: 0 1rem; }
-            .compose-section, .feed { padding: 0 1.25rem; }
-            .feed-card { padding: 1.25rem; }
         }
     </style>
 </head>
@@ -414,46 +429,65 @@
     <p class="section-subtitle">Share what's on your heart. Every prayer is seen and lifted up by real people in this community.</p>
 </div>
 
-<!-- Cheshbon Banner -->
-<div class="cheshbon-banner">
-    <div class="cheshbon-banner-icon">&#128214;</div>
-    <div class="cheshbon-banner-text">
-        <strong>Cheshbon Bible App</strong>
-        <span>Read scripture, share reflections, and grow with the community.</span>
-    </div>
-    <span class="cheshbon-banner-btn" style="opacity:0.6;cursor:default;">Coming Soon</span>
-</div>
+<!-- Two-panel layout -->
+<div class="panels">
 
-<!-- Filter Tabs -->
-<div class="filter-tabs">
-    <button class="filter-tab active" data-filter="all">All</button>
-    <button class="filter-tab" data-filter="reflections">Reflections</button>
-    <button class="filter-tab" data-filter="prayers">Prayer Requests</button>
-</div>
-
-<!-- Compose Section -->
-<div class="compose-section">
-    <div id="compose-connect" style="text-align:center;">
-        <button class="connect-wallet-btn" onclick="connectWallet()">&#128274;&ensp;Connect Wallet to Post</button>
-    </div>
-    <div id="compose-form" style="display:none;">
-        <div class="compose-card">
-            <div class="compose-header">
-                <div class="compose-avatar" id="compose-avatar">?</div>
-                <span class="compose-wallet" id="compose-addr"></span>
+    <!-- LEFT: Prayer Requests -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon panel-icon--crimson">&#128591;</div>
+            <div>
+                <div class="panel-title">Prayer Requests</div>
+                <div class="panel-source">Community Submissions</div>
             </div>
-            <textarea class="compose-textarea" id="prayer-input" placeholder="Share your prayer request with the community..." maxlength="1000" oninput="updateCount()"></textarea>
-            <div class="compose-footer">
-                <span class="compose-count"><span id="char-count">0</span>/1000</span>
-                <button class="compose-submit" id="submit-btn" onclick="submitPrayer()" disabled>Submit Prayer</button>
+            <span class="panel-count" id="prayer-count"></span>
+        </div>
+
+        <!-- Compose -->
+        <div id="compose-connect" style="text-align:center; margin-bottom: 1rem;">
+            <button class="connect-wallet-btn" onclick="connectWallet()">&#128274;&ensp;Connect Wallet to Post</button>
+        </div>
+        <div id="compose-form" style="display:none;">
+            <div class="compose-card">
+                <div class="compose-header">
+                    <div class="compose-avatar" id="compose-avatar">?</div>
+                    <span class="compose-wallet" id="compose-addr"></span>
+                </div>
+                <textarea class="compose-textarea" id="prayer-input" placeholder="Share your prayer request..." maxlength="1000" oninput="updateCount()"></textarea>
+                <div class="compose-footer">
+                    <div class="compose-left">
+                        <span class="compose-count"><span id="char-count">0</span>/1000</span>
+                        <label class="privacy-toggle">
+                            <input type="checkbox" id="privacy-check">
+                            <span class="privacy-switch"></span>
+                            <span class="privacy-label">Private</span>
+                        </label>
+                    </div>
+                    <button class="compose-submit" id="submit-btn" onclick="submitPrayer()" disabled>Submit Prayer</button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Feed -->
-<div class="feed" id="feed">
-    <div class="feed-loading">Loading prayers &amp; reflections...</div>
+        <div id="prayer-feed">
+            <div class="panel-loading">Loading prayers...</div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Scripture Reflections -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon panel-icon--gold">&#128214;</div>
+            <div>
+                <div class="panel-title">Scripture Reflections</div>
+                <div class="panel-source">via Cheshbon Bible App</div>
+            </div>
+            <span class="panel-count" id="reflection-count"></span>
+        </div>
+        <div id="reflection-feed">
+            <div class="panel-loading">Loading reflections...</div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Toast -->
@@ -491,9 +525,13 @@
 
     // State
     let walletAddress = null;
-    let allItems = [];
-    let currentFilter = 'all';
+    let prayers = [];
+    let reflections = [];
     let userPrays = new Set();
+
+    function isAdmin() {
+        return walletAddress && ADMIN_WALLETS.includes(walletAddress);
+    }
 
     // --- Wallet ---
     async function connectWallet() {
@@ -527,6 +565,7 @@
         const text = input.value.trim();
         if (!text || !walletAddress) return;
 
+        const isPrivate = document.getElementById('privacy-check').checked;
         const btn = document.getElementById('submit-btn');
         btn.disabled = true;
         btn.textContent = 'Submitting...';
@@ -535,15 +574,16 @@
             const resp = await fetch('/api/s4h/prayer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', wallet_address: walletAddress, prayer_text: text })
+                body: JSON.stringify({ action: 'submit', wallet_address: walletAddress, prayer_text: text, is_private: isPrivate })
             });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.error);
 
             input.value = '';
+            document.getElementById('privacy-check').checked = false;
             updateCount();
-            showToast('Prayer submitted');
-            loadFeed();
+            showToast(isPrivate ? 'Private prayer submitted' : 'Prayer submitted');
+            loadPrayersAndRender();
         } catch (e) {
             showToast(e.message || 'Failed to submit');
         } finally {
@@ -552,21 +592,31 @@
         }
     }
 
-    // --- Feed ---
-    async function loadFeed() {
-        const feedEl = document.getElementById('feed');
-        feedEl.innerHTML = '<div class="feed-loading">Loading prayers &amp; reflections...</div>';
-
-        const [reflections, prayers] = await Promise.all([
-            loadReflections(),
-            loadPrayers()
+    // --- Load Data ---
+    async function loadAll() {
+        await Promise.all([
+            loadPrayersAndRender(),
+            loadReflectionsAndRender()
         ]);
-
-        allItems = [...reflections, ...prayers].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        renderFeed();
     }
 
-    async function loadReflections() {
+    async function loadPrayersAndRender() {
+        try {
+            const { data, error } = await suiteSb
+                .from('prayer_requests')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            prayers = data || [];
+            renderPrayers();
+        } catch (e) {
+            console.error('Failed to load prayers:', e);
+            document.getElementById('prayer-feed').innerHTML = '<div class="panel-empty">Could not load prayers.</div>';
+        }
+    }
+
+    async function loadReflectionsAndRender() {
         try {
             const { data, error } = await cheshbonSb
                 .from('public_reflections')
@@ -575,25 +625,11 @@
                 .order('created_at', { ascending: false })
                 .limit(50);
             if (error) throw error;
-            return (data || []).map(r => ({ ...r, _type: 'reflection' }));
+            reflections = data || [];
+            renderReflections();
         } catch (e) {
             console.error('Failed to load reflections:', e);
-            return [];
-        }
-    }
-
-    async function loadPrayers() {
-        try {
-            const { data, error } = await suiteSb
-                .from('prayer_requests')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(50);
-            if (error) throw error;
-            return (data || []).map(p => ({ ...p, _type: 'prayer' }));
-        } catch (e) {
-            console.error('Failed to load prayers:', e);
-            return [];
+            document.getElementById('reflection-feed').innerHTML = '<div class="panel-empty">Could not load reflections.</div>';
         }
     }
 
@@ -606,27 +642,42 @@
                 .eq('wallet_address', walletAddress);
             if (error) throw error;
             userPrays = new Set((data || []).map(p => p.prayer_id));
-            renderFeed();
+            renderPrayers();
         } catch (e) {
             console.error('Failed to load user prays:', e);
         }
     }
 
-    function renderFeed() {
-        const feedEl = document.getElementById('feed');
-        let items = allItems;
-        if (currentFilter === 'reflections') items = items.filter(i => i._type === 'reflection');
-        if (currentFilter === 'prayers') items = items.filter(i => i._type === 'prayer');
+    // --- Render ---
+    function renderPrayers() {
+        const el = document.getElementById('prayer-feed');
+        // Filter: show public prayers to everyone, private only to admins
+        const visible = prayers.filter(p => {
+            if (!p.is_private) return true;
+            return isAdmin() || (walletAddress && p.wallet_address === walletAddress);
+        });
 
-        if (items.length === 0) {
-            feedEl.innerHTML = '<div class="feed-empty">No prayers or reflections yet. Be the first.</div>';
+        document.getElementById('prayer-count').textContent = visible.length > 0 ? visible.length : '';
+
+        if (visible.length === 0) {
+            el.innerHTML = '<div class="panel-empty">No prayer requests yet. Be the first to share.</div>';
             return;
         }
-
-        feedEl.innerHTML = items.map(item => item._type === 'reflection' ? renderReflection(item) : renderPrayer(item)).join('');
+        el.innerHTML = visible.map(renderPrayerCard).join('');
     }
 
-    function renderReflection(r) {
+    function renderReflections() {
+        const el = document.getElementById('reflection-feed');
+        document.getElementById('reflection-count').textContent = reflections.length > 0 ? reflections.length : '';
+
+        if (reflections.length === 0) {
+            el.innerHTML = '<div class="panel-empty">No reflections yet. Coming soon via Cheshbon Bible App.</div>';
+            return;
+        }
+        el.innerHTML = reflections.map(renderReflectionCard).join('');
+    }
+
+    function renderReflectionCard(r) {
         const initials = (r.display_name || 'A').slice(0, 2).toUpperCase();
         const name = r.display_name || 'Anonymous';
         return `
@@ -636,10 +687,8 @@
                     <div>
                         <div class="feed-user">${esc(name)}</div>
                         <div class="feed-meta">
-                            <span class="feed-type-badge badge-reflection">&#128214; Reflection</span>
                             <span class="feed-time">${timeAgo(r.created_at)}</span>
                         </div>
-                        <div class="feed-source">via Cheshbon Bible App</div>
                     </div>
                 </div>
                 ${r.verse_text ? `
@@ -650,28 +699,29 @@
                 ` : ''}
                 <div class="feed-text">${esc(r.reflection)}</div>
                 <div class="feed-actions">
-                    <span>&#9825; ${r.likes_count || 0}</span>
+                    <span class="feed-action">&#9825; ${r.likes_count || 0}</span>
                 </div>
             </div>
         `;
     }
 
-    function renderPrayer(p) {
+    function renderPrayerCard(p) {
         const addr = p.wallet_address || '';
         const short = addr.slice(0, 6) + '...' + addr.slice(-4);
         const initials = addr.slice(2, 4).toUpperCase();
         const hasPrayed = userPrays.has(p.id);
         const canDelete = walletAddress && (addr === walletAddress || ADMIN_WALLETS.includes(walletAddress));
+        const privateClass = p.is_private ? ' is-private' : '';
         return `
-            <div class="feed-card" data-type="prayer">
+            <div class="feed-card${privateClass}" data-type="prayer">
                 ${canDelete ? `<button class="feed-delete" onclick="deletePrayer('${p.id}')" title="Delete prayer">&times;</button>` : ''}
                 <div class="feed-card-header">
                     <div class="feed-avatar prayer">${initials}</div>
                     <div>
                         <div class="feed-user">${short}</div>
                         <div class="feed-meta">
-                            <span class="feed-type-badge badge-prayer">&#128591; Prayer Request</span>
                             <span class="feed-time">${timeAgo(p.created_at)}</span>
+                            ${p.is_private ? '<span class="private-badge">Private</span>' : ''}
                         </div>
                     </div>
                 </div>
@@ -685,6 +735,7 @@
         `;
     }
 
+    // --- Actions ---
     async function togglePray(prayerId, btn) {
         if (!walletAddress) {
             showToast('Connect your wallet to pray');
@@ -705,11 +756,10 @@
                 userPrays.delete(prayerId);
             }
 
-            // Update count in allItems
-            const item = allItems.find(i => i.id === prayerId);
+            const item = prayers.find(i => i.id === prayerId);
             if (item) item.pray_count = (item.pray_count || 0) + (data.prayed ? 1 : -1);
 
-            renderFeed();
+            renderPrayers();
         } catch (e) {
             showToast(e.message || 'Failed');
         }
@@ -726,23 +776,13 @@
             });
             const data = await resp.json();
             if (!resp.ok) throw new Error(data.error);
-            allItems = allItems.filter(i => i.id !== prayerId);
-            renderFeed();
+            prayers = prayers.filter(i => i.id !== prayerId);
+            renderPrayers();
             showToast('Prayer deleted');
         } catch (e) {
             showToast(e.message || 'Failed to delete');
         }
     }
-
-    // --- Filter tabs ---
-    document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            currentFilter = tab.dataset.filter;
-            renderFeed();
-        });
-    });
 
     // --- Utils ---
     function esc(s) {
@@ -769,7 +809,7 @@
     }
 
     // --- Init ---
-    loadFeed();
+    loadAll();
 
     // Ambient particles
     (function() {
