@@ -600,6 +600,59 @@
         c.appendChild(p);
     }
 })();
+
+// ── Live Stats from Contract ──
+(async function() {
+    var STAKING = '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D';
+    var RPC = 'https://mainnet.base.org';
+
+    async function call(to, data) {
+        var res = await fetch(RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_call', params: [{ to: to, data: data }, 'latest'], id: 1 })
+        });
+        var json = await res.json();
+        return json.result || '0x0';
+    }
+
+    function fromWei(hex) {
+        var big = BigInt(hex || '0x0');
+        return Number(big) / 1e18;
+    }
+
+    function fmt(n) {
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toFixed(0);
+    }
+
+    try {
+        var results = await Promise.all([
+            call(STAKING, '0x817b1cd2'), // totalStaked()
+            call(STAKING, '0xdff69787'), // stakerCount()
+            call(STAKING, '0x7b0a47ee'), // rewardRate()
+        ]);
+
+        var totalStaked = fromWei(results[0]);
+        var stakerCount = Number(BigInt(results[1] || '0x0'));
+        var rewardRate = fromWei(results[2]);
+
+        var apy = 0;
+        if (totalStaked > 0 && rewardRate > 0) {
+            var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
+            apy = rawApy > 9999 ? 9999 : Math.round(rawApy);
+        }
+
+        document.getElementById('statApy').textContent = apy > 0 ? apy.toLocaleString() + '%' : '--';
+        document.getElementById('statTvl').textContent = totalStaked > 0 ? fmt(totalStaked) + ' S4H' : '--';
+        document.getElementById('statStaked').textContent = totalStaked > 0 ? fmt(totalStaked) : '--';
+        document.getElementById('statStakers').textContent = stakerCount > 0 ? stakerCount.toLocaleString() : '0';
+    } catch (err) {
+        console.error('Stats fetch error:', err);
+    }
+})();
 </script>
 
 </body>
