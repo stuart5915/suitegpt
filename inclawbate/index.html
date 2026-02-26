@@ -1799,19 +1799,22 @@ function copyCA(id) {
             { to: STAKING_PROXY, data: '0xdff69787' }, // [1] stakerCount()
             { to: STAKING_PROXY, data: '0x7b0a47ee' }, // [2] rewardRate()
             { to: STAKING_PROXY, data: '0x506ec095' }, // [3] periodEnd()
-            { to: INCLAWNCH, data: '0x18160ddd' },      // [4] totalSupply()
-            { to: INCLAWNCH, data: BAL_OF_STAKING },     // [5] balanceOf(stakingProxy)
-            { to: INCLAWNCH, data: BAL_OF_CLAWNCH_RWD }, // [6] balanceOf(clawnchRewards)
-            { to: INCLAWNCH, data: BAL_OF_S4H_RWD },     // [7] balanceOf(s4hRewards)
-            { to: INCLAWNCH, data: BAL_OF_INCLAWBASE },   // [8] balanceOf(inclawbase.base.eth)
-        ]).catch(function() { return ['0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0']; }),
+        ]).catch(function() { return ['0x0','0x0','0x0','0x0']; }),
+        rpcBatch([
+            { to: INCLAWNCH, data: '0x18160ddd' },      // [0] totalSupply()
+            { to: INCLAWNCH, data: BAL_OF_STAKING },     // [1] balanceOf(stakingProxy)
+            { to: INCLAWNCH, data: BAL_OF_CLAWNCH_RWD }, // [2] balanceOf(clawnchRewards)
+            { to: INCLAWNCH, data: BAL_OF_S4H_RWD },     // [3] balanceOf(s4hRewards)
+            { to: INCLAWNCH, data: BAL_OF_INCLAWBASE },   // [4] balanceOf(inclawbase.base.eth)
+        ]).catch(function() { return ['0x0','0x0','0x0','0x0','0x0']; }),
         fetch('https://base.blockscout.com/api/v2/tokens/' + INCLAWNCH + '/counters')
             .then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
         var ubi = results[0];
         var inDex = results[1];
         var chain = results[2];
-        var blockscout = results[3];
+        var dist = results[3];
+        var blockscout = results[4];
 
         var inPrice = bestPrice(inDex, INCLAWNCH);
 
@@ -1905,11 +1908,11 @@ function copyCA(id) {
         if (inMcap > 0) setText('tkInMcap', fmtMcap(inMcap));
 
         // ── Live Token Distribution ──
-        var totalSupply = fromWei(chain[4]);
-        var inStaking = fromWei(chain[5]);       // INCLAWNCH staking contract
-        var inClawnchRwd = fromWei(chain[6]);    // ClawnchRewards (INCLAWNCH rewards)
-        var inS4hRwd = fromWei(chain[7]);        // S4H rewards (INCLAWNCH rewards)
-        var inInclawbase = fromWei(chain[8]);    // inclawbase.base.eth wallet
+        var totalSupply = fromWei(dist[0]);
+        var inStaking = fromWei(dist[1]);        // INCLAWNCH staking contract
+        var inClawnchRwd = fromWei(dist[2]);     // ClawnchRewards (INCLAWNCH rewards)
+        var inS4hRwd = fromWei(dist[3]);         // S4H rewards (INCLAWNCH rewards)
+        var inInclawbase = fromWei(dist[4]);     // inclawbase.base.eth wallet
 
         // Locked = staked + reward contracts + inclawbase wallet
         var lockedTotal = inStaking + inClawnchRwd + inS4hRwd + inInclawbase;
