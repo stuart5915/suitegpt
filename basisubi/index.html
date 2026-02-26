@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basis — Autonomous Agent Powering Universal Income</title>
-    <meta name="description" content="Basis is an autonomous AI agent on Virtuals Protocol. It generates fees 24/7 that buy back INCLAWNCH and distribute UBI rewards.">
-    <meta property="og:title" content="Basis ($BASIS) — Autonomous AI Agent">
-    <meta property="og:description" content="The autonomous agent powering universal income. Built on Virtuals Protocol.">
+    <title>Basis — Automated LP Vault on Aerodrome</title>
+    <meta name="description" content="Deposit USDC into the Basis vault. Earn yield from concentrated ETH/USDC liquidity on Aerodrome. All fees buy INCLAWNCH.">
+    <meta property="og:title" content="Basis — Automated LP Vault">
+    <meta property="og:description" content="Deposit USDC. Earn yield. All fees buy INCLAWNCH and distribute to $BASIS stakers as UBI.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://basisubi.com">
     <meta name="twitter:card" content="summary_large_image">
@@ -22,6 +22,7 @@
         :root {
             --bg: #030810;
             --surface: #081018;
+            --surface-2: #0c1520;
             --accent: hsl(210, 100%, 50%);
             --accent-bright: hsl(200, 100%, 65%);
             --accent-dim: hsla(210, 100%, 50%, 0.1);
@@ -29,6 +30,9 @@
             --cyan: hsl(185, 100%, 50%);
             --cyan-dim: hsla(185, 100%, 50%, 0.1);
             --cyan-glow: hsla(185, 100%, 50%, 0.2);
+            --green: hsl(155, 80%, 50%);
+            --green-dim: hsla(155, 80%, 50%, 0.1);
+            --green-glow: hsla(155, 80%, 50%, 0.2);
             --glow: hsl(195, 100%, 60%);
             --glow-dim: hsla(195, 100%, 60%, 0.1);
             --text: #f0f4f8;
@@ -65,7 +69,7 @@
             background-size: 256px;
         }
 
-        /* Dot grid pattern */
+        /* Dot grid */
         body::after {
             content: '';
             position: fixed;
@@ -77,813 +81,364 @@
             background-size: 32px 32px;
         }
 
-        /* Ambient background */
-        .ambient-bg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .ambient-bg .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(140px);
-        }
-        .ambient-bg .orb-1 {
-            width: 700px; height: 700px;
-            background: var(--accent);
-            opacity: 0.1;
-            top: -300px; left: -200px;
-            animation: drift1 22s ease-in-out infinite;
-        }
-        .ambient-bg .orb-2 {
-            width: 500px; height: 500px;
-            background: var(--cyan);
-            opacity: 0.06;
-            bottom: -200px; right: -100px;
-            animation: drift2 28s ease-in-out infinite;
-        }
-        .ambient-bg .orb-3 {
-            width: 400px; height: 400px;
-            background: var(--glow);
-            opacity: 0.05;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation: drift3 20s ease-in-out infinite;
-        }
-        @keyframes drift1 {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(100px, 80px); }
-        }
-        @keyframes drift2 {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(-80px, -100px); }
-        }
-        @keyframes drift3 {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-40%, -60%) scale(1.3); }
-        }
+        /* Ambient orbs */
+        .ambient-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .ambient-bg .orb { position: absolute; border-radius: 50%; filter: blur(140px); }
+        .ambient-bg .orb-1 { width: 700px; height: 700px; background: var(--accent); opacity: 0.08; top: -300px; left: -200px; animation: drift1 22s ease-in-out infinite; }
+        .ambient-bg .orb-2 { width: 500px; height: 500px; background: var(--cyan); opacity: 0.05; bottom: -200px; right: -100px; animation: drift2 28s ease-in-out infinite; }
+        .ambient-bg .orb-3 { width: 400px; height: 400px; background: var(--green); opacity: 0.04; top: 60%; left: 50%; animation: drift3 20s ease-in-out infinite; }
+        @keyframes drift1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(100px, 80px); } }
+        @keyframes drift2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-80px, -100px); } }
+        @keyframes drift3 { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-40%, -60%) scale(1.3); } }
 
         /* Layout */
-        .container {
-            max-width: 1140px;
-            margin: 0 auto;
-            padding: 0 28px;
-            position: relative;
-            z-index: 1;
-        }
+        .container { max-width: 1140px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+        section { padding: 100px 0; }
 
-        section { padding: 120px 0; }
-
-        /* Navigation */
+        /* ═══ NAV ═══ */
         nav {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
             padding: 14px 28px;
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             background: rgba(3, 8, 16, 0.75);
             border-bottom: 1px solid var(--border);
-            transition: background 0.3s;
         }
-        nav .nav-inner {
-            max-width: 1140px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .nav-brand {
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--text);
-            text-decoration: none;
-            letter-spacing: -0.02em;
-        }
-        .nav-brand span {
-            font-family: var(--mono);
-            color: var(--accent-bright);
-            font-weight: 600;
-        }
-        .nav-links {
-            display: flex;
-            gap: 36px;
-            list-style: none;
-        }
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: color 0.2s;
-            letter-spacing: 0.01em;
-        }
+        nav .nav-inner { max-width: 1140px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
+        .nav-brand span { font-family: var(--mono); color: var(--accent-bright); font-weight: 600; }
+        .nav-links { display: flex; gap: 32px; list-style: none; }
+        .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
         .nav-links a:hover { color: var(--text); }
-
-        /* ═══ HERO ═══ */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding-top: 80px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Orbital ring background */
-        .hero-orbital {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 700px;
-            height: 700px;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .hero-orbital .ring {
-            fill: none;
-            stroke-width: 1;
-        }
-        .hero-orbital .ring-1 {
-            stroke: rgba(50, 140, 255, 0.12);
-            animation: spin 60s linear infinite;
-            transform-origin: center;
-        }
-        .hero-orbital .ring-2 {
-            stroke: rgba(0, 220, 255, 0.06);
-            stroke-dasharray: 8 16;
-            animation: spin-reverse 45s linear infinite;
-            transform-origin: center;
-        }
-        .hero-orbital .ring-3 {
-            stroke: rgba(0, 180, 255, 0.05);
-            stroke-dasharray: 4 20;
-            animation: spin 80s linear infinite;
-            transform-origin: center;
-        }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-
-        .hero-content {
-            max-width: 740px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Staggered hero reveal */
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 7px 20px;
-            border-radius: 100px;
-            border: 1px solid var(--border-accent);
-            background: var(--accent-dim);
-            font-family: var(--mono);
-            font-size: 0.76rem;
-            color: var(--accent-bright);
-            margin-bottom: 36px;
-            letter-spacing: 0.04em;
-            opacity: 0;
-            transform: translateX(-20px);
-            animation: slideInLeft 0.6s ease forwards 0.2s;
-        }
-        .hero-badge .pulse {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--accent-bright);
-            box-shadow: 0 0 12px var(--accent-glow);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--accent-glow); }
-            50% { opacity: 0.6; box-shadow: 0 0 0 10px transparent; }
-        }
-        @keyframes slideInLeft {
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .hero h1 {
-            font-family: var(--font-display);
-            font-size: clamp(3.5rem, 10vw, 7rem);
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: -0.05em;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, hsl(210, 100%, 60%) 0%, #fff 40%, hsl(185, 100%, 55%) 100%);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeUp 0.8s ease forwards 0.4s, shimmer 10s ease-in-out infinite 1.2s;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmer {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        .hero .ticker {
-            font-family: var(--mono);
-            font-size: clamp(1.1rem, 3vw, 1.5rem);
-            color: var(--accent-bright);
-            margin-bottom: 24px;
-            font-weight: 500;
-            letter-spacing: 0.06em;
-            opacity: 0;
-            animation: fadeUp 0.6s ease forwards 0.7s;
-        }
-        .hero .ticker .cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1.1em;
-            background: var(--accent-bright);
-            margin-left: 4px;
-            vertical-align: text-bottom;
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-
-        .hero p {
-            font-size: clamp(1.05rem, 2vw, 1.2rem);
-            color: var(--text-secondary);
-            max-width: 540px;
-            margin: 0 auto 44px;
-            line-height: 1.75;
-            opacity: 0;
-            animation: fadeUp 0.6s ease forwards 0.9s;
-        }
-        .hero-actions {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeUp 0.6s ease forwards 1.1s;
-        }
 
         /* ═══ BUTTONS ═══ */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 36px;
-            border-radius: 14px;
-            font-family: var(--font-body);
-            font-weight: 600;
-            font-size: 0.92rem;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 36px; border-radius: 14px;
+            font-family: var(--font-body); font-weight: 600; font-size: 0.92rem;
+            text-decoration: none; border: none; cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            letter-spacing: 0.01em;
         }
         .btn-primary {
             background: linear-gradient(135deg, hsl(210, 100%, 50%) 0%, hsl(185, 100%, 45%) 100%);
             color: #fff;
             box-shadow: 0 0 40px var(--accent-glow), 0 4px 20px rgba(0,0,0,0.3);
         }
-        .btn-primary:hover {
-            box-shadow: 0 0 60px var(--accent-glow), 0 8px 30px rgba(0,0,0,0.4);
-            transform: translateY(-3px);
+        .btn-primary:hover { box-shadow: 0 0 60px var(--accent-glow), 0 8px 30px rgba(0,0,0,0.4); transform: translateY(-3px); }
+        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-accent); }
+        .btn-outline:hover { border-color: var(--accent); background: var(--accent-dim); transform: translateY(-2px); }
+        .btn-green {
+            background: linear-gradient(135deg, hsl(155, 80%, 40%) 0%, hsl(170, 70%, 45%) 100%);
+            color: #fff;
+            box-shadow: 0 0 30px var(--green-glow), 0 4px 16px rgba(0,0,0,0.3);
         }
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border-accent);
-        }
-        .btn-outline:hover {
-            border-color: var(--accent);
-            background: var(--accent-dim);
-            transform: translateY(-2px);
-        }
+        .btn-green:hover { box-shadow: 0 0 50px var(--green-glow), 0 8px 24px rgba(0,0,0,0.4); transform: translateY(-3px); }
 
         /* ═══ SECTION HEADERS ═══ */
-        .section-label {
-            font-family: var(--mono);
-            font-size: 0.72rem;
-            color: var(--accent-bright);
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            margin-bottom: 14px;
+        .section-label { font-family: var(--mono); font-size: 0.72rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 14px; }
+        .section-title { font-family: var(--font-display); font-size: clamp(2rem, 4.5vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 16px; line-height: 1.1; }
+        .section-desc { font-size: 1.05rem; color: var(--text-secondary); max-width: 600px; line-height: 1.75; }
+
+        /* ═══ HERO ═══ */
+        .hero {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            text-align: center; padding-top: 80px; position: relative; overflow: hidden;
         }
-        .section-title {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 4.5vw, 2.8rem);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin-bottom: 16px;
-            line-height: 1.1;
+        .hero-orbital { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; height: 700px; pointer-events: none; z-index: 0; }
+        .hero-orbital .ring { fill: none; stroke-width: 1; }
+        .hero-orbital .ring-1 { stroke: rgba(50, 140, 255, 0.12); animation: spin 60s linear infinite; transform-origin: center; }
+        .hero-orbital .ring-2 { stroke: rgba(0, 220, 255, 0.06); stroke-dasharray: 8 16; animation: spin-reverse 45s linear infinite; transform-origin: center; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+
+        .hero-content { max-width: 740px; position: relative; z-index: 2; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 7px 20px; border-radius: 100px;
+            border: 1px solid var(--border-accent); background: var(--accent-dim);
+            font-family: var(--mono); font-size: 0.76rem; color: var(--accent-bright);
+            margin-bottom: 36px; letter-spacing: 0.04em;
+            opacity: 0; transform: translateX(-20px); animation: slideInLeft 0.6s ease forwards 0.2s;
         }
-        .section-desc {
-            font-size: 1.05rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            line-height: 1.75;
+        .hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green-glow); animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--green-glow); } 50% { opacity: 0.6; box-shadow: 0 0 0 10px transparent; } }
+        @keyframes slideInLeft { to { opacity: 1; transform: translateX(0); } }
+
+        .hero h1 {
+            font-family: var(--font-display); font-size: clamp(3.5rem, 10vw, 7rem); font-weight: 800;
+            line-height: 1; letter-spacing: -0.05em; margin-bottom: 10px;
+            background: linear-gradient(135deg, hsl(210, 100%, 60%) 0%, #fff 40%, hsl(185, 100%, 55%) 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: fadeUp 0.8s ease forwards 0.4s, shimmer 10s ease-in-out infinite 1.2s;
+            opacity: 0; transform: translateY(30px);
+        }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+        .hero-subtitle {
+            font-family: var(--font-display); font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+            font-weight: 600; color: var(--text); margin-bottom: 8px; letter-spacing: -0.01em;
+            opacity: 0; animation: fadeUp 0.6s ease forwards 0.6s;
         }
 
-        /* ═══ WHAT IS BASIS ═══ */
-        .what-is { padding-bottom: 80px; }
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-top: 56px;
+        .hero-apy {
+            display: inline-flex; align-items: center; gap: 12px;
+            font-family: var(--mono); font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 600;
+            color: var(--green); margin-bottom: 24px;
+            opacity: 0; animation: fadeUp 0.6s ease forwards 0.7s;
         }
-        .feature-card {
-            background: var(--surface);
-            border: none;
-            border-left: 3px solid var(--accent);
-            border-radius: 16px;
-            padding: 36px 30px;
-            transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        .hero-apy .apy-label { font-size: 0.7em; color: var(--text-secondary); }
+        .hero-apy .apy-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 16px var(--green-glow); animation: pulse 2s ease-in-out infinite; }
+
+        .hero p {
+            font-size: clamp(1.05rem, 2vw, 1.15rem); color: var(--text-secondary);
+            max-width: 520px; margin: 0 auto 44px; line-height: 1.75;
+            opacity: 0; animation: fadeUp 0.6s ease forwards 0.9s;
+        }
+        .hero-actions {
+            display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+            opacity: 0; transform: translateY(20px); animation: fadeUp 0.6s ease forwards 1.1s;
+        }
+
+        /* ═══ STATS BAR ═══ */
+        .stats-bar {
+            padding: 0;
             position: relative;
+            z-index: 2;
+            margin-top: -40px;
+        }
+        .stats-inner {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+            background: var(--border);
+            border-radius: 16px;
             overflow: hidden;
+            border: 1px solid var(--border-accent);
+        }
+        .stat-item {
+            background: var(--surface);
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .stat-label {
+            font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px;
+        }
+        .stat-value {
+            font-family: var(--mono); font-size: 1.25rem; font-weight: 600; color: var(--text);
+        }
+        .stat-value.green { color: var(--green); }
+
+        /* ═══ HOW IT WORKS ═══ */
+        .how-it-works { padding-bottom: 80px; }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
+        .feature-card {
+            background: var(--surface); border: none; border-left: 3px solid var(--accent);
+            border-radius: 16px; padding: 36px 30px;
+            transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative; overflow: hidden;
         }
         .feature-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            opacity: 0;
+            content: ''; position: absolute; inset: 0; opacity: 0;
             background: radial-gradient(ellipse at 20% 50%, var(--accent-dim) 0%, transparent 70%);
             transition: opacity 0.35s;
         }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
-        }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4); }
         .feature-card:hover::before { opacity: 1; }
-
         .feature-card:nth-child(1) { border-left-color: var(--accent); }
         .feature-card:nth-child(1) .feature-icon { border-color: var(--accent); background: var(--accent-dim); }
         .feature-card:nth-child(2) { border-left-color: var(--cyan); }
         .feature-card:nth-child(2) .feature-icon { border-color: var(--cyan); background: var(--cyan-dim); }
         .feature-card:nth-child(2)::before { background: radial-gradient(ellipse at 20% 50%, var(--cyan-dim) 0%, transparent 70%); }
-        .feature-card:nth-child(3) { border-left-color: var(--glow); }
-        .feature-card:nth-child(3) .feature-icon { border-color: var(--glow); background: var(--glow-dim); }
-        .feature-card:nth-child(3)::before { background: radial-gradient(ellipse at 20% 50%, var(--glow-dim) 0%, transparent 70%); }
-
+        .feature-card:nth-child(3) { border-left-color: var(--green); }
+        .feature-card:nth-child(3) .feature-icon { border-color: var(--green); background: var(--green-dim); }
+        .feature-card:nth-child(3)::before { background: radial-gradient(ellipse at 20% 50%, var(--green-dim) 0%, transparent 70%); }
         .feature-icon {
-            width: 52px; height: 52px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            margin-bottom: 22px;
-            border: 1.5px solid var(--accent);
-            position: relative;
-            z-index: 1;
+            width: 52px; height: 52px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; margin-bottom: 22px; border: 1.5px solid var(--accent);
+            position: relative; z-index: 1;
         }
-        .feature-card h3 {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            letter-spacing: -0.01em;
-            position: relative;
-            z-index: 1;
-        }
-        .feature-card p {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-            position: relative;
-            z-index: 1;
-        }
+        .feature-card h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; position: relative; z-index: 1; }
+        .feature-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; position: relative; z-index: 1; }
 
-        /* ═══ FLYWHEEL (CENTERPIECE) ═══ */
-        .flywheel-section {
-            position: relative;
-            overflow: hidden;
-        }
-        .flywheel-section::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 700px;
-            height: 700px;
+        /* ═══ SYSTEM FLOW DIAGRAM ═══ */
+        .flow-section { position: relative; overflow: hidden; }
+        .flow-section::before {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 700px; height: 700px;
             background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
             pointer-events: none;
         }
+        .flow-diagram { max-width: 640px; margin: 60px auto 0; position: relative; }
+        .flow-svg { width: 100%; height: auto; display: block; }
 
-        .flywheel-diagram {
-            max-width: 560px;
-            margin: 60px auto 48px;
-            position: relative;
-        }
-        .flywheel-svg {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
+        /* SVG flow styles */
+        .flow-svg .node-rect { fill: var(--surface); stroke-width: 1.5; rx: 12; }
+        .flow-svg .node-rect-blue { stroke: var(--accent); }
+        .flow-svg .node-rect-cyan { stroke: var(--cyan); }
+        .flow-svg .node-rect-green { stroke: var(--green); }
+        .flow-svg .node-rect-dim { stroke: var(--text-dim); }
+        .flow-svg .node-text { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; fill: var(--text); }
+        .flow-svg .node-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; fill: var(--text-secondary); }
+        .flow-svg .node-icon { font-size: 18px; }
+        .flow-svg .flow-line { fill: none; stroke-width: 2; stroke-dasharray: 8 6; }
+        .flow-svg .flow-line-blue { stroke: var(--accent); }
+        .flow-svg .flow-line-cyan { stroke: var(--cyan); }
+        .flow-svg .flow-line-green { stroke: var(--green); }
+        .flow-svg .flow-animate { animation: dashFlow 2.5s linear infinite; }
+        @keyframes dashFlow { to { stroke-dashoffset: -42; } }
+        .flow-svg .flow-arrow { stroke-width: 0; }
+        .flow-svg .label-text { font-family: 'IBM Plex Mono', monospace; font-size: 9px; fill: var(--text-dim); letter-spacing: 0.04em; }
 
-        /* SVG styles */
-        .flywheel-svg .orbit-ring {
-            fill: none;
-            stroke: rgba(50, 140, 255, 0.15);
-            stroke-width: 1.5;
+        /* ═══ VAULT SECTION ═══ */
+        .vault-section { padding-top: 60px; }
+        .vault-layout { display: grid; grid-template-columns: 1fr 400px; gap: 48px; align-items: start; }
+        .vault-info-col .section-desc { margin-bottom: 32px; }
+        .vault-highlights {
+            display: flex; flex-direction: column; gap: 16px;
         }
-        .flywheel-svg .flow-ring {
-            fill: none;
-            stroke: var(--accent);
-            stroke-width: 2;
-            stroke-dasharray: 12 8;
-            animation: dashFlow 3s linear infinite;
+        .vault-highlight {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 16px; border-radius: 12px;
+            background: var(--surface); border: 1px solid var(--border);
         }
-        @keyframes dashFlow {
-            to { stroke-dashoffset: -60; }
+        .vault-highlight-icon {
+            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; border: 1px solid var(--border-accent); background: var(--accent-dim);
         }
-        .flywheel-svg .node-circle {
-            fill: var(--surface);
-            stroke: var(--accent);
-            stroke-width: 1.5;
-        }
-        .flywheel-svg .node-circle-cyan {
-            fill: var(--surface);
-            stroke: var(--cyan);
-            stroke-width: 1.5;
-        }
-        .flywheel-svg .node-circle-glow {
-            fill: var(--surface);
-            stroke: var(--glow);
-            stroke-width: 1.5;
-        }
-        .flywheel-svg .node-icon {
-            font-size: 20px;
-        }
-        .flywheel-svg .node-label {
-            font-family: 'Syne', sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            fill: var(--text);
-            text-anchor: middle;
-        }
-        .flywheel-svg .center-label {
-            font-family: 'Syne', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            fill: var(--accent-bright);
-            text-anchor: middle;
-            letter-spacing: 0.12em;
-        }
-        .flywheel-svg .center-sub {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 9px;
-            fill: var(--text-dim);
-            text-anchor: middle;
-            letter-spacing: 0.08em;
-        }
-        .flywheel-svg .center-ring {
-            fill: none;
-            stroke: var(--accent);
-            stroke-width: 1;
-            opacity: 0.3;
-        }
-        .flywheel-svg .glow-dot {
-            animation: glowPulse 2s ease-in-out infinite;
-        }
-        .flywheel-svg .glow-dot:nth-child(2) { animation-delay: 0.5s; }
-        .flywheel-svg .glow-dot:nth-child(3) { animation-delay: 1s; }
-        .flywheel-svg .glow-dot:nth-child(4) { animation-delay: 1.5s; }
-        @keyframes glowPulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
-        }
+        .vault-highlight h4 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+        .vault-highlight p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
 
-        .flywheel-steps {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0;
-            position: relative;
+        /* Vault Card */
+        .vault-card {
+            background: var(--surface); border: 1px solid var(--border-accent);
+            border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
         }
-        .flywheel-step {
-            text-align: center;
-            padding: 24px 16px;
-            position: relative;
+        .vault-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--cyan), var(--green));
         }
-        .flywheel-step::after {
-            content: '';
-            position: absolute;
-            top: 36px;
-            right: -4px;
-            width: 30%;
-            height: 1px;
-            background: linear-gradient(90deg, var(--accent), transparent);
-            opacity: 0.3;
+        .vault-tabs { display: flex; gap: 4px; margin-bottom: 28px; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 4px; }
+        .vault-tab {
+            flex: 1; padding: 10px; border-radius: 8px; border: none;
+            font-family: var(--font-body); font-size: 0.88rem; font-weight: 600;
+            color: var(--text-secondary); background: transparent; cursor: pointer; transition: all 0.2s;
         }
-        .flywheel-step:last-child::after { display: none; }
+        .vault-tab.active { background: var(--accent-dim); color: var(--text); border: 1px solid var(--border-accent); }
+        .vault-input-group { margin-bottom: 20px; }
+        .vault-input-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; display: block; }
+        .vault-input-row {
+            display: flex; align-items: center; gap: 0;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 12px; padding: 4px; transition: border-color 0.2s;
+        }
+        .vault-input-row:focus-within { border-color: var(--accent); }
+        .vault-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            padding: 12px 16px; font-family: var(--mono); font-size: 1.1rem;
+            color: var(--text); font-weight: 500;
+        }
+        .vault-input::placeholder { color: var(--text-dim); }
+        .vault-max-btn {
+            padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-accent);
+            background: var(--accent-dim); color: var(--accent-bright);
+            font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; letter-spacing: 0.06em; margin-right: 4px;
+        }
+        .vault-max-btn:hover { background: var(--accent); color: #fff; }
+        .vault-balance { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 8px; }
+        .vault-action-btn { width: 100%; justify-content: center; margin-bottom: 20px; padding: 16px; font-size: 1rem; }
+        .vault-detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-top: 1px solid var(--border); font-size: 0.82rem;
+        }
+        .vault-detail-row:first-of-type { border-top: none; }
+        .vault-detail-label { color: var(--text-secondary); }
+        .vault-detail-value { font-family: var(--mono); color: var(--text); font-weight: 500; }
 
-        .step-num {
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            color: var(--accent-bright);
-            margin-bottom: 10px;
-            letter-spacing: 0.08em;
-        }
-        .flywheel-step h4 {
-            font-family: var(--font-display);
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .flywheel-step p {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.65;
-        }
-
-        .flywheel-loop {
-            text-align: center;
-            margin-top: 32px;
-            padding: 18px 28px;
-            border-radius: 12px;
-            border: 1px solid var(--border-accent);
-            background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 100%);
-        }
-        .flywheel-loop span {
-            font-family: var(--mono);
-            font-size: 0.82rem;
-            color: var(--accent-bright);
-            letter-spacing: 0.02em;
-        }
-
-        /* ═══ TOKEN INFO ═══ */
-        .token-section {
-            background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 20, 0.5) 30%, rgba(10, 10, 20, 0.5) 70%, transparent 100%);
-        }
+        /* ═══ TOKEN SECTION ═══ */
+        .token-section { background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 20, 0.5) 30%, rgba(10, 10, 20, 0.5) 70%, transparent 100%); }
         .token-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 44px;
-            margin-top: 44px;
-            max-width: 620px;
-            position: relative;
-            overflow: hidden;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 44px; margin-top: 44px; max-width: 620px;
+            position: relative; overflow: hidden;
         }
-        .token-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, hsl(210, 100%, 50%), hsl(195, 100%, 55%), hsl(185, 100%, 50%));
-        }
-        .token-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 80px;
-            background: linear-gradient(180deg, rgba(50, 140, 255, 0.04) 0%, transparent 100%);
-            pointer-events: none;
-        }
-        .token-header {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 1;
-        }
-        .token-img-wrap {
-            position: relative;
-            width: 64px;
-            height: 64px;
-        }
-        .token-img-wrap::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 18px;
-            border: 2px solid var(--accent);
-            opacity: 0.3;
-            animation: tokenPulse 3s ease-in-out infinite;
-        }
-        @keyframes tokenPulse {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.05); }
-        }
-        .token-symbol {
-            width: 64px; height: 64px;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 0 30px hsla(210, 100%, 50%, 0.25);
-        }
-        .token-symbol img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .token-header h3 {
-            font-family: var(--font-display);
-            font-size: 1.6rem;
-            font-weight: 700;
-        }
-        .token-header .token-ticker {
-            font-family: var(--mono);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        .token-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 1;
-        }
-        .token-detail {
-            padding: 16px 18px;
-            background: rgba(50, 140, 255, 0.03);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .token-detail-label {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 6px;
-            font-family: var(--mono);
-        }
-        .token-detail-value {
-            font-family: var(--mono);
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .token-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            position: relative;
-            z-index: 1;
-        }
-        .token-actions .btn {
-            padding: 12px 28px;
-            font-size: 0.88rem;
-        }
+        .token-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, hsl(210, 100%, 50%), hsl(195, 100%, 55%), hsl(155, 80%, 50%)); }
+        .token-header { display: flex; align-items: center; gap: 18px; margin-bottom: 30px; position: relative; z-index: 1; }
+        .token-img-wrap { position: relative; width: 64px; height: 64px; }
+        .token-img-wrap::before { content: ''; position: absolute; inset: -4px; border-radius: 18px; border: 2px solid var(--accent); opacity: 0.3; animation: tokenPulse 3s ease-in-out infinite; }
+        @keyframes tokenPulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
+        .token-symbol { width: 64px; height: 64px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 30px hsla(210, 100%, 50%, 0.25); }
+        .token-symbol img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .token-header h3 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
+        .token-header .token-ticker { font-family: var(--mono); font-size: 0.85rem; color: var(--text-secondary); }
+        .token-details { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 30px; position: relative; z-index: 1; }
+        .token-detail { padding: 16px 18px; background: rgba(50, 140, 255, 0.03); border-radius: 12px; border: 1px solid var(--border); }
+        .token-detail-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; font-family: var(--mono); }
+        .token-detail-value { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; }
+        .token-actions { display: flex; gap: 12px; flex-wrap: wrap; position: relative; z-index: 1; }
+        .token-actions .btn { padding: 12px 28px; font-size: 0.88rem; }
 
-        /* ═══ POWERED BY VIRTUALS ═══ */
-        .virtuals-section {
-            text-align: center;
+        /* ═══ POWERED BY ═══ */
+        .powered-section { text-align: center; }
+        .powered-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+        .powered-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+            padding: 32px 24px; text-align: center; transition: all 0.3s;
         }
-        .virtuals-divider {
-            width: 60px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
-            margin: 0 auto 48px;
-        }
-        .virtuals-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 52px 44px;
-            margin-top: 44px;
-            max-width: 720px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .virtuals-card p {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            line-height: 1.75;
-            margin-bottom: 20px;
-        }
-        .virtuals-card p:last-of-type { margin-bottom: 24px; }
-        .virtuals-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 24px;
-            border-radius: 100px;
-            border: 1px solid var(--border-accent);
-            background: var(--accent-dim);
-            font-family: var(--mono);
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-        }
+        .powered-card:hover { border-color: var(--border-accent); transform: translateY(-4px); }
+        .powered-card h4 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+        .powered-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; }
+        .powered-icon { font-size: 1.8rem; margin-bottom: 16px; display: block; }
 
         /* ═══ FOOTER ═══ */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 56px 0;
-            position: relative;
-        }
-        .footer-inner {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 32px;
-        }
-        .footer-brand-wrap { position: relative; }
-        .footer-brand {
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 1.05rem;
-            margin-bottom: 8px;
-        }
-        .footer-brand span {
-            font-family: var(--mono);
-            color: var(--accent-bright);
-        }
-        .footer-tagline {
-            font-size: 0.82rem;
-            color: var(--text-dim);
-        }
-        /* Small orbital decorative element */
-        .footer-orbital {
-            position: absolute;
-            top: -8px;
-            left: -20px;
-            width: 50px;
-            height: 50px;
-            pointer-events: none;
-            opacity: 0.2;
-        }
-        .footer-links {
-            display: flex;
-            gap: 28px;
-            flex-wrap: wrap;
-        }
-        .footer-links a {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
+        footer { border-top: 1px solid var(--border); padding: 56px 0; position: relative; }
+        .footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 32px; }
+        .footer-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+        .footer-brand span { font-family: var(--mono); color: var(--accent-bright); }
+        .footer-tagline { font-size: 0.82rem; color: var(--text-dim); }
+        .footer-links { display: flex; gap: 28px; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.85rem; color: var(--text-secondary); text-decoration: none; transition: color 0.2s; }
         .footer-links a:hover { color: var(--text); }
-        .footer-disclaimer {
-            width: 100%;
-            margin-top: 28px;
-            padding-top: 28px;
-            border-top: 1px solid var(--border);
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            line-height: 1.65;
-            max-width: 700px;
-        }
+        .footer-disclaimer { width: 100%; margin-top: 28px; padding-top: 28px; border-top: 1px solid var(--border); font-size: 0.72rem; color: var(--text-dim); line-height: 1.65; max-width: 700px; }
 
         /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 900px) {
+            .vault-layout { grid-template-columns: 1fr; }
+            .vault-card { max-width: 440px; }
+        }
         @media (max-width: 768px) {
             section { padding: 80px 0; }
             .features-grid { grid-template-columns: 1fr; }
-            .flywheel-diagram { max-width: 320px; }
-            .flywheel-steps {
-                grid-template-columns: 1fr 1fr;
-                gap: 4px;
-            }
-            .flywheel-step::after { display: none; }
+            .stats-inner { grid-template-columns: repeat(2, 1fr); }
+            .powered-grid { grid-template-columns: 1fr; }
             .nav-links { gap: 20px; }
             .nav-links a { font-size: 0.8rem; }
             .footer-inner { flex-direction: column; }
             .token-details { grid-template-columns: 1fr; }
             .token-card { padding: 32px 24px; }
-            .virtuals-card { padding: 36px 28px; }
+            .flow-diagram { max-width: 360px; }
         }
-
         @media (max-width: 480px) {
             .hero h1 { font-size: 3rem; }
             .hero-actions { flex-direction: column; align-items: center; }
-            .btn { width: 100%; justify-content: center; }
-            .flywheel-steps { grid-template-columns: 1fr; }
-            .flywheel-diagram { max-width: 260px; }
+            .hero-actions .btn { width: 100%; justify-content: center; }
+            .stats-inner { grid-template-columns: 1fr 1fr; }
             .nav-links { gap: 14px; }
             .hero-orbital { width: 400px; height: 400px; }
+            .vault-card { padding: 24px 20px; }
         }
 
         /* ═══ SCROLL ANIMATIONS ═══ */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(28px);
-            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .fade-in { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
         .fade-in.delay-1 { transition-delay: 0.1s; }
         .fade-in.delay-2 { transition-delay: 0.2s; }
         .fade-in.delay-3 { transition-delay: 0.3s; }
     </style>
 </head>
 <body>
-    <!-- Ambient background -->
     <div class="ambient-bg">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -895,156 +450,287 @@
         <div class="nav-inner">
             <a href="#" class="nav-brand"><span>$</span>BASIS</a>
             <ul class="nav-links">
-                <li><a href="#about">About</a></li>
-                <li><a href="#flywheel">Flywheel</a></li>
+                <li><a href="#how">How It Works</a></li>
+                <li><a href="#flow">System</a></li>
+                <li><a href="#vault">Vault</a></li>
                 <li><a href="#token">Token</a></li>
                 <li><a href="/stake">Stake</a></li>
             </ul>
         </div>
     </nav>
 
-    <!-- Hero -->
+    <!-- ═══ HERO ═══ -->
     <section class="hero" id="hero">
-        <!-- Orbital rings -->
         <svg class="hero-orbital" viewBox="0 0 700 700">
             <circle class="ring ring-1" cx="350" cy="350" r="280"/>
             <circle class="ring ring-2" cx="350" cy="350" r="220"/>
-            <circle class="ring ring-3" cx="350" cy="350" r="340"/>
         </svg>
-
         <div class="hero-content">
             <div class="hero-badge">
                 <span class="pulse"></span>
-                Autonomous on Virtuals Protocol
+                ETH/USDC LP Vault on Aerodrome
             </div>
             <h1>Basis</h1>
-            <div class="ticker">$BASIS<span class="cursor"></span></div>
-            <p>The autonomous AI agent powering universal income. Generating fees 24/7 that flow back to holders as UBI rewards.</p>
+            <div class="hero-subtitle">Automated Concentrated Liquidity Vault</div>
+            <div class="hero-apy">
+                <span class="apy-dot"></span>
+                <span>Targeting 15-30% APY</span>
+                <span class="apy-label">estimated</span>
+            </div>
+            <p>Deposit USDC. Earn yield from Aerodrome's deepest pool. All performance fees buy INCLAWNCH and distribute to $BASIS stakers.</p>
             <div class="hero-actions">
-                <a href="#token" class="btn btn-primary">Buy $BASIS</a>
-                <a href="#about" class="btn btn-outline">Learn More</a>
+                <a href="#vault" class="btn btn-green">Deposit USDC</a>
+                <a href="#how" class="btn btn-outline">How It Works</a>
             </div>
         </div>
     </section>
 
-    <!-- What is Basis -->
-    <section class="what-is" id="about">
+    <!-- ═══ STATS BAR ═══ -->
+    <div class="stats-bar">
+        <div class="container">
+            <div class="stats-inner">
+                <div class="stat-item">
+                    <div class="stat-label">Total Value Locked</div>
+                    <div class="stat-value" id="stat-tvl">Launching Soon</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Vault APY</div>
+                    <div class="stat-value green" id="stat-apy">15-30%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">INCLAWNCH Bought</div>
+                    <div class="stat-value" id="stat-bought">--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">$BASIS Stakers</div>
+                    <div class="stat-value" id="stat-stakers">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ HOW IT WORKS ═══ -->
+    <section class="how-it-works" id="how">
         <div class="container">
             <div class="fade-in">
-                <div class="section-label">What is Basis</div>
-                <h2 class="section-title">An AI agent that works for you</h2>
-                <p class="section-desc">Basis is a fully autonomous AI agent deployed on Virtuals Protocol. It posts on X/Twitter daily, engages with crypto communities, and generates protocol fees — all without human intervention.</p>
+                <div class="section-label">How It Works</div>
+                <h2 class="section-title">Yield, automated</h2>
+                <p class="section-desc">Deposit USDC. The vault manages concentrated liquidity on Aerodrome. No manual LP management. No impermanent loss stress. Just yield.</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card fade-in delay-1">
                     <div class="feature-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-bright)"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-bright)"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
                     </div>
-                    <h3>Autonomous</h3>
-                    <p>No operators, no manual posting. Basis runs 24/7 using the GAME framework on Virtuals, making its own decisions about when and what to post.</p>
+                    <h3>Deposit USDC</h3>
+                    <p>Drop USDC into the vault and receive bUSDC shares. Your share of the vault grows as yield accrues. Withdraw anytime &mdash; no lock-ups.</p>
                 </div>
                 <div class="feature-card fade-in delay-2">
                     <div class="feature-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--cyan)"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                     </div>
-                    <h3>Revenue-Generating</h3>
-                    <p>Every interaction earns protocol fees. Those fees are used to buy back INCLAWNCH tokens and distribute them as UBI to stakers.</p>
+                    <h3>Vault Earns Yield</h3>
+                    <p>The vault deploys capital as concentrated liquidity on Aerodrome&rsquo;s ETH/USDC pool. Automated rebalancing keeps the position active and earning.</p>
                 </div>
                 <div class="feature-card fade-in delay-3">
                     <div class="feature-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--glow)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                     </div>
-                    <h3>Base-Native</h3>
-                    <p>Built on Base via Virtuals Protocol. Low gas fees, fast transactions, and seamless integration with the Inclawbate staking ecosystem.</p>
+                    <h3>Fees Buy INCLAWNCH</h3>
+                    <p>15% performance fee on profits. That fee buys INCLAWNCH on the open market and distributes it to $BASIS stakers as UBI rewards.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- The Flywheel -->
-    <section class="flywheel-section" id="flywheel">
+    <!-- ═══ SYSTEM FLOW DIAGRAM ═══ -->
+    <section class="flow-section" id="flow">
         <div class="container">
             <div class="fade-in" style="text-align:center;">
-                <div class="section-label">The Flywheel</div>
-                <h2 class="section-title">How the UBI engine works</h2>
-                <p class="section-desc" style="margin:0 auto;">Agent fees and external treasury funding drive open market buys, feeding stakers and building a permanent safety net.</p>
+                <div class="section-label">System Architecture</div>
+                <h2 class="section-title">How value flows</h2>
+                <p class="section-desc" style="margin:0 auto;">Every dollar of yield generates buy pressure on INCLAWNCH. A self-reinforcing flywheel powered by real revenue.</p>
             </div>
 
-            <!-- SVG Flywheel Diagram -->
-            <div class="flywheel-diagram fade-in">
-                <svg class="flywheel-svg" viewBox="0 0 500 500">
-                    <!-- Outer orbit ring -->
-                    <circle class="orbit-ring" cx="250" cy="250" r="190"/>
-                    <!-- Animated flow ring -->
-                    <circle class="flow-ring" cx="250" cy="250" r="190"/>
+            <div class="flow-diagram fade-in">
+                <svg class="flow-svg" viewBox="0 0 600 720">
+                    <!-- ─── Flow Lines (animated) ─── -->
+                    <!-- User → Vault -->
+                    <line x1="300" y1="70" x2="300" y2="130" class="flow-line flow-line-blue flow-animate"/>
+                    <polygon points="295,128 300,140 305,128" fill="var(--accent)" class="flow-arrow"/>
 
-                    <!-- Center -->
-                    <circle class="center-ring" cx="250" cy="250" r="52"/>
-                    <text class="center-label" x="250" y="246">UBI</text>
-                    <text class="center-sub" x="250" y="262">ENGINE</text>
+                    <!-- Vault ↔ Aerodrome -->
+                    <line x1="370" y1="170" x2="430" y2="170" class="flow-line flow-line-cyan flow-animate"/>
+                    <polygon points="428,165 440,170 428,175" fill="var(--cyan)" class="flow-arrow"/>
+                    <line x1="430" y1="190" x2="370" y2="190" class="flow-line flow-line-cyan flow-animate" style="animation-direction:reverse"/>
+                    <polygon points="372,185 360,190 372,195" fill="var(--cyan)" class="flow-arrow"/>
 
-                    <!-- Node 1: Top — Agents Earn Fees -->
-                    <circle class="node-circle" cx="250" cy="60" r="36"/>
-                    <text class="node-icon" x="250" y="56" text-anchor="middle" fill="var(--accent-bright)">&#x26A1;</text>
-                    <text class="node-label" x="250" y="76" fill="var(--text)">Earn Fees</text>
-                    <!-- Glow dot -->
-                    <circle class="glow-dot" cx="250" cy="60" r="3" fill="var(--accent-bright)"/>
+                    <!-- Vault → FeeManager -->
+                    <line x1="300" y1="220" x2="300" y2="300" class="flow-line flow-line-blue flow-animate"/>
+                    <polygon points="295,298 300,310 305,298" fill="var(--accent)" class="flow-arrow"/>
+                    <text class="label-text" x="320" y="268" text-anchor="start">15% of yield</text>
 
-                    <!-- Node 2: Right — Open Market Buys -->
-                    <circle class="node-circle-cyan" cx="440" cy="250" r="36"/>
-                    <text class="node-icon" x="440" y="246" text-anchor="middle" fill="var(--cyan)">&#x1F4B0;</text>
-                    <text class="node-label" x="440" y="268" fill="var(--text)">Market Buy</text>
-                    <circle class="glow-dot" cx="440" cy="250" r="3" fill="var(--cyan)"/>
+                    <!-- FeeManager → Manager Wallet -->
+                    <line x1="250" y1="370" x2="170" y2="440" class="flow-line flow-line-blue flow-animate"/>
+                    <polygon points="165,435 165,450 175,442" fill="var(--accent)" class="flow-arrow"/>
 
-                    <!-- Node 3: Bottom — Stakers + Treasury -->
-                    <circle class="node-circle-glow" cx="250" cy="440" r="36"/>
-                    <text class="node-icon" x="250" y="436" text-anchor="middle" fill="var(--glow)">&#x1F3E6;</text>
-                    <text class="node-label" x="250" y="458" fill="var(--text)">Split Yield</text>
-                    <circle class="glow-dot" cx="250" cy="440" r="3" fill="var(--glow)"/>
+                    <!-- FeeManager → Buyback -->
+                    <line x1="350" y1="370" x2="430" y2="440" class="flow-line flow-line-green flow-animate"/>
+                    <polygon points="425,442 435,450 435,435" fill="var(--green)" class="flow-arrow"/>
 
-                    <!-- Node 4: Left — Treasury Backstop -->
-                    <circle class="node-circle" cx="60" cy="250" r="36"/>
-                    <text class="node-icon" x="60" y="246" text-anchor="middle" fill="var(--accent-bright)">&#x1F6E1;</text>
-                    <text class="node-label" x="60" y="268" fill="var(--text)">Backstop</text>
-                    <circle class="glow-dot" cx="60" cy="250" r="3" fill="var(--accent-bright)"/>
+                    <!-- Buyback → Staking -->
+                    <line x1="480" y1="500" x2="380" y2="580" class="flow-line flow-line-green flow-animate"/>
+                    <polygon points="376,574 375,588 386,578" fill="var(--green)" class="flow-arrow"/>
+                    <text class="label-text" x="445" y="548" text-anchor="middle">INCLAWNCH</text>
+
+                    <!-- ─── Nodes ─── -->
+                    <!-- User -->
+                    <rect x="230" y="30" width="140" height="50" class="node-rect node-rect-blue" rx="12"/>
+                    <text class="node-icon" x="260" y="62" text-anchor="middle">&#x1F464;</text>
+                    <text class="node-text" x="310" y="56" text-anchor="middle">You</text>
+                    <text class="node-sub" x="310" y="70" text-anchor="middle">deposit USDC</text>
+
+                    <!-- BasisVault -->
+                    <rect x="220" y="140" width="160" height="80" class="node-rect node-rect-blue" rx="12"/>
+                    <text class="node-text" x="300" y="172" text-anchor="middle">BasisVault</text>
+                    <text class="node-sub" x="300" y="188" text-anchor="middle">ERC-4626 | bUSDC</text>
+                    <text class="node-sub" x="300" y="202" text-anchor="middle">Deposit + Withdraw</text>
+
+                    <!-- Aerodrome -->
+                    <rect x="440" y="145" width="150" height="70" class="node-rect node-rect-cyan" rx="12"/>
+                    <text class="node-text" x="515" y="175" text-anchor="middle">Aerodrome</text>
+                    <text class="node-sub" x="515" y="191" text-anchor="middle">ETH/USDC CL Pool</text>
+                    <text class="node-sub" x="515" y="203" text-anchor="middle">Concentrated LP</text>
+
+                    <!-- FeeManager -->
+                    <rect x="220" y="310" width="160" height="65" class="node-rect node-rect-blue" rx="12"/>
+                    <text class="node-text" x="300" y="340" text-anchor="middle">FeeManager</text>
+                    <text class="node-sub" x="300" y="356" text-anchor="middle">Performance Fee Split</text>
+
+                    <!-- Manager Wallet -->
+                    <rect x="80" y="450" width="150" height="55" class="node-rect node-rect-dim" rx="12"/>
+                    <text class="node-text" x="155" y="476" text-anchor="middle">Manager</text>
+                    <text class="node-sub" x="155" y="492" text-anchor="middle">Operations (50%)</text>
+
+                    <!-- INCLAWNCH Buyback -->
+                    <rect x="400" y="450" width="160" height="55" class="node-rect node-rect-green" rx="12"/>
+                    <text class="node-text" x="480" y="476" text-anchor="middle" fill="var(--green)">Buy INCLAWNCH</text>
+                    <text class="node-sub" x="480" y="492" text-anchor="middle">Open Market (50%)</text>
+
+                    <!-- Staking -->
+                    <rect x="220" y="590" width="160" height="70" class="node-rect node-rect-green" rx="12"/>
+                    <text class="node-icon" x="260" y="625" text-anchor="middle">&#x1F4B0;</text>
+                    <text class="node-text" x="320" y="618" text-anchor="middle" fill="var(--green)">$BASIS Staking</text>
+                    <text class="node-sub" x="300" y="640" text-anchor="middle">Earn INCLAWNCH as UBI</text>
+
+                    <!-- Glow dots on flow paths -->
+                    <circle r="3" fill="var(--accent)">
+                        <animateMotion dur="2s" repeatCount="indefinite" path="M300,70 L300,140"/>
+                    </circle>
+                    <circle r="3" fill="var(--green)">
+                        <animateMotion dur="2.5s" repeatCount="indefinite" path="M350,370 L430,440"/>
+                    </circle>
+                    <circle r="3" fill="var(--green)">
+                        <animateMotion dur="2s" repeatCount="indefinite" path="M480,500 L380,580"/>
+                    </circle>
                 </svg>
             </div>
 
-            <div class="flywheel-steps fade-in">
-                <div class="flywheel-step">
-                    <div class="step-num">01</div>
-                    <h4>Agents Earn Fees</h4>
-                    <p>Basis earns protocol fees from Virtuals for every post and engagement. External treasury also contributes funding.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="step-num">02</div>
-                    <h4>Open Market Buys</h4>
-                    <p>All agent fees buy $BASIS tokens on the open market — creating real, consistent buy pressure from actual revenue.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="step-num">03</div>
-                    <h4>Stakers + Treasury</h4>
-                    <p>Purchased tokens are split: a portion flows to stakers as UBI yield, and a portion builds the treasury reserve.</p>
-                </div>
-                <div class="flywheel-step">
-                    <div class="step-num">04</div>
-                    <h4>Treasury Backstop</h4>
-                    <p>Treasury funds an Aerodrome concentrated ETH/USDC LP — actively managed, earning rewards and trading fees, targeting 25–30% APY. A permanent safety net that sustains the ecosystem even if trading volume slows.</p>
-                </div>
-            </div>
-            <div class="flywheel-loop fade-in">
-                <span>Revenue in &rarr; open market buys &rarr; staker yield + treasury LP growth &rarr; repeat forever.</span>
+            <!-- Flywheel summary -->
+            <div class="fade-in" style="text-align:center; margin-top:36px; padding:18px 28px; border-radius:12px; border:1px solid var(--border-accent); background:linear-gradient(135deg, var(--green-dim) 0%, transparent 100%); max-width:640px; margin-left:auto; margin-right:auto;">
+                <span style="font-family:var(--mono); font-size:0.82rem; color:var(--green); letter-spacing:0.02em;">
+                    Vault yield &rarr; performance fee &rarr; buy INCLAWNCH &rarr; $BASIS staker rewards &rarr; repeat forever
+                </span>
             </div>
         </div>
     </section>
 
-    <!-- Token Info -->
+    <!-- ═══ VAULT DEPOSIT UI ═══ -->
+    <section class="vault-section" id="vault">
+        <div class="container">
+            <div class="vault-layout">
+                <div class="vault-info-col fade-in">
+                    <div class="section-label">The Vault</div>
+                    <h2 class="section-title">Deposit USDC. Earn yield.</h2>
+                    <p class="section-desc">The Basis vault provides concentrated liquidity on Aerodrome&rsquo;s ETH/USDC pool. Parameterized strategy, permissionless rebalancing, automated compounding. You just deposit.</p>
+                    <div class="vault-highlights">
+                        <div class="vault-highlight">
+                            <div class="vault-highlight-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </div>
+                            <div>
+                                <h4>No Lock-ups</h4>
+                                <p>Withdraw anytime. Withdrawals are never paused, even in emergencies.</p>
+                            </div>
+                        </div>
+                        <div class="vault-highlight">
+                            <div class="vault-highlight-icon" style="border-color:var(--cyan); background:var(--cyan-dim);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+                            </div>
+                            <div>
+                                <h4>Permissionless</h4>
+                                <p>Anyone can call rebalance() and compound(). No gatekeepers.</p>
+                            </div>
+                        </div>
+                        <div class="vault-highlight">
+                            <div class="vault-highlight-icon" style="border-color:var(--green); background:var(--green-dim);">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                            </div>
+                            <div>
+                                <h4>Fee on Profits Only</h4>
+                                <p>15% performance fee taken only on yield earned. Zero deposit/withdrawal fees.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vault-card fade-in delay-2">
+                    <div class="vault-tabs">
+                        <button class="vault-tab active" id="tabDeposit" onclick="switchTab('deposit')">Deposit</button>
+                        <button class="vault-tab" id="tabWithdraw" onclick="switchTab('withdraw')">Withdraw</button>
+                    </div>
+
+                    <div class="vault-input-group">
+                        <label class="vault-input-label" id="inputLabel">Amount (USDC)</label>
+                        <div class="vault-input-row">
+                            <input type="number" class="vault-input" id="vaultAmount" placeholder="0.00" step="0.01" min="0">
+                            <button class="vault-max-btn" id="maxBtn" onclick="setMax()">MAX</button>
+                        </div>
+                        <div class="vault-balance">Balance: <span id="userBalance">--</span></div>
+                    </div>
+
+                    <button class="btn btn-green vault-action-btn" id="vaultActionBtn" onclick="handleVaultAction()">
+                        Connect Wallet
+                    </button>
+
+                    <div class="vault-detail-row">
+                        <span class="vault-detail-label" id="receiveLabel">You receive</span>
+                        <span class="vault-detail-value" id="receiveValue">-- bUSDC</span>
+                    </div>
+                    <div class="vault-detail-row">
+                        <span class="vault-detail-label">Performance Fee</span>
+                        <span class="vault-detail-value">15% on profits</span>
+                    </div>
+                    <div class="vault-detail-row">
+                        <span class="vault-detail-label">Deposit/Withdraw Fee</span>
+                        <span class="vault-detail-value" style="color:var(--green)">0%</span>
+                    </div>
+                    <div class="vault-detail-row">
+                        <span class="vault-detail-label">Deposit Cap</span>
+                        <span class="vault-detail-value">$25,000 USDC</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ TOKEN ═══ -->
     <section class="token-section" id="token">
         <div class="container">
             <div class="fade-in">
                 <div class="section-label">Token</div>
                 <h2 class="section-title">$BASIS</h2>
-                <p class="section-desc">The agent token on Virtuals Protocol. Holding $BASIS gives you exposure to the autonomous agent's growth and fee generation.</p>
+                <p class="section-desc">Stake $BASIS to earn INCLAWNCH from all vault fee revenue. Launched on Clanker Direct with a 1% swap fee that also buys INCLAWNCH.</p>
             </div>
             <div class="token-card fade-in">
                 <div class="token-header">
@@ -1053,107 +739,220 @@
                     </div>
                     <div>
                         <h3>Basis</h3>
-                        <div class="token-ticker">$BASIS</div>
+                        <div class="token-ticker">$BASIS on Base</div>
                     </div>
                 </div>
                 <div class="token-details">
                     <div class="token-detail">
                         <div class="token-detail-label">Chain</div>
-                        <div class="token-detail-value">Base (Virtuals)</div>
+                        <div class="token-detail-value">Base (Clanker Direct)</div>
                     </div>
                     <div class="token-detail">
-                        <div class="token-detail-label">Protocol</div>
-                        <div class="token-detail-value">Virtuals Protocol</div>
+                        <div class="token-detail-label">Swap Fee</div>
+                        <div class="token-detail-value">1% &rarr; buys INCLAWNCH</div>
                     </div>
                     <div class="token-detail">
-                        <div class="token-detail-label">Type</div>
-                        <div class="token-detail-value">Agent Token</div>
+                        <div class="token-detail-label">Staking</div>
+                        <div class="token-detail-value">Stake &rarr; Earn INCLAWNCH</div>
                     </div>
                     <div class="token-detail">
-                        <div class="token-detail-label">Supply</div>
-                        <div class="token-detail-value">1,000,000,000</div>
+                        <div class="token-detail-label">Dev Allocation</div>
+                        <div class="token-detail-value" style="color:var(--green)">None &mdash; 0%</div>
                     </div>
                 </div>
                 <div class="token-actions">
                     <a href="#" class="btn btn-primary" id="buyBtn">Buy $BASIS</a>
                     <a href="#" class="btn btn-outline" id="chartBtn">View Chart</a>
+                    <a href="/stake" class="btn btn-outline">Stake $BASIS</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Powered by Virtuals -->
-    <section class="virtuals-section">
+    <!-- ═══ POWERED BY ═══ -->
+    <section class="powered-section">
         <div class="container">
             <div class="fade-in">
-                <div class="virtuals-divider"></div>
                 <div class="section-label">Infrastructure</div>
-                <h2 class="section-title">Powered by Virtuals Protocol</h2>
-                <div class="virtuals-card">
-                    <p>Virtuals Protocol is the leading platform for deploying autonomous AI agents on-chain. Basis uses the GAME (Generative Autonomous Multi-modal Entities) framework to make real-time decisions about content creation and audience engagement.</p>
-                    <p>Every agent on Virtuals has its own token. When agents earn fees, tokenholders benefit. It's aligned incentives from day one.</p>
-                    <div class="virtuals-badge">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        Verified on Virtuals Protocol
-                    </div>
+                <h2 class="section-title">Built on the best</h2>
+            </div>
+            <div class="powered-grid fade-in">
+                <div class="powered-card">
+                    <span class="powered-icon">&#x1F535;</span>
+                    <h4>Aerodrome</h4>
+                    <p>The largest DEX on Base. Concentrated liquidity pools with deep ETH/USDC volume. Where the vault earns its yield.</p>
+                </div>
+                <div class="powered-card">
+                    <span class="powered-icon">&#x1F3ED;</span>
+                    <h4>Inclawbate</h4>
+                    <p>The ecosystem powering Basis. INCLAWNCH buybacks create a flywheel that rewards every participant in the network.</p>
+                </div>
+                <div class="powered-card">
+                    <span class="powered-icon">&#x26A1;</span>
+                    <h4>Base</h4>
+                    <p>Coinbase&rsquo;s L2. Sub-cent gas fees, fast finality, and the deepest on-chain liquidity outside Ethereum mainnet.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- ═══ FOOTER ═══ -->
     <footer>
         <div class="container">
             <div class="footer-inner">
-                <div class="footer-brand-wrap">
-                    <svg class="footer-orbital" viewBox="0 0 50 50">
-                        <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(50,140,255,0.2)" stroke-width="0.5" stroke-dasharray="3 5"/>
-                    </svg>
+                <div>
                     <div class="footer-brand"><span>$</span>BASIS</div>
-                    <div class="footer-tagline">The autonomous agent powering universal income.</div>
+                    <div class="footer-tagline">Automated LP vault. Real yield. INCLAWNCH flywheel.</div>
                 </div>
                 <div class="footer-links">
                     <a href="https://x.com/BasisUBI" target="_blank" rel="noopener">X / Twitter</a>
                     <a href="/stake">Stake $BASIS</a>
-                    <a href="https://virtuals.io" target="_blank" rel="noopener">Virtuals Protocol</a>
+                    <a href="https://aerodrome.finance" target="_blank" rel="noopener">Aerodrome</a>
                     <a href="https://inclawbate.com" target="_blank" rel="noopener" style="color:var(--text-dim)">Part of the Inclawbate ecosystem</a>
                 </div>
                 <div class="footer-disclaimer">
-                    $BASIS is an experimental AI agent token. Cryptocurrency investments carry inherent risks including potential total loss of capital. This is not financial advice. Always do your own research before purchasing any digital assets. $BASIS is deployed on Virtuals Protocol on the Base network.
+                    $BASIS is an experimental DeFi protocol. Smart contract risk, impermanent loss, and market volatility can result in loss of funds. APY estimates are not guaranteed. This is not financial advice. DYOR. Contracts are upgradeable (UUPS) and managed by the Basis admin until governance is established.
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
-        // Scroll fade-in observer with stagger
-        (function() {
-            var els = document.querySelectorAll('.fade-in');
-            if (!('IntersectionObserver' in window)) {
-                els.forEach(function(el) { el.classList.add('visible'); });
-                return;
-            }
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
-            els.forEach(function(el) { observer.observe(el); });
-        })();
-
-        // Smooth scroll for nav links
-        document.querySelectorAll('a[href^="#"]').forEach(function(a) {
-            a.addEventListener('click', function(e) {
-                var target = document.querySelector(a.getAttribute('href'));
-                if (target) {
-                    e.preventDefault();
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // ═══════════════════════════════════════════
+    //  Scroll fade-in observer
+    // ═══════════════════════════════════════════
+    (function() {
+        var els = document.querySelectorAll('.fade-in');
+        if (!('IntersectionObserver' in window)) {
+            els.forEach(function(el) { el.classList.add('visible'); });
+            return;
+        }
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
                 }
             });
+        }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+        els.forEach(function(el) { observer.observe(el); });
+    })();
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            var target = document.querySelector(a.getAttribute('href'));
+            if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         });
+    });
+
+    // ═══════════════════════════════════════════
+    //  Vault UI Logic
+    // ═══════════════════════════════════════════
+    var currentTab = 'deposit';
+    var connected = false;
+    var userAddress = null;
+
+    // Contract addresses — fill when deployed
+    var VAULT_ADDRESS = '';
+    var USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabDeposit').classList.toggle('active', tab === 'deposit');
+        document.getElementById('tabWithdraw').classList.toggle('active', tab === 'withdraw');
+        document.getElementById('inputLabel').textContent = tab === 'deposit' ? 'Amount (USDC)' : 'Amount (bUSDC)';
+        document.getElementById('receiveLabel').textContent = tab === 'deposit' ? 'You receive' : 'You receive';
+        document.getElementById('receiveValue').textContent = tab === 'deposit' ? '-- bUSDC' : '-- USDC';
+        document.getElementById('vaultAmount').value = '';
+        updateActionButton();
+    }
+
+    function updateActionButton() {
+        var btn = document.getElementById('vaultActionBtn');
+        if (!connected) {
+            btn.textContent = 'Connect Wallet';
+            return;
+        }
+        if (!VAULT_ADDRESS) {
+            btn.textContent = 'Vault Launching Soon';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            return;
+        }
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.textContent = currentTab === 'deposit' ? 'Deposit USDC' : 'Withdraw';
+    }
+
+    function setMax() {
+        // Will be wired to actual balance once connected
+        var bal = document.getElementById('userBalance').textContent;
+        if (bal && bal !== '--') {
+            document.getElementById('vaultAmount').value = parseFloat(bal.replace(/[^0-9.]/g, '')) || '';
+        }
+    }
+
+    async function handleVaultAction() {
+        if (!connected) {
+            await connectWallet();
+            return;
+        }
+        // Deposit/withdraw logic will be wired once vault is deployed
+        alert(currentTab === 'deposit'
+            ? 'Vault launching soon! Deposit will be available once the contract is deployed on Base.'
+            : 'Vault launching soon! Withdraw will be available once the contract is deployed on Base.');
+    }
+
+    async function connectWallet() {
+        if (typeof window.ethereum === 'undefined') {
+            alert('Please install a Web3 wallet (MetaMask, Rabby, etc.)');
+            return;
+        }
+        try {
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAddress = accounts[0];
+            connected = true;
+            document.getElementById('userBalance').textContent = 'Loading...';
+            updateActionButton();
+
+            // Check chain (Base = 8453)
+            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (parseInt(chainId, 16) !== 8453) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x2105' }]
+                    });
+                } catch(e) {
+                    document.getElementById('userBalance').textContent = 'Switch to Base';
+                    return;
+                }
+            }
+
+            // Fetch USDC balance
+            var balHex = await window.ethereum.request({
+                method: 'eth_call',
+                params: [{
+                    to: USDC_ADDRESS,
+                    data: '0x70a08231000000000000000000000000' + userAddress.slice(2)
+                }, 'latest']
+            });
+            var balance = parseInt(balHex, 16) / 1e6;
+            document.getElementById('userBalance').textContent = balance.toFixed(2) + ' USDC';
+        } catch(e) {
+            console.error('Wallet connect failed:', e);
+        }
+    }
+
+    // Listen for account/chain changes
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', function(accounts) {
+            if (accounts.length === 0) { connected = false; userAddress = null; updateActionButton(); }
+            else { userAddress = accounts[0]; connectWallet(); }
+        });
+        window.ethereum.on('chainChanged', function() { if (connected) connectWallet(); });
+    }
     </script>
 </body>
 </html>
