@@ -572,9 +572,10 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
-        .legend-dot--lp { background: var(--seafoam-400); }
         .legend-dot--staked { background: var(--lobster-400); }
-        .legend-dot--circ { background: var(--sand-300); }
+        .legend-dot--rewards { background: var(--seafoam-400); }
+        .legend-dot--wallet { background: var(--sand-300); }
+        .legend-dot--circ { background: var(--border-default); }
         .legend-dot--team { background: var(--border-subtle); }
 
         .dist-stats-row {
@@ -1422,14 +1423,19 @@
             </div>
             <div class="chart-legend">
                 <div class="legend-item">
-                    <span class="legend-dot legend-dot--lp"></span>
-                    <span class="legend-text">Liquidity Pool</span>
-                    <span class="legend-pct" id="distLp">--%</span>
+                    <span class="legend-dot legend-dot--staked"></span>
+                    <span class="legend-text">Staked</span>
+                    <span class="legend-pct" id="distStaked">--%</span>
                 </div>
                 <div class="legend-item">
-                    <span class="legend-dot legend-dot--staked"></span>
-                    <span class="legend-text">Staked (Locked)</span>
-                    <span class="legend-pct" id="distStaked">--%</span>
+                    <span class="legend-dot legend-dot--rewards"></span>
+                    <span class="legend-text">Reward Pools</span>
+                    <span class="legend-pct" id="distRewards">--%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot legend-dot--wallet"></span>
+                    <span class="legend-text">inclawbase.base.eth</span>
+                    <span class="legend-pct" id="distWallet">--%</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-dot legend-dot--circ"></span>
@@ -1773,20 +1779,32 @@ function copyCA(id) {
         });
     }
 
-    // balanceOf(address) selector + padded staking proxy address
-    var BAL_OF_STAKING = '0x70a08231000000000000000000000000' + STAKING_PROXY.slice(2);
+    // Contracts that hold locked INCLAWNCH
+    var CLAWNCH_REWARDS = '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9';
+    var S4H_REWARDS = '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D';
+    var INCLAWBASE_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+
+    // balanceOf(address) selectors
+    var BAL_PREFIX = '0x70a08231000000000000000000000000';
+    var BAL_OF_STAKING = BAL_PREFIX + STAKING_PROXY.slice(2);
+    var BAL_OF_CLAWNCH_RWD = BAL_PREFIX + CLAWNCH_REWARDS.slice(2);
+    var BAL_OF_S4H_RWD = BAL_PREFIX + S4H_REWARDS.slice(2);
+    var BAL_OF_INCLAWBASE = BAL_PREFIX + INCLAWBASE_WALLET.slice(2);
 
     Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; }),
         rpcBatch([
-            { to: STAKING_PROXY, data: '0x817b1cd2' }, // totalStaked()
-            { to: STAKING_PROXY, data: '0xdff69787' }, // stakerCount()
-            { to: STAKING_PROXY, data: '0x7b0a47ee' }, // rewardRate()
-            { to: STAKING_PROXY, data: '0x506ec095' }, // periodEnd()
-            { to: INCLAWNCH, data: '0x18160ddd' },      // totalSupply()
-            { to: INCLAWNCH, data: BAL_OF_STAKING },     // balanceOf(stakingProxy)
-        ]).catch(function() { return ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0']; }),
+            { to: STAKING_PROXY, data: '0x817b1cd2' }, // [0] totalStaked()
+            { to: STAKING_PROXY, data: '0xdff69787' }, // [1] stakerCount()
+            { to: STAKING_PROXY, data: '0x7b0a47ee' }, // [2] rewardRate()
+            { to: STAKING_PROXY, data: '0x506ec095' }, // [3] periodEnd()
+            { to: INCLAWNCH, data: '0x18160ddd' },      // [4] totalSupply()
+            { to: INCLAWNCH, data: BAL_OF_STAKING },     // [5] balanceOf(stakingProxy)
+            { to: INCLAWNCH, data: BAL_OF_CLAWNCH_RWD }, // [6] balanceOf(clawnchRewards)
+            { to: INCLAWNCH, data: BAL_OF_S4H_RWD },     // [7] balanceOf(s4hRewards)
+            { to: INCLAWNCH, data: BAL_OF_INCLAWBASE },   // [8] balanceOf(inclawbase.base.eth)
+        ]).catch(function() { return ['0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0','0x0']; }),
         fetch('https://base.blockscout.com/api/v2/tokens/' + INCLAWNCH + '/counters')
             .then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
@@ -1888,29 +1906,25 @@ function copyCA(id) {
 
         // ── Live Token Distribution ──
         var totalSupply = fromWei(chain[4]);
-        var stakedBalance = fromWei(chain[5]);
+        var inStaking = fromWei(chain[5]);       // INCLAWNCH staking contract
+        var inClawnchRwd = fromWei(chain[6]);    // ClawnchRewards (INCLAWNCH rewards)
+        var inS4hRwd = fromWei(chain[7]);        // S4H rewards (INCLAWNCH rewards)
+        var inInclawbase = fromWei(chain[8]);    // inclawbase.base.eth wallet
 
-        // Get LP token balance from DexScreener pair data
-        var lpBalance = 0;
-        if (inDex && inDex.pairs) {
-            inDex.pairs.forEach(function(p) {
-                if (p.baseToken && p.baseToken.address &&
-                    p.baseToken.address.toLowerCase() === INCLAWNCH.toLowerCase() &&
-                    p.liquidity && p.liquidity.base) {
-                    lpBalance += parseFloat(p.liquidity.base) || 0;
-                }
-            });
-        }
+        // Locked = staked + reward contracts + inclawbase wallet
+        var lockedTotal = inStaking + inClawnchRwd + inS4hRwd + inInclawbase;
 
         if (totalSupply > 0) {
-            var lpPct = (lpBalance / totalSupply) * 100;
-            var stakedPct = (stakedBalance / totalSupply) * 100;
-            var lockedPct = lpPct + stakedPct;
+            var stakedPct = (inStaking / totalSupply) * 100;
+            var rewardsPct = ((inClawnchRwd + inS4hRwd) / totalSupply) * 100;
+            var walletPct = (inInclawbase / totalSupply) * 100;
+            var lockedPct = (lockedTotal / totalSupply) * 100;
             var circPct = 100 - lockedPct;
             if (circPct < 0) circPct = 0;
 
-            setText('distLp', lpPct.toFixed(1) + '%');
             setText('distStaked', stakedPct.toFixed(1) + '%');
+            setText('distRewards', rewardsPct.toFixed(1) + '%');
+            setText('distWallet', walletPct.toFixed(1) + '%');
             setText('distCirc', circPct.toFixed(1) + '%');
             setText('distLockedPct', lockedPct.toFixed(1) + '%');
 
@@ -1923,15 +1937,17 @@ function copyCA(id) {
             }
             setText('distTotalSupply', fmtSupply(totalSupply));
 
-            // Update donut chart with dynamic conic-gradient
+            // Update donut chart: staked (coral), rewards (seafoam), wallet (gold), circulating (dim)
             var donut = document.getElementById('pieDonut');
             if (donut) {
-                var lpDeg = (lpPct / 100) * 360;
-                var stakedDeg = lpDeg + (stakedPct / 100) * 360;
+                var d1 = (stakedPct / 100) * 360;
+                var d2 = d1 + (rewardsPct / 100) * 360;
+                var d3 = d2 + (walletPct / 100) * 360;
                 donut.style.background = 'conic-gradient(' +
-                    'var(--seafoam-400) 0deg ' + lpDeg.toFixed(1) + 'deg, ' +
-                    'var(--lobster-400) ' + lpDeg.toFixed(1) + 'deg ' + stakedDeg.toFixed(1) + 'deg, ' +
-                    'var(--sand-300) ' + stakedDeg.toFixed(1) + 'deg 360deg)';
+                    'var(--lobster-400) 0deg ' + d1.toFixed(1) + 'deg, ' +
+                    'var(--seafoam-400) ' + d1.toFixed(1) + 'deg ' + d2.toFixed(1) + 'deg, ' +
+                    'var(--sand-300) ' + d2.toFixed(1) + 'deg ' + d3.toFixed(1) + 'deg, ' +
+                    'var(--border-default) ' + d3.toFixed(1) + 'deg 360deg)';
             }
 
             // Update center label
