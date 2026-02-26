@@ -573,7 +573,39 @@
             flex-shrink: 0;
         }
         .legend-dot--lp { background: var(--seafoam-400); }
+        .legend-dot--staked { background: var(--lobster-400); }
+        .legend-dot--circ { background: var(--sand-300); }
         .legend-dot--team { background: var(--border-subtle); }
+
+        .dist-stats-row {
+            display: flex;
+            gap: var(--space-md);
+            width: 100%;
+            max-width: 320px;
+        }
+        .dist-stat {
+            flex: 1;
+            text-align: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md) var(--space-sm);
+        }
+        .dist-stat-value {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--seafoam-300);
+        }
+        .dist-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
         .legend-text { flex: 1; }
         .legend-pct {
             font-weight: 700;
@@ -1382,22 +1414,46 @@
     <p class="section-sub">100% fair launch. Zero team tokens. Built for the community.</p>
 
     <div class="tokenomics-grid">
-        <!-- Left: Pie chart -->
+        <!-- Left: Pie chart + live distribution -->
         <div class="tokenomics-chart-side">
             <div class="pie-wrap">
-                <div class="pie-donut"></div>
-                <div class="pie-center-label">100%<br><span>Community</span></div>
+                <div class="pie-donut" id="pieDonut"></div>
+                <div class="pie-center-label" id="pieCenterLabel">100%<br><span>Community</span></div>
             </div>
             <div class="chart-legend">
                 <div class="legend-item">
                     <span class="legend-dot legend-dot--lp"></span>
-                    <span class="legend-text">Liquidity Pool (Clanker Launch)</span>
-                    <span class="legend-pct">100%</span>
+                    <span class="legend-text">Liquidity Pool</span>
+                    <span class="legend-pct" id="distLp">--%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot legend-dot--staked"></span>
+                    <span class="legend-text">Staked (Locked)</span>
+                    <span class="legend-pct" id="distStaked">--%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot legend-dot--circ"></span>
+                    <span class="legend-text">Circulating</span>
+                    <span class="legend-pct" id="distCirc">--%</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-dot legend-dot--team"></span>
                     <span class="legend-text">Team / VC / Insider</span>
                     <span class="legend-pct">0%</span>
+                </div>
+            </div>
+            <div class="dist-stats-row">
+                <div class="dist-stat">
+                    <div class="dist-stat-value" id="distHolders">--</div>
+                    <div class="dist-stat-label">Holders</div>
+                </div>
+                <div class="dist-stat">
+                    <div class="dist-stat-value" id="distLockedPct">--%</div>
+                    <div class="dist-stat-label">Supply Locked</div>
+                </div>
+                <div class="dist-stat">
+                    <div class="dist-stat-value" id="distTotalSupply">--</div>
+                    <div class="dist-stat-label">Total Supply</div>
                 </div>
             </div>
             <div class="zero-callout">0% Team &middot; 0% VC &middot; 0% Insider</div>
@@ -1717,6 +1773,9 @@ function copyCA(id) {
         });
     }
 
+    // balanceOf(address) selector + padded staking proxy address
+    var BAL_OF_STAKING = '0x70a08231000000000000000000000000' + STAKING_PROXY.slice(2);
+
     Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
         fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; }),
@@ -1725,11 +1784,16 @@ function copyCA(id) {
             { to: STAKING_PROXY, data: '0xdff69787' }, // stakerCount()
             { to: STAKING_PROXY, data: '0x7b0a47ee' }, // rewardRate()
             { to: STAKING_PROXY, data: '0x506ec095' }, // periodEnd()
-        ]).catch(function() { return ['0x0', '0x0', '0x0', '0x0']; })
+            { to: INCLAWNCH, data: '0x18160ddd' },      // totalSupply()
+            { to: INCLAWNCH, data: BAL_OF_STAKING },     // balanceOf(stakingProxy)
+        ]).catch(function() { return ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0']; }),
+        fetch('https://base.blockscout.com/api/v2/tokens/' + INCLAWNCH + '/counters')
+            .then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
         var ubi = results[0];
         var inDex = results[1];
         var chain = results[2];
+        var blockscout = results[3];
 
         var inPrice = bestPrice(inDex, INCLAWNCH);
 
@@ -1821,6 +1885,66 @@ function copyCA(id) {
         if (inPrice > 0) setText('tkInPrice', fmtPrice(inPrice));
         var inMcap = bestMcap(inDex, INCLAWNCH);
         if (inMcap > 0) setText('tkInMcap', fmtMcap(inMcap));
+
+        // ── Live Token Distribution ──
+        var totalSupply = fromWei(chain[4]);
+        var stakedBalance = fromWei(chain[5]);
+
+        // Get LP token balance from DexScreener pair data
+        var lpBalance = 0;
+        if (inDex && inDex.pairs) {
+            inDex.pairs.forEach(function(p) {
+                if (p.baseToken && p.baseToken.address &&
+                    p.baseToken.address.toLowerCase() === INCLAWNCH.toLowerCase() &&
+                    p.liquidity && p.liquidity.base) {
+                    lpBalance += parseFloat(p.liquidity.base) || 0;
+                }
+            });
+        }
+
+        if (totalSupply > 0) {
+            var lpPct = (lpBalance / totalSupply) * 100;
+            var stakedPct = (stakedBalance / totalSupply) * 100;
+            var lockedPct = lpPct + stakedPct;
+            var circPct = 100 - lockedPct;
+            if (circPct < 0) circPct = 0;
+
+            setText('distLp', lpPct.toFixed(1) + '%');
+            setText('distStaked', stakedPct.toFixed(1) + '%');
+            setText('distCirc', circPct.toFixed(1) + '%');
+            setText('distLockedPct', lockedPct.toFixed(1) + '%');
+
+            // Format total supply
+            function fmtSupply(n) {
+                if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+                if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+                if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+                return fmtNum(n);
+            }
+            setText('distTotalSupply', fmtSupply(totalSupply));
+
+            // Update donut chart with dynamic conic-gradient
+            var donut = document.getElementById('pieDonut');
+            if (donut) {
+                var lpDeg = (lpPct / 100) * 360;
+                var stakedDeg = lpDeg + (stakedPct / 100) * 360;
+                donut.style.background = 'conic-gradient(' +
+                    'var(--seafoam-400) 0deg ' + lpDeg.toFixed(1) + 'deg, ' +
+                    'var(--lobster-400) ' + lpDeg.toFixed(1) + 'deg ' + stakedDeg.toFixed(1) + 'deg, ' +
+                    'var(--sand-300) ' + stakedDeg.toFixed(1) + 'deg 360deg)';
+            }
+
+            // Update center label
+            var centerLabel = document.getElementById('pieCenterLabel');
+            if (centerLabel) {
+                centerLabel.innerHTML = lockedPct.toFixed(1) + '%<br><span>Locked</span>';
+            }
+        }
+
+        // Holder count from Blockscout
+        if (blockscout && blockscout.token_holders_count) {
+            setText('distHolders', fmtNum(Number(blockscout.token_holders_count)));
+        }
     });
 })();
 </script>
