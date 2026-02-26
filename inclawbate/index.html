@@ -1800,21 +1800,13 @@ function copyCA(id) {
             { to: STAKING_PROXY, data: '0x7b0a47ee' }, // [2] rewardRate()
             { to: STAKING_PROXY, data: '0x506ec095' }, // [3] periodEnd()
         ]).catch(function() { return ['0x0','0x0','0x0','0x0']; }),
-        rpcBatch([
-            { to: INCLAWNCH, data: '0x18160ddd' },      // [0] totalSupply()
-            { to: INCLAWNCH, data: BAL_OF_STAKING },     // [1] balanceOf(stakingProxy)
-            { to: INCLAWNCH, data: BAL_OF_CLAWNCH_RWD }, // [2] balanceOf(clawnchRewards)
-            { to: INCLAWNCH, data: BAL_OF_S4H_RWD },     // [3] balanceOf(s4hRewards)
-            { to: INCLAWNCH, data: BAL_OF_INCLAWBASE },   // [4] balanceOf(inclawbase.base.eth)
-        ]).catch(function() { return ['0x0','0x0','0x0','0x0','0x0']; }),
         fetch('https://base.blockscout.com/api/v2/tokens/' + INCLAWNCH + '/counters')
             .then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
         var ubi = results[0];
         var inDex = results[1];
         var chain = results[2];
-        var dist = results[3];
-        var blockscout = results[4];
+        var blockscout = results[3];
 
         var inPrice = bestPrice(inDex, INCLAWNCH);
 
@@ -1907,63 +1899,66 @@ function copyCA(id) {
         var inMcap = bestMcap(inDex, INCLAWNCH);
         if (inMcap > 0) setText('tkInMcap', fmtMcap(inMcap));
 
-        // ── Live Token Distribution ──
-        var totalSupply = fromWei(dist[0]);
-        var inStaking = fromWei(dist[1]);        // INCLAWNCH staking contract
-        var inClawnchRwd = fromWei(dist[2]);     // ClawnchRewards (INCLAWNCH rewards)
-        var inS4hRwd = fromWei(dist[3]);         // S4H rewards (INCLAWNCH rewards)
-        var inInclawbase = fromWei(dist[4]);     // inclawbase.base.eth wallet
-
-        // Locked = staked + reward contracts + inclawbase wallet
-        var lockedTotal = inStaking + inClawnchRwd + inS4hRwd + inInclawbase;
-
-        if (totalSupply > 0) {
-            var stakedPct = (inStaking / totalSupply) * 100;
-            var rewardsPct = ((inClawnchRwd + inS4hRwd) / totalSupply) * 100;
-            var walletPct = (inInclawbase / totalSupply) * 100;
-            var lockedPct = (lockedTotal / totalSupply) * 100;
-            var circPct = 100 - lockedPct;
-            if (circPct < 0) circPct = 0;
-
-            setText('distStaked', stakedPct.toFixed(1) + '%');
-            setText('distRewards', rewardsPct.toFixed(1) + '%');
-            setText('distWallet', walletPct.toFixed(1) + '%');
-            setText('distCirc', circPct.toFixed(1) + '%');
-            setText('distLockedPct', lockedPct.toFixed(1) + '%');
-
-            // Format total supply
-            function fmtSupply(n) {
-                if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
-                if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-                if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-                return fmtNum(n);
-            }
-            setText('distTotalSupply', fmtSupply(totalSupply));
-
-            // Update donut chart: staked (coral), rewards (seafoam), wallet (gold), circulating (dim)
-            var donut = document.getElementById('pieDonut');
-            if (donut) {
-                var d1 = (stakedPct / 100) * 360;
-                var d2 = d1 + (rewardsPct / 100) * 360;
-                var d3 = d2 + (walletPct / 100) * 360;
-                donut.style.background = 'conic-gradient(' +
-                    'var(--lobster-400) 0deg ' + d1.toFixed(1) + 'deg, ' +
-                    'var(--seafoam-400) ' + d1.toFixed(1) + 'deg ' + d2.toFixed(1) + 'deg, ' +
-                    'var(--sand-300) ' + d2.toFixed(1) + 'deg ' + d3.toFixed(1) + 'deg, ' +
-                    'var(--border-default) ' + d3.toFixed(1) + 'deg 360deg)';
-            }
-
-            // Update center label
-            var centerLabel = document.getElementById('pieCenterLabel');
-            if (centerLabel) {
-                centerLabel.innerHTML = lockedPct.toFixed(1) + '%<br><span>Locked</span>';
-            }
-        }
-
         // Holder count from Blockscout
         if (blockscout && blockscout.token_holders_count) {
             setText('distHolders', fmtNum(Number(blockscout.token_holders_count)));
         }
+
+        // ── Live Token Distribution (separate RPC batch to avoid rate limits) ──
+        rpcBatch([
+            { to: INCLAWNCH, data: '0x18160ddd' },      // [0] totalSupply()
+            { to: INCLAWNCH, data: BAL_OF_STAKING },     // [1] balanceOf(stakingProxy)
+            { to: INCLAWNCH, data: BAL_OF_CLAWNCH_RWD }, // [2] balanceOf(clawnchRewards)
+            { to: INCLAWNCH, data: BAL_OF_S4H_RWD },     // [3] balanceOf(s4hRewards)
+            { to: INCLAWNCH, data: BAL_OF_INCLAWBASE },   // [4] balanceOf(inclawbase.base.eth)
+        ]).then(function(dist) {
+            var totalSupply = fromWei(dist[0]);
+            var inStaking = fromWei(dist[1]);
+            var inClawnchRwd = fromWei(dist[2]);
+            var inS4hRwd = fromWei(dist[3]);
+            var inInclawbase = fromWei(dist[4]);
+            var lockedTotal = inStaking + inClawnchRwd + inS4hRwd + inInclawbase;
+
+            if (totalSupply > 0) {
+                var stakedPct = (inStaking / totalSupply) * 100;
+                var rewardsPct = ((inClawnchRwd + inS4hRwd) / totalSupply) * 100;
+                var walletPct = (inInclawbase / totalSupply) * 100;
+                var lockedPct = (lockedTotal / totalSupply) * 100;
+                var circPct = 100 - lockedPct;
+                if (circPct < 0) circPct = 0;
+
+                setText('distStaked', stakedPct.toFixed(1) + '%');
+                setText('distRewards', rewardsPct.toFixed(1) + '%');
+                setText('distWallet', walletPct.toFixed(1) + '%');
+                setText('distCirc', circPct.toFixed(1) + '%');
+                setText('distLockedPct', lockedPct.toFixed(1) + '%');
+
+                function fmtSupply(n) {
+                    if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+                    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+                    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+                    return fmtNum(n);
+                }
+                setText('distTotalSupply', fmtSupply(totalSupply));
+
+                var donut = document.getElementById('pieDonut');
+                if (donut) {
+                    var d1 = (stakedPct / 100) * 360;
+                    var d2 = d1 + (rewardsPct / 100) * 360;
+                    var d3 = d2 + (walletPct / 100) * 360;
+                    donut.style.background = 'conic-gradient(' +
+                        'var(--lobster-400) 0deg ' + d1.toFixed(1) + 'deg, ' +
+                        'var(--seafoam-400) ' + d1.toFixed(1) + 'deg ' + d2.toFixed(1) + 'deg, ' +
+                        'var(--sand-300) ' + d2.toFixed(1) + 'deg ' + d3.toFixed(1) + 'deg, ' +
+                        'var(--border-default) ' + d3.toFixed(1) + 'deg 360deg)';
+                }
+
+                var centerLabel = document.getElementById('pieCenterLabel');
+                if (centerLabel) {
+                    centerLabel.innerHTML = lockedPct.toFixed(1) + '%<br><span>Locked</span>';
+                }
+            }
+        }).catch(function() {});
     });
 })();
 </script>
