@@ -107,8 +107,19 @@ var COMING_SOON = [
         color: 'hsl(210, 100%, 50%)',
         colorDim: 'hsla(210, 100%, 50%, 0.12)',
         glow: 'hsla(210, 100%, 50%, 0.18)',
-        description: 'Autonomous AI agent on Virtuals. Fees buy back INCLAWNCH as UBI rewards.',
-        platform: 'Virtuals Protocol',
+        description: 'Automated LP vault on Aerodrome. Vault fees buy INCLAWNCH and distribute to $BASIS stakers as UBI.',
+        platform: 'basisubi.com',
+        category: 'ubi'
+    },
+    {
+        name: 'MirrorMind',
+        ticker: 'MIRROR',
+        logo: '',
+        color: 'hsl(280, 60%, 55%)',
+        colorDim: 'hsla(280, 60%, 55%, 0.12)',
+        glow: 'hsla(280, 60%, 55%, 0.18)',
+        description: 'Wellness brand powering mindful living. Trading fees buy INCLAWNCH and flow back to stakers.',
+        platform: 'mirrormind.life',
         category: 'ubi'
     }
 ];
