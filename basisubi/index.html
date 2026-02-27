@@ -845,40 +845,23 @@
                     </div>
                 </div>
 
-                <div class="vault-card fade-in delay-2">
-                    <div class="vault-tabs">
-                        <button class="vault-tab active" id="tabDeposit" onclick="switchTab('deposit')">Deposit</button>
-                        <button class="vault-tab" id="tabWithdraw" onclick="switchTab('withdraw')">Withdraw</button>
-                    </div>
-
-                    <div class="vault-input-group">
-                        <label class="vault-input-label" id="inputLabel">Amount (USDC)</label>
-                        <div class="vault-input-row">
-                            <input type="number" class="vault-input" id="vaultAmount" placeholder="0.00" step="0.01" min="0">
-                            <button class="vault-max-btn" id="maxBtn" onclick="setMax()">MAX</button>
+                <div class="vault-card fade-in delay-2" style="text-align:center;">
+                    <div style="padding:40px 20px;">
+                        <div style="font-size:2.5rem; margin-bottom:16px;">&#x1F6A7;</div>
+                        <h3 style="font-family:var(--heading); font-size:1.4rem; color:#fff; margin-bottom:8px;">Coming Soon</h3>
+                        <p style="color:var(--text-dim); font-size:0.9rem; line-height:1.6; margin-bottom:24px;">The Basis vault is currently under development. Deposits will open once the contracts are deployed and audited on Base.</p>
+                        <div class="vault-detail-row">
+                            <span class="vault-detail-label">Performance Fee</span>
+                            <span class="vault-detail-value">15% on profits</span>
                         </div>
-                        <div class="vault-balance">Balance: <span id="userBalance">--</span></div>
-                    </div>
-
-                    <button class="btn btn-green vault-action-btn" id="vaultActionBtn" onclick="handleVaultAction()">
-                        Connect Wallet
-                    </button>
-
-                    <div class="vault-detail-row">
-                        <span class="vault-detail-label" id="receiveLabel">You receive</span>
-                        <span class="vault-detail-value" id="receiveValue">-- bUSDC</span>
-                    </div>
-                    <div class="vault-detail-row">
-                        <span class="vault-detail-label">Performance Fee</span>
-                        <span class="vault-detail-value">15% on profits</span>
-                    </div>
-                    <div class="vault-detail-row">
-                        <span class="vault-detail-label">Deposit/Withdraw Fee</span>
-                        <span class="vault-detail-value" style="color:var(--green)">0%</span>
-                    </div>
-                    <div class="vault-detail-row">
-                        <span class="vault-detail-label">Deposit Cap</span>
-                        <span class="vault-detail-value">$25,000 USDC</span>
+                        <div class="vault-detail-row">
+                            <span class="vault-detail-label">Deposit/Withdraw Fee</span>
+                            <span class="vault-detail-value" style="color:var(--green)">0%</span>
+                        </div>
+                        <div class="vault-detail-row">
+                            <span class="vault-detail-label">Deposit Cap</span>
+                            <span class="vault-detail-value">$25,000 USDC</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -891,7 +874,7 @@
             <div class="fade-in">
                 <div class="section-label">Token</div>
                 <h2 class="section-title">$BASIS</h2>
-                <p class="section-desc">Stake $BASIS to earn INCLAWNCH from all vault fee revenue. Launched on Clanker Direct with a 1% swap fee that also buys INCLAWNCH.</p>
+                <p class="section-desc">Stake $BASIS to earn BASIS rewards from vault fee revenue. Launched on Clanker Direct with a 1% swap fee.</p>
             </div>
             <div class="token-card fade-in">
                 <div class="token-header">
@@ -910,11 +893,11 @@
                     </div>
                     <div class="token-detail">
                         <div class="token-detail-label">Swap Fee</div>
-                        <div class="token-detail-value">1% &rarr; buys INCLAWNCH</div>
+                        <div class="token-detail-value">1%</div>
                     </div>
                     <div class="token-detail">
                         <div class="token-detail-label">Staking</div>
-                        <div class="token-detail-value">Stake &rarr; Earn INCLAWNCH</div>
+                        <div class="token-detail-value">Stake &rarr; Earn BASIS</div>
                     </div>
                     <div class="token-detail">
                         <div class="token-detail-label">Dev Allocation</div>
@@ -963,7 +946,7 @@
             <div class="footer-inner">
                 <div>
                     <div class="footer-brand"><span>$</span>BASIS</div>
-                    <div class="footer-tagline">Automated LP vault. Real yield. INCLAWNCH flywheel.</div>
+                    <div class="footer-tagline">Automated LP vault. Real yield. BASIS flywheel.</div>
                 </div>
                 <div class="footer-links">
                     <a href="https://x.com/BasisUBI" target="_blank" rel="noopener">X / Twitter</a>
@@ -1007,113 +990,7 @@
         });
     });
 
-    // ═══════════════════════════════════════════
-    //  Vault UI Logic
-    // ═══════════════════════════════════════════
-    var currentTab = 'deposit';
-    var connected = false;
-    var userAddress = null;
-
-    // Contract addresses — fill when deployed
-    var VAULT_ADDRESS = '';
-    var USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-
-    function switchTab(tab) {
-        currentTab = tab;
-        document.getElementById('tabDeposit').classList.toggle('active', tab === 'deposit');
-        document.getElementById('tabWithdraw').classList.toggle('active', tab === 'withdraw');
-        document.getElementById('inputLabel').textContent = tab === 'deposit' ? 'Amount (USDC)' : 'Amount (bUSDC)';
-        document.getElementById('receiveLabel').textContent = tab === 'deposit' ? 'You receive' : 'You receive';
-        document.getElementById('receiveValue').textContent = tab === 'deposit' ? '-- bUSDC' : '-- USDC';
-        document.getElementById('vaultAmount').value = '';
-        updateActionButton();
-    }
-
-    function updateActionButton() {
-        var btn = document.getElementById('vaultActionBtn');
-        if (!connected) {
-            btn.textContent = 'Connect Wallet';
-            return;
-        }
-        if (!VAULT_ADDRESS) {
-            btn.textContent = 'Vault Launching Soon';
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            return;
-        }
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.textContent = currentTab === 'deposit' ? 'Deposit USDC' : 'Withdraw';
-    }
-
-    function setMax() {
-        // Will be wired to actual balance once connected
-        var bal = document.getElementById('userBalance').textContent;
-        if (bal && bal !== '--') {
-            document.getElementById('vaultAmount').value = parseFloat(bal.replace(/[^0-9.]/g, '')) || '';
-        }
-    }
-
-    async function handleVaultAction() {
-        if (!connected) {
-            await connectWallet();
-            return;
-        }
-        // Deposit/withdraw logic will be wired once vault is deployed
-        alert(currentTab === 'deposit'
-            ? 'Vault launching soon! Deposit will be available once the contract is deployed on Base.'
-            : 'Vault launching soon! Withdraw will be available once the contract is deployed on Base.');
-    }
-
-    async function connectWallet() {
-        if (typeof window.ethereum === 'undefined') {
-            alert('Please install a Web3 wallet (MetaMask, Rabby, etc.)');
-            return;
-        }
-        try {
-            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            userAddress = accounts[0];
-            connected = true;
-            document.getElementById('userBalance').textContent = 'Loading...';
-            updateActionButton();
-
-            // Check chain (Base = 8453)
-            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
-            if (parseInt(chainId, 16) !== 8453) {
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x2105' }]
-                    });
-                } catch(e) {
-                    document.getElementById('userBalance').textContent = 'Switch to Base';
-                    return;
-                }
-            }
-
-            // Fetch USDC balance
-            var balHex = await window.ethereum.request({
-                method: 'eth_call',
-                params: [{
-                    to: USDC_ADDRESS,
-                    data: '0x70a08231000000000000000000000000' + userAddress.slice(2)
-                }, 'latest']
-            });
-            var balance = parseInt(balHex, 16) / 1e6;
-            document.getElementById('userBalance').textContent = balance.toFixed(2) + ' USDC';
-        } catch(e) {
-            console.error('Wallet connect failed:', e);
-        }
-    }
-
-    // Listen for account/chain changes
-    if (window.ethereum) {
-        window.ethereum.on('accountsChanged', function(accounts) {
-            if (accounts.length === 0) { connected = false; userAddress = null; updateActionButton(); }
-            else { userAddress = accounts[0]; connectWallet(); }
-        });
-        window.ethereum.on('chainChanged', function() { if (connected) connectWallet(); });
-    }
+    // Vault UI — coming soon (wallet connect disabled)
     </script>
 </body>
 </html>
