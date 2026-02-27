@@ -124,7 +124,8 @@ async function sendTxAndWait(provider, from, to, data) {
 var state = {
     wallet: null,
     provider: null,
-    step: 1,        // 1=form, 2=tier, 3=deploy, 4=success
+    poolType: 'launch',  // 'launch' | 'ecosystem' | 'partner'
+    step: 1,        // 1=form, 4=success, 5=incubated, 6=ecosystem, 7=partner
     deploying: false,
     project: null,   // registered project from API
     deployedToken: null,
@@ -360,7 +361,7 @@ function parsePoolDeployed(receipt) {
 }
 
 // ══════════════════════════════════════
-// BYT (BRING YOUR TOKEN)
+// TOKEN HELPERS (shared by launch + partner)
 // ══════════════════════════════════════
 
 function decodeString(hex) {
@@ -387,162 +388,125 @@ async function readDeployFee() {
     return fromWei(hex);
 }
 
-var bytDebounceTimer = null;
+// ══════════════════════════════════════
+// POOL TYPE SELECTION
+// ══════════════════════════════════════
 
-function onBytAddressInput() {
-    clearTimeout(bytDebounceTimer);
-    var input = document.getElementById('bytTokenAddress');
-    var preview = document.getElementById('bytTokenPreview');
-    var btn = document.getElementById('bytDeployBtn');
+function selectPoolType(type) {
+    state.poolType = type;
+
+    // Update card selection
+    document.querySelectorAll('.pool-type-card').forEach(function(card) {
+        card.classList.toggle('selected', card.dataset.pool === type);
+    });
+
+    // Show/hide field groups
+    var fieldsLaunchName = document.getElementById('fieldsLaunchName');
+    var fieldsEcoName = document.getElementById('fieldsEcoName');
+    var fieldsPartnerToken = document.getElementById('fieldsPartnerToken');
+    var fieldsFeeSplit = document.getElementById('fieldsFeeSplit');
+    var fieldsIncubation = document.getElementById('fieldsIncubation');
+    var fieldsSharedSocial = document.getElementById('fieldsSharedSocial');
+
+    // Launch fields
+    if (fieldsLaunchName) fieldsLaunchName.classList.toggle('hidden', type !== 'launch');
+    if (fieldsFeeSplit) fieldsFeeSplit.classList.toggle('hidden', type !== 'launch');
+    if (fieldsIncubation) fieldsIncubation.classList.toggle('hidden', type !== 'launch');
+
+    // Ecosystem fields
+    if (fieldsEcoName) fieldsEcoName.classList.toggle('hidden', type !== 'ecosystem');
+
+    // Partner fields
+    if (fieldsPartnerToken) fieldsPartnerToken.classList.toggle('hidden', type !== 'partner');
+
+    // Shared social fields (ecosystem + partner)
+    if (fieldsSharedSocial) fieldsSharedSocial.classList.toggle('hidden', type === 'launch');
+
+    // Update deploy button text
+    var btn = document.getElementById('deployBtn');
+    if (btn && !state.deploying) {
+        if (type === 'ecosystem') {
+            btn.textContent = 'Register App';
+        } else if (type === 'partner') {
+            btn.textContent = 'Deploy Staking';
+        } else {
+            var incToggle = document.getElementById('incubationToggle');
+            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Token';
+        }
+    }
+}
+
+// Partner token address lookup
+var partnerDebounceTimer = null;
+
+function onPartnerAddressInput() {
+    clearTimeout(partnerDebounceTimer);
+    var input = document.getElementById('partnerTokenAddress');
+    var preview = document.getElementById('partnerTokenPreview');
     var val = input.value.trim();
 
     if (!val || val.length !== 42 || !val.startsWith('0x')) {
         preview.classList.add('hidden');
-        btn.disabled = true;
         return;
     }
 
-    bytDebounceTimer = setTimeout(async function() {
+    partnerDebounceTimer = setTimeout(async function() {
         try {
             var info = await readTokenInfo(val);
             if (info.name && info.symbol) {
-                document.getElementById('bytTokenName').textContent = info.name;
-                document.getElementById('bytTokenSymbol').textContent = '$' + info.symbol;
-                document.getElementById('bytTokenIcon').textContent = info.symbol[0];
+                document.getElementById('partnerTokenName').textContent = info.name;
+                document.getElementById('partnerTokenSymbol').textContent = '$' + info.symbol;
+                document.getElementById('partnerTokenIcon').textContent = info.symbol[0];
                 preview.classList.remove('hidden');
-                btn.disabled = false;
             } else {
                 preview.classList.add('hidden');
-                btn.disabled = true;
                 showToast('Could not read token info. Is this a valid ERC20 on Base?', 'error');
             }
         } catch (e) {
             preview.classList.add('hidden');
-            btn.disabled = true;
         }
     }, 600);
 }
 
-async function handleBYTDeploy() {
-    if (state.deploying) return;
+// ══════════════════════════════════════
+// DEPLOY FLOW (branches on pool type)
+// ══════════════════════════════════════
 
-    var tokenAddress = document.getElementById('bytTokenAddress').value.trim();
-    var desc = document.getElementById('bytDesc').value.trim();
-    var website = document.getElementById('bytWebsite').value.trim();
-    var logo = document.getElementById('bytLogo').value.trim();
-    var tokenName = document.getElementById('bytTokenName').textContent;
-    var tokenSymbol = document.getElementById('bytTokenSymbol').textContent.replace('$', '');
-
-    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
-
-    if (!state.wallet) {
-        await connectWallet();
-        if (!state.wallet) return;
-    }
-
-    state.deploying = true;
-    var btn = document.getElementById('bytDeployBtn');
-    btn.disabled = true;
-    btn.textContent = 'Approving INCLAWNCH...';
-
-    try {
-        // Step 1: Approve INCLAWNCH to factory
-        var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-        await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
-
-        btn.textContent = 'Deploying staking pool...';
-
-        // Step 2: deployPaid(tokenAddress, INCLAWNCH)
-        var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
-        var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
-
-        var stakingPool = parsePoolDeployed(result.receipt);
-        if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
-
-        btn.textContent = 'Registering project...';
-
-        // Step 3: Register with API as BYT
-        var regResult = await apiPost({
-            action: 'register',
-            token_address: tokenAddress,
-            token_name: tokenName,
-            token_symbol: tokenSymbol,
-            description: desc,
-            website_url: website,
-            logo_url: logo,
-            fee_split_bps: 10000,
-            tier: 'byt',
-            creator_wallet: state.wallet
-        });
-
-        // Step 4: Update staking address
-        if (regResult.project) {
-            await apiPost({
-                action: 'update-staking',
-                project_id: regResult.project.id,
-                staking_address: stakingPool,
-                staking_deploy_tx: result.txHash
-            });
-        }
-
-        // Show success
-        document.getElementById('bytForm').classList.add('hidden');
-        document.getElementById('bytSuccess').classList.remove('hidden');
-        document.getElementById('bytStakingAddr').textContent = stakingPool;
-
-        var adminLink = document.getElementById('bytAdminLink');
-        if (regResult.project) {
-            adminLink.href = '/stake/' + regResult.project.id + '/admin';
-        }
-
-        state.deploying = false;
-        showToast('Staking deployed! Pending review.', 'success');
-
-    } catch (e) {
-        state.deploying = false;
-        btn.disabled = false;
-        btn.textContent = 'Deploy Staking';
-        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
-            showToast('Transaction rejected', 'error');
-        } else {
-            showToast('Deploy failed: ' + (e.message || 'Unknown error'), 'error');
-        }
-    }
+function getAgentFields() {
+    var agentCheckbox = document.getElementById('agentEnabled');
+    var agentPersonaEl = document.getElementById('agentPersona');
+    var agentPostsEl = document.getElementById('agentPostsPerDay');
+    return {
+        enabled: agentCheckbox ? agentCheckbox.checked : false,
+        persona: agentPersonaEl ? agentPersonaEl.value.trim() : '',
+        postsPerDay: agentPostsEl ? parseInt(agentPostsEl.value) || 4 : 4
+    };
 }
-
-// ══════════════════════════════════════
-// LAUNCH FLOW
-// ══════════════════════════════════════
 
 async function handleDeploy() {
     if (state.deploying) return;
 
-    var nameEl = document.getElementById('tokenName');
-    var symbolEl = document.getElementById('tokenSymbol');
-    var descEl = document.getElementById('tokenDesc');
-    var websiteEl = document.getElementById('tokenWebsite');
-    var splitEl = document.getElementById('feeSplit');
-    var tierEl = document.querySelector('input[name="tier"]:checked');
+    if (state.poolType === 'ecosystem') return handleEcosystemRegister();
+    if (state.poolType === 'partner') return handlePartnerDeploy();
+    return handleLaunchDeploy();
+}
 
-    var name = nameEl.value.trim();
-    var symbol = symbolEl.value.trim().toUpperCase();
-    var desc = descEl.value.trim();
-    var website = websiteEl.value.trim();
-    var agentCheckbox = document.getElementById('agentEnabled');
-    var agentPersonaEl = document.getElementById('agentPersona');
-    var agentPostsEl = document.getElementById('agentPostsPerDay');
-
-    var splitPct = parseInt(splitEl.value) || 100;
-    var tier = tierEl ? tierEl.value : 'permissionless';
-    var agentEnabled = agentCheckbox ? agentCheckbox.checked : false;
-    var agentPersona = agentPersonaEl ? agentPersonaEl.value.trim() : '';
-    var agentPostsPerDay = agentPostsEl ? parseInt(agentPostsEl.value) || 4 : 4;
+// ── Launch + Stake flow ──
+async function handleLaunchDeploy() {
+    var name = document.getElementById('tokenName').value.trim();
+    var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
+    var desc = document.getElementById('tokenDesc').value.trim();
+    var website = document.getElementById('tokenWebsite').value.trim();
+    var splitPct = parseInt(document.getElementById('feeSplit').value) || 100;
+    var incToggle = document.getElementById('incubationToggle');
+    var isIncubated = incToggle && incToggle.checked;
+    var agent = getAgentFields();
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
 
     // ── Incubated: application-only flow (no on-chain deploy) ──
-    if (tier === 'incubated') {
+    if (isIncubated) {
         var xHandle = (document.getElementById('incXHandle')?.value || '').trim();
         var telegram = (document.getElementById('incTelegram')?.value || '').trim();
         var logoUrl = (document.getElementById('incLogoUrl')?.value || '').trim();
@@ -571,9 +535,9 @@ async function handleDeploy() {
                 fee_split_bps: 10000,
                 tier: 'incubated',
                 creator_wallet: state.wallet,
-                agent_enabled: agentEnabled,
-                agent_persona: agentPersona || null,
-                agent_posts_per_day: agentPostsPerDay
+                agent_enabled: agent.enabled,
+                agent_persona: agent.persona || null,
+                agent_posts_per_day: agent.postsPerDay
             });
 
             if (regResult.error) {
@@ -610,7 +574,6 @@ async function handleDeploy() {
     try {
         // Step 1: Deploy token via Clanker v4
         var calldata = encodeClankerDeploy(name, symbol);
-
         var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata);
 
         var tokenAddress = parseDeployedToken(result.receipt);
@@ -633,11 +596,11 @@ async function handleDeploy() {
             description: desc,
             website_url: website,
             fee_split_bps: splitPct * 100,
-            tier: tier,
+            tier: 'permissionless',
             creator_wallet: state.wallet,
-            agent_enabled: agentEnabled,
-            agent_persona: agentPersona || null,
-            agent_posts_per_day: agentPostsPerDay
+            agent_enabled: agent.enabled,
+            agent_persona: agent.persona || null,
+            agent_posts_per_day: agent.postsPerDay
         });
 
         if (regResult.error) {
@@ -651,17 +614,14 @@ async function handleDeploy() {
             try {
                 updateDeployButton('Deploying staking pool...', true);
 
-                // Approve INCLAWNCH burn to factory
                 var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
                 await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
 
                 updateDeployButton('Creating staking pool...', true);
 
-                // deployPaid(stakingToken, rewardToken)
                 var deployPaidData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
                 var stakingResult = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployPaidData);
 
-                // Parse PoolDeployed event to get staking pool address
                 var stakingPool = parsePoolDeployed(stakingResult.receipt);
                 if (stakingPool) {
                     await apiPost({
@@ -677,7 +637,6 @@ async function handleDeploy() {
             }
         }
 
-        // Step 4: Show success
         state.step = 4;
         state.deploying = false;
         updateUI();
@@ -694,13 +653,160 @@ async function handleDeploy() {
     }
 }
 
+// ── Ecosystem App flow (API-only, no on-chain) ──
+async function handleEcosystemRegister() {
+    var name = document.getElementById('ecoProjectName').value.trim();
+    var desc = document.getElementById('tokenDesc').value.trim();
+    var website = document.getElementById('tokenWebsite').value.trim();
+    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || '').trim();
+    var xHandle = (document.getElementById('sharedXHandle')?.value || '').trim();
+    var telegram = (document.getElementById('sharedTelegram')?.value || '').trim();
+    var agent = getAgentFields();
+
+    if (!name) return showToast('Project name is required', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
+    }
+
+    state.deploying = true;
+    updateDeployButton('Registering app...', true);
+
+    try {
+        var regResult = await apiPost({
+            action: 'register',
+            token_name: name,
+            description: desc,
+            website_url: website,
+            logo_url: logoUrl,
+            x_handle: xHandle,
+            telegram_url: telegram,
+            fee_split_bps: 10000,
+            tier: 'ecosystem',
+            creator_wallet: state.wallet,
+            agent_enabled: agent.enabled,
+            agent_persona: agent.persona || null,
+            agent_posts_per_day: agent.postsPerDay
+        });
+
+        if (regResult.error) {
+            showToast('Registration failed: ' + regResult.error, 'error');
+            state.deploying = false;
+            updateDeployButton('Register App', false);
+            return;
+        }
+
+        state.project = regResult.project;
+        state.step = 6; // ecosystem success
+        state.deploying = false;
+        updateUI();
+        showToast('App registered!', 'success');
+    } catch (e) {
+        state.deploying = false;
+        updateDeployButton('Register App', false);
+        showToast('Registration failed: ' + (e.message || 'Unknown error'), 'error');
+    }
+}
+
+// ── Partner Pool flow (deploy staking for existing token) ──
+async function handlePartnerDeploy() {
+    var tokenAddress = document.getElementById('partnerTokenAddress').value.trim();
+    var desc = document.getElementById('tokenDesc').value.trim();
+    var website = document.getElementById('tokenWebsite').value.trim();
+    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || '').trim();
+    var xHandle = (document.getElementById('sharedXHandle')?.value || '').trim();
+    var telegram = (document.getElementById('sharedTelegram')?.value || '').trim();
+    var tokenName = document.getElementById('partnerTokenName').textContent;
+    var tokenSymbol = document.getElementById('partnerTokenSymbol').textContent.replace('$', '');
+    var agent = getAgentFields();
+
+    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
+    if (!tokenName || tokenName === '--') return showToast('Enter a valid token address first', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
+    }
+
+    state.deploying = true;
+    updateDeployButton('Approving INCLAWNCH...', true);
+
+    try {
+        // Step 1: Approve INCLAWNCH to factory
+        var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
+        await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
+
+        updateDeployButton('Deploying staking pool...', true);
+
+        // Step 2: deployPaid(tokenAddress, INCLAWNCH)
+        var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
+        var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
+
+        var stakingPool = parsePoolDeployed(result.receipt);
+        if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
+
+        updateDeployButton('Registering project...', true);
+
+        // Step 3: Register with API as partner
+        var regResult = await apiPost({
+            action: 'register',
+            token_address: tokenAddress,
+            token_name: tokenName,
+            token_symbol: tokenSymbol,
+            description: desc,
+            website_url: website,
+            logo_url: logoUrl,
+            x_handle: xHandle,
+            telegram_url: telegram,
+            fee_split_bps: 10000,
+            tier: 'partner',
+            creator_wallet: state.wallet,
+            agent_enabled: agent.enabled,
+            agent_persona: agent.persona || null,
+            agent_posts_per_day: agent.postsPerDay
+        });
+
+        // Step 4: Update staking address
+        if (regResult.project) {
+            await apiPost({
+                action: 'update-staking',
+                project_id: regResult.project.id,
+                staking_address: stakingPool,
+                staking_deploy_tx: result.txHash
+            });
+            state.project = regResult.project;
+        }
+
+        state.step = 7; // partner success
+        state.deploying = false;
+        updateUI();
+        showToast('Staking deployed!', 'success');
+
+    } catch (e) {
+        state.deploying = false;
+        updateDeployButton('Deploy Staking', false);
+        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
+            showToast('Transaction rejected', 'error');
+        } else {
+            showToast('Deploy failed: ' + (e.message || 'Unknown error'), 'error');
+        }
+    }
+}
+
 function updateDeployButton(text, disabled) {
     var btn = document.getElementById('deployBtn');
     if (!btn) return;
-    // If resetting (not disabled), use tier-appropriate label
+    // If resetting (not disabled), use pool-type-appropriate label
     if (!disabled && !text) {
-        var sel = document.querySelector('input[name="tier"]:checked');
-        btn.textContent = (sel && sel.value === 'incubated') ? 'Submit Application' : 'Deploy Token';
+        if (state.poolType === 'ecosystem') {
+            btn.textContent = 'Register App';
+        } else if (state.poolType === 'partner') {
+            btn.textContent = 'Deploy Staking';
+        } else {
+            var incToggle = document.getElementById('incubationToggle');
+            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Token';
+        }
     } else {
         btn.textContent = text;
     }
@@ -736,11 +842,17 @@ function renderProjects() {
     }
 
     grid.innerHTML = state.projects.map(function(p) {
-        var tierBadge = p.tier === 'incubated'
-            ? '<span class="tier-badge tier-incubated">Incubated</span>'
-            : p.tier === 'byt'
-            ? '<span class="tier-badge tier-permissionless">BYT</span>'
-            : '<span class="tier-badge tier-permissionless">Permissionless</span>';
+        var tierLabel, tierClass;
+        if (p.tier === 'ecosystem') {
+            tierLabel = 'Ecosystem App'; tierClass = 'tier-ecosystem';
+        } else if (p.tier === 'partner' || p.tier === 'byt') {
+            tierLabel = 'Partner Pool'; tierClass = 'tier-partner';
+        } else if (p.tier === 'incubated') {
+            tierLabel = 'Incubated'; tierClass = 'tier-incubated';
+        } else {
+            tierLabel = 'Launch + Stake'; tierClass = 'tier-permissionless';
+        }
+        var tierBadge = '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>';
 
         // Agent status dot
         var agentDot = '';
@@ -929,7 +1041,6 @@ function updateUI() {
     var launchSection = document.getElementById('launchSection');
     var formStep = document.getElementById('formStep');
     var successStep = document.getElementById('successStep');
-    var bytSection = document.getElementById('bytSection');
 
     var heroLaunchBtn = document.getElementById('heroLaunchBtn');
 
@@ -942,23 +1053,31 @@ function updateUI() {
             walletInfo.querySelector('.wallet-addr').textContent = shortAddr(state.wallet);
         }
         if (launchSection) launchSection.style.display = 'block';
-        if (bytSection) bytSection.style.display = 'block';
     } else {
         if (connectBtn) connectBtn.style.display = 'inline-flex';
         if (heroLaunchBtn) heroLaunchBtn.style.display = 'none';
         if (walletInfo) walletInfo.style.display = 'none';
         if (launchSection) launchSection.style.display = 'none';
-        if (bytSection) bytSection.style.display = 'none';
     }
 
     var incubatedSuccessStep = document.getElementById('incubatedSuccessStep');
+    var ecosystemSuccessStep = document.getElementById('ecosystemSuccessStep');
+    var partnerSuccessStep = document.getElementById('partnerSuccessStep');
+
+    // Hide all success states first
+    function hideAllSuccess() {
+        if (formStep) formStep.style.display = 'none';
+        if (successStep) successStep.style.display = 'none';
+        if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
+        if (ecosystemSuccessStep) ecosystemSuccessStep.style.display = 'none';
+        if (partnerSuccessStep) partnerSuccessStep.style.display = 'none';
+    }
 
     // Step state
     if (state.step === 4 && successStep && formStep) {
-        // Permissionless deploy success
-        formStep.style.display = 'none';
+        // Launch + Stake deploy success
+        hideAllSuccess();
         successStep.style.display = 'block';
-        if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
 
         var addrEl = successStep.querySelector('.deployed-address');
         if (addrEl && state.deployedToken) addrEl.textContent = state.deployedToken;
@@ -971,23 +1090,52 @@ function updateUI() {
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
 
-        // Show agent success note if enabled
         var agentNote = document.getElementById('agentSuccessNote');
         if (agentNote && state.project && state.project.agent_enabled) {
             agentNote.style.display = 'block';
         }
     } else if (state.step === 5 && incubatedSuccessStep && formStep) {
         // Incubated application success
-        formStep.style.display = 'none';
-        if (successStep) successStep.style.display = 'none';
+        hideAllSuccess();
         incubatedSuccessStep.style.display = 'block';
 
         var incProjectIdEl = incubatedSuccessStep.querySelector('.incubated-project-id');
         if (incProjectIdEl && state.project) incProjectIdEl.textContent = state.project.id;
+    } else if (state.step === 6 && ecosystemSuccessStep && formStep) {
+        // Ecosystem app success
+        hideAllSuccess();
+        ecosystemSuccessStep.style.display = 'block';
+
+        var ecoProjectIdEl = ecosystemSuccessStep.querySelector('.ecosystem-project-id');
+        if (ecoProjectIdEl && state.project) ecoProjectIdEl.textContent = state.project.id;
+
+        var ecoAgentNote = document.getElementById('ecoAgentSuccessNote');
+        if (ecoAgentNote && state.project && state.project.agent_enabled) {
+            ecoAgentNote.style.display = 'block';
+        }
+    } else if (state.step === 7 && partnerSuccessStep && formStep) {
+        // Partner pool success
+        hideAllSuccess();
+        partnerSuccessStep.style.display = 'block';
+
+        var partnerAddrEl = partnerSuccessStep.querySelector('.partner-staking-addr');
+        if (partnerAddrEl && state.project && state.project.staking_address) {
+            partnerAddrEl.textContent = state.project.staking_address;
+        }
+
+        var partnerProjectIdEl = partnerSuccessStep.querySelector('.partner-project-id');
+        if (partnerProjectIdEl && state.project) partnerProjectIdEl.textContent = state.project.id;
+
+        var partnerAgentNote = document.getElementById('partnerAgentSuccessNote');
+        if (partnerAgentNote && state.project && state.project.agent_enabled) {
+            partnerAgentNote.style.display = 'block';
+        }
     } else if (formStep && successStep) {
         formStep.style.display = 'block';
         successStep.style.display = 'none';
         if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
+        if (ecosystemSuccessStep) ecosystemSuccessStep.style.display = 'none';
+        if (partnerSuccessStep) partnerSuccessStep.style.display = 'none';
     }
 
     // Admin panel
@@ -1063,49 +1211,54 @@ async function init() {
         });
     }
 
-    // Tier toggle — show/hide incubated fields, change button text
-    var tierRadios = document.querySelectorAll('input[name="tier"]');
-    var incubatedFields = document.getElementById('incubatedFields');
-    var deployBtnEl = document.getElementById('deployBtn');
-    var feeSplitGroup = document.getElementById('feeSplit')?.closest('.form-group');
-
-    function onTierChange() {
-        var selected = document.querySelector('input[name="tier"]:checked');
-        var isIncubated = selected && selected.value === 'incubated';
-
-        if (incubatedFields) {
-            if (isIncubated) {
-                incubatedFields.classList.add('visible');
-            } else {
-                incubatedFields.classList.remove('visible');
+    // Pool type card selection
+    var poolTypeGrid = document.getElementById('poolTypeGrid');
+    if (poolTypeGrid) {
+        poolTypeGrid.addEventListener('click', function(e) {
+            var card = e.target.closest('.pool-type-card');
+            if (card && card.dataset.pool) {
+                selectPoolType(card.dataset.pool);
             }
-        }
-
-        // Change button text
-        if (deployBtnEl && !state.deploying) {
-            deployBtnEl.textContent = isIncubated ? 'Submit Application' : 'Deploy Token';
-        }
-
-        // Hide fee split for incubated (irrelevant until approved)
-        if (feeSplitGroup) {
-            feeSplitGroup.style.display = isIncubated ? 'none' : '';
-        }
+        });
     }
 
-    tierRadios.forEach(function(radio) {
-        radio.addEventListener('change', onTierChange);
-    });
+    // Incubation toggle — show/hide incubated fields, change button text
+    var incubationToggle = document.getElementById('incubationToggle');
+    var incubatedFields = document.getElementById('incubatedFields');
+    var deployBtnEl = document.getElementById('deployBtn');
+    var feeSplitGroup = document.getElementById('fieldsFeeSplit');
 
-    // BYT bindings
-    var bytAddrInput = document.getElementById('bytTokenAddress');
-    if (bytAddrInput) bytAddrInput.addEventListener('input', onBytAddressInput);
+    if (incubationToggle) {
+        incubationToggle.addEventListener('change', function() {
+            var isIncubated = incubationToggle.checked;
 
-    var bytDeployBtn = document.getElementById('bytDeployBtn');
-    if (bytDeployBtn) bytDeployBtn.addEventListener('click', handleBYTDeploy);
+            if (incubatedFields) {
+                if (isIncubated) {
+                    incubatedFields.classList.add('visible');
+                } else {
+                    incubatedFields.classList.remove('visible');
+                }
+            }
 
-    // Load deploy fee for BYT display
+            // Change button text
+            if (deployBtnEl && !state.deploying) {
+                deployBtnEl.textContent = isIncubated ? 'Submit Application' : 'Deploy Token';
+            }
+
+            // Hide fee split for incubated (irrelevant until approved)
+            if (feeSplitGroup) {
+                feeSplitGroup.style.display = isIncubated ? 'none' : '';
+            }
+        });
+    }
+
+    // Partner token address lookup
+    var partnerAddrInput = document.getElementById('partnerTokenAddress');
+    if (partnerAddrInput) partnerAddrInput.addEventListener('input', onPartnerAddressInput);
+
+    // Load deploy fee for partner display
     readDeployFee().then(function(fee) {
-        var el = document.getElementById('bytFeeDisplay');
+        var el = document.getElementById('partnerFeeDisplay');
         if (el) el.textContent = fmt(fee);
     }).catch(function() {});
 

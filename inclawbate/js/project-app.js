@@ -119,13 +119,21 @@ function renderProject() {
     document.getElementById('projectSymbol').textContent = '$' + p.token_symbol;
 
     var tierEl = document.getElementById('projectTier');
-    if (p.tier === 'incubated') {
-        tierEl.innerHTML = '<span class="tier-badge tier-incubated">Incubated</span>';
-    } else if (p.tier === 'byt') {
-        tierEl.innerHTML = '<span class="tier-badge tier-permissionless">BYT</span>';
+    var tierLabel, tierClass;
+    if (p.tier === 'ecosystem') {
+        tierLabel = 'Ecosystem App';
+        tierClass = 'tier-ecosystem';
+    } else if (p.tier === 'partner' || p.tier === 'byt') {
+        tierLabel = 'Partner Pool';
+        tierClass = 'tier-partner';
+    } else if (p.tier === 'incubated') {
+        tierLabel = 'Incubated';
+        tierClass = 'tier-incubated';
     } else {
-        tierEl.innerHTML = '<span class="tier-badge tier-permissionless">Permissionless</span>';
+        tierLabel = 'Launch + Stake';
+        tierClass = 'tier-permissionless';
     }
+    tierEl.innerHTML = '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>';
 
     // Description
     var descEl = document.getElementById('projectDesc');
@@ -141,13 +149,25 @@ function renderProject() {
     if (p.staking_address) linksHtml += '<a href="/stake" class="project-link">Stake</a>';
     document.getElementById('projectLinks').innerHTML = linksHtml;
 
-    // Info grid
+    // Info grid — conditional on pool type
     var splitPct = Math.round((p.fee_split_bps || 10000) / 100);
-    var gridHtml =
-        '<div class="info-card"><div class="info-label">Fee Split</div><div class="info-value">' + splitPct + '%</div></div>' +
-        '<div class="info-card"><div class="info-label">Staking</div><div class="info-value">' + (p.staking_address ? '<span class="active-dot">Live</span>' : 'Pending') + '</div></div>' +
-        '<div class="info-card"><div class="info-label">Total Rewards</div><div class="info-value">' + fmt(p.total_rewards_distributed || 0) + ' INCLAWNCH</div></div>' +
-        '<div class="info-card"><div class="info-label">Total Fees</div><div class="info-value">' + fmt(p.total_fees_claimed || 0) + '</div></div>';
+    var gridHtml = '';
+    if (p.tier === 'ecosystem') {
+        // Ecosystem apps use main UBI pool — no staking stats
+        gridHtml = '<div class="info-card" style="grid-column:1/-1"><div class="info-label">Type</div><div class="info-value">Ecosystem App &mdash; powered by INCLAWNCH</div></div>';
+    } else if (p.tier === 'partner' || p.tier === 'byt') {
+        // Partner pools manage own rewards
+        gridHtml =
+            '<div class="info-card"><div class="info-label">Staking</div><div class="info-value">' + (p.staking_address ? '<span class="active-dot">Live</span>' : 'Pending') + '</div></div>' +
+            '<div class="info-card"><div class="info-label">Total Fees</div><div class="info-value">' + fmt(p.total_fees_claimed || 0) + '</div></div>';
+    } else {
+        // Launch + Stake / Incubated — full stats
+        gridHtml =
+            '<div class="info-card"><div class="info-label">Fee Split</div><div class="info-value">' + splitPct + '%</div></div>' +
+            '<div class="info-card"><div class="info-label">Staking</div><div class="info-value">' + (p.staking_address ? '<span class="active-dot">Live</span>' : 'Pending') + '</div></div>' +
+            '<div class="info-card"><div class="info-label">Total Rewards</div><div class="info-value">' + fmt(p.total_rewards_distributed || 0) + ' INCLAWNCH</div></div>' +
+            '<div class="info-card"><div class="info-label">Total Fees</div><div class="info-value">' + fmt(p.total_fees_claimed || 0) + '</div></div>';
+    }
     document.getElementById('infoGrid').innerHTML = gridHtml;
 
     // Agent section

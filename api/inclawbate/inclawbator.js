@@ -172,8 +172,8 @@ export default async function handler(req, res) {
                 agent_enabled, agent_persona, agent_posts_per_day
             } = req.body;
 
-            if (!token_name || !token_symbol || !creator_wallet) {
-                return res.status(400).json({ error: 'token_name, token_symbol, and creator_wallet are required' });
+            if (!token_name || !creator_wallet) {
+                return res.status(400).json({ error: 'token_name and creator_wallet are required' });
             }
 
             const splitBps = parseInt(fee_split_bps) || 10000;
@@ -181,9 +181,9 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'fee_split_bps must be between 2000 (20%) and 10000 (100%)' });
             }
 
-            const validTiers = ['incubated', 'permissionless', 'byt'];
+            const validTiers = ['incubated', 'permissionless', 'byt', 'ecosystem', 'partner'];
             const projectTier = validTiers.includes(tier) ? tier : 'permissionless';
-            const status = projectTier === 'permissionless' ? 'active' : 'pending';
+            const status = (projectTier === 'incubated') ? 'pending' : 'active';
 
             // Agent config
             const wantsAgent = agent_enabled === true;
@@ -196,7 +196,7 @@ export default async function handler(req, res) {
                     creator_profile_id: user.sub || null,
                     token_address: token_address ? token_address.toLowerCase() : null,
                     token_name,
-                    token_symbol: token_symbol.toUpperCase(),
+                    token_symbol: token_symbol ? token_symbol.toUpperCase() : token_name.slice(0, 10).toUpperCase(),
                     deploy_tx_hash: deploy_tx_hash || null,
                     description: description || null,
                     website_url: website_url || null,
