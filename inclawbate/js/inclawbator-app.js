@@ -213,160 +213,114 @@ async function apiPost(body) {
 //                      address[] initialHolders, uint256[] initialAmounts)
 // We pass minimal config — name, symbol, and msg.sender as deployer
 
+// Clanker v4 deployToken ABI — uses ethers.js AbiCoder loaded from CDN
+// Selector: 0xdf40224a
+// deployToken(DeploymentConfig) where DeploymentConfig is a deeply nested struct
+
+var CLANKER_SELECTOR = 'df40224a';
+
+// Known Clanker v4 contract addresses on Base
+var WETH_BASE = '0x4200000000000000000000000000000000000006';
+var CLANKER_HOOK_STATIC = '0xDd5EeaFf7BD481AD55Db083062b13a3cdf0A68CC';
+var CLANKER_FEE_LOCKER = '0xF3622742b1E446D92e45E22923Ef11C2fcD55D68';
+var ZERO_ADDR = '0x0000000000000000000000000000000000000000';
+
+// Full ABI fragment for deployToken
+var DEPLOY_TOKEN_ABI = [{
+    name: 'deployToken',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [{
+        name: 'deploymentConfig',
+        type: 'tuple',
+        components: [
+            { name: 'tokenConfig', type: 'tuple', components: [
+                { name: 'tokenAdmin', type: 'address' },
+                { name: 'name', type: 'string' },
+                { name: 'symbol', type: 'string' },
+                { name: 'salt', type: 'bytes32' },
+                { name: 'image', type: 'string' },
+                { name: 'metadata', type: 'string' },
+                { name: 'context', type: 'string' },
+                { name: 'originatingChainId', type: 'uint256' }
+            ]},
+            { name: 'poolConfig', type: 'tuple', components: [
+                { name: 'hook', type: 'address' },
+                { name: 'pairedToken', type: 'address' },
+                { name: 'tickIfToken0IsClanker', type: 'int24' },
+                { name: 'tickSpacing', type: 'int24' },
+                { name: 'poolData', type: 'bytes' }
+            ]},
+            { name: 'lockerConfig', type: 'tuple', components: [
+                { name: 'locker', type: 'address' },
+                { name: 'rewardAdmins', type: 'address[]' },
+                { name: 'rewardRecipients', type: 'address[]' },
+                { name: 'rewardBps', type: 'uint16[]' },
+                { name: 'tickLower', type: 'int24[]' },
+                { name: 'tickUpper', type: 'int24[]' },
+                { name: 'positionBps', type: 'uint16[]' },
+                { name: 'lockerData', type: 'bytes' }
+            ]},
+            { name: 'mevModuleConfig', type: 'tuple', components: [
+                { name: 'mevModule', type: 'address' },
+                { name: 'mevModuleData', type: 'bytes' }
+            ]},
+            { name: 'extensionConfigs', type: 'tuple[]', components: [
+                { name: 'extension', type: 'address' },
+                { name: 'msgValue', type: 'uint256' },
+                { name: 'extensionBps', type: 'uint16' },
+                { name: 'extensionData', type: 'bytes' }
+            ]}
+        ]
+    }],
+    outputs: [{ name: 'tokenAddress', type: 'address' }]
+}];
+
 function encodeClankerDeploy(name, symbol) {
-    // deployToken((string,string,bytes32,string,string,address,address,address[],uint256[]))
-    // selector: we need to compute it or use known one
-    // For Clanker v4 at 0xE85A59c628F7d27878ACeB4bf3b35733630083a9
-    // Function: deployToken(TokenConfig memory config)
+    // Use ethers.js Interface to ABI-encode the call
+    var iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
 
-    // ABI encode a tuple with dynamic types requires offset calculation
-    // We'll use a simplified approach: encode the function call manually
+    // Generate random salt
+    var saltBytes = new Uint8Array(32);
+    crypto.getRandomValues(saltBytes);
+    var salt = '0x' + Array.from(saltBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 
-    // The simplest approach: use eth_sendTransaction with the ABI-encoded data
-    // For now, let's prepare the minimal calldata
+    var deploymentConfig = {
+        tokenConfig: {
+            tokenAdmin: state.wallet,
+            name: name,
+            symbol: symbol,
+            salt: salt,
+            image: '',
+            metadata: '',
+            context: '',
+            originatingChainId: 8453
+        },
+        poolConfig: {
+            hook: CLANKER_HOOK_STATIC,
+            pairedToken: WETH_BASE,
+            tickIfToken0IsClanker: -199200,
+            tickSpacing: 100,
+            poolData: '0x'
+        },
+        lockerConfig: {
+            locker: CLANKER_FEE_LOCKER,
+            rewardAdmins: [state.wallet],
+            rewardRecipients: [state.wallet],
+            rewardBps: [10000],
+            tickLower: [-887200],
+            tickUpper: [887200],
+            positionBps: [10000],
+            lockerData: '0x'
+        },
+        mevModuleConfig: {
+            mevModule: ZERO_ADDR,
+            mevModuleData: '0x'
+        },
+        extensionConfigs: []
+    };
 
-    // We encode using the standard ABI encoding for the tuple struct
-    var encoder = new AbiEncoder();
-
-    // deployToken selector (first 4 bytes of keccak256)
-    // We'll compute this at deploy time or hardcode after checking
-    // For Clanker v4, the actual selector needs to be verified
-    // Using the factory interface directly
-
-    return encoder.encodeFunctionCall('deployToken', [
-        name,           // string name
-        symbol,         // string symbol
-        '0x' + '0'.repeat(64), // bytes32 salt (random)
-        '',             // string image
-        '',             // string metadata
-        '0x0000000000000000000000000000000000000000', // address context
-        state.wallet,   // address deployer
-        [],             // address[] initialHolders
-        []              // uint256[] initialAmounts
-    ]);
-}
-
-// Minimal ABI encoder for the Clanker call
-var AbiEncoder = function() {};
-AbiEncoder.prototype.encodeFunctionCall = function(name, args) {
-    // For Clanker v4 deployToken, we use the known interface
-    // The function signature for the struct-based call
-    // deployToken((string,string,bytes32,string,string,address,address,address[],uint256[]))
-
-    // Selector: keccak256 of the function signature
-    // We'll use the raw approach: construct the ABI-encoded call manually
-    // This is complex with dynamic types, so we use a simplified flow:
-
-    // The Clanker v4 factory accepts a simpler call pattern on Base
-    // Let's use the direct createToken pattern instead
-
-    var tokenName = args[0];
-    var tokenSymbol = args[1];
-
-    // Encode the struct as ABI
-    // Offset to tuple data = 32 bytes (0x20)
-    var parts = [];
-
-    // Add offset to tuple
-    parts.push(pad32('0x20'));
-
-    // Now encode the tuple contents
-    // Offsets for dynamic fields within the tuple:
-    // Field 0: name (string) - dynamic -> offset
-    // Field 1: symbol (string) - dynamic -> offset
-    // Field 2: salt (bytes32) - static
-    // Field 3: image (string) - dynamic -> offset
-    // Field 4: metadata (string) - dynamic -> offset
-    // Field 5: context (address) - static
-    // Field 6: deployer (address) - static
-    // Field 7: initialHolders (address[]) - dynamic -> offset
-    // Field 8: initialAmounts (uint256[]) - dynamic -> offset
-
-    // 9 fields, each 32 bytes for head = 9 * 32 = 288 = 0x120
-    var headSize = 9 * 32;
-    var dynamicData = [];
-    var headParts = [];
-
-    // Track current dynamic data offset (relative to start of tuple data)
-    var dynOffset = headSize;
-
-    // Field 0: name (dynamic)
-    headParts.push(pad32(toHex(dynOffset)));
-    var nameBytes = encodeString(tokenName);
-    dynamicData.push(nameBytes);
-    dynOffset += nameBytes.length / 2; // hex chars / 2 = bytes
-
-    // Field 1: symbol (dynamic)
-    headParts.push(pad32(toHex(dynOffset)));
-    var symbolBytes = encodeString(tokenSymbol);
-    dynamicData.push(symbolBytes);
-    dynOffset += symbolBytes.length / 2;
-
-    // Field 2: salt (bytes32) - static, zero
-    headParts.push('0'.repeat(64));
-
-    // Field 3: image (dynamic) - empty string
-    headParts.push(pad32(toHex(dynOffset)));
-    var imageBytes = encodeString('');
-    dynamicData.push(imageBytes);
-    dynOffset += imageBytes.length / 2;
-
-    // Field 4: metadata (dynamic) - empty string
-    headParts.push(pad32(toHex(dynOffset)));
-    var metaBytes = encodeString('');
-    dynamicData.push(metaBytes);
-    dynOffset += metaBytes.length / 2;
-
-    // Field 5: context (address) - zero
-    headParts.push(pad32('0x0'));
-
-    // Field 6: deployer (address) - msg.sender
-    headParts.push(pad32(args[6]));
-
-    // Field 7: initialHolders (dynamic) - empty array
-    headParts.push(pad32(toHex(dynOffset)));
-    var holdersBytes = encodeArray([]);
-    dynamicData.push(holdersBytes);
-    dynOffset += holdersBytes.length / 2;
-
-    // Field 8: initialAmounts (dynamic) - empty array
-    headParts.push(pad32(toHex(dynOffset)));
-    var amountsBytes = encodeArray([]);
-    dynamicData.push(amountsBytes);
-    dynOffset += amountsBytes.length / 2;
-
-    // Build the full calldata
-    // Selector for deployToken((string,string,bytes32,string,string,address,address,address[],uint256[]))
-    var selector = computeSelector('deployToken((string,string,bytes32,string,string,address,address,address[],uint256[]))');
-
-    return '0x' + selector + parts.join('') + headParts.join('') + dynamicData.join('');
-};
-
-function encodeString(str) {
-    var hex = '';
-    for (var i = 0; i < str.length; i++) {
-        hex += str.charCodeAt(i).toString(16).padStart(2, '0');
-    }
-    // length (32 bytes) + data padded to 32-byte boundary
-    var lenHex = pad32(toHex(str.length));
-    var dataHex = hex.padEnd(Math.ceil(hex.length / 64) * 64, '0');
-    if (dataHex === '') dataHex = '0'.repeat(64); // empty string still needs one word of padding
-    return lenHex + dataHex;
-}
-
-function encodeArray(arr) {
-    // length + elements
-    return pad32(toHex(arr.length));
-    // No elements for empty array
-}
-
-function computeSelector(sig) {
-    // Simple keccak256 — we'll use a precomputed value
-    // deployToken((string,string,bytes32,string,string,address,address,address[],uint256[]))
-    // Precomputed: we need to verify this on-chain
-    // For now, use the known selector from Clanker v4
-    // This will be verified during testing
-    return '2e6c0e9a'; // placeholder — will be verified against actual contract
+    return iface.encodeFunctionData('deployToken', [deploymentConfig]);
 }
 
 // Parse TokenDeployed event from receipt logs to get token address

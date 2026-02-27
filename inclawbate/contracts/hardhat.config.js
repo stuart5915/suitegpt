@@ -21,6 +21,9 @@ module.exports = {
       chainId: 84532
     }
   },
+  sourcify: {
+    enabled: true
+  },
   etherscan: {
     apiKey: {
       base: process.env.BASESCAN_API_KEY || "",
