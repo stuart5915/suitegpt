@@ -1157,6 +1157,35 @@
             background: var(--border-subtle);
         }
 
+        /* ── Incubated Expansion ── */
+        .incubated-fields {
+            display: none;
+            margin-top: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid hsla(172, 30%, 56%, 0.15);
+            border-radius: var(--radius-md);
+            animation: fadeSlideIn 0.25s ease-out;
+        }
+        .incubated-fields.visible { display: block; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .incubated-fields .form-group { margin-bottom: var(--space-md); }
+        .incubated-fields .form-group:last-child { margin-bottom: 0; }
+        .incubated-note {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--seafoam-300);
+            background: var(--green-dim);
+            border: 1px solid hsla(172, 30%, 56%, 0.15);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+            line-height: 1.6;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 700px) {
             .features-grid { grid-template-columns: 1fr; }
@@ -1294,6 +1323,32 @@
                 </div>
             </div>
 
+            <!-- Incubated Expansion -->
+            <div id="incubatedFields" class="incubated-fields">
+                <div class="incubated-note">
+                    No token needed yet. Tell us about your project and we'll help you launch. Free staking, marketing support, and AI agent included.
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="incXHandle">Your X Handle</label>
+                        <input id="incXHandle" class="form-input" type="text" placeholder="@yourhandle">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="incTelegram">Telegram (optional)</label>
+                        <input id="incTelegram" class="form-input" type="text" placeholder="@handle or t.me/...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="incLogoUrl">Logo URL (optional)</label>
+                    <input id="incLogoUrl" class="form-input" type="url" placeholder="https://...logo.png">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="incHelpNeeded">What do you need help with?</label>
+                    <p class="form-hint">Token launch, tokenomics design, marketing, development, community building, etc.</p>
+                    <textarea id="incHelpNeeded" class="form-input" placeholder="Describe your project vision and what kind of support you're looking for..." maxlength="1000" style="min-height:120px"></textarea>
+                </div>
+            </div>
+
             <!-- Agent Toggle -->
             <div class="form-group">
                 <label class="agent-toggle">
@@ -1325,7 +1380,7 @@
             <button id="deployBtn" class="deploy-btn">Deploy Token</button>
         </div>
 
-        <!-- Success State -->
+        <!-- Success State: Permissionless -->
         <div id="successStep" class="success-card">
             <div class="success-icon">&#129438;</div>
             <h3 class="success-title">Token Deployed!</h3>
@@ -1352,6 +1407,28 @@
             <div id="agentSuccessNote" class="success-detail" style="display:none">
                 <div class="success-detail-label">AI Agent</div>
                 <div class="success-detail-value">Your AI agent is live! 10 free credits loaded. First post within 30 minutes.</div>
+            </div>
+        </div>
+
+        <!-- Success State: Incubated Application -->
+        <div id="incubatedSuccessStep" class="success-card">
+            <div class="success-icon">&#128232;</div>
+            <h3 class="success-title">Application Submitted!</h3>
+            <p class="success-subtitle">We've received your project details. Here's what happens next:</p>
+
+            <div class="success-detail">
+                <div class="success-detail-label">Project ID</div>
+                <div class="success-detail-value incubated-project-id">&mdash;</div>
+            </div>
+            <div class="success-detail">
+                <div class="success-detail-label">Status</div>
+                <div class="success-detail-value">Pending Review</div>
+            </div>
+            <div class="success-detail">
+                <div class="success-detail-label">Next Steps</div>
+                <div class="success-detail-value" style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.85rem;line-height:1.6">
+                    We'll review your application and reach out via X or Telegram. If approved, we'll deploy your token and staking pool at no cost. AI agent will activate once live.
+                </div>
             </div>
         </div>
     </section>
