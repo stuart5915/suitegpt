@@ -742,50 +742,28 @@ function renderProjects() {
             ? '<span class="tier-badge tier-permissionless">BYT</span>'
             : '<span class="tier-badge tier-permissionless">Permissionless</span>';
 
-        var splitPct = Math.round((p.fee_split_bps || 10000) / 100);
-
-        // Agent status
-        var agentRowHtml = '';
+        // Agent status dot
+        var agentDot = '';
         if (p.agent_enabled) {
-            var isActive = p.agent_status === 'active';
-            var agentLabel = isActive
-                ? 'Live — ' + (p.agent_credits || 0) + ' credits'
-                : 'Dormant';
-            var badgeClass = isActive ? 'agent-badge--active' : 'agent-badge--dormant';
-            var xStatus = p.x_connected && p.x_handle
-                ? '<span class="agent-badge agent-badge--active">@' + escapeHtml(p.x_handle) + '</span>'
-                : p.x_connected
-                ? '<span class="agent-badge agent-badge--active">X Connected</span>'
-                : '';
-            agentRowHtml = '<div class="agent-row">' +
-                '<span class="agent-badge ' + badgeClass + '">AI Agent ' + agentLabel + '</span>' +
-                xStatus +
-            '</div>';
+            var dotColor = p.agent_status === 'active' ? 'var(--seafoam-400)' : 'var(--text-dim)';
+            agentDot = '<span class="agent-dot" style="background:' + dotColor + '" title="AI Agent ' + (p.agent_status === 'active' ? 'Live' : 'Dormant') + '"></span>';
         }
 
-        return '<div class="project-card" style="border-color:' + (p.color || 'var(--border-subtle)') + '">' +
+        // Truncate description
+        var desc = p.description || '';
+        if (desc.length > 120) desc = desc.slice(0, 117) + '...';
+
+        return '<a href="/inclawbator/' + p.id + '" class="project-card" style="border-color:' + (p.color || 'var(--border-subtle)') + '">' +
             '<div class="project-card-header">' +
                 (p.logo_url ? '<img src="' + p.logo_url + '" class="project-logo" alt="">' : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>') +
                 '<div class="project-card-info">' +
-                    '<div class="project-name">' + escapeHtml(p.token_name) + '</div>' +
+                    '<div class="project-name">' + escapeHtml(p.token_name) + ' ' + agentDot + '</div>' +
                     '<div class="project-symbol">$' + escapeHtml(p.token_symbol) + '</div>' +
                 '</div>' +
                 tierBadge +
             '</div>' +
-            (p.description ? '<p class="project-desc">' + escapeHtml(p.description) + '</p>' : '') +
-            '<div class="project-stats">' +
-                '<div class="project-stat"><span class="stat-label">Fee Split</span><span class="stat-value">' + splitPct + '%</span></div>' +
-                (p.staking_address ? '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value active-dot">Live</span></div>' : '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value">Pending</span></div>') +
-            '</div>' +
-            agentRowHtml +
-            '<div class="project-actions">' +
-                (p.staking_address ? '<a href="/stake" class="project-btn">Stake</a>' : '') +
-                (p.token_address ? '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Chart</a>' : '') +
-                (p.website_url ? '<a href="' + escapeHtml(p.website_url) + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Website</a>' : '') +
-                (p.agent_enabled ? '<button class="feed-agent-btn" onclick="openFeedModal(\'' + p.id + '\', \'' + escapeHtml(p.token_symbol) + '\')">Feed Agent</button>' : '') +
-                (p.agent_enabled && !p.x_connected && state.wallet && p.creator_wallet === state.wallet ? '<a href="/api/inclawbate/x-connect?project_id=' + p.id + '&wallet=' + state.wallet + '" class="feed-agent-btn" style="text-decoration:none">Connect X</a>' : '') +
-            '</div>' +
-        '</div>';
+            (desc ? '<p class="project-desc">' + escapeHtml(desc) + '</p>' : '') +
+        '</a>';
     }).join('');
 }
 
@@ -1166,68 +1144,6 @@ async function init() {
     loadProjects();
 }
 
-// ══════════════════════════════════════
-// FEED MODAL
-// ══════════════════════════════════════
-
-window.openFeedModal = function(projectId, symbol) {
-    var overlay = document.getElementById('feedModalOverlay');
-    var titleEl = overlay.querySelector('.feed-modal-title');
-    document.getElementById('feedProjectId').value = projectId;
-    document.getElementById('feedTxHash').value = '';
-    document.getElementById('feedResult').style.display = 'none';
-    titleEl.textContent = 'Feed $' + symbol + ' Agent';
-    overlay.classList.add('visible');
-};
-
-window.closeFeedModal = function() {
-    document.getElementById('feedModalOverlay').classList.remove('visible');
-};
-
-window.submitFeed = async function() {
-    var txHash = document.getElementById('feedTxHash').value.trim();
-    var projectId = document.getElementById('feedProjectId').value;
-    var resultEl = document.getElementById('feedResult');
-    var btn = document.getElementById('feedSubmitBtn');
-
-    if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
-        resultEl.style.display = 'block';
-        resultEl.style.color = 'var(--lobster-300)';
-        resultEl.textContent = 'Enter a valid transaction hash (0x...)';
-        return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Verifying...';
-    resultEl.style.display = 'none';
-
-    try {
-        var res = await fetch(API_BASE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'feed-agent', project_id: projectId, tx_hash: txHash })
-        });
-        var data = await res.json();
-
-        resultEl.style.display = 'block';
-        if (data.error) {
-            resultEl.style.color = 'var(--lobster-300)';
-            resultEl.textContent = data.error;
-        } else {
-            resultEl.style.color = 'var(--seafoam-300)';
-            resultEl.textContent = '+' + data.credits_added + ' credits added! Total: ' + data.credits_total;
-            showToast('Agent fed! +' + data.credits_added + ' credits', 'success');
-            loadProjects(); // refresh cards
-        }
-    } catch (e) {
-        resultEl.style.display = 'block';
-        resultEl.style.color = 'var(--lobster-300)';
-        resultEl.textContent = 'Network error. Try again.';
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Submit';
-};
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

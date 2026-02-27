@@ -106,6 +106,32 @@ export default async function handler(req, res) {
             });
         }
 
+        // Single project by ID + agent posts
+        const id = req.query.id;
+        if (id) {
+            const { data: project, error: projErr } = await supabase
+                .from('inclawbator_projects')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (projErr || !project) return res.status(404).json({ error: 'Project not found' });
+
+            const { x_access_token, x_access_secret, ...safe } = project;
+            safe.x_connected = !!(x_access_token && x_access_secret);
+
+            // Last 10 agent posts
+            const { data: posts } = await supabase
+                .from('inclawbator_agent_posts')
+                .select('id, tweet_text, tweet_id, status, created_at')
+                .eq('project_id', id)
+                .eq('status', 'posted')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            return res.status(200).json({ project: safe, agent_posts: posts || [] });
+        }
+
         const wallet = req.query.wallet;
 
         if (wallet) {
@@ -419,6 +445,80 @@ export default async function handler(req, res) {
                 inclawnch_deposited: verification.amount,
                 price_usd: livePrice
             });
+        }
+
+        // ── Owner: update agent settings ──
+        if (action === 'update-agent') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id, agent_persona, agent_posts_per_day, agent_status } = req.body;
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+
+            const updates = { updated_at: new Date().toISOString() };
+            if (agent_persona !== undefined) updates.agent_persona = agent_persona || null;
+            if (agent_posts_per_day !== undefined) {
+                updates.agent_posts_per_day = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
+            }
+            if (agent_status === 'active' || agent_status === 'paused') {
+                updates.agent_status = agent_status;
+            }
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .update(updates)
+                .eq('id', project_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            const { x_access_token: _t, x_access_secret: _s, ...safeResult } = data;
+            safeResult.x_connected = !!(_t && _s);
+            return res.status(200).json({ project: safeResult });
+        }
+
+        // ── Owner: disconnect X ──
+        if (action === 'disconnect-x') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id } = req.body;
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+
+            const { error } = await supabase
+                .from('inclawbator_projects')
+                .update({
+                    x_access_token: null,
+                    x_access_secret: null,
+                    x_handle: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', project_id);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true });
         }
 
         return res.status(400).json({ error: 'Unknown action' });
