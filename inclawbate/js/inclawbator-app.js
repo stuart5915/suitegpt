@@ -752,8 +752,14 @@ function renderProjects() {
                 ? 'Live — ' + (p.agent_credits || 0) + ' credits'
                 : 'Dormant';
             var badgeClass = isActive ? 'agent-badge--active' : 'agent-badge--dormant';
+            var xStatus = p.x_connected && p.x_handle
+                ? '<span class="agent-badge agent-badge--active">@' + escapeHtml(p.x_handle) + '</span>'
+                : p.x_connected
+                ? '<span class="agent-badge agent-badge--active">X Connected</span>'
+                : '';
             agentRowHtml = '<div class="agent-row">' +
                 '<span class="agent-badge ' + badgeClass + '">AI Agent ' + agentLabel + '</span>' +
+                xStatus +
             '</div>';
         }
 
