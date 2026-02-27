@@ -101,17 +101,6 @@ var POOLS = {
 // Coming soon pools (displayed as preview cards, not functional)
 var COMING_SOON = [
     {
-        name: 'Basis',
-        ticker: 'BASIS',
-        logo: '',
-        color: 'hsl(210, 100%, 50%)',
-        colorDim: 'hsla(210, 100%, 50%, 0.12)',
-        glow: 'hsla(210, 100%, 50%, 0.18)',
-        description: 'Automated LP vault on Aerodrome. Vault fees buy INCLAWNCH and distribute to $BASIS stakers as UBI.',
-        platform: 'basisubi.com',
-        category: 'ubi'
-    },
-    {
         name: 'MirrorMind',
         ticker: 'MIRROR',
         logo: '',
