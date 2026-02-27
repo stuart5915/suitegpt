@@ -161,7 +161,7 @@ export default async function handler(req, res) {
 
             // Agent config
             const wantsAgent = agent_enabled === true;
-            const postsPerDay = Math.min(12, Math.max(1, parseInt(agent_posts_per_day) || 4));
+            const postsPerDay = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
 
             const { data, error } = await supabase
                 .from('inclawbator_projects')
