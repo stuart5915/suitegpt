@@ -6,7 +6,7 @@
     <title>Inclawbator — 1-Click Token Launch on Base</title>
     <meta name="description" content="Inclawbator: permissionless token launchpad on Base. Deploy via Clanker, auto-staking from day one, fee routing to INCLAWNCH holders. Anyone can launch.">
     <meta property="og:title" content="Inclawbator — 1-Click Token Launch on Base">
-    <meta property="og:description" content="Permissionless token launchpad. Deploy, stake, earn. Coming soon.">
+    <meta property="og:description" content="Permissionless token launchpad. Deploy, stake, earn.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/inclawbator">
     <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=inclawbator">
@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="/styles/components.css">
     <style>
         /* ══════════════════════════════════════
-           INCLAWBATOR — COMING SOON
+           INCLAWBATOR — TOKEN LAUNCHPAD
            ══════════════════════════════════════ */
 
         .incubator-page {
@@ -71,8 +71,54 @@
             font-size: 1rem;
             color: var(--text-secondary);
             max-width: 580px;
-            margin: 0 auto;
+            margin: 0 auto var(--space-xl);
             line-height: 1.7;
+        }
+        .hero-actions {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-on-accent);
+            background: var(--accent-gradient);
+            padding: 14px 32px;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-glow);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+        .hero-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow-lg);
+        }
+        .wallet-info {
+            display: none;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--seafoam-300);
+            background: var(--green-dim);
+            border: 1px solid hsla(172, 30%, 56%, 0.2);
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+        }
+        .wallet-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--seafoam-400);
         }
 
         /* ── Section headings ── */
@@ -96,7 +142,233 @@
             margin-bottom: var(--space-xl);
         }
 
-        /* ── Feature cards (What You Get) ── */
+        /* ── Launch Form ── */
+        .launch-section {
+            display: none;
+        }
+        .launch-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+        }
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+        .form-label {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .form-hint {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-xs);
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            outline: none;
+            transition: border-color var(--transition-base);
+            box-sizing: border-box;
+        }
+        .form-input:focus {
+            border-color: var(--lobster-400);
+        }
+        .form-input::placeholder {
+            color: var(--text-dim);
+        }
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+
+        /* Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            outline: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            cursor: pointer;
+            border: 2px solid var(--bg-dark);
+        }
+        .slider-display {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+            white-space: nowrap;
+            min-width: 120px;
+            text-align: right;
+        }
+
+        /* Tier selection */
+        .tier-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+        .tier-option {
+            position: relative;
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            cursor: pointer;
+            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+        }
+        .tier-option:hover {
+            border-color: var(--border-default);
+        }
+        .tier-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .tier-option input[type="radio"]:checked + .tier-content {
+            color: var(--text-primary);
+        }
+        .tier-option:has(input:checked) {
+            border-color: var(--lobster-400);
+            box-shadow: 0 0 0 1px var(--lobster-400);
+        }
+        .tier-name {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .tier-price {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+            margin-bottom: var(--space-xs);
+        }
+        .tier-desc {
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Deploy button */
+        .deploy-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 16px;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-on-accent);
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            box-shadow: var(--shadow-glow);
+            transition: transform var(--transition-base), box-shadow var(--transition-base), opacity var(--transition-base);
+        }
+        .deploy-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow-lg);
+        }
+        .deploy-btn:disabled, .deploy-btn.deploying {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Success state */
+        .success-card {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid hsla(172, 30%, 56%, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-md);
+        }
+        .success-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .success-subtitle {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+        }
+        .success-detail {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            text-align: left;
+        }
+        .success-detail-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .success-detail-value {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--seafoam-300);
+            word-break: break-all;
+        }
+        .success-detail-value a {
+            color: var(--lobster-300);
+            text-decoration: none;
+        }
+        .success-detail-value a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Feature cards ── */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -113,10 +385,7 @@
             border-color: var(--border-default);
             box-shadow: var(--shadow-md);
         }
-        .feature-icon {
-            font-size: 1.5rem;
-            margin-bottom: var(--space-sm);
-        }
+        .feature-icon { font-size: 1.5rem; margin-bottom: var(--space-sm); }
         .feature-name {
             font-family: var(--font-display);
             font-size: 1rem;
@@ -131,7 +400,7 @@
             line-height: 1.6;
         }
 
-        /* ── Steps (How It Works) ── */
+        /* ── Steps ── */
         .steps {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -143,14 +412,12 @@
             border-radius: var(--radius-md);
             padding: var(--space-lg);
             text-align: center;
-            position: relative;
         }
         .step-num {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border-radius: var(--radius-full);
             background: var(--accent-glow);
             border: 1px solid var(--lobster-400);
@@ -174,7 +441,7 @@
             line-height: 1.5;
         }
 
-        /* ── Audience (For Everyone) ── */
+        /* ── Audience ── */
         .audience-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -187,10 +454,7 @@
             padding: var(--space-xl);
             text-align: center;
         }
-        .audience-icon {
-            font-size: 2rem;
-            margin-bottom: var(--space-sm);
-        }
+        .audience-icon { font-size: 2rem; margin-bottom: var(--space-sm); }
         .audience-label {
             font-family: var(--font-display);
             font-size: 1rem;
@@ -213,10 +477,7 @@
             padding: var(--space-2xl);
             text-align: center;
         }
-        .split-bar-container {
-            max-width: 480px;
-            margin: 0 auto var(--space-lg);
-        }
+        .split-bar-container { max-width: 480px; margin: 0 auto var(--space-lg); }
         .split-bar-label {
             display: flex;
             justify-content: space-between;
@@ -230,7 +491,6 @@
             border-radius: var(--radius-full);
             background: var(--bg-elevated);
             overflow: hidden;
-            position: relative;
         }
         .split-bar-fill {
             height: 100%;
@@ -265,6 +525,284 @@
             padding: 8px 18px;
             border-radius: var(--radius-md);
         }
+
+        /* ── Projects Grid ── */
+        .sort-bar {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .sort-btn {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .sort-btn:hover { border-color: var(--border-default); color: var(--text-secondary); }
+        .sort-btn.active {
+            color: var(--lobster-300);
+            border-color: var(--lobster-400);
+            background: var(--accent-glow);
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-md);
+        }
+        .no-projects {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: var(--space-3xl);
+            font-family: var(--font-body);
+            color: var(--text-dim);
+        }
+
+        .project-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+        }
+        .project-card:hover {
+            border-color: var(--border-default);
+            box-shadow: var(--shadow-md);
+        }
+        .project-card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .project-logo {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+        }
+        .project-logo-placeholder {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: #fff;
+        }
+        .project-card-info { flex: 1; }
+        .project-name {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .project-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+        .tier-badge {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+        }
+        .tier-incubated {
+            color: var(--seafoam-300);
+            background: var(--green-dim);
+            border: 1px solid hsla(172, 30%, 56%, 0.2);
+        }
+        .tier-permissionless {
+            color: var(--lobster-300);
+            background: var(--accent-glow);
+            border: 1px solid hsla(var(--lobster-hue, 10), 50%, 56%, 0.2);
+        }
+        .project-desc {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: var(--space-md);
+        }
+        .project-stats {
+            display: flex;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-md);
+        }
+        .project-stat { display: flex; flex-direction: column; }
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .active-dot::before {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--seafoam-400);
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .project-actions {
+            display: flex;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+        .project-btn {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            text-decoration: none;
+            transition: all var(--transition-base);
+            cursor: pointer;
+            border: none;
+            color: var(--text-on-accent);
+            background: var(--accent-gradient);
+        }
+        .project-btn:hover {
+            transform: translateY(-1px);
+        }
+        .project-btn--outline {
+            color: var(--text-secondary);
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+        }
+        .project-btn--outline:hover {
+            border-color: var(--border-default);
+            color: var(--text-primary);
+        }
+
+        /* ── Admin Panel ── */
+        .admin-panel {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid hsla(0, 60%, 50%, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+        }
+        .admin-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--lobster-300);
+            margin-bottom: var(--space-lg);
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--space-xl);
+        }
+        .admin-table th, .admin-table td {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .admin-table th {
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.65rem;
+        }
+        .admin-table td {
+            color: var(--text-secondary);
+        }
+        .admin-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: var(--space-md);
+            align-items: end;
+        }
+        .admin-input {
+            width: 100%;
+            padding: 10px 14px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            outline: none;
+            box-sizing: border-box;
+        }
+        .admin-input:focus { border-color: var(--lobster-400); }
+        .admin-btn {
+            padding: 10px 24px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-on-accent);
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .admin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ── Toast ── */
+        .toast-container {
+            position: fixed;
+            top: calc(var(--nav-height) + var(--space-md));
+            right: var(--space-md);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+        .incubator-toast {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 12px 18px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateX(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .incubator-toast.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .incubator-toast.hiding {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        .incubator-toast--error { border-color: hsla(0, 60%, 50%, 0.4); }
+        .incubator-toast--success { border-color: hsla(172, 60%, 50%, 0.4); }
 
         /* ── CTA ── */
         .cta-section {
@@ -303,6 +841,9 @@
             .features-grid { grid-template-columns: 1fr; }
             .steps { grid-template-columns: repeat(2, 1fr); }
             .audience-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .tier-options { grid-template-columns: 1fr; }
+            .admin-row { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
             .steps { grid-template-columns: 1fr; }
@@ -310,6 +851,9 @@
     </style>
 </head>
 <body>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container"></div>
 
 <!-- Nav -->
 <nav class="nav">
@@ -329,13 +873,127 @@
 
     <!-- ═══ Hero ═══ -->
     <section class="hero">
-        <div class="hero-badge">Coming Soon</div>
+        <div class="hero-badge">Live on Base</div>
         <h1 class="hero-title">Inclawbator</h1>
         <p class="hero-subtitle">1-Click Token Launch on Base</p>
         <p class="hero-desc">
             A permissionless launchpad where anyone &mdash; human or AI &mdash; can deploy a token on Base with
             auto-staking, fee routing to INCLAWNCH holders, and built-in discovery. No code required.
         </p>
+        <div class="hero-actions">
+            <button id="walletConnectBtn" class="hero-cta">
+                Connect Wallet
+            </button>
+            <button id="heroLaunchBtn" class="hero-cta" style="display:none">
+                Launch a Token <span>&#8594;</span>
+            </button>
+            <div id="walletInfo" class="wallet-info">
+                <span class="wallet-dot"></span>
+                <span class="wallet-addr"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ Launch Form ═══ -->
+    <section id="launchSection" class="launch-section section">
+        <p class="section-label">Launch</p>
+        <h2 class="section-title">Deploy your token</h2>
+
+        <div id="formStep" class="launch-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="tokenName">Token Name</label>
+                    <input id="tokenName" class="form-input" type="text" placeholder="e.g. MoonCat" maxlength="32">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="tokenSymbol">Symbol</label>
+                    <input id="tokenSymbol" class="form-input" type="text" placeholder="e.g. MCAT" maxlength="10" style="text-transform: uppercase">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="tokenDesc">Description</label>
+                <textarea id="tokenDesc" class="form-input" placeholder="What is this token about?" maxlength="280"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="tokenWebsite">Website URL (optional)</label>
+                <input id="tokenWebsite" class="form-input" type="url" placeholder="https://yourproject.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Fee Split to Stakers</label>
+                <p class="form-hint">What % of swap fees go to stakers? Minimum 20%, you keep the rest.</p>
+                <div class="slider-container">
+                    <input id="feeSplit" type="range" min="20" max="100" value="100" step="5">
+                    <span id="feeSplitDisplay" class="slider-display">100% to stakers</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Tier</label>
+                <div class="tier-options">
+                    <label class="tier-option">
+                        <input type="radio" name="tier" value="permissionless" checked>
+                        <div class="tier-content">
+                            <div class="tier-name">Permissionless</div>
+                            <div class="tier-price">Burns INCLAWNCH</div>
+                            <p class="tier-desc">Goes live immediately. Burns a small amount of INCLAWNCH to deploy staking pool.</p>
+                        </div>
+                    </label>
+                    <label class="tier-option">
+                        <input type="radio" name="tier" value="incubated">
+                        <div class="tier-content">
+                            <div class="tier-name">Incubated</div>
+                            <div class="tier-price">Free</div>
+                            <p class="tier-desc">Admin reviews and approves. Staking pool deployed by Inclawbate team at no cost.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button id="deployBtn" class="deploy-btn">Deploy Token</button>
+        </div>
+
+        <!-- Success State -->
+        <div id="successStep" class="success-card">
+            <div class="success-icon">&#129438;</div>
+            <h3 class="success-title">Token Deployed!</h3>
+            <p class="success-subtitle">Your token is live on Base. Here are the details:</p>
+
+            <div class="success-detail">
+                <div class="success-detail-label">Token Address</div>
+                <div class="success-detail-value deployed-address">&mdash;</div>
+            </div>
+            <div class="success-detail">
+                <div class="success-detail-label">Deploy Transaction</div>
+                <div class="success-detail-value">
+                    <a class="deploy-tx-link" href="#" target="_blank" rel="noopener">View on BaseScan</a>
+                </div>
+            </div>
+            <div class="success-detail">
+                <div class="success-detail-label">Project ID</div>
+                <div class="success-detail-value project-id">&mdash;</div>
+            </div>
+            <div class="success-detail">
+                <div class="success-detail-label">Staking</div>
+                <div class="success-detail-value">Staking pool will be deployed shortly. Check back on the Stake page.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ Live Projects ═══ -->
+    <section class="section">
+        <p class="section-label">Live Projects</p>
+        <h2 class="section-title">Launched through Inclawbator</h2>
+        <div class="sort-bar">
+            <button class="sort-btn active" data-sort="newest">Newest</button>
+            <button class="sort-btn" data-sort="fees">Fees</button>
+            <button class="sort-btn" data-sort="split">Split %</button>
+        </div>
+        <div id="projectsGrid" class="projects-grid">
+            <div class="no-projects">Loading projects...</div>
+        </div>
     </section>
 
     <!-- ═══ What You Get ═══ -->
@@ -442,9 +1100,39 @@
         </div>
     </section>
 
+    <!-- ═══ Admin Panel (hidden unless admin wallet) ═══ -->
+    <section id="adminPanel" class="admin-panel section">
+        <h3 class="admin-title">Admin: Batch Distribution</h3>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Staking</th>
+                    <th>Fees Claimed</th>
+                    <th>Share</th>
+                    <th>Distributed</th>
+                </tr>
+            </thead>
+            <tbody id="adminPoolsBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Loading...</td></tr>
+            </tbody>
+        </table>
+        <div class="admin-row">
+            <div class="form-group" style="margin:0">
+                <label class="form-label" for="distAmount">INCLAWNCH Amount</label>
+                <input id="distAmount" class="admin-input" type="number" placeholder="e.g. 1000000000">
+            </div>
+            <div class="form-group" style="margin:0">
+                <label class="form-label" for="distDays">Duration (days)</label>
+                <input id="distDays" class="admin-input" type="number" placeholder="e.g. 30" value="30">
+            </div>
+            <button id="batchDistributeBtn" class="admin-btn">Batch Distribute</button>
+        </div>
+    </section>
+
     <!-- ═══ CTA ═══ -->
     <section class="cta-section">
-        <h2 class="cta-title">Want to launch?</h2>
+        <h2 class="cta-title">Ready to build?</h2>
         <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="cta-btn">
             Join the Telegram
             <span>&#8594;</span>
@@ -469,6 +1157,7 @@
 </footer>
 
 <script src="/js/nav-auth.js"></script>
+<script src="/js/inclawbator-app.js"></script>
 
 </body>
 </html>

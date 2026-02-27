@@ -1505,6 +1505,39 @@ function routeApp() {
 // ══════════════════════════════════════
 
 async function init() {
+    // Load dynamic Inclawbator pools from API
+    try {
+        var resp = await fetch('/api/inclawbate/inclawbator');
+        if (resp.ok) {
+            var data = await resp.json();
+            (data.projects || []).forEach(function(p) {
+                if (!p.staking_address || !p.token_address) return;
+                var key = p.token_symbol.toLowerCase();
+                if (POOLS[key]) return; // don't overwrite hardcoded pools
+                POOLS[key] = {
+                    name: p.token_name,
+                    ticker: p.token_symbol,
+                    token: p.token_address,
+                    rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
+                    rewardTicker: 'INCLAWNCH',
+                    staking: p.staking_address,
+                    decimals: 18,
+                    logo: p.logo_url || '',
+                    color: p.color || 'hsl(172, 32%, 48%)',
+                    colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
+                    glow: p.glow || 'hsla(172, 32%, 48%, 0.18)',
+                    description: p.description || '',
+                    buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
+                    chartLink: 'https://dexscreener.com/base/' + p.token_address,
+                    featured: false,
+                    category: p.tier === 'incubated' ? 'ubi' : 'partner',
+                    dynamic: true
+                };
+            });
+            POOL_KEYS = Object.keys(POOLS);
+        }
+    } catch (e) { /* Inclawbator API unavailable, proceed with hardcoded pools */ }
+
     wirePoolEvents();
 
     // Listen for popstate
