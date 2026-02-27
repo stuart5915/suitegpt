@@ -745,14 +745,16 @@ function renderProjects() {
         var splitPct = Math.round((p.fee_split_bps || 10000) / 100);
 
         // Agent status
-        var agentHtml = '';
+        var agentRowHtml = '';
         if (p.agent_enabled) {
             var isActive = p.agent_status === 'active';
             var agentLabel = isActive
-                ? 'Agent Live (' + (p.agent_credits || 0) + ' credits)'
-                : 'Agent Dormant';
+                ? 'Live — ' + (p.agent_credits || 0) + ' credits'
+                : 'Dormant';
             var badgeClass = isActive ? 'agent-badge--active' : 'agent-badge--dormant';
-            agentHtml = '<div class="project-stat"><span class="stat-label">AI Agent</span><span class="stat-value"><span class="agent-badge ' + badgeClass + '">' + agentLabel + '</span></span></div>';
+            agentRowHtml = '<div class="agent-row">' +
+                '<span class="agent-badge ' + badgeClass + '">AI Agent ' + agentLabel + '</span>' +
+            '</div>';
         }
 
         return '<div class="project-card" style="border-color:' + (p.color || 'var(--border-subtle)') + '">' +
@@ -768,8 +770,8 @@ function renderProjects() {
             '<div class="project-stats">' +
                 '<div class="project-stat"><span class="stat-label">Fee Split</span><span class="stat-value">' + splitPct + '%</span></div>' +
                 (p.staking_address ? '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value active-dot">Live</span></div>' : '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value">Pending</span></div>') +
-                agentHtml +
             '</div>' +
+            agentRowHtml +
             '<div class="project-actions">' +
                 (p.staking_address ? '<a href="/stake" class="project-btn">Stake</a>' : '') +
                 (p.token_address ? '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Chart</a>' : '') +
