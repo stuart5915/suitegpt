@@ -777,7 +777,7 @@ function renderProjects() {
                 (p.token_address ? '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Chart</a>' : '') +
                 (p.website_url ? '<a href="' + escapeHtml(p.website_url) + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Website</a>' : '') +
                 (p.agent_enabled ? '<button class="feed-agent-btn" onclick="openFeedModal(\'' + p.id + '\', \'' + escapeHtml(p.token_symbol) + '\')">Feed Agent</button>' : '') +
-                (p.agent_enabled && !p.x_connected ? '<a href="/api/inclawbate/x-connect?project_id=' + p.id + '" class="feed-agent-btn" style="text-decoration:none">Connect X</a>' : '') +
+                (p.agent_enabled && !p.x_connected && state.wallet && p.creator_wallet === state.wallet ? '<a href="/api/inclawbate/x-connect?project_id=' + p.id + '&wallet=' + state.wallet + '" class="feed-agent-btn" style="text-decoration:none">Connect X</a>' : '') +
             '</div>' +
         '</div>';
     }).join('');

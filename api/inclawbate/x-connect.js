@@ -37,7 +37,7 @@ function buildAuthHeader(params) {
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-    const { project_id } = req.query;
+    const { project_id, wallet } = req.query;
     if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
     const { X_API_KEY, X_API_SECRET } = process.env;
@@ -45,14 +45,17 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'X API credentials not configured' });
     }
 
-    // Verify project exists
+    // Verify project exists and caller is owner
     const { data: project } = await supabase
         .from('inclawbator_projects')
-        .select('id')
+        .select('id, creator_wallet')
         .eq('id', project_id)
         .single();
 
     if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!wallet || project.creator_wallet !== wallet.toLowerCase()) {
+        return res.status(403).json({ error: 'Only the project owner can connect X' });
+    }
 
     try {
         // Determine callback URL
