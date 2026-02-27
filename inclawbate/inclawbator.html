@@ -804,6 +804,163 @@
         .incubator-toast--error { border-color: hsla(0, 60%, 50%, 0.4); }
         .incubator-toast--success { border-color: hsla(172, 60%, 50%, 0.4); }
 
+        /* ── Agent Toggle ── */
+        .agent-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            user-select: none;
+        }
+        .agent-toggle input[type="checkbox"] {
+            width: 18px; height: 18px;
+            accent-color: var(--lobster-400);
+            cursor: pointer;
+        }
+        .agent-toggle-label {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .agent-toggle-hint {
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-left: 28px;
+        }
+        .agent-options {
+            display: none;
+            margin-top: var(--space-md);
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+        .agent-options.visible { display: block; }
+        .agent-options .form-group { margin-bottom: var(--space-md); }
+        .agent-options .form-group:last-child { margin-bottom: 0; }
+        .agent-select {
+            width: 100%;
+            padding: 10px 14px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            outline: none;
+            box-sizing: border-box;
+        }
+        .agent-select:focus { border-color: var(--lobster-400); }
+
+        /* ── Agent status on project cards ── */
+        .agent-badge {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+        }
+        .agent-badge--active {
+            color: var(--seafoam-300);
+            background: var(--green-dim);
+            border: 1px solid hsla(172, 30%, 56%, 0.2);
+        }
+        .agent-badge--dormant {
+            color: var(--text-dim);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+        }
+        .feed-agent-btn {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            border: 1px solid hsla(172, 30%, 56%, 0.3);
+            color: var(--seafoam-300);
+            background: var(--green-dim);
+            transition: all var(--transition-base);
+        }
+        .feed-agent-btn:hover {
+            border-color: var(--seafoam-400);
+            transform: translateY(-1px);
+        }
+
+        /* ── Feed Modal ── */
+        .feed-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .feed-modal-overlay.visible { display: flex; }
+        .feed-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            max-width: 440px;
+            width: 90%;
+        }
+        .feed-modal-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+        .feed-modal-instructions {
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+        }
+        .feed-modal-wallet {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--seafoam-300);
+            background: var(--bg-elevated);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            margin: var(--space-sm) 0 var(--space-lg);
+            word-break: break-all;
+            cursor: pointer;
+        }
+        .feed-modal-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        .feed-modal-actions button {
+            flex: 1;
+            padding: 10px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            border: none;
+        }
+        .feed-submit-btn {
+            color: var(--text-on-accent);
+            background: var(--accent-gradient);
+        }
+        .feed-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .feed-cancel-btn {
+            color: var(--text-secondary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle) !important;
+        }
+
         /* ── CTA ── */
         .cta-section {
             text-align: center;
@@ -853,6 +1010,28 @@
 <body>
 
 <!-- Toast container -->
+<!-- Feed Agent Modal -->
+<div id="feedModalOverlay" class="feed-modal-overlay">
+    <div class="feed-modal">
+        <div class="feed-modal-title">Feed Agent</div>
+        <div class="feed-modal-instructions">
+            Send INCLAWNCH to the protocol wallet below, then paste the transaction hash to add credits.
+            Each credit powers one AI post for this project.
+        </div>
+        <code class="feed-modal-wallet" onclick="navigator.clipboard.writeText(this.textContent).then(function(){})">0x91B5C0D07859CFeAfEB67d9694121CD741F049bd</code>
+        <div class="form-group">
+            <label class="form-label" for="feedTxHash">Transaction Hash</label>
+            <input id="feedTxHash" class="form-input" type="text" placeholder="0x...">
+        </div>
+        <input type="hidden" id="feedProjectId" value="">
+        <div id="feedResult" style="font-family:var(--font-mono);font-size:0.78rem;margin-bottom:var(--space-md);display:none"></div>
+        <div class="feed-modal-actions">
+            <button class="feed-cancel-btn" onclick="closeFeedModal()">Cancel</button>
+            <button id="feedSubmitBtn" class="feed-submit-btn" onclick="submitFeed()">Submit</button>
+        </div>
+    </div>
+</div>
+
 <div id="toastContainer" class="toast-container"></div>
 
 <!-- Nav -->
@@ -864,7 +1043,6 @@
         <a href="/ubi" class="nav-link">UBI</a>
         <a href="/stake" class="nav-link">Stake</a>
         <a href="/kingdom" class="nav-link">Kingdom</a>
-        <a href="/ecosystem" class="nav-link">Ecosystem</a>
         <a href="/inclawbator" class="nav-link active">Inclawbator</a>
     </div>
 </nav>
@@ -952,6 +1130,34 @@
                 </div>
             </div>
 
+            <!-- Agent Toggle -->
+            <div class="form-group">
+                <label class="agent-toggle">
+                    <input type="checkbox" id="agentEnabled">
+                    <span class="agent-toggle-label">Enable AI Hype Agent</span>
+                </label>
+                <p class="agent-toggle-hint">Starts with 10 free credits. 1 credit per post. Anyone can feed more.</p>
+
+                <div id="agentOptions" class="agent-options">
+                    <div class="form-group">
+                        <label class="form-label" for="agentPersona">Agent Personality (optional)</label>
+                        <p class="form-hint">Guide the AI's voice. e.g. "Aggressive degen energy" or "Calm and technical"</p>
+                        <textarea id="agentPersona" class="form-input" placeholder="e.g. Bullish and meme-heavy, loves crab puns" maxlength="280"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="agentPostsPerDay">Posts per Day</label>
+                        <select id="agentPostsPerDay" class="agent-select">
+                            <option value="1">1 per day</option>
+                            <option value="2">2 per day</option>
+                            <option value="4" selected>4 per day</option>
+                            <option value="6">6 per day</option>
+                            <option value="8">8 per day</option>
+                            <option value="12">12 per day</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <button id="deployBtn" class="deploy-btn">Deploy Token</button>
         </div>
 
@@ -978,6 +1184,10 @@
             <div class="success-detail">
                 <div class="success-detail-label">Staking</div>
                 <div class="success-detail-value">Staking pool will be deployed shortly. Check back on the Stake page.</div>
+            </div>
+            <div id="agentSuccessNote" class="success-detail" style="display:none">
+                <div class="success-detail-label">AI Agent</div>
+                <div class="success-detail-value">Your AI agent is live! 10 free credits loaded. First post within 30 minutes.</div>
             </div>
         </div>
     </section>
@@ -1147,6 +1357,7 @@
         <p class="footer-text">inclawbate &mdash; The Agent-Human Economy</p>
         <div class="footer-links">
             <a href="/humans" class="footer-link">Browse</a>
+            <a href="/skills" class="footer-link">Skills</a>
             <a href="/inclawbator" class="footer-link">Inclawbator</a>
             <a href="/ubi" class="footer-link">UBI</a>
             <a href="/stake" class="footer-link">Stake</a>

@@ -372,8 +372,15 @@ async function handleDeploy() {
     var symbol = symbolEl.value.trim().toUpperCase();
     var desc = descEl.value.trim();
     var website = websiteEl.value.trim();
+    var agentCheckbox = document.getElementById('agentEnabled');
+    var agentPersonaEl = document.getElementById('agentPersona');
+    var agentPostsEl = document.getElementById('agentPostsPerDay');
+
     var splitPct = parseInt(splitEl.value) || 100;
     var tier = tierEl ? tierEl.value : 'permissionless';
+    var agentEnabled = agentCheckbox ? agentCheckbox.checked : false;
+    var agentPersona = agentPersonaEl ? agentPersonaEl.value.trim() : '';
+    var agentPostsPerDay = agentPostsEl ? parseInt(agentPostsEl.value) || 4 : 4;
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
@@ -414,7 +421,10 @@ async function handleDeploy() {
             website_url: website,
             fee_split_bps: splitPct * 100,
             tier: tier,
-            creator_wallet: state.wallet
+            creator_wallet: state.wallet,
+            agent_enabled: agentEnabled,
+            agent_persona: agentPersona || null,
+            agent_posts_per_day: agentPostsPerDay
         });
 
         if (regResult.error) {
@@ -516,6 +526,17 @@ function renderProjects() {
 
         var splitPct = Math.round((p.fee_split_bps || 10000) / 100);
 
+        // Agent status
+        var agentHtml = '';
+        if (p.agent_enabled) {
+            var isActive = p.agent_status === 'active';
+            var agentLabel = isActive
+                ? 'Agent Live (' + (p.agent_credits || 0) + ' credits)'
+                : 'Agent Dormant';
+            var badgeClass = isActive ? 'agent-badge--active' : 'agent-badge--dormant';
+            agentHtml = '<div class="project-stat"><span class="stat-label">AI Agent</span><span class="stat-value"><span class="agent-badge ' + badgeClass + '">' + agentLabel + '</span></span></div>';
+        }
+
         return '<div class="project-card" style="border-color:' + (p.color || 'var(--border-subtle)') + '">' +
             '<div class="project-card-header">' +
                 (p.logo_url ? '<img src="' + p.logo_url + '" class="project-logo" alt="">' : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>') +
@@ -529,11 +550,13 @@ function renderProjects() {
             '<div class="project-stats">' +
                 '<div class="project-stat"><span class="stat-label">Fee Split</span><span class="stat-value">' + splitPct + '%</span></div>' +
                 (p.staking_address ? '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value active-dot">Live</span></div>' : '<div class="project-stat"><span class="stat-label">Staking</span><span class="stat-value">Pending</span></div>') +
+                agentHtml +
             '</div>' +
             '<div class="project-actions">' +
                 (p.staking_address ? '<a href="/stake" class="project-btn">Stake</a>' : '') +
                 (p.token_address ? '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Chart</a>' : '') +
                 (p.website_url ? '<a href="' + escapeHtml(p.website_url) + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Website</a>' : '') +
+                (p.agent_enabled ? '<button class="feed-agent-btn" onclick="openFeedModal(\'' + p.id + '\', \'' + escapeHtml(p.token_symbol) + '\')">Feed Agent</button>' : '') +
             '</div>' +
         '</div>';
     }).join('');
@@ -735,6 +758,12 @@ function updateUI() {
 
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
+
+        // Show agent success note if enabled
+        var agentNote = document.getElementById('agentSuccessNote');
+        if (agentNote && state.project && state.project.agent_enabled) {
+            agentNote.style.display = 'block';
+        }
     } else if (formStep && successStep) {
         formStep.style.display = 'block';
         successStep.style.display = 'none';
@@ -800,6 +829,19 @@ async function init() {
     var batchBtn = document.getElementById('batchDistributeBtn');
     if (batchBtn) batchBtn.addEventListener('click', handleBatchDistribute);
 
+    // Agent toggle
+    var agentCheckbox = document.getElementById('agentEnabled');
+    var agentOptions = document.getElementById('agentOptions');
+    if (agentCheckbox && agentOptions) {
+        agentCheckbox.addEventListener('change', function() {
+            if (agentCheckbox.checked) {
+                agentOptions.classList.add('visible');
+            } else {
+                agentOptions.classList.remove('visible');
+            }
+        });
+    }
+
     // Init slider
     initSlider();
 
@@ -819,6 +861,69 @@ async function init() {
     // Load projects
     loadProjects();
 }
+
+// ══════════════════════════════════════
+// FEED MODAL
+// ══════════════════════════════════════
+
+window.openFeedModal = function(projectId, symbol) {
+    var overlay = document.getElementById('feedModalOverlay');
+    var titleEl = overlay.querySelector('.feed-modal-title');
+    document.getElementById('feedProjectId').value = projectId;
+    document.getElementById('feedTxHash').value = '';
+    document.getElementById('feedResult').style.display = 'none';
+    titleEl.textContent = 'Feed $' + symbol + ' Agent';
+    overlay.classList.add('visible');
+};
+
+window.closeFeedModal = function() {
+    document.getElementById('feedModalOverlay').classList.remove('visible');
+};
+
+window.submitFeed = async function() {
+    var txHash = document.getElementById('feedTxHash').value.trim();
+    var projectId = document.getElementById('feedProjectId').value;
+    var resultEl = document.getElementById('feedResult');
+    var btn = document.getElementById('feedSubmitBtn');
+
+    if (!txHash || !/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--lobster-300)';
+        resultEl.textContent = 'Enter a valid transaction hash (0x...)';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+    resultEl.style.display = 'none';
+
+    try {
+        var res = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'feed-agent', project_id: projectId, tx_hash: txHash })
+        });
+        var data = await res.json();
+
+        resultEl.style.display = 'block';
+        if (data.error) {
+            resultEl.style.color = 'var(--lobster-300)';
+            resultEl.textContent = data.error;
+        } else {
+            resultEl.style.color = 'var(--seafoam-300)';
+            resultEl.textContent = '+' + data.credits_added + ' credits added! Total: ' + data.credits_total;
+            showToast('Agent fed! +' + data.credits_added + ' credits', 'success');
+            loadProjects(); // refresh cards
+        }
+    } catch (e) {
+        resultEl.style.display = 'block';
+        resultEl.style.color = 'var(--lobster-300)';
+        resultEl.textContent = 'Network error. Try again.';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Submit';
+};
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
