@@ -69,7 +69,8 @@ Write a tweet:`;
 // ── X OAuth 1.0a posting (per-project tokens) ──
 
 async function postTweet(text, projectAccessToken, projectAccessSecret) {
-    const { X_API_KEY, X_API_SECRET } = process.env;
+    const X_API_KEY = process.env.INCLAWBATE_X_API_KEY;
+    const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET;
     if (!X_API_KEY || !X_API_SECRET) {
         throw new Error('X API app credentials not configured');
     }

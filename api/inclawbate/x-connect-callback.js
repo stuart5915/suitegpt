@@ -48,7 +48,8 @@ export default async function handler(req, res) {
         return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
     }
 
-    const { X_API_KEY, X_API_SECRET } = process.env;
+    const X_API_KEY = process.env.INCLAWBATE_X_API_KEY;
+    const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET;
     if (!X_API_KEY || !X_API_SECRET) {
         return res.redirect(302, 'https://inclawbate.com/inclawbator?x_connect=error');
     }

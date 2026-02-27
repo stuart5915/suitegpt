@@ -40,7 +40,8 @@ export default async function handler(req, res) {
     const { project_id, wallet } = req.query;
     if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
-    const { X_API_KEY, X_API_SECRET } = process.env;
+    const X_API_KEY = process.env.INCLAWBATE_X_API_KEY;
+    const X_API_SECRET = process.env.INCLAWBATE_X_API_SECRET;
     if (!X_API_KEY || !X_API_SECRET) {
         return res.status(500).json({ error: 'X API credentials not configured' });
     }
