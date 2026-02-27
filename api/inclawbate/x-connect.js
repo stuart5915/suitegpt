@@ -86,8 +86,8 @@ export default async function handler(req, res) {
 
         const body = await resp.text();
         if (!resp.ok) {
-            console.error('X request_token error:', body);
-            return res.status(502).json({ error: 'Failed to get request token from X' });
+            console.error('X request_token error:', resp.status, body);
+            return res.status(502).json({ error: 'Failed to get request token from X', status: resp.status, detail: body });
         }
 
         const params = new URLSearchParams(body);
