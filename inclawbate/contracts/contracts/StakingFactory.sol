@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @notice Deploys minimal proxy staking pools from ClawnchRewardsLite.
 ///         Two modes:
 ///         - deployFree: admin deploys for incubated projects (no cost)
-///         - deployPaid: anyone can deploy by burning INCLAWNCH to 0xdEaD
+///         - deployPaid: anyone can deploy by paying INCLAWNCH to feeRecipient
 contract StakingFactory {
     using SafeERC20 for IERC20;
 
@@ -20,8 +20,8 @@ contract StakingFactory {
     address public owner;
     address public implementation;     // ClawnchRewardsLite address
     IERC20  public burnToken;          // INCLAWNCH
-    uint256 public deployFee;          // amount burned for deployPaid
-    address constant DEAD = 0x000000000000000000000000000000000000dEaD;
+    uint256 public deployFee;          // amount paid for deployPaid
+    address public feeRecipient;       // receives deploy fees (inclawbate.base.eth)
 
     address[] public allPools;
     mapping(address => address) public poolAdmin;     // pool -> admin
@@ -39,6 +39,7 @@ contract StakingFactory {
     );
     event ImplementationUpdated(address oldImpl, address newImpl);
     event DeployFeeUpdated(uint256 oldFee, uint256 newFee);
+    event FeeRecipientUpdated(address oldRecipient, address newRecipient);
     event OwnerTransferred(address oldOwner, address newOwner);
 
     // ══════════════════════════════════════════════════════════════
@@ -56,15 +57,18 @@ contract StakingFactory {
 
     /// @param _implementation ClawnchRewardsLite deployed address
     /// @param _burnToken      INCLAWNCH token address
-    /// @param _deployFee      Amount of INCLAWNCH burned per deployPaid
-    constructor(address _implementation, address _burnToken, uint256 _deployFee) {
+    /// @param _deployFee      Amount of INCLAWNCH paid per deployPaid
+    /// @param _feeRecipient   Address that receives deploy fees
+    constructor(address _implementation, address _burnToken, uint256 _deployFee, address _feeRecipient) {
         require(_implementation != address(0), "zero impl");
         require(_burnToken != address(0), "zero burn token");
+        require(_feeRecipient != address(0), "zero fee recipient");
 
         owner = msg.sender;
         implementation = _implementation;
         burnToken = IERC20(_burnToken);
         deployFee = _deployFee;
+        feeRecipient = _feeRecipient;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -83,7 +87,7 @@ contract StakingFactory {
         pool = _deploy(stakingToken, rewardToken, poolAdminAddr, false);
     }
 
-    /// @notice Anyone can deploy a staking pool by burning INCLAWNCH.
+    /// @notice Anyone can deploy a staking pool by paying INCLAWNCH to feeRecipient.
     /// @param stakingToken Token that users stake
     /// @param rewardToken  Token distributed as rewards (usually INCLAWNCH)
     function deployPaid(
@@ -91,9 +95,10 @@ contract StakingFactory {
         address rewardToken
     ) external returns (address pool) {
         require(deployFee > 0, "fee not set");
+        require(feeRecipient != address(0), "no fee recipient");
 
-        // Burn INCLAWNCH by sending to dead address
-        burnToken.safeTransferFrom(msg.sender, DEAD, deployFee);
+        // Send INCLAWNCH to fee recipient
+        burnToken.safeTransferFrom(msg.sender, feeRecipient, deployFee);
 
         pool = _deploy(stakingToken, rewardToken, msg.sender, true);
     }
@@ -160,6 +165,12 @@ contract StakingFactory {
     function setDeployFee(uint256 _fee) external onlyOwner {
         emit DeployFeeUpdated(deployFee, _fee);
         deployFee = _fee;
+    }
+
+    function setFeeRecipient(address _recipient) external onlyOwner {
+        require(_recipient != address(0), "zero address");
+        emit FeeRecipientUpdated(feeRecipient, _recipient);
+        feeRecipient = _recipient;
     }
 
     function transferOwner(address _newOwner) external onlyOwner {

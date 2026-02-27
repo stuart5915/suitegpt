@@ -15,8 +15,8 @@ var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
-// Staking factory (deployed on Base)
-var STAKING_FACTORY = '0xb8C2a458907D52980c13398b22A8eD8656B36186';
+// Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
+var STAKING_FACTORY = '0xB0896F6c13088ca1812Ede403B8D229452b82394';
 
 // ══════════════════════════════════════
 // SELECTORS
@@ -28,6 +28,11 @@ var SEL = {
     // Staking factory
     deployPaid:       '0x82123c96', // deployPaid(address,address)
     deployFree:       '0x489e57a1', // deployFree(address,address,address)
+    deployFee:        '0xeb2a5d2c', // deployFee() → uint256
+    feeRecipient:     '0x46904840', // feeRecipient() → address
+    // ERC20 view
+    name:             '0x06fdde03', // name() → string
+    symbol:           '0x95d89b41', // symbol() → string
     // View
     balanceOf:        '0x70a08231',
     totalStaked:      '0x817b1cd2',
@@ -355,6 +360,157 @@ function parsePoolDeployed(receipt) {
 }
 
 // ══════════════════════════════════════
+// BYT (BRING YOUR TOKEN)
+// ══════════════════════════════════════
+
+function decodeString(hex) {
+    // ABI-encoded string: offset (32b) + length (32b) + data
+    if (!hex || hex === '0x' || hex.length < 130) return '';
+    try {
+        var offset = parseInt(hex.slice(2, 66), 16) * 2;
+        var len = parseInt(hex.slice(2 + offset, 2 + offset + 64), 16);
+        var data = hex.slice(2 + offset + 64, 2 + offset + 64 + len * 2);
+        var bytes = [];
+        for (var i = 0; i < data.length; i += 2) bytes.push(parseInt(data.substr(i, 2), 16));
+        return new TextDecoder().decode(new Uint8Array(bytes));
+    } catch (e) { return ''; }
+}
+
+async function readTokenInfo(address) {
+    var nameHex = await contractRead(address, SEL.name);
+    var symbolHex = await contractRead(address, SEL.symbol);
+    return { name: decodeString(nameHex), symbol: decodeString(symbolHex) };
+}
+
+async function readDeployFee() {
+    var hex = await contractRead(STAKING_FACTORY, SEL.deployFee);
+    return fromWei(hex);
+}
+
+var bytDebounceTimer = null;
+
+function onBytAddressInput() {
+    clearTimeout(bytDebounceTimer);
+    var input = document.getElementById('bytTokenAddress');
+    var preview = document.getElementById('bytTokenPreview');
+    var btn = document.getElementById('bytDeployBtn');
+    var val = input.value.trim();
+
+    if (!val || val.length !== 42 || !val.startsWith('0x')) {
+        preview.classList.add('hidden');
+        btn.disabled = true;
+        return;
+    }
+
+    bytDebounceTimer = setTimeout(async function() {
+        try {
+            var info = await readTokenInfo(val);
+            if (info.name && info.symbol) {
+                document.getElementById('bytTokenName').textContent = info.name;
+                document.getElementById('bytTokenSymbol').textContent = '$' + info.symbol;
+                document.getElementById('bytTokenIcon').textContent = info.symbol[0];
+                preview.classList.remove('hidden');
+                btn.disabled = false;
+            } else {
+                preview.classList.add('hidden');
+                btn.disabled = true;
+                showToast('Could not read token info. Is this a valid ERC20 on Base?', 'error');
+            }
+        } catch (e) {
+            preview.classList.add('hidden');
+            btn.disabled = true;
+        }
+    }, 600);
+}
+
+async function handleBYTDeploy() {
+    if (state.deploying) return;
+
+    var tokenAddress = document.getElementById('bytTokenAddress').value.trim();
+    var desc = document.getElementById('bytDesc').value.trim();
+    var website = document.getElementById('bytWebsite').value.trim();
+    var logo = document.getElementById('bytLogo').value.trim();
+    var tokenName = document.getElementById('bytTokenName').textContent;
+    var tokenSymbol = document.getElementById('bytTokenSymbol').textContent.replace('$', '');
+
+    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
+    }
+
+    state.deploying = true;
+    var btn = document.getElementById('bytDeployBtn');
+    btn.disabled = true;
+    btn.textContent = 'Approving INCLAWNCH...';
+
+    try {
+        // Step 1: Approve INCLAWNCH to factory
+        var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
+        await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
+
+        btn.textContent = 'Deploying staking pool...';
+
+        // Step 2: deployPaid(tokenAddress, INCLAWNCH)
+        var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
+        var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
+
+        var stakingPool = parsePoolDeployed(result.receipt);
+        if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
+
+        btn.textContent = 'Registering project...';
+
+        // Step 3: Register with API as BYT
+        var regResult = await apiPost({
+            action: 'register',
+            token_address: tokenAddress,
+            token_name: tokenName,
+            token_symbol: tokenSymbol,
+            description: desc,
+            website_url: website,
+            logo_url: logo,
+            fee_split_bps: 10000,
+            tier: 'byt',
+            creator_wallet: state.wallet
+        });
+
+        // Step 4: Update staking address
+        if (regResult.project) {
+            await apiPost({
+                action: 'update-staking',
+                project_id: regResult.project.id,
+                staking_address: stakingPool,
+                staking_deploy_tx: result.txHash
+            });
+        }
+
+        // Show success
+        document.getElementById('bytForm').classList.add('hidden');
+        document.getElementById('bytSuccess').classList.remove('hidden');
+        document.getElementById('bytStakingAddr').textContent = stakingPool;
+
+        var adminLink = document.getElementById('bytAdminLink');
+        if (regResult.project) {
+            adminLink.href = '/stake/' + regResult.project.id + '/admin';
+        }
+
+        state.deploying = false;
+        showToast('Staking deployed! Pending review.', 'success');
+
+    } catch (e) {
+        state.deploying = false;
+        btn.disabled = false;
+        btn.textContent = 'Deploy Staking';
+        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
+            showToast('Transaction rejected', 'error');
+        } else {
+            showToast('Deploy failed: ' + (e.message || 'Unknown error'), 'error');
+        }
+    }
+}
+
+// ══════════════════════════════════════
 // LAUNCH FLOW
 // ══════════════════════════════════════
 
@@ -522,6 +678,8 @@ function renderProjects() {
     grid.innerHTML = state.projects.map(function(p) {
         var tierBadge = p.tier === 'incubated'
             ? '<span class="tier-badge tier-incubated">Incubated</span>'
+            : p.tier === 'byt'
+            ? '<span class="tier-badge tier-permissionless">BYT</span>'
             : '<span class="tier-badge tier-permissionless">Permissionless</span>';
 
         var splitPct = Math.round((p.fee_split_bps || 10000) / 100);
@@ -724,6 +882,7 @@ function updateUI() {
     var launchSection = document.getElementById('launchSection');
     var formStep = document.getElementById('formStep');
     var successStep = document.getElementById('successStep');
+    var bytSection = document.getElementById('bytSection');
 
     var heroLaunchBtn = document.getElementById('heroLaunchBtn');
 
@@ -736,11 +895,13 @@ function updateUI() {
             walletInfo.querySelector('.wallet-addr').textContent = shortAddr(state.wallet);
         }
         if (launchSection) launchSection.style.display = 'block';
+        if (bytSection) bytSection.style.display = 'block';
     } else {
         if (connectBtn) connectBtn.style.display = 'inline-flex';
         if (heroLaunchBtn) heroLaunchBtn.style.display = 'none';
         if (walletInfo) walletInfo.style.display = 'none';
         if (launchSection) launchSection.style.display = 'none';
+        if (bytSection) bytSection.style.display = 'none';
     }
 
     // Step state
@@ -841,6 +1002,19 @@ async function init() {
             }
         });
     }
+
+    // BYT bindings
+    var bytAddrInput = document.getElementById('bytTokenAddress');
+    if (bytAddrInput) bytAddrInput.addEventListener('input', onBytAddressInput);
+
+    var bytDeployBtn = document.getElementById('bytDeployBtn');
+    if (bytDeployBtn) bytDeployBtn.addEventListener('click', handleBYTDeploy);
+
+    // Load deploy fee for BYT display
+    readDeployFee().then(function(fee) {
+        var el = document.getElementById('bytFeeDisplay');
+        if (el) el.textContent = fmt(fee);
+    }).catch(function() {});
 
     // Init slider
     initSlider();
