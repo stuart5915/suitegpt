@@ -15,8 +15,8 @@ var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
-// Staking factory — set after deploy (Phase 2)
-var STAKING_FACTORY = null; // Will be set after contract deployment
+// Staking factory (deployed on Base)
+var STAKING_FACTORY = '0xb8C2a458907D52980c13398b22A8eD8656B36186';
 
 // ══════════════════════════════════════
 // SELECTORS
@@ -26,8 +26,8 @@ var SEL = {
     approve:          '0x095ea7b3', // approve(address,uint256)
     depositRewards:   '0xbdd071fb', // depositRewards(uint256,uint256)
     // Staking factory
-    deployPaid:       '0x', // TBD after factory deploy
-    deployFree:       '0x', // TBD after factory deploy
+    deployPaid:       '0x82123c96', // deployPaid(address,address)
+    deployFree:       '0x489e57a1', // deployFree(address,address,address)
     // View
     balanceOf:        '0x70a08231',
     totalStaked:      '0x817b1cd2',
