@@ -97,6 +97,15 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
 
+        // Strip secrets, but expose whether X is connected
+        function sanitizeProjects(rows) {
+            return (rows || []).map(p => {
+                const { x_access_token, x_access_secret, ...safe } = p;
+                safe.x_connected = !!(x_access_token && x_access_secret);
+                return safe;
+            });
+        }
+
         const wallet = req.query.wallet;
 
         if (wallet) {
@@ -107,7 +116,7 @@ export default async function handler(req, res) {
                 .order('created_at', { ascending: false });
 
             if (error) return res.status(500).json({ error: error.message });
-            return res.status(200).json({ projects: data });
+            return res.status(200).json({ projects: sanitizeProjects(data) });
         }
 
         // Public: only active projects
@@ -118,7 +127,7 @@ export default async function handler(req, res) {
             .order('created_at', { ascending: false });
 
         if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json({ projects: data });
+        return res.status(200).json({ projects: sanitizeProjects(data) });
     }
 
     // ── POST — actions ──

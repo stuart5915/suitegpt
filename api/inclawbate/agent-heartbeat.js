@@ -66,12 +66,15 @@ Write a tweet:`;
     return (data.content?.[0]?.text || '').trim();
 }
 
-// ── X OAuth 1.0a posting (reused from post-to-x.js) ──
+// ── X OAuth 1.0a posting (per-project tokens) ──
 
-async function postTweet(text) {
-    const { X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET } = process.env;
-    if (!X_API_KEY || !X_API_SECRET || !X_ACCESS_TOKEN || !X_ACCESS_SECRET) {
-        throw new Error('X API credentials not configured');
+async function postTweet(text, projectAccessToken, projectAccessSecret) {
+    const { X_API_KEY, X_API_SECRET } = process.env;
+    if (!X_API_KEY || !X_API_SECRET) {
+        throw new Error('X API app credentials not configured');
+    }
+    if (!projectAccessToken || !projectAccessSecret) {
+        throw new Error('Project X account not connected');
     }
 
     const oauth = {
@@ -79,7 +82,7 @@ async function postTweet(text) {
         oauth_nonce: crypto.randomBytes(16).toString('hex'),
         oauth_signature_method: 'HMAC-SHA1',
         oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-        oauth_token: X_ACCESS_TOKEN,
+        oauth_token: projectAccessToken,
         oauth_version: '1.0'
     };
 
@@ -96,7 +99,7 @@ async function postTweet(text) {
         encodeURIComponent(paramString)
     ].join('&');
 
-    const signingKey = `${encodeURIComponent(X_API_SECRET)}&${encodeURIComponent(X_ACCESS_SECRET)}`;
+    const signingKey = `${encodeURIComponent(X_API_SECRET)}&${encodeURIComponent(projectAccessSecret)}`;
     const signature = crypto.createHmac('sha1', signingKey).update(signatureBase).digest('base64');
     oauth.oauth_signature = signature;
 
@@ -149,28 +152,36 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: 'Daily post cap reached', cap: DAILY_POST_CAP });
         }
 
-        // Find agents that are due
+        // Find agents that are due (must have X tokens connected)
         const { data: projects, error: queryErr } = await supabase
             .from('inclawbator_projects')
             .select('*')
             .eq('agent_enabled', true)
             .eq('agent_status', 'active')
             .eq('status', 'active')
-            .gt('agent_credits', 0);
+            .gt('agent_credits', 0)
+            .not('x_access_token', 'is', null);
 
         if (queryErr) throw queryErr;
         if (!projects || projects.length === 0) {
-            return res.status(200).json({ message: 'No active agents' });
+            return res.status(200).json({ message: 'No active agents with X connected' });
         }
 
         const now = Date.now();
         let posted = 0;
         let dormant = 0;
+        let skipped_no_x = 0;
         const errors = [];
 
         for (const project of projects) {
             // Check if we've hit the daily cap during this run
             if ((recentPosts || 0) + posted >= DAILY_POST_CAP) break;
+
+            // Double-check X tokens exist
+            if (!project.x_access_token || !project.x_access_secret) {
+                skipped_no_x++;
+                continue;
+            }
 
             // Check if enough time has passed since last post
             const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 4);
@@ -201,8 +212,8 @@ export default async function handler(req, res) {
                     throw new Error('Generated tweet invalid or too long');
                 }
 
-                // Post to X
-                const tweetId = await postTweet(tweetText);
+                // Post to X using project's own tokens
+                const tweetId = await postTweet(tweetText, project.x_access_token, project.x_access_secret);
 
                 // Record post
                 await supabase

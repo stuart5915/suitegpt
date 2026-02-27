@@ -775,6 +775,7 @@ function renderProjects() {
                 (p.token_address ? '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Chart</a>' : '') +
                 (p.website_url ? '<a href="' + escapeHtml(p.website_url) + '" target="_blank" rel="noopener" class="project-btn project-btn--outline">Website</a>' : '') +
                 (p.agent_enabled ? '<button class="feed-agent-btn" onclick="openFeedModal(\'' + p.id + '\', \'' + escapeHtml(p.token_symbol) + '\')">Feed Agent</button>' : '') +
+                (p.agent_enabled && !p.x_connected ? '<a href="/api/inclawbate/x-connect?project_id=' + p.id + '" class="feed-agent-btn" style="text-decoration:none">Connect X</a>' : '') +
             '</div>' +
         '</div>';
     }).join('');
@@ -1136,6 +1137,21 @@ async function init() {
                 updateUI();
             }
         } catch (e) {}
+    }
+
+    // Check for X connect callback result
+    var urlParams = new URLSearchParams(window.location.search);
+    var xConnect = urlParams.get('x_connect');
+    if (xConnect === 'success') {
+        var handle = urlParams.get('handle');
+        showToast('X account connected' + (handle ? ': @' + handle : '') + '! Agent will post from this account.', 'success');
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (xConnect === 'denied') {
+        showToast('X authorization was denied', 'error');
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (xConnect === 'error' || xConnect === 'expired') {
+        showToast('X connection failed. Please try again.', 'error');
+        window.history.replaceState({}, '', window.location.pathname);
     }
 
     // Load projects
