@@ -11,12 +11,12 @@ const BASE_RPC = 'https://mainnet.base.org';
 const APPROVE_SELECTOR = '0x095ea7b3';           // approve(address,uint256)
 const ALLOWANCE_SELECTOR = '0xdd62ed3e';          // allowance(address,address)
 const BALANCE_SELECTOR = '0x70a08231';             // balanceOf(address)
-const HAS_MINTED_SELECTOR = '0x2c3e486c';         // hasMinted(address) — bytes4(keccak256("hasMinted(address)"))
+const HAS_MINTED_SELECTOR = '0x38e21cce';         // hasMinted(address)
 const TOTAL_MINTED_SELECTOR = '0xa2309ff8';        // totalMinted()
 const MAX_UINT256 = '0x' + 'f'.repeat(64);
 
 // mint(uint256,bytes32[]) selector
-const MINT_SELECTOR = '0x0ed28e37';  // bytes4(keccak256("mint(uint256,bytes32[])"))
+const MINT_SELECTOR = '0xba41b0c6';  // bytes4(keccak256("mint(uint256,bytes32[])"))
 
 // ── Helpers ──
 function pad32(hex) {
