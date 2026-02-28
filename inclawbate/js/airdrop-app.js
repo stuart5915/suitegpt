@@ -1,6 +1,7 @@
 // Inclawbate — Admin Airdrop Controller + UBI Distribution
 // Uses Disperse.app contract on Base for batch ERC-20 transfers
 
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be';
 const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const DISPERSE_ADDRESS = '0xD152f549545093347A162Dce210e7293f1452150';
@@ -41,6 +42,7 @@ const SC = {
 let provider = null;
 let userAddress = null;
 let allProfiles = [];
+let clawsPrice = 0;
 let clawnchPrice = 0;
 let inclawnchPriceGlobal = 0;
 let currentFilter = 'no-hires';
@@ -242,18 +244,25 @@ function bestDexPrice(dexData, tokenAddr) {
 }
 
 async function fetchPrice() {
+    // Fetch CLAWS price (primary airdrop token)
+    try {
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+        const data = await resp.json();
+        clawsPrice = bestDexPrice(data, CLAWS_ADDRESS);
+    } catch (e) { /* try fallback */ }
+    // Fetch CLAWNCH price (legacy)
     try {
         const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
         const data = await resp.json();
         clawnchPrice = bestDexPrice(data, CLAWNCH_ADDRESS);
     } catch (e) { /* try fallback */ }
     // CoinGecko fallback
-    if (!clawnchPrice) {
+    if (!clawsPrice || !clawnchPrice) {
         try {
-            const gResp = await fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' + CLAWNCH_ADDRESS + '&vs_currencies=usd');
+            const gResp = await fetch('https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=' + CLAWS_ADDRESS + ',' + CLAWNCH_ADDRESS + '&vs_currencies=usd');
             const gData = await gResp.json();
-            var key = CLAWNCH_ADDRESS.toLowerCase();
-            if (gData[key] && gData[key].usd) clawnchPrice = gData[key].usd;
+            if (!clawsPrice && gData[CLAWS_ADDRESS.toLowerCase()]?.usd) clawsPrice = gData[CLAWS_ADDRESS.toLowerCase()].usd;
+            if (!clawnchPrice && gData[CLAWNCH_ADDRESS.toLowerCase()]?.usd) clawnchPrice = gData[CLAWNCH_ADDRESS.toLowerCase()].usd;
         } catch (e) { /* no price */ }
     }
     updateSummary();
@@ -404,15 +413,15 @@ function updateSummary() {
     const selected = getSelectedRecipients();
     const amount = parseInt(amountInput.value) || 0;
     const total = selected.length * amount;
-    const usd = clawnchPrice > 0 ? (total * clawnchPrice).toFixed(2) : '?';
+    const usd = clawsPrice > 0 ? (total * clawsPrice).toFixed(2) : '?';
 
     document.getElementById('recipientCount').textContent = selected.length;
     document.getElementById('totalClawnch').textContent = total.toLocaleString();
     document.getElementById('totalUsd').textContent = '$' + usd;
 
     const hint = document.getElementById('amountHint');
-    if (clawnchPrice > 0) {
-        hint.textContent = '~$' + (amount * clawnchPrice).toFixed(4) + ' each';
+    if (clawsPrice > 0) {
+        hint.textContent = '~$' + (amount * clawsPrice).toFixed(4) + ' each';
     }
 
     document.getElementById('sendBtn').disabled = selected.length === 0 || amount <= 0;
@@ -436,15 +445,15 @@ sendBtn.addEventListener('click', async () => {
 
     try {
         await ensureBase(provider);
-        // Check CLAWNCH balance
+        // Check CLAWS balance
         const balanceData = BALANCE_SELECTOR + pad32(userAddress);
         const balResult = await provider.request({
             method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
+            params: [{ to: CLAWS_ADDRESS, data: balanceData }, 'latest']
         });
         const balance = BigInt(balResult);
         if (balance < totalWei) {
-            sendStatus.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+            sendStatus.textContent = `Insufficient CLAWS. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
             sendStatus.className = 'airdrop-status error';
             sendBtn.disabled = false;
             return;
@@ -454,12 +463,12 @@ sendBtn.addEventListener('click', async () => {
         const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
         const allowResult = await provider.request({
             method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+            params: [{ to: CLAWS_ADDRESS, data: allowData }, 'latest']
         });
         const allowance = BigInt(allowResult);
 
         if (allowance < totalWei) {
-            sendStatus.textContent = 'Approving CLAWNCH spend...';
+            sendStatus.textContent = 'Approving CLAWS spend...';
             const approveData = APPROVE_SELECTOR
                 + pad32(DISPERSE_ADDRESS)
                 + pad32(toHex(totalWei));
@@ -468,7 +477,7 @@ sendBtn.addEventListener('click', async () => {
                 method: 'eth_sendTransaction',
                 params: [{
                     from: userAddress,
-                    to: CLAWNCH_ADDRESS,
+                    to: CLAWS_ADDRESS,
                     data: approveData
                 }]
             });
@@ -483,7 +492,7 @@ sendBtn.addEventListener('click', async () => {
         const recipients = selected.map(p => p.wallet_address);
         const amounts = selected.map(() => amountWei);
 
-        const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+        const calldata = buildDisperseTokenCalldata(CLAWS_ADDRESS, recipients, amounts);
 
         const disperseTx = await provider.request({
             method: 'eth_sendTransaction',
@@ -516,13 +525,13 @@ sendBtn.addEventListener('click', async () => {
             });
             const hireResult = await hireResp.json();
             if (hireResult.success) {
-                sendStatus.textContent = `Done! Sent ${amount.toLocaleString()} CLAWNCH to ${selected.length} humans. ${hireResult.created} hires recorded.`;
+                sendStatus.textContent = `Done! Sent ${amount.toLocaleString()} CLAWS to ${selected.length} humans. ${hireResult.created} hires recorded.`;
             } else {
-                sendStatus.textContent = `CLAWNCH sent! But hire recording failed: ${hireResult.error || 'Unknown error'}`;
+                sendStatus.textContent = `CLAWS sent! But hire recording failed: ${hireResult.error || 'Unknown error'}`;
             }
         } catch (hireErr) {
             console.error('Batch hire error:', hireErr);
-            sendStatus.textContent = `CLAWNCH sent to ${selected.length} humans! Hire recording failed — check console.`;
+            sendStatus.textContent = `CLAWS sent to ${selected.length} humans! Hire recording failed — check console.`;
         }
         sendStatus.className = 'airdrop-status success';
         sendBtn.textContent = 'Done!';
@@ -1426,7 +1435,7 @@ function getSelectedPhilRecipients() {
 function updatePhilSummary() {
     const selected = getSelectedPhilRecipients();
     const totalClawnch = selected.reduce((sum, r) => sum + r.amount, 0);
-    const usd = clawnchPrice > 0 ? (totalClawnch * clawnchPrice).toFixed(2) : '?';
+    const usd = clawsPrice > 0 ? (totalClawnch * clawsPrice).toFixed(2) : '?';
 
     document.getElementById('philRecipientCount').textContent = selected.length;
     document.getElementById('philTotalClawnch').textContent = totalClawnch.toLocaleString();
@@ -1525,15 +1534,15 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
         const amounts = selected.map(r => toWei(r.amount));
         const totalWei = amounts.reduce((sum, a) => sum + a, 0n);
 
-        // Check balance
+        // Check CLAWS balance
         const balanceData = BALANCE_SELECTOR + pad32(userAddress);
         const balResult = await provider.request({
             method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: balanceData }, 'latest']
+            params: [{ to: CLAWS_ADDRESS, data: balanceData }, 'latest']
         });
         const balance = BigInt(balResult);
         if (balance < totalWei) {
-            status.textContent = `Insufficient CLAWNCH. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
+            status.textContent = `Insufficient CLAWS. Need ${(Number(totalWei) / 1e18).toLocaleString()}, have ${(Number(balance) / 1e18).toLocaleString()}`;
             status.className = 'airdrop-status error';
             btn.disabled = false;
             return;
@@ -1544,16 +1553,16 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
         const allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
         const allowResult = await provider.request({
             method: 'eth_call',
-            params: [{ to: CLAWNCH_ADDRESS, data: allowData }, 'latest']
+            params: [{ to: CLAWS_ADDRESS, data: allowData }, 'latest']
         });
         const allowance = BigInt(allowResult);
 
         if (allowance < totalWei) {
-            status.textContent = 'Approving CLAWNCH spend...';
+            status.textContent = 'Approving CLAWS spend...';
             const approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(toHex(totalWei));
             const approveTx = await provider.request({
                 method: 'eth_sendTransaction',
-                params: [{ from: userAddress, to: CLAWNCH_ADDRESS, data: approveData }]
+                params: [{ from: userAddress, to: CLAWS_ADDRESS, data: approveData }]
             });
             status.textContent = 'Waiting for approval...';
             await waitForReceipt(approveTx);
@@ -1561,7 +1570,7 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
 
         // Disperse
         status.textContent = `Sending to ${selected.length} recipients...`;
-        const calldata = buildDisperseTokenCalldata(CLAWNCH_ADDRESS, recipients, amounts);
+        const calldata = buildDisperseTokenCalldata(CLAWS_ADDRESS, recipients, amounts);
         const disperseTx = await provider.request({
             method: 'eth_sendTransaction',
             params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
@@ -1589,7 +1598,7 @@ document.getElementById('sendPhilBtn').addEventListener('click', async () => {
         } catch (e) { /* non-critical */ }
 
         const totalSent = selected.reduce((s, r) => s + r.amount, 0);
-        status.textContent = `Sent ${totalSent.toLocaleString()} CLAWNCH to ${selected.length} recipients!`;
+        status.textContent = `Sent ${totalSent.toLocaleString()} CLAWS to ${selected.length} recipients!`;
         status.className = 'airdrop-status success';
     } catch (err) {
         console.error('Philanthropy send error:', err);
@@ -1900,9 +1909,9 @@ if (qsSendBtn) {
         var statusEl = document.getElementById('qsStatus');
         var recipient = (addrInput.value || '').trim().toLowerCase();
         var amount = parseInt(amtInput.value) || 0;
-        var token = tokenSelect.value; // 'clawnch' or 'inclawnch'
-        var tokenAddress = token === 'inclawnch' ? INCLAWNCH_ADDRESS : CLAWNCH_ADDRESS;
-        var tokenLabel = token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
+        var token = tokenSelect.value; // 'claws', 'clawnch', or 'inclawnch'
+        var tokenAddress = token === 'claws' ? CLAWS_ADDRESS : token === 'inclawnch' ? INCLAWNCH_ADDRESS : CLAWNCH_ADDRESS;
+        var tokenLabel = token === 'claws' ? 'CLAWS' : token === 'inclawnch' ? 'inCLAWNCH' : 'CLAWNCH';
 
         if (!recipient || recipient.length !== 42 || !recipient.startsWith('0x')) {
             statusEl.textContent = 'Enter a valid address';
