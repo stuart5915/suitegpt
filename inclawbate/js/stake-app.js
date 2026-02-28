@@ -557,8 +557,34 @@ function renderOverview() {
     var ubiHtml = '';
     var partnerHtml = '';
 
+    // Populate CLAWS hero stats
+    var clawsStats = poolStats['claws'] || {};
+    var clawsPrice = poolPrices['claws'] || 0;
+    var clawsTvl = (clawsStats.totalStaked || 0) * clawsPrice;
+    totalTvl += clawsTvl;
+    var he = document.getElementById('clawsHeroApy');
+    if (he) he.textContent = clawsStats.apy ? Math.round(clawsStats.apy).toLocaleString('en-US') + '%' : '--';
+    var ht = document.getElementById('clawsHeroTvl');
+    if (ht) ht.textContent = clawsTvl > 0 ? fmtUsd(clawsTvl) : '--';
+    var hs = document.getElementById('clawsHeroStaked');
+    if (hs) hs.textContent = clawsStats.totalStaked ? fmt(clawsStats.totalStaked) : '--';
+    var hk = document.getElementById('clawsHeroStakers');
+    if (hk) hk.textContent = clawsStats.stakerCount !== undefined ? clawsStats.stakerCount.toLocaleString('en-US') : '--';
+
+    // Wire hero Stake CLAWS link
+    var heroStakeLink = document.querySelector('.claws-hero-btn--primary');
+    if (heroStakeLink) {
+        heroStakeLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            history.pushState(null, '', '/stake/claws');
+            routeApp();
+        });
+    }
+
     sorted.forEach(function(key) {
         var pool = POOLS[key];
+        // Skip CLAWS — rendered in hero section
+        if (key === 'claws') return;
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
         if (pool.category === 'rewards') {
