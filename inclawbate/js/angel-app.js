@@ -288,8 +288,22 @@ async function doMint() {
 btnConnect.addEventListener('click', connectWallet);
 btnMint.addEventListener('click', doMint);
 
+// Populate market links
+function updateMarketLinks() {
+    if (!ANGEL_NFT_ADDRESS) return;
+    var os = document.getElementById('linkOpenSea');
+    var el = document.getElementById('linkElement');
+    var bs = document.getElementById('linkBasescan');
+    var ca = document.getElementById('angelContractAddr');
+    if (os) os.href = 'https://opensea.io/assets/base/' + ANGEL_NFT_ADDRESS;
+    if (el) el.href = 'https://element.market/collections/base/' + ANGEL_NFT_ADDRESS;
+    if (bs) bs.href = 'https://basescan.org/address/' + ANGEL_NFT_ADDRESS;
+    if (ca) ca.textContent = ANGEL_NFT_ADDRESS;
+}
+
 loadMerkleData();
 loadStats();
+updateMarketLinks();
 
 // Auto-connect if wallet already connected
 if (window.ethereum) {

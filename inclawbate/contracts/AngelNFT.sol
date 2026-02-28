@@ -2,11 +2,14 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-contract AngelNFT is ERC721, Ownable {
+/// @title AngelNFT — Inclawbate Founding Badge
+/// @notice Snapshot holders send INCLAWNCH to mint. 5% royalty on secondary sales.
+contract AngelNFT is ERC721, ERC2981, Ownable {
     IERC20 public immutable inclawnch;
     bytes32 public immutable merkleRoot;
 
@@ -20,11 +23,14 @@ contract AngelNFT is ERC721, Ownable {
     constructor(
         address _inclawnch,
         bytes32 _merkleRoot,
-        string memory baseTokenURI_
+        string memory baseTokenURI_,
+        address royaltyReceiver,
+        uint96 royaltyBps
     ) ERC721("Inclawbate Angel", "ANGEL") Ownable(msg.sender) {
         inclawnch = IERC20(_inclawnch);
         merkleRoot = _merkleRoot;
         _baseTokenURI = baseTokenURI_;
+        _setDefaultRoyalty(royaltyReceiver, royaltyBps);
     }
 
     function mint(uint256 amount, bytes32[] calldata proof) external {
@@ -56,7 +62,17 @@ contract AngelNFT is ERC721, Ownable {
         _baseTokenURI = baseTokenURI_;
     }
 
+    function setRoyalty(address receiver, uint96 bps) external onlyOwner {
+        _setDefaultRoyalty(receiver, bps);
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public view override(ERC721, ERC2981) returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
