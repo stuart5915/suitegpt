@@ -91,6 +91,22 @@ async function contractReadBatch(calls) {
         body: JSON.stringify(batch)
     });
     var results = await res.json();
+    // Handle non-array response (some RPCs don't support batch)
+    if (!Array.isArray(results)) {
+        // Fallback: send individual calls
+        var out = [];
+        for (var i = 0; i < calls.length; i++) {
+            var r = await fetch(BASE_RPC, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call',
+                    params: [{ to: calls[i].to, data: calls[i].data }, 'latest'] })
+            });
+            var j = await r.json();
+            out.push(j.result || '0x0');
+        }
+        return out;
+    }
     results.sort(function(a, b) { return a.id - b.id; });
     return results.map(function(r) { return r.result || '0x0'; });
 }
