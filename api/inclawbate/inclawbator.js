@@ -6,13 +6,13 @@
 // POST action:"approve"            — admin approves incubated project (admin_secret)
 // POST action:"record-distribution"— log reward distribution (admin_secret)
 // POST action:"update-fees"        — admin updates total_fees_claimed (admin_secret)
-// POST action:"feed-agent"         — deposit INCLAWNCH to feed a project's AI agent
+// POST action:"feed-agent"         — deposit CLAWS to feed a project's AI agent
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
 
 // ── Deposit verification (reused from credits.js) ──
-const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'.toLowerCase();
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379'.toLowerCase();
 const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const TARGET_USD_PER_CREDIT = 0.005;
@@ -39,9 +39,9 @@ async function rpcCall(method, params) {
     return null;
 }
 
-async function fetchInclawnchPrice() {
+async function fetchClawsPrice() {
     try {
-        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
         const data = await resp.json();
         if (data.pairs && data.pairs.length > 0) {
             return parseFloat(data.pairs[0].priceUsd) || 0;
@@ -56,11 +56,11 @@ async function verifyDepositTx(txHash) {
         return { valid: false, reason: 'Transaction failed or not found' };
     }
     const transferLog = (receipt.logs || []).find(log =>
-        log.address.toLowerCase() === CLAWNCH_ADDRESS &&
+        log.address.toLowerCase() === CLAWS_ADDRESS &&
         log.topics[0] === ERC20_TRANSFER_TOPIC
     );
     if (!transferLog) {
-        return { valid: false, reason: 'No CLAWNCH transfer found in transaction' };
+        return { valid: false, reason: 'No CLAWS transfer found in transaction' };
     }
     const to = '0x' + transferLog.topics[2].slice(26).toLowerCase();
     const amount = Number(BigInt(transferLog.data)) / 1e18;
@@ -366,7 +366,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ project: data });
         }
 
-        // ── Feed agent — deposit INCLAWNCH to add credits ──
+        // ── Feed agent — deposit CLAWS to add credits ──
         if (action === 'feed-agent') {
             const { project_id, tx_hash } = req.body;
             if (!project_id) return res.status(400).json({ error: 'project_id required' });
@@ -398,15 +398,15 @@ export default async function handler(req, res) {
             if (!verification.valid) return res.status(400).json({ error: verification.reason });
 
             // Fetch live price
-            const livePrice = await fetchInclawnchPrice();
+            const livePrice = await fetchClawsPrice();
             if (livePrice <= 0) {
-                return res.status(503).json({ error: 'Unable to fetch INCLAWNCH price. Try again shortly.' });
+                return res.status(503).json({ error: 'Unable to fetch CLAWS price. Try again shortly.' });
             }
 
             const tokensPerCredit = TARGET_USD_PER_CREDIT / livePrice;
             const credits = Math.floor(verification.amount / tokensPerCredit);
             if (credits <= 0) {
-                return res.status(400).json({ error: `Deposit too small. Min ~${Math.ceil(tokensPerCredit)} INCLAWNCH for 1 credit.` });
+                return res.status(400).json({ error: `Deposit too small. Min ~${Math.ceil(tokensPerCredit)} CLAWS for 1 credit.` });
             }
 
             // Record deposit
@@ -442,7 +442,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 credits_added: credits,
                 credits_total: newBalance,
-                inclawnch_deposited: verification.amount,
+                claws_deposited: verification.amount,
                 price_usd: livePrice
             });
         }

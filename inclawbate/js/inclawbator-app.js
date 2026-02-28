@@ -10,6 +10,7 @@
 
 var BASE_CHAIN_ID = '0x2105';
 var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
+var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
@@ -615,11 +616,11 @@ async function handleLaunchDeploy() {
                 updateDeployButton('Deploying staking pool...', true);
 
                 var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-                await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
+                await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
 
                 updateDeployButton('Creating staking pool...', true);
 
-                var deployPaidData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
+                var deployPaidData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
                 var stakingResult = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployPaidData);
 
                 var stakingPool = parsePoolDeployed(stakingResult.receipt);
@@ -730,17 +731,17 @@ async function handlePartnerDeploy() {
     }
 
     state.deploying = true;
-    updateDeployButton('Approving INCLAWNCH...', true);
+    updateDeployButton('Approving CLAWS...', true);
 
     try {
-        // Step 1: Approve INCLAWNCH to factory
+        // Step 1: Approve CLAWS to factory
         var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-        await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, '0x' + approveData.replace('0x0x', '0x'));
+        await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
 
         updateDeployButton('Deploying staking pool...', true);
 
-        // Step 2: deployPaid(tokenAddress, INCLAWNCH)
-        var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(INCLAWNCH);
+        // Step 2: deployPaid(tokenAddress, CLAWS)
+        var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
         var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
 
         var stakingPool = parsePoolDeployed(result.receipt);
@@ -995,9 +996,9 @@ async function handleBatchDistribute() {
 
             btn.textContent = 'Approving ' + (i + 1) + '/' + pools.length + '...';
 
-            // Approve INCLAWNCH to staking contract
+            // Approve CLAWS to staking contract
             var approveData = SEL.approve + pad32(pool.staking_address) + shareWei;
-            await sendTxAndWait(state.provider, state.wallet, INCLAWNCH, approveData);
+            await sendTxAndWait(state.provider, state.wallet, CLAWS, approveData);
 
             btn.textContent = 'Depositing ' + (i + 1) + '/' + pools.length + '...';
 

@@ -154,7 +154,7 @@ function renderProject() {
     var gridHtml = '';
     if (p.tier === 'ecosystem') {
         // Ecosystem apps use main UBI pool — no staking stats
-        gridHtml = '<div class="info-card" style="grid-column:1/-1"><div class="info-label">Type</div><div class="info-value">Ecosystem App &mdash; powered by INCLAWNCH</div></div>';
+        gridHtml = '<div class="info-card" style="grid-column:1/-1"><div class="info-label">Type</div><div class="info-value">Ecosystem App &mdash; powered by CLAWS</div></div>';
     } else if (p.tier === 'partner' || p.tier === 'byt') {
         // Partner pools manage own rewards
         gridHtml =
@@ -165,7 +165,7 @@ function renderProject() {
         gridHtml =
             '<div class="info-card"><div class="info-label">Fee Split</div><div class="info-value">' + splitPct + '%</div></div>' +
             '<div class="info-card"><div class="info-label">Staking</div><div class="info-value">' + (p.staking_address ? '<span class="active-dot">Live</span>' : 'Pending') + '</div></div>' +
-            '<div class="info-card"><div class="info-label">Total Rewards</div><div class="info-value">' + fmt(p.total_rewards_distributed || 0) + ' INCLAWNCH</div></div>' +
+            '<div class="info-card"><div class="info-label">Total Rewards</div><div class="info-value">' + fmt(p.total_rewards_distributed || 0) + ' CLAWS</div></div>' +
             '<div class="info-card"><div class="info-label">Total Fees</div><div class="info-value">' + fmt(p.total_fees_claimed || 0) + '</div></div>';
     }
     document.getElementById('infoGrid').innerHTML = gridHtml;
