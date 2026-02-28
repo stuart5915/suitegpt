@@ -22,6 +22,83 @@
     <link rel="stylesheet" href="/styles/core.css">
     <link rel="stylesheet" href="/styles/components.css">
     <style>
+        /* ── Announcement Banner ── */
+        .announce-banner {
+            position: fixed;
+            top: var(--nav-height);
+            left: 0; right: 0;
+            z-index: 999;
+            background: linear-gradient(90deg, hsl(172, 45%, 28%), hsl(172, 50%, 22%));
+            border-bottom: 1px solid hsla(172, 50%, 50%, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 48px 10px 20px;
+            cursor: pointer;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .announce-banner:hover {
+            background: linear-gradient(90deg, hsl(172, 45%, 32%), hsl(172, 50%, 26%));
+        }
+        .announce-banner.hidden {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+        .announce-banner-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .announce-banner-text {
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+        .announce-banner-text span {
+            color: var(--seafoam-200, hsl(172, 60%, 78%));
+        }
+        .announce-banner-cta {
+            background: hsla(0, 0%, 100%, 0.15);
+            border: 1px solid hsla(0, 0%, 100%, 0.25);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 4px 14px;
+            border-radius: var(--radius-full);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .announce-banner-close {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: hsla(0, 0%, 100%, 0.5);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+        .announce-banner-close:hover {
+            color: #fff;
+        }
+        body.has-banner .hero {
+            margin-top: calc(var(--nav-height) + 42px);
+        }
+        @media (max-width: 600px) {
+            .announce-banner { padding: 8px 40px 8px 12px; gap: 8px; }
+            .announce-banner-text { font-size: 0.78rem; }
+            .announce-banner-cta { display: none; }
+        }
+
         /* ── Hero (compact banner) ── */
         .hero {
             margin-top: var(--nav-height);
@@ -1286,6 +1363,21 @@
         <a href="/inclawbator" class="nav-link">Inclawbator</a>
     </div>
 </nav>
+
+<!-- Announcement Banner -->
+<div class="announce-banner" id="announceBanner" onclick="window.location.href='/stake'">
+    <span class="announce-banner-icon">&#129438;</span>
+    <span class="announce-banner-text"><span>$CLAWS is live.</span> Airdrop landed. Staking rewards flowing. Angel NFTs mintable.</span>
+    <span class="announce-banner-cta">Stake Now</span>
+    <button class="announce-banner-close" id="closeBanner" onclick="event.stopPropagation(); document.getElementById('announceBanner').classList.add('hidden'); document.body.classList.remove('has-banner'); localStorage.setItem('claws-banner-dismissed','1');" aria-label="Close">&times;</button>
+</div>
+<script>
+if (!localStorage.getItem('claws-banner-dismissed')) {
+    document.body.classList.add('has-banner');
+} else {
+    document.getElementById('announceBanner').classList.add('hidden');
+}
+</script>
 
 <!-- Hero -->
 <section class="hero">
