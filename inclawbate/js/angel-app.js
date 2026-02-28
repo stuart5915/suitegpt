@@ -2,7 +2,7 @@
 // Connect wallet → check Merkle eligibility → approve INCLAWNCH → mint Angel NFT
 
 // ── Addresses (update after deploy) ──
-const ANGEL_NFT_ADDRESS = ''; // TODO: set after deploy
+const ANGEL_NFT_ADDRESS = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
 const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const BASE_CHAIN_ID = '0x2105';
 const BASE_RPC = 'https://mainnet.base.org';
