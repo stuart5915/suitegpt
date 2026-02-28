@@ -165,6 +165,7 @@ connectBtn.addEventListener('click', async () => {
         document.getElementById('philPanel').style.display = '';
         document.getElementById('stakingContractPanel').style.display = '';
         document.getElementById('quickSendPanel').style.display = '';
+        if (document.getElementById('clawsMigrationPanel')) document.getElementById('clawsMigrationPanel').style.display = '';
 
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
@@ -1955,5 +1956,344 @@ if (qsSendBtn) {
             statusEl.className = 'airdrop-status error';
         }
         qsSendBtn.disabled = false;
+    });
+}
+
+// ══════════════════════════════════════════════════
+//  CLAWS MIGRATION AIRDROP
+// ══════════════════════════════════════════════════
+
+var clawsSnapshot = null;     // loaded eligible entries
+var clawsBatches = [];        // array of batches
+var clawsNextBatch = 0;       // index of next batch to send
+var CLAWS_BATCH_SIZE = 200;
+var clawsTxHashes = [];       // tx hashes for each batch
+
+var clawsLoadBtn = document.getElementById('clawsLoadBtn');
+var clawsSendBtn = document.getElementById('clawsSendBtn');
+var clawsVerifyBtn = document.getElementById('clawsVerifyBtn');
+var clawsStatusEl = document.getElementById('clawsStatus');
+
+function clawsLog(msg) {
+    var log = document.getElementById('clawsTxLog');
+    var body = document.getElementById('clawsTxLogBody');
+    if (!log || !body) return;
+    log.style.display = '';
+    var line = document.createElement('div');
+    line.style.marginBottom = '4px';
+    var ts = new Date().toLocaleTimeString();
+    line.innerHTML = '<span style="color:var(--text-dim);">[' + ts + ']</span> ' + msg;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+}
+
+function clawsUpdateProgress() {
+    var bar = document.getElementById('clawsProgressBar');
+    var text = document.getElementById('clawsProgressText');
+    var wrap = document.getElementById('clawsProgress');
+    if (!bar || !text || !wrap) return;
+    wrap.style.display = '';
+    var pct = clawsBatches.length > 0 ? Math.round((clawsNextBatch / clawsBatches.length) * 100) : 0;
+    bar.style.width = pct + '%';
+    text.textContent = clawsNextBatch + ' / ' + clawsBatches.length + ' batches sent (' + pct + '%)';
+}
+
+if (clawsLoadBtn) {
+    clawsLoadBtn.addEventListener('click', async function() {
+        var tokenAddr = (document.getElementById('clawsTokenAddr').value || '').trim();
+        if (!tokenAddr || tokenAddr.length !== 42 || !tokenAddr.startsWith('0x')) {
+            clawsStatusEl.textContent = 'Enter a valid CLAWS token address';
+            clawsStatusEl.className = 'airdrop-status error';
+            return;
+        }
+
+        clawsLoadBtn.disabled = true;
+        clawsStatusEl.textContent = 'Loading snapshot...';
+        clawsStatusEl.className = 'airdrop-status';
+
+        try {
+            var resp = await fetch('/scripts/snapshot-2026-02-28.json');
+            var data = await resp.json();
+
+            clawsSnapshot = data.eligible.filter(function(e) { return e.total > 0; });
+            clawsSnapshot.sort(function(a, b) { return b.total - a.total; }); // biggest first
+
+            // Build batches
+            clawsBatches = [];
+            for (var i = 0; i < clawsSnapshot.length; i += CLAWS_BATCH_SIZE) {
+                clawsBatches.push(clawsSnapshot.slice(i, i + CLAWS_BATCH_SIZE));
+            }
+            clawsNextBatch = 0;
+            clawsTxHashes = [];
+
+            // Show stats
+            var totalNeeded = clawsSnapshot.reduce(function(s, e) { return s + e.total; }, 0);
+            document.getElementById('clawsAddresses').textContent = clawsSnapshot.length;
+            document.getElementById('clawsBatches').textContent = clawsBatches.length;
+            document.getElementById('clawsNeeded').textContent = fmtNum(totalNeeded);
+
+            // Check CLAWS balance
+            var balData = BALANCE_SELECTOR + pad32(userAddress);
+            var balResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: tokenAddr, data: balData }, 'latest']
+            });
+            var balance = fromWei(balResult);
+            document.getElementById('clawsBalance').textContent = fmtNum(balance);
+
+            if (balance < totalNeeded) {
+                document.getElementById('clawsBalance').style.color = 'var(--red)';
+                clawsStatusEl.textContent = 'Insufficient CLAWS! Need ' + fmtNum(totalNeeded) + ', have ' + fmtNum(balance);
+                clawsStatusEl.className = 'airdrop-status error';
+                clawsLoadBtn.disabled = false;
+                return;
+            }
+
+            document.getElementById('clawsBalance').style.color = 'var(--seafoam-300)';
+
+            // Render batch preview
+            clawsRenderBatches();
+            clawsUpdateProgress();
+
+            clawsSendBtn.style.display = '';
+            clawsSendBtn.disabled = false;
+            clawsVerifyBtn.style.display = '';
+            clawsStatusEl.textContent = 'Ready. ' + clawsSnapshot.length + ' addresses in ' + clawsBatches.length + ' batches.';
+            clawsStatusEl.className = 'airdrop-status success';
+
+            clawsLog('Loaded snapshot: ' + clawsSnapshot.length + ' addresses, ' + fmtNum(totalNeeded) + ' CLAWS needed');
+            clawsLog('Your balance: ' + fmtNum(balance) + ' CLAWS');
+
+        } catch (err) {
+            clawsStatusEl.textContent = 'Failed to load snapshot: ' + (err.message || err);
+            clawsStatusEl.className = 'airdrop-status error';
+        }
+        clawsLoadBtn.disabled = false;
+    });
+}
+
+function clawsRenderBatches() {
+    var container = document.getElementById('clawsBatchList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (var i = 0; i < clawsBatches.length; i++) {
+        var batch = clawsBatches[i];
+        var batchTotal = batch.reduce(function(s, e) { return s + e.total; }, 0);
+        var sent = i < clawsNextBatch;
+
+        var div = document.createElement('div');
+        div.id = 'clawsBatch' + i;
+        div.style.cssText = 'padding: var(--space-sm) var(--space-md); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: var(--space-xs); display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;';
+
+        if (sent) {
+            div.style.borderColor = 'var(--seafoam-400)';
+            div.style.background = 'hsla(172, 60%, 40%, 0.06)';
+        } else if (i === clawsNextBatch) {
+            div.style.borderColor = 'var(--lobster-400)';
+            div.style.background = 'hsla(9, 80%, 55%, 0.06)';
+        }
+
+        var left = '<span style="font-family:var(--font-mono);color:var(--text-primary);font-weight:600;">Batch ' + (i + 1) + '</span>';
+        left += '<span style="color:var(--text-dim);margin-left:8px;">' + batch.length + ' addresses</span>';
+        left += '<span style="color:var(--text-dim);margin-left:8px;">' + fmtNum(batchTotal) + ' CLAWS</span>';
+
+        var right = '';
+        if (sent) {
+            right = '<span style="color:var(--seafoam-400);font-family:var(--font-mono);">Sent</span>';
+            if (clawsTxHashes[i]) {
+                right += ' <a href="https://basescan.org/tx/' + clawsTxHashes[i] + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;font-size:0.72rem;">tx</a>';
+            }
+        } else if (i === clawsNextBatch) {
+            right = '<span style="color:var(--lobster-300);font-weight:600;">Next</span>';
+        } else {
+            right = '<span style="color:var(--text-dim);">Pending</span>';
+        }
+
+        div.innerHTML = '<div>' + left + '</div><div>' + right + '</div>';
+
+        // Expandable address list on click
+        var details = document.createElement('details');
+        details.style.cssText = 'margin-top: 4px; font-size: 0.72rem; color: var(--text-dim);';
+        var summary = document.createElement('summary');
+        summary.style.cssText = 'cursor: pointer; color: var(--text-secondary);';
+        summary.textContent = 'Show addresses';
+        details.appendChild(summary);
+
+        var addrList = document.createElement('div');
+        addrList.style.cssText = 'max-height: 150px; overflow-y: auto; margin-top: 4px; font-family: var(--font-mono); line-height: 1.6;';
+        for (var j = 0; j < batch.length; j++) {
+            addrList.innerHTML += batch[j].address + ' → ' + fmtNum(batch[j].total) + '<br>';
+        }
+        details.appendChild(addrList);
+
+        var wrapper = document.createElement('div');
+        wrapper.style.marginBottom = 'var(--space-xs)';
+        wrapper.appendChild(div);
+        wrapper.appendChild(details);
+        container.appendChild(wrapper);
+    }
+}
+
+// Send next batch
+if (clawsSendBtn) {
+    clawsSendBtn.addEventListener('click', async function() {
+        if (clawsNextBatch >= clawsBatches.length) {
+            clawsStatusEl.textContent = 'All batches sent!';
+            clawsStatusEl.className = 'airdrop-status success';
+            return;
+        }
+
+        var tokenAddr = (document.getElementById('clawsTokenAddr').value || '').trim();
+        if (!tokenAddr) return;
+
+        var batch = clawsBatches[clawsNextBatch];
+        var batchIdx = clawsNextBatch;
+        var batchTotal = batch.reduce(function(s, e) { return s + e.total; }, 0);
+
+        clawsSendBtn.disabled = true;
+        clawsStatusEl.textContent = 'Sending batch ' + (batchIdx + 1) + '/' + clawsBatches.length + '...';
+        clawsStatusEl.className = 'airdrop-status';
+
+        try {
+            await ensureBase(provider);
+
+            // Check allowance first
+            var allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+            var allowResult = await provider.request({
+                method: 'eth_call',
+                params: [{ to: tokenAddr, data: allowData }, 'latest']
+            });
+            var batchTotalWei = batch.reduce(function(s, e) { return s + toWei(e.total); }, BigInt(0));
+
+            if (BigInt(allowResult || '0x0') < batchTotalWei) {
+                clawsStatusEl.textContent = 'Approving CLAWS for Disperse...';
+                clawsLog('Batch ' + (batchIdx + 1) + ': Requesting approval...');
+                var approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(MAX_UINT256);
+                var approveTx = await provider.request({
+                    method: 'eth_sendTransaction',
+                    params: [{ from: userAddress, to: tokenAddr, data: approveData }]
+                });
+                clawsLog('Approve tx: <a href="https://basescan.org/tx/' + approveTx + '" target="_blank" style="color:var(--seafoam-300);">' + approveTx.slice(0, 14) + '...</a>');
+                clawsStatusEl.textContent = 'Waiting for approval...';
+                await waitForReceipt(approveTx);
+                clawsLog('Approved!');
+            }
+
+            // Build Disperse calldata
+            var recipients = batch.map(function(e) { return e.address; });
+            var amounts = batch.map(function(e) { return toWei(e.total); });
+            var calldata = buildDisperseTokenCalldata(tokenAddr, recipients, amounts);
+
+            clawsStatusEl.textContent = 'Sign batch ' + (batchIdx + 1) + ' (' + batch.length + ' addresses, ' + fmtNum(batchTotal) + ' CLAWS)...';
+            clawsLog('Batch ' + (batchIdx + 1) + ': Sending ' + fmtNum(batchTotal) + ' CLAWS to ' + batch.length + ' addresses...');
+
+            var txHash = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+            });
+
+            clawsLog('Batch ' + (batchIdx + 1) + ' tx: <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);">' + txHash + '</a>');
+            clawsStatusEl.textContent = 'Confirming batch ' + (batchIdx + 1) + '...';
+
+            var receipt = await waitForReceipt(txHash);
+
+            clawsTxHashes[batchIdx] = txHash;
+            clawsNextBatch++;
+            clawsLog('Batch ' + (batchIdx + 1) + ' confirmed! Gas: ' + (parseInt(receipt.gasUsed, 16) || '?'));
+
+            clawsRenderBatches();
+            clawsUpdateProgress();
+
+            if (clawsNextBatch >= clawsBatches.length) {
+                clawsStatusEl.textContent = 'All ' + clawsBatches.length + ' batches sent! Airdrop complete.';
+                clawsStatusEl.className = 'airdrop-status success';
+                clawsSendBtn.textContent = 'All Done!';
+                clawsSendBtn.disabled = true;
+                clawsVerifyBtn.disabled = false;
+                clawsLog('<strong style="color:var(--seafoam-300);">AIRDROP COMPLETE — all ' + clawsSnapshot.length + ' addresses sent!</strong>');
+            } else {
+                clawsStatusEl.textContent = 'Batch ' + (batchIdx + 1) + ' sent! ' + (clawsBatches.length - clawsNextBatch) + ' remaining.';
+                clawsStatusEl.className = 'airdrop-status success';
+                clawsSendBtn.textContent = 'Send Batch ' + (clawsNextBatch + 1) + ' of ' + clawsBatches.length;
+                clawsSendBtn.disabled = false;
+            }
+
+        } catch (err) {
+            if (err.code === 4001) {
+                clawsStatusEl.textContent = 'Transaction cancelled. Click Send to retry batch ' + (batchIdx + 1) + '.';
+                clawsLog('Batch ' + (batchIdx + 1) + ': Cancelled by user');
+            } else {
+                clawsStatusEl.textContent = 'Batch ' + (batchIdx + 1) + ' failed: ' + (err.message || err);
+                clawsLog('<span style="color:var(--red);">Batch ' + (batchIdx + 1) + ' FAILED: ' + (err.message || err) + '</span>');
+            }
+            clawsStatusEl.className = 'airdrop-status error';
+            clawsSendBtn.disabled = false;
+        }
+    });
+}
+
+// Verify balances — spot-check all 833 addresses on-chain
+if (clawsVerifyBtn) {
+    clawsVerifyBtn.addEventListener('click', async function() {
+        if (!clawsSnapshot || clawsSnapshot.length === 0) return;
+
+        var tokenAddr = (document.getElementById('clawsTokenAddr').value || '').trim();
+        if (!tokenAddr) return;
+
+        clawsVerifyBtn.disabled = true;
+        clawsStatusEl.textContent = 'Verifying balances for all ' + clawsSnapshot.length + ' addresses...';
+        clawsStatusEl.className = 'airdrop-status';
+        clawsLog('Starting balance verification for ' + clawsSnapshot.length + ' addresses...');
+
+        var mismatches = [];
+        var verified = 0;
+        var VERIFY_BATCH = 50; // batch RPC calls
+
+        try {
+            for (var i = 0; i < clawsSnapshot.length; i += VERIFY_BATCH) {
+                var chunk = clawsSnapshot.slice(i, i + VERIFY_BATCH);
+                var calls = chunk.map(function(e) {
+                    return { to: tokenAddr, data: BALANCE_SELECTOR + pad32(e.address) };
+                });
+
+                var results = await contractReadBatch(calls);
+
+                for (var j = 0; j < chunk.length; j++) {
+                    var expected = toWei(chunk[j].total);
+                    var actual = BigInt(results[j] || '0x0');
+                    // Allow balance >= expected (they might have bought more)
+                    if (actual < expected) {
+                        mismatches.push({
+                            address: chunk[j].address,
+                            expected: Number(expected) / 1e18,
+                            actual: Number(actual) / 1e18,
+                        });
+                    }
+                    verified++;
+                }
+
+                clawsStatusEl.textContent = 'Verified ' + verified + ' / ' + clawsSnapshot.length + '...';
+            }
+
+            if (mismatches.length === 0) {
+                clawsStatusEl.textContent = 'All ' + verified + ' addresses verified! Every wallet has >= expected CLAWS.';
+                clawsStatusEl.className = 'airdrop-status success';
+                clawsLog('<strong style="color:var(--seafoam-300);">VERIFICATION PASSED — all ' + verified + ' addresses have correct balances!</strong>');
+            } else {
+                clawsStatusEl.textContent = mismatches.length + ' addresses have less than expected. Check tx log.';
+                clawsStatusEl.className = 'airdrop-status error';
+                clawsLog('<span style="color:var(--red);">' + mismatches.length + ' MISMATCHES found:</span>');
+                for (var m = 0; m < mismatches.length; m++) {
+                    clawsLog('<span style="color:var(--red);">' + mismatches[m].address + ': expected ' + fmtNum(mismatches[m].expected) + ', got ' + fmtNum(mismatches[m].actual) + '</span>');
+                }
+            }
+        } catch (err) {
+            clawsStatusEl.textContent = 'Verification error: ' + (err.message || err);
+            clawsStatusEl.className = 'airdrop-status error';
+            clawsLog('<span style="color:var(--red);">Verification error: ' + (err.message || err) + '</span>');
+        }
+
+        clawsVerifyBtn.disabled = false;
     });
 }
