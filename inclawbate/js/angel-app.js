@@ -127,22 +127,62 @@ async function loadMerkleData() {
     }
 }
 
+// ── RPC with fallback ──
+var ANGEL_RPCS = ['https://base.drpc.org', 'https://mainnet.base.org', 'https://base.llamarpc.com'];
+
+async function angelRpc(method, params) {
+    for (var i = 0; i < ANGEL_RPCS.length; i++) {
+        try {
+            var resp = await fetch(ANGEL_RPCS[i], {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params })
+            });
+            if (resp.status === 503 || resp.status === 429) continue;
+            var data = await resp.json();
+            if (data.result !== undefined) return data.result;
+        } catch (e) { /* try next */ }
+    }
+    return null;
+}
+
 // ── Load global stats ──
 async function loadStats() {
     if (!ANGEL_NFT_ADDRESS) return;
 
     try {
-        var results = await contractReadBatch([
-            { to: ANGEL_NFT_ADDRESS, data: TOTAL_MINTED_SELECTOR },
-            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(ANGEL_NFT_ADDRESS) },
-        ]);
-
-        var minted = Number(BigInt(results[0]));
-        var collected = fromWei(results[1]);
+        var mintedHex = await angelRpc('eth_call', [{ to: ANGEL_NFT_ADDRESS, data: TOTAL_MINTED_SELECTOR }, 'latest']);
+        var minted = Number(BigInt(mintedHex || '0x0'));
 
         document.getElementById('statMinted').textContent = minted;
         document.getElementById('statRemaining').textContent = (828 - minted);
-        document.getElementById('statCollected').textContent = fmtNum(collected);
+
+        // Total INCLAWNCH used to mint — scan Minted events
+        var MINTED_TOPIC = '0x25b428dfde728ccfaddad7e29e4ac23c24ed7fd1a6e3e3f91894a9a073f5dfff';
+        var blockHex = await angelRpc('eth_blockNumber', []);
+        if (blockHex && minted > 0) {
+            var currentBlock = Number(BigInt(blockHex));
+            var totalUsed = 0;
+            var found = 0;
+            for (var off = 0; off < 2000000 && found < minted; off += 10000) {
+                var toBlock = currentBlock - off;
+                var fromBlock = toBlock - 10000;
+                var logs = await angelRpc('eth_getLogs', [{
+                    address: ANGEL_NFT_ADDRESS,
+                    fromBlock: '0x' + fromBlock.toString(16),
+                    toBlock: '0x' + toBlock.toString(16),
+                    topics: [MINTED_TOPIC]
+                }]);
+                if (logs && Array.isArray(logs)) {
+                    logs.forEach(function(log) {
+                        totalUsed += Number(BigInt('0x' + log.data.slice(66))) / 1e18;
+                        found++;
+                    });
+                }
+            }
+            document.getElementById('statCollected').textContent = fmtNum(Math.round(totalUsed));
+        } else {
+            document.getElementById('statCollected').textContent = '0';
+        }
     } catch (e) {
         console.error('Stats error:', e);
     }
