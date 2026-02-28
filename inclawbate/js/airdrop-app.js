@@ -178,9 +178,11 @@ connectBtn.addEventListener('click', async () => {
         connectBtn.disabled = true;
         selectPanel.style.display = '';
 
-        // Show UBI distribution panel, philanthropy panel, staking contract panel, and quick send
+        // Show all admin panels
         document.getElementById('ubiDistPanel').style.display = '';
         document.getElementById('philPanel').style.display = '';
+        document.getElementById('clawsStakingPanel').style.display = '';
+        document.getElementById('angelHoldersPanel').style.display = '';
         document.getElementById('stakingContractPanel').style.display = '';
         document.getElementById('quickSendPanel').style.display = '';
         if (document.getElementById('clawsMigrationPanel')) document.getElementById('clawsMigrationPanel').style.display = '';
@@ -188,14 +190,18 @@ connectBtn.addEventListener('click', async () => {
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
 
-        // Set default end time for deposit rewards (tomorrow 6am EST)
+        // Set default end times for deposit rewards (tomorrow 6am EST)
         setDefaultEndTime();
         updateDurationPreview();
+        setCsDefaultEndTime();
+        updateCsDurationPreview();
 
         loadProfiles();
         loadDistribution();
         loadPhilanthropy();
         refreshContractStats();
+        refreshClawsStakingStats();
+        refreshAngelHolders();
     } catch (err) {
         walletStatus.textContent = err.message || 'Connection failed';
         walletStatus.className = 'airdrop-status error';
@@ -1892,6 +1898,359 @@ document.getElementById('scTransferBtn').addEventListener('click', async functio
         statusEl.textContent = err.message || 'Transfer failed';
         statusEl.className = 'airdrop-status error';
     }
+});
+
+// ══════════════════════════════════════════════════
+//  CLAWS STAKING CONTRACT ADMIN
+// ══════════════════════════════════════════════════
+
+const CLAWS_STAKING = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
+
+async function refreshClawsStakingStats() {
+    try {
+        var results = await contractReadBatch([
+            { to: CLAWS_STAKING, data: SC.totalStaked },
+            { to: CLAWS_STAKING, data: SC.stakerCount },
+            { to: CLAWS_STAKING, data: SC.rewardRate },
+            { to: CLAWS_STAKING, data: SC.periodEnd },
+            { to: CLAWS_STAKING, data: SC.rewardPoolBalance },
+            { to: CLAWS_STAKING, data: SC.totalDeposited },
+            { to: CLAWS_STAKING, data: SC.totalClaimed },
+            { to: CLAWS_STAKING, data: SC.paused },
+        ]);
+
+        var totalStaked = fromWei(results[0]);
+        var stakerCnt = Number(BigInt(results[1] || '0x0'));
+        var rate = fromWei(results[2]);
+        var end = Number(BigInt(results[3] || '0x0'));
+        var pool = fromWei(results[4]);
+        var deposited = fromWei(results[5]);
+        var claimed = fromWei(results[6]);
+        var isPaused = BigInt(results[7] || '0x0') > 0n;
+
+        document.getElementById('csTotalStaked').textContent = fmtNum(Math.round(totalStaked)) + ' CLAWS';
+        document.getElementById('csStakerCount').textContent = stakerCnt;
+        document.getElementById('csRewardRate').textContent = fmtNum(Math.round(rate * 86400)) + '/day';
+        document.getElementById('csPeriodEnd').textContent = end > 0 ? new Date(end * 1000).toLocaleString() : 'Not set';
+        document.getElementById('csRewardPool').textContent = fmtNum(Math.round(pool)) + ' CLAWS';
+        document.getElementById('csTotalDeposited').textContent = fmtNum(Math.round(deposited)) + ' CLAWS';
+        document.getElementById('csTotalClaimed').textContent = fmtNum(Math.round(claimed)) + ' CLAWS';
+        document.getElementById('csPaused').textContent = isPaused ? 'PAUSED' : 'Active';
+        document.getElementById('csPaused').style.color = isPaused ? 'var(--lobster-300)' : 'var(--seafoam-300)';
+    } catch (e) {
+        console.error('Failed to load CLAWS staking stats:', e);
+    }
+}
+
+// CLAWS deposit end time helpers
+function getCsEndTimeMs() {
+    var dateVal = document.getElementById('csDepositEndDate').value;
+    var timeVal = document.getElementById('csDepositEndTime').value;
+    if (!dateVal || !timeVal) return NaN;
+    return new Date(dateVal + 'T' + timeVal + ':00Z').getTime() + (5 * 3600000);
+}
+
+function setCsDefaultEndTime() {
+    var now = new Date();
+    var next6am = new Date(now);
+    next6am.setUTCHours(11, 0, 0, 0);
+    if (now.getTime() >= next6am.getTime()) next6am.setUTCDate(next6am.getUTCDate() + 1);
+    var estDate = new Date(next6am.getTime() - 5 * 3600000);
+    var y = estDate.getUTCFullYear();
+    var mo = String(estDate.getUTCMonth() + 1).padStart(2, '0');
+    var d = String(estDate.getUTCDate()).padStart(2, '0');
+    document.getElementById('csDepositEndDate').value = y + '-' + mo + '-' + d;
+    document.getElementById('csDepositEndTime').value = '06:00';
+}
+
+function updateCsDurationPreview() {
+    var el = document.getElementById('csDurationPreview');
+    var endTime = getCsEndTimeMs();
+    var now = Date.now();
+    var secs = Math.floor((endTime - now) / 1000);
+    if (isNaN(secs) || secs <= 0) {
+        el.textContent = secs === 0 || isNaN(secs) ? '' : 'in the past';
+        return;
+    }
+    el.textContent = Math.floor(secs / 3600) + 'h ' + Math.floor((secs % 3600) / 60) + 'm from now';
+}
+
+function updateCsDepositUsd() {
+    var raw = (document.getElementById('csDepositAmount').value || '').replace(/,/g, '');
+    var amt = parseInt(raw) || 0;
+    var el = document.getElementById('csDepositUsd');
+    if (amt > 0 && clawsPrice > 0) {
+        el.textContent = '~$' + (amt * clawsPrice).toFixed(2) + ' USD';
+    } else {
+        el.textContent = '';
+    }
+}
+
+var csDepAmtInput = document.getElementById('csDepositAmount');
+if (csDepAmtInput) {
+    csDepAmtInput.addEventListener('input', function() {
+        var raw = csDepAmtInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        if (raw) csDepAmtInput.value = parseInt(raw, 10).toLocaleString();
+        updateCsDepositUsd();
+    });
+}
+
+document.getElementById('csDepositEndDate').addEventListener('input', updateCsDurationPreview);
+document.getElementById('csDepositEndTime').addEventListener('input', updateCsDurationPreview);
+document.getElementById('csRefreshBtn').addEventListener('click', refreshClawsStakingStats);
+
+// Deposit CLAWS rewards
+document.getElementById('csDepositBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+
+    var rawAmt = (document.getElementById('csDepositAmount').value || '').replace(/,/g, '');
+    var amount = parseInt(rawAmt) || 0;
+    if (amount <= 0) { alert('Enter a valid amount'); return; }
+
+    var endTime = getCsEndTimeMs();
+    var durationSecs = Math.floor((endTime - Date.now()) / 1000);
+    if (isNaN(durationSecs) || durationSecs <= 0) { alert('End time must be in the future'); return; }
+
+    var hrs = Math.floor(durationSecs / 3600);
+    var mins = Math.floor((durationSecs % 3600) / 60);
+    if (!confirm('Deposit ' + fmtNum(amount) + ' CLAWS to drip over ' + hrs + 'h ' + mins + 'm?')) return;
+
+    var statusEl = document.getElementById('csDepositStatus');
+    var btn = document.getElementById('csDepositBtn');
+    btn.disabled = true;
+    statusEl.textContent = 'Switching to Base...';
+    await ensureBase(provider);
+    statusEl.textContent = 'Checking approval...';
+    statusEl.className = 'airdrop-status';
+
+    try {
+        var amountWei = toWei(amount);
+
+        // Check allowance for CLAWS → CLAWS staking contract
+        var allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(CLAWS_STAKING);
+        var allowResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWS_ADDRESS, data: allowData }, 'latest']
+        });
+        if (BigInt(allowResult || '0x0') < amountWei) {
+            statusEl.textContent = 'Requesting CLAWS approval...';
+            var approveData = APPROVE_SELECTOR + pad32(CLAWS_STAKING) + pad32(MAX_UINT256);
+            var approveTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: CLAWS_ADDRESS, data: approveData }]
+            });
+            statusEl.textContent = 'Waiting for approval...';
+            await waitForReceipt(approveTx);
+        }
+
+        // depositRewards(amount, duration)
+        statusEl.textContent = 'Depositing CLAWS rewards...';
+        var depositData = SC.depositRewards + pad32(toHex(amountWei)) + pad32(toHex(durationSecs));
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: CLAWS_STAKING, data: depositData }]
+        });
+        statusEl.textContent = 'Confirming...';
+        await waitForReceipt(txHash);
+
+        statusEl.innerHTML = 'CLAWS rewards deposited! <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+        statusEl.className = 'airdrop-status success';
+        refreshClawsStakingStats();
+    } catch (err) {
+        statusEl.textContent = err.message || 'Deposit failed';
+        statusEl.className = 'airdrop-status error';
+    }
+    btn.disabled = false;
+});
+
+// CLAWS Pause
+document.getElementById('csPauseBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+    try {
+        await ensureBase(provider);
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: CLAWS_STAKING, data: SC.pause }]
+        });
+        await waitForReceipt(txHash);
+        refreshClawsStakingStats();
+    } catch (err) { alert(err.message || 'Pause failed'); }
+});
+
+// CLAWS Unpause
+document.getElementById('csUnpauseBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress) return;
+    try {
+        await ensureBase(provider);
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: CLAWS_STAKING, data: SC.unpause }]
+        });
+        await waitForReceipt(txHash);
+        refreshClawsStakingStats();
+    } catch (err) { alert(err.message || 'Unpause failed'); }
+});
+
+// ══════════════════════════════════════════════════
+//  ANGEL NFT HOLDERS
+// ══════════════════════════════════════════════════
+
+const ANGEL_NFT_ADDRESS = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
+const TOTAL_MINTED_SEL = '0xa2309ff8';   // totalMinted()
+const OWNER_OF_SEL = '0x6352211e';       // ownerOf(uint256)
+
+var angelHolders = []; // [{tokenId, owner}]
+
+async function refreshAngelHolders() {
+    var tbody = document.getElementById('angelHolderTableBody');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">Loading...</td></tr>';
+
+    try {
+        // Get total minted + INCLAWNCH balance of NFT contract
+        var results = await contractReadBatch([
+            { to: ANGEL_NFT_ADDRESS, data: TOTAL_MINTED_SEL },
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(ANGEL_NFT_ADDRESS) },
+        ]);
+
+        var totalMinted = Number(BigInt(results[0] || '0x0'));
+        var collected = fromWei(results[1]);
+
+        document.getElementById('angelTotalMinted').textContent = totalMinted;
+        document.getElementById('angelCollected').textContent = fmtNum(Math.round(collected));
+
+        if (totalMinted === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No mints yet</td></tr>';
+            document.getElementById('angelBonusBtn').disabled = true;
+            return;
+        }
+
+        // Fetch ownerOf for each token (1-indexed)
+        angelHolders = [];
+        var ownerCalls = [];
+        for (var i = 1; i <= totalMinted; i++) {
+            ownerCalls.push({ to: ANGEL_NFT_ADDRESS, data: OWNER_OF_SEL + pad32(toHex(i)) });
+        }
+
+        var ownerResults = await contractReadBatch(ownerCalls);
+        var html = '';
+        var uniqueHolders = new Set();
+
+        for (var j = 0; j < ownerResults.length; j++) {
+            var owner = '0x' + ownerResults[j].slice(26).toLowerCase();
+            var tokenId = j + 1;
+            angelHolders.push({ tokenId: tokenId, owner: owner });
+            uniqueHolders.add(owner);
+            html += '<tr>'
+                + '<td>' + (j + 1) + '</td>'
+                + '<td class="mono"><a href="https://basescan.org/address/' + owner + '" target="_blank" style="color:var(--text-secondary);text-decoration:none;">' + shortAddr(owner) + '</a></td>'
+                + '<td class="mono">#' + tokenId + '</td>'
+                + '</tr>';
+        }
+
+        tbody.innerHTML = html;
+        document.getElementById('angelBonusBtn').disabled = uniqueHolders.size === 0;
+    } catch (e) {
+        console.error('Angel holders error:', e);
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--lobster-300); padding: var(--space-lg);">Error loading holders</td></tr>';
+    }
+}
+
+document.getElementById('angelRefreshBtn').addEventListener('click', refreshAngelHolders);
+
+// Bonus amount USD preview
+var angelBonusInput = document.getElementById('angelBonusAmount');
+if (angelBonusInput) {
+    angelBonusInput.addEventListener('input', function() {
+        var raw = angelBonusInput.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+        if (raw) angelBonusInput.value = parseInt(raw, 10).toLocaleString();
+        var amt = parseInt(raw) || 0;
+        var el = document.getElementById('angelBonusUsd');
+        if (amt > 0 && clawsPrice > 0) {
+            el.textContent = '~$' + (amt * clawsPrice).toFixed(4) + ' each';
+        } else {
+            el.textContent = '';
+        }
+    });
+}
+
+// Send bonus CLAWS to all Angel holders via Disperse
+document.getElementById('angelBonusBtn').addEventListener('click', async function() {
+    if (!provider || !userAddress || angelHolders.length === 0) return;
+
+    var rawAmt = (document.getElementById('angelBonusAmount').value || '').replace(/,/g, '');
+    var amountPerHolder = parseInt(rawAmt) || 0;
+    if (amountPerHolder <= 0) { alert('Enter a valid amount'); return; }
+
+    // Deduplicate holders (one address may hold multiple NFTs — send once per unique holder)
+    var holderSet = {};
+    angelHolders.forEach(function(h) {
+        if (!holderSet[h.owner]) holderSet[h.owner] = 0;
+        holderSet[h.owner]++;
+    });
+    var uniqueAddrs = Object.keys(holderSet);
+
+    var total = amountPerHolder * uniqueAddrs.length;
+    if (!confirm('Send ' + fmtNum(amountPerHolder) + ' CLAWS to each of ' + uniqueAddrs.length + ' Angel holders?\n\nTotal: ' + fmtNum(total) + ' CLAWS')) return;
+
+    var btn = document.getElementById('angelBonusBtn');
+    var statusEl = document.getElementById('angelBonusStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Preparing...';
+    statusEl.className = 'airdrop-status';
+
+    try {
+        await ensureBase(provider);
+        var amountWei = toWei(amountPerHolder);
+        var totalWei = amountWei * BigInt(uniqueAddrs.length);
+
+        // Check CLAWS balance
+        var balData = BALANCE_SELECTOR + pad32(userAddress);
+        var balResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWS_ADDRESS, data: balData }, 'latest']
+        });
+        if (BigInt(balResult || '0x0') < totalWei) {
+            statusEl.textContent = 'Insufficient CLAWS balance';
+            statusEl.className = 'airdrop-status error';
+            btn.disabled = false;
+            return;
+        }
+
+        // Check allowance
+        var allowData = ALLOWANCE_SELECTOR + pad32(userAddress) + pad32(DISPERSE_ADDRESS);
+        var allowResult = await provider.request({
+            method: 'eth_call',
+            params: [{ to: CLAWS_ADDRESS, data: allowData }, 'latest']
+        });
+        if (BigInt(allowResult || '0x0') < totalWei) {
+            statusEl.textContent = 'Approving CLAWS spend...';
+            var approveData = APPROVE_SELECTOR + pad32(DISPERSE_ADDRESS) + pad32(MAX_UINT256);
+            var approveTx = await provider.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: userAddress, to: CLAWS_ADDRESS, data: approveData }]
+            });
+            statusEl.textContent = 'Waiting for approval...';
+            await waitForReceipt(approveTx);
+        }
+
+        // Disperse CLAWS to holders
+        statusEl.textContent = 'Sending bonus to ' + uniqueAddrs.length + ' holders...';
+        var amounts = uniqueAddrs.map(function() { return amountWei; });
+        var calldata = buildDisperseTokenCalldata(CLAWS_ADDRESS, uniqueAddrs, amounts);
+        var disperseTx = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }]
+        });
+        statusEl.textContent = 'Confirming...';
+        await waitForReceipt(disperseTx);
+
+        statusEl.innerHTML = 'Sent ' + fmtNum(amountPerHolder) + ' CLAWS to ' + uniqueAddrs.length + ' Angel holders! <a href="https://basescan.org/tx/' + disperseTx + '" target="_blank" style="color:var(--seafoam-300);text-decoration:underline;">View tx</a>';
+        statusEl.className = 'airdrop-status success';
+    } catch (err) {
+        statusEl.textContent = err.message || 'Send failed';
+        statusEl.className = 'airdrop-status error';
+    }
+    btn.disabled = false;
 });
 
 // ══════════════════════════════════════════════════
