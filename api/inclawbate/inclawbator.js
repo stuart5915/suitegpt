@@ -416,7 +416,7 @@ export default async function handler(req, res) {
                     project_id,
                     depositor_wallet: 'unknown', // no auth required to feed
                     tx_hash: tx_hash.toLowerCase(),
-                    inclawnch_amount: verification.amount,
+                    claws_amount: verification.amount,
                     credits_granted: credits
                 });
 
