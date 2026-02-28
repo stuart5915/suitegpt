@@ -185,7 +185,10 @@ connectBtn.addEventListener('click', async () => {
         document.getElementById('angelHoldersPanel').style.display = '';
         document.getElementById('stakingContractPanel').style.display = '';
         document.getElementById('quickSendPanel').style.display = '';
+        document.getElementById('angelWithdrawPanel').style.display = '';
         if (document.getElementById('clawsMigrationPanel')) document.getElementById('clawsMigrationPanel').style.display = '';
+
+        loadAngelWithdrawStats();
 
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
@@ -2759,3 +2762,50 @@ if (clawsVerifyBtn) {
         clawsVerifyBtn.disabled = false;
     });
 }
+
+// ══════════════════════════════════════════════════
+//  ANGEL NFT — WITHDRAW INCLAWNCH
+// ══════════════════════════════════════════════════
+
+const WITHDRAW_INCLAWNCH_SEL = '0x82b78253'; // withdrawInclawnch(address)
+
+async function loadAngelWithdrawStats() {
+    try {
+        var results = await contractReadBatch([
+            { to: ANGEL_NFT_ADDRESS, data: TOTAL_MINTED_SEL },
+            { to: INCLAWNCH_ADDRESS, data: BALANCE_SELECTOR + pad32(ANGEL_NFT_ADDRESS) },
+        ]);
+        var minted = Number(BigInt(results[0] || '0x0'));
+        var bal = fromWei(results[1]);
+        document.getElementById('angelContractBal').textContent = fmtNum(Math.round(bal));
+        document.getElementById('angelMintCount').textContent = minted + ' / 828';
+    } catch (e) {
+        document.getElementById('angelContractBal').textContent = 'Error';
+    }
+}
+
+document.getElementById('angelWithdrawBtn').addEventListener('click', async function() {
+    var btn = this;
+    var status = document.getElementById('angelWithdrawStatus');
+    btn.disabled = true;
+    status.textContent = 'Sending withdraw tx...';
+    status.className = 'airdrop-status';
+
+    try {
+        var data = WITHDRAW_INCLAWNCH_SEL + pad32(ADMIN_WALLET);
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: userAddress, to: ANGEL_NFT_ADDRESS, data: data }]
+        });
+        status.textContent = 'Waiting for confirmation...';
+        await waitForReceipt(txHash);
+        status.textContent = 'Withdrawn!';
+        status.className = 'airdrop-status success';
+        loadAngelWithdrawStats();
+    } catch (err) {
+        status.textContent = err.code === 4001 ? 'Cancelled' : (err.message || 'Failed');
+        status.className = 'airdrop-status error';
+    }
+
+    btn.disabled = false;
+});
