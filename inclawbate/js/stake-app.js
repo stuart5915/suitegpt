@@ -38,7 +38,7 @@ var POOLS = {
         description: 'The original. Stake inCLAWNCH, earn inCLAWNCH.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-        featured: true,
+        featured: false,
         category: 'ubi',
         auditLink: '/audit/clawnch-rewards'
     },
@@ -57,8 +57,8 @@ var POOLS = {
         description: 'Stake CLAWNCH, earn INCLAWNCH rewards. 1B INCLAWNCH over 30 days.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
-        featured: true,
-        category: 'rewards',
+        featured: false,
+        category: 'ubi',
         auditLink: '/audit/clawnch-rewards'
     },
     s4h: {
