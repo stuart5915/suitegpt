@@ -141,7 +141,7 @@ async function loadStats() {
         var collected = fromWei(results[1]);
 
         document.getElementById('statMinted').textContent = minted;
-        document.getElementById('statRemaining').textContent = (833 - minted);
+        document.getElementById('statRemaining').textContent = (828 - minted);
         document.getElementById('statCollected').textContent = fmtNum(collected);
     } catch (e) {
         console.error('Stats error:', e);
