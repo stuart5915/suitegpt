@@ -2018,6 +2018,58 @@ if (clawsLoadBtn) {
             clawsSnapshot = data.eligible.filter(function(e) { return e.total > 0; });
             clawsSnapshot.sort(function(a, b) { return b.total - a.total; }); // biggest first
 
+            // ── PRE-FLIGHT VALIDATION ──
+            clawsStatusEl.textContent = 'Validating snapshot data...';
+            var problems = [];
+
+            // 1. Check for duplicate addresses
+            var addrSet = {};
+            var dupes = [];
+            for (var d = 0; d < clawsSnapshot.length; d++) {
+                var addrLower = clawsSnapshot[d].address.toLowerCase();
+                if (addrSet[addrLower]) {
+                    dupes.push(addrLower);
+                }
+                addrSet[addrLower] = true;
+            }
+            if (dupes.length > 0) {
+                problems.push('DUPLICATE ADDRESSES: ' + dupes.join(', '));
+            }
+
+            // 2. Check for invalid addresses
+            for (var v = 0; v < clawsSnapshot.length; v++) {
+                var addr = clawsSnapshot[v].address;
+                if (!addr || addr.length !== 42 || !addr.startsWith('0x')) {
+                    problems.push('INVALID ADDRESS at index ' + v + ': ' + addr);
+                }
+                if (addr === '0x0000000000000000000000000000000000000000') {
+                    problems.push('ZERO ADDRESS at index ' + v);
+                }
+            }
+
+            // 3. Check for zero/negative amounts
+            for (var a = 0; a < clawsSnapshot.length; a++) {
+                if (!clawsSnapshot[a].total || clawsSnapshot[a].total <= 0) {
+                    problems.push('ZERO/NEGATIVE AMOUNT for ' + clawsSnapshot[a].address + ': ' + clawsSnapshot[a].total);
+                }
+            }
+
+            // 4. Verify BigInt conversion doesn't lose precision
+            var totalFromBigInt = BigInt(0);
+            for (var b = 0; b < clawsSnapshot.length; b++) {
+                totalFromBigInt += toWei(clawsSnapshot[b].total);
+            }
+
+            if (problems.length > 0) {
+                clawsStatusEl.textContent = 'SNAPSHOT VALIDATION FAILED — ' + problems.length + ' problems found. Check tx log.';
+                clawsStatusEl.className = 'airdrop-status error';
+                for (var p = 0; p < problems.length; p++) {
+                    clawsLog('<span style="color:var(--red);">PROBLEM: ' + problems[p] + '</span>');
+                }
+                clawsLoadBtn.disabled = false;
+                return;
+            }
+
             // Build batches
             clawsBatches = [];
             for (var i = 0; i < clawsSnapshot.length; i += CLAWS_BATCH_SIZE) {
@@ -2031,6 +2083,14 @@ if (clawsLoadBtn) {
             document.getElementById('clawsAddresses').textContent = clawsSnapshot.length;
             document.getElementById('clawsBatches').textContent = clawsBatches.length;
             document.getElementById('clawsNeeded').textContent = fmtNum(totalNeeded);
+
+            // Log validation results
+            clawsLog('Validation passed:');
+            clawsLog('  Addresses: ' + clawsSnapshot.length + ' (0 duplicates)');
+            clawsLog('  Total (float): ' + totalNeeded.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' CLAWS');
+            clawsLog('  Total (wei): ' + totalFromBigInt.toString());
+            clawsLog('  Top 3: ' + clawsSnapshot.slice(0, 3).map(function(e) { return shortAddr(e.address) + ' = ' + fmtNum(e.total); }).join(', '));
+            clawsLog('  Bottom 3: ' + clawsSnapshot.slice(-3).map(function(e) { return shortAddr(e.address) + ' = ' + fmtNum(e.total); }).join(', '));
 
             // Check CLAWS balance
             var balData = BALANCE_SELECTOR + pad32(userAddress);
@@ -2058,11 +2118,12 @@ if (clawsLoadBtn) {
             clawsSendBtn.style.display = '';
             clawsSendBtn.disabled = false;
             clawsVerifyBtn.style.display = '';
-            clawsStatusEl.textContent = 'Ready. ' + clawsSnapshot.length + ' addresses in ' + clawsBatches.length + ' batches.';
+            clawsVerifyBtn.disabled = false;
+            clawsStatusEl.textContent = 'Validated + ready. ' + clawsSnapshot.length + ' addresses in ' + clawsBatches.length + ' batches. Review batches below, then send.';
             clawsStatusEl.className = 'airdrop-status success';
 
-            clawsLog('Loaded snapshot: ' + clawsSnapshot.length + ' addresses, ' + fmtNum(totalNeeded) + ' CLAWS needed');
-            clawsLog('Your balance: ' + fmtNum(balance) + ' CLAWS');
+            clawsLog('Balance: ' + fmtNum(balance) + ' CLAWS (need ' + fmtNum(totalNeeded) + ', surplus: ' + fmtNum(balance - totalNeeded) + ')');
+            clawsLog('<strong style="color:var(--seafoam-300);">Ready to send. Review batches, then click Send.</strong>');
 
         } catch (err) {
             clawsStatusEl.textContent = 'Failed to load snapshot: ' + (err.message || err);
@@ -2184,6 +2245,23 @@ if (clawsSendBtn) {
             var recipients = batch.map(function(e) { return e.address; });
             var amounts = batch.map(function(e) { return toWei(e.total); });
             var calldata = buildDisperseTokenCalldata(tokenAddr, recipients, amounts);
+
+            // ── DRY RUN: simulate via eth_call before signing ──
+            clawsStatusEl.textContent = 'Simulating batch ' + (batchIdx + 1) + '...';
+            clawsLog('Batch ' + (batchIdx + 1) + ': Simulating (dry run)...');
+            try {
+                await provider.request({
+                    method: 'eth_call',
+                    params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }, 'latest']
+                });
+                clawsLog('Batch ' + (batchIdx + 1) + ': Simulation passed — will not revert');
+            } catch (simErr) {
+                clawsLog('<span style="color:var(--red);">Batch ' + (batchIdx + 1) + ' SIMULATION FAILED: ' + (simErr.message || simErr) + '</span>');
+                clawsStatusEl.textContent = 'Batch ' + (batchIdx + 1) + ' would revert! Check log. NOT sending.';
+                clawsStatusEl.className = 'airdrop-status error';
+                clawsSendBtn.disabled = false;
+                return;
+            }
 
             clawsStatusEl.textContent = 'Sign batch ' + (batchIdx + 1) + ' (' + batch.length + ' addresses, ' + fmtNum(batchTotal) + ' CLAWS)...';
             clawsLog('Batch ' + (batchIdx + 1) + ': Sending ' + fmtNum(batchTotal) + ' CLAWS to ' + batch.length + ' addresses...');
