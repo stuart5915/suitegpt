@@ -188,7 +188,7 @@ connectBtn.addEventListener('click', async () => {
         document.getElementById('angelWithdrawPanel').style.display = '';
         if (document.getElementById('clawsMigrationPanel')) document.getElementById('clawsMigrationPanel').style.display = '';
 
-        loadAngelWithdrawStats();
+        // Angel withdraw stats are populated by refreshAngelHolders() below
 
         // Enable bulk welcome button
         document.getElementById('bulkWelcomeBtn').disabled = false;
@@ -2121,6 +2121,10 @@ async function refreshAngelHolders() {
         document.getElementById('angelTotalMinted').textContent = totalMinted;
         document.getElementById('angelCollected').textContent = fmtNum(Math.round(collected));
 
+        // Also update the withdraw panel stats
+        document.getElementById('angelContractBal').textContent = fmtNum(Math.round(collected));
+        document.getElementById('angelMintCount').textContent = totalMinted + ' / 828';
+
         if (totalMinted === 0) {
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-dim); padding: var(--space-lg);">No mints yet</td></tr>';
             document.getElementById('angelBonusBtn').disabled = true;
@@ -2770,6 +2774,8 @@ if (clawsVerifyBtn) {
 const WITHDRAW_INCLAWNCH_SEL = '0x82b78253'; // withdrawInclawnch(address)
 
 async function loadAngelWithdrawStats() {
+    // Stats are populated by refreshAngelHolders() which runs on connect.
+    // This is a manual refresh fallback.
     try {
         var results = await contractReadBatch([
             { to: ANGEL_NFT_ADDRESS, data: TOTAL_MINTED_SEL },
@@ -2783,6 +2789,10 @@ async function loadAngelWithdrawStats() {
         document.getElementById('angelContractBal').textContent = 'Error';
     }
 }
+
+document.getElementById('angelWithdrawRefreshBtn').addEventListener('click', function() {
+    loadAngelWithdrawStats();
+});
 
 document.getElementById('angelWithdrawBtn').addEventListener('click', async function() {
     var btn = this;
@@ -2802,6 +2812,7 @@ document.getElementById('angelWithdrawBtn').addEventListener('click', async func
         status.textContent = 'Withdrawn!';
         status.className = 'airdrop-status success';
         loadAngelWithdrawStats();
+        refreshAngelHolders();
     } catch (err) {
         status.textContent = err.code === 4001 ? 'Cancelled' : (err.message || 'Failed');
         status.className = 'airdrop-status error';
