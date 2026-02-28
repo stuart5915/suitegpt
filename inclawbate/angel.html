@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angel NFT — Inclawbate</title>
+    <meta name="description" content="Mint your Inclawbate Angel NFT. Send your snapshot INCLAWNCH to earn your place as a founding supporter.">
+    <meta property="og:title" content="Angel NFT — Inclawbate">
+    <meta property="og:description" content="Mint your Inclawbate Angel NFT. Founding supporters only.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/angel">
+    <meta property="og:image" content="https://inclawbate.com/inclawbate/assets/logo-square.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        .angel-page {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-2xl);
+        }
+
+        .angel-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+        }
+
+        .angel-title {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .angel-sub {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        .angel-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            backdrop-filter: blur(12px);
+        }
+
+        .angel-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+            text-align: center;
+        }
+
+        .angel-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--seafoam-300);
+        }
+
+        .angel-stat-label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-top: 2px;
+        }
+
+        .angel-divider {
+            border: none;
+            border-top: 1px solid var(--glass-border);
+            margin: var(--space-lg) 0;
+        }
+
+        /* ── Eligibility section ── */
+        .angel-eligibility {
+            text-align: center;
+            padding: var(--space-lg) 0;
+        }
+
+        .angel-status {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            display: inline-block;
+            margin-bottom: var(--space-md);
+        }
+
+        .angel-status--eligible {
+            background: hsla(172, 60%, 40%, 0.15);
+            color: var(--seafoam-300);
+            border: 1px solid hsla(172, 60%, 40%, 0.3);
+        }
+
+        .angel-status--not-eligible {
+            background: hsla(0, 60%, 40%, 0.12);
+            color: hsl(0, 70%, 65%);
+            border: 1px solid hsla(0, 60%, 40%, 0.25);
+        }
+
+        .angel-status--minted {
+            background: hsla(45, 80%, 50%, 0.12);
+            color: hsl(45, 80%, 65%);
+            border: 1px solid hsla(45, 80%, 50%, 0.25);
+        }
+
+        .angel-amount {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .angel-amount-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-md);
+        }
+
+        .angel-mint-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 36px;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--seafoam-500);
+            color: #fff;
+        }
+
+        .angel-mint-btn:hover:not(:disabled) {
+            background: var(--seafoam-400);
+            transform: translateY(-1px);
+        }
+
+        .angel-mint-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .angel-connect-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 36px;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .angel-connect-btn:hover {
+            border-color: var(--seafoam-400);
+            color: var(--seafoam-300);
+        }
+
+        /* ── NFT Display ── */
+        .angel-nft-display {
+            text-align: center;
+            padding: var(--space-lg);
+        }
+
+        .angel-nft-image {
+            width: 240px;
+            height: 240px;
+            border-radius: var(--radius-lg);
+            margin: 0 auto var(--space-md);
+            background: linear-gradient(135deg, hsla(172, 40%, 30%, 0.3), hsla(280, 40%, 30%, 0.3));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .angel-nft-congrats {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--seafoam-300);
+            margin-bottom: var(--space-xs);
+        }
+
+        .angel-nft-id {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        /* ── TX status ── */
+        .angel-tx-status {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: var(--space-sm);
+        }
+
+        .angel-tx-status a {
+            color: var(--seafoam-300);
+            text-decoration: underline;
+        }
+
+        /* ── Info section ── */
+        .angel-info {
+            margin-top: var(--space-xl);
+        }
+
+        .angel-info h3 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .angel-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: var(--space-md);
+        }
+
+        .angel-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .angel-info li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            padding-left: 1.2em;
+            position: relative;
+        }
+
+        .angel-info li::before {
+            content: '\25C6';
+            position: absolute;
+            left: 0;
+            color: var(--seafoam-400);
+        }
+
+        @media (max-width: 600px) {
+            .angel-title { font-size: 1.8rem; }
+            .angel-stats { grid-template-columns: 1fr; }
+            .angel-nft-image { width: 180px; height: 180px; font-size: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav"></nav>
+    <script src="/nav-component.js"></script>
+
+    <div class="angel-page">
+        <div class="angel-header">
+            <h1 class="angel-title">Angel NFT</h1>
+            <p class="angel-sub">For the 833 who believed first</p>
+        </div>
+
+        <div class="angel-card">
+            <!-- Global stats -->
+            <div class="angel-stats">
+                <div>
+                    <div class="angel-stat-value" id="statMinted">--</div>
+                    <div class="angel-stat-label">Minted</div>
+                </div>
+                <div>
+                    <div class="angel-stat-value" id="statRemaining">--</div>
+                    <div class="angel-stat-label">Remaining</div>
+                </div>
+                <div>
+                    <div class="angel-stat-value" id="statCollected">--</div>
+                    <div class="angel-stat-label">INCLAWNCH Collected</div>
+                </div>
+            </div>
+
+            <hr class="angel-divider">
+
+            <!-- State: Not connected -->
+            <div class="angel-eligibility" id="stateConnect">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: var(--space-md);">
+                    Connect your wallet to check eligibility
+                </p>
+                <button class="angel-connect-btn" id="btnConnect">Connect Wallet</button>
+            </div>
+
+            <!-- State: Checking -->
+            <div class="angel-eligibility" id="stateChecking" style="display:none">
+                <p style="color: var(--text-dim); font-family: var(--font-mono); font-size: 0.85rem;">
+                    Checking eligibility...
+                </p>
+            </div>
+
+            <!-- State: Not eligible -->
+            <div class="angel-eligibility" id="stateNotEligible" style="display:none">
+                <div class="angel-status angel-status--not-eligible">Not Eligible</div>
+                <p style="color: var(--text-secondary); font-size: 0.88rem;">
+                    This wallet was not in the INCLAWNCH snapshot.
+                </p>
+            </div>
+
+            <!-- State: Eligible — can mint -->
+            <div class="angel-eligibility" id="stateEligible" style="display:none">
+                <div class="angel-status angel-status--eligible">Eligible</div>
+                <div class="angel-amount" id="mintAmount">--</div>
+                <div class="angel-amount-label">INCLAWNCH required to mint</div>
+                <button class="angel-mint-btn" id="btnMint">Approve &amp; Mint</button>
+                <div class="angel-tx-status" id="txStatus"></div>
+            </div>
+
+            <!-- State: Already minted -->
+            <div class="angel-eligibility" id="stateMinted" style="display:none">
+                <div class="angel-nft-display">
+                    <div class="angel-nft-image" id="nftImage">&#128519;</div>
+                    <div class="angel-nft-congrats">You're an Angel</div>
+                    <div class="angel-nft-id" id="nftId"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info section -->
+        <div class="angel-info">
+            <h3>What is the Angel NFT?</h3>
+            <p>
+                The Inclawbate Angel NFT is a badge for the original 833 snapshot holders who supported INCLAWNCH.
+                To mint, you send your snapshot INCLAWNCH balance to the contract. In return, you receive a
+                non-transferable founding badge on Base.
+            </p>
+            <ul>
+                <li>Max supply: 833 (one per snapshot wallet)</li>
+                <li>Cost: your snapshot INCLAWNCH balance</li>
+                <li>Tradeable on secondary markets</li>
+                <li>Collected INCLAWNCH funds CLAWS ecosystem growth</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/" class="footer-link">Home</a>
+            <a href="/skills" class="footer-link">Skills</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+        </div>
+    </footer>
+
+    <script type="module" src="/js/angel-app.js"></script>
+</body>
+</html>
