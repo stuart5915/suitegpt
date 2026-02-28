@@ -23,8 +23,7 @@ var POOLS = {
         chartLink: 'https://dexscreener.com/base/0x7ca47B141639B893C6782823C0b219f872056379',
         featured: true,
         category: 'ubi',
-        auditLink: '/audit/clawnch-rewards',
-        comingSoon: true
+        auditLink: '/audit/clawnch-rewards'
     },
     inclawnch: {
         name: 'inCLAWNCH',
