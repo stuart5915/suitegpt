@@ -288,16 +288,28 @@ async function doMint() {
 btnConnect.addEventListener('click', connectWallet);
 btnMint.addEventListener('click', doMint);
 
-// Populate market links
+// Populate market links (top + bottom)
 function updateMarketLinks() {
     if (!ANGEL_NFT_ADDRESS) return;
+    var osUrl = 'https://opensea.io/assets/base/' + ANGEL_NFT_ADDRESS;
+    var elUrl = 'https://element.market/collections/base/' + ANGEL_NFT_ADDRESS;
+    var bsUrl = 'https://basescan.org/address/' + ANGEL_NFT_ADDRESS;
+    // Top links (by id)
     var os = document.getElementById('linkOpenSea');
     var el = document.getElementById('linkElement');
     var bs = document.getElementById('linkBasescan');
+    if (os) os.href = osUrl;
+    if (el) el.href = elUrl;
+    if (bs) bs.href = bsUrl;
+    // Bottom links (by class)
+    var osB = document.querySelector('.angel-link-os');
+    var elB = document.querySelector('.angel-link-el');
+    var bsB = document.querySelector('.angel-link-bs');
+    if (osB) osB.href = osUrl;
+    if (elB) elB.href = elUrl;
+    if (bsB) bsB.href = bsUrl;
+    // Contract address
     var ca = document.getElementById('angelContractAddr');
-    if (os) os.href = 'https://opensea.io/assets/base/' + ANGEL_NFT_ADDRESS;
-    if (el) el.href = 'https://element.market/collections/base/' + ANGEL_NFT_ADDRESS;
-    if (bs) bs.href = 'https://basescan.org/address/' + ANGEL_NFT_ADDRESS;
     if (ca) ca.textContent = ANGEL_NFT_ADDRESS;
 }
 
