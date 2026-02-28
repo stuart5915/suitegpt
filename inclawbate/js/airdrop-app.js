@@ -2252,7 +2252,7 @@ if (clawsSendBtn) {
             try {
                 await provider.request({
                     method: 'eth_call',
-                    params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata }, 'latest']
+                    params: [{ from: userAddress, to: DISPERSE_ADDRESS, data: calldata, gas: '0x1C9C380' }, 'latest']
                 });
                 clawsLog('Batch ' + (batchIdx + 1) + ': Simulation passed — will not revert');
             } catch (simErr) {
