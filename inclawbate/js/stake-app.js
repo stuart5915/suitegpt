@@ -23,7 +23,8 @@ var POOLS = {
         chartLink: 'https://dexscreener.com/base/0x7ca47B141639B893C6782823C0b219f872056379',
         featured: true,
         category: 'ubi',
-        auditLink: '/audit/clawnch-rewards'
+        auditLink: '/audit/clawnch-rewards',
+        comingSoon: true
     },
     inclawnch: {
         name: 'inCLAWNCH',
@@ -694,9 +695,25 @@ function renderPoolPage(pool, key) {
     }
     document.getElementById('poolLinks').innerHTML = linksHtml;
 
+    // Coming soon — disable staking
+    if (pool.comingSoon) {
+        document.getElementById('poolConnectBtn').textContent = 'Staking Coming Soon';
+        document.getElementById('poolConnectBtn').classList.remove('connected');
+        document.getElementById('poolConnectBtn').disabled = true;
+        document.getElementById('poolConnectBtn').style.opacity = '0.5';
+        document.getElementById('poolConnectBtn').style.cursor = 'not-allowed';
+        document.getElementById('poolStakeSection').classList.remove('visible');
+        document.getElementById('poolPositionSection').classList.remove('visible');
+        document.getElementById('poolDesc').textContent = pool.description + ' Staking opens soon — stay tuned.';
+        return;
+    }
+
     // Reset wallet state
     document.getElementById('poolConnectBtn').textContent = 'Connect Wallet';
     document.getElementById('poolConnectBtn').classList.remove('connected');
+    document.getElementById('poolConnectBtn').disabled = false;
+    document.getElementById('poolConnectBtn').style.opacity = '';
+    document.getElementById('poolConnectBtn').style.cursor = '';
     document.getElementById('poolStakeSection').classList.remove('visible');
     document.getElementById('poolPositionSection').classList.remove('visible');
     document.getElementById('poolStakeStatus').textContent = '';
