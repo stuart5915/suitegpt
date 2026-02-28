@@ -14,7 +14,7 @@ var POOLS = {
         token: '0x7ca47B141639B893C6782823C0b219f872056379',
         staking: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40',
         decimals: 18,
-        logo: '/inclawbate/assets/logo-circle.jpg',
+        logo: '/inclawbate/assets/clawslogo.jpg',
         color: 'hsl(172, 50%, 42%)',
         colorDim: 'hsla(172, 50%, 42%, 0.12)',
         glow: 'hsla(172, 50%, 42%, 0.18)',
