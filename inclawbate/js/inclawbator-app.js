@@ -1481,22 +1481,176 @@ function loadMyProjects() {
             ? '<img src="' + p.logo_url + '" class="project-logo" alt="">'
             : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>';
 
-        return '<div class="my-project-card">' +
-            logoHtml +
-            '<div class="my-project-card-body">' +
-                '<div class="my-project-card-top">' +
-                    '<span class="my-project-card-name">' + escapeHtml(p.token_name) + '</span>' +
-                    '<span class="my-project-card-symbol">$' + escapeHtml(p.token_symbol) + '</span>' +
-                    agentDot +
+        // X connect status
+        var xStatusText = p.x_connected ? (p.x_handle ? '@' + escapeHtml(p.x_handle) : 'Connected') : 'Not connected';
+
+        // Agent controls (only if agent enabled)
+        var agentPanel = '';
+        if (p.agent_enabled) {
+            var postsVal = p.agent_posts_per_day || 4;
+            var postsOptions = [1,2,4,8,12,24].map(function(n) {
+                return '<option value="' + n + '"' + (n === postsVal ? ' selected' : '') + '>' + n + '</option>';
+            }).join('');
+
+            var isPaused = p.agent_status !== 'active';
+            var pauseBtnClass = isPaused ? 'owner-btn' : 'owner-btn owner-btn--danger';
+            var pauseBtnText = isPaused ? 'Resume Agent' : 'Pause Agent';
+
+            agentPanel =
+                '<div class="mp-detail-section">' +
+                    '<div class="mp-detail-row">' +
+                        '<span class="mp-detail-label">X Account</span>' +
+                        '<span class="mp-detail-value">' + xStatusText + '</span>' +
+                        (p.x_connected
+                            ? '<button class="owner-btn owner-btn--danger mp-disconnect-x" data-id="' + p.id + '">Disconnect</button>'
+                            : '<a href="/api/inclawbate/x-connect?project_id=' + p.id + '&wallet=' + state.wallet + '" class="owner-btn">Connect X</a>') +
+                    '</div>' +
+                    '<div class="mp-detail-row">' +
+                        '<span class="mp-detail-label">Posts / Day</span>' +
+                        '<select class="owner-select mp-posts-select" data-id="' + p.id + '">' + postsOptions + '</select>' +
+                    '</div>' +
+                    '<div class="mp-detail-persona">' +
+                        '<span class="mp-detail-label">Agent Persona</span>' +
+                        '<textarea class="owner-textarea mp-persona" data-id="' + p.id + '" placeholder="Describe your agent\'s personality...">' + escapeHtml(p.agent_persona || '') + '</textarea>' +
+                    '</div>' +
+                    '<div class="mp-detail-actions">' +
+                        '<button class="owner-btn owner-btn--primary mp-save-btn" data-id="' + p.id + '">Save Changes</button>' +
+                        '<button class="' + pauseBtnClass + ' mp-pause-btn" data-id="' + p.id + '">' + pauseBtnText + '</button>' +
+                    '</div>' +
+                '</div>';
+        } else {
+            agentPanel =
+                '<div class="mp-detail-section">' +
+                    '<p class="mp-no-agent">No AI agent enabled for this project.</p>' +
+                    '<a href="/inclawbator/' + p.id + '" class="owner-btn">Full Details</a>' +
+                '</div>';
+        }
+
+        return '<div class="my-project-card" data-project-id="' + p.id + '">' +
+            '<div class="my-project-card-header">' +
+                logoHtml +
+                '<div class="my-project-card-body">' +
+                    '<div class="my-project-card-top">' +
+                        '<span class="my-project-card-name">' + escapeHtml(p.token_name) + '</span>' +
+                        '<span class="my-project-card-symbol">$' + escapeHtml(p.token_symbol) + '</span>' +
+                        agentDot +
+                    '</div>' +
+                    '<div class="my-project-card-badges">' +
+                        '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>' +
+                        '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+                    '</div>' +
                 '</div>' +
-                '<div class="my-project-card-badges">' +
-                    '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>' +
-                    '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
-                '</div>' +
+                '<button class="my-project-view-btn mp-toggle-btn">Manage</button>' +
             '</div>' +
-            '<a href="/inclawbator/' + p.id + '" class="my-project-view-btn">View</a>' +
+            '<div class="mp-detail-panel hidden">' + agentPanel + '</div>' +
         '</div>';
     }).join('');
+
+    // Bind event listeners
+    bindDashboardEvents(grid);
+}
+
+function bindDashboardEvents(grid) {
+    // Toggle expand/collapse
+    grid.querySelectorAll('.mp-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var card = btn.closest('.my-project-card');
+            var panel = card.querySelector('.mp-detail-panel');
+            var isOpen = !panel.classList.contains('hidden');
+            // Close all others first
+            grid.querySelectorAll('.mp-detail-panel').forEach(function(p) { p.classList.add('hidden'); });
+            grid.querySelectorAll('.mp-toggle-btn').forEach(function(b) { b.textContent = 'Manage'; });
+            if (!isOpen) {
+                panel.classList.remove('hidden');
+                btn.textContent = 'Close';
+            }
+        });
+    });
+
+    // Save agent settings
+    grid.querySelectorAll('.mp-save-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var pid = btn.dataset.id;
+            var card = btn.closest('.my-project-card');
+            var persona = card.querySelector('.mp-persona').value;
+            var postsPerDay = parseInt(card.querySelector('.mp-posts-select').value);
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            var data = await apiPost({
+                action: 'update-agent',
+                project_id: pid,
+                agent_persona: persona,
+                agent_posts_per_day: postsPerDay
+            });
+
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+
+            if (data.error) {
+                showToast(data.error, 'error');
+            } else {
+                showToast('Settings saved', 'success');
+                // Update local project data
+                var proj = state.projects.find(function(p) { return p.id === pid; });
+                if (proj && data.project) {
+                    Object.assign(proj, data.project);
+                }
+            }
+        });
+    });
+
+    // Pause/Resume agent
+    grid.querySelectorAll('.mp-pause-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var pid = btn.dataset.id;
+            var proj = state.projects.find(function(p) { return p.id === pid; });
+            if (!proj) return;
+
+            var newStatus = proj.agent_status === 'active' ? 'paused' : 'active';
+            btn.disabled = true;
+
+            var data = await apiPost({
+                action: 'update-agent',
+                project_id: pid,
+                agent_status: newStatus
+            });
+
+            btn.disabled = false;
+
+            if (data.error) {
+                showToast(data.error, 'error');
+            } else {
+                showToast(newStatus === 'paused' ? 'Agent paused' : 'Agent resumed', 'success');
+                if (data.project) Object.assign(proj, data.project);
+                loadMyProjects(); // re-render
+            }
+        });
+    });
+
+    // Disconnect X
+    grid.querySelectorAll('.mp-disconnect-x').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            if (!confirm('Disconnect X account? The agent will stop posting.')) return;
+            var pid = btn.dataset.id;
+            btn.disabled = true;
+
+            var data = await apiPost({
+                action: 'disconnect-x',
+                project_id: pid
+            });
+
+            if (data.error) {
+                showToast(data.error, 'error');
+            } else {
+                showToast('X disconnected', 'success');
+                var proj = state.projects.find(function(p) { return p.id === pid; });
+                if (proj) { proj.x_connected = false; proj.x_handle = null; }
+                loadMyProjects();
+            }
+        });
+    });
 }
 
 window.switchToLaunchTab = function() { switchTab('launch'); };
