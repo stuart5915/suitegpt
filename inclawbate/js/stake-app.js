@@ -479,7 +479,7 @@ function buildPoolCard(key, pool) {
     var price = poolPrices[key] || 0;
     var tvl = (stats.totalStaked || 0) * price;
 
-    var apyStr = stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--';
+    var apyStr = pool.retired ? '0%' : (stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--');
     var stakedStr = stats.totalStaked ? fmt(stats.totalStaked) : '--';
     var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
@@ -489,7 +489,7 @@ function buildPoolCard(key, pool) {
         : 'Stake &rarr;';
 
     var retiredBadge = pool.retired
-        ? '<div class="stake-card-retired-badge">Rewards Ended</div>'
+        ? ' <span class="stake-card-retired-badge">Ended</span>'
         : '';
     var cardCta = pool.retired
         ? '<div class="stake-card-cta">Unstake &amp; Migrate to CLAWS &rarr;</div>'
@@ -497,11 +497,10 @@ function buildPoolCard(key, pool) {
 
     return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
         'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
-        retiredBadge +
-        '<div class="stake-card-identity"' + (pool.retired ? ' style="padding-right:120px"' : '') + '>' +
+        '<div class="stake-card-identity">' +
             '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
             '<div>' +
-                '<div class="stake-card-name">' + pool.name + '</div>' +
+                '<div class="stake-card-name">' + pool.name + retiredBadge + '</div>' +
                 '<div class="stake-card-desc">' + pool.description + '</div>' +
             '</div>' +
         '</div>' +
@@ -685,7 +684,7 @@ function renderPoolPage(pool, key) {
     // Stats
     var stats = poolStats[key] || {};
     var price = poolPrices[key] || 0;
-    document.getElementById('poolApy').textContent = stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--';
+    document.getElementById('poolApy').textContent = pool.retired ? '0%' : (stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--');
     document.getElementById('poolTotalStaked').textContent = stats.totalStaked ? fmt(stats.totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = stats.rewardPool ? fmt(stats.rewardPool) : '--';
@@ -737,8 +736,10 @@ function renderPoolPage(pool, key) {
             '<a href="/stake/claws" class="pool-retired-cta">Go to CLAWS Staking &rarr;</a>';
     }
     // Hide retired notice for non-retired pools
-    var existingNotice = document.getElementById('poolRetiredNotice');
-    if (existingNotice) existingNotice.style.display = 'none';
+    if (!pool.retired) {
+        var existingNotice = document.getElementById('poolRetiredNotice');
+        if (existingNotice) existingNotice.style.display = 'none';
+    }
 
     // Reset wallet state
     document.getElementById('poolConnectBtn').textContent = 'Connect Wallet';
