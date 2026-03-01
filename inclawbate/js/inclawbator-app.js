@@ -1483,13 +1483,16 @@ function loadMyProjects() {
 
         return '<div class="my-project-card">' +
             logoHtml +
-            '<div class="my-project-card-info">' +
-                '<div class="my-project-card-name">' + escapeHtml(p.token_name) + ' ' + agentDot + '</div>' +
-                '<div class="my-project-card-symbol">$' + escapeHtml(p.token_symbol) + '</div>' +
-            '</div>' +
-            '<div class="my-project-card-badges">' +
-                '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>' +
-                '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+            '<div class="my-project-card-body">' +
+                '<div class="my-project-card-top">' +
+                    '<span class="my-project-card-name">' + escapeHtml(p.token_name) + '</span>' +
+                    '<span class="my-project-card-symbol">$' + escapeHtml(p.token_symbol) + '</span>' +
+                    agentDot +
+                '</div>' +
+                '<div class="my-project-card-badges">' +
+                    '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>' +
+                    '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+                '</div>' +
             '</div>' +
             '<a href="/inclawbator/' + p.id + '" class="my-project-view-btn">View</a>' +
         '</div>';
