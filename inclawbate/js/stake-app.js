@@ -662,6 +662,22 @@ var currentPoolKey = null;
 var walletAddr = null;
 var walletBalance = 0;
 
+window.addClawsToWallet = async function() {
+    var provider = window.ethereum || (window.WalletKit && window.WalletKit.getProvider());
+    if (!provider) { alert('No wallet detected. Please install MetaMask or another wallet.'); return; }
+    try {
+        await provider.request({
+            method: 'wallet_watchAsset',
+            params: { type: 'ERC20', options: {
+                address: '0x7ca47B141639B893C6782823C0b219f872056379',
+                symbol: 'CLAWS',
+                decimals: 18,
+                image: 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg'
+            }}
+        });
+    } catch (e) { console.log('User rejected or error:', e); }
+};
+
 function getProvider() {
     if (window.WalletKit && window.WalletKit.isConnected()) {
         return window.WalletKit.getProvider();
@@ -761,8 +777,10 @@ function renderPoolPage(pool, key) {
             '<div class="retired-notice-title">This pool has ended</div>' +
             '<p>Rewards for this pool have stopped and migrated to <strong>CLAWS</strong>.</p>' +
             '<p>If you have tokens staked here, connect your wallet below to unstake them. Then head to the CLAWS pool to stake and start earning again.</p>' +
-            '<p style="margin-top:var(--space-sm)"><strong>Add CLAWS to your wallet:</strong> <code style="font-size:0.75rem;background:var(--bg-dark);padding:2px 6px;border-radius:4px;word-break:break-all">' + clawsAddr + '</code></p>' +
-            '<a href="/stake/claws" class="pool-retired-cta">Go to CLAWS Staking &rarr;</a>';
+            '<div class="retired-notice-actions">' +
+                '<button onclick="addClawsToWallet()" class="pool-retired-add-btn">&#129438; Add $CLAWS to Wallet</button>' +
+                '<a href="/stake/claws" class="pool-retired-cta">Go to CLAWS Staking &rarr;</a>' +
+            '</div>';
     }
     // Hide retired notice for non-retired pools
     if (!pool.retired) {

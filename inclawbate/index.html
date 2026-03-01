@@ -1180,6 +1180,26 @@
             border: 1px solid var(--border-default);
         }
         .migration-link--secondary:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+        .add-claws-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            background: hsla(172, 50%, 42%, 0.12);
+            padding: 4px 14px;
+            border: 1px solid hsla(172, 50%, 42%, 0.3);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 4px;
+        }
+        .add-claws-btn:hover {
+            background: hsla(172, 50%, 42%, 0.22);
+            border-color: var(--seafoam-400);
+        }
         @media (max-width: 600px) {
             .migration-notice-inner { flex-direction: column; gap: var(--space-md); }
         }
@@ -1502,7 +1522,7 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
             <p>If you were holding <strong>$INCLAWNCH</strong> at the snapshot on <strong>February 28, 2026</strong>, you've been airdropped <strong>$CLAWS</strong>. Staking rewards now flow through CLAWS only.</p>
             <ol class="migration-notice-steps">
                 <li><a href="/scripts/snapshot-2026-02-28.json" target="_blank">Check the snapshot</a> to verify your wallet was included</li>
-                <li>Add <strong>$CLAWS</strong> to your wallet: <code>0x7ca47B141639B893C6782823C0b219f872056379</code></li>
+                <li>Add <strong>$CLAWS</strong> to your wallet: <button onclick="addClawsToWallet()" class="add-claws-btn">&#129438; Add to Wallet</button></li>
                 <li>Head to the <a href="/stake">Stake page</a> and stake your CLAWS to start earning rewards</li>
                 <li>If you still have INCLAWNCH staked, <a href="/stake">unstake it</a> &mdash; that pool's rewards have ended</li>
             </ol>
@@ -2203,6 +2223,21 @@ function copyCA(id) {
         }).catch(function() {});
     });
 })();
+</script>
+<script>
+function addClawsToWallet() {
+    var provider = window.ethereum;
+    if (!provider) { alert('No wallet detected. Please install MetaMask or another wallet.'); return; }
+    provider.request({
+        method: 'wallet_watchAsset',
+        params: { type: 'ERC20', options: {
+            address: '0x7ca47B141639B893C6782823C0b219f872056379',
+            symbol: 'CLAWS',
+            decimals: 18,
+            image: 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg'
+        }}
+    }).catch(function() {});
+}
 </script>
 </body>
 </html>
