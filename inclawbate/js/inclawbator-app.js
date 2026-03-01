@@ -423,7 +423,8 @@ function selectPoolType(type) {
     // Launch fields
     if (fieldsLaunchName) fieldsLaunchName.classList.toggle('hidden', type !== 'launch');
     if (fieldsFeeSplit) fieldsFeeSplit.classList.toggle('hidden', type !== 'launch' && type !== 'ecosystem');
-    if (fieldsIncubation) fieldsIncubation.classList.toggle('hidden', type !== 'launch' && type !== 'partner');
+    // Incubation shown for all types
+    if (fieldsIncubation) fieldsIncubation.classList.remove('hidden');
 
     // Ecosystem fields
     if (fieldsEcoName) fieldsEcoName.classList.toggle('hidden', type !== 'ecosystem');
@@ -445,27 +446,43 @@ function selectPoolType(type) {
         if (feeSplitHint) feeSplitHint.textContent = 'What % of swap fees go to stakers? Minimum 20%, you keep the rest.';
     }
 
-    // Reset incubation toggle when switching types
+    // Incubation toggle behavior per type
     var incToggle = document.getElementById('incubationToggle');
     var incubatedFields = document.getElementById('incubatedFields');
-    if (incToggle && type !== state.poolType) {
-        incToggle.checked = false;
-        if (incubatedFields) incubatedFields.classList.remove('visible');
-    }
+    var incLabel = fieldsIncubation ? fieldsIncubation.querySelector('.agent-toggle-label') : null;
+    var incHint = document.getElementById('incubationHint');
 
-    // Update incubation hint for partner
-    var incHint = fieldsIncubation ? fieldsIncubation.querySelector('.agent-toggle-hint') : null;
-    if (incHint) {
-        incHint.textContent = type === 'partner'
-            ? "Your token won't have staking deployed until approved. We'll review and deploy at no cost."
-            : 'Free deploy, team support, pending approval';
+    if (type === 'ecosystem') {
+        // Ecosystem: always incubated, locked on
+        if (incToggle) { incToggle.checked = true; incToggle.disabled = true; }
+        if (incubatedFields) incubatedFields.classList.add('visible');
+        if (incLabel) incLabel.textContent = 'Incubated Ecosystem App';
+        if (incHint) incHint.textContent = 'Ecosystem apps go through review before activation.';
+        // Hide fee split when incubated
+        if (fieldsFeeSplit) fieldsFeeSplit.style.display = 'none';
+    } else {
+        // Launch / Partner: user can toggle
+        if (incToggle) { incToggle.disabled = false; }
+        if (incLabel) incLabel.textContent = 'Apply for Incubation';
+        // Reset toggle when switching types
+        if (incToggle) {
+            incToggle.checked = false;
+            if (incubatedFields) incubatedFields.classList.remove('visible');
+        }
+        if (fieldsFeeSplit) fieldsFeeSplit.style.display = '';
+
+        if (type === 'partner') {
+            if (incHint) incHint.textContent = "Your token won't have staking deployed until approved. We'll review and deploy at no cost.";
+        } else {
+            if (incHint) incHint.textContent = 'Free deploy, team support, pending approval';
+        }
     }
 
     // Update deploy button text
     var btn = document.getElementById('deployBtn');
     if (btn && !state.deploying) {
         if (type === 'ecosystem') {
-            btn.textContent = 'Register App';
+            btn.textContent = 'Submit Application';
         } else if (type === 'partner') {
             btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Staking';
         } else {
@@ -691,18 +708,20 @@ async function handleLaunchDeploy() {
     }
 }
 
-// ── Ecosystem App flow (API-only, no on-chain) ──
+// ── Ecosystem App flow (always incubated — submit for review) ──
 async function handleEcosystemRegister() {
     var name = document.getElementById('ecoProjectName').value.trim();
     var desc = document.getElementById('tokenDesc').value.trim();
     var website = document.getElementById('tokenWebsite').value.trim();
-    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || '').trim();
-    var xHandle = (document.getElementById('sharedXHandle')?.value || '').trim();
-    var telegram = (document.getElementById('sharedTelegram')?.value || '').trim();
+    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || document.getElementById('incLogoUrl')?.value || '').trim();
+    var xHandle = (document.getElementById('sharedXHandle')?.value || document.getElementById('incXHandle')?.value || '').trim();
+    var telegram = (document.getElementById('sharedTelegram')?.value || document.getElementById('incTelegram')?.value || '').trim();
+    var helpNeeded = (document.getElementById('incHelpNeeded')?.value || '').trim();
     var feeSplit = parseInt(document.getElementById('feeSplit').value) || 100;
     var agent = getAgentFields();
 
     if (!name) return showToast('Project name is required', 'error');
+    if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
 
     if (!state.wallet) {
         await connectWallet();
@@ -710,19 +729,19 @@ async function handleEcosystemRegister() {
     }
 
     state.deploying = true;
-    updateDeployButton('Registering app...', true);
+    updateDeployButton('Submitting application...', true);
 
     try {
         var regResult = await apiPost({
             action: 'register',
             token_name: name,
-            description: desc,
+            description: desc + (helpNeeded ? '\n\n--- HELP NEEDED ---\n' + helpNeeded : ''),
             website_url: website,
             logo_url: logoUrl,
             x_handle: xHandle,
             telegram_url: telegram,
             fee_split_bps: feeSplit * 100,
-            tier: 'ecosystem',
+            tier: 'incubated',
             creator_wallet: state.wallet,
             agent_enabled: agent.enabled,
             agent_persona: agent.persona || null,
@@ -730,21 +749,21 @@ async function handleEcosystemRegister() {
         });
 
         if (regResult.error) {
-            showToast('Registration failed: ' + regResult.error, 'error');
+            showToast('Submission failed: ' + regResult.error, 'error');
             state.deploying = false;
-            updateDeployButton('Register App', false);
+            updateDeployButton('Submit Application', false);
             return;
         }
 
         state.project = regResult.project;
-        state.step = 6; // ecosystem success
+        state.step = 5; // incubated success
         state.deploying = false;
         updateUI();
-        showToast('App registered!', 'success');
+        showToast('Application submitted!', 'success');
     } catch (e) {
         state.deploying = false;
-        updateDeployButton('Register App', false);
-        showToast('Registration failed: ' + (e.message || 'Unknown error'), 'error');
+        updateDeployButton('Submit Application', false);
+        showToast('Submission failed: ' + (e.message || 'Unknown error'), 'error');
     }
 }
 
@@ -1449,6 +1468,9 @@ async function init() {
 
     if (incubationToggle) {
         incubationToggle.addEventListener('change', function() {
+            // Ecosystem is always locked on — ignore manual changes
+            if (state.poolType === 'ecosystem') return;
+
             var isIncubated = incubationToggle.checked;
 
             if (incubatedFields) {
