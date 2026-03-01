@@ -432,8 +432,8 @@ function selectPoolType(type) {
     // Partner fields
     if (fieldsPartnerToken) fieldsPartnerToken.classList.toggle('hidden', type !== 'partner');
 
-    // Shared social fields (ecosystem + partner)
-    if (fieldsSharedSocial) fieldsSharedSocial.classList.toggle('hidden', type === 'launch');
+    // Shared social fields (partner only — ecosystem uses incubated fields instead)
+    if (fieldsSharedSocial) fieldsSharedSocial.classList.toggle('hidden', type !== 'partner');
 
     // Update fee split label context
     var feeSplitLabel = fieldsFeeSplit ? fieldsFeeSplit.querySelector('.form-label') : null;
@@ -1493,6 +1493,12 @@ async function init() {
             // Hide fee split for incubated (irrelevant until approved)
             if (feeSplitGroup) {
                 feeSplitGroup.style.display = isIncubated ? 'none' : '';
+            }
+
+            // Hide shared social when incubated (incubated fields have their own)
+            var sharedSocial = document.getElementById('fieldsSharedSocial');
+            if (sharedSocial && state.poolType === 'partner') {
+                sharedSocial.classList.toggle('hidden', isIncubated);
             }
         });
     }
