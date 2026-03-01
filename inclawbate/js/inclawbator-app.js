@@ -161,9 +161,20 @@ async function connectWallet() {
                 }
             }
             updateUI();
+            updateComingSoonGate();
         }
     } catch (e) {
         showToast('Wallet connection failed', 'error');
+    }
+}
+
+function updateComingSoonGate() {
+    var overlay = document.getElementById('comingSoonOverlay');
+    if (!overlay) return;
+    if (state.isAdmin) {
+        overlay.classList.add('hidden');
+    } else {
+        overlay.classList.remove('hidden');
     }
 }
 
@@ -1489,6 +1500,9 @@ async function init() {
             }
         } catch (e) {}
     }
+
+    // Coming Soon gate — only admin can see the page
+    updateComingSoonGate();
 
     // Check for X connect callback result
     var urlParams = new URLSearchParams(window.location.search);
