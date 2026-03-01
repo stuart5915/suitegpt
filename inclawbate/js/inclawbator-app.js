@@ -132,7 +132,8 @@ var state = {
     deployedToken: null,
     deployTxHash: null,
     isAdmin: false,
-    projects: []     // loaded from API
+    projects: [],    // loaded from API
+    tab: 'launch'    // 'launch' | 'dashboard'
 };
 
 // ══════════════════════════════════════
@@ -411,6 +412,17 @@ function selectPoolType(type) {
     document.querySelectorAll('.pool-type-card').forEach(function(card) {
         card.classList.toggle('selected', card.dataset.pool === type);
     });
+
+    // Update flow description
+    var descEl = document.getElementById('poolTypeDesc');
+    if (descEl) {
+        var descs = {
+            launch: 'Pick a name and symbol, set your fee split, and deploy in one click. Your token launches on Clanker, a staking pool activates automatically, and swap fees start routing to CLAWS stakers.',
+            ecosystem: 'Register your app to share the CLAWS reward pool. Your application goes through review \u2014 once approved, you\u2019ll get a fee split allocation and full ecosystem listing.',
+            partner: 'Bring your existing token and deploy a CLAWS staking pool for it. Holders can stake immediately and start earning CLAWS rewards from day one.'
+        };
+        descEl.textContent = descs[type] || descs.launch;
+    }
 
     // Show/hide field groups
     var fieldsLaunchName = document.getElementById('fieldsLaunchName');
@@ -938,6 +950,7 @@ async function loadProjects() {
         var data = await apiGet();
         state.projects = data.projects || [];
         renderProjects();
+        if (state.tab === 'dashboard') loadMyProjects();
     } catch (e) {
         // Silently fail
     }
@@ -1282,6 +1295,9 @@ function updateUI() {
 
     var heroLaunchBtn = document.getElementById('heroLaunchBtn');
 
+    // Tabs visibility (only when wallet connected)
+    var inclawbatorTabs = document.getElementById('inclawbatorTabs');
+
     // Wallet state
     if (state.wallet) {
         if (connectBtn) connectBtn.style.display = 'none';
@@ -1291,11 +1307,13 @@ function updateUI() {
             walletInfo.querySelector('.wallet-addr').textContent = shortAddr(state.wallet);
         }
         if (launchSection) launchSection.style.display = 'block';
+        if (inclawbatorTabs) inclawbatorTabs.style.display = 'flex';
     } else {
         if (connectBtn) connectBtn.style.display = 'inline-flex';
         if (heroLaunchBtn) heroLaunchBtn.style.display = 'none';
         if (walletInfo) walletInfo.style.display = 'none';
         if (launchSection) launchSection.style.display = 'none';
+        if (inclawbatorTabs) inclawbatorTabs.style.display = 'none';
     }
 
     var incubatedSuccessStep = document.getElementById('incubatedSuccessStep');
@@ -1403,6 +1421,84 @@ function initSlider() {
 }
 
 // ══════════════════════════════════════
+// TABS + MY PROJECTS DASHBOARD
+// ══════════════════════════════════════
+
+function switchTab(tab) {
+    state.tab = tab;
+    var tabLaunch = document.getElementById('tabLaunch');
+    var tabDashboard = document.getElementById('tabDashboard');
+    if (tabLaunch) tabLaunch.classList.toggle('hidden', tab !== 'launch');
+    if (tabDashboard) tabDashboard.classList.toggle('hidden', tab !== 'dashboard');
+
+    document.querySelectorAll('.incl-tab').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    if (tab === 'dashboard') loadMyProjects();
+}
+
+function loadMyProjects() {
+    var grid = document.getElementById('myProjectsGrid');
+    var empty = document.getElementById('myProjectsEmpty');
+    if (!grid || !empty) return;
+
+    var mine = state.projects.filter(function(p) {
+        return p.creator_wallet && p.creator_wallet.toLowerCase() === (state.wallet || '').toLowerCase();
+    });
+
+    if (mine.length === 0) {
+        grid.innerHTML = '';
+        grid.style.display = 'none';
+        empty.classList.remove('hidden');
+        return;
+    }
+
+    empty.classList.add('hidden');
+    grid.style.display = '';
+    grid.innerHTML = mine.map(function(p) {
+        // Tier badge
+        var tierLabel, tierClass;
+        if (p.tier === 'ecosystem') { tierLabel = 'Ecosystem'; tierClass = 'tier-ecosystem'; }
+        else if (p.tier === 'partner' || p.tier === 'byt') { tierLabel = 'Partner'; tierClass = 'tier-partner'; }
+        else if (p.tier === 'incubated') { tierLabel = 'Incubated'; tierClass = 'tier-incubated'; }
+        else { tierLabel = 'Launch'; tierClass = 'tier-permissionless'; }
+
+        // Status badge
+        var status = p.status || 'active';
+        var statusClass = 'status-' + status;
+        var statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+
+        // Agent dot
+        var agentDot = '';
+        if (p.agent_enabled) {
+            var dotColor = p.agent_status === 'active' ? 'var(--seafoam-400)' : 'var(--text-dim)';
+            agentDot = '<span class="agent-dot" style="background:' + dotColor + '" title="AI Agent ' + (p.agent_status === 'active' ? 'Live' : 'Dormant') + '"></span>';
+        }
+
+        // Logo
+        var logoHtml = p.logo_url
+            ? '<img src="' + p.logo_url + '" class="project-logo" alt="">'
+            : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>';
+
+        return '<div class="my-project-card">' +
+            logoHtml +
+            '<div class="my-project-card-info">' +
+                '<div class="my-project-card-name">' + escapeHtml(p.token_name) + ' ' + agentDot + '</div>' +
+                '<div class="my-project-card-symbol">$' + escapeHtml(p.token_symbol) + '</div>' +
+            '</div>' +
+            '<div class="my-project-card-badges">' +
+                '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>' +
+                '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+            '</div>' +
+            '<a href="/inclawbator/' + p.id + '" class="my-project-view-btn">View</a>' +
+        '</div>';
+    }).join('');
+}
+
+window.switchToLaunchTab = function() { switchTab('launch'); };
+
+// ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
 
@@ -1456,6 +1552,17 @@ async function init() {
             var card = e.target.closest('.pool-type-card');
             if (card && card.dataset.pool) {
                 selectPoolType(card.dataset.pool);
+            }
+        });
+    }
+
+    // Tab switching
+    var tabContainer = document.getElementById('inclawbatorTabs');
+    if (tabContainer) {
+        tabContainer.addEventListener('click', function(e) {
+            var btn = e.target.closest('.incl-tab');
+            if (btn && btn.dataset.tab) {
+                switchTab(btn.dataset.tab);
             }
         });
     }

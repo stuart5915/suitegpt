@@ -885,6 +885,140 @@
             line-height: 1.5;
         }
 
+        /* ── Pool Type Flow Description ── */
+        .pool-type-flow-desc {
+            font-family: var(--font-mono, 'JetBrains Mono', monospace);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin: calc(-1 * var(--space-lg)) 0 var(--space-2xl);
+            padding: 0 var(--space-xs);
+        }
+
+        /* ── Inclawbator Tabs ── */
+        .inclawbator-tabs {
+            display: flex;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-xl);
+        }
+        .incl-tab {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: var(--space-sm) var(--space-lg);
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        .incl-tab:hover {
+            color: var(--text-primary);
+            border-color: var(--border-default);
+        }
+        .incl-tab.active {
+            background: var(--lobster-500);
+            color: #fff;
+            border-color: var(--lobster-500);
+        }
+
+        /* ── My Projects Dashboard ── */
+        .my-projects-empty {
+            text-align: center;
+            padding: var(--space-3xl) var(--space-xl);
+            color: var(--text-secondary);
+        }
+        .my-projects-empty .empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+            opacity: 0.6;
+        }
+        .my-projects-empty p {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-lg);
+        }
+        .my-projects-empty .deploy-btn {
+            display: inline-flex;
+        }
+        .my-project-card {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: border-color var(--transition-base);
+        }
+        .my-project-card:hover {
+            border-color: var(--border-default);
+        }
+        .my-project-card .project-logo,
+        .my-project-card .project-logo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            flex-shrink: 0;
+        }
+        .my-project-card .project-logo-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #fff;
+            font-size: 1rem;
+        }
+        .my-project-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .my-project-card-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .my-project-card-symbol {
+            font-family: var(--font-mono, 'JetBrains Mono', monospace);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .my-project-card-badges {
+            display: flex;
+            gap: var(--space-xs);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .status-active { background: rgba(52,211,153,0.15); color: var(--seafoam-400); }
+        .status-pending { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .status-rejected { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .my-project-view-btn {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--lobster-400);
+            text-decoration: none;
+            padding: var(--space-xs) var(--space-md);
+            border: 1px solid var(--lobster-400);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+            flex-shrink: 0;
+        }
+        .my-project-view-btn:hover {
+            background: var(--lobster-500);
+            color: #fff;
+        }
+
         /* ── Partner Token Preview ── */
         .partner-token-preview {
             display: flex;
@@ -1085,6 +1219,12 @@
         <p class="section-label">Get Started</p>
         <h2 class="section-title">Choose your path</h2>
 
+        <div class="inclawbator-tabs" id="inclawbatorTabs" style="display:none">
+            <button class="incl-tab active" data-tab="launch">Launch New</button>
+            <button class="incl-tab" data-tab="dashboard">My Projects</button>
+        </div>
+
+        <div id="tabLaunch">
         <div id="formStep" class="launch-card">
             <!-- Pool Type Selector -->
             <div class="pool-type-grid" id="poolTypeGrid">
@@ -1104,6 +1244,8 @@
                     <div class="pool-type-desc">Your token, your rewards, fully independent</div>
                 </div>
             </div>
+
+            <p id="poolTypeDesc" class="pool-type-flow-desc">Pick a name and symbol, set your fee split, and deploy in one click. Your token launches on Clanker, a staking pool activates automatically, and swap fees start routing to CLAWS stakers.</p>
 
             <!-- Launch: Token Name + Symbol -->
             <div id="fieldsLaunchName" class="form-row">
@@ -1343,6 +1485,17 @@
                 <div class="success-detail-value">Your AI agent is live! 10 free credits loaded.</div>
             </div>
             <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
+        </div>
+        </div><!-- /tabLaunch -->
+
+        <!-- My Projects Dashboard -->
+        <div id="tabDashboard" class="hidden">
+            <div id="myProjectsGrid" class="projects-grid"></div>
+            <div id="myProjectsEmpty" class="my-projects-empty hidden">
+                <div class="empty-icon">&#128230;</div>
+                <p>No projects yet. Launch your first one!</p>
+                <button class="deploy-btn" onclick="window.switchToLaunchTab()">Launch New</button>
+            </div>
         </div>
     </section>
 
