@@ -42,7 +42,8 @@ var POOLS = {
         category: 'ubi',
         auditLink: '/audit/clawnch-rewards',
         retired: true,
-        migratePool: 'claws'
+        migratePool: 'claws',
+        hidden: true
     },
     clawnch: {
         name: 'CLAWNCH',
@@ -602,8 +603,8 @@ function renderOverview() {
 
     sorted.forEach(function(key) {
         var pool = POOLS[key];
-        // Skip CLAWS — rendered in hero section
-        if (key === 'claws') return;
+        // Skip CLAWS (hero section) and hidden pools
+        if (key === 'claws' || pool.hidden) return;
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
         if (pool.category === 'rewards') {
