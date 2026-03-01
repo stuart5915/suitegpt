@@ -319,10 +319,7 @@
             font-size: 0.78rem;
             color: var(--text-secondary);
             line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            white-space: pre-line;
             margin-bottom: 2px;
         }
         .kanban-card-meta {
@@ -665,12 +662,266 @@
             50% { box-shadow: 0 0 0 3px hsla(0, 70%, 50%, 0.15); }
         }
 
+        /* ── Role badges ── */
+        .role-badge {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid transparent;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        .role-viewer {
+            background: hsla(0, 0%, 50%, 0.12);
+            color: hsl(0, 0%, 60%);
+            border-color: hsla(0, 0%, 50%, 0.2);
+        }
+        .role-member {
+            background: hsla(172, 40%, 45%, 0.12);
+            color: hsl(172, 40%, 60%);
+            border-color: hsla(172, 40%, 45%, 0.2);
+        }
+        .role-editor {
+            background: hsla(43, 70%, 50%, 0.12);
+            color: hsl(43, 70%, 65%);
+            border-color: hsla(43, 70%, 50%, 0.2);
+        }
+        .role-admin {
+            background: hsla(9, 60%, 55%, 0.12);
+            color: hsl(9, 60%, 65%);
+            border-color: hsla(9, 60%, 55%, 0.2);
+        }
+        .admin-role-select {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .admin-role-select:focus {
+            outline: none;
+            border-color: var(--lobster-400);
+        }
+
+        /* ── Viewer restrictions ── */
+        .kanban-card.viewer-card {
+            cursor: default;
+        }
+        .kanban-card.viewer-card:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ── Team Chat ── */
+        .chat-section {
+            margin-top: var(--space-xl);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeUp 0.5s ease-out 0.3s backwards;
+        }
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .chat-header:hover {
+            background: var(--bg-card);
+        }
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chat-header-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .chat-header-toggle {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            transition: transform 0.3s;
+        }
+        .chat-header-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        .chat-body {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            transition: height 0.3s;
+        }
+        .chat-body.collapsed {
+            height: 0;
+            overflow: hidden;
+        }
+        .chat-channels {
+            display: flex;
+            gap: 2px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            overflow-x: auto;
+        }
+        .chat-channel-tab {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .chat-channel-tab:hover {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        .chat-channel-tab.active {
+            background: var(--lobster-500);
+            color: #fff;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-default) transparent;
+        }
+        .chat-messages::-webkit-scrollbar { width: 5px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+        .chat-msg {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 6px 0;
+        }
+        .chat-msg-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--lobster-500), var(--seafoam-400));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .chat-msg-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .chat-msg-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+        .chat-msg-name {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+        .chat-msg-time {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--text-dim);
+        }
+        .chat-msg-text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            word-break: break-word;
+            white-space: pre-line;
+        }
+        .chat-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+        }
+        .chat-input {
+            flex: 1;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            resize: none;
+        }
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--lobster-400);
+            box-shadow: 0 0 0 3px hsla(9, 52%, 56%, 0.1);
+        }
+        .chat-send-btn {
+            background: linear-gradient(135deg, var(--lobster-400), hsl(18, 60%, 62%));
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .chat-send-btn:hover {
+            box-shadow: 0 4px 16px hsla(9, 50%, 45%, 0.3);
+            transform: translateY(-1px);
+        }
+        .chat-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 768px) {
             .team-page { padding-left: var(--space-sm); padding-right: var(--space-sm); }
             .kanban-column { min-width: 280px; }
             .board-title { font-size: 1.3rem; }
             .gate-screen h2 { font-size: 1.7rem; }
+            .chat-body { height: 320px; }
         }
     </style>
 </head>
@@ -725,6 +976,26 @@
             <div class="board-loading">
                 <div class="loading-spinner"></div>
                 Loading board...
+            </div>
+        </div>
+
+        <!-- Team Chat -->
+        <div class="chat-section" id="chat-section">
+            <div class="chat-header" id="chat-header">
+                <div class="chat-header-left">
+                    <span class="chat-header-title">Team Chat</span>
+                </div>
+                <span class="chat-header-toggle" id="chat-toggle">&#9660;</span>
+            </div>
+            <div class="chat-body" id="chat-body">
+                <div class="chat-channels" id="chat-channels"></div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-empty">No messages yet. Start the conversation!</div>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="2000">
+                    <button class="chat-send-btn" id="chat-send-btn">Send</button>
+                </div>
             </div>
         </div>
     </div>
