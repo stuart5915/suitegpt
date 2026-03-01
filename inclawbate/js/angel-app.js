@@ -238,6 +238,27 @@ async function checkEligibility() {
     var amountFloat = fromWei('0x' + BigInt(userProof.amount).toString(16));
     mintAmount.textContent = fmtNum(amountFloat) + ' INCLAWNCH';
     showState('stateEligible');
+
+    // Show balance info so user knows if they're short before clicking
+    try {
+        var balHex = await contractRead(
+            INCLAWNCH_ADDRESS,
+            BALANCE_SELECTOR + pad32(userAddress)
+        );
+        var balFloat = fromWei(balHex);
+        var balInfo = document.getElementById('mintBalanceInfo');
+        if (balInfo) {
+            balInfo.style.display = '';
+            if (balFloat >= amountFloat) {
+                balInfo.textContent = 'Your balance: ' + fmtNum(balFloat) + ' INCLAWNCH ✓';
+                balInfo.style.color = 'var(--seafoam-300, #4fd1c5)';
+            } else {
+                var short = amountFloat - balFloat;
+                balInfo.textContent = 'Your balance: ' + fmtNum(balFloat) + ' (' + fmtNum(short) + ' short)';
+                balInfo.style.color = 'hsl(30, 80%, 65%)';
+            }
+        }
+    } catch (e) { /* non-critical */ }
 }
 
 // ── Mint flow ──
@@ -261,9 +282,18 @@ async function doMint() {
         var amountBN = BigInt(amount);
 
         if (balance < amountBN) {
-            txStatus.textContent = 'Insufficient INCLAWNCH balance. Need ' + fmtNum(fromWei('0x' + amountBN.toString(16)));
-            btnMint.disabled = false;
-            return;
+            var balFloat = fromWei('0x' + balance.toString(16));
+            var needFloat = fromWei('0x' + amountBN.toString(16));
+            var shortfall = needFloat - balFloat;
+            // Allow attempt if within 0.5% — balance may update or user can acquire the small difference
+            var tolerance = needFloat * 0.005;
+            if (shortfall > tolerance) {
+                txStatus.textContent = 'Insufficient balance. You have ' + fmtNum(balFloat) + ' but need ' + fmtNum(needFloat) + ' INCLAWNCH (' + fmtNum(shortfall) + ' short).';
+                btnMint.disabled = false;
+                return;
+            }
+            // Within tolerance — warn but let them try
+            txStatus.textContent = 'You\'re ' + fmtNum(shortfall) + ' INCLAWNCH short — attempting anyway...';
         }
 
         // 2. Check allowance
