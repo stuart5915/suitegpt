@@ -498,7 +498,7 @@ function buildPoolCard(key, pool) {
     return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
         'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
         retiredBadge +
-        '<div class="stake-card-identity">' +
+        '<div class="stake-card-identity"' + (pool.retired ? ' style="padding-right:120px"' : '') + '>' +
             '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
             '<div>' +
                 '<div class="stake-card-name">' + pool.name + '</div>' +
