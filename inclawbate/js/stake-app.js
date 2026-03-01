@@ -56,14 +56,12 @@ var POOLS = {
         color: 'hsl(32, 50%, 50%)',
         colorDim: 'hsla(32, 50%, 50%, 0.12)',
         glow: 'hsla(32, 50%, 50%, 0.18)',
-        description: 'Rewards have ended. CLAWNCH rewards have migrated to CLAWS.',
+        description: 'The OG. Stake CLAWNCH, earn INCLAWNCH rewards.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
         category: 'ubi',
-        auditLink: '/audit/clawnch-rewards',
-        retired: true,
-        migratePool: 'claws'
+        auditLink: '/audit/clawnch-rewards'
     },
     s4h: {
         name: 'Salvation 4 Humanity',
