@@ -662,6 +662,59 @@
         }
         .admin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        /* ── Admin Review Cards ── */
+        .admin-review-section { margin-bottom: var(--space-xl); }
+        .admin-pending-list { display: flex; flex-direction: column; gap: var(--space-md); }
+        .admin-pending-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+        .admin-pending-card .pending-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: var(--space-sm);
+        }
+        .admin-pending-card .pending-name {
+            font-family: var(--font-display); font-weight: 800; font-size: 1rem; color: var(--text-primary);
+        }
+        .admin-pending-card .pending-tier {
+            font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+            padding: 3px 8px; border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-dim);
+        }
+        .admin-pending-card .pending-meta {
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);
+            margin-bottom: var(--space-sm); line-height: 1.6;
+        }
+        .admin-pending-card .pending-desc {
+            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;
+            margin-bottom: var(--space-md);
+        }
+        .admin-pending-actions {
+            display: flex; gap: var(--space-sm); align-items: center;
+        }
+        .admin-pending-actions .btn-approve {
+            padding: 8px 20px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem;
+            color: #fff; background: var(--seafoam-500); border: none; border-radius: var(--radius-md); cursor: pointer;
+        }
+        .admin-pending-actions .btn-reject {
+            padding: 8px 20px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem;
+            color: #fff; background: hsl(0, 60%, 45%); border: none; border-radius: var(--radius-md); cursor: pointer;
+        }
+        .admin-pending-actions .btn-approve:hover { opacity: 0.85; }
+        .admin-pending-actions .btn-reject:hover { opacity: 0.85; }
+
+        /* ── Launch Another ── */
+        .launch-another-btn {
+            margin-top: var(--space-xl);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+        .launch-another-btn:hover {
+            border-color: var(--lobster-400);
+        }
+
         /* ── Toast ── */
         .toast-container {
             position: fixed;
@@ -990,7 +1043,7 @@
                 <div class="pool-type-card" data-pool="ecosystem">
                     <div class="pool-type-icon">&#127760;</div>
                     <div class="pool-type-name">Ecosystem App</div>
-                    <div class="pool-type-desc">Build on CLAWS &mdash; no new token needed</div>
+                    <div class="pool-type-desc">Share the CLAWS reward pool &mdash; set your own fee split</div>
                 </div>
                 <div class="pool-type-card" data-pool="partner">
                     <div class="pool-type-icon">&#129309;</div>
@@ -1171,6 +1224,7 @@
                 <div class="success-detail-label">AI Agent</div>
                 <div class="success-detail-value">Your AI agent is live! 10 free credits loaded. First post within 30 minutes.</div>
             </div>
+            <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
         </div>
 
         <!-- Success State: Incubated Application -->
@@ -1193,6 +1247,7 @@
                     We'll review your application and reach out via X or Telegram. If approved, we'll deploy your token and staking pool at no cost. AI agent will activate once live.
                 </div>
             </div>
+            <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
         </div>
 
         <!-- Success State: Ecosystem App -->
@@ -1213,6 +1268,7 @@
                 <div class="success-detail-label">AI Agent</div>
                 <div class="success-detail-value">Your AI agent is live! 10 free credits loaded.</div>
             </div>
+            <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
         </div>
 
         <!-- Success State: Partner Pool -->
@@ -1233,6 +1289,7 @@
                 <div class="success-detail-label">AI Agent</div>
                 <div class="success-detail-value">Your AI agent is live! 10 free credits loaded.</div>
             </div>
+            <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
         </div>
     </section>
 
@@ -1356,7 +1413,15 @@
 
     <!-- ═══ Admin Panel (hidden unless admin wallet) ═══ -->
     <section id="adminPanel" class="admin-panel section">
-        <h3 class="admin-title">Admin: Batch Distribution</h3>
+        <!-- Pending Applications Review -->
+        <div id="adminReviewSection" class="admin-review-section">
+            <h3 class="admin-title">Pending Applications</h3>
+            <div id="adminPendingList" class="admin-pending-list">
+                <p style="color:var(--text-dim);text-align:center">Loading...</p>
+            </div>
+        </div>
+
+        <h3 class="admin-title" style="margin-top:var(--space-2xl)">Admin: Batch Distribution</h3>
         <table class="admin-table">
             <thead>
                 <tr>

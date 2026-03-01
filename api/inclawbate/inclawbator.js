@@ -73,6 +73,8 @@ async function verifyDepositTx(txHash) {
     return { valid: true, amount };
 }
 
+const ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
+
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com'
@@ -143,6 +145,22 @@ export default async function handler(req, res) {
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ projects: sanitizeProjects(data) });
+        }
+
+        // Admin: pending applications
+        if (req.query.pending === 'true') {
+            const reqWallet = (req.headers['x-wallet'] || '').toLowerCase();
+            if (reqWallet !== ADMIN_WALLET) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            const { data: pending, error: pendErr } = await supabase
+                .from('inclawbator_projects')
+                .select('*')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (pendErr) return res.status(500).json({ error: pendErr.message });
+            return res.status(200).json({ projects: sanitizeProjects(pending) });
         }
 
         // Public: only active projects
@@ -277,6 +295,30 @@ export default async function handler(req, res) {
             const { data, error } = await supabase
                 .from('inclawbator_projects')
                 .update({ status: 'active', updated_at: new Date().toISOString() })
+                .eq('id', project_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ project: data });
+        }
+
+        // ── Admin: reject incubated project ──
+        if (action === 'reject') {
+            const { project_id, admin_secret, rejection_reason } = req.body;
+            const expectedSecret = process.env.INCLAWBATE_ADMIN_SECRET;
+            if (!expectedSecret || admin_secret !== expectedSecret) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .update({
+                    status: 'rejected',
+                    rejection_reason: rejection_reason || null,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', project_id)
                 .select()
                 .single();
