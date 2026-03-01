@@ -35,12 +35,14 @@ var POOLS = {
         color: 'hsl(172, 32%, 48%)',
         colorDim: 'hsla(172, 32%, 48%, 0.12)',
         glow: 'hsla(172, 32%, 48%, 0.18)',
-        description: 'The original. Stake inCLAWNCH, earn inCLAWNCH.',
+        description: 'Rewards have ended. INCLAWNCH staking has migrated to CLAWS.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
         category: 'ubi',
-        auditLink: '/audit/clawnch-rewards'
+        auditLink: '/audit/clawnch-rewards',
+        retired: true,
+        migratePool: 'claws'
     },
     clawnch: {
         name: 'CLAWNCH',
@@ -54,12 +56,14 @@ var POOLS = {
         color: 'hsl(32, 50%, 50%)',
         colorDim: 'hsla(32, 50%, 50%, 0.12)',
         glow: 'hsla(32, 50%, 50%, 0.18)',
-        description: 'Stake CLAWNCH, earn INCLAWNCH rewards. 1B INCLAWNCH over 30 days.',
+        description: 'Rewards have ended. CLAWNCH rewards have migrated to CLAWS.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
         category: 'ubi',
-        auditLink: '/audit/clawnch-rewards'
+        auditLink: '/audit/clawnch-rewards',
+        retired: true,
+        migratePool: 'claws'
     },
     s4h: {
         name: 'Salvation 4 Humanity',
@@ -486,6 +490,23 @@ function buildPoolCard(key, pool) {
         ? 'Stake ' + pool.ticker + ' &rarr; Earn ' + pool.rewardTicker
         : 'Stake &rarr;';
 
+    // Retired pool — show migration notice instead of normal CTA
+    if (pool.retired) {
+        var migrateLink = pool.migratePool ? '/stake/' + pool.migratePool : '/stake';
+        return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card stake-card--retired" ' +
+            'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + ';opacity:0.6">' +
+            '<div class="stake-card-retired-badge">Rewards Ended</div>' +
+            '<div class="stake-card-identity">' +
+                '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
+                '<div>' +
+                    '<div class="stake-card-name">' + pool.name + '</div>' +
+                    '<div class="stake-card-desc">' + pool.description + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="stake-card-cta" style="background:var(--bg-elevated);color:var(--text-secondary);">Unstake &amp; migrate to CLAWS &rarr;</div>' +
+        '</a>' };
+    }
+
     return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
         'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
         '<div class="stake-card-identity">' +
@@ -706,6 +727,29 @@ function renderPoolPage(pool, key) {
         document.getElementById('poolDesc').textContent = pool.description + ' Staking opens soon — stay tuned.';
         return;
     }
+
+    // Retired pool — show migration notice, allow unstake only
+    if (pool.retired) {
+        var migrateNotice = document.getElementById('poolRetiredNotice');
+        if (!migrateNotice) {
+            migrateNotice = document.createElement('div');
+            migrateNotice.id = 'poolRetiredNotice';
+            migrateNotice.className = 'pool-retired-notice';
+            var descEl = document.getElementById('poolDesc');
+            descEl.parentNode.insertBefore(migrateNotice, descEl.nextSibling);
+        }
+        migrateNotice.style.display = 'block';
+        var clawsAddr = '0x7ca47B141639B893C6782823C0b219f872056379';
+        migrateNotice.innerHTML =
+            '<div class="retired-notice-title">This pool has ended</div>' +
+            '<p>Rewards for this pool have stopped and migrated to <strong>CLAWS</strong>.</p>' +
+            '<p>If you have tokens staked here, connect your wallet below to unstake them. Then head to the CLAWS pool to stake and start earning again.</p>' +
+            '<p style="margin-top:var(--space-sm)"><strong>Add CLAWS to your wallet:</strong> <code style="font-size:0.75rem;background:var(--bg-dark);padding:2px 6px;border-radius:4px;word-break:break-all">' + clawsAddr + '</code></p>' +
+            '<a href="/stake/claws" class="pool-retired-cta">Go to CLAWS Staking &rarr;</a>';
+    }
+    // Hide retired notice for non-retired pools
+    var existingNotice = document.getElementById('poolRetiredNotice');
+    if (existingNotice) existingNotice.style.display = 'none';
 
     // Reset wallet state
     document.getElementById('poolConnectBtn').textContent = 'Connect Wallet';
