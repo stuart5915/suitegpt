@@ -352,7 +352,75 @@
             word-break: break-all;
         }
 
+        /* ── Countdown Banner ── */
+        .angel-countdown-banner {
+            background: linear-gradient(135deg, hsla(280, 60%, 55%, 0.15), hsla(0, 70%, 50%, 0.1));
+            border: 1px solid hsla(280, 60%, 55%, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+        .countdown-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: hsl(0, 70%, 65%);
+            margin-bottom: var(--space-sm);
+        }
+        .countdown-timer {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-sm);
+        }
+        .countdown-unit {
+            text-align: center;
+        }
+        .countdown-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+        .countdown-unit-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .countdown-colon {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-dim);
+            line-height: 1;
+            opacity: 0.4;
+        }
+        .countdown-message {
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .countdown-message strong {
+            color: hsl(280, 60%, 65%);
+        }
+        .countdown-ended {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: hsl(0, 70%, 65%);
+        }
         @media (max-width: 600px) {
+            .countdown-value { font-size: 1.4rem; }
+            .countdown-colon { font-size: 1.4rem; }
             .angel-title { font-size: 1.8rem; }
         }
     </style>
@@ -381,7 +449,36 @@
             <h1 class="angel-title">Angel NFT</h1>
             <p class="angel-sub">
                 A founding badge for the 828 original INCLAWNCH holders who believed from the start.
-                Send your snapshot INCLAWNCH to mint. Tradeable on secondary markets with 5% royalty.
+                Send your snapshot INCLAWNCH to mint. Minting closes forever on March 15, 2026.
+            </p>
+        </div>
+
+        <!-- Countdown Banner -->
+        <div class="angel-countdown-banner" id="countdownBanner">
+            <div class="countdown-label">Minting Closes Forever</div>
+            <div class="countdown-timer" id="countdownTimer">
+                <div class="countdown-unit">
+                    <div class="countdown-value" id="cdDays">--</div>
+                    <div class="countdown-unit-label">Days</div>
+                </div>
+                <div class="countdown-colon">:</div>
+                <div class="countdown-unit">
+                    <div class="countdown-value" id="cdHours">--</div>
+                    <div class="countdown-unit-label">Hours</div>
+                </div>
+                <div class="countdown-colon">:</div>
+                <div class="countdown-unit">
+                    <div class="countdown-value" id="cdMins">--</div>
+                    <div class="countdown-unit-label">Min</div>
+                </div>
+                <div class="countdown-colon">:</div>
+                <div class="countdown-unit">
+                    <div class="countdown-value" id="cdSecs">--</div>
+                    <div class="countdown-unit-label">Sec</div>
+                </div>
+            </div>
+            <p class="countdown-message">
+                Only <strong>29 of 828</strong> Angels have been minted. After <strong>March 15 at 11:59 PM UTC</strong>, minting closes permanently. Whatever supply exists at that point is the final collection. No extensions. No second chances.
             </p>
         </div>
 
@@ -522,6 +619,57 @@
         </div>
     </footer>
 
+    <script>
+    (function() {
+        var DEADLINE = new Date('2026-03-15T23:59:59Z').getTime();
+
+        function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+        function tick() {
+            var now = Date.now();
+            var diff = DEADLINE - now;
+
+            if (diff <= 0) {
+                // Minting ended
+                var banner = document.getElementById('countdownBanner');
+                if (banner) {
+                    var timer = document.getElementById('countdownTimer');
+                    if (timer) timer.style.display = 'none';
+                    var label = banner.querySelector('.countdown-label');
+                    if (label) label.textContent = 'Minting Has Closed';
+                    var msg = banner.querySelector('.countdown-message');
+                    if (msg) msg.innerHTML = '<span class="countdown-ended">Minting is permanently closed.</span><br>The Angel NFT collection is now final. Trade on secondary markets below.';
+                }
+                // Disable mint button
+                var mintBtn = document.getElementById('btnMint');
+                if (mintBtn) { mintBtn.disabled = true; mintBtn.textContent = 'Minting Closed'; }
+                return;
+            }
+
+            var days = Math.floor(diff / 86400000);
+            var hours = Math.floor((diff % 86400000) / 3600000);
+            var mins = Math.floor((diff % 3600000) / 60000);
+            var secs = Math.floor((diff % 60000) / 1000);
+
+            var dEl = document.getElementById('cdDays');
+            var hEl = document.getElementById('cdHours');
+            var mEl = document.getElementById('cdMins');
+            var sEl = document.getElementById('cdSecs');
+            if (dEl) dEl.textContent = pad(days);
+            if (hEl) hEl.textContent = pad(hours);
+            if (mEl) mEl.textContent = pad(mins);
+            if (sEl) sEl.textContent = pad(secs);
+
+            setTimeout(tick, 1000);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', tick);
+        } else {
+            tick();
+        }
+    })();
+    </script>
     <script type="module" src="/js/angel-app.js"></script>
 </body>
 </html>
