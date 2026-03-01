@@ -42,8 +42,7 @@ var POOLS = {
         category: 'ubi',
         auditLink: '/audit/clawnch-rewards',
         retired: true,
-        migratePool: 'claws',
-        hidden: true
+        migratePool: 'claws'
     },
     clawnch: {
         name: 'CLAWNCH',
@@ -489,25 +488,16 @@ function buildPoolCard(key, pool) {
         ? 'Stake ' + pool.ticker + ' &rarr; Earn ' + pool.rewardTicker
         : 'Stake &rarr;';
 
-    // Retired pool — show migration notice instead of normal CTA
-    if (pool.retired) {
-        var migrateLink = pool.migratePool ? '/stake/' + pool.migratePool : '/stake';
-        return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card stake-card--retired" ' +
-            'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + ';opacity:0.6">' +
-            '<div class="stake-card-retired-badge">Rewards Ended</div>' +
-            '<div class="stake-card-identity">' +
-                '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
-                '<div>' +
-                    '<div class="stake-card-name">' + pool.name + '</div>' +
-                    '<div class="stake-card-desc">' + pool.description + '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="stake-card-cta" style="background:var(--bg-elevated);color:var(--text-secondary);">Unstake &amp; migrate to CLAWS &rarr;</div>' +
-        '</a>' };
-    }
+    var retiredBadge = pool.retired
+        ? '<div class="stake-card-retired-badge">Rewards Ended</div>'
+        : '';
+    var cardCta = pool.retired
+        ? '<div class="stake-card-cta">Unstake &amp; Migrate to CLAWS &rarr;</div>'
+        : '<div class="stake-card-cta">' + ctaText + '</div>';
 
     return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
         'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
+        retiredBadge +
         '<div class="stake-card-identity">' +
             '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
             '<div>' +
@@ -533,7 +523,7 @@ function buildPoolCard(key, pool) {
                 '<span class="stake-card-stat-label">Stakers</span>' +
             '</div>' +
         '</div>' +
-        '<div class="stake-card-cta">' + ctaText + '</div>' +
+        cardCta +
     '</a>' };
 }
 
@@ -603,8 +593,8 @@ function renderOverview() {
 
     sorted.forEach(function(key) {
         var pool = POOLS[key];
-        // Skip CLAWS (hero section) and hidden pools
-        if (key === 'claws' || pool.hidden) return;
+        // Skip CLAWS — rendered in hero section
+        if (key === 'claws') return;
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
         if (pool.category === 'rewards') {
