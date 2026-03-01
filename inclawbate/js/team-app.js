@@ -134,7 +134,7 @@ function renderBoard() {
 
     kanbanBoard.innerHTML = '';
 
-    columns.forEach(function(col) {
+    columns.forEach(function(col, colIndex) {
         const colCards = cards
             .filter(function(c) { return c.column_id === col.id; })
             .sort(function(a, b) { return a.position - b.position; });
@@ -142,6 +142,7 @@ function renderBoard() {
         var colEl = document.createElement('div');
         colEl.className = 'kanban-column';
         colEl.dataset.columnId = col.id;
+        colEl.dataset.colIndex = colIndex;
 
         colEl.innerHTML =
             '<div class="kanban-column-header">' +
@@ -168,6 +169,13 @@ function renderBoard() {
             onCardDrop(cardId, col.id, cardsContainer);
         });
 
+        if (colCards.length === 0) {
+            var emptyEl = document.createElement('div');
+            emptyEl.className = 'kanban-empty';
+            emptyEl.textContent = 'Drop cards here';
+            cardsContainer.appendChild(emptyEl);
+        }
+
         colCards.forEach(function(card) {
             cardsContainer.appendChild(renderCard(card, members));
         });
@@ -188,12 +196,13 @@ function renderCard(card, members) {
         if (member) assignee = member.display_name || shortenWallet(member.wallet_address);
     }
 
+    var initial = assignee ? assignee.charAt(0).toUpperCase() : '';
     el.innerHTML =
         '<div class="kanban-card-title">' + escHtml(card.title) + '</div>' +
         (card.description ? '<div class="kanban-card-desc">' + escHtml(card.description) + '</div>' : '') +
         '<div class="kanban-card-meta">' +
             '<span class="priority-badge priority-' + card.priority + '">' + card.priority + '</span>' +
-            (assignee ? '<span class="card-assignee">' + escHtml(assignee) + '</span>' : '') +
+            (assignee ? '<span class="card-assignee"><span class="card-assignee-avatar">' + initial + '</span>' + escHtml(assignee) + '</span>' : '') +
         '</div>';
 
     // Drag events
