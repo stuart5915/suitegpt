@@ -76,6 +76,7 @@ var POOLS = {
         colorDim: 'hsla(35, 38%, 38%, 0.12)',
         glow: 'hsla(35, 38%, 38%, 0.18)',
         description: 'AI-powered online church community. Stake S4H, earn INCLAWNCH rewards.',
+        website: 'https://salvation4humanity.com',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
         chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
         featured: false,
@@ -502,6 +503,7 @@ function buildPoolCard(key, pool) {
             '<div>' +
                 '<div class="stake-card-name">' + pool.name + retiredBadge + '</div>' +
                 '<div class="stake-card-desc">' + pool.description + '</div>' +
+                (pool.website ? '<div class="stake-card-website"><span class="stake-card-website-dot"></span>' + pool.website.replace('https://', '') + '</div>' : '') +
             '</div>' +
         '</div>' +
         '<div class="stake-card-stats">' +
@@ -689,8 +691,34 @@ function renderPoolPage(pool, key) {
     document.getElementById('poolStakers').textContent = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = stats.rewardPool ? fmt(stats.rewardPool) : '--';
 
+    // Website banner
+    var websiteBanner = document.getElementById('poolWebsiteBanner');
+    if (pool.website) {
+        if (!websiteBanner) {
+            websiteBanner = document.createElement('a');
+            websiteBanner.id = 'poolWebsiteBanner';
+            websiteBanner.className = 'pool-website-banner';
+            var descEl2 = document.getElementById('poolDesc');
+            descEl2.parentNode.insertBefore(websiteBanner, descEl2.nextSibling);
+        }
+        websiteBanner.href = pool.website;
+        websiteBanner.target = '_blank';
+        websiteBanner.rel = 'noopener';
+        websiteBanner.style.display = 'flex';
+        websiteBanner.style.setProperty('--pool-accent', pool.color);
+        websiteBanner.innerHTML =
+            '<span class="pool-website-banner-dot"></span>' +
+            '<span class="pool-website-banner-text">Visit <strong>' + pool.website.replace('https://', '') + '</strong></span>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>';
+    } else if (websiteBanner) {
+        websiteBanner.style.display = 'none';
+    }
+
     // Links
     var linksHtml = '';
+    if (pool.website) {
+        linksHtml += '<a href="' + pool.website + '" target="_blank" rel="noopener" class="pool-link pool-link--website">&#127760; Website</a>';
+    }
     if (pool.buyLink) {
         linksHtml += '<a href="' + pool.buyLink + '" target="_blank" rel="noopener" class="pool-link">Buy ' + pool.ticker + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     }
