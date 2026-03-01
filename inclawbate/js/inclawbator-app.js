@@ -1481,6 +1481,30 @@ function loadMyProjects() {
             ? '<img src="' + p.logo_url + '" class="project-logo" alt="">'
             : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>';
 
+        // Staking pool info
+        var stakingHtml = '';
+        if (p.staking_address) {
+            stakingHtml =
+                '<div class="mp-detail-row">' +
+                    '<span class="mp-detail-label">Staking Pool</span>' +
+                    '<span class="mp-staking-live"><span class="mp-live-dot"></span>Live</span>' +
+                    '<code class="mp-detail-addr">' + p.staking_address.slice(0, 6) + '...' + p.staking_address.slice(-4) + '</code>' +
+                    '<a href="/stake" class="owner-btn">View on Stake</a>' +
+                '</div>';
+        } else {
+            var stakingNote = p.tier === 'incubated' || p.status === 'pending'
+                ? 'Your staking pool will be deployed once your application is reviewed and approved. The team handles deployment at no cost.'
+                : 'Your staking pool is being set up. It usually activates within a few minutes after token launch.';
+            stakingHtml =
+                '<div class="mp-detail-row mp-detail-row--col">' +
+                    '<div style="display:flex;align-items:center;gap:var(--space-md)">' +
+                        '<span class="mp-detail-label">Staking Pool</span>' +
+                        '<span class="mp-staking-pending">Pending</span>' +
+                    '</div>' +
+                    '<p class="mp-staking-note">' + stakingNote + '</p>' +
+                '</div>';
+        }
+
         // X connect status
         var xStatusText = p.x_connected ? (p.x_handle ? '@' + escapeHtml(p.x_handle) : 'Connected') : 'Not connected';
 
@@ -1498,6 +1522,8 @@ function loadMyProjects() {
 
             agentPanel =
                 '<div class="mp-detail-section">' +
+                    stakingHtml +
+                    '<div class="mp-detail-divider"></div>' +
                     '<div class="mp-detail-row">' +
                         '<span class="mp-detail-label">X Account</span>' +
                         '<span class="mp-detail-value">' + xStatusText + '</span>' +
@@ -1521,6 +1547,8 @@ function loadMyProjects() {
         } else {
             agentPanel =
                 '<div class="mp-detail-section">' +
+                    stakingHtml +
+                    '<div class="mp-detail-divider"></div>' +
                     '<p class="mp-no-agent">No AI agent enabled for this project.</p>' +
                     '<a href="/inclawbator/' + p.id + '" class="owner-btn">Full Details</a>' +
                 '</div>';
