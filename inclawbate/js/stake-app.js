@@ -937,7 +937,7 @@ async function refreshPoolStats(key) {
 
     poolStats[key] = { totalStaked: totalStaked, stakerCount: stakerCount, rewardRate: rewardRate, periodEnd: Number(BigInt(results[3] || '0x0')), rewardPool: rewardPool, apy: apy };
 
-    document.getElementById('poolApy').textContent = apy > 0 ? Math.round(apy).toLocaleString('en-US') + '%' : '--';
+    document.getElementById('poolApy').textContent = POOLS[key].retired ? '0%' : (apy > 0 ? Math.round(apy).toLocaleString('en-US') + '%' : '--');
     document.getElementById('poolTotalStaked').textContent = totalStaked > 0 ? fmt(totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stakerCount > 0 ? stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = rewardPool > 0 ? fmt(rewardPool) : '--';
