@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html><head><title>Set BaseURI - Angel NFT</title></head>
+<body style="font-family:monospace;max-width:600px;margin:40px auto;padding:20px;background:#111;color:#eee;">
+<h2>Angel NFT - Set Base URI</h2>
+<p>Contract: 0x14d44d4d9f7898be1b9e1184a116502061eff5e7</p>
+<p>New URI: <code>https://stuart-hollinger-landing.vercel.app/api/inclawbate/nft/</code></p>
+<br>
+<button id="btn" style="padding:12px 24px;font-size:16px;cursor:pointer;background:#6366f1;color:#fff;border:none;border-radius:8px;">
+  Connect & Set BaseURI
+</button>
+<p id="status" style="margin-top:20px;"></p>
+
+<script>
+document.getElementById('btn').addEventListener('click', async function() {
+    var status = document.getElementById('status');
+    if (!window.ethereum) { status.textContent = 'No wallet found'; return; }
+
+    try {
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        status.textContent = 'Connected: ' + accounts[0];
+
+        // Ensure Base chain
+        try {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        } catch(e) {}
+
+        // setBaseURI("https://stuart-hollinger-landing.vercel.app/api/inclawbate/nft/")
+        var data = '0x55f804b3' +
+            '0000000000000000000000000000000000000000000000000000000000000020' +
+            '000000000000000000000000000000000000000000000000000000000000003f' +
+            '68747470733a2f2f7374756172742d686f6c6c696e6765722d6c616e64696e' +
+            '672e76657263656c2e6170702f6170692f696e636c6177626174652f6e6674' +
+            '2f00000000000000000000000000000000000000000000000000000000000000';
+
+        status.textContent = 'Sending transaction...';
+        var tx = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: accounts[0],
+                to: '0x14d44d4d9f7898be1b9e1184a116502061eff5e7',
+                data: data
+            }]
+        });
+        status.innerHTML = 'Sent! <a href="https://basescan.org/tx/' + tx + '" target="_blank" style="color:#818cf8;">View on Basescan</a>';
+    } catch(e) {
+        status.textContent = 'Error: ' + (e.message || e);
+    }
+});
+</script>
+</body></html>
