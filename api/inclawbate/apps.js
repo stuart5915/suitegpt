@@ -130,7 +130,7 @@ export default async function handler(req, res) {
 
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, created_at', { count: 'exact' })
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' })
                 .eq('is_public', true);
 
             if (category && category !== 'all') {
@@ -171,10 +171,14 @@ export default async function handler(req, res) {
                 if (uvs) uvs.forEach(u => upvotedSet.add(u.app_id));
             }
 
-            const results = apps.map(a => ({
-                ...a,
-                has_upvoted: upvotedSet.has(a.id)
-            }));
+            const results = apps.map(a => {
+                const { code, ...rest } = a;
+                return {
+                    ...rest,
+                    has_code: !!code,
+                    has_upvoted: upvotedSet.has(a.id)
+                };
+            });
 
             return res.json({
                 apps: results,

@@ -651,9 +651,11 @@
                     '<div class="app-detail">' +
                         '<div class="app-detail-desc">' + escapeHtml(app.description || '') + '</div>' +
                         (tagsHtml ? '<div class="app-detail-tags">' + tagsHtml + '</div>' : '') +
-                        '<iframe class="app-preview-frame" src="' + (app.app_url || ('/s/' + encodeURIComponent(app.slug))) + '" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>' +
+                        (app.has_code
+                            ? '<iframe class="app-preview-frame" src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>'
+                            : '<div class="app-preview-placeholder" style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);border-radius:12px;border:1px solid var(--border-default);color:var(--text-muted);font-size:0.9rem;">' + (app.app_url ? 'External app — click Use App to open' : 'No preview available') + '</div>') +
                         '<div class="app-detail-actions">' +
-                            '<a class="app-use-btn" href="' + (app.app_url || ('/s/' + encodeURIComponent(app.slug))) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
+                            '<a class="app-use-btn" href="' + (app.has_code ? ('/s/' + encodeURIComponent(app.slug)) : (app.app_url || '#')) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
                             '<button class="app-use-btn" style="background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-secondary);" onclick="event.stopPropagation(); AppStore.fork(\'' + appIdSafe + '\')">Fork</button>' +
                         '</div>' +
                         unlockHtml +
