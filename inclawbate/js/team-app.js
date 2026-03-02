@@ -1,4 +1,4 @@
-// Inclawbate — Team Kanban Board
+// Inclawbate — Team Kanban Board (Multi-Board)
 // Pattern: IIFE, raw EIP-1193 (same as stake-app.js)
 
 (function() {
@@ -16,7 +16,10 @@ const CHAT_POLL_MS = 5000;
 // STATE
 // ══════════════════════════════════════
 let walletAddress = null;
-let boardData = null; // { columns, cards, members, channels, me }
+let boardData = null; // { boards, activeBoard, columns, cards, members, channels, me }
+let boards = [];
+let activeBoardSlug = null;
+let activeBoardId = null;
 let myRole = 'viewer';
 let activeChannelId = null;
 let chatMessages = [];
@@ -35,6 +38,7 @@ const gateDenied  = document.getElementById('gate-denied');
 const deniedWallet = document.getElementById('denied-wallet');
 const boardContainer = document.getElementById('board-container');
 const kanbanBoard = document.getElementById('kanban-board');
+const boardTabs   = document.getElementById('board-tabs');
 const btnConnect  = document.getElementById('btn-connect');
 const btnAddCard  = document.getElementById('btn-add-card');
 const btnAdmin    = document.getElementById('btn-admin');
@@ -139,6 +143,13 @@ async function checkAccess() {
         boardData = await resp.json();
         myRole = boardData.me ? boardData.me.role : 'viewer';
 
+        // Store boards list
+        boards = boardData.boards || [];
+        if (boardData.activeBoard) {
+            activeBoardSlug = boardData.activeBoard.slug;
+            activeBoardId = boardData.activeBoard.id;
+        }
+
         gateConnect.style.display = 'none';
         gateDenied.style.display = 'none';
         boardContainer.style.display = '';
@@ -151,6 +162,7 @@ async function checkAccess() {
         // Hide add-card button for viewers
         btnAddCard.style.display = hasRole('member') ? '' : 'none';
 
+        renderBoardTabs();
         renderBoard();
         initChat();
 
@@ -165,6 +177,67 @@ async function checkAccess() {
 }
 
 // ══════════════════════════════════════
+// BOARD TABS
+// ══════════════════════════════════════
+function renderBoardTabs() {
+    boardTabs.innerHTML = '';
+    boards.forEach(function(b) {
+        var tab = document.createElement('button');
+        tab.className = 'board-tab' + (b.slug === activeBoardSlug ? ' active' : '');
+        tab.textContent = b.title;
+        tab.dataset.slug = b.slug;
+        tab.addEventListener('click', function() {
+            if (b.slug === activeBoardSlug) return;
+            loadBoard(b.slug);
+        });
+        boardTabs.appendChild(tab);
+    });
+}
+
+async function loadBoard(slug) {
+    activeBoardSlug = slug;
+
+    // Update tab highlight immediately
+    var tabs = boardTabs.querySelectorAll('.board-tab');
+    tabs.forEach(function(t) {
+        t.classList.toggle('active', t.dataset.slug === slug);
+    });
+
+    // Show loading
+    kanbanBoard.innerHTML = '<div class="board-loading"><div class="loading-spinner"></div>Loading board...</div>';
+
+    try {
+        var resp = await fetch(API + '?board=' + encodeURIComponent(slug), {
+            headers: { 'X-Wallet-Address': walletAddress }
+        });
+        if (!resp.ok) throw new Error('API error');
+
+        var data = await resp.json();
+        boardData.columns = data.columns;
+        boardData.cards = data.cards;
+        boardData.channels = data.channels;
+        boardData.activeBoard = data.activeBoard;
+        if (data.boards) {
+            boards = data.boards;
+            boardData.boards = data.boards;
+        }
+        activeBoardId = data.activeBoard ? data.activeBoard.id : null;
+
+        renderBoard();
+
+        // Reset chat for new board
+        activeChannelId = null;
+        chatMessages = [];
+        chatLastTimestamp = null;
+        channelUnreads = {};
+        initChat();
+    } catch (err) {
+        console.error('Load board failed:', err);
+        kanbanBoard.innerHTML = '<div class="board-loading">Failed to load board. Try refreshing.</div>';
+    }
+}
+
+// ══════════════════════════════════════
 // RENDER BOARD
 // ══════════════════════════════════════
 function renderBoard() {
@@ -174,6 +247,12 @@ function renderBoard() {
     var members = boardData.members;
 
     kanbanBoard.innerHTML = '';
+
+    if (columns.length === 0) {
+        kanbanBoard.innerHTML = '<div class="board-loading" style="opacity:0.6">No columns yet. ' +
+            (hasRole('admin') ? 'Open Manage Team to add columns.' : 'Ask an admin to set up this board.') + '</div>';
+        return;
+    }
 
     columns.forEach(function(col, colIndex) {
         var colCards = cards
@@ -373,7 +452,8 @@ async function saveCard() {
             description: modalCardDesc.value.trim(),
             column_id: modalCardCol.value,
             priority: modalCardPri.value,
-            assigned_to: modalCardAssn.value || null
+            assigned_to: modalCardAssn.value || null,
+            board_id: activeBoardId
         };
     }
 
@@ -412,6 +492,7 @@ async function deleteCard() {
 // ADMIN PANEL
 // ══════════════════════════════════════
 function openAdminPanel() {
+    renderAdminBoards();
     renderAdminMembers();
     renderAdminColumns();
     renderAdminChannels();
@@ -422,6 +503,59 @@ function closeAdminPanel() {
     adminOverlay.classList.remove('active');
 }
 
+// ── Admin: Boards ──
+function renderAdminBoards() {
+    var list = document.getElementById('admin-boards-list');
+    if (!list) return;
+    list.innerHTML = '';
+    boards.forEach(function(b) {
+        var row = document.createElement('div');
+        row.className = 'admin-col-item';
+        row.innerHTML = '<span>' + escHtml(b.title) + ' <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.68rem">/' + escHtml(b.slug) + '</span></span>';
+
+        var rmBtn = document.createElement('button');
+        rmBtn.className = 'admin-remove-btn';
+        rmBtn.textContent = 'Delete';
+        rmBtn.addEventListener('click', function() { deleteBoard(b.id, b.title); });
+        row.appendChild(rmBtn);
+
+        list.appendChild(row);
+    });
+}
+
+async function addBoard() {
+    var input = document.getElementById('admin-new-board');
+    var title = input.value.trim();
+    if (!title) return;
+    try {
+        await apiPost({ action: 'add-board', title: title });
+        input.value = '';
+        // Reload to get updated boards list
+        await loadBoard(activeBoardSlug);
+        renderAdminBoards();
+    } catch (err) {
+        alert('Failed to add board: ' + (err.message || err));
+    }
+}
+
+async function deleteBoard(boardId, title) {
+    if (!confirm('Delete board "' + title + '" and ALL its columns, cards, and channels?')) return;
+    try {
+        await apiPost({ action: 'delete-board', board_id: boardId });
+        // If we deleted the active board, switch to first available
+        if (boardId === activeBoardId) {
+            activeBoardSlug = null;
+            activeBoardId = null;
+        }
+        // Reload from first board
+        await checkAccess();
+        renderAdminBoards();
+    } catch (err) {
+        alert('Failed to delete board: ' + (err.message || err));
+    }
+}
+
+// ── Admin: Members ──
 function renderAdminMembers() {
     adminMembersList.innerHTML = '';
     boardData.members.forEach(function(m) {
@@ -540,7 +674,7 @@ async function addColumn() {
     var title = document.getElementById('admin-new-col').value.trim();
     if (!title) return;
     try {
-        await apiPost({ action: 'add-column', title: title });
+        await apiPost({ action: 'add-column', title: title, board_id: activeBoardId });
         document.getElementById('admin-new-col').value = '';
         await refreshBoard();
         renderAdminColumns();
@@ -564,7 +698,12 @@ async function deleteColumn(colId, title) {
 // TEAM CHAT
 // ══════════════════════════════════════
 function initChat() {
-    if (!boardData.channels || boardData.channels.length === 0) return;
+    if (!boardData.channels || boardData.channels.length === 0) {
+        chatChannels.innerHTML = '';
+        chatMessagesEl.innerHTML = '<div class="chat-empty">No channels on this board yet.</div>';
+        activeChannelId = null;
+        return;
+    }
 
     renderChannelTabs();
 
@@ -828,7 +967,7 @@ async function addChannel() {
     var title = input.value.trim();
     if (!title) return;
     try {
-        await apiPost({ action: 'add-channel', title: title });
+        await apiPost({ action: 'add-channel', title: title, board_id: activeBoardId });
         input.value = '';
         await refreshBoard();
         renderAdminChannels();
@@ -871,7 +1010,9 @@ async function apiPost(body) {
 
 async function refreshBoard() {
     try {
-        var resp = await fetch(API, {
+        var url = API;
+        if (activeBoardSlug) url += '?board=' + encodeURIComponent(activeBoardSlug);
+        var resp = await fetch(url, {
             headers: { 'X-Wallet-Address': walletAddress }
         });
         if (resp.ok) {
@@ -880,6 +1021,10 @@ async function refreshBoard() {
             boardData.cards = data.cards;
             boardData.members = data.members;
             if (data.channels) boardData.channels = data.channels;
+            if (data.boards) {
+                boards = data.boards;
+                boardData.boards = data.boards;
+            }
             renderBoard();
         }
     } catch (err) {
@@ -919,8 +1064,10 @@ function init() {
     adminBackdrop.addEventListener('click', closeAdminPanel);
     btnAddMember.addEventListener('click', addMember);
     btnAddColumn.addEventListener('click', addColumn);
-    var btnAddChannel = document.getElementById('btn-add-channel');
-    if (btnAddChannel) btnAddChannel.addEventListener('click', addChannel);
+    var btnAddChannelEl = document.getElementById('btn-add-channel');
+    if (btnAddChannelEl) btnAddChannelEl.addEventListener('click', addChannel);
+    var btnAddBoardEl = document.getElementById('btn-add-board');
+    if (btnAddBoardEl) btnAddBoardEl.addEventListener('click', addBoard);
 
     // Chat events
     chatHeader.addEventListener('click', function() {

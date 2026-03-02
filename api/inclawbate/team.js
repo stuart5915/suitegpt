@@ -1,5 +1,5 @@
-// Inclawbate — Team Kanban Board API
-// GET                             — returns columns + cards + members + channels (team member auth)
+// Inclawbate — Team Kanban Board API (Multi-Board)
+// GET                             — returns boards + columns + cards + members + channels for a board
 // GET ?messages_channel=ID        — returns messages for channel (last 50, or after timestamp)
 // POST action:"add-card"          — create a card (member+)
 // POST action:"update-card"       — move/edit a card (member own, editor+ any)
@@ -10,6 +10,10 @@
 // POST action:"remove-member"     — remove from team (admin only)
 // POST action:"update-member-role"— change a member's role (admin only)
 // POST action:"send-message"      — send chat message (all roles)
+// POST action:"add-channel"       — create channel (admin only)
+// POST action:"delete-channel"    — remove channel (admin only)
+// POST action:"add-board"         — create board (admin only)
+// POST action:"delete-board"      — remove board + cascade (admin only)
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -59,6 +63,25 @@ async function authenticateWallet(req) {
     return data || null;
 }
 
+// Resolve board slug to board id; returns the board row or null
+async function resolveBoard(slug) {
+    if (!slug) {
+        // Default to first board by position
+        const { data } = await supabase
+            .from('team_boards')
+            .select('*')
+            .order('position')
+            .limit(1);
+        return (data && data[0]) || null;
+    }
+    const { data } = await supabase
+        .from('team_boards')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+    return data || null;
+}
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin)) {
@@ -95,14 +118,22 @@ export default async function handler(req, res) {
             return res.status(200).json({ messages: data || [] });
         }
 
-        const [colRes, cardRes, memRes, chanRes] = await Promise.all([
-            supabase.from('team_columns').select('*').order('position'),
-            supabase.from('team_cards').select('*').order('position'),
+        // Resolve active board
+        const boardSlug = req.query.board || null;
+        const board = await resolveBoard(boardSlug);
+        if (!board) return res.status(404).json({ error: 'Board not found' });
+
+        const [boardsRes, colRes, cardRes, memRes, chanRes] = await Promise.all([
+            supabase.from('team_boards').select('*').order('position'),
+            supabase.from('team_columns').select('*').eq('board_id', board.id).order('position'),
+            supabase.from('team_cards').select('*').eq('board_id', board.id).order('position'),
             supabase.from('team_members').select('id, wallet_address, display_name, role, created_at'),
-            supabase.from('team_channels').select('*').order('position')
+            supabase.from('team_channels').select('*').eq('board_id', board.id).order('position')
         ]);
 
         return res.status(200).json({
+            boards: boardsRes.data || [],
+            activeBoard: board,
             columns: colRes.data || [],
             cards: cardRes.data || [],
             members: memRes.data || [],
@@ -122,8 +153,9 @@ export default async function handler(req, res) {
         if (action === 'add-card') {
             if (!hasRole(member, 'member')) return res.status(403).json({ error: 'Members and above can create cards' });
 
-            const { title, description, column_id, priority, assigned_to } = req.body;
+            const { title, description, column_id, priority, assigned_to, board_id } = req.body;
             if (!title || !column_id) return res.status(400).json({ error: 'title and column_id required' });
+            if (!board_id) return res.status(400).json({ error: 'board_id required' });
 
             const { data: existing } = await supabase
                 .from('team_cards')
@@ -139,6 +171,7 @@ export default async function handler(req, res) {
                     title,
                     description: description || null,
                     column_id,
+                    board_id,
                     priority: priority || 'normal',
                     assigned_to: assigned_to || null,
                     position: nextPos,
@@ -212,19 +245,21 @@ export default async function handler(req, res) {
         // ── Add column (admin) ──
         if (action === 'add-column') {
             if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
-            const { title } = req.body;
+            const { title, board_id } = req.body;
             if (!title) return res.status(400).json({ error: 'title required' });
+            if (!board_id) return res.status(400).json({ error: 'board_id required' });
 
             const { data: existing } = await supabase
                 .from('team_columns')
                 .select('position')
+                .eq('board_id', board_id)
                 .order('position', { ascending: false })
                 .limit(1);
             const nextPos = (existing && existing.length > 0) ? existing[0].position + 1 : 0;
 
             const { data, error } = await supabase
                 .from('team_columns')
-                .insert({ title, position: nextPos })
+                .insert({ title, position: nextPos, board_id })
                 .select()
                 .single();
 
@@ -325,19 +360,21 @@ export default async function handler(req, res) {
         // ── Add channel (admin) ──
         if (action === 'add-channel') {
             if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
-            const { title } = req.body;
+            const { title, board_id } = req.body;
             if (!title) return res.status(400).json({ error: 'title required' });
+            if (!board_id) return res.status(400).json({ error: 'board_id required' });
 
             const { data: existing } = await supabase
                 .from('team_channels')
                 .select('position')
+                .eq('board_id', board_id)
                 .order('position', { ascending: false })
                 .limit(1);
             const nextPos = (existing && existing.length > 0) ? existing[0].position + 1 : 0;
 
             const { data, error } = await supabase
                 .from('team_channels')
-                .insert({ title, position: nextPos })
+                .insert({ title, position: nextPos, board_id })
                 .select()
                 .single();
 
@@ -355,6 +392,60 @@ export default async function handler(req, res) {
                 .from('team_channels')
                 .delete()
                 .eq('id', channel_id);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true });
+        }
+
+        // ── Add board (admin) ──
+        if (action === 'add-board') {
+            if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
+            const { title } = req.body;
+            if (!title) return res.status(400).json({ error: 'title required' });
+
+            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            if (!slug) return res.status(400).json({ error: 'Invalid title for slug generation' });
+
+            const { data: existing } = await supabase
+                .from('team_boards')
+                .select('position')
+                .order('position', { ascending: false })
+                .limit(1);
+            const nextPos = (existing && existing.length > 0) ? existing[0].position + 1 : 0;
+
+            const { data, error } = await supabase
+                .from('team_boards')
+                .insert({ title, slug, position: nextPos })
+                .select()
+                .single();
+
+            if (error) {
+                if (error.code === '23505') return res.status(409).json({ error: 'Board slug already exists' });
+                return res.status(500).json({ error: error.message });
+            }
+            return res.status(201).json({ board: data });
+        }
+
+        // ── Delete board (admin) ──
+        if (action === 'delete-board') {
+            if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
+            const { board_id } = req.body;
+            if (!board_id) return res.status(400).json({ error: 'board_id required' });
+
+            // Delete channels' messages first, then channels, cards, columns, then board
+            const { data: channels } = await supabase.from('team_channels').select('id').eq('board_id', board_id);
+            if (channels && channels.length > 0) {
+                const channelIds = channels.map(c => c.id);
+                await supabase.from('team_messages').delete().in('channel_id', channelIds);
+            }
+            await supabase.from('team_channels').delete().eq('board_id', board_id);
+            await supabase.from('team_cards').delete().eq('board_id', board_id);
+            await supabase.from('team_columns').delete().eq('board_id', board_id);
+
+            const { error } = await supabase
+                .from('team_boards')
+                .delete()
+                .eq('id', board_id);
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ ok: true });
