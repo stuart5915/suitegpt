@@ -131,7 +131,6 @@ export default async function handler(req, res) {
             let query = supabase
                 .from('user_apps')
                 .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, created_at', { count: 'exact' })
-                .eq('is_listed', true)
                 .eq('is_public', true);
 
             if (category && category !== 'all') {
