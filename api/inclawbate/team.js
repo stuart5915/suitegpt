@@ -305,6 +305,61 @@ export default async function handler(req, res) {
             return res.status(200).json({ member: data });
         }
 
+        // ── Set display name (self only) ──
+        if (action === 'set-display-name') {
+            const { display_name } = req.body;
+            if (!display_name || !display_name.trim()) return res.status(400).json({ error: 'display_name required' });
+            const cleaned = display_name.trim().slice(0, 32);
+
+            const { data, error } = await supabase
+                .from('team_members')
+                .update({ display_name: cleaned })
+                .eq('id', member.id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ member: data });
+        }
+
+        // ── Add channel (admin) ──
+        if (action === 'add-channel') {
+            if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
+            const { title } = req.body;
+            if (!title) return res.status(400).json({ error: 'title required' });
+
+            const { data: existing } = await supabase
+                .from('team_channels')
+                .select('position')
+                .order('position', { ascending: false })
+                .limit(1);
+            const nextPos = (existing && existing.length > 0) ? existing[0].position + 1 : 0;
+
+            const { data, error } = await supabase
+                .from('team_channels')
+                .insert({ title, position: nextPos })
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(201).json({ channel: data });
+        }
+
+        // ── Delete channel (admin) ──
+        if (action === 'delete-channel') {
+            if (!hasRole(member, 'admin')) return res.status(403).json({ error: 'Admin only' });
+            const { channel_id } = req.body;
+            if (!channel_id) return res.status(400).json({ error: 'channel_id required' });
+
+            const { error } = await supabase
+                .from('team_channels')
+                .delete()
+                .eq('id', channel_id);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true });
+        }
+
         // ── Send message (all roles) ──
         if (action === 'send-message') {
             const { channel_id, content } = req.body;

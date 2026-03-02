@@ -150,6 +150,11 @@ async function checkAccess() {
 
         renderBoard();
         initChat();
+
+        // Prompt for display name if not set
+        if (boardData.me && !boardData.me.display_name) {
+            promptDisplayName();
+        }
     } catch (err) {
         console.error('Access check failed:', err);
         kanbanBoard.innerHTML = '<div class="board-loading">Failed to load board. Try refreshing.</div>';
@@ -406,6 +411,7 @@ async function deleteCard() {
 function openAdminPanel() {
     renderAdminMembers();
     renderAdminColumns();
+    renderAdminChannels();
     adminOverlay.classList.add('active');
 }
 
@@ -574,7 +580,7 @@ function renderChannelTabs() {
         var tab = document.createElement('button');
         tab.className = 'chat-channel-tab';
         tab.dataset.channelId = ch.id;
-        tab.textContent = '#' + ch.name;
+        tab.textContent = '#' + ch.title;
         tab.addEventListener('click', function() {
             if (activeChannelId === ch.id) return;
             activeChannelId = ch.id;
@@ -625,10 +631,15 @@ async function pollNewMessages() {
         var data = await resp.json();
         var newMsgs = data.messages || [];
         if (newMsgs.length > 0) {
-            chatMessages = chatMessages.concat(newMsgs);
-            chatLastTimestamp = newMsgs[newMsgs.length - 1].created_at;
-            renderMessages();
-            if (!chatUserScrolledUp) scrollChatToBottom(false);
+            var existingIds = {};
+            chatMessages.forEach(function(m) { existingIds[m.id] = true; });
+            var dedupMsgs = newMsgs.filter(function(m) { return !existingIds[m.id]; });
+            if (dedupMsgs.length > 0) {
+                chatMessages = chatMessages.concat(dedupMsgs);
+                chatLastTimestamp = dedupMsgs[dedupMsgs.length - 1].created_at;
+                renderMessages();
+                if (!chatUserScrolledUp) scrollChatToBottom(false);
+            }
         }
     } catch (err) {
         // silent
@@ -715,6 +726,75 @@ function relativeTime(isoStr) {
 }
 
 // ══════════════════════════════════════
+// DISPLAY NAME PROMPT
+// ══════════════════════════════════════
+async function promptDisplayName() {
+    var name = prompt('Set your display name for the team board:');
+    if (!name || !name.trim()) return;
+    try {
+        await apiPost({ action: 'set-display-name', display_name: name.trim() });
+        boardData.me.display_name = name.trim();
+        // Update in members list too
+        boardData.members.forEach(function(m) {
+            if (m.id === boardData.me.id) m.display_name = name.trim();
+        });
+        renderBoard();
+        renderMessages();
+    } catch (err) {
+        console.error('Set name failed:', err);
+    }
+}
+
+// ══════════════════════════════════════
+// ADMIN CHANNEL MANAGEMENT
+// ══════════════════════════════════════
+function renderAdminChannels() {
+    var list = document.getElementById('admin-channels-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (boardData.channels || []).forEach(function(ch) {
+        var row = document.createElement('div');
+        row.className = 'admin-col-item';
+        row.innerHTML = '<span>#' + escHtml(ch.title) + '</span>';
+
+        var rmBtn = document.createElement('button');
+        rmBtn.className = 'admin-remove-btn';
+        rmBtn.textContent = 'Delete';
+        rmBtn.addEventListener('click', function() { deleteChannel(ch.id, ch.title); });
+        row.appendChild(rmBtn);
+
+        list.appendChild(row);
+    });
+}
+
+async function addChannel() {
+    var input = document.getElementById('admin-new-channel');
+    var title = input.value.trim();
+    if (!title) return;
+    try {
+        await apiPost({ action: 'add-channel', title: title });
+        input.value = '';
+        await refreshBoard();
+        renderAdminChannels();
+        initChat();
+    } catch (err) {
+        alert('Failed to add channel.');
+    }
+}
+
+async function deleteChannel(channelId, title) {
+    if (!confirm('Delete channel "#' + title + '" and all its messages?')) return;
+    try {
+        await apiPost({ action: 'delete-channel', channel_id: channelId });
+        await refreshBoard();
+        renderAdminChannels();
+        initChat();
+    } catch (err) {
+        alert('Failed to delete channel.');
+    }
+}
+
+// ══════════════════════════════════════
 // API HELPERS
 // ══════════════════════════════════════
 async function apiPost(body) {
@@ -783,12 +863,17 @@ function init() {
     adminBackdrop.addEventListener('click', closeAdminPanel);
     btnAddMember.addEventListener('click', addMember);
     btnAddColumn.addEventListener('click', addColumn);
+    var btnAddChannel = document.getElementById('btn-add-channel');
+    if (btnAddChannel) btnAddChannel.addEventListener('click', addChannel);
 
     // Chat events
     chatHeader.addEventListener('click', function() {
         chatBody.classList.toggle('collapsed');
         chatToggle.classList.toggle('collapsed');
     });
+
+    var btnSetName = document.getElementById('btn-set-name');
+    if (btnSetName) btnSetName.addEventListener('click', promptDisplayName);
 
     chatSendBtn.addEventListener('click', sendMessage);
     chatInput.addEventListener('keydown', function(e) {
