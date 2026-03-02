@@ -125,15 +125,14 @@ async function sendTxAndWait(provider, from, to, data) {
 var state = {
     wallet: null,
     provider: null,
-    poolType: 'launch',  // 'launch' | 'ecosystem' | 'partner'
-    step: 1,        // 1=form, 4=success, 5=incubated, 6=ecosystem, 7=partner
+    activeDrawer: null, // 'launch' | 'pool' | 'incubate' | null
+    step: 0,        // 0=normal, 4=launch success, 5=incubated success, 7=pool success
     deploying: false,
-    project: null,   // registered project from API
+    project: null,
     deployedToken: null,
     deployTxHash: null,
     isAdmin: false,
-    projects: [],    // loaded from API
-    tab: 'launch'    // 'launch' | 'dashboard'
+    projects: [],
 };
 
 // ══════════════════════════════════════
@@ -226,25 +225,12 @@ async function apiPost(body) {
 // CLANKER V4 DEPLOY
 // ══════════════════════════════════════
 
-// Clanker v4 deployToken(TokenConfig)
-// TokenConfig struct: (string name, string symbol, bytes32 salt, string image,
-//                      string metadata, address context, address deployer,
-//                      address[] initialHolders, uint256[] initialAmounts)
-// We pass minimal config — name, symbol, and msg.sender as deployer
-
-// Clanker v4 deployToken ABI — uses ethers.js AbiCoder loaded from CDN
-// Selector: 0xdf40224a
-// deployToken(DeploymentConfig) where DeploymentConfig is a deeply nested struct
-
 var CLANKER_SELECTOR = 'df40224a';
-
-// Known Clanker v4 contract addresses on Base
 var WETH_BASE = '0x4200000000000000000000000000000000000006';
 var CLANKER_HOOK_STATIC = '0xDd5EeaFf7BD481AD55Db083062b13a3cdf0A68CC';
 var CLANKER_FEE_LOCKER = '0xF3622742b1E446D92e45E22923Ef11C2fcD55D68';
 var ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
-// Full ABI fragment for deployToken
 var DEPLOY_TOKEN_ABI = [{
     name: 'deployToken',
     type: 'function',
@@ -296,10 +282,7 @@ var DEPLOY_TOKEN_ABI = [{
 }];
 
 function encodeClankerDeploy(name, symbol) {
-    // Use ethers.js Interface to ABI-encode the call
     var iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
-
-    // Generate random salt
     var saltBytes = new Uint8Array(32);
     crypto.getRandomValues(saltBytes);
     var salt = '0x' + Array.from(saltBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
@@ -342,25 +325,18 @@ function encodeClankerDeploy(name, symbol) {
     return iface.encodeFunctionData('deployToken', [deploymentConfig]);
 }
 
-// Parse TokenDeployed event from receipt logs to get token address
 function parseDeployedToken(receipt) {
-    // Look for TokenDeployed event
-    // TokenDeployed(address indexed token, address indexed deployer, ...)
-    // The token address is in topics[1]
     if (!receipt || !receipt.logs) return null;
     for (var i = 0; i < receipt.logs.length; i++) {
         var log = receipt.logs[i];
         if (log.address && log.address.toLowerCase() === CLANKER_V4.toLowerCase() && log.topics && log.topics.length >= 2) {
-            // Token address is in topics[1] (indexed param)
             return '0x' + log.topics[1].slice(26);
         }
     }
     return null;
 }
 
-// Parse PoolDeployed event from StakingFactory receipt
 function parsePoolDeployed(receipt) {
-    // PoolDeployed(address indexed pool, address indexed stakingToken, address indexed admin, bool paid)
     if (!receipt || !receipt.logs) return null;
     for (var i = 0; i < receipt.logs.length; i++) {
         var log = receipt.logs[i];
@@ -374,11 +350,10 @@ function parsePoolDeployed(receipt) {
 }
 
 // ══════════════════════════════════════
-// TOKEN HELPERS (shared by launch + partner)
+// TOKEN HELPERS
 // ══════════════════════════════════════
 
 function decodeString(hex) {
-    // ABI-encoded string: offset (32b) + length (32b) + data
     if (!hex || hex === '0x' || hex.length < 130) return '';
     try {
         var offset = parseInt(hex.slice(2, 66), 16) * 2;
@@ -402,105 +377,67 @@ async function readDeployFee() {
 }
 
 // ══════════════════════════════════════
-// POOL TYPE SELECTION
+// TOOL DRAWER
 // ══════════════════════════════════════
 
-function selectPoolType(type) {
-    state.poolType = type;
+function openToolDrawer(tool) {
+    // If clicking the same tool, close the drawer
+    if (state.activeDrawer === tool) {
+        closeToolDrawer();
+        return;
+    }
 
-    // Update card selection
-    document.querySelectorAll('.pool-type-card').forEach(function(card) {
-        card.classList.toggle('selected', card.dataset.pool === type);
+    // Connect wallet if not connected
+    if (!state.wallet) {
+        connectWallet().then(function() {
+            if (state.wallet) openToolDrawer(tool);
+        });
+        return;
+    }
+
+    state.activeDrawer = tool;
+
+    // Highlight active card
+    document.querySelectorAll('.tool-card[data-tool]').forEach(function(card) {
+        card.classList.toggle('active', card.dataset.tool === tool);
     });
 
-    // Update flow description
-    var descEl = document.getElementById('poolTypeDesc');
-    if (descEl) {
-        var descs = {
-            launch: 'Pick a name and symbol, set your fee split, and deploy in one click. Your token launches on Clanker, a staking pool activates automatically, and swap fees start routing to CLAWS stakers.',
-            ecosystem: 'Register your app to share the CLAWS reward pool. Your application goes through review \u2014 once approved, you\u2019ll get a fee split allocation and full ecosystem listing.',
-            partner: 'Bring your existing token and deploy a CLAWS staking pool for it. Holders can stake immediately and start earning CLAWS rewards from day one.'
-        };
-        descEl.textContent = descs[type] || descs.launch;
+    // Show drawer
+    var drawer = document.getElementById('toolDrawer');
+    if (drawer) {
+        drawer.classList.add('open');
+        // Reset animation
+        drawer.style.animation = 'none';
+        drawer.offsetHeight; // force reflow
+        drawer.style.animation = '';
     }
 
-    // Show/hide field groups
-    var fieldsLaunchName = document.getElementById('fieldsLaunchName');
-    var fieldsEcoName = document.getElementById('fieldsEcoName');
-    var fieldsPartnerToken = document.getElementById('fieldsPartnerToken');
-    var fieldsFeeSplit = document.getElementById('fieldsFeeSplit');
-    var fieldsIncubation = document.getElementById('fieldsIncubation');
-    var fieldsSharedSocial = document.getElementById('fieldsSharedSocial');
+    // Show correct content
+    var drawers = { launch: 'drawerLaunch', pool: 'drawerPool', incubate: 'drawerIncubate' };
+    Object.keys(drawers).forEach(function(key) {
+        var el = document.getElementById(drawers[key]);
+        if (el) el.classList.toggle('active', key === tool);
+    });
 
-    // Launch fields
-    if (fieldsLaunchName) fieldsLaunchName.classList.toggle('hidden', type !== 'launch');
-    if (fieldsFeeSplit) fieldsFeeSplit.classList.toggle('hidden', type !== 'launch' && type !== 'ecosystem');
-    // Incubation shown for all types
-    if (fieldsIncubation) fieldsIncubation.classList.remove('hidden');
-
-    // Ecosystem fields
-    if (fieldsEcoName) fieldsEcoName.classList.toggle('hidden', type !== 'ecosystem');
-
-    // Partner fields
-    if (fieldsPartnerToken) fieldsPartnerToken.classList.toggle('hidden', type !== 'partner');
-
-    // Shared social fields (partner only — ecosystem uses incubated fields instead)
-    if (fieldsSharedSocial) fieldsSharedSocial.classList.toggle('hidden', type !== 'partner');
-
-    // Update fee split label context
-    var feeSplitLabel = fieldsFeeSplit ? fieldsFeeSplit.querySelector('.form-label') : null;
-    var feeSplitHint = fieldsFeeSplit ? fieldsFeeSplit.querySelector('.form-hint') : null;
-    if (type === 'ecosystem') {
-        if (feeSplitLabel) feeSplitLabel.textContent = 'CLAWS Rewards Split';
-        if (feeSplitHint) feeSplitHint.textContent = "What % of CLAWS rewards are allocated to your app's stakers?";
-    } else {
-        if (feeSplitLabel) feeSplitLabel.textContent = 'Fee Split to Stakers';
-        if (feeSplitHint) feeSplitHint.textContent = 'What % of swap fees go to stakers? Minimum 20%, you keep the rest.';
+    // Scroll drawer into view
+    if (drawer) {
+        setTimeout(function() { drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
     }
+}
 
-    // Incubation toggle behavior per type
-    var incToggle = document.getElementById('incubationToggle');
-    var incubatedFields = document.getElementById('incubatedFields');
-    var incLabel = fieldsIncubation ? fieldsIncubation.querySelector('.agent-toggle-label') : null;
-    var incHint = document.getElementById('incubationHint');
+function closeToolDrawer() {
+    state.activeDrawer = null;
 
-    if (type === 'ecosystem') {
-        // Ecosystem: always incubated, locked on
-        if (incToggle) { incToggle.checked = true; incToggle.disabled = true; }
-        if (incubatedFields) incubatedFields.classList.add('visible');
-        if (incLabel) incLabel.textContent = 'Incubated Ecosystem App';
-        if (incHint) incHint.textContent = 'Ecosystem apps go through review before activation.';
-        // Hide fee split when incubated
-        if (fieldsFeeSplit) fieldsFeeSplit.style.display = 'none';
-    } else {
-        // Launch / Partner: user can toggle
-        if (incToggle) { incToggle.disabled = false; }
-        if (incLabel) incLabel.textContent = 'Apply for Incubation';
-        // Reset toggle when switching types
-        if (incToggle) {
-            incToggle.checked = false;
-            if (incubatedFields) incubatedFields.classList.remove('visible');
-        }
-        if (fieldsFeeSplit) fieldsFeeSplit.style.display = '';
+    document.querySelectorAll('.tool-card[data-tool]').forEach(function(card) {
+        card.classList.remove('active');
+    });
 
-        if (type === 'partner') {
-            if (incHint) incHint.textContent = "Your token won't have staking deployed until approved. We'll review and deploy at no cost.";
-        } else {
-            if (incHint) incHint.textContent = 'Free deploy, team support, pending approval';
-        }
-    }
+    var drawer = document.getElementById('toolDrawer');
+    if (drawer) drawer.classList.remove('open');
 
-    // Update deploy button text
-    var btn = document.getElementById('deployBtn');
-    if (btn && !state.deploying) {
-        if (type === 'ecosystem') {
-            btn.textContent = 'Submit Application';
-        } else if (type === 'partner') {
-            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Staking';
-        } else {
-            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Token';
-        }
-    }
+    document.querySelectorAll('.drawer-content').forEach(function(el) {
+        el.classList.remove('active');
+    });
 }
 
 // Partner token address lookup
@@ -536,98 +473,36 @@ function onPartnerAddressInput() {
 }
 
 // ══════════════════════════════════════
-// DEPLOY FLOW (branches on pool type)
+// AGENT HELPERS
 // ══════════════════════════════════════
 
-function getAgentFields() {
-    var agentCheckbox = document.getElementById('agentEnabled');
-    var agentPersonaEl = document.getElementById('agentPersona');
-    var agentPostsEl = document.getElementById('agentPostsPerDay');
+function getAgentFieldsFrom(prefix) {
+    var checkbox = document.getElementById(prefix + 'AgentEnabled');
+    var persona = document.getElementById(prefix + 'AgentPersona');
+    var posts = document.getElementById(prefix + 'AgentPostsPerDay');
     return {
-        enabled: agentCheckbox ? agentCheckbox.checked : false,
-        persona: agentPersonaEl ? agentPersonaEl.value.trim() : '',
-        postsPerDay: agentPostsEl ? parseInt(agentPostsEl.value) || 4 : 4
+        enabled: checkbox ? checkbox.checked : false,
+        persona: persona ? persona.value.trim() : '',
+        postsPerDay: posts ? parseInt(posts.value) || 4 : 4
     };
 }
 
-async function handleDeploy() {
+// ══════════════════════════════════════
+// DEPLOY: LAUNCH TOKEN
+// ══════════════════════════════════════
+
+async function handleLaunchDeploy() {
     if (state.deploying) return;
 
-    if (state.poolType === 'ecosystem') return handleEcosystemRegister();
-    if (state.poolType === 'partner') return handlePartnerDeploy();
-    return handleLaunchDeploy();
-}
-
-// ── Launch + Stake flow ──
-async function handleLaunchDeploy() {
     var name = document.getElementById('tokenName').value.trim();
     var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
-    var desc = document.getElementById('tokenDesc').value.trim();
-    var website = document.getElementById('tokenWebsite').value.trim();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var website = document.getElementById('launchWebsite').value.trim();
     var splitPct = parseInt(document.getElementById('feeSplit').value) || 100;
-    var incToggle = document.getElementById('incubationToggle');
-    var isIncubated = incToggle && incToggle.checked;
-    var agent = getAgentFields();
+    var agent = getAgentFieldsFrom('launch');
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
-
-    // ── Incubated: application-only flow (no on-chain deploy) ──
-    if (isIncubated) {
-        var xHandle = (document.getElementById('incXHandle')?.value || '').trim();
-        var telegram = (document.getElementById('incTelegram')?.value || '').trim();
-        var logoUrl = (document.getElementById('incLogoUrl')?.value || '').trim();
-        var helpNeeded = (document.getElementById('incHelpNeeded')?.value || '').trim();
-
-        if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
-
-        if (!state.wallet) {
-            await connectWallet();
-            if (!state.wallet) return;
-        }
-
-        state.deploying = true;
-        updateDeployButton('Submitting application...', true);
-
-        try {
-            var regResult = await apiPost({
-                action: 'register',
-                token_name: name,
-                token_symbol: symbol,
-                description: desc + (helpNeeded ? '\n\n--- HELP NEEDED ---\n' + helpNeeded : ''),
-                website_url: website,
-                x_handle: xHandle,
-                telegram_url: telegram,
-                logo_url: logoUrl,
-                fee_split_bps: 10000,
-                tier: 'incubated',
-                creator_wallet: state.wallet,
-                agent_enabled: agent.enabled,
-                agent_persona: agent.persona || null,
-                agent_posts_per_day: agent.postsPerDay
-            });
-
-            if (regResult.error) {
-                showToast('Submission failed: ' + regResult.error, 'error');
-                state.deploying = false;
-                updateDeployButton('Submit Application', false);
-                return;
-            }
-
-            state.project = regResult.project;
-            state.step = 5; // incubated success
-            state.deploying = false;
-            updateUI();
-            showToast('Application submitted!', 'success');
-        } catch (e) {
-            state.deploying = false;
-            updateDeployButton('Submit Application', false);
-            showToast('Submission failed: ' + (e.message || 'Unknown error'), 'error');
-        }
-        return;
-    }
-
-    // ── Permissionless: full deploy flow ──
     if (splitPct < 20 || splitPct > 100) return showToast('Fee split must be 20-100%', 'error');
 
     if (!state.wallet) {
@@ -636,7 +511,8 @@ async function handleLaunchDeploy() {
     }
 
     state.deploying = true;
-    updateDeployButton('Deploying token...', true);
+    var btn = document.getElementById('deployLaunchBtn');
+    setBtnState(btn, 'Deploying token...', true);
 
     try {
         // Step 1: Deploy token via Clanker v4
@@ -651,7 +527,7 @@ async function handleLaunchDeploy() {
         state.deployedToken = tokenAddress;
         state.deployTxHash = result.txHash;
 
-        updateDeployButton('Registering project...', true);
+        setBtnState(btn, 'Registering project...', true);
 
         // Step 2: Register with API
         var regResult = await apiPost({
@@ -679,12 +555,12 @@ async function handleLaunchDeploy() {
         // Step 3: Deploy staking pool
         if (STAKING_FACTORY) {
             try {
-                updateDeployButton('Deploying staking pool...', true);
+                setBtnState(btn, 'Deploying staking pool...', true);
 
                 var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
                 await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
 
-                updateDeployButton('Creating staking pool...', true);
+                setBtnState(btn, 'Creating staking pool...', true);
 
                 var deployPaidData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
                 var stakingResult = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployPaidData);
@@ -706,12 +582,13 @@ async function handleLaunchDeploy() {
 
         state.step = 4;
         state.deploying = false;
+        closeToolDrawer();
         updateUI();
         showToast('Token deployed successfully!', 'success');
 
     } catch (e) {
         state.deploying = false;
-        updateDeployButton('Deploy Token', false);
+        setBtnState(btn, 'Deploy Token', false);
         if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
             showToast('Transaction rejected by user', 'error');
         } else {
@@ -720,78 +597,18 @@ async function handleLaunchDeploy() {
     }
 }
 
-// ── Ecosystem App flow (always incubated — submit for review) ──
-async function handleEcosystemRegister() {
-    var name = document.getElementById('ecoProjectName').value.trim();
-    var desc = document.getElementById('tokenDesc').value.trim();
-    var website = document.getElementById('tokenWebsite').value.trim();
-    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || document.getElementById('incLogoUrl')?.value || '').trim();
-    var xHandle = (document.getElementById('sharedXHandle')?.value || document.getElementById('incXHandle')?.value || '').trim();
-    var telegram = (document.getElementById('sharedTelegram')?.value || document.getElementById('incTelegram')?.value || '').trim();
-    var helpNeeded = (document.getElementById('incHelpNeeded')?.value || '').trim();
-    var feeSplit = parseInt(document.getElementById('feeSplit').value) || 100;
-    var agent = getAgentFields();
+// ══════════════════════════════════════
+// DEPLOY: CREATE STAKE POOL
+// ══════════════════════════════════════
 
-    if (!name) return showToast('Project name is required', 'error');
-    if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
+async function handlePoolDeploy() {
+    if (state.deploying) return;
 
-    if (!state.wallet) {
-        await connectWallet();
-        if (!state.wallet) return;
-    }
-
-    state.deploying = true;
-    updateDeployButton('Submitting application...', true);
-
-    try {
-        var regResult = await apiPost({
-            action: 'register',
-            token_name: name,
-            description: desc + (helpNeeded ? '\n\n--- HELP NEEDED ---\n' + helpNeeded : ''),
-            website_url: website,
-            logo_url: logoUrl,
-            x_handle: xHandle,
-            telegram_url: telegram,
-            fee_split_bps: feeSplit * 100,
-            tier: 'incubated',
-            creator_wallet: state.wallet,
-            agent_enabled: agent.enabled,
-            agent_persona: agent.persona || null,
-            agent_posts_per_day: agent.postsPerDay
-        });
-
-        if (regResult.error) {
-            showToast('Submission failed: ' + regResult.error, 'error');
-            state.deploying = false;
-            updateDeployButton('Submit Application', false);
-            return;
-        }
-
-        state.project = regResult.project;
-        state.step = 5; // incubated success
-        state.deploying = false;
-        updateUI();
-        showToast('Application submitted!', 'success');
-    } catch (e) {
-        state.deploying = false;
-        updateDeployButton('Submit Application', false);
-        showToast('Submission failed: ' + (e.message || 'Unknown error'), 'error');
-    }
-}
-
-// ── Partner Pool flow (deploy staking for existing token) ──
-async function handlePartnerDeploy() {
     var tokenAddress = document.getElementById('partnerTokenAddress').value.trim();
-    var desc = document.getElementById('tokenDesc').value.trim();
-    var website = document.getElementById('tokenWebsite').value.trim();
-    var logoUrl = (document.getElementById('sharedLogoUrl')?.value || '').trim();
-    var xHandle = (document.getElementById('sharedXHandle')?.value || '').trim();
-    var telegram = (document.getElementById('sharedTelegram')?.value || '').trim();
+    var desc = document.getElementById('poolDesc').value.trim();
     var tokenName = document.getElementById('partnerTokenName').textContent;
     var tokenSymbol = document.getElementById('partnerTokenSymbol').textContent.replace('$', '');
-    var agent = getAgentFields();
-    var incToggle = document.getElementById('incubationToggle');
-    var isIncubated = incToggle && incToggle.checked;
+    var agent = getAgentFieldsFrom('pool');
 
     if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
     if (!tokenName || tokenName === '--') return showToast('Enter a valid token address first', 'error');
@@ -801,66 +618,16 @@ async function handlePartnerDeploy() {
         if (!state.wallet) return;
     }
 
-    // ── Partner Incubated: application-only flow (no on-chain deploy) ──
-    if (isIncubated) {
-        var incXHandle = (document.getElementById('incXHandle')?.value || '').trim() || xHandle;
-        var incTelegram = (document.getElementById('incTelegram')?.value || '').trim() || telegram;
-        var incLogoUrl = (document.getElementById('incLogoUrl')?.value || '').trim() || logoUrl;
-        var helpNeeded = (document.getElementById('incHelpNeeded')?.value || '').trim();
-
-        if (!incXHandle && !incTelegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
-
-        state.deploying = true;
-        updateDeployButton('Submitting application...', true);
-
-        try {
-            var regResult = await apiPost({
-                action: 'register',
-                token_address: tokenAddress,
-                token_name: tokenName,
-                token_symbol: tokenSymbol,
-                description: desc + (helpNeeded ? '\n\n--- HELP NEEDED ---\n' + helpNeeded : ''),
-                website_url: website,
-                x_handle: incXHandle,
-                telegram_url: incTelegram,
-                logo_url: incLogoUrl,
-                fee_split_bps: 10000,
-                tier: 'incubated',
-                creator_wallet: state.wallet,
-                agent_enabled: agent.enabled,
-                agent_persona: agent.persona || null,
-                agent_posts_per_day: agent.postsPerDay
-            });
-
-            if (regResult.error) {
-                showToast('Submission failed: ' + regResult.error, 'error');
-                state.deploying = false;
-                updateDeployButton('Submit Application', false);
-                return;
-            }
-
-            state.project = regResult.project;
-            state.step = 5; // incubated success
-            state.deploying = false;
-            updateUI();
-            showToast('Application submitted!', 'success');
-        } catch (e) {
-            state.deploying = false;
-            updateDeployButton('Submit Application', false);
-            showToast('Submission failed: ' + (e.message || 'Unknown error'), 'error');
-        }
-        return;
-    }
-
     state.deploying = true;
-    updateDeployButton('Approving CLAWS...', true);
+    var btn = document.getElementById('deployPoolBtn');
+    setBtnState(btn, 'Approving CLAWS...', true);
 
     try {
         // Step 1: Approve CLAWS to factory
         var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
         await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
 
-        updateDeployButton('Deploying staking pool...', true);
+        setBtnState(btn, 'Deploying staking pool...', true);
 
         // Step 2: deployPaid(tokenAddress, CLAWS)
         var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
@@ -869,7 +636,7 @@ async function handlePartnerDeploy() {
         var stakingPool = parsePoolDeployed(result.receipt);
         if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
 
-        updateDeployButton('Registering project...', true);
+        setBtnState(btn, 'Registering project...', true);
 
         // Step 3: Register with API as partner
         var regResult = await apiPost({
@@ -878,10 +645,6 @@ async function handlePartnerDeploy() {
             token_name: tokenName,
             token_symbol: tokenSymbol,
             description: desc,
-            website_url: website,
-            logo_url: logoUrl,
-            x_handle: xHandle,
-            telegram_url: telegram,
             fee_split_bps: 10000,
             tier: 'partner',
             creator_wallet: state.wallet,
@@ -903,12 +666,13 @@ async function handlePartnerDeploy() {
 
         state.step = 7; // partner success
         state.deploying = false;
+        closeToolDrawer();
         updateUI();
         showToast('Staking deployed!', 'success');
 
     } catch (e) {
         state.deploying = false;
-        updateDeployButton('Deploy Staking', false);
+        setBtnState(btn, 'Deploy Pool', false);
         if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
             showToast('Transaction rejected', 'error');
         } else {
@@ -917,22 +681,134 @@ async function handlePartnerDeploy() {
     }
 }
 
-function updateDeployButton(text, disabled) {
-    var btn = document.getElementById('deployBtn');
-    if (!btn) return;
-    // If resetting (not disabled), use pool-type-appropriate label
-    if (!disabled && !text) {
-        var incToggle = document.getElementById('incubationToggle');
-        if (state.poolType === 'ecosystem') {
-            btn.textContent = 'Register App';
-        } else if (state.poolType === 'partner') {
-            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Staking';
-        } else {
-            btn.textContent = (incToggle && incToggle.checked) ? 'Submit Application' : 'Deploy Token';
-        }
-    } else {
-        btn.textContent = text;
+// ══════════════════════════════════════
+// DEPLOY: REQUEST INCUBATION
+// ══════════════════════════════════════
+
+async function handleIncubationSubmit() {
+    if (state.deploying) return;
+
+    var name = document.getElementById('incProjectName').value.trim();
+    var vision = document.getElementById('incVision').value.trim();
+    var xHandle = document.getElementById('incXHandle').value.trim();
+    var telegram = document.getElementById('incTelegram').value.trim();
+    var logoUrl = document.getElementById('incLogoUrl').value.trim();
+    var helpNeeded = document.getElementById('incHelpNeeded').value.trim();
+    var agent = getAgentFieldsFrom('inc');
+
+    if (!name) return showToast('Project name is required', 'error');
+    if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
     }
+
+    state.deploying = true;
+    var btn = document.getElementById('submitIncubationBtn');
+    setBtnState(btn, 'Submitting application...', true);
+
+    try {
+        var description = vision;
+        if (helpNeeded) description += '\n\n--- HELP NEEDED ---\n' + helpNeeded;
+
+        var regResult = await apiPost({
+            action: 'register',
+            token_name: name,
+            description: description,
+            x_handle: xHandle,
+            telegram_url: telegram,
+            logo_url: logoUrl,
+            fee_split_bps: 10000,
+            tier: 'incubated',
+            creator_wallet: state.wallet,
+            agent_enabled: agent.enabled,
+            agent_persona: agent.persona || null,
+            agent_posts_per_day: agent.postsPerDay
+        });
+
+        if (regResult.error) {
+            showToast('Submission failed: ' + regResult.error, 'error');
+            state.deploying = false;
+            setBtnState(btn, 'Submit Application', false);
+            return;
+        }
+
+        state.project = regResult.project;
+        state.step = 5; // incubated success
+        state.deploying = false;
+        closeToolDrawer();
+        updateUI();
+        showToast('Application submitted!', 'success');
+    } catch (e) {
+        state.deploying = false;
+        setBtnState(btn, 'Submit Application', false);
+        showToast('Submission failed: ' + (e.message || 'Unknown error'), 'error');
+    }
+}
+
+// ══════════════════════════════════════
+// REWARD DEPOSIT
+// ══════════════════════════════════════
+
+async function handleRewardDeposit(projectId, stakingAddress) {
+    var card = document.querySelector('.my-project-card[data-project-id="' + projectId + '"]');
+    if (!card) return;
+
+    var amountInput = card.querySelector('.reward-amount');
+    var durationInput = card.querySelector('.reward-duration');
+    var btn = card.querySelector('.reward-deposit-btn');
+
+    var amount = parseFloat(amountInput.value);
+    var days = parseInt(durationInput.value);
+
+    if (!amount || amount <= 0) return showToast('Enter a valid amount', 'error');
+    if (!days || days <= 0) return showToast('Enter valid duration in days', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Approving...';
+
+    try {
+        var amountWei = BigInt(Math.floor(amount * 1e18)).toString(16).padStart(64, '0');
+        var durationSec = BigInt(days * 86400).toString(16).padStart(64, '0');
+
+        // Approve CLAWS to staking contract
+        var approveData = SEL.approve + pad32(stakingAddress) + amountWei;
+        await sendTxAndWait(state.provider, state.wallet, CLAWS, approveData);
+
+        btn.textContent = 'Depositing...';
+
+        // depositRewards(amount, duration)
+        var depositData = SEL.depositRewards + amountWei + durationSec;
+        await sendTxAndWait(state.provider, state.wallet, stakingAddress, depositData);
+
+        btn.textContent = 'Deposit Rewards';
+        btn.disabled = false;
+        amountInput.value = '';
+        showToast('Rewards deposited!', 'success');
+    } catch (e) {
+        btn.textContent = 'Deposit Rewards';
+        btn.disabled = false;
+        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
+            showToast('Transaction rejected', 'error');
+        } else {
+            showToast('Deposit failed: ' + (e.message || 'Unknown error'), 'error');
+        }
+    }
+}
+
+// ══════════════════════════════════════
+// BUTTON HELPER
+// ══════════════════════════════════════
+
+function setBtnState(btn, text, disabled) {
+    if (!btn) return;
+    btn.textContent = text;
     btn.disabled = disabled;
     if (disabled) {
         btn.classList.add('deploying');
@@ -950,7 +826,7 @@ async function loadProjects() {
         var data = await apiGet();
         state.projects = data.projects || [];
         renderProjects();
-        if (state.tab === 'dashboard') loadMyProjects();
+        loadMyProjects();
     } catch (e) {
         // Silently fail
     }
@@ -978,14 +854,12 @@ function renderProjects() {
         }
         var tierBadge = '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>';
 
-        // Agent status dot
         var agentDot = '';
         if (p.agent_enabled) {
             var dotColor = p.agent_status === 'active' ? 'var(--seafoam-400)' : 'var(--text-dim)';
             agentDot = '<span class="agent-dot" style="background:' + dotColor + '" title="AI Agent ' + (p.agent_status === 'active' ? 'Live' : 'Dormant') + '"></span>';
         }
 
-        // Truncate description
         var desc = p.description || '';
         if (desc.length > 120) desc = desc.slice(0, 117) + '...';
 
@@ -1013,7 +887,6 @@ function escapeHtml(str) {
 // ══════════════════════════════════════
 
 function sortProjects(by) {
-    // Update active button
     document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
     var activeBtn = document.querySelector('.sort-btn[data-sort="' + by + '"]');
     if (activeBtn) activeBtn.classList.add('active');
@@ -1041,7 +914,6 @@ async function loadAdminPanel() {
     if (!panel) return;
     panel.style.display = 'block';
 
-    // Load pending applications
     try {
         var pendingData = await fetch(API_BASE + '?pending=true', {
             headers: { 'x-wallet': state.wallet }
@@ -1052,7 +924,6 @@ async function loadAdminPanel() {
         if (pendingList) pendingList.innerHTML = '<p style="color:var(--text-dim);text-align:center">Failed to load</p>';
     }
 
-    // Load all projects with staking addresses
     try {
         var data = await apiGet();
         var pools = (data.projects || []).filter(function(p) { return p.staking_address; });
@@ -1111,7 +982,7 @@ async function approveProject(id) {
 
 async function rejectProject(id) {
     var reason = prompt('Rejection reason:');
-    if (reason === null) return; // cancelled
+    if (reason === null) return;
     var secret = prompt('Admin secret:');
     if (!secret) return;
 
@@ -1167,7 +1038,6 @@ async function handleBatchDistribute() {
 
     var durationSeconds = days * 86400;
 
-    // Get pools with staking addresses
     var data = await apiGet();
     var pools = (data.projects || []).filter(function(p) { return p.staking_address; });
 
@@ -1176,7 +1046,6 @@ async function handleBatchDistribute() {
     var totalFees = pools.reduce(function(sum, p) { return sum + parseFloat(p.total_fees_claimed || 0); }, 0);
 
     if (totalFees <= 0) {
-        // Equal distribution if no fees tracked yet
         var equalShare = totalAmount / pools.length;
         pools.forEach(function(p) { p._share = equalShare; });
     } else {
@@ -1198,17 +1067,14 @@ async function handleBatchDistribute() {
 
             btn.textContent = 'Approving ' + (i + 1) + '/' + pools.length + '...';
 
-            // Approve CLAWS to staking contract
             var approveData = SEL.approve + pad32(pool.staking_address) + shareWei;
             await sendTxAndWait(state.provider, state.wallet, CLAWS, approveData);
 
             btn.textContent = 'Depositing ' + (i + 1) + '/' + pools.length + '...';
 
-            // depositRewards(amount, duration)
             var depositData = SEL.depositRewards + shareWei + durHex;
             var result = await sendTxAndWait(state.provider, state.wallet, pool.staking_address, depositData);
 
-            // Record in API
             await apiPost({
                 action: 'record-distribution',
                 admin_secret: prompt('Admin secret for recording:'),
@@ -1244,12 +1110,12 @@ function resetForm() {
     state.project = null;
     state.deployedToken = null;
     state.deployTxHash = null;
-    state.poolType = 'launch';
 
-    // Clear form inputs
-    ['tokenName', 'tokenSymbol', 'tokenDesc', 'tokenWebsite', 'ecoProjectName',
-     'partnerTokenAddress', 'sharedLogoUrl', 'sharedXHandle', 'sharedTelegram',
-     'incXHandle', 'incTelegram', 'incLogoUrl', 'incHelpNeeded', 'agentPersona'].forEach(function(id) {
+    // Clear all form inputs
+    ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
+     'partnerTokenAddress', 'poolDesc',
+     'incProjectName', 'incVision', 'incXHandle', 'incTelegram', 'incLogoUrl', 'incHelpNeeded',
+     'launchAgentPersona', 'poolAgentPersona', 'incAgentPersona'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -1258,29 +1124,38 @@ function resetForm() {
     var slider = document.getElementById('feeSplit');
     if (slider) { slider.value = 100; initSlider(); }
 
-    // Reset toggles
-    var incToggle = document.getElementById('incubationToggle');
-    if (incToggle) incToggle.checked = false;
-    var incFields = document.getElementById('incubatedFields');
-    if (incFields) incFields.classList.remove('visible');
-    var agentCheck = document.getElementById('agentEnabled');
-    if (agentCheck) agentCheck.checked = false;
-    var agentOpts = document.getElementById('agentOptions');
-    if (agentOpts) agentOpts.classList.remove('visible');
+    // Reset agent toggles
+    ['launchAgentEnabled', 'poolAgentEnabled', 'incAgentEnabled'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.checked = false;
+    });
+    ['launchAgentOptions', 'poolAgentOptions', 'incAgentOptions'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('visible');
+    });
 
-    // Reset pool type selection
-    selectPoolType('launch');
+    // Reset partner token preview
+    var preview = document.getElementById('partnerTokenPreview');
+    if (preview) preview.classList.add('hidden');
+
+    // Hide success states
+    ['successStep', 'incubatedSuccessStep', 'partnerSuccessStep'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Close drawer
+    closeToolDrawer();
+
     updateUI();
-
-    // Scroll to form
-    var formEl = document.getElementById('formStep');
-    if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
 }
 
 // Expose to onclick handlers
 window.resetForm = resetForm;
 window.approveProject = approveProject;
 window.rejectProject = rejectProject;
+window.openToolDrawer = openToolDrawer;
+window.handleRewardDeposit = handleRewardDeposit;
 
 // ══════════════════════════════════════
 // UI UPDATE
@@ -1289,9 +1164,6 @@ window.rejectProject = rejectProject;
 function updateUI() {
     var connectBtn = document.getElementById('walletConnectBtn');
     var walletInfo = document.getElementById('walletInfo');
-    var launchSection = document.getElementById('launchSection');
-    var formStep = document.getElementById('formStep');
-    var successStep = document.getElementById('successStep');
 
     // Wallet state
     if (state.wallet) {
@@ -1300,89 +1172,56 @@ function updateUI() {
             walletInfo.style.display = 'flex';
             walletInfo.querySelector('.wallet-addr').textContent = shortAddr(state.wallet);
         }
-        if (launchSection) launchSection.style.display = 'block';
     } else {
         if (connectBtn) connectBtn.style.display = 'inline-flex';
         if (walletInfo) walletInfo.style.display = 'none';
-        if (launchSection) launchSection.style.display = 'none';
     }
 
+    // My Projects section — visible when wallet connected
+    var myProjectsSection = document.getElementById('myProjectsSection');
+    if (myProjectsSection) {
+        if (state.wallet) {
+            myProjectsSection.classList.add('visible');
+            loadMyProjects();
+        } else {
+            myProjectsSection.classList.remove('visible');
+        }
+    }
+
+    // Success states
+    var successStep = document.getElementById('successStep');
     var incubatedSuccessStep = document.getElementById('incubatedSuccessStep');
-    var ecosystemSuccessStep = document.getElementById('ecosystemSuccessStep');
     var partnerSuccessStep = document.getElementById('partnerSuccessStep');
 
-    // Hide all success states first
-    function hideAllSuccess() {
-        if (formStep) formStep.style.display = 'none';
-        if (successStep) successStep.style.display = 'none';
-        if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
-        if (ecosystemSuccessStep) ecosystemSuccessStep.style.display = 'none';
-        if (partnerSuccessStep) partnerSuccessStep.style.display = 'none';
-    }
+    // Hide all success states
+    if (successStep) successStep.style.display = 'none';
+    if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
+    if (partnerSuccessStep) partnerSuccessStep.style.display = 'none';
 
-    // Step state
-    if (state.step === 4 && successStep && formStep) {
-        // Launch + Stake deploy success
-        hideAllSuccess();
+    if (state.step === 4 && successStep) {
         successStep.style.display = 'block';
-
         var addrEl = successStep.querySelector('.deployed-address');
         if (addrEl && state.deployedToken) addrEl.textContent = state.deployedToken;
-
         var txLink = successStep.querySelector('.deploy-tx-link');
-        if (txLink && state.deployTxHash) {
-            txLink.href = 'https://basescan.org/tx/' + state.deployTxHash;
-        }
-
+        if (txLink && state.deployTxHash) txLink.href = 'https://basescan.org/tx/' + state.deployTxHash;
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
-
         var agentNote = document.getElementById('agentSuccessNote');
-        if (agentNote && state.project && state.project.agent_enabled) {
-            agentNote.style.display = 'block';
-        }
-    } else if (state.step === 5 && incubatedSuccessStep && formStep) {
-        // Incubated application success
-        hideAllSuccess();
+        if (agentNote && state.project && state.project.agent_enabled) agentNote.style.display = 'block';
+    } else if (state.step === 5 && incubatedSuccessStep) {
         incubatedSuccessStep.style.display = 'block';
-
         var incProjectIdEl = incubatedSuccessStep.querySelector('.incubated-project-id');
         if (incProjectIdEl && state.project) incProjectIdEl.textContent = state.project.id;
-    } else if (state.step === 6 && ecosystemSuccessStep && formStep) {
-        // Ecosystem app success
-        hideAllSuccess();
-        ecosystemSuccessStep.style.display = 'block';
-
-        var ecoProjectIdEl = ecosystemSuccessStep.querySelector('.ecosystem-project-id');
-        if (ecoProjectIdEl && state.project) ecoProjectIdEl.textContent = state.project.id;
-
-        var ecoAgentNote = document.getElementById('ecoAgentSuccessNote');
-        if (ecoAgentNote && state.project && state.project.agent_enabled) {
-            ecoAgentNote.style.display = 'block';
-        }
-    } else if (state.step === 7 && partnerSuccessStep && formStep) {
-        // Partner pool success
-        hideAllSuccess();
+    } else if (state.step === 7 && partnerSuccessStep) {
         partnerSuccessStep.style.display = 'block';
-
         var partnerAddrEl = partnerSuccessStep.querySelector('.partner-staking-addr');
         if (partnerAddrEl && state.project && state.project.staking_address) {
             partnerAddrEl.textContent = state.project.staking_address;
         }
-
         var partnerProjectIdEl = partnerSuccessStep.querySelector('.partner-project-id');
         if (partnerProjectIdEl && state.project) partnerProjectIdEl.textContent = state.project.id;
-
         var partnerAgentNote = document.getElementById('partnerAgentSuccessNote');
-        if (partnerAgentNote && state.project && state.project.agent_enabled) {
-            partnerAgentNote.style.display = 'block';
-        }
-    } else if (formStep && successStep) {
-        formStep.style.display = 'block';
-        successStep.style.display = 'none';
-        if (incubatedSuccessStep) incubatedSuccessStep.style.display = 'none';
-        if (ecosystemSuccessStep) ecosystemSuccessStep.style.display = 'none';
-        if (partnerSuccessStep) partnerSuccessStep.style.display = 'none';
+        if (partnerAgentNote && state.project && state.project.agent_enabled) partnerAgentNote.style.display = 'block';
     }
 
     // Admin panel
@@ -1412,31 +1251,28 @@ function initSlider() {
 }
 
 // ══════════════════════════════════════
-// TABS + MY PROJECTS DASHBOARD
+// MY PROJECTS DASHBOARD
 // ══════════════════════════════════════
-
-function switchTab(tab) {
-    state.tab = tab;
-    var tabLaunch = document.getElementById('tabLaunch');
-    var tabDashboard = document.getElementById('tabDashboard');
-    if (tabLaunch) tabLaunch.classList.toggle('hidden', tab !== 'launch');
-    if (tabDashboard) tabDashboard.classList.toggle('hidden', tab !== 'dashboard');
-
-    document.querySelectorAll('.incl-tab').forEach(function(btn) {
-        btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-
-    if (tab === 'dashboard') loadMyProjects();
-}
 
 function loadMyProjects() {
     var grid = document.getElementById('myProjectsGrid');
     var empty = document.getElementById('myProjectsEmpty');
+    var countBadge = document.getElementById('myProjectsCount');
     if (!grid || !empty) return;
 
     var mine = state.projects.filter(function(p) {
         return p.creator_wallet && p.creator_wallet.toLowerCase() === (state.wallet || '').toLowerCase();
     });
+
+    // Update count badge
+    if (countBadge) {
+        if (mine.length > 0) {
+            countBadge.textContent = mine.length;
+            countBadge.style.display = 'inline';
+        } else {
+            countBadge.style.display = 'none';
+        }
+    }
 
     if (mine.length === 0) {
         grid.innerHTML = '';
@@ -1496,10 +1332,27 @@ function loadMyProjects() {
                 '</div>';
         }
 
+        // Reward Deposit form (only if staking address exists)
+        var rewardDepositHtml = '';
+        if (p.staking_address) {
+            rewardDepositHtml =
+                '<div class="reward-deposit-form">' +
+                    '<div class="form-group">' +
+                        '<label class="form-label">CLAWS Amount</label>' +
+                        '<input class="form-input reward-amount" type="number" placeholder="e.g. 1000000">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label class="form-label">Duration (days)</label>' +
+                        '<input class="form-input reward-duration" type="number" placeholder="30" value="30">' +
+                    '</div>' +
+                    '<button class="reward-deposit-btn" onclick="handleRewardDeposit(\'' + p.id + '\',\'' + p.staking_address + '\')">Deposit Rewards</button>' +
+                '</div>';
+        }
+
         // X connect status
         var xStatusText = p.x_connected ? (p.x_handle ? '@' + escapeHtml(p.x_handle) : 'Connected') : 'Not connected';
 
-        // Agent controls (only if agent enabled)
+        // Agent controls
         var agentPanel = '';
         if (p.agent_enabled) {
             var postsVal = p.agent_posts_per_day || 4;
@@ -1514,6 +1367,7 @@ function loadMyProjects() {
             agentPanel =
                 '<div class="mp-detail-section">' +
                     stakingHtml +
+                    rewardDepositHtml +
                     '<div class="mp-detail-divider"></div>' +
                     '<div class="mp-detail-row">' +
                         '<span class="mp-detail-label">X Account</span>' +
@@ -1539,6 +1393,7 @@ function loadMyProjects() {
             agentPanel =
                 '<div class="mp-detail-section">' +
                     stakingHtml +
+                    rewardDepositHtml +
                     '<div class="mp-detail-divider"></div>' +
                     '<p class="mp-no-agent">No AI agent enabled for this project.</p>' +
                     '<a href="/inclawbator/' + p.id + '" class="owner-btn">Full Details</a>' +
@@ -1611,7 +1466,6 @@ function bindDashboardEvents(grid) {
                 showToast(data.error, 'error');
             } else {
                 showToast('Settings saved', 'success');
-                // Update local project data
                 var proj = state.projects.find(function(p) { return p.id === pid; });
                 if (proj && data.project) {
                     Object.assign(proj, data.project);
@@ -1643,7 +1497,7 @@ function bindDashboardEvents(grid) {
             } else {
                 showToast(newStatus === 'paused' ? 'Agent paused' : 'Agent resumed', 'success');
                 if (data.project) Object.assign(proj, data.project);
-                loadMyProjects(); // re-render
+                loadMyProjects();
             }
         });
     });
@@ -1672,7 +1526,14 @@ function bindDashboardEvents(grid) {
     });
 }
 
-window.switchToLaunchTab = function() { switchTab('launch'); };
+// ══════════════════════════════════════
+// ACCORDION
+// ══════════════════════════════════════
+
+function toggleAccordion() {
+    var accordion = document.getElementById('learnAccordion');
+    if (accordion) accordion.classList.toggle('open');
+}
 
 // ══════════════════════════════════════
 // INIT
@@ -1683,9 +1544,25 @@ async function init() {
     var connectBtn = document.getElementById('walletConnectBtn');
     if (connectBtn) connectBtn.addEventListener('click', connectWallet);
 
-    // Bind deploy
-    var deployBtn = document.getElementById('deployBtn');
-    if (deployBtn) deployBtn.addEventListener('click', handleDeploy);
+    // Bind tool card clicks → open drawers
+    document.querySelectorAll('.tool-card[data-tool]').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't intercept clicks on the <a> card (Build App)
+            if (card.tagName === 'A') return;
+            e.preventDefault();
+            openToolDrawer(card.dataset.tool);
+        });
+    });
+
+    // Bind deploy buttons
+    var deployLaunchBtn = document.getElementById('deployLaunchBtn');
+    if (deployLaunchBtn) deployLaunchBtn.addEventListener('click', handleLaunchDeploy);
+
+    var deployPoolBtn = document.getElementById('deployPoolBtn');
+    if (deployPoolBtn) deployPoolBtn.addEventListener('click', handlePoolDeploy);
+
+    var submitIncBtn = document.getElementById('submitIncubationBtn');
+    if (submitIncBtn) submitIncBtn.addEventListener('click', handleIncubationSubmit);
 
     // Bind sort buttons
     document.querySelectorAll('.sort-btn').forEach(function(btn) {
@@ -1696,100 +1573,16 @@ async function init() {
     var batchBtn = document.getElementById('batchDistributeBtn');
     if (batchBtn) batchBtn.addEventListener('click', handleBatchDistribute);
 
-    // Agent toggle
-    var agentCheckbox = document.getElementById('agentEnabled');
-    var agentOptions = document.getElementById('agentOptions');
-    if (agentCheckbox && agentOptions) {
-        agentCheckbox.addEventListener('change', function() {
-            if (agentCheckbox.checked) {
-                agentOptions.classList.add('visible');
-            } else {
-                agentOptions.classList.remove('visible');
-            }
-        });
-    }
-
-    // Pool type card selection
-    var poolTypeGrid = document.getElementById('poolTypeGrid');
-    if (poolTypeGrid) {
-        poolTypeGrid.addEventListener('click', function(e) {
-            var card = e.target.closest('.pool-type-card');
-            if (card && card.dataset.pool) {
-                selectPoolType(card.dataset.pool);
-            }
-        });
-    }
-
-    // Hub card: Launch → connect wallet if needed, then scroll to launch form
-    var hubLaunch = document.getElementById('hubLaunch');
-    if (hubLaunch) hubLaunch.addEventListener('click', function() {
-        if (!state.wallet) {
-            connectWallet().then(function() {
-                switchTab('launch');
-                document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
+    // Agent toggles (one per drawer)
+    ['launch', 'pool', 'inc'].forEach(function(prefix) {
+        var checkbox = document.getElementById(prefix + 'AgentEnabled');
+        var options = document.getElementById(prefix + 'AgentOptions');
+        if (checkbox && options) {
+            checkbox.addEventListener('change', function() {
+                options.classList.toggle('visible', checkbox.checked);
             });
-        } else {
-            switchTab('launch');
-            document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
         }
     });
-
-    // Hub card: My Projects → connect wallet if needed, then switch to dashboard + scroll
-    var hubProjects = document.getElementById('hubProjects');
-    if (hubProjects) hubProjects.addEventListener('click', function() {
-        if (!state.wallet) {
-            connectWallet().then(function() {
-                switchTab('dashboard');
-                document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
-            });
-        } else {
-            switchTab('dashboard');
-            document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-
-    // Incubation toggle — show/hide incubated fields, change button text
-    var incubationToggle = document.getElementById('incubationToggle');
-    var incubatedFields = document.getElementById('incubatedFields');
-    var deployBtnEl = document.getElementById('deployBtn');
-    var feeSplitGroup = document.getElementById('fieldsFeeSplit');
-
-    if (incubationToggle) {
-        incubationToggle.addEventListener('change', function() {
-            // Ecosystem is always locked on — ignore manual changes
-            if (state.poolType === 'ecosystem') return;
-
-            var isIncubated = incubationToggle.checked;
-
-            if (incubatedFields) {
-                if (isIncubated) {
-                    incubatedFields.classList.add('visible');
-                } else {
-                    incubatedFields.classList.remove('visible');
-                }
-            }
-
-            // Change button text based on pool type
-            if (deployBtnEl && !state.deploying) {
-                if (state.poolType === 'partner') {
-                    deployBtnEl.textContent = isIncubated ? 'Submit Application' : 'Deploy Staking';
-                } else {
-                    deployBtnEl.textContent = isIncubated ? 'Submit Application' : 'Deploy Token';
-                }
-            }
-
-            // Hide fee split for incubated (irrelevant until approved)
-            if (feeSplitGroup) {
-                feeSplitGroup.style.display = isIncubated ? 'none' : '';
-            }
-
-            // Hide shared social when incubated (incubated fields have their own)
-            var sharedSocial = document.getElementById('fieldsSharedSocial');
-            if (sharedSocial && state.poolType === 'partner') {
-                sharedSocial.classList.toggle('hidden', isIncubated);
-            }
-        });
-    }
 
     // Partner token address lookup
     var partnerAddrInput = document.getElementById('partnerTokenAddress');
@@ -1804,6 +1597,10 @@ async function init() {
     // Init slider
     initSlider();
 
+    // Accordion toggle
+    var accordionToggle = document.getElementById('learnAccordionToggle');
+    if (accordionToggle) accordionToggle.addEventListener('click', toggleAccordion);
+
     // Auto-connect if previously connected
     if (window.ethereum) {
         try {
@@ -1817,7 +1614,7 @@ async function init() {
         } catch (e) {}
     }
 
-    // Coming Soon gate — only admin can see the page
+    // Coming Soon gate
     updateComingSoonGate();
 
     // Check for X connect callback result
