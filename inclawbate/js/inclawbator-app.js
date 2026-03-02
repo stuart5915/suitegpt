@@ -1748,17 +1748,6 @@ async function init() {
         }
     });
 
-    // Tab switching
-    var tabContainer = document.getElementById('inclawbatorTabs');
-    if (tabContainer) {
-        tabContainer.addEventListener('click', function(e) {
-            var btn = e.target.closest('.incl-tab');
-            if (btn && btn.dataset.tab) {
-                switchTab(btn.dataset.tab);
-            }
-        });
-    }
-
     // Incubation toggle — show/hide incubated fields, change button text
     var incubationToggle = document.getElementById('incubationToggle');
     var incubatedFields = document.getElementById('incubatedFields');
