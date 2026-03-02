@@ -1609,7 +1609,7 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
 <div class="section-bg-seafoam">
 <section class="ubi-section fade-section">
     <h2><span class="grad-text">Oh, and You Get</span> <span class="ransom-word"><span class="ransom-letter" style="background:#00b894;font-family:'Special Elite',cursive;transform:rotate(-1.5deg)">P</span><span class="ransom-letter" style="background:#d63031;font-family:'Permanent Marker',cursive;transform:rotate(2deg)">a</span><span class="ransom-letter" style="background:#fdcb6e;color:#222;font-family:'Special Elite',cursive;transform:rotate(-2deg)">i</span><span class="ransom-letter" style="background:#6c5ce7;font-family:'Permanent Marker',cursive;transform:rotate(1deg)">d</span></span> <span class="grad-text">Daily</span></h2>
-    <p class="section-sub">Stake $INCLAWNCH. Earn yield. Every single day.</p>
+    <p class="section-sub">Stake $CLAWS. Earn yield. Every single day.</p>
 
     <div class="ubi-stats">
         <div class="ubi-stat">
@@ -1981,8 +1981,8 @@ function copyCA(id) {
 
 // Live UBI stats — reads on-chain staking contract + DexScreener prices
 (function() {
-    var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
-    var STAKING_PROXY = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+    var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
+    var STAKING_PROXY = '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40';
     var BASE_RPC = 'https://mainnet.base.org';
 
     function fmtNum(n) { return Math.round(Number(n) || 0).toLocaleString(); }
@@ -2055,14 +2055,14 @@ function copyCA(id) {
 
     Promise.all([
         fetchRetry('/api/inclawbate/ubi'),
-        fetch('https://api.dexscreener.com/latest/dex/tokens/' + INCLAWNCH).then(function(r) { return r.json(); }).catch(function() { return null; }),
+        fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS).then(function(r) { return r.json(); }).catch(function() { return null; }),
         rpcBatch([
             { to: STAKING_PROXY, data: '0x817b1cd2' }, // [0] totalStaked()
             { to: STAKING_PROXY, data: '0xdff69787' }, // [1] stakerCount()
             { to: STAKING_PROXY, data: '0x7b0a47ee' }, // [2] rewardRate()
             { to: STAKING_PROXY, data: '0x506ec095' }, // [3] periodEnd()
         ]).catch(function() { return ['0x0','0x0','0x0','0x0']; }),
-        fetch('https://base.blockscout.com/api/v2/tokens/' + INCLAWNCH + '/counters')
+        fetch('https://base.blockscout.com/api/v2/tokens/' + CLAWS + '/counters')
             .then(function(r) { return r.json(); }).catch(function() { return null; })
     ]).then(function(results) {
         var ubi = results[0];
@@ -2070,7 +2070,7 @@ function copyCA(id) {
         var chain = results[2];
         var blockscout = results[3];
 
-        var inPrice = bestPrice(inDex, INCLAWNCH);
+        var inPrice = bestPrice(inDex, CLAWS);
 
         // localStorage fallback for price
         if (!inPrice) {
@@ -2118,7 +2118,7 @@ function copyCA(id) {
             var dailyUsd = dailyRate * inPrice;
             setText('numDaily', '$' + fmtUsd(dailyUsd));
         } else if (dailyRate > 0) {
-            setText('numDaily', fmtNum(Math.round(dailyRate)) + ' inCLAWNCH');
+            setText('numDaily', fmtNum(Math.round(dailyRate)) + ' CLAWS');
         }
 
         // Total Value Distributed (USD) — from API (historical data)
