@@ -1741,6 +1741,19 @@ async function init() {
         });
     }
 
+    // Hub card: Launch → scroll to launch section
+    var hubLaunch = document.getElementById('hubLaunch');
+    if (hubLaunch) hubLaunch.addEventListener('click', function() {
+        document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Hub card: My Projects → switch to dashboard tab + scroll
+    var hubProjects = document.getElementById('hubProjects');
+    if (hubProjects) hubProjects.addEventListener('click', function() {
+        switchTab('dashboard');
+        document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
     // Tab switching
     var tabContainer = document.getElementById('inclawbatorTabs');
     if (tabContainer) {
