@@ -762,89 +762,9 @@ function setBtnState(btn, text, disabled) {
     }
 }
 
-// ══════════════════════════════════════
-// PROJECT CARDS
-// ══════════════════════════════════════
-
-async function loadProjects() {
-    try {
-        var data = await apiGet();
-        state.projects = data.projects || [];
-        renderProjects();
-    } catch (e) {
-        // Silently fail
-    }
-}
-
-function renderProjects() {
-    var grid = document.getElementById('projectsGrid');
-    if (!grid) return;
-
-    if (state.projects.length === 0) {
-        grid.innerHTML = '<div class="no-projects">No projects launched yet. Be the first!</div>';
-        return;
-    }
-
-    grid.innerHTML = state.projects.map(function(p) {
-        var tierLabel, tierClass;
-        if (p.tier === 'ecosystem') {
-            tierLabel = 'Ecosystem App'; tierClass = 'tier-ecosystem';
-        } else if (p.tier === 'partner' || p.tier === 'byt') {
-            tierLabel = 'Partner Pool'; tierClass = 'tier-partner';
-        } else if (p.tier === 'incubated') {
-            tierLabel = 'Incubated'; tierClass = 'tier-incubated';
-        } else {
-            tierLabel = 'Launch + Stake'; tierClass = 'tier-permissionless';
-        }
-        var tierBadge = '<span class="tier-badge ' + tierClass + '">' + tierLabel + '</span>';
-
-        var agentDot = '';
-        if (p.agent_enabled) {
-            var dotColor = p.agent_status === 'active' ? 'var(--seafoam-400)' : 'var(--text-dim)';
-            agentDot = '<span class="agent-dot" style="background:' + dotColor + '" title="AI Agent ' + (p.agent_status === 'active' ? 'Live' : 'Dormant') + '"></span>';
-        }
-
-        var desc = p.description || '';
-        if (desc.length > 120) desc = desc.slice(0, 117) + '...';
-
-        return '<a href="/inclawbator/' + p.id + '" class="project-card" style="border-color:' + (p.color || 'var(--border-subtle)') + '">' +
-            '<div class="project-card-header">' +
-                (p.logo_url ? '<img src="' + p.logo_url + '" class="project-logo" alt="">' : '<div class="project-logo-placeholder" style="background:' + (p.color || 'var(--seafoam-500)') + '">' + (p.token_symbol || '?')[0] + '</div>') +
-                '<div class="project-card-info">' +
-                    '<div class="project-name">' + escapeHtml(p.token_name) + ' ' + agentDot + '</div>' +
-                    '<div class="project-symbol">$' + escapeHtml(p.token_symbol) + '</div>' +
-                '</div>' +
-                tierBadge +
-            '</div>' +
-            (desc ? '<p class="project-desc">' + escapeHtml(desc) + '</p>' : '') +
-        '</a>';
-    }).join('');
-}
-
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// ══════════════════════════════════════
-// SORT/FILTER
-// ══════════════════════════════════════
-
-function sortProjects(by) {
-    document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
-    var activeBtn = document.querySelector('.sort-btn[data-sort="' + by + '"]');
-    if (activeBtn) activeBtn.classList.add('active');
-
-    var sorted = state.projects.slice();
-    if (by === 'newest') {
-        sorted.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
-    } else if (by === 'fees') {
-        sorted.sort(function(a, b) { return (b.total_fees_claimed || 0) - (a.total_fees_claimed || 0); });
-    } else if (by === 'split') {
-        sorted.sort(function(a, b) { return (b.fee_split_bps || 0) - (a.fee_split_bps || 0); });
-    }
-    state.projects = sorted;
-    renderProjects();
 }
 
 // ══════════════════════════════════════
@@ -1220,11 +1140,6 @@ async function init() {
     var submitIncBtn = document.getElementById('submitIncubationBtn');
     if (submitIncBtn) submitIncBtn.addEventListener('click', handleIncubationSubmit);
 
-    // Bind sort buttons
-    document.querySelectorAll('.sort-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() { sortProjects(btn.dataset.sort); });
-    });
-
     // Bind admin distribute
     var batchBtn = document.getElementById('batchDistributeBtn');
     if (batchBtn) batchBtn.addEventListener('click', handleBatchDistribute);
@@ -1288,8 +1203,7 @@ async function init() {
         window.history.replaceState({}, '', window.location.pathname);
     }
 
-    // Load projects
-    loadProjects();
+    // Load admin panel (handled by updateUI when admin)
 }
 
 
