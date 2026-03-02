@@ -114,12 +114,22 @@ export default async function handler(req, res) {
     try {
         const { data, error } = await supabase
             .from('user_apps')
-            .select('id, code, claws_price, creator_wallet, creator_x_handle, name, slug, description')
+            .select('id, code, app_url, claws_price, creator_wallet, creator_x_handle, name, slug, description')
             .eq('slug', slug)
             .eq('is_public', true)
             .single();
 
-        if (error || !data || !data.code) {
+        if (error || !data) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.status(404).send(notFoundPage());
+        }
+
+        // If app has no code but has an external URL, redirect
+        if (!data.code && data.app_url) {
+            return res.redirect(302, data.app_url);
+        }
+
+        if (!data.code) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(404).send(notFoundPage());
         }

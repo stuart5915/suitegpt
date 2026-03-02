@@ -96,20 +96,14 @@ export default async function handler(req, res) {
     // ── GET — list apps ──
     if (req.method === 'GET') {
         try {
-            const { category, search, sort, page, limit: rawLimit, id, debug } = req.query;
+            const { category, search, sort, page, limit: rawLimit, id } = req.query;
             const user = getUser(req);
-
-            // Debug: raw count of user_apps
-            if (debug === '1') {
-                const { data: all, error: e1, count: c1 } = await supabase.from('user_apps').select('id, name, slug, is_public, is_listed', { count: 'exact' }).limit(5);
-                return res.json({ total_rows: c1, sample: all, error: e1 });
-            }
 
             // Single app detail (include code for fork)
             if (id) {
                 const { data: app, error } = await supabase
                     .from('user_apps')
-                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, forked_from_user_app, created_at, updated_at, code')
+                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, forked_from_user_app, app_url, created_at, updated_at, code')
                     .eq('id', id)
                     .maybeSingle();
 
@@ -136,7 +130,7 @@ export default async function handler(req, res) {
 
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, created_at', { count: 'exact' })
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, created_at', { count: 'exact' })
                 .eq('is_public', true);
 
             if (category && category !== 'all') {
