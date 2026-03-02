@@ -1293,27 +1293,18 @@ function updateUI() {
     var formStep = document.getElementById('formStep');
     var successStep = document.getElementById('successStep');
 
-    var heroLaunchBtn = document.getElementById('heroLaunchBtn');
-
-    // Tabs visibility (only when wallet connected)
-    var inclawbatorTabs = document.getElementById('inclawbatorTabs');
-
     // Wallet state
     if (state.wallet) {
         if (connectBtn) connectBtn.style.display = 'none';
-        if (heroLaunchBtn) heroLaunchBtn.style.display = 'inline-flex';
         if (walletInfo) {
             walletInfo.style.display = 'flex';
             walletInfo.querySelector('.wallet-addr').textContent = shortAddr(state.wallet);
         }
         if (launchSection) launchSection.style.display = 'block';
-        if (inclawbatorTabs) inclawbatorTabs.style.display = 'flex';
     } else {
         if (connectBtn) connectBtn.style.display = 'inline-flex';
-        if (heroLaunchBtn) heroLaunchBtn.style.display = 'none';
         if (walletInfo) walletInfo.style.display = 'none';
         if (launchSection) launchSection.style.display = 'none';
-        if (inclawbatorTabs) inclawbatorTabs.style.display = 'none';
     }
 
     var incubatedSuccessStep = document.getElementById('incubatedSuccessStep');
@@ -1692,18 +1683,6 @@ async function init() {
     var connectBtn = document.getElementById('walletConnectBtn');
     if (connectBtn) connectBtn.addEventListener('click', connectWallet);
 
-    var heroCta = document.getElementById('heroLaunchBtn');
-    if (heroCta) heroCta.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (!state.wallet) {
-            connectWallet().then(function() {
-                document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
-            });
-        } else {
-            document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-
     // Bind deploy
     var deployBtn = document.getElementById('deployBtn');
     if (deployBtn) deployBtn.addEventListener('click', handleDeploy);
@@ -1741,17 +1720,32 @@ async function init() {
         });
     }
 
-    // Hub card: Launch → scroll to launch section
+    // Hub card: Launch → connect wallet if needed, then scroll to launch form
     var hubLaunch = document.getElementById('hubLaunch');
     if (hubLaunch) hubLaunch.addEventListener('click', function() {
-        document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+        if (!state.wallet) {
+            connectWallet().then(function() {
+                switchTab('launch');
+                document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
+            });
+        } else {
+            switchTab('launch');
+            document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+        }
     });
 
-    // Hub card: My Projects → switch to dashboard tab + scroll
+    // Hub card: My Projects → connect wallet if needed, then switch to dashboard + scroll
     var hubProjects = document.getElementById('hubProjects');
     if (hubProjects) hubProjects.addEventListener('click', function() {
-        switchTab('dashboard');
-        document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+        if (!state.wallet) {
+            connectWallet().then(function() {
+                switchTab('dashboard');
+                document.getElementById('launchSection')?.scrollIntoView({ behavior: 'smooth' });
+            });
+        } else {
+            switchTab('dashboard');
+            document.getElementById('launchSection').scrollIntoView({ behavior: 'smooth' });
+        }
     });
 
     // Tab switching
