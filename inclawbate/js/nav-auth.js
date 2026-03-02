@@ -28,7 +28,7 @@
         if (!profileStr) return;
 
         const profile = JSON.parse(profileStr);
-        if (!profile || !profile.x_handle) return;
+        if (!profile) return;
 
         const navLinks = document.querySelector('.nav-links');
         if (!navLinks) return;
@@ -52,20 +52,27 @@
             } else {
                 const span = document.createElement('span');
                 span.className = 'nav-avatar-fallback';
-                span.textContent = (profile.x_name || profile.x_handle || '?')[0].toUpperCase();
+                span.textContent = (profile.x_name || profile.x_handle || profile.wallet_address || '?')[0].toUpperCase();
                 userBtn.appendChild(span);
             }
 
             const handleSpan = document.createElement('span');
             handleSpan.className = 'nav-handle';
-            handleSpan.textContent = `@${profile.x_handle}`;
+            const isWalletOnly = !profile.x_handle || profile.x_handle.startsWith('w_');
+            if (isWalletOnly && profile.wallet_address) {
+                const addr = profile.wallet_address;
+                handleSpan.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
+            } else {
+                handleSpan.textContent = `@${profile.x_handle}`;
+            }
             userBtn.appendChild(handleSpan);
 
             // Dropdown
             const dropdown = document.createElement('div');
             dropdown.className = 'nav-dropdown';
+            const profileHref = profile.x_handle ? `/u/${encodeURIComponent(profile.x_handle)}` : '#';
             dropdown.innerHTML = `
-                <a href="/u/${encodeURIComponent(profile.x_handle)}" class="nav-dropdown-item">Profile</a>
+                <a href="${profileHref}" class="nav-dropdown-item">Profile</a>
                 <a href="/dashboard" class="nav-dropdown-item nav-inbox-link">Inbox</a>
                 <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="nav-dropdown-item">Chat</a>
                 <button type="button" class="nav-dropdown-item nav-disconnect">Disconnect</button>

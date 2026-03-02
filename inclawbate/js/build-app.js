@@ -500,6 +500,48 @@
         sendMessage();
     }
 
+    // ── Wallet Connect ──
+    async function connectWallet() {
+        if (!window.ethereum) {
+            alert('No wallet detected. Install MetaMask or another browser wallet to continue.');
+            return;
+        }
+
+        try {
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var address = accounts[0];
+            var timestamp = Math.floor(Date.now() / 1000);
+            var message = 'Sign in to Inclawbate Build Studio\nWallet: ' + address + '\nTimestamp: ' + timestamp;
+
+            var signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, address]
+            });
+
+            var resp = await fetch('/api/inclawbate/wallet-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: address, signature: signature, message: message })
+            });
+
+            var data = await resp.json();
+
+            if (!resp.ok || !data.success) {
+                alert(data.error || 'Wallet login failed. Please try again.');
+                return;
+            }
+
+            localStorage.setItem('inclawbate_token', data.token);
+            localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+
+            fetchCredits();
+            loadProjects();
+        } catch (e) {
+            if (e.code === 4001) return; // user rejected
+            alert('Wallet connection failed. Please try again.');
+        }
+    }
+
     // ── Go Back ──
     function goBack() {
         loadProjects();
@@ -558,7 +600,8 @@
         copyWallet: copyWallet,
         onTxInput: onTxInput,
         verifyDeposit: verifyDeposit,
-        usePrompt: usePrompt
+        usePrompt: usePrompt,
+        connectWallet: connectWallet
     };
 
     // ── Boot ──

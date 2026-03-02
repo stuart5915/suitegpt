@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { verifyMessage, randomBytes } from 'ethers';
+import { createJwt } from './x-callback.js';
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -107,13 +108,28 @@ export default async function handler(req, res) {
             }
         }
 
+        // Issue JWT
+        const now = Math.floor(Date.now() / 1000);
+        const token = createJwt({
+            sub: profile.id,
+            x_handle: profile.x_handle,
+            wallet_address: address.toLowerCase(),
+            iat: now,
+            exp: now + 7 * 24 * 60 * 60 // 7 days
+        });
+
         return res.status(200).json({
             success: true,
-            api_key: profile.api_key,
-            wallet_address: profile.wallet_address,
-            credits: profile.credits || 0,
-            x_handle: profile.x_handle,
-            x_name: profile.x_name
+            token,
+            profile: {
+                id: profile.id,
+                x_handle: profile.x_handle,
+                x_name: profile.x_name,
+                x_avatar_url: profile.x_avatar_url || null,
+                wallet_address: profile.wallet_address,
+                credits: profile.credits || 0,
+                api_key: profile.api_key
+            }
         });
 
     } catch (err) {

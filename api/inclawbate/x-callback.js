@@ -26,7 +26,7 @@ function base64url(str) {
     return Buffer.from(str).toString('base64url');
 }
 
-function createJwt(payload) {
+export function createJwt(payload) {
     const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const body = base64url(JSON.stringify(payload));
     const sig = createHmac('sha256', JWT_SECRET)
