@@ -48,7 +48,8 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { name, slug, code, email, description, source, update } = req.body;
+        const { name, slug, code, email, description, source, update,
+                category, claws_price, creator_wallet, creator_x_handle, tags, is_listed } = req.body;
 
         // Validate required fields
         if (!slug || !code || !email) {
@@ -92,14 +93,22 @@ export default async function handler(req, res) {
                 return res.status(403).json({ error: 'You can only update your own site.' });
             }
 
+            const updatePayload = {
+                code,
+                name: name || cleanSlug,
+                description: description || null,
+                updated_at: new Date().toISOString(),
+            };
+            if (category) updatePayload.category = category;
+            if (claws_price !== undefined) updatePayload.claws_price = claws_price;
+            if (creator_wallet) updatePayload.creator_wallet = creator_wallet;
+            if (creator_x_handle) updatePayload.creator_x_handle = creator_x_handle;
+            if (tags) updatePayload.tags = tags;
+            if (is_listed !== undefined) updatePayload.is_listed = is_listed;
+
             const { error: updateErr } = await supabase
                 .from('user_apps')
-                .update({
-                    code,
-                    name: name || cleanSlug,
-                    description: description || null,
-                    updated_at: new Date().toISOString(),
-                })
+                .update(updatePayload)
                 .eq('slug', cleanSlug);
 
             if (updateErr) throw updateErr;
@@ -114,18 +123,27 @@ export default async function handler(req, res) {
         }
 
         // Insert
+        const VALID_CATEGORIES = ['tools', 'games', 'creative', 'finance', 'social', 'other'];
+        const insertPayload = {
+            name: name || cleanSlug,
+            slug: cleanSlug,
+            description: description || null,
+            code,
+            is_public: true,
+            is_listed: is_listed === true,
+            publisher_email: email,
+            source: source || 'clients-publish',
+            category: VALID_CATEGORIES.includes(category) ? category : 'other',
+            claws_price: parseFloat(claws_price) || 0,
+            creator_wallet: creator_wallet || null,
+            creator_x_handle: creator_x_handle || null,
+            tags: Array.isArray(tags) ? tags.slice(0, 10) : [],
+            upvote_count: 0,
+        };
+
         const { error: insertErr } = await supabase
             .from('user_apps')
-            .insert({
-                name: name || cleanSlug,
-                slug: cleanSlug,
-                description: description || null,
-                code,
-                is_public: true,
-                is_listed: false,
-                publisher_email: email,
-                source: source || 'clients-publish',
-            });
+            .insert(insertPayload);
 
         if (insertErr) throw insertErr;
 

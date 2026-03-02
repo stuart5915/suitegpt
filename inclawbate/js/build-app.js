@@ -352,11 +352,26 @@
     function openPublish() {
         if (!state.currentCode) return;
         els.publishOverlay.classList.add('active');
+
+        // Pre-fill fields
+        var nameEl = document.getElementById('publishName');
+        var descEl = document.getElementById('publishDesc');
+        if (nameEl) nameEl.value = state.title !== 'New Project' ? state.title : '';
+        if (descEl) descEl.value = '';
+
         els.publishSlug.value = '';
         els.publishResult.innerHTML = '';
         els.publishConfirm.disabled = true;
         els.slugPreview.textContent = 'inclawbate.com/s/...';
-        els.publishSlug.focus();
+
+        // Auto-generate slug from title
+        if (state.title && state.title !== 'New Project') {
+            var autoSlug = state.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 63);
+            els.publishSlug.value = autoSlug;
+            onSlugInput();
+        }
+
+        if (nameEl) nameEl.focus();
     }
 
     function closePublish() {
@@ -370,6 +385,14 @@
         els.publishConfirm.disabled = !raw || raw.length < 2;
     }
 
+    function onPaidToggle() {
+        var paid = document.getElementById('publishPaid');
+        var priceRow = document.getElementById('publishPriceRow');
+        if (paid && priceRow) {
+            priceRow.classList.toggle('visible', paid.checked);
+        }
+    }
+
     async function publish() {
         var slug = els.publishSlug.value.trim();
         if (!slug || !state.currentCode) return;
@@ -381,24 +404,43 @@
         var profile = getProfile();
         var email = (profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'build@inclawbate.com');
 
+        // Collect new fields
+        var appName = (document.getElementById('publishName') || {}).value || state.title;
+        var appDesc = (document.getElementById('publishDesc') || {}).value || '';
+        var category = (document.getElementById('publishCategory') || {}).value || 'other';
+        var isPaid = (document.getElementById('publishPaid') || {}).checked || false;
+        var priceVal = isPaid ? parseFloat((document.getElementById('publishPrice') || {}).value) || 0 : 0;
+        var tagsRaw = (document.getElementById('publishTags') || {}).value || '';
+        var tags = tagsRaw.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+        var isListed = (document.getElementById('publishListed') || {}).checked !== false;
+        var creatorWallet = profile && profile.wallet_address ? profile.wallet_address : null;
+        var creatorXHandle = profile && profile.x_handle ? profile.x_handle : null;
+
         try {
             var resp = await fetch(PUBLISH_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: state.title,
+                    name: appName,
                     slug: slug,
                     code: state.currentCode,
                     email: email,
-                    description: 'Built with Inclawbate Build Studio',
-                    source: 'build-studio'
+                    description: appDesc || 'Built with Inclawbate Build Studio',
+                    source: 'build-studio',
+                    category: category,
+                    claws_price: priceVal,
+                    creator_wallet: creatorWallet,
+                    creator_x_handle: creatorXHandle,
+                    tags: tags,
+                    is_listed: isListed
                 })
             });
 
             var data = await resp.json();
 
             if (data.success) {
-                els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>';
+                var storeLink = isListed ? ' | <a href="/apps" target="_blank">View in App Store</a>' : '';
+                els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>' + storeLink;
                 els.publishResult.className = 'publish-result';
 
                 // Update session with slug
@@ -609,6 +651,7 @@
         openPublish: openPublish,
         closePublish: closePublish,
         onSlugInput: onSlugInput,
+        onPaidToggle: onPaidToggle,
         publish: publish,
         openBuyCredits: openBuyCredits,
         closeBuyCredits: closeBuyCredits,

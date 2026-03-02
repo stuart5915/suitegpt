@@ -414,7 +414,9 @@
             border-radius: var(--radius-xl);
             padding: var(--space-2xl);
             width: 90%;
-            max-width: 420px;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
         }
         .publish-modal h3 {
             color: var(--text-primary);
@@ -479,6 +481,79 @@
         }
         .publish-result a { color: var(--seafoam-300); }
         .publish-result.error { color: var(--red); }
+        .publish-modal textarea {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: var(--space-md);
+            box-sizing: border-box;
+            resize: vertical;
+            min-height: 60px;
+        }
+        .publish-modal textarea:focus { border-color: var(--accent-primary); }
+        .publish-modal select {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: var(--space-md);
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .publish-modal select:focus { border-color: var(--accent-primary); }
+        .publish-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        .publish-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            user-select: none;
+        }
+        .publish-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--seafoam-400);
+            cursor: pointer;
+        }
+        .publish-price-input {
+            display: none;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .publish-price-input.visible { display: flex; }
+        .publish-price-input input {
+            width: 120px;
+            margin-bottom: 0;
+        }
+        .publish-price-input span {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+        .publish-divider {
+            border: none;
+            border-top: 1px solid var(--border-subtle);
+            margin: var(--space-md) 0;
+        }
 
         /* ── Welcome State ── */
         .build-welcome {
@@ -679,6 +754,7 @@
         <a href="/angel" class="nav-link">NFT</a>
         <a href="/kingdom" class="nav-link">Kingdom</a>
         <a href="/build" class="nav-link active">Build</a>
+        <a href="/apps" class="nav-link">Apps</a>
         <a href="/inclawbator" class="nav-link">Inclawbator</a>
     </div>
 </nav>
@@ -750,10 +826,51 @@
 <!-- Publish Modal -->
 <div id="publishOverlay" class="publish-overlay">
     <div class="publish-modal">
-        <h3>Publish Your Site</h3>
-        <label for="publishSlug">Choose a URL slug</label>
+        <h3>Publish to App Store</h3>
+
+        <label for="publishName">App name</label>
+        <input id="publishName" type="text" placeholder="My Cool App" maxlength="80">
+
+        <label for="publishDesc">Short description</label>
+        <textarea id="publishDesc" placeholder="What does your app do? (140 chars)" maxlength="140" rows="2"></textarea>
+
+        <label for="publishCategory">Category</label>
+        <select id="publishCategory">
+            <option value="tools">Tools</option>
+            <option value="games">Games</option>
+            <option value="creative">Creative</option>
+            <option value="finance">Finance</option>
+            <option value="social">Social</option>
+            <option value="other" selected>Other</option>
+        </select>
+
+        <div class="publish-row">
+            <label class="publish-toggle">
+                <input type="checkbox" id="publishPaid" onchange="window.BuildApp.onPaidToggle()">
+                Paid app
+            </label>
+        </div>
+        <div id="publishPriceRow" class="publish-price-input">
+            <input id="publishPrice" type="number" min="1" placeholder="100" value="">
+            <span>CLAWS</span>
+        </div>
+
+        <label for="publishTags">Tags (comma separated)</label>
+        <input id="publishTags" type="text" placeholder="ai, utility, fun">
+
+        <div class="publish-row">
+            <label class="publish-toggle">
+                <input type="checkbox" id="publishListed" checked>
+                List on App Store
+            </label>
+        </div>
+
+        <hr class="publish-divider">
+
+        <label for="publishSlug">URL slug</label>
         <input id="publishSlug" type="text" placeholder="my-cool-site" oninput="window.BuildApp.onSlugInput()">
         <div id="slugPreview" class="publish-slug-preview">inclawbate.com/s/...</div>
+
         <div class="publish-actions">
             <button class="publish-cancel" onclick="window.BuildApp.closePublish()">Cancel</button>
             <button id="publishConfirm" class="publish-confirm" onclick="window.BuildApp.publish()" disabled>Publish</button>
