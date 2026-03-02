@@ -325,6 +325,94 @@
             font-family: var(--font-mono);
         }
 
+        /* ── Unlock + Tip UI ── */
+        .app-unlock-section, .app-tip-section {
+            margin-top: var(--space-md);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .app-unlock-section h4, .app-tip-section h4 {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .app-unlock-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-md);
+        }
+        .app-unlock-status {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--seafoam-400);
+            margin-bottom: var(--space-sm);
+        }
+        .app-tx-row {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            margin-bottom: var(--space-sm);
+        }
+        .app-tx-input {
+            flex: 1;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            outline: none;
+        }
+        .app-tx-input:focus { border-color: var(--accent-primary); }
+        .app-tx-input::placeholder { color: var(--text-dim); }
+        .app-verify-btn {
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .app-verify-btn:disabled { opacity: 0.4; cursor: default; }
+        .app-tip-amounts {
+            display: flex;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-sm);
+            flex-wrap: wrap;
+        }
+        .app-tip-btn {
+            padding: var(--space-xs) var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .app-tip-btn:hover {
+            border-color: var(--sand-400);
+            color: var(--sand-300);
+        }
+        .app-tip-btn.active {
+            background: hsla(32, 40%, 30%, 0.3);
+            border-color: var(--sand-400);
+            color: var(--sand-300);
+        }
+        .app-result {
+            font-size: 0.8rem;
+            margin-top: var(--space-sm);
+        }
+        .app-result.success { color: var(--seafoam-400); }
+        .app-result.error { color: #ef4444; }
+
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
@@ -510,6 +598,42 @@
             var tags = (app.tags || []);
             var tagsHtml = tags.map(function(t) { return '<span class="app-tag">' + escapeHtml(t) + '</span>'; }).join('');
 
+            var isPaid = app.claws_price > 0;
+            var appIdSafe = app.id.replace(/'/g, '');
+
+            // Build unlock section for paid apps
+            var unlockHtml = '';
+            if (isPaid && app.creator_wallet) {
+                unlockHtml =
+                    '<div class="app-unlock-section" id="unlock-' + appIdSafe + '">' +
+                        '<h4>Unlock for ' + formatNum(app.claws_price) + ' CLAWS</h4>' +
+                        '<p class="app-unlock-info">Send ' + formatNum(app.claws_price) + ' CLAWS to <strong style="font-family:var(--font-mono);font-size:0.7rem;">' + app.creator_wallet.slice(0, 8) + '...' + app.creator_wallet.slice(-6) + '</strong>, then paste the tx hash below.</p>' +
+                        '<div class="app-tx-row">' +
+                            '<input class="app-tx-input" type="text" placeholder="0x..." id="unlock-tx-' + appIdSafe + '" onclick="event.stopPropagation()">' +
+                            '<button class="app-verify-btn" onclick="event.stopPropagation(); AppStore.unlock(\'' + appIdSafe + '\')">Verify</button>' +
+                        '</div>' +
+                        '<div class="app-result" id="unlock-result-' + appIdSafe + '"></div>' +
+                    '</div>';
+            }
+
+            // Build tip section
+            var tipHtml =
+                '<div class="app-tip-section">' +
+                    '<h4>Tip Creator</h4>' +
+                    (app.creator_wallet
+                        ? '<div class="app-tip-amounts">' +
+                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 10)">10 CLAWS</button>' +
+                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 50)">50 CLAWS</button>' +
+                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 100)">100 CLAWS</button>' +
+                          '</div>' +
+                          '<div class="app-tx-row">' +
+                            '<input class="app-tx-input" type="text" placeholder="Paste tip tx hash..." id="tip-tx-' + appIdSafe + '" onclick="event.stopPropagation()">' +
+                            '<button class="app-verify-btn" onclick="event.stopPropagation(); AppStore.tip(\'' + appIdSafe + '\')">Verify Tip</button>' +
+                          '</div>' +
+                          '<div class="app-result" id="tip-result-' + appIdSafe + '"></div>'
+                        : '<p class="app-unlock-info">Creator has no wallet set.</p>') +
+                '</div>';
+
             card.innerHTML =
                 '<div class="app-upvote">' +
                     '<button class="app-upvote-btn' + (app.has_upvoted ? ' upvoted' : '') + '" data-id="' + app.id + '" onclick="event.stopPropagation(); AppStore.upvote(\'' + app.id + '\', this)">' +
@@ -532,6 +656,8 @@
                         '<div class="app-detail-actions">' +
                             '<a class="app-use-btn" href="/s/' + encodeURIComponent(app.slug) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
                         '</div>' +
+                        unlockHtml +
+                        tipHtml +
                     '</div>' +
                 '</div>' +
                 '<div class="app-thumb">' + icon + '</div>';
@@ -608,6 +734,103 @@
         }
     }
 
+    // ── Unlock ──
+    async function unlock(appId) {
+        if (!isLoggedIn()) { alert('Connect your wallet first.'); return; }
+        var txInput = document.getElementById('unlock-tx-' + appId);
+        var resultEl = document.getElementById('unlock-result-' + appId);
+        if (!txInput || !resultEl) return;
+
+        var txHash = txInput.value.trim();
+        if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+            resultEl.textContent = 'Enter a valid tx hash';
+            resultEl.className = 'app-result error';
+            return;
+        }
+
+        resultEl.textContent = 'Verifying on-chain...';
+        resultEl.className = 'app-result';
+
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ action: 'unlock', app_id: appId, tx_hash: txHash })
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.unlocked) {
+                resultEl.textContent = 'Unlocked! Paid ' + data.amount + ' CLAWS.';
+                resultEl.className = 'app-result success';
+                // Replace unlock section with success
+                var section = document.getElementById('unlock-' + appId);
+                if (section) {
+                    section.innerHTML = '<div class="app-unlock-status">Unlocked</div>';
+                }
+            } else {
+                resultEl.textContent = data.error || 'Verification failed.';
+                resultEl.className = 'app-result error';
+            }
+        } catch(e) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'app-result error';
+        }
+    }
+
+    // ── Tip ──
+    function selectTip(appId, amount) {
+        // Highlight selected button
+        var section = document.getElementById('tip-tx-' + appId);
+        if (section) section.focus();
+        var btns = section ? section.closest('.app-tip-section').querySelectorAll('.app-tip-btn') : [];
+        btns.forEach(function(b) { b.classList.remove('active'); });
+        event.target.classList.add('active');
+    }
+
+    async function tip(appId) {
+        if (!isLoggedIn()) { alert('Connect your wallet first.'); return; }
+        var txInput = document.getElementById('tip-tx-' + appId);
+        var resultEl = document.getElementById('tip-result-' + appId);
+        if (!txInput || !resultEl) return;
+
+        var txHash = txInput.value.trim();
+        if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+            resultEl.textContent = 'Enter a valid tx hash';
+            resultEl.className = 'app-result error';
+            return;
+        }
+
+        resultEl.textContent = 'Verifying tip on-chain...';
+        resultEl.className = 'app-result';
+
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ action: 'tip', app_id: appId, tx_hash: txHash })
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.tipped) {
+                resultEl.textContent = 'Tipped ' + data.amount + ' CLAWS! Thanks for supporting the creator.';
+                resultEl.className = 'app-result success';
+                txInput.value = '';
+            } else {
+                resultEl.textContent = data.error || 'Tip verification failed.';
+                resultEl.className = 'app-result error';
+            }
+        } catch(e) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'app-result error';
+        }
+    }
+
     // ── Helpers ──
     function escapeHtml(str) {
         var d = document.createElement('div');
@@ -640,6 +863,9 @@
     // ── Public API ──
     window.AppStore = {
         upvote: upvote,
+        unlock: unlock,
+        tip: tip,
+        selectTip: selectTip,
         nextPage: nextPage,
         prevPage: prevPage
     };

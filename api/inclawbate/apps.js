@@ -1,4 +1,4 @@
-// App Store API — list apps (GET) + upvote toggle (POST)
+// App Store API — list apps (GET) + upvote/unlock/tip (POST)
 
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'crypto';
@@ -9,6 +9,63 @@ const supabase = createClient(
 );
 
 const JWT_SECRET = process.env.INCLAWBATE_JWT_SECRET;
+
+// On-chain verification constants (CLAWS on Base)
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379'.toLowerCase();
+const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org'
+];
+
+async function rpcCall(method, params) {
+    for (let i = 0; i < BASE_RPCS.length; i++) {
+        try {
+            const resp = await fetch(BASE_RPCS[i], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+            });
+            if (resp.status === 429) continue;
+            const data = await resp.json();
+            if (data.result !== undefined) return data.result;
+        } catch (e) { /* try next */ }
+    }
+    return null;
+}
+
+async function verifyClawsTransfer(txHash, expectedRecipient, minAmount) {
+    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+    if (!receipt || receipt.status !== '0x1') {
+        return { valid: false, reason: 'Transaction failed or not found' };
+    }
+
+    const transferLog = (receipt.logs || []).find(log =>
+        log.address.toLowerCase() === CLAWS_ADDRESS &&
+        log.topics[0] === ERC20_TRANSFER_TOPIC
+    );
+    if (!transferLog) {
+        return { valid: false, reason: 'No CLAWS transfer found in transaction' };
+    }
+
+    const to = '0x' + transferLog.topics[2].slice(26).toLowerCase();
+    const amount = Number(BigInt(transferLog.data)) / 1e18;
+
+    if (to !== expectedRecipient.toLowerCase()) {
+        return { valid: false, reason: 'Transfer recipient does not match creator wallet' };
+    }
+
+    if (minAmount > 0 && amount < minAmount) {
+        return { valid: false, reason: `Transfer amount (${amount}) is less than required (${minAmount})` };
+    }
+
+    if (amount <= 0) {
+        return { valid: false, reason: 'Transfer amount is zero' };
+    }
+
+    return { valid: true, amount };
+}
 
 function verifyJwt(token) {
     try {
@@ -130,57 +187,137 @@ export default async function handler(req, res) {
         }
     }
 
-    // ── POST — upvote toggle ──
+    // ── POST — upvote / unlock / tip ──
     if (req.method === 'POST') {
         const user = getUser(req);
         if (!user) return res.status(401).json({ error: 'Login required' });
 
         try {
-            const { action, app_id } = req.body;
-            if (action !== 'upvote' || !app_id) {
-                return res.status(400).json({ error: 'Invalid action' });
+            const { action, app_id, tx_hash, amount: tipAmount } = req.body;
+            if (!app_id) return res.status(400).json({ error: 'app_id required' });
+
+            // ── Upvote ──
+            if (action === 'upvote') {
+                const { data: existing } = await supabase
+                    .from('app_upvotes')
+                    .select('id')
+                    .eq('profile_id', user.sub)
+                    .eq('app_id', app_id)
+                    .maybeSingle();
+
+                if (existing) {
+                    await supabase.from('app_upvotes').delete().eq('id', existing.id);
+                    const { data: app } = await supabase.from('user_apps').select('upvote_count').eq('id', app_id).maybeSingle();
+                    if (app) {
+                        const newCount = Math.max(0, (app.upvote_count || 0) - 1);
+                        await supabase.from('user_apps').update({ upvote_count: newCount }).eq('id', app_id);
+                        return res.json({ upvoted: false, upvote_count: newCount });
+                    }
+                    return res.json({ upvoted: false });
+                } else {
+                    await supabase.from('app_upvotes').insert({ profile_id: user.sub, app_id });
+                    const { data: app } = await supabase.from('user_apps').select('upvote_count').eq('id', app_id).maybeSingle();
+                    if (app) {
+                        const newCount = (app.upvote_count || 0) + 1;
+                        await supabase.from('user_apps').update({ upvote_count: newCount }).eq('id', app_id);
+                        return res.json({ upvoted: true, upvote_count: newCount });
+                    }
+                    return res.json({ upvoted: true });
+                }
             }
 
-            // Check if already upvoted
-            const { data: existing } = await supabase
-                .from('app_upvotes')
-                .select('id')
-                .eq('profile_id', user.sub)
-                .eq('app_id', app_id)
-                .maybeSingle();
-
-            if (existing) {
-                // Remove upvote
-                await supabase.from('app_upvotes').delete().eq('id', existing.id);
-                await supabase.rpc('increment_field', { table_name: 'user_apps', row_id: app_id, field_name: 'upvote_count', amount: -1 }).catch(() => {});
-                // Fallback: manual decrement
-                const { data: app } = await supabase.from('user_apps').select('upvote_count').eq('id', app_id).maybeSingle();
-                if (app) {
-                    const newCount = Math.max(0, (app.upvote_count || 0) - 1);
-                    await supabase.from('user_apps').update({ upvote_count: newCount }).eq('id', app_id);
-                    return res.json({ upvoted: false, upvote_count: newCount });
+            // ── Unlock ──
+            if (action === 'unlock') {
+                if (!tx_hash || !/^0x[a-fA-F0-9]{64}$/.test(tx_hash)) {
+                    return res.status(400).json({ error: 'Valid tx_hash required' });
                 }
-                return res.json({ upvoted: false });
-            } else {
-                // Add upvote
-                const { error: insErr } = await supabase.from('app_upvotes').insert({
+
+                // Check duplicate
+                const { data: dup } = await supabase.from('app_unlocks').select('id').eq('tx_hash', tx_hash.toLowerCase()).maybeSingle();
+                if (dup) return res.status(409).json({ error: 'Transaction already used' });
+
+                // Get app details
+                const { data: app } = await supabase.from('user_apps')
+                    .select('id, claws_price, creator_wallet')
+                    .eq('id', app_id).maybeSingle();
+                if (!app) return res.status(404).json({ error: 'App not found' });
+                if (!app.creator_wallet) return res.status(400).json({ error: 'App has no creator wallet' });
+                if (!app.claws_price || app.claws_price <= 0) return res.status(400).json({ error: 'App is free' });
+
+                // Verify on-chain
+                const verification = await verifyClawsTransfer(tx_hash, app.creator_wallet, app.claws_price);
+                if (!verification.valid) {
+                    return res.status(400).json({ error: verification.reason });
+                }
+
+                // Record unlock
+                const { error: insErr } = await supabase.from('app_unlocks').insert({
                     profile_id: user.sub,
-                    app_id
+                    app_id,
+                    tx_hash: tx_hash.toLowerCase(),
+                    amount: verification.amount
                 });
-                if (insErr) throw insErr;
-
-                const { data: app } = await supabase.from('user_apps').select('upvote_count').eq('id', app_id).maybeSingle();
-                if (app) {
-                    const newCount = (app.upvote_count || 0) + 1;
-                    await supabase.from('user_apps').update({ upvote_count: newCount }).eq('id', app_id);
-                    return res.json({ upvoted: true, upvote_count: newCount });
+                if (insErr) {
+                    if (insErr.code === '23505') return res.status(409).json({ error: 'Transaction already used' });
+                    throw insErr;
                 }
-                return res.json({ upvoted: true });
+
+                return res.json({ unlocked: true, amount: verification.amount });
             }
+
+            // ── Tip ──
+            if (action === 'tip') {
+                if (!tx_hash || !/^0x[a-fA-F0-9]{64}$/.test(tx_hash)) {
+                    return res.status(400).json({ error: 'Valid tx_hash required' });
+                }
+
+                // Check duplicate
+                const { data: dup } = await supabase.from('app_tips').select('id').eq('tx_hash', tx_hash.toLowerCase()).maybeSingle();
+                if (dup) return res.status(409).json({ error: 'Transaction already used' });
+
+                // Get app creator wallet
+                const { data: app } = await supabase.from('user_apps')
+                    .select('id, creator_wallet')
+                    .eq('id', app_id).maybeSingle();
+                if (!app) return res.status(404).json({ error: 'App not found' });
+                if (!app.creator_wallet) return res.status(400).json({ error: 'App has no creator wallet' });
+
+                // Verify on-chain — any positive amount
+                const verification = await verifyClawsTransfer(tx_hash, app.creator_wallet, 0);
+                if (!verification.valid) {
+                    return res.status(400).json({ error: verification.reason });
+                }
+
+                // Record tip
+                const { error: insErr } = await supabase.from('app_tips').insert({
+                    profile_id: user.sub,
+                    app_id,
+                    tx_hash: tx_hash.toLowerCase(),
+                    amount: verification.amount
+                });
+                if (insErr) {
+                    if (insErr.code === '23505') return res.status(409).json({ error: 'Transaction already used' });
+                    throw insErr;
+                }
+
+                return res.json({ tipped: true, amount: verification.amount });
+            }
+
+            // ── Check unlock status ──
+            if (action === 'check-unlock') {
+                const { data: unlock } = await supabase.from('app_unlocks')
+                    .select('id')
+                    .eq('profile_id', user.sub)
+                    .eq('app_id', app_id)
+                    .maybeSingle();
+                return res.json({ unlocked: !!unlock });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock' });
 
         } catch (err) {
-            console.error('upvote error:', err);
-            return res.status(500).json({ error: 'Failed to process upvote' });
+            console.error('apps POST error:', err);
+            return res.status(500).json({ error: 'Something went wrong' });
         }
     }
 
