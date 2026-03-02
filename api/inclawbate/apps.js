@@ -96,8 +96,14 @@ export default async function handler(req, res) {
     // ── GET — list apps ──
     if (req.method === 'GET') {
         try {
-            const { category, search, sort, page, limit: rawLimit, id } = req.query;
+            const { category, search, sort, page, limit: rawLimit, id, debug } = req.query;
             const user = getUser(req);
+
+            // Debug: raw count of user_apps
+            if (debug === '1') {
+                const { data: all, error: e1, count: c1 } = await supabase.from('user_apps').select('id, name, slug, is_public, is_listed', { count: 'exact' }).limit(5);
+                return res.json({ total_rows: c1, sample: all, error: e1 });
+            }
 
             // Single app detail (include code for fork)
             if (id) {
@@ -154,7 +160,10 @@ export default async function handler(req, res) {
             query = query.range(offset, offset + limitNum - 1);
 
             const { data: apps, error, count } = await query;
-            if (error) throw error;
+            if (error) {
+                console.error('apps query error:', JSON.stringify(error));
+                return res.status(500).json({ error: 'Query failed', detail: error.message, code: error.code });
+            }
 
             // Check upvotes for authenticated user
             let upvotedSet = new Set();
