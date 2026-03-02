@@ -65,6 +65,12 @@
         return !!getToken() && !!getProfile();
     }
 
+    function logout() {
+        localStorage.removeItem('inclawbate_token');
+        localStorage.removeItem('inclawbate_profile');
+        showView('auth');
+    }
+
     // ── Views ──
     function showView(view) {
         els.authGate.style.display = 'none';
@@ -85,6 +91,9 @@
             var resp = await fetch(API_BASE, {
                 headers: { 'Authorization': 'Bearer ' + getToken() }
             });
+
+            if (resp.status === 401) { logout(); return; }
+
             var data = await resp.json();
 
             if (!data.sessions || data.sessions.length === 0) {
@@ -203,6 +212,12 @@
 
             // Remove thinking indicator
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+
+            if (resp.status === 401) {
+                if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+                logout();
+                return;
+            }
 
             if (!resp.ok) {
                 appendMessage('assistant', data.error || 'Something went wrong.');
