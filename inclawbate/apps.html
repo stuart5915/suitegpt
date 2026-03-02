@@ -655,6 +655,7 @@
                         '<iframe class="app-preview-frame" src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>' +
                         '<div class="app-detail-actions">' +
                             '<a class="app-use-btn" href="/s/' + encodeURIComponent(app.slug) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
+                            '<button class="app-use-btn" style="background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-secondary);" onclick="event.stopPropagation(); AppStore.fork(\'' + appIdSafe + '\')">Fork</button>' +
                         '</div>' +
                         unlockHtml +
                         tipHtml +
@@ -831,6 +832,26 @@
         }
     }
 
+    // ── Fork ──
+    async function fork(appId) {
+        try {
+            var resp = await fetch(API + '?id=' + appId);
+            var data = await resp.json();
+            if (!data.app || !data.app.code) {
+                alert('Could not load app code.');
+                return;
+            }
+            sessionStorage.setItem('fork_source', JSON.stringify({
+                app_id: data.app.id,
+                name: data.app.name,
+                code: data.app.code
+            }));
+            window.location.href = '/build';
+        } catch(e) {
+            alert('Failed to fork. Try again.');
+        }
+    }
+
     // ── Helpers ──
     function escapeHtml(str) {
         var d = document.createElement('div');
@@ -866,6 +887,7 @@
         unlock: unlock,
         tip: tip,
         selectTip: selectTip,
+        fork: fork,
         nextPage: nextPage,
         prevPage: prevPage
     };

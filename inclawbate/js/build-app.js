@@ -13,7 +13,8 @@
         currentCode: null,
         credits: null,
         sending: false,
-        title: 'New Project'
+        title: 'New Project',
+        forkedFrom: null  // { app_id, name } if forked
     };
 
     // ── DOM refs ──
@@ -426,13 +427,15 @@
                     code: state.currentCode,
                     email: email,
                     description: appDesc || 'Built with Inclawbate Build Studio',
-                    source: 'build-studio',
+                    source: state.forkedFrom ? 'build-studio-fork' : 'build-studio',
                     category: category,
                     claws_price: priceVal,
                     creator_wallet: creatorWallet,
                     creator_x_handle: creatorXHandle,
                     tags: tags,
-                    is_listed: isListed
+                    is_listed: isListed,
+                    forked_from_user_app: state.forkedFrom ? state.forkedFrom.app_id : null,
+                    revenue_split: state.forkedFrom ? 80 : 100
                 })
             });
 
@@ -626,6 +629,29 @@
         return div.innerHTML;
     }
 
+    // ── Fork Detection ──
+    function checkForkSource() {
+        try {
+            var raw = sessionStorage.getItem('fork_source');
+            if (!raw) return false;
+            sessionStorage.removeItem('fork_source');
+            var fork = JSON.parse(raw);
+            if (!fork.code) return false;
+
+            state.forkedFrom = { app_id: fork.app_id, name: fork.name };
+            state.currentCode = fork.code;
+            state.title = 'Fork of ' + (fork.name || 'App');
+
+            // Go straight to build view with code loaded
+            showView('build');
+            els.buildTitle.textContent = state.title;
+            if (els.buildWelcome) els.buildWelcome.style.display = 'none';
+            updatePreview(state.currentCode);
+            appendMessage('assistant', 'Forked from "' + (fork.name || 'App') + '". The code is loaded in preview — edit it with chat or publish directly.');
+            return true;
+        } catch (e) { return false; }
+    }
+
     // ── Init ──
     function init() {
         cacheDom();
@@ -638,6 +664,9 @@
 
         // Fetch credits on load
         fetchCredits();
+
+        // Check if we're loading from a fork
+        if (checkForkSource()) return;
 
         loadProjects();
     }

@@ -99,11 +99,11 @@ export default async function handler(req, res) {
             const { category, search, sort, page, limit: rawLimit, id } = req.query;
             const user = getUser(req);
 
-            // Single app detail
+            // Single app detail (include code for fork)
             if (id) {
                 const { data: app, error } = await supabase
                     .from('user_apps')
-                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, created_at, updated_at')
+                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, forked_from_user_app, created_at, updated_at, code')
                     .eq('id', id)
                     .maybeSingle();
 

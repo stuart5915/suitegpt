@@ -49,7 +49,8 @@ export default async function handler(req, res) {
 
     try {
         const { name, slug, code, email, description, source, update,
-                category, claws_price, creator_wallet, creator_x_handle, tags, is_listed } = req.body;
+                category, claws_price, creator_wallet, creator_x_handle, tags, is_listed,
+                forked_from_user_app, revenue_split } = req.body;
 
         // Validate required fields
         if (!slug || !code || !email) {
@@ -139,6 +140,8 @@ export default async function handler(req, res) {
             creator_x_handle: creator_x_handle || null,
             tags: Array.isArray(tags) ? tags.slice(0, 10) : [],
             upvote_count: 0,
+            forked_from_user_app: forked_from_user_app || null,
+            revenue_split: forked_from_user_app ? (parseInt(revenue_split) || 80) : 100,
         };
 
         const { error: insertErr } = await supabase

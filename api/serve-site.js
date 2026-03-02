@@ -151,10 +151,20 @@ export default async function handler(req, res) {
             }
         }
 
+        // Inject CLAWS SDK before </body>
+        let html = data.code;
+        const sdkAttrs = `data-creator-wallet="${data.creator_wallet || ''}" data-app-id="${data.id}"`;
+        const sdkTag = `<script src="https://inclawbate.com/js/claws-sdk.js" ${sdkAttrs}></script>`;
+        if (html.includes('</body>')) {
+            html = html.replace('</body>', sdkTag + '\n</body>');
+        } else {
+            html += '\n' + sdkTag;
+        }
+
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
         // Don't set X-Frame-Options so sites can be embedded
-        return res.status(200).send(data.code);
+        return res.status(200).send(html);
 
     } catch (err) {
         console.error('serve-site error:', err);
