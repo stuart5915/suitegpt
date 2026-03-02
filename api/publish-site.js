@@ -104,7 +104,7 @@ export default async function handler(req, res) {
 
             if (updateErr) throw updateErr;
 
-            return res.json({ success: true, url: `https://suitegpt.app/s/${cleanSlug}`, updated: true });
+            return res.json({ success: true, url: `https://inclawbate.com/s/${cleanSlug}`, updated: true });
         }
 
         // NEW publish — check availability
@@ -137,12 +137,12 @@ export default async function handler(req, res) {
                 name: name || cleanSlug,
                 email,
                 business_name: name,
-                message: `Published site: https://suitegpt.app/s/${cleanSlug}`,
+                message: `Published site: https://inclawbate.com/s/${cleanSlug}`,
                 source: (source || 'clients') + '-publish',
             }),
         }).catch(() => {});
 
-        return res.json({ success: true, url: `https://suitegpt.app/s/${cleanSlug}` });
+        return res.json({ success: true, url: `https://inclawbate.com/s/${cleanSlug}` });
 
     } catch (err) {
         console.error('publish-site error:', err);

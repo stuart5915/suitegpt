@@ -355,7 +355,7 @@
         els.publishSlug.value = '';
         els.publishResult.innerHTML = '';
         els.publishConfirm.disabled = true;
-        els.slugPreview.textContent = 'suitegpt.app/s/...';
+        els.slugPreview.textContent = 'inclawbate.com/s/...';
         els.publishSlug.focus();
     }
 
@@ -366,7 +366,7 @@
     function onSlugInput() {
         var raw = els.publishSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 63);
         els.publishSlug.value = raw;
-        els.slugPreview.textContent = raw ? 'suitegpt.app/s/' + raw : 'suitegpt.app/s/...';
+        els.slugPreview.textContent = raw ? 'inclawbate.com/s/' + raw : 'inclawbate.com/s/...';
         els.publishConfirm.disabled = !raw || raw.length < 2;
     }
 
