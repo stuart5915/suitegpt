@@ -192,9 +192,19 @@
         // Show thinking indicator
         var thinkingEl = document.createElement('div');
         thinkingEl.className = 'chat-msg thinking';
-        thinkingEl.textContent = 'Building...';
+        thinkingEl.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>' +
+            '<span class="thinking-status">Thinking...</span>' +
+            '<span class="thinking-note">This may take up to 30 seconds</span>';
         els.chatMessages.appendChild(thinkingEl);
         scrollChat();
+
+        var thinkingMessages = ['Thinking...', 'Designing layout...', 'Writing HTML...', 'Building your site...', 'Rendering styles...', 'Almost there...'];
+        var thinkingIdx = 0;
+        var thinkingInterval = setInterval(function() {
+            thinkingIdx = (thinkingIdx + 1) % thinkingMessages.length;
+            var statusEl = thinkingEl.querySelector('.thinking-status');
+            if (statusEl) statusEl.textContent = thinkingMessages[thinkingIdx];
+        }, 3000);
 
         try {
             var resp = await fetch(API_BASE, {
@@ -212,6 +222,7 @@
             var data = await resp.json();
 
             // Remove thinking indicator
+            clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
 
             if (resp.status === 401) {
@@ -249,6 +260,7 @@
             }
 
         } catch (e) {
+            clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             appendMessage('assistant', 'Network error. Please try again.');
         }
