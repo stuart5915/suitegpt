@@ -23,6 +23,9 @@ let chatMessages = [];
 let chatLastTimestamp = null;
 let chatPollTimer = null;
 let chatUserScrolledUp = false;
+let chatCollapsed = false;
+let chatUnreadDot = false;
+let channelUnreads = {}; // channelId -> boolean
 
 // ══════════════════════════════════════
 // DOM REFS
@@ -583,9 +586,14 @@ function renderChannelTabs() {
         tab.textContent = '#' + ch.title;
         tab.addEventListener('click', function() {
             if (activeChannelId === ch.id) return;
+            // Mark previous channel's last seen
+            var prevCh = boardData.channels.find(function(c) { return c.id === activeChannelId; });
+            if (prevCh && chatLastTimestamp) prevCh._lastSeen = chatLastTimestamp;
             activeChannelId = ch.id;
             chatMessages = [];
             chatLastTimestamp = null;
+            channelUnreads[ch.id] = false;
+            updateChannelDots();
             highlightChannelTab(ch.id);
             loadMessages(ch.id);
         });
@@ -639,6 +647,11 @@ async function pollNewMessages() {
                 chatLastTimestamp = dedupMsgs[dedupMsgs.length - 1].created_at;
                 renderMessages();
                 if (!chatUserScrolledUp) scrollChatToBottom(false);
+                // Show unread dot if chat is collapsed
+                if (chatCollapsed) {
+                    chatUnreadDot = true;
+                    updateUnreadDot();
+                }
             }
         }
     } catch (err) {
@@ -648,7 +661,50 @@ async function pollNewMessages() {
 
 function startChatPoll() {
     if (chatPollTimer) clearInterval(chatPollTimer);
-    chatPollTimer = setInterval(pollNewMessages, CHAT_POLL_MS);
+    chatPollTimer = setInterval(function() {
+        pollNewMessages();
+        pollOtherChannels();
+    }, CHAT_POLL_MS);
+}
+
+function updateUnreadDot() {
+    var dot = document.getElementById('chat-unread-dot');
+    if (dot) dot.style.display = chatUnreadDot ? '' : 'none';
+}
+
+async function pollOtherChannels() {
+    if (!boardData || !boardData.channels) return;
+    boardData.channels.forEach(async function(ch) {
+        if (ch.id === activeChannelId) return;
+        try {
+            var url = API + '?messages_channel=' + ch.id + '&messages_after=' + encodeURIComponent(ch._lastSeen || ch.created_at);
+            var resp = await fetch(url, { headers: { 'X-Wallet-Address': walletAddress } });
+            if (!resp.ok) return;
+            var data = await resp.json();
+            if (data.messages && data.messages.length > 0) {
+                channelUnreads[ch.id] = true;
+                updateChannelDots();
+            }
+        } catch (e) { /* silent */ }
+    });
+}
+
+function updateChannelDots() {
+    var tabs = document.querySelectorAll('.chat-channel-tab');
+    tabs.forEach(function(tab) {
+        var chId = tab.dataset.channelId;
+        var dot = tab.querySelector('.channel-unread-dot');
+        if (channelUnreads[chId]) {
+            if (!dot) {
+                dot = document.createElement('span');
+                dot.className = 'channel-unread-dot';
+                tab.appendChild(dot);
+            }
+            dot.style.display = '';
+        } else if (dot) {
+            dot.style.display = 'none';
+        }
+    });
 }
 
 function renderMessages() {
@@ -870,6 +926,11 @@ function init() {
     chatHeader.addEventListener('click', function() {
         chatBody.classList.toggle('collapsed');
         chatToggle.classList.toggle('collapsed');
+        chatCollapsed = chatBody.classList.contains('collapsed');
+        if (!chatCollapsed) {
+            chatUnreadDot = false;
+            updateUnreadDot();
+        }
     });
 
     var btnSetName = document.getElementById('btn-set-name');
