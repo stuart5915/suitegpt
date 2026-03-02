@@ -155,6 +155,8 @@ async function loadStats() {
 
         document.getElementById('statMinted').textContent = minted;
         document.getElementById('statRemaining').textContent = (828 - minted);
+        var cdMinted = document.getElementById('countdownMinted');
+        if (cdMinted) cdMinted.textContent = minted;
 
         // Total INCLAWNCH used to mint — scan Minted events
         var MINTED_TOPIC = '0x25b428dfde728ccfaddad7e29e4ac23c24ed7fd1a6e3e3f91894a9a073f5dfff';
