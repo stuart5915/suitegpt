@@ -142,7 +142,7 @@ export default async function handler(req, res) {
     // Credit check
     if (!admin && (!profile || profile.credits <= 0)) {
         return res.status(402).json({
-            error: 'No credits remaining. Deposit $INCLAWNCH at inclawbate.com/deposit to get more.',
+            error: 'Buy credits with $CLAWS to keep building.',
             credits: 0
         });
     }

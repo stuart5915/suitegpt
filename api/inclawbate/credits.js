@@ -3,7 +3,7 @@
 // GET  (Bearer JWT)          — get own credits + api_key (dashboard use)
 // POST {action:"generate-key"}  — generate/regenerate API key (JWT)
 // POST {action:"add-credits", handle, amount, admin_secret} — admin top-up
-// POST {action:"deposit", tx_hash} — self-service CLAWNCH deposit (JWT)
+// POST {action:"deposit", tx_hash} — self-service CLAWS deposit (JWT)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -15,16 +15,16 @@ const ALLOWED_ORIGINS = [
 ];
 
 // Deposit constants
-const CLAWNCH_ADDRESS = '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be'.toLowerCase();
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379'.toLowerCase();
 const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const TARGET_USD_PER_CREDIT = 0.005; // covers ~$0.003 API cost + margin
 const MIN_TOKENS_PER_CREDIT = 1;
 const MAX_TOKENS_PER_CREDIT = 10000;
 
-async function fetchInclawnchPrice() {
+async function fetchClawsPrice() {
     try {
-        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWNCH_ADDRESS);
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
         const data = await resp.json();
         if (data.pairs && data.pairs.length > 0) {
             return parseFloat(data.pairs[0].priceUsd) || 0;
@@ -44,7 +44,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Verify CLAWNCH transfer on Base chain (with retry + fallback RPC)
+// Verify CLAWS transfer on Base chain (with retry + fallback RPC)
 const BASE_RPCS = [
     'https://mainnet.base.org',
     'https://base.llamarpc.com',
@@ -74,11 +74,11 @@ async function verifyDepositTx(txHash) {
     }
 
     const transferLog = (receipt.logs || []).find(log =>
-        log.address.toLowerCase() === CLAWNCH_ADDRESS &&
+        log.address.toLowerCase() === CLAWS_ADDRESS &&
         log.topics[0] === ERC20_TRANSFER_TOPIC
     );
     if (!transferLog) {
-        return { valid: false, reason: 'No CLAWNCH transfer found in transaction' };
+        return { valid: false, reason: 'No CLAWS transfer found in transaction' };
     }
 
     const to = '0x' + transferLog.topics[2].slice(26).toLowerCase();
@@ -246,15 +246,15 @@ export default async function handler(req, res) {
             }
 
             // Fetch live price for dynamic credit rate
-            const livePrice = await fetchInclawnchPrice();
+            const livePrice = await fetchClawsPrice();
             if (livePrice <= 0) {
-                return res.status(503).json({ error: 'Unable to fetch INCLAWNCH price. Please try again in a moment.' });
+                return res.status(503).json({ error: 'Unable to fetch CLAWS price. Please try again in a moment.' });
             }
 
             const tokensPerCredit = getTokensPerCredit(livePrice);
             const credits = Math.floor(verification.amount / tokensPerCredit);
             if (credits <= 0) {
-                return res.status(400).json({ error: `Deposit too small. At current price, minimum ~${Math.ceil(tokensPerCredit)} INCLAWNCH for 1 credit.` });
+                return res.status(400).json({ error: `Deposit too small. At current price, minimum ~${Math.ceil(tokensPerCredit)} CLAWS for 1 credit.` });
             }
 
             // Get user's handle for add_inclawbate_credits RPC
@@ -299,7 +299,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 credits_added: credits,
                 credits_total: newBalance,
-                clawnch_deposited: verification.amount,
+                claws_deposited: verification.amount,
                 rate_used: Math.round(tokensPerCredit),
                 price_usd: livePrice
             });

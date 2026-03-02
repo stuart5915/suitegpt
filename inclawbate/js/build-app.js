@@ -27,8 +27,10 @@
         els.buildView = $('buildView');
         els.buildTitle = $('buildTitle');
         els.buildCredits = $('buildCredits');
+        els.creditsCount = $('creditsCount');
         els.publishBtn = $('publishBtn');
         els.chatMessages = $('chatMessages');
+        els.buildWelcome = $('buildWelcome');
         els.chatInput = $('chatInput');
         els.chatSend = $('chatSend');
         els.previewFrame = $('previewFrame');
@@ -40,6 +42,12 @@
         els.slugPreview = $('slugPreview');
         els.publishConfirm = $('publishConfirm');
         els.publishResult = $('publishResult');
+        els.buyOverlay = $('buyOverlay');
+        els.buyTxHash = $('buyTxHash');
+        els.buyVerifyBtn = $('buyVerifyBtn');
+        els.buyResult = $('buyResult');
+        els.buyCurrentBalance = $('buyCurrentBalance');
+        els.buyRate = $('buyRate');
     }
 
     // ── Auth ──
@@ -108,7 +116,10 @@
     async function openSession(sessionId) {
         state.sessionId = sessionId;
         state.currentCode = null;
-        els.chatMessages.innerHTML = '';
+        // Clear messages but keep welcome hidden
+        var msgs = els.chatMessages.querySelectorAll('.chat-msg');
+        msgs.forEach(function (m) { m.remove(); });
+        if (els.buildWelcome) els.buildWelcome.style.display = 'none';
         resetPreview();
         showView('build');
         els.buildTitle.textContent = 'Loading...';
@@ -144,7 +155,10 @@
         state.sessionId = null;
         state.currentCode = null;
         state.title = 'New Project';
-        els.chatMessages.innerHTML = '';
+        // Remove chat messages but re-show welcome
+        var msgs = els.chatMessages.querySelectorAll('.chat-msg');
+        msgs.forEach(function (m) { m.remove(); });
+        if (els.buildWelcome) els.buildWelcome.style.display = '';
         els.buildTitle.textContent = 'New Project';
         resetPreview();
         showView('build');
@@ -192,6 +206,7 @@
 
             if (!resp.ok) {
                 appendMessage('assistant', data.error || 'Something went wrong.');
+                if (resp.status === 402) openBuyCredits();
                 state.sending = false;
                 els.chatSend.disabled = false;
                 return;
@@ -229,6 +244,9 @@
 
     // ── Chat Helpers ──
     function appendMessage(role, content, code) {
+        // Hide welcome on first message
+        if (els.buildWelcome) els.buildWelcome.style.display = 'none';
+
         var div = document.createElement('div');
         div.className = 'chat-msg ' + role;
 
@@ -295,9 +313,24 @@
 
     // ── Credits display ──
     function updateCredits() {
-        if (state.credits !== null) {
-            els.buildCredits.textContent = state.credits + ' credits';
-        }
+        if (state.credits === null) return;
+        els.creditsCount.textContent = state.credits;
+        els.creditsCount.className = 'build-credits-count' +
+            (state.credits <= 0 ? ' empty' : state.credits <= 5 ? ' low' : '');
+    }
+
+    async function fetchCredits() {
+        try {
+            var resp = await fetch('/api/inclawbate/credits', {
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            if (!resp.ok) return;
+            var data = await resp.json();
+            if (data.credits !== undefined) {
+                state.credits = data.credits;
+                updateCredits();
+            }
+        } catch (e) { /* non-critical */ }
     }
 
     // ── Publish ──
@@ -379,6 +412,94 @@
         }
     }
 
+    // ── Buy Credits ──
+    var PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+    var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+
+    async function openBuyCredits() {
+        els.buyOverlay.classList.add('active');
+        els.buyTxHash.value = '';
+        els.buyVerifyBtn.disabled = true;
+        els.buyResult.innerHTML = '';
+        els.buyCurrentBalance.textContent = state.credits !== null ? state.credits + ' credits' : '--';
+
+        // Fetch CLAWS price for rate display
+        els.buyRate.textContent = 'Loading...';
+        try {
+            var resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+            var data = await resp.json();
+            if (data.pairs && data.pairs.length > 0) {
+                var price = parseFloat(data.pairs[0].priceUsd) || 0;
+                if (price > 0) {
+                    var tokensPerCredit = Math.ceil(0.005 / price);
+                    els.buyRate.textContent = '~' + tokensPerCredit.toLocaleString() + ' CLAWS / credit';
+                } else {
+                    els.buyRate.textContent = 'Price unavailable';
+                }
+            }
+        } catch (e) {
+            els.buyRate.textContent = 'Price unavailable';
+        }
+    }
+
+    function closeBuyCredits() {
+        els.buyOverlay.classList.remove('active');
+    }
+
+    function copyWallet() {
+        navigator.clipboard.writeText(PROTOCOL_WALLET).then(function () {
+            var btn = els.buyOverlay.querySelector('.copy-btn');
+            if (btn) { btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = 'Copy'; }, 2000); }
+        });
+    }
+
+    function onTxInput() {
+        var val = els.buyTxHash.value.trim();
+        els.buyVerifyBtn.disabled = !/^0x[a-fA-F0-9]{64}$/.test(val);
+    }
+
+    async function verifyDeposit() {
+        var txHash = els.buyTxHash.value.trim();
+        if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) return;
+
+        els.buyVerifyBtn.disabled = true;
+        els.buyResult.innerHTML = 'Verifying on-chain...';
+        els.buyResult.className = 'buy-result';
+
+        try {
+            var resp = await fetch('/api/inclawbate/credits', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
+            });
+            var data = await resp.json();
+
+            if (resp.ok) {
+                els.buyResult.textContent = '+' + data.credits_added + ' credits added! New balance: ' + data.credits_total;
+                els.buyResult.className = 'buy-result success';
+                state.credits = data.credits_total;
+                updateCredits();
+                els.buyCurrentBalance.textContent = data.credits_total + ' credits';
+            } else {
+                els.buyResult.textContent = data.error || 'Verification failed.';
+                els.buyResult.className = 'buy-result error';
+                els.buyVerifyBtn.disabled = false;
+            }
+        } catch (e) {
+            els.buyResult.textContent = 'Network error. Try again.';
+            els.buyResult.className = 'buy-result error';
+            els.buyVerifyBtn.disabled = false;
+        }
+    }
+
+    function usePrompt(text) {
+        els.chatInput.value = text;
+        sendMessage();
+    }
+
     // ── Go Back ──
     function goBack() {
         loadProjects();
@@ -416,12 +537,8 @@
             return;
         }
 
-        // Fetch credits
-        var profile = getProfile();
-        if (profile) {
-            // Credits will be updated on first message; show handle for now
-            els.buildCredits.textContent = '';
-        }
+        // Fetch credits on load
+        fetchCredits();
 
         loadProjects();
     }
@@ -435,7 +552,13 @@
         openPublish: openPublish,
         closePublish: closePublish,
         onSlugInput: onSlugInput,
-        publish: publish
+        publish: publish,
+        openBuyCredits: openBuyCredits,
+        closeBuyCredits: closeBuyCredits,
+        copyWallet: copyWallet,
+        onTxInput: onTxInput,
+        verifyDeposit: verifyDeposit,
+        usePrompt: usePrompt
     };
 
     // ── Boot ──

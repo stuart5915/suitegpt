@@ -147,8 +147,8 @@
             align-items: center;
             gap: var(--space-md);
             padding: var(--space-sm) var(--space-lg);
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-default);
             min-height: 48px;
             flex-shrink: 0;
         }
@@ -173,10 +173,38 @@
             text-overflow: ellipsis;
         }
         .build-credits {
-            font-size: 0.8rem;
-            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
             font-family: var(--font-mono);
             white-space: nowrap;
+        }
+        .build-credits-count {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--seafoam-400);
+        }
+        .build-credits-count.low { color: #f59e0b; }
+        .build-credits-count.empty { color: #ef4444; }
+        .build-credits-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+        .buy-credits-btn {
+            padding: 2px var(--space-sm);
+            background: none;
+            border: 1px solid var(--seafoam-400);
+            border-radius: 999px;
+            color: var(--seafoam-400);
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background var(--transition-fast), color var(--transition-fast);
+        }
+        .buy-credits-btn:hover {
+            background: var(--seafoam-400);
+            color: #fff;
         }
         .build-publish-btn {
             padding: var(--space-xs) var(--space-md);
@@ -206,8 +234,8 @@
             min-width: 320px;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid var(--border-subtle);
-            background: var(--bg-surface);
+            border-right: 1px solid var(--border-default);
+            background: var(--bg-elevated);
         }
         .chat-messages {
             flex: 1;
@@ -258,8 +286,8 @@
         /* Chat input */
         .chat-input-area {
             padding: var(--space-md);
-            border-top: 1px solid var(--border-subtle);
-            background: var(--bg-surface);
+            border-top: 1px solid var(--border-default);
+            background: var(--bg-elevated);
         }
         .chat-input-wrap {
             display: flex;
@@ -269,8 +297,8 @@
         .chat-input {
             flex: 1;
             resize: none;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
             padding: var(--space-md);
             color: var(--text-primary);
@@ -280,10 +308,13 @@
             min-height: 44px;
             max-height: 160px;
             outline: none;
-            transition: border-color var(--transition-fast);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
-        .chat-input:focus { border-color: var(--accent-primary); }
-        .chat-input::placeholder { color: var(--text-dim); }
+        .chat-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        .chat-input::placeholder { color: var(--text-secondary); }
         .chat-send {
             width: 44px;
             height: 44px;
@@ -445,6 +476,174 @@
         .publish-result a { color: var(--seafoam-300); }
         .publish-result.error { color: var(--red); }
 
+        /* ── Welcome State ── */
+        .build-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
+            padding: var(--space-xl);
+            gap: var(--space-md);
+        }
+        .build-welcome-icon { font-size: 2.5rem; }
+        .build-welcome h3 {
+            font-size: 1.15rem;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .build-welcome p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+            max-width: 260px;
+        }
+        .build-welcome-prompts {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+            width: 100%;
+            max-width: 280px;
+        }
+        .build-welcome-prompt {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm) var(--space-md);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: left;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+        }
+        .build-welcome-prompt:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        /* ── Buy Credits Modal ── */
+        .buy-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .buy-overlay.active { display: flex; }
+        .buy-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: var(--space-2xl);
+            width: 90%;
+            max-width: 440px;
+        }
+        .buy-modal h3 {
+            color: var(--text-primary);
+            margin: 0 0 var(--space-xs) 0;
+        }
+        .buy-modal-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+        }
+        .buy-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-sm) 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .buy-info-row .label { color: var(--text-secondary); }
+        .buy-info-row .value { color: var(--text-primary); font-weight: 600; }
+        .buy-wallet-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm) var(--space-md);
+            margin: var(--space-md) 0;
+        }
+        .buy-wallet-row .addr {
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+        .buy-wallet-row .copy-btn {
+            background: none;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            padding: 2px var(--space-sm);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .buy-wallet-row .copy-btn:hover { color: var(--text-primary); }
+        .buy-tx-input {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            outline: none;
+            margin-bottom: var(--space-md);
+            box-sizing: border-box;
+        }
+        .buy-tx-input:focus { border-color: var(--accent-primary); }
+        .buy-tx-input::placeholder { color: var(--text-dim); }
+        .buy-verify-btn {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .buy-verify-btn:disabled { opacity: 0.4; cursor: default; }
+        .buy-result {
+            margin-top: var(--space-md);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .buy-result.success { color: var(--seafoam-400); }
+        .buy-result.error { color: #ef4444; }
+        .buy-footer {
+            margin-top: var(--space-md);
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        .buy-footer a { color: var(--text-dim); }
+        .buy-footer a:hover { color: var(--text-secondary); }
+        .buy-close {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .buy-modal { position: relative; }
+
         /* ── Mobile ── */
         @media (max-width: 768px) {
             .build-panels {
@@ -461,7 +660,7 @@
                 height: 50%;
             }
             .build-title { font-size: 0.85rem; }
-            .build-credits { display: none; }
+            .build-credits-label { display: none; }
         }
     </style>
 </head>
@@ -501,12 +700,27 @@
     <div class="build-header">
         <button class="build-back" onclick="window.BuildApp.goBack()" title="Back to projects">&larr;</button>
         <div id="buildTitle" class="build-title">New Project</div>
-        <div id="buildCredits" class="build-credits"></div>
+        <div id="buildCredits" class="build-credits">
+            <span id="creditsCount" class="build-credits-count">--</span>
+            <span class="build-credits-label">credits</span>
+            <button class="buy-credits-btn" onclick="window.BuildApp.openBuyCredits()">+ Buy</button>
+        </div>
         <button id="publishBtn" class="build-publish-btn" onclick="window.BuildApp.openPublish()" disabled>Publish</button>
     </div>
     <div class="build-panels">
         <div class="chat-panel">
-            <div id="chatMessages" class="chat-messages"></div>
+            <div id="chatMessages" class="chat-messages">
+                <div id="buildWelcome" class="build-welcome">
+                    <div class="build-welcome-icon">&#129438;</div>
+                    <h3>What do you want to build?</h3>
+                    <p>Describe your idea and AI will build it live.</p>
+                    <div class="build-welcome-prompts">
+                        <button class="build-welcome-prompt" onclick="window.BuildApp.usePrompt('A modern coffee shop landing page with menu and hours')">A modern coffee shop landing page with menu and hours</button>
+                        <button class="build-welcome-prompt" onclick="window.BuildApp.usePrompt('A minimal portfolio site with dark theme and project cards')">A minimal portfolio site with dark theme and project cards</button>
+                        <button class="build-welcome-prompt" onclick="window.BuildApp.usePrompt('A countdown timer app for New Year with confetti animation')">A countdown timer app for New Year with confetti animation</button>
+                    </div>
+                </div>
+            </div>
             <div class="chat-input-area">
                 <div class="chat-input-wrap">
                     <textarea id="chatInput" class="chat-input" placeholder="Describe what you want to build..." rows="1"></textarea>
@@ -540,6 +754,39 @@
             <button id="publishConfirm" class="publish-confirm" onclick="window.BuildApp.publish()" disabled>Publish</button>
         </div>
         <div id="publishResult" class="publish-result"></div>
+    </div>
+</div>
+
+<!-- Buy Credits Modal -->
+<div id="buyOverlay" class="buy-overlay">
+    <div class="buy-modal">
+        <button class="buy-close" onclick="window.BuildApp.closeBuyCredits()">&times;</button>
+        <h3>Buy Credits</h3>
+        <p class="buy-modal-subtitle">Send $CLAWS tokens to the protocol wallet to get credits.</p>
+        <div class="buy-info-row">
+            <span class="label">Your balance</span>
+            <span class="value" id="buyCurrentBalance">--</span>
+        </div>
+        <div class="buy-info-row">
+            <span class="label">Rate</span>
+            <span class="value" id="buyRate">Loading...</span>
+        </div>
+        <div class="buy-info-row" style="border-bottom:none;">
+            <span class="label">Per credit</span>
+            <span class="value">1 credit = 1 AI message</span>
+        </div>
+        <label style="display:block;font-size:0.8rem;color:var(--text-secondary);margin:var(--space-md) 0 var(--space-xs);">Protocol wallet</label>
+        <div class="buy-wallet-row">
+            <span class="addr">0x91B5C0D07859CFeAfEB67d9694121CD741F049bd</span>
+            <button class="copy-btn" onclick="window.BuildApp.copyWallet()">Copy</button>
+        </div>
+        <label style="display:block;font-size:0.8rem;color:var(--text-secondary);margin:0 0 var(--space-xs);">Paste transaction hash</label>
+        <input id="buyTxHash" class="buy-tx-input" type="text" placeholder="0x..." oninput="window.BuildApp.onTxInput()">
+        <button id="buyVerifyBtn" class="buy-verify-btn" onclick="window.BuildApp.verifyDeposit()" disabled>Verify Deposit</button>
+        <div id="buyResult" class="buy-result"></div>
+        <div class="buy-footer">
+            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Don't have CLAWS? Buy on Uniswap &rarr;</a>
+        </div>
     </div>
 </div>
 
