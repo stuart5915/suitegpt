@@ -89,8 +89,8 @@ a:hover { opacity: 0.85; }
 <div class="c">
 <div class="lock">&#128274;</div>
 <h1>${name}</h1>
-<p class="desc">${app.description || 'This is a premium app. Unlock it with CLAWS tokens.'}</p>
-<div class="price">${price.toLocaleString()} CLAWS</div>
+<p class="desc">${app.description || 'This is a premium app. Pay once to unlock it forever.'}</p>
+<div class="price">${price.toLocaleString()} CLAWS — one-time unlock</div>
 <p class="creator">by ${creator}</p>
 <a href="/apps?id=${app.id}">Unlock This App</a>
 <p class="alt">Don't have CLAWS? <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Buy on Uniswap</a></p>
