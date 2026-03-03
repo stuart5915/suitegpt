@@ -782,51 +782,75 @@
         }
         .buy-info-row .label { color: var(--text-secondary); }
         .buy-info-row .value { color: var(--text-primary); font-weight: 600; }
-        .buy-wallet-row {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            padding: var(--space-sm) var(--space-md);
-            margin: var(--space-md) 0;
-        }
-        .buy-wallet-row .addr {
-            flex: 1;
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
+        .buy-amount-label {
+            display: block;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            word-break: break-all;
+            margin: var(--space-lg) 0 var(--space-sm);
         }
-        .buy-wallet-row .copy-btn {
-            background: none;
+        .buy-amount-presets {
+            display: flex;
+            gap: 8px;
+        }
+        .buy-preset {
+            flex: 1;
+            padding: 10px 0;
+            background: var(--bg-elevated);
             border: 1px solid var(--border-default);
-            border-radius: var(--radius-sm);
+            border-radius: var(--radius-md);
             color: var(--text-secondary);
             font-family: var(--font-body);
-            font-size: 0.75rem;
-            padding: 2px var(--space-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
-            white-space: nowrap;
+            transition: all var(--transition-fast);
         }
-        .buy-wallet-row .copy-btn:hover { color: var(--text-primary); }
-        .buy-tx-input {
+        .buy-preset:hover {
+            border-color: var(--text-dim);
+            color: var(--text-primary);
+        }
+        .buy-preset.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: #fff;
+        }
+        .buy-custom-row {
+            margin-top: 8px;
+        }
+        .buy-custom-input {
             width: 100%;
-            padding: var(--space-md);
+            padding: var(--space-sm) var(--space-md);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             color: var(--text-primary);
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
             outline: none;
-            margin-bottom: var(--space-md);
             box-sizing: border-box;
         }
-        .buy-tx-input:focus { border-color: var(--accent-primary); }
-        .buy-tx-input::placeholder { color: var(--text-dim); }
-        .buy-verify-btn {
+        .buy-custom-input:focus { border-color: var(--accent-primary); }
+        .buy-custom-input::placeholder { color: var(--text-dim); }
+        .buy-cost-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md);
+            margin: var(--space-md) 0;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+        .buy-cost-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .buy-cost-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .buy-send-btn {
             width: 100%;
             padding: var(--space-md);
             background: var(--accent-gradient);
@@ -837,8 +861,10 @@
             font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
+            transition: opacity var(--transition-fast);
         }
-        .buy-verify-btn:disabled { opacity: 0.4; cursor: default; }
+        .buy-send-btn:hover { opacity: 0.85; }
+        .buy-send-btn:disabled { opacity: 0.4; cursor: default; }
         .buy-result {
             margin-top: var(--space-md);
             font-size: 0.85rem;
@@ -1045,27 +1071,30 @@
     <div class="buy-modal">
         <button class="buy-close" onclick="window.BuildApp.closeBuyCredits()">&times;</button>
         <h3>Buy Credits</h3>
-        <p class="buy-modal-subtitle">Send $CLAWS tokens to the protocol wallet to get credits.</p>
+        <p class="buy-modal-subtitle">1 credit = 1 AI message</p>
         <div class="buy-info-row">
             <span class="label">Your balance</span>
             <span class="value" id="buyCurrentBalance">--</span>
         </div>
-        <div class="buy-info-row">
+        <div class="buy-info-row" style="border-bottom:none;">
             <span class="label">Rate</span>
             <span class="value" id="buyRate">Loading...</span>
         </div>
-        <div class="buy-info-row" style="border-bottom:none;">
-            <span class="label">Per credit</span>
-            <span class="value">1 credit = 1 AI message</span>
+        <label class="buy-amount-label">How many credits?</label>
+        <div class="buy-amount-presets">
+            <button class="buy-preset" data-amount="10" onclick="window.BuildApp.pickCredits(10)">10</button>
+            <button class="buy-preset" data-amount="25" onclick="window.BuildApp.pickCredits(25)">25</button>
+            <button class="buy-preset active" data-amount="50" onclick="window.BuildApp.pickCredits(50)">50</button>
+            <button class="buy-preset" data-amount="100" onclick="window.BuildApp.pickCredits(100)">100</button>
         </div>
-        <label style="display:block;font-size:0.8rem;color:var(--text-secondary);margin:var(--space-md) 0 var(--space-xs);">Protocol wallet</label>
-        <div class="buy-wallet-row">
-            <span class="addr">0x91B5C0D07859CFeAfEB67d9694121CD741F049bd</span>
-            <button class="copy-btn" onclick="window.BuildApp.copyWallet()">Copy</button>
+        <div class="buy-custom-row">
+            <input id="buyCustomAmount" class="buy-custom-input" type="number" min="1" max="1000" placeholder="Or type a custom amount..." oninput="window.BuildApp.onCustomCredits()">
         </div>
-        <label style="display:block;font-size:0.8rem;color:var(--text-secondary);margin:0 0 var(--space-xs);">Paste transaction hash</label>
-        <input id="buyTxHash" class="buy-tx-input" type="text" placeholder="0x..." oninput="window.BuildApp.onTxInput()">
-        <button id="buyVerifyBtn" class="buy-verify-btn" onclick="window.BuildApp.verifyDeposit()" disabled>Verify Deposit</button>
+        <div class="buy-cost-display">
+            <span class="buy-cost-label">Total cost</span>
+            <span class="buy-cost-value" id="buyCostValue">--</span>
+        </div>
+        <button id="buySendBtn" class="buy-send-btn" onclick="window.BuildApp.sendClawsTx()" disabled>Send CLAWS</button>
         <div id="buyResult" class="buy-result"></div>
         <div class="buy-footer">
             <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Don't have CLAWS? Buy on Uniswap &rarr;</a>

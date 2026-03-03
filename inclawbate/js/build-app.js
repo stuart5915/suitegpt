@@ -97,11 +97,12 @@
         els.publishConfirm = $('publishConfirm');
         els.publishResult = $('publishResult');
         els.buyOverlay = $('buyOverlay');
-        els.buyTxHash = $('buyTxHash');
-        els.buyVerifyBtn = $('buyVerifyBtn');
         els.buyResult = $('buyResult');
         els.buyCurrentBalance = $('buyCurrentBalance');
         els.buyRate = $('buyRate');
+        els.buyCostValue = $('buyCostValue');
+        els.buySendBtn = $('buySendBtn');
+        els.buyCustomAmount = $('buyCustomAmount');
     }
 
     // ── Auth ──
@@ -559,24 +560,36 @@
     // ── Buy Credits ──
     var PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
     var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+    var BASE_CHAIN_ID = '0x2105'; // 8453
+    var buyState = { clawsPerCredit: 0, selectedAmount: 50, clawsPrice: 0 };
 
     async function openBuyCredits() {
         els.buyOverlay.classList.add('active');
-        els.buyTxHash.value = '';
-        els.buyVerifyBtn.disabled = true;
         els.buyResult.innerHTML = '';
+        els.buySendBtn.disabled = true;
+        els.buyCustomAmount.value = '';
         els.buyCurrentBalance.textContent = state.credits !== null ? state.credits + ' credits' : '--';
 
-        // Fetch CLAWS price for rate display
+        // Reset preset buttons to default (50)
+        buyState.selectedAmount = 50;
+        var presets = els.buyOverlay.querySelectorAll('.buy-preset');
+        presets.forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-amount') === '50');
+        });
+
+        // Fetch CLAWS price
         els.buyRate.textContent = 'Loading...';
+        els.buyCostValue.textContent = '--';
         try {
             var resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
             var data = await resp.json();
             if (data.pairs && data.pairs.length > 0) {
                 var price = parseFloat(data.pairs[0].priceUsd) || 0;
                 if (price > 0) {
-                    var tokensPerCredit = Math.ceil(0.005 / price);
-                    els.buyRate.textContent = '~' + tokensPerCredit.toLocaleString() + ' CLAWS / credit';
+                    buyState.clawsPrice = price;
+                    buyState.clawsPerCredit = Math.ceil(0.005 / price);
+                    els.buyRate.textContent = '~' + buyState.clawsPerCredit.toLocaleString() + ' CLAWS / credit';
+                    updateBuyCost();
                 } else {
                     els.buyRate.textContent = 'Price unavailable';
                 }
@@ -590,26 +603,101 @@
         els.buyOverlay.classList.remove('active');
     }
 
-    function copyWallet() {
-        navigator.clipboard.writeText(PROTOCOL_WALLET).then(function () {
-            var btn = els.buyOverlay.querySelector('.copy-btn');
-            if (btn) { btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = 'Copy'; }, 2000); }
+    function pickCredits(n) {
+        buyState.selectedAmount = n;
+        els.buyCustomAmount.value = '';
+        var presets = els.buyOverlay.querySelectorAll('.buy-preset');
+        presets.forEach(function (btn) {
+            btn.classList.toggle('active', parseInt(btn.getAttribute('data-amount')) === n);
         });
+        updateBuyCost();
     }
 
-    function onTxInput() {
-        var val = els.buyTxHash.value.trim();
-        els.buyVerifyBtn.disabled = !/^0x[a-fA-F0-9]{64}$/.test(val);
+    function onCustomCredits() {
+        var val = parseInt(els.buyCustomAmount.value) || 0;
+        if (val > 0) {
+            buyState.selectedAmount = val;
+            var presets = els.buyOverlay.querySelectorAll('.buy-preset');
+            presets.forEach(function (btn) { btn.classList.remove('active'); });
+        }
+        updateBuyCost();
     }
 
-    async function verifyDeposit() {
-        var txHash = els.buyTxHash.value.trim();
-        if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) return;
+    function updateBuyCost() {
+        var amount = buyState.selectedAmount;
+        if (!amount || !buyState.clawsPerCredit) {
+            els.buyCostValue.textContent = '--';
+            els.buySendBtn.disabled = true;
+            return;
+        }
+        var totalClaws = amount * buyState.clawsPerCredit;
+        var totalUsd = (amount * 0.005).toFixed(2);
+        els.buyCostValue.textContent = totalClaws.toLocaleString() + ' CLAWS (~$' + totalUsd + ')';
+        els.buySendBtn.disabled = false;
+    }
 
-        els.buyVerifyBtn.disabled = true;
-        els.buyResult.innerHTML = 'Verifying on-chain...';
-        els.buyResult.className = 'buy-result';
+    async function sendClawsTx() {
+        if (!window.ethereum) {
+            els.buyResult.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
+            els.buyResult.className = 'buy-result error';
+            return;
+        }
 
+        var amount = buyState.selectedAmount;
+        if (!amount || !buyState.clawsPerCredit) return;
+
+        els.buySendBtn.disabled = true;
+        els.buyResult.innerHTML = '';
+
+        try {
+            // Ensure Base network
+            var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (chainId !== BASE_CHAIN_ID) {
+                try {
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+                } catch (switchErr) {
+                    els.buyResult.textContent = 'Please switch to Base network in your wallet.';
+                    els.buyResult.className = 'buy-result error';
+                    els.buySendBtn.disabled = false;
+                    return;
+                }
+            }
+
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var from = accounts[0];
+
+            // Build ERC-20 transfer calldata
+            var totalTokens = BigInt(amount) * BigInt(buyState.clawsPerCredit);
+            var amountWei = totalTokens * BigInt('1000000000000000000');
+            var selector = '0xa9059cbb';
+            var paddedAddr = PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0');
+            var paddedAmt = amountWei.toString(16).padStart(64, '0');
+            var data = selector + paddedAddr + paddedAmt;
+
+            els.buyResult.textContent = 'Confirm in your wallet...';
+            els.buyResult.className = 'buy-result';
+
+            var txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{ from: from, to: CLAWS_ADDRESS, data: data }]
+            });
+
+            // Auto-verify the deposit
+            els.buyResult.textContent = 'Transaction sent! Verifying...';
+            await verifyDeposit(txHash);
+
+        } catch (e) {
+            if (e.code === 4001) {
+                els.buyResult.textContent = 'Transaction cancelled.';
+            } else {
+                els.buyResult.textContent = e.message || 'Transaction failed.';
+            }
+            els.buyResult.className = 'buy-result error';
+            els.buySendBtn.disabled = false;
+        }
+    }
+
+    async function verifyDeposit(txHash) {
         try {
             var resp = await fetch('/api/inclawbate/credits', {
                 method: 'POST',
@@ -630,12 +718,12 @@
             } else {
                 els.buyResult.textContent = data.error || 'Verification failed.';
                 els.buyResult.className = 'buy-result error';
-                els.buyVerifyBtn.disabled = false;
+                els.buySendBtn.disabled = false;
             }
         } catch (e) {
             els.buyResult.textContent = 'Network error. Try again.';
             els.buyResult.className = 'buy-result error';
-            els.buyVerifyBtn.disabled = false;
+            els.buySendBtn.disabled = false;
         }
     }
 
@@ -851,9 +939,9 @@
         publish: publish,
         openBuyCredits: openBuyCredits,
         closeBuyCredits: closeBuyCredits,
-        copyWallet: copyWallet,
-        onTxInput: onTxInput,
-        verifyDeposit: verifyDeposit,
+        pickCredits: pickCredits,
+        onCustomCredits: onCustomCredits,
+        sendClawsTx: sendClawsTx,
         usePrompt: usePrompt,
         shufflePrompts: shufflePrompts,
         connectWallet: connectWallet
