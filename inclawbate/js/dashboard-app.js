@@ -159,6 +159,111 @@ async function deleteApp(appId, appName) {
     }
 }
 
+// ── Projects ──
+async function loadProjects() {
+    const auth = getStoredAuth();
+    if (!auth) return;
+
+    const container = document.getElementById('projectList');
+    if (!container) return;
+
+    const profile = auth.profile;
+    const wallet = profile.wallet_address;
+    if (!wallet) {
+        container.innerHTML = '<div class="overview-empty"><p>Connect a wallet to see your projects.</p></div>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/inclawbator?wallet=${encodeURIComponent(wallet.toLowerCase())}`);
+        const data = await res.json();
+        const projects = data.projects || [];
+
+        // Update stat card
+        document.getElementById('ovProjects').textContent = projects.length;
+
+        if (projects.length === 0) {
+            container.innerHTML = '<div class="overview-empty"><p>No projects yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
+            return;
+        }
+
+        // Sort: active first, then pending, then rejected; within each group by created_at desc
+        const statusOrder = { active: 0, pending: 1, rejected: 2 };
+        projects.sort((a, b) => {
+            const sa = statusOrder[a.status] ?? 1;
+            const sb = statusOrder[b.status] ?? 1;
+            if (sa !== sb) return sa - sb;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+
+        container.innerHTML = '';
+        for (const p of projects) {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+
+            const symbol = p.token_symbol || '???';
+            const name = p.token_name || 'Unknown';
+            const status = p.status || 'pending';
+            const tier = p.tier || 'permissionless';
+            const addr = p.token_address || '';
+            const addrShort = addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '';
+            const created = p.created_at ? timeAgo(p.created_at) : '';
+
+            // Build action buttons
+            let actionsHtml = '';
+            if (addr) {
+                actionsHtml += `<a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+            }
+            if (!p.staking_address && status === 'active') {
+                actionsHtml += `<a href="/inclawbator#pool" class="project-card-action primary">Create Pool</a>`;
+            }
+            if (p.staking_address) {
+                actionsHtml += `<button type="button" class="project-card-action primary" data-pool="${esc(p.staking_address)}" data-name="${esc(name)}" data-project="${esc(p.id)}">Fund Rewards</button>`;
+            }
+            if (p.agent_enabled) {
+                actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
+            }
+
+            card.innerHTML = `
+                <div class="project-card-header">
+                    <div class="project-card-icon">${symbol[0]}</div>
+                    <div class="project-card-title">
+                        <div class="project-card-name">${esc(name)}</div>
+                        <div class="project-card-symbol">$${esc(symbol)}</div>
+                    </div>
+                    <div class="project-card-badges">
+                        <span class="project-status-badge ${esc(status)}">${esc(status)}</span>
+                        <span class="project-tier-badge">${esc(tier)}</span>
+                    </div>
+                </div>
+                <div class="project-card-meta">
+                    ${addr ? `<span><a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
+                    ${created ? `<span>${created}</span>` : ''}
+                </div>
+                <div class="project-card-actions">${actionsHtml}</div>
+            `;
+
+            // Wire copy button
+            card.querySelector('.project-card-copy')?.addEventListener('click', (e) => {
+                const text = e.currentTarget.dataset.copy;
+                navigator.clipboard.writeText(text);
+                e.currentTarget.textContent = '✓';
+                setTimeout(() => { e.currentTarget.innerHTML = '&#128203;'; }, 1500);
+            });
+
+            // Wire fund button
+            card.querySelector('.project-card-action.primary[data-pool]')?.addEventListener('click', (e) => {
+                const btn = e.currentTarget;
+                openFundModal(btn.dataset.pool, btn.dataset.name, btn.dataset.project);
+            });
+
+            container.appendChild(card);
+        }
+    } catch (e) {
+        container.innerHTML = '<div class="overview-empty"><p>Failed to load projects.</p></div>';
+    }
+}
+
 // ── Staking Pools ──
 const BASE_RPCS = [
     'https://mainnet.base.org',
@@ -662,6 +767,7 @@ function init() {
     });
 
     loadOverview();
+    loadProjects();
     loadStakingPools();
 }
 
