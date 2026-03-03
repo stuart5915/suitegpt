@@ -860,13 +860,13 @@ async function handleIncubationSubmit() {
 
     var name = document.getElementById('incProjectName').value.trim();
     var vision = document.getElementById('incVision').value.trim();
-    var xHandle = document.getElementById('incXHandle').value.trim();
-    var telegram = document.getElementById('incTelegram').value.trim();
+    var contactMethod = document.getElementById('incContactMethod').value;
+    var contactHandle = document.getElementById('incContactHandle').value.trim();
     var logoUrl = document.getElementById('incLogoUrl').value.trim();
     var helpNeeded = document.getElementById('incHelpNeeded').value.trim();
 
     if (!name) return showToast('Project name is required', 'error');
-    if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
+    if (!contactHandle) return showToast('Please provide a handle or link so we can reach you', 'error');
 
     if (!state.wallet) {
         await connectWallet();
@@ -880,6 +880,10 @@ async function handleIncubationSubmit() {
     try {
         var description = vision;
         if (helpNeeded) description += '\n\n--- HELP NEEDED ---\n' + helpNeeded;
+        description += '\n\n--- CONTACT ---\n' + contactMethod + ': ' + contactHandle;
+
+        var xHandle = contactMethod === 'x_dms' ? contactHandle.replace(/^@/, '') : '';
+        var telegram = contactMethod === 'telegram' ? contactHandle : '';
 
         var regResult = await apiPost({
             action: 'register',
@@ -905,7 +909,8 @@ async function handleIncubationSubmit() {
         state.deploying = false;
         closeToolDrawer();
         updateUI();
-        showToast('Application submitted!', 'success');
+        showToast('Application submitted! We\'ll reach out within 48 hours.', 'success');
+        setTimeout(function() { window.location.href = '/team'; }, 2500);
     } catch (e) {
         state.deploying = false;
         setBtnState(btn, 'Submit Application', false);
