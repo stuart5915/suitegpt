@@ -454,11 +454,7 @@
         }, 3000);
 
         try {
-            // When editing an existing app, include the code as context on the first message
             var fullMessage = message + getAttachmentPrompt();
-            if (state.editingApp && !state.sessionId && state.currentCode) {
-                fullMessage = 'Here is my existing app code:\n```html\n' + state.currentCode + '\n```\n\nPlease make this change: ' + fullMessage;
-            }
 
             var resp = await fetch(API_BASE, {
                 method: 'POST',
@@ -466,11 +462,11 @@
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + getToken()
                 },
-                body: JSON.stringify({
+                body: JSON.stringify(Object.assign({
                     session_id: state.sessionId,
                     message: fullMessage,
                     model: state.selectedModel
-                })
+                }, !state.sessionId && state.currentCode ? { current_code: state.currentCode } : {}))
             });
 
             var data = await resp.json();

@@ -218,7 +218,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { session_id, message } = req.body;
+        const { session_id, message, current_code } = req.body;
 
         if (!message || !message.trim()) {
             // Refund — no work done
@@ -270,6 +270,18 @@ export default async function handler(req, res) {
             role: m.role,
             content: m.content
         }));
+
+        // If no history but current_code provided (edit/fork), inject it as context
+        if (contextMessages.length === 0 && current_code) {
+            contextMessages.push({
+                role: 'user',
+                content: 'Here is my existing app. I want to make changes to it.'
+            });
+            contextMessages.push({
+                role: 'assistant',
+                content: 'I can see your existing app code. What changes would you like me to make? I\'ll output the complete updated HTML file.\n\n```html\n' + current_code + '\n```'
+            });
+        }
 
         // Add current user message
         contextMessages.push({ role: 'user', content: message });
