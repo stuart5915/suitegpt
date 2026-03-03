@@ -205,14 +205,14 @@ function extractHtml(text) {
 }
 
 function hasEditBlocks(text) {
-    return text.includes('<<<<<<< SEARCH');
+    return /&lt;{4,8} SEARCH|<{4,8} SEARCH/.test(text);
 }
 
 function parseEditBlocks(text) {
     const blocks = [];
     // Normalize \r\n to \n before parsing
     const normalized = text.replace(/\r\n/g, '\n');
-    const regex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
+    const regex = /<{4,8} SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>{4,8} REPLACE/g;
     let match;
     while ((match = regex.exec(normalized)) !== null) {
         blocks.push({ search: match[1], replace: match[2] });
@@ -417,7 +417,9 @@ export default async function handler(req, res) {
         // Determine edit mode — do we have existing code to edit?
         let existingCode = req.body._session_code || null;
         if (!existingCode && current_code) existingCode = current_code;
-        const isEditMode = !!existingCode;
+        // Long prompts (>1500 chars) are almost always "build from scratch" requests,
+        // not small edits. Force full-file mode so Claude outputs complete HTML.
+        const isEditMode = !!existingCode && message.length < 1500;
 
         // Fetch last 20 messages for context
         const { data: history } = await supabase

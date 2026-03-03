@@ -683,7 +683,7 @@
             div.textContent = content;
         } else {
             // Strip the HTML code block and edit blocks from display (handles truncated responses too)
-            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').replace(/<<<<<<< SEARCH[\s\S]*?>>>>>>> REPLACE/g, '').trim();
+            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').replace(/<{4,8} SEARCH[\s\S]*?>{4,8} REPLACE/g, '').trim();
             if (!displayText && code) displayText = 'Here\'s your updated site:';
             div.textContent = displayText;
             if (code) {
