@@ -759,6 +759,10 @@ function initBuyCredits() {
     // Pay with CLAWS
     document.getElementById('dashBuySendBtn')?.addEventListener('click', dashSendClawsTx);
 
+    // Subscription tier cards → Stripe checkout
+    document.querySelectorAll('.dash-buy-panel .sub-tier-card').forEach(card => {
+        card.addEventListener('click', () => dashBuyTier(card));
+    });
 
     // Fetch price
     fetchClawsPrice();
@@ -929,6 +933,44 @@ async function dashBuyWithCard() {
         resultEl.textContent = 'Network error. Try again.';
         resultEl.className = 'buy-result error';
         cardBtn.disabled = false;
+    }
+}
+
+async function dashBuyTier(card) {
+    const credits = parseInt(card.dataset.credits);
+    const btn = card.querySelector('.sub-tier-btn');
+    const resultEl = document.getElementById('dashBuyResult');
+    if (!credits || !btn) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Redirecting...';
+    if (resultEl) resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(`${API_BASE}/create-checkout`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ credits: credits, return_path: '/dashboard' })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.url) {
+            window.location.href = data.url;
+        } else {
+            if (resultEl) {
+                resultEl.textContent = data.error || 'Failed to start checkout.';
+                resultEl.className = 'buy-result error';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Choose ' + card.dataset.tier.charAt(0).toUpperCase() + card.dataset.tier.slice(1);
+        }
+    } catch (e) {
+        if (resultEl) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'buy-result error';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Choose ' + card.dataset.tier.charAt(0).toUpperCase() + card.dataset.tier.slice(1);
     }
 }
 

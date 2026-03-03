@@ -15,6 +15,13 @@ const ALLOWED_ORIGINS = [
 const PRICE_PER_CREDIT = 0.005; // $0.005 per credit
 const MIN_CREDITS = 100;        // $0.50 — Stripe minimum
 
+// Discounted tier bundles (price in cents)
+const TIER_PRICING = {
+    1500:  600,   // Spark:   $6   (save 20%)
+    5000:  1900,  // Builder: $19  (save 24%)
+    15000: 5500,  // Studio:  $55  (save 27%)
+};
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin)) {
@@ -41,7 +48,10 @@ export default async function handler(req, res) {
         // Allow caller to specify return page (default: /build)
         const basePath = (return_path && /^\/[a-z]/.test(return_path)) ? return_path : '/build';
 
-        const amount = Math.round(credits * PRICE_PER_CREDIT * 100) / 100; // dollars
+        // Use discounted tier price if it matches, otherwise standard rate
+        const tierCents = TIER_PRICING[credits];
+        const amountCents = tierCents || Math.round(credits * PRICE_PER_CREDIT * 100);
+        const amount = amountCents / 100;
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -50,11 +60,11 @@ export default async function handler(req, res) {
                     price_data: {
                         currency: 'usd',
                         product_data: {
-                            name: 'Inclawbate Credits',
+                            name: tierCents ? `Inclawbate Credits — ${credits.toLocaleString()} Bundle` : 'Inclawbate Credits',
                             description: `${credits.toLocaleString()} credits for Build Studio`,
                             images: ['https://inclawbate.com/assets/logo-circle.jpg'],
                         },
-                        unit_amount: Math.round(amount * 100), // Stripe uses cents
+                        unit_amount: amountCents,
                     },
                     quantity: 1,
                 },

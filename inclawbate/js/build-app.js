@@ -824,8 +824,33 @@
         tabSubscribe.classList.toggle('active', tab === 'subscribe');
     }
 
-    function selectSubscription(tier) {
-        alert('Subscriptions coming soon! For now, buy credits with CLAWS tokens.');
+    var TIER_CREDITS = { spark: 1500, builder: 5000, studio: 15000 };
+
+    async function selectSubscription(tier) {
+        var credits = TIER_CREDITS[tier];
+        if (!credits) return;
+
+        var card = document.querySelector('.sub-tier-card[onclick*="' + tier + '"]');
+        var btn = card ? card.querySelector('.sub-tier-btn') : null;
+        if (btn) { btn.disabled = true; btn.textContent = 'Redirecting...'; }
+
+        try {
+            var resp = await fetch('/api/inclawbate/create-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('inclawbate_token') },
+                body: JSON.stringify({ credits: credits, return_path: '/build' })
+            });
+            var data = await resp.json();
+            if (resp.ok && data.url) {
+                window.location.href = data.url;
+            } else {
+                els.buyResult.textContent = data.error || 'Failed to start checkout.';
+                if (btn) { btn.disabled = false; btn.textContent = 'Choose ' + tier.charAt(0).toUpperCase() + tier.slice(1); }
+            }
+        } catch (e) {
+            els.buyResult.textContent = 'Network error. Try again.';
+            if (btn) { btn.disabled = false; btn.textContent = 'Choose ' + tier.charAt(0).toUpperCase() + tier.slice(1); }
+        }
     }
 
     async function openBuyCredits() {
