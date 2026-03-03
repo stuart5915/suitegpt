@@ -272,14 +272,19 @@ export default async function handler(req, res) {
         }));
 
         // If no history but current_code provided (edit/fork), inject it as context
+        // Cap at 40KB to keep Claude's processing within the 60s function timeout
         if (contextMessages.length === 0 && current_code) {
+            const MAX_CODE = 40000;
+            const trimmedCode = current_code.length > MAX_CODE
+                ? current_code.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
+                : current_code;
             contextMessages.push({
                 role: 'user',
-                content: 'Here is my existing app. I want to make changes to it.'
+                content: 'Here is my existing app code:\n\n```html\n' + trimmedCode + '\n```\n\nI want to make a change to it.'
             });
             contextMessages.push({
                 role: 'assistant',
-                content: 'I can see your existing app code. What changes would you like me to make? I\'ll output the complete updated HTML file.\n\n```html\n' + current_code + '\n```'
+                content: 'I can see your app. Tell me what you\'d like to change and I\'ll output the complete updated HTML file.'
             });
         }
 
@@ -296,7 +301,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: tier.model,
-                max_tokens: 8000,
+                max_tokens: 16000,
                 system: SYSTEM_PROMPT,
                 messages: contextMessages
             })

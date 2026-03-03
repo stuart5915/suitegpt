@@ -469,14 +469,20 @@
                 }, !state.sessionId && state.currentCode ? { current_code: state.currentCode } : {}))
             });
 
-            var data = await resp.json();
-
             // Remove thinking indicator
             clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
 
+            if (resp.status === 504) {
+                appendMessage('assistant', 'Request timed out. Try a simpler change, or try again.');
+                state.sending = false;
+                els.chatSend.disabled = false;
+                return;
+            }
+
+            var data = await resp.json();
+
             if (resp.status === 401) {
-                if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
                 logout();
                 return;
             }
@@ -513,7 +519,11 @@
         } catch (e) {
             clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
-            appendMessage('assistant', 'Network error. Please try again.');
+            var errMsg = 'Network error. Please try again.';
+            if (e && e.message && e.message.includes('504')) {
+                errMsg = 'Request timed out — the app may be too complex. Try a simpler change or start fresh.';
+            }
+            appendMessage('assistant', errMsg);
         }
 
         // Clear attachments after send
