@@ -175,8 +175,6 @@ async function loadProjects() {
     const auth = getStoredAuth();
     if (!auth) return;
 
-    const appSection = document.getElementById('overviewApplications');
-    const tokenSection = document.getElementById('overviewTokens');
     const appContainer = document.getElementById('applicationList');
     const tokenContainer = document.getElementById('tokenList');
     if (!appContainer || !tokenContainer) return;
@@ -207,7 +205,6 @@ async function loadProjects() {
 
         // Render applications
         if (applications.length > 0) {
-            appSection.style.display = '';
             appContainer.innerHTML = '';
             for (const p of applications) {
                 appContainer.appendChild(renderProjectCard(p));
@@ -216,7 +213,6 @@ async function loadProjects() {
 
         // Render tokens
         if (tokens.length > 0) {
-            tokenSection.style.display = '';
             tokenContainer.innerHTML = '';
             for (const p of tokens) {
                 tokenContainer.appendChild(renderProjectCard(p));
