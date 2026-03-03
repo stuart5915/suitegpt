@@ -55,13 +55,17 @@ async function loadOverview() {
     const appsData = apps.status === 'fulfilled' ? apps.value : null;
 
     // Update stat cards
-    document.getElementById('ovCredits').textContent = creditsData?.credits ?? 0;
+    const creditCount = creditsData?.credits ?? 0;
+    document.getElementById('ovCredits').textContent = creditCount;
     document.getElementById('ovApps').textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
+
+    // Update buy panel balance
+    const balEl = document.getElementById('dashBuyBalance');
+    if (balEl) balEl.textContent = creditCount + ' credits';
 
     renderAppCards(appsData?.apps || []);
 
-    // Render credits inline
-    document.getElementById('creditBalance').textContent = creditsData?.credits ?? 0;
+    // Populate API key
     if (creditsData?.api_key) {
         document.getElementById('dashApiKey').value = creditsData.api_key;
     }
@@ -711,15 +715,239 @@ function openFundModal(poolAddr, poolName, projectId) {
     document.addEventListener('keydown', escHandler);
 }
 
+// ── Buy Credits ──
+const PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
+const BASE_CHAIN_ID = '0x2105';
+const buyState = { clawsPerCredit: 0, selectedAmount: 250, clawsPrice: 0 };
+
+function initBuyCredits() {
+    // Tab switching
+    document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.getElementById('dashBuyCredits').classList.toggle('active', tab === 'credits');
+            document.getElementById('dashBuySubscribe').classList.toggle('active', tab === 'subscribe');
+        });
+    });
+
+    // Presets
+    document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+            buyState.selectedAmount = parseInt(btn.dataset.amount);
+            const custom = document.getElementById('dashBuyCustom');
+            if (custom) custom.value = '';
+            document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(b => b.classList.toggle('active', b === btn));
+            updateDashBuyCost();
+        });
+    });
+
+    // Custom amount
+    document.getElementById('dashBuyCustom')?.addEventListener('input', () => {
+        const val = parseInt(document.getElementById('dashBuyCustom').value) || 0;
+        if (val > 0) {
+            buyState.selectedAmount = val;
+            document.querySelectorAll('.dash-buy-panel .buy-preset').forEach(b => b.classList.remove('active'));
+        }
+        updateDashBuyCost();
+    });
+
+    // Pay with card
+    document.getElementById('dashBuyCardBtn')?.addEventListener('click', dashBuyWithCard);
+
+    // Pay with CLAWS
+    document.getElementById('dashBuySendBtn')?.addEventListener('click', dashSendClawsTx);
+
+    // Subscription cards
+    document.querySelectorAll('.dash-buy-panel .sub-tier-card').forEach(card => {
+        card.addEventListener('click', () => {
+            alert('Subscriptions coming soon! For now, buy credits with CLAWS tokens.');
+        });
+    });
+
+    // Fetch price
+    fetchClawsPrice();
+}
+
+async function fetchClawsPrice() {
+    const rateEl = document.getElementById('dashBuyRate');
+    try {
+        const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+        const data = await resp.json();
+        if (data.pairs && data.pairs.length > 0) {
+            const price = parseFloat(data.pairs[0].priceUsd) || 0;
+            if (price > 0) {
+                buyState.clawsPrice = price;
+                buyState.clawsPerCredit = Math.ceil(0.005 / price);
+                if (rateEl) rateEl.textContent = '~' + buyState.clawsPerCredit.toLocaleString() + ' CLAWS / credit';
+                updateDashBuyCost();
+                return;
+            }
+        }
+        if (rateEl) rateEl.textContent = 'Price unavailable';
+    } catch (e) {
+        if (rateEl) rateEl.textContent = 'Price unavailable';
+    }
+}
+
+function updateDashBuyCost() {
+    const amount = buyState.selectedAmount;
+    const costEl = document.getElementById('dashBuyCost');
+    const sendBtn = document.getElementById('dashBuySendBtn');
+    const cardBtn = document.getElementById('dashBuyCardBtn');
+    const bH = document.getElementById('dashBrkHaiku');
+    const bS = document.getElementById('dashBrkSonnet');
+    const bO = document.getElementById('dashBrkOpus');
+    const cardIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
+
+    if (!amount || !buyState.clawsPerCredit) {
+        if (costEl) costEl.textContent = '--';
+        if (sendBtn) sendBtn.disabled = true;
+        if (cardBtn) { cardBtn.disabled = true; cardBtn.innerHTML = cardIcon + 'Pay with Card'; }
+        if (bH) bH.textContent = '--';
+        if (bS) bS.textContent = '--';
+        if (bO) bO.textContent = '--';
+        return;
+    }
+
+    const totalClaws = amount * buyState.clawsPerCredit;
+    const totalUsd = (amount * 0.005).toFixed(2);
+    if (costEl) costEl.textContent = totalClaws.toLocaleString() + ' CLAWS (~$' + totalUsd + ')';
+    if (sendBtn) sendBtn.disabled = false;
+    if (cardBtn) {
+        if (amount >= 100) {
+            cardBtn.disabled = false;
+            cardBtn.innerHTML = cardIcon + 'Pay with Card — $' + totalUsd;
+        } else {
+            cardBtn.disabled = true;
+            cardBtn.innerHTML = cardIcon + 'Card min $0.50 (100 credits)';
+        }
+    }
+    if (bH) bH.textContent = Math.floor(amount / 5) + ' msgs';
+    if (bS) bS.textContent = Math.floor(amount / 15) + ' msgs';
+    if (bO) bO.textContent = Math.floor(amount / 60) + ' msgs';
+}
+
+async function dashSendClawsTx() {
+    const resultEl = document.getElementById('dashBuyResult');
+    const sendBtn = document.getElementById('dashBuySendBtn');
+
+    if (!window.ethereum) {
+        resultEl.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
+        resultEl.className = 'buy-result error';
+        return;
+    }
+
+    const amount = buyState.selectedAmount;
+    if (!amount || !buyState.clawsPerCredit) return;
+
+    sendBtn.disabled = true;
+    resultEl.innerHTML = '';
+
+    try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== BASE_CHAIN_ID) {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+            } catch (e) {
+                resultEl.textContent = 'Please switch to Base network in your wallet.';
+                resultEl.className = 'buy-result error';
+                sendBtn.disabled = false;
+                return;
+            }
+        }
+
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const from = accounts[0];
+
+        const totalTokens = BigInt(amount) * BigInt(buyState.clawsPerCredit);
+        const amountWei = totalTokens * BigInt('1000000000000000000');
+        const selector = '0xa9059cbb';
+        const paddedAddr = PROTOCOL_WALLET.slice(2).toLowerCase().padStart(64, '0');
+        const paddedAmt = amountWei.toString(16).padStart(64, '0');
+        const data = selector + paddedAddr + paddedAmt;
+
+        resultEl.textContent = 'Confirm in your wallet...';
+        resultEl.className = 'buy-result';
+
+        const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from, to: CLAWS_ADDRESS, data }]
+        });
+
+        resultEl.textContent = 'Transaction sent! Verifying...';
+
+        // Verify deposit
+        const resp = await fetch(`${API_BASE}/credits`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
+        });
+        const result = await resp.json();
+
+        if (resp.ok) {
+            resultEl.textContent = '+' + result.credits_added + ' credits added! New balance: ' + result.credits_total;
+            resultEl.className = 'buy-result success';
+            document.getElementById('ovCredits').textContent = result.credits_total;
+            document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
+        } else {
+            resultEl.textContent = result.error || 'Verification failed.';
+            resultEl.className = 'buy-result error';
+            sendBtn.disabled = false;
+        }
+    } catch (e) {
+        if (e.code === 4001) {
+            resultEl.textContent = 'Transaction cancelled.';
+        } else {
+            resultEl.textContent = e.message || 'Transaction failed.';
+        }
+        resultEl.className = 'buy-result error';
+        sendBtn.disabled = false;
+    }
+}
+
+async function dashBuyWithCard() {
+    const amount = buyState.selectedAmount;
+    if (!amount || amount < 100) return;
+
+    const cardBtn = document.getElementById('dashBuyCardBtn');
+    const resultEl = document.getElementById('dashBuyResult');
+    cardBtn.disabled = true;
+    resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(`${API_BASE}/create-checkout`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ credits: amount })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.url) {
+            window.location.href = data.url;
+        } else {
+            resultEl.textContent = data.error || 'Failed to start checkout.';
+            resultEl.className = 'buy-result error';
+            cardBtn.disabled = false;
+        }
+    } catch (e) {
+        resultEl.textContent = 'Network error. Try again.';
+        resultEl.className = 'buy-result error';
+        cardBtn.disabled = false;
+    }
+}
+
 // ── Init ──
 function init() {
     const auth = getStoredAuth();
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
+        initBuyCredits();
         return;
     }
 
-    // Fetch fresh profile for Telegram status
+    // Fetch fresh profile
     const profile = auth.profile;
     fetch(`/api/inclawbate/humans?handle=${profile.x_handle}`)
         .then(r => r.ok ? r.json() : null)
@@ -730,7 +958,7 @@ function init() {
         })
         .catch(() => {});
 
-    // Wire credits buttons
+    // Wire API key buttons
     document.getElementById('generateApiKey')?.addEventListener('click', async () => {
         const btn = document.getElementById('generateApiKey');
         btn.disabled = true;
@@ -745,9 +973,8 @@ function init() {
             if (data.api_key) {
                 document.getElementById('dashApiKey').value = data.api_key;
             }
-        } catch (err) {
-            // Silent
-        } finally {
+        } catch (err) {}
+        finally {
             btn.disabled = false;
             btn.textContent = 'Generate';
         }
@@ -763,13 +990,22 @@ function init() {
         }
     });
 
-    document.getElementById('copyDepositAddr')?.addEventListener('click', () => {
-        const input = document.getElementById('depositAddr');
-        navigator.clipboard.writeText(input.value);
-        const btn = document.getElementById('copyDepositAddr');
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-    });
+    // Init buy credits panel
+    initBuyCredits();
+
+    // Check Stripe payment return
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    if (payment) {
+        history.replaceState(null, '', window.location.pathname);
+        if (payment === 'success') {
+            const credits = params.get('credits');
+            setTimeout(() => {
+                alert(credits ? 'Payment successful! ' + credits + ' credits added.' : 'Payment successful! Credits are being added.');
+                loadOverview();
+            }, 500);
+        }
+    }
 
     loadOverview();
     loadProjects();
