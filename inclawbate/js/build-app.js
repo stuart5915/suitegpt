@@ -474,7 +474,7 @@
     function updateCredits() {
         if (state.credits === null) return;
         els.creditsCount.textContent = state.credits;
-        els.creditsCount.className = 'build-credits-count' +
+        els.creditsCount.className = 'action-credits-count' +
             (state.credits <= 0 ? ' empty' : state.credits <= 5 ? ' low' : '');
     }
 
@@ -698,7 +698,24 @@
     var BASE_CHAIN_ID = '0x2105'; // 8453
     var buyState = { clawsPerCredit: 0, selectedAmount: 250, clawsPrice: 0 };
 
+    function switchBuyTab(tab) {
+        var btnCredits = document.getElementById('buyTabBtnCredits');
+        var btnSubscribe = document.getElementById('buyTabBtnSubscribe');
+        var tabCredits = document.getElementById('buyTabCredits');
+        var tabSubscribe = document.getElementById('buyTabSubscribe');
+        if (!btnCredits || !tabCredits) return;
+        btnCredits.classList.toggle('active', tab === 'credits');
+        btnSubscribe.classList.toggle('active', tab === 'subscribe');
+        tabCredits.classList.toggle('active', tab === 'credits');
+        tabSubscribe.classList.toggle('active', tab === 'subscribe');
+    }
+
+    function selectSubscription(tier) {
+        alert('Subscriptions coming soon! For now, buy credits with CLAWS tokens.');
+    }
+
     async function openBuyCredits() {
+        switchBuyTab('credits');
         els.buyOverlay.classList.add('active');
         els.buyResult.innerHTML = '';
         els.buySendBtn.disabled = true;
@@ -978,7 +995,12 @@
             expandEl.classList.remove('open');
         }
 
-        renderWelcomePrompts(category);
+        // Only show welcome prompts when no pill is active (accordion handles it otherwise)
+        if (category) {
+            renderWelcomePrompts(null);  // clear welcome prompts — accordion has them
+        } else {
+            renderWelcomePrompts(null);  // show generic starter prompts
+        }
     }
 
     function useCapPrompt(text) {
@@ -1164,6 +1186,8 @@
         publish: publish,
         openBuyCredits: openBuyCredits,
         closeBuyCredits: closeBuyCredits,
+        switchBuyTab: switchBuyTab,
+        selectSubscription: selectSubscription,
         pickCredits: pickCredits,
         onCustomCredits: onCustomCredits,
         sendClawsTx: sendClawsTx,
