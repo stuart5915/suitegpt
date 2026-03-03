@@ -535,11 +535,9 @@
                 }, !state.sessionId && state.currentCode ? { current_code: state.currentCode } : {}))
             });
 
-            // Remove thinking indicator
-            clearInterval(thinkingInterval);
-            if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
-
             if (resp.status === 504) {
+                clearInterval(thinkingInterval);
+                if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
                 appendMessage('assistant', 'Request timed out. Try a simpler change, or try again.');
                 state.sending = false;
                 els.chatSend.disabled = false;
@@ -549,6 +547,8 @@
             // Non-streaming error responses (401, 402, etc.) come as JSON
             var contentType = resp.headers.get('content-type') || '';
             if (!contentType.includes('text/event-stream')) {
+                clearInterval(thinkingInterval);
+                if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
                 var data = await resp.json();
                 if (resp.status === 401) { logout(); return; }
                 appendMessage('assistant', data.error || 'Something went wrong.');
@@ -559,11 +559,11 @@
             }
 
             // ── Read SSE stream ──
+            // Keep thinking indicator alive with progress messages while streaming
+            var streamMessages = ['Writing code...', 'Building layout...', 'Adding styles...', 'Wiring up logic...', 'Polishing details...', 'Almost done...'];
+            var streamMsgIdx = 0;
+            var streamStarted = false;
             var streamedText = '';
-            var streamDiv = document.createElement('div');
-            streamDiv.className = 'chat-msg assistant';
-            streamDiv.textContent = '';
-            els.chatMessages.appendChild(streamDiv);
 
             var reader = resp.body.getReader();
             var decoder = new TextDecoder();
@@ -591,10 +591,21 @@
                             }
                         } else if (evt.type === 'delta') {
                             streamedText += evt.text;
-                            // Show streaming text (strip code blocks for display)
-                            var display = streamedText.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').trim();
-                            streamDiv.textContent = display || 'Generating...';
-                            scrollChat();
+                            // Update thinking indicator with progress on first delta
+                            if (!streamStarted) {
+                                streamStarted = true;
+                                clearInterval(thinkingInterval);
+                                var statusEl = thinkingEl.querySelector('.thinking-status');
+                                if (statusEl) statusEl.textContent = streamMessages[0];
+                                var noteEl = thinkingEl.querySelector('.thinking-note');
+                                if (noteEl) noteEl.textContent = '';
+                                // Rotate progress messages every 2.5s
+                                thinkingInterval = setInterval(function() {
+                                    streamMsgIdx = (streamMsgIdx + 1) % streamMessages.length;
+                                    var s = thinkingEl.querySelector('.thinking-status');
+                                    if (s) s.textContent = streamMessages[streamMsgIdx];
+                                }, 2500);
+                            }
                         } else if (evt.type === 'done') {
                             doneData = evt;
                         }
@@ -602,9 +613,9 @@
                 }
             }
 
-            // ── Process final result ──
-            // Replace streaming div with final message
-            streamDiv.remove();
+            // Remove thinking indicator
+            clearInterval(thinkingInterval);
+            if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             var finalCode = doneData ? doneData.code : extractHtmlClient(streamedText);
             var displayText = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
             if (!displayText && finalCode) displayText = 'Here\'s your updated site:';
