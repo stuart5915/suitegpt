@@ -763,16 +763,10 @@ async function handlePoolDeploy() {
 
     state.deploying = true;
     var btn = document.getElementById('deployPoolBtn');
-    setBtnState(btn, 'Approving CLAWS...', true);
+    setBtnState(btn, 'Deploying staking pool...', true);
 
     try {
-        // Step 1: Approve CLAWS to factory
-        var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-        await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
-
-        setBtnState(btn, 'Deploying staking pool...', true);
-
-        // Step 2: deployPaid(tokenAddress, CLAWS)
+        // Deploy staking pool (fee is 0, no CLAWS approve needed)
         var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
         var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
 
