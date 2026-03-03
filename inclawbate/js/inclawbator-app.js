@@ -273,15 +273,18 @@ function updateAllocationUI() {
     var balanceDisplay = document.getElementById('clawsBalanceDisplay');
     var costDisplay = document.getElementById('allocationCostDisplay');
     var warningEl = document.getElementById('allocationWarning');
+    var lockupNote = document.getElementById('allocationLockupNote');
 
     if (state.allocationPct === 0) {
         if (balanceEl) balanceEl.style.display = 'none';
         if (warningEl) warningEl.classList.remove('visible');
+        if (lockupNote) lockupNote.style.display = 'none';
         return;
     }
 
     if (balanceEl) balanceEl.style.display = 'flex';
     if (balanceDisplay) balanceDisplay.textContent = fmt(state.clawsBalance);
+    if (lockupNote) lockupNote.style.display = 'block';
 
     var cost = ALLOCATION_TIERS[state.allocationPct] || 0;
     if (costDisplay) costDisplay.textContent = 'Cost: ' + fmt(cost) + ' CLAWS';
