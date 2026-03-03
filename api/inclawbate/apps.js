@@ -89,7 +89,7 @@ function getUser(req) {
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -330,6 +330,45 @@ export default async function handler(req, res) {
         } catch (err) {
             console.error('apps POST error:', err);
             return res.status(500).json({ error: 'Something went wrong' });
+        }
+    }
+
+    // ── DELETE — remove own app ──
+    if (req.method === 'DELETE') {
+        const user = getUser(req);
+        if (!user) return res.status(401).json({ error: 'Login required' });
+
+        try {
+            const { app_id } = req.body;
+            if (!app_id) return res.status(400).json({ error: 'app_id required' });
+
+            const { data: app, error: lookupErr } = await supabase
+                .from('user_apps')
+                .select('id, user_id, creator_x_handle')
+                .eq('id', app_id)
+                .maybeSingle();
+
+            if (lookupErr || !app) return res.status(404).json({ error: 'App not found' });
+
+            // Verify ownership
+            const ownsById = app.user_id && app.user_id === user.sub;
+            const ownsByHandle = app.creator_x_handle && user.x_handle &&
+                app.creator_x_handle.toLowerCase() === user.x_handle.toLowerCase();
+            if (!ownsById && !ownsByHandle) {
+                return res.status(403).json({ error: 'You do not own this app' });
+            }
+
+            const { error: delErr } = await supabase
+                .from('user_apps')
+                .delete()
+                .eq('id', app_id);
+
+            if (delErr) throw delErr;
+
+            return res.json({ deleted: true });
+        } catch (err) {
+            console.error('apps DELETE error:', err);
+            return res.status(500).json({ error: 'Failed to delete app' });
         }
     }
 
