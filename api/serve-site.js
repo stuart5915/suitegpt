@@ -64,6 +64,8 @@ function paywallPage(app) {
     const name = app.name || app.slug;
     const price = parseFloat(app.claws_price) || 0;
     const creator = app.creator_x_handle ? '@' + app.creator_x_handle : (app.creator_wallet ? app.creator_wallet.slice(0, 6) + '...' + app.creator_wallet.slice(-4) : 'Creator');
+    const creatorWallet = app.creator_wallet || '';
+    const priceWei = BigInt(Math.ceil(price)) * BigInt('1000000000000000000');
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,10 +81,16 @@ h1 { font-size: 1.6rem; margin-bottom: 8px; }
 .desc { color: #8a8078; margin-bottom: 24px; line-height: 1.5; }
 .price { display: inline-block; padding: 8px 20px; background: hsla(32, 40%, 30%, 0.3); color: #c9a86c; border-radius: 999px; font-size: 1rem; font-weight: 700; margin-bottom: 24px; }
 .creator { color: #6a6058; font-size: 0.85rem; margin-bottom: 24px; }
-a { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #c05a3c, #d4845a); color: #fff; border-radius: 12px; text-decoration: none; font-weight: 700; transition: opacity 0.2s; }
-a:hover { opacity: 0.85; }
+.btn { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #c05a3c, #d4845a); color: #fff; border-radius: 12px; border: none; font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.status { margin-top: 16px; font-size: 0.85rem; min-height: 1.2em; }
+.status.error { color: #ef4444; }
+.status.success { color: #4ade80; }
 .alt { display: block; margin-top: 16px; color: #6a6058; font-size: 0.8rem; }
-.alt a { background: none; padding: 0; color: #8a8078; display: inline; }
+.alt a { color: #8a8078; text-decoration: none; }
+.alt a:hover { color: #c9a86c; }
+.login-link { color: #8a8078; text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -92,9 +100,100 @@ a:hover { opacity: 0.85; }
 <p class="desc">${app.description || 'This is a premium app. Pay once to unlock it forever.'}</p>
 <div class="price">${price.toLocaleString()} CLAWS — one-time unlock</div>
 <p class="creator">by ${creator}</p>
-<a href="/apps?id=${app.id}">Unlock This App</a>
+<button class="btn" id="unlockBtn" onclick="unlockApp()">Pay ${price.toLocaleString()} CLAWS</button>
+<div class="status" id="status"></div>
 <p class="alt">Don't have CLAWS? <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Buy on Uniswap</a></p>
 </div>
+<script>
+var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
+var CREATOR = '${creatorWallet}';
+var APP_ID = '${app.id}';
+var AMOUNT_WEI = '${priceWei.toString(16)}';
+
+function getToken() {
+    return localStorage.getItem('inclawbate_token');
+}
+
+async function unlockApp() {
+    var btn = document.getElementById('unlockBtn');
+    var status = document.getElementById('status');
+
+    if (!getToken()) {
+        status.innerHTML = 'You need to log in first. <a class="login-link" href="/launch">Log in</a>';
+        status.className = 'status error';
+        return;
+    }
+
+    if (!window.ethereum) {
+        status.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
+        status.className = 'status error';
+        return;
+    }
+
+    btn.disabled = true;
+    status.textContent = '';
+    status.className = 'status';
+
+    try {
+        var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            } catch (e) {
+                status.textContent = 'Please switch to Base network.';
+                status.className = 'status error';
+                btn.disabled = false;
+                return;
+            }
+        }
+
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        var from = accounts[0];
+
+        var selector = '0xa9059cbb';
+        var paddedAddr = CREATOR.slice(2).toLowerCase().padStart(64, '0');
+        var paddedAmt = AMOUNT_WEI.padStart(64, '0');
+        var data = selector + paddedAddr + paddedAmt;
+
+        status.textContent = 'Confirm in your wallet...';
+
+        var txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: from, to: CLAWS, data: data }]
+        });
+
+        status.textContent = 'Transaction sent! Verifying...';
+
+        var resp = await fetch('/api/inclawbate/apps', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify({ action: 'unlock', app_id: APP_ID, tx_hash: txHash })
+        });
+        var result = await resp.json();
+
+        if (resp.ok && result.unlocked) {
+            status.textContent = 'Unlocked! Reloading...';
+            status.className = 'status success';
+            setTimeout(function() { location.reload(); }, 1000);
+        } else {
+            status.textContent = result.error || 'Verification failed. Try again in a moment.';
+            status.className = 'status error';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        if (e.code === 4001) {
+            status.textContent = 'Transaction cancelled.';
+        } else {
+            status.textContent = e.message || 'Transaction failed.';
+        }
+        status.className = 'status error';
+        btn.disabled = false;
+    }
+}
+</script>
 </body>
 </html>`;
 }
