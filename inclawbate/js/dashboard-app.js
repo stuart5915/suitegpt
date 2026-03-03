@@ -56,8 +56,10 @@ async function loadOverview() {
 
     // Update stat cards
     const creditCount = creditsData?.credits ?? 0;
-    document.getElementById('ovCredits').textContent = creditCount;
-    document.getElementById('ovApps').textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
+    const ovCreditsEl = document.getElementById('ovCredits');
+    if (ovCreditsEl) ovCreditsEl.textContent = creditCount;
+    const ovAppsEl = document.getElementById('ovApps');
+    if (ovAppsEl) ovAppsEl.textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
 
     // Update buy panel balance
     const balEl = document.getElementById('dashBuyBalance');
@@ -200,19 +202,23 @@ async function loadProjects() {
         tokens.sort(sortFn);
 
         // Render applications
+        appContainer.innerHTML = '';
         if (applications.length > 0) {
-            appContainer.innerHTML = '';
             for (const p of applications) {
                 appContainer.appendChild(renderProjectCard(p));
             }
+        } else {
+            appContainer.innerHTML = '<div class="overview-empty"><p>No applications yet. <a href="/inclawbator#incubate">Request incubation</a></p></div>';
         }
 
         // Render tokens
+        tokenContainer.innerHTML = '';
         if (tokens.length > 0) {
-            tokenContainer.innerHTML = '';
             for (const p of tokens) {
                 tokenContainer.appendChild(renderProjectCard(p));
             }
+        } else {
+            tokenContainer.innerHTML = '<div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
         }
     } catch (e) {
         // silent
