@@ -24,7 +24,7 @@ var ADMIN_WALLETS = [
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
 // Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
-var STAKING_FACTORY = '0xB0896F6c13088ca1812Ede403B8D229452b82394';
+var STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
 
 // inclawbate.base.eth — receives 20% of LP reward fees
 var INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
@@ -800,14 +800,7 @@ async function handlePoolDeploy() {
     setBtnState(btn, 'Deploying staking pool...', true);
 
     try {
-        // Approve 1 wei of CLAWS to factory (required by contract)
-        setBtnState(btn, 'Approving...', true);
-        var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-        await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
-
-        setBtnState(btn, 'Deploying staking pool...', true);
-
-        // Deploy staking pool (1 wei fee — effectively free)
+        // Deploy staking pool (free — no CLAWS fee)
         var deployData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
         var result = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployData);
 

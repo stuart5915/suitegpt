@@ -87,18 +87,18 @@ contract StakingFactory {
         pool = _deploy(stakingToken, rewardToken, poolAdminAddr, false);
     }
 
-    /// @notice Anyone can deploy a staking pool by paying INCLAWNCH to feeRecipient.
+    /// @notice Anyone can deploy a staking pool. Free if deployFee is 0.
     /// @param stakingToken Token that users stake
     /// @param rewardToken  Token distributed as rewards (usually INCLAWNCH)
     function deployPaid(
         address stakingToken,
         address rewardToken
     ) external returns (address pool) {
-        require(deployFee > 0, "fee not set");
-        require(feeRecipient != address(0), "no fee recipient");
-
-        // Send INCLAWNCH to fee recipient
-        burnToken.safeTransferFrom(msg.sender, feeRecipient, deployFee);
+        // Collect fee only if set (0 = free deploy)
+        if (deployFee > 0) {
+            require(feeRecipient != address(0), "no fee recipient");
+            burnToken.safeTransferFrom(msg.sender, feeRecipient, deployFee);
+        }
 
         pool = _deploy(stakingToken, rewardToken, msg.sender, true);
     }
