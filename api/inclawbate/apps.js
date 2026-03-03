@@ -207,7 +207,7 @@ export default async function handler(req, res) {
             const results = apps.map(a => {
                 const { code, ...rest } = a;
                 const proj = projectByAppId[a.id] || projectByWallet[a.creator_wallet] || null;
-                return {
+                const entry = {
                     ...rest,
                     has_code: !!code,
                     has_upvoted: upvotedSet.has(a.id),
@@ -215,6 +215,9 @@ export default async function handler(req, res) {
                     token_address: proj ? proj.token_address : null,
                     staking_address: proj ? proj.staking_address : null
                 };
+                // Include code when creator is fetching their own apps (for edit)
+                if (creator && code) entry.code = code;
+                return entry;
             });
 
             return res.json({
