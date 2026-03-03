@@ -414,6 +414,12 @@
         els.chatInput.focus();
     }
 
+    function startNew() {
+        state.forkedFrom = null;
+        state.editingApp = null;
+        newProject();
+    }
+
     // ── Cost Estimation & Confirmation ──
     async function estimateEditCost() {
         if (!state.currentCode) return null;
@@ -1648,6 +1654,7 @@
     // ── Expose Public API ──
     window.BuildApp = {
         newProject: newProject,
+        startNew: startNew,
         send: sendMessage,
         goBack: goBack,
         setModel: setModel,
