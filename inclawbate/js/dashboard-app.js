@@ -71,6 +71,7 @@ async function loadOverview() {
 
 function renderProfileCard(profile) {
     const card = document.getElementById('overviewProfileCard');
+    card.classList.remove('hidden');
     const name = profile.x_name || profile.x_handle || 'Anonymous';
     const handle = profile.x_handle && !profile.x_handle.startsWith('w_') ? `@${profile.x_handle}` : '';
     const profileHref = profile.x_handle ? `/u/${encodeURIComponent(profile.x_handle)}` : '#';
@@ -1472,6 +1473,7 @@ function init() {
     const auth = getStoredAuth();
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
+        document.getElementById('overviewProfileCard')?.classList.add('hidden');
         initBuyCredits();
         return;
     }
