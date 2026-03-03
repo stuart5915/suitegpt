@@ -680,7 +680,7 @@
     var PROTOCOL_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
     var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
     var BASE_CHAIN_ID = '0x2105'; // 8453
-    var buyState = { clawsPerCredit: 0, selectedAmount: 50, clawsPrice: 0 };
+    var buyState = { clawsPerCredit: 0, selectedAmount: 250, clawsPrice: 0 };
 
     async function openBuyCredits() {
         els.buyOverlay.classList.add('active');
@@ -690,7 +690,7 @@
         els.buyCurrentBalance.textContent = state.credits !== null ? state.credits + ' credits' : '--';
 
         // Reset preset buttons to default (50)
-        buyState.selectedAmount = 50;
+        buyState.selectedAmount = 250;
         var presets = els.buyOverlay.querySelectorAll('.buy-preset');
         presets.forEach(function (btn) {
             btn.classList.toggle('active', btn.getAttribute('data-amount') === '50');
@@ -761,7 +761,7 @@
         els.buySendBtn.disabled = false;
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
         if (bSonnet) bSonnet.textContent = Math.floor(amount / 15) + ' msgs';
-        if (bOpus) bOpus.textContent = Math.floor(amount / 25) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 40) + ' msgs';
     }
 
     async function sendClawsTx() {

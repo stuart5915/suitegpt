@@ -22,7 +22,7 @@ const FREE_HANDLES = ['artstu'];
 const MODEL_TIERS = {
     fast:     { model: 'claude-haiku-4-5-20251001',  credits: 5,  label: 'Fast' },
     standard: { model: 'claude-sonnet-4-5-20250929', credits: 15, label: 'Standard' },
-    pro:      { model: 'claude-opus-4-6-20250214',   credits: 25, label: 'Pro' }
+    pro:      { model: 'claude-opus-4-6-20250214',   credits: 40, label: 'Pro' }
 };
 
 const SYSTEM_PROMPT = `You are a expert web developer AI. The user will describe a website, app, or page they want built. You generate complete, self-contained HTML files.
