@@ -744,15 +744,24 @@
 
     function updateBuyCost() {
         var amount = buyState.selectedAmount;
+        var bHaiku = document.getElementById('breakdownHaiku');
+        var bSonnet = document.getElementById('breakdownSonnet');
+        var bOpus = document.getElementById('breakdownOpus');
         if (!amount || !buyState.clawsPerCredit) {
             els.buyCostValue.textContent = '--';
             els.buySendBtn.disabled = true;
+            if (bHaiku) bHaiku.textContent = '--';
+            if (bSonnet) bSonnet.textContent = '--';
+            if (bOpus) bOpus.textContent = '--';
             return;
         }
         var totalClaws = amount * buyState.clawsPerCredit;
         var totalUsd = (amount * 0.005).toFixed(2);
         els.buyCostValue.textContent = totalClaws.toLocaleString() + ' CLAWS (~$' + totalUsd + ')';
         els.buySendBtn.disabled = false;
+        if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
+        if (bSonnet) bSonnet.textContent = Math.floor(amount / 15) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 25) + ' msgs';
     }
 
     async function sendClawsTx() {
