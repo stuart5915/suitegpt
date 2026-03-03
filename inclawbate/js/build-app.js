@@ -476,6 +476,10 @@
         var priceRow = document.getElementById('publishPriceRow');
         if (paid && priceRow) {
             priceRow.classList.toggle('visible', paid.checked);
+            if (paid.checked) {
+                var input = document.getElementById('publishPrice');
+                if (input) setTimeout(function () { input.focus(); }, 100);
+            }
         }
     }
 

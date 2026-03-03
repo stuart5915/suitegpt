@@ -602,21 +602,115 @@
             accent-color: var(--seafoam-400);
             cursor: pointer;
         }
-        .publish-price-input {
+        /* ── Monetize Card ── */
+        .monetize-card {
+            position: relative;
+            border-radius: var(--radius-lg);
+            padding: 2px;
+            margin-bottom: var(--space-lg);
+            background: linear-gradient(135deg, #34d399, #6366f1, #f59e0b);
+            cursor: pointer;
+            transition: box-shadow var(--transition-fast);
+        }
+        .monetize-card:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25), 0 0 40px rgba(52, 211, 153, 0.1);
+        }
+        .monetize-card-inner {
+            background: var(--bg-card);
+            border-radius: calc(var(--radius-lg) - 2px);
+            padding: var(--space-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+        .monetize-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #34d399, #6366f1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .monetize-text {
+            flex: 1;
+        }
+        .monetize-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .monetize-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+        .monetize-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .monetize-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .monetize-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-deepest);
+            border-radius: 999px;
+            border: 1px solid var(--border-default);
+            transition: all var(--transition-fast);
+        }
+        .monetize-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 2px;
+            top: 2px;
+            background: var(--text-dim);
+            border-radius: 50%;
+            transition: all var(--transition-fast);
+        }
+        .monetize-switch input:checked + .monetize-slider {
+            background: linear-gradient(135deg, #34d399, #6366f1);
+            border-color: transparent;
+        }
+        .monetize-switch input:checked + .monetize-slider::before {
+            transform: translateX(20px);
+            background: #fff;
+        }
+        .monetize-price-row {
             display: none;
             align-items: center;
             gap: var(--space-sm);
-            margin-bottom: var(--space-md);
+            margin-top: var(--space-sm);
+            padding-top: var(--space-sm);
+            border-top: 1px solid var(--border-subtle);
         }
-        .publish-price-input.visible { display: flex; }
-        .publish-price-input input {
-            width: 120px;
+        .monetize-price-row.visible { display: flex; }
+        .monetize-price-row input {
+            width: 100px;
+            padding: 6px 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            outline: none;
             margin-bottom: 0;
         }
-        .publish-price-input span {
-            font-size: 0.85rem;
+        .monetize-price-row input:focus { border-color: var(--accent-primary); }
+        .monetize-price-row span {
+            font-size: 0.8rem;
             color: var(--text-dim);
-            font-family: var(--font-mono);
         }
         .publish-divider {
             border: none;
@@ -1015,6 +1109,24 @@
     <div class="publish-modal">
         <h3>Publish to App Store</h3>
 
+        <div class="monetize-card" onclick="document.getElementById('publishPaid').click()">
+            <div class="monetize-card-inner">
+                <div class="monetize-icon">&#128176;</div>
+                <div class="monetize-text">
+                    <div class="monetize-title">Earn money from your app</div>
+                    <div class="monetize-desc">Charge users in CLAWS tokens — you keep the revenue</div>
+                    <div id="publishPriceRow" class="monetize-price-row" onclick="event.stopPropagation()">
+                        <input id="publishPrice" type="number" min="1" placeholder="100" value="">
+                        <span>CLAWS per use</span>
+                    </div>
+                </div>
+                <label class="monetize-switch" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="publishPaid" onchange="window.BuildApp.onPaidToggle()">
+                    <span class="monetize-slider"></span>
+                </label>
+            </div>
+        </div>
+
         <label for="publishName">App name</label>
         <input id="publishName" type="text" placeholder="My Cool App" maxlength="80">
 
@@ -1030,17 +1142,6 @@
             <option value="social">Social</option>
             <option value="other" selected>Other</option>
         </select>
-
-        <div class="publish-row">
-            <label class="publish-toggle">
-                <input type="checkbox" id="publishPaid" onchange="window.BuildApp.onPaidToggle()">
-                Paid app
-            </label>
-        </div>
-        <div id="publishPriceRow" class="publish-price-input">
-            <input id="publishPrice" type="number" min="1" placeholder="100" value="">
-            <span>CLAWS</span>
-        </div>
 
         <label for="publishTags">Tags (comma separated)</label>
         <input id="publishTags" type="text" placeholder="ai, utility, fun">
