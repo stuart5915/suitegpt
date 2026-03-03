@@ -190,8 +190,9 @@ async function loadProjects() {
         const data = await res.json();
         const projects = data.projects || [];
 
-        // Update stat card
-        document.getElementById('ovProjects').textContent = projects.length;
+        // Update stat card (if it exists)
+        const ovProjects = document.getElementById('ovProjects');
+        if (ovProjects) ovProjects.textContent = projects.length;
 
         if (projects.length === 0) {
             container.innerHTML = '<div class="overview-empty"><p>No projects yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
