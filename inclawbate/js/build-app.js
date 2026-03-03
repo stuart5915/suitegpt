@@ -936,6 +936,7 @@
                     claws_price: priceVal,
                     creator_wallet: creatorWallet,
                     creator_x_handle: creatorXHandle,
+                    user_id: profile && profile.id ? profile.id : null,
                     tags: tags,
                     is_listed: isListed,
                     forked_from_user_app: state.forkedFrom ? state.forkedFrom.app_id : null,

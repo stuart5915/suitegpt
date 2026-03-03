@@ -135,7 +135,10 @@ export default async function handler(req, res) {
                 .from('user_apps')
                 .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' });
 
-            if (creatorId) {
+            const creatorWallet = req.query.creator_wallet;
+            if (creatorId && creatorWallet) {
+                query = query.or(`user_id.eq.${creatorId},creator_wallet.eq.${creatorWallet.toLowerCase()}`);
+            } else if (creatorId) {
                 query = query.eq('user_id', creatorId);
             } else if (creator) {
                 query = query.ilike('creator_x_handle', creator);
