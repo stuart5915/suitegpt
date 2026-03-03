@@ -1180,11 +1180,7 @@ async function init() {
         });
     }
 
-    // Load deploy fee for partner display
-    readDeployFee().then(function(fee) {
-        var el = document.getElementById('partnerFeeDisplay');
-        if (el) el.textContent = fmt(fee);
-    }).catch(function() {});
+    // Deploy fee removed — staking pool deploy is free (gas only)
 
     // Accordion toggle
     var accordionToggle = document.getElementById('learnAccordionToggle');
