@@ -37,8 +37,7 @@ function afterAuth(profile, token, dest) {
     if (profile.api_key) {
         window.postMessage({
             type: 'inclawbate-auth',
-            apiKey: profile.api_key,
-            xHandle: profile.x_handle
+            apiKey: profile.api_key
         }, '*');
     }
 
