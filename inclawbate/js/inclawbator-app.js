@@ -627,11 +627,9 @@ async function handleLaunchDeploy() {
     var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
     var desc = document.getElementById('launchDesc').value.trim();
     var website = document.getElementById('launchWebsite').value.trim();
-    var splitPct = parseInt(document.getElementById('feeSplit').value) || 100;
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
-    if (splitPct < 20 || splitPct > 100) return showToast('Fee split must be 20-100%', 'error');
 
     if (!state.wallet) {
         await connectWallet();
@@ -666,7 +664,7 @@ async function handleLaunchDeploy() {
             deploy_tx_hash: result.txHash,
             description: desc,
             website_url: website,
-            fee_split_bps: splitPct * 100,
+            fee_split_bps: 2000,
             tier: 'permissionless',
             creator_wallet: state.wallet
         });
@@ -1155,10 +1153,6 @@ function resetForm() {
         if (el) el.value = '';
     });
 
-    // Reset slider
-    var slider = document.getElementById('feeSplit');
-    if (slider) { slider.value = 100; initSlider(); }
-
     // Reset agent drawer
     var agentPostsPerDay = document.getElementById('agentPostsPerDay');
     if (agentPostsPerDay) agentPostsPerDay.value = '4';
@@ -1255,26 +1249,6 @@ function updateUI() {
 }
 
 // ══════════════════════════════════════
-// FEE SPLIT SLIDER
-// ══════════════════════════════════════
-
-function initSlider() {
-    var slider = document.getElementById('feeSplit');
-    var display = document.getElementById('feeSplitDisplay');
-    var bar = document.querySelector('.split-bar-fill');
-    if (!slider) return;
-
-    function update() {
-        var val = parseInt(slider.value);
-        if (display) display.textContent = val + '% to stakers';
-        if (bar) bar.style.width = val + '%';
-    }
-
-    slider.addEventListener('input', update);
-    update();
-}
-
-// ══════════════════════════════════════
 // ACCORDION
 // ══════════════════════════════════════
 
@@ -1342,9 +1316,6 @@ async function init() {
         var el = document.getElementById('partnerFeeDisplay');
         if (el) el.textContent = fmt(fee);
     }).catch(function() {});
-
-    // Init slider
-    initSlider();
 
     // Accordion toggle
     var accordionToggle = document.getElementById('learnAccordionToggle');
