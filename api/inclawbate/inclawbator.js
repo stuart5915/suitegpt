@@ -11,6 +11,7 @@
 // POST action:"feed-agent"         — deposit CLAWS to feed a project's AI agent
 // POST action:"delete-application" — owner deletes a pending/rejected application (JWT auth)
 // POST action:"update-application" — owner updates application fields (JWT auth)
+// POST action:"record-allocation-claim" — owner records on-chain allocation claim (JWT auth)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -809,6 +810,48 @@ export default async function handler(req, res) {
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ project: data });
+        }
+
+        // ── Owner: record allocation claim ──
+        if (action === 'record-allocation-claim') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id, claim_tx_hash, wallet } = req.body;
+            if (!project_id || !claim_tx_hash || !wallet) {
+                return res.status(400).json({ error: 'project_id, claim_tx_hash, and wallet required' });
+            }
+
+            // Verify ownership
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id, allocation_pct, allocation_claimed_at')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+            if (project.allocation_claimed_at) {
+                return res.status(409).json({ error: 'Allocation already claimed' });
+            }
+            if (!project.allocation_pct || project.allocation_pct <= 0) {
+                return res.status(400).json({ error: 'No allocation to claim' });
+            }
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .update({
+                    allocation_claimed_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', project_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true, project: data });
         }
 
         return res.status(400).json({ error: 'Unknown action' });

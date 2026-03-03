@@ -36,6 +36,20 @@ function timeAgo(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function getAllocationUnlockTime(createdAt) {
+    return new Date(createdAt).getTime() + 7 * 24 * 60 * 60 * 1000;
+}
+
+function formatCountdown(ms) {
+    if (ms <= 0) return '0m';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+}
+
 // ── Overview ──
 async function loadOverview() {
     const auth = getStoredAuth();
@@ -372,6 +386,42 @@ function renderProjectCard(p) {
         }
     }
 
+    // Allocation section
+    let allocationHtml = '';
+    if (p.allocation_pct > 0 && addr) {
+        if (p.allocation_claimed_at) {
+            allocationHtml = `<div class="project-allocation-section claimed">
+                <div class="allocation-row">
+                    <span class="alloc-label">&#128274; ${p.allocation_pct}% Allocation</span>
+                    <span class="allocation-claimed-badge">Claimed</span>
+                </div>
+            </div>`;
+        } else {
+            const unlockTime = getAllocationUnlockTime(p.created_at);
+            const remaining = unlockTime - Date.now();
+            if (remaining > 0) {
+                allocationHtml = `<div class="project-allocation-section locked" data-unlock="${unlockTime}">
+                    <div class="allocation-row">
+                        <span class="alloc-label">&#128274; ${p.allocation_pct}% Allocation</span>
+                        <span class="allocation-countdown">Unlocks in ${formatCountdown(remaining)}</span>
+                    </div>
+                </div>`;
+            } else {
+                allocationHtml = `<div class="project-allocation-section unlocked">
+                    <div class="allocation-row">
+                        <span class="alloc-label">&#128275; ${p.allocation_pct}% Allocation</span>
+                        <span class="allocation-claimable">Claimable now!</span>
+                    </div>
+                    <button type="button" class="allocation-claim-btn"
+                        data-token="${esc(addr)}"
+                        data-project="${esc(p.id)}"
+                        data-alloc="${p.allocation_pct}">Claim Allocation</button>
+                    <div class="allocation-result"></div>
+                </div>`;
+            }
+        }
+    }
+
     card.innerHTML = `
         <div class="project-card-header">
             <div class="project-card-icon">${iconLetter}</div>
@@ -390,6 +440,7 @@ function renderProjectCard(p) {
         </div>
         ${priceRowHtml}
         ${actionsHtml ? `<div class="project-card-actions">${actionsHtml}</div>` : ''}
+        ${allocationHtml}
         ${chartHtml}
     `;
 
@@ -426,6 +477,12 @@ function renderProjectCard(p) {
     // Wire delete button
     card.querySelector('[data-delete-project]')?.addEventListener('click', (e) => {
         deleteApplication(e.currentTarget.dataset.deleteProject, e.currentTarget.dataset.deleteName);
+    });
+
+    // Wire allocation claim button
+    card.querySelector('.allocation-claim-btn')?.addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        claimAllocation(btn.dataset.token, btn.dataset.project, parseInt(btn.dataset.alloc), btn);
     });
 
     return card;
@@ -518,6 +575,9 @@ const STAKING_SEL = {
     unpause:        '0x3f4ba83a',
     paused:         '0x5c975abb',
 };
+const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
+const DEFAULT_SUPPLY = 100000000000n;
+const CLAIM_SEL = '0x2e7ba6ef'; // claim(address,address,uint256,bytes32[])
 
 function pad32(hex) { return hex.replace('0x', '').padStart(64, '0'); }
 function fromWei(hex) {
@@ -561,6 +621,85 @@ async function sendTx(from, to, data) {
         } catch (e) {}
     }
     throw new Error('Transaction timed out');
+}
+
+async function claimAllocation(tokenAddr, projectId, allocPct, btn) {
+    const resultEl = btn.parentElement.querySelector('.allocation-result');
+    try {
+        const provider = window.ethereum;
+        if (!provider) { resultEl.className = 'allocation-result error'; resultEl.textContent = 'No wallet connected'; return; }
+
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const wallet = accounts[0];
+
+        // Switch to Base if needed
+        try {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        } catch (e) {
+            resultEl.className = 'allocation-result error';
+            resultEl.textContent = 'Please switch to Base network';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Claiming...';
+
+        // Calculate allocated amount: 100B * allocPct / 100 * 1e18
+        const allocatedAmount = DEFAULT_SUPPLY * BigInt(allocPct) / 100n * (10n ** 18n);
+        const amountHex = allocatedAmount.toString(16).padStart(64, '0');
+
+        // Build calldata: claim(address token, address recipient, uint256 amount, bytes32[] proof)
+        const data = CLAIM_SEL
+            + pad32(tokenAddr)       // token
+            + pad32(wallet)          // recipient
+            + amountHex              // allocatedAmount
+            + '0'.repeat(62) + '80'  // offset to proof array (128 bytes = 0x80)
+            + '0'.repeat(64);        // proof length = 0
+
+        const receipt = await sendTx(wallet, CLANKER_AIRDROP_V2, data);
+        if (receipt.status === '0x0') throw new Error('Transaction reverted');
+
+        // Record in DB
+        try {
+            await fetch(`${API_BASE}/inclawbator`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    action: 'record-allocation-claim',
+                    project_id: projectId,
+                    claim_tx_hash: receipt.transactionHash,
+                    wallet: wallet
+                })
+            });
+        } catch (e) { /* non-fatal */ }
+
+        resultEl.className = 'allocation-result success';
+        resultEl.textContent = 'Claimed!';
+        btn.textContent = 'Claimed';
+
+        setTimeout(() => { loadProjects(); }, 2500);
+    } catch (e) {
+        resultEl.className = 'allocation-result error';
+        resultEl.textContent = e.message || 'Claim failed';
+        btn.disabled = false;
+        btn.textContent = 'Claim Allocation';
+    }
+}
+
+function updateAllocationCountdowns() {
+    const sections = document.querySelectorAll('.project-allocation-section.locked');
+    let needsReload = false;
+    sections.forEach(section => {
+        const unlockTime = parseInt(section.dataset.unlock);
+        const remaining = unlockTime - Date.now();
+        if (remaining <= 0) {
+            needsReload = true;
+        } else {
+            const countdownEl = section.querySelector('.allocation-countdown');
+            if (countdownEl) countdownEl.textContent = 'Unlocks in ' + formatCountdown(remaining);
+        }
+    });
+    if (needsReload) loadProjects();
 }
 
 async function loadStakingPools() {
@@ -1705,6 +1844,7 @@ function init() {
     loadOverview();
     loadProjects();
     loadStakingPools();
+    setInterval(updateAllocationCountdowns, 60000);
 }
 
 // Boot
