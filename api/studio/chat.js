@@ -204,9 +204,11 @@ function hasEditBlocks(text) {
 
 function parseEditBlocks(text) {
     const blocks = [];
+    // Normalize \r\n to \n before parsing
+    const normalized = text.replace(/\r\n/g, '\n');
     const regex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(normalized)) !== null) {
         blocks.push({ search: match[1], replace: match[2] });
     }
     return blocks;
@@ -214,12 +216,16 @@ function parseEditBlocks(text) {
 
 function applyEdits(code, blocks) {
     const errors = [];
+    let applied = 0;
+    // Normalize \r\n in existing code for consistent matching
+    code = code.replace(/\r\n/g, '\n');
     for (let i = 0; i < blocks.length; i++) {
         const { search, replace } = blocks[i];
         // Try exact match first
         const idx = code.indexOf(search);
         if (idx !== -1) {
             code = code.slice(0, idx) + replace + code.slice(idx + search.length);
+            applied++;
             continue;
         }
         // Fallback: normalize trailing whitespace per line
@@ -227,8 +233,6 @@ function applyEdits(code, blocks) {
         const normCode = code.split('\n').map(l => l.trimEnd()).join('\n');
         const normIdx = normCode.indexOf(normSearch);
         if (normIdx !== -1) {
-            // Map normalized index back to original code
-            // Count original chars up to the same line/position
             const linesBefore = normCode.slice(0, normIdx).split('\n').length - 1;
             const origLines = code.split('\n');
             let origStart = 0;
@@ -238,13 +242,14 @@ function applyEdits(code, blocks) {
             for (let j = linesBefore; j < linesBefore + searchLineCount; j++) {
                 origEnd += (origLines[j]?.length || 0) + 1;
             }
-            origEnd--; // remove trailing newline overshoot
+            origEnd--;
             code = code.slice(0, origStart) + replace + code.slice(origEnd);
+            applied++;
             continue;
         }
         errors.push('Block ' + (i + 1) + ': no match for SEARCH text');
     }
-    return { code, errors };
+    return { code, errors, applied };
 }
 
 function autoTitle(message) {
@@ -447,23 +452,20 @@ export default async function handler(req, res) {
                 });
             }
         } else if (isEditMode && contextMessages.length > 0) {
-            // Re-inject current code every 3rd user message to prevent drift
-            const userMsgCount = contextMessages.filter(m => m.role === 'user').length;
-            if (userMsgCount % 3 === 0) {
-                const MAX_CODE = 40000;
-                const trimmedCode = existingCode.length > MAX_CODE
-                    ? existingCode.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
-                    : existingCode;
-                // Append code reminder after history, before the new user message (pushed below)
-                contextMessages.push({
-                    role: 'user',
-                    content: 'For reference, here is the current app code:\n\n```html\n' + trimmedCode + '\n```'
-                });
-                contextMessages.push({
-                    role: 'assistant',
-                    content: 'Got it, I have the current code. What would you like to change?'
-                });
-            }
+            // Always re-inject current code in edit mode so Claude can write accurate SEARCH blocks
+            // Input tokens are cheap; failed edits from stale context are expensive
+            const MAX_CODE = 40000;
+            const trimmedCode = existingCode.length > MAX_CODE
+                ? existingCode.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
+                : existingCode;
+            contextMessages.push({
+                role: 'user',
+                content: 'For reference, here is the current app code:\n\n```html\n' + trimmedCode + '\n```'
+            });
+            contextMessages.push({
+                role: 'assistant',
+                content: 'Got it, I have the current code. What would you like to change?'
+            });
         }
 
         // Add current user message
@@ -559,9 +561,17 @@ export default async function handler(req, res) {
                 code = fullHtml;
             } else if (hasEditBlocks(assistantText)) {
                 const blocks = parseEditBlocks(assistantText);
-                const result = applyEdits(existingCode, blocks);
-                code = result.code;
-                if (result.errors.length > 0) console.warn('Edit block failures:', result.errors);
+                if (blocks.length === 0) {
+                    console.warn('Edit blocks detected but regex parsed 0 blocks');
+                } else {
+                    const result = applyEdits(existingCode, blocks);
+                    if (result.applied > 0) {
+                        code = result.code;
+                    }
+                    if (result.errors.length > 0) {
+                        console.warn('Edit block failures (' + result.applied + '/' + blocks.length + ' applied):', result.errors);
+                    }
+                }
             }
         } else {
             code = extractHtml(assistantText);
