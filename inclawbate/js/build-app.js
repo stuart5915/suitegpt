@@ -623,8 +623,13 @@
             clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             var finalCode = doneData ? doneData.code : extractHtmlClient(streamedText);
-            var displayText = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
-            if (!displayText && finalCode) displayText = 'Here\'s your updated site:';
+
+            // Guard: if response is just metadata (model ID, etc.) and no code, treat as error
+            var stripped = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
+            if (!finalCode && stripped.length < 80 && /^model:\s/i.test(stripped)) {
+                streamedText = 'Something went wrong — the AI returned an empty response. Please try again.';
+            }
+
             appendMessage('assistant', streamedText, finalCode);
 
             if (doneData) {
