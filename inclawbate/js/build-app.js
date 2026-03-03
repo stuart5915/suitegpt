@@ -18,6 +18,58 @@
         selectedModel: 'fast'
     };
 
+    // ── Starter Prompts Pool ──
+    var STARTER_PROMPTS = [
+        'A modern coffee shop landing page with menu and hours',
+        'A minimal portfolio site with dark theme and project cards',
+        'A countdown timer app for New Year with confetti animation',
+        'A personal budget tracker with charts and categories',
+        'A recipe card layout with ingredients and step-by-step instructions',
+        'A weather dashboard that shows a 5-day forecast',
+        'A habit tracker with streaks and daily check-ins',
+        'A landing page for a dog walking service',
+        'A retro arcade-style game menu screen',
+        'A simple todo app with drag-and-drop reordering',
+        'A pricing comparison table for SaaS plans',
+        'A music playlist viewer with album art grid',
+        'A fitness workout log with exercise cards',
+        'A travel blog homepage with destination cards',
+        'A restaurant menu with categories and photos',
+        'An event RSVP page with countdown and details',
+        'A personal link-in-bio page with social icons',
+        'A quiz app with multiple choice questions and scoring'
+    ];
+
+    var currentPromptIndices = [];
+
+    var FOLLOWUP_SUGGESTIONS = [
+        'Add a contact form',
+        'Make the header sticky',
+        'Add dark/light mode toggle',
+        'Add smooth scroll animations',
+        'Make it mobile-responsive',
+        'Add a footer with social links',
+        'Add a hero image or banner',
+        'Include a testimonials section',
+        'Add hover effects to the cards',
+        'Add a search bar',
+        'Include an FAQ accordion',
+        'Add a loading spinner',
+        'Make the colors more vibrant',
+        'Add a navigation menu',
+        'Include a call-to-action button',
+        'Add subtle background animation',
+        'Include a pricing section',
+        'Add icon badges or tags',
+        'Make the typography bolder',
+        'Add a modal popup',
+        'Include breadcrumb navigation',
+        'Add progress indicators',
+        'Include a notification banner',
+        'Add page transitions',
+        'Include a stats counter section'
+    ];
+
     // ── DOM refs ──
     var els = {};
     function $(id) { return document.getElementById(id); }
@@ -169,10 +221,12 @@
         // Remove chat messages but re-show welcome
         var msgs = els.chatMessages.querySelectorAll('.chat-msg');
         msgs.forEach(function (m) { m.remove(); });
+        removeSuggestionChips();
         if (els.buildWelcome) els.buildWelcome.style.display = '';
         els.buildTitle.textContent = 'New Project';
         resetPreview();
         showView('build');
+        renderWelcomePrompts();
         els.chatInput.focus();
     }
 
@@ -188,6 +242,7 @@
         els.chatSend.disabled = true;
 
         // Show user message
+        removeSuggestionChips();
         appendMessage('user', message);
 
         // Show thinking indicator
@@ -259,6 +314,7 @@
             if (data.code) {
                 state.currentCode = data.code;
                 updatePreview(data.code);
+                setTimeout(showSuggestionChips, 400);
             }
 
         } catch (e) {
@@ -578,6 +634,80 @@
         }
     }
 
+    // ── Refreshable Welcome Prompts ──
+    function pickRandomIndices(poolSize, count) {
+        var indices = [];
+        while (indices.length < count && indices.length < poolSize) {
+            var r = Math.floor(Math.random() * poolSize);
+            if (indices.indexOf(r) === -1) indices.push(r);
+        }
+        return indices;
+    }
+
+    function renderWelcomePrompts() {
+        var container = document.querySelector('.build-welcome-prompts');
+        if (!container) return;
+
+        // Remove existing prompt buttons (keep the shuffle button)
+        var existing = container.querySelectorAll('.build-welcome-prompt');
+        existing.forEach(function (el) {
+            el.classList.add('fade-out');
+        });
+
+        setTimeout(function () {
+            // Remove old buttons
+            container.querySelectorAll('.build-welcome-prompt').forEach(function (el) { el.remove(); });
+
+            // Pick 3 new random prompts
+            currentPromptIndices = pickRandomIndices(STARTER_PROMPTS.length, 3);
+
+            // Insert before the shuffle button
+            var shuffleBtn = container.querySelector('.shuffle-prompts-btn');
+
+            currentPromptIndices.forEach(function (idx, i) {
+                var btn = document.createElement('button');
+                btn.className = 'build-welcome-prompt fade-in';
+                btn.style.animationDelay = (i * 0.08) + 's';
+                btn.textContent = STARTER_PROMPTS[idx];
+                btn.addEventListener('click', function () { usePrompt(STARTER_PROMPTS[idx]); });
+                container.insertBefore(btn, shuffleBtn);
+            });
+        }, existing.length > 0 ? 200 : 0);
+    }
+
+    function shufflePrompts() {
+        renderWelcomePrompts();
+    }
+
+    // ── Follow-up Suggestion Chips ──
+    function removeSuggestionChips() {
+        var chips = els.chatMessages.querySelectorAll('.suggestion-chips');
+        chips.forEach(function (c) { c.remove(); });
+    }
+
+    function showSuggestionChips() {
+        removeSuggestionChips();
+
+        var indices = pickRandomIndices(FOLLOWUP_SUGGESTIONS.length, 4);
+        var container = document.createElement('div');
+        container.className = 'suggestion-chips';
+
+        indices.forEach(function (idx, i) {
+            var chip = document.createElement('button');
+            chip.className = 'suggestion-chip';
+            chip.style.animationDelay = (i * 0.08) + 's';
+            chip.textContent = FOLLOWUP_SUGGESTIONS[idx];
+            chip.addEventListener('click', function () {
+                removeSuggestionChips();
+                usePrompt(FOLLOWUP_SUGGESTIONS[idx]);
+            });
+            container.appendChild(chip);
+        });
+
+        els.chatMessages.appendChild(container);
+        scrollChat();
+    }
+
     function usePrompt(text) {
         els.chatInput.value = text;
         sendMessage();
@@ -679,6 +809,7 @@
     function init() {
         cacheDom();
         setupInput();
+        renderWelcomePrompts();
 
         if (!isLoggedIn()) {
             showView('auth');
@@ -712,6 +843,7 @@
         onTxInput: onTxInput,
         verifyDeposit: verifyDeposit,
         usePrompt: usePrompt,
+        shufflePrompts: shufflePrompts,
         connectWallet: connectWallet
     };
 
