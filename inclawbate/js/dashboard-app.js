@@ -36,26 +36,20 @@ async function loadOverview() {
 
     renderProfileCard(profile);
 
-    const [credits, projects, apps] = await Promise.allSettled([
+    const [credits, apps] = await Promise.allSettled([
         fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-        profile.wallet_address
-            ? fetch(`${API_BASE}/inclawbator?wallet=${encodeURIComponent(profile.wallet_address)}`).then(r => r.ok ? r.json() : null)
-            : Promise.resolve(null),
         profile.x_handle
             ? fetch(`${API_BASE}/apps?creator=${encodeURIComponent(profile.x_handle)}`).then(r => r.ok ? r.json() : null)
             : Promise.resolve(null)
     ]);
 
     const creditsData = credits.status === 'fulfilled' ? credits.value : null;
-    const projectsData = projects.status === 'fulfilled' ? projects.value : null;
     const appsData = apps.status === 'fulfilled' ? apps.value : null;
 
     // Update stat cards
     document.getElementById('ovCredits').textContent = creditsData?.credits ?? 0;
-    document.getElementById('ovProjects').textContent = projectsData?.projects?.length ?? 0;
     document.getElementById('ovApps').textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
 
-    renderProjectCards(projectsData?.projects || []);
     renderAppCards(appsData?.apps || []);
 
     // Render credits inline
@@ -93,31 +87,6 @@ function renderProfileCard(profile) {
         localStorage.removeItem('inclawbate_profile');
         localStorage.removeItem('inclawbate_last_inbox');
         window.location.reload();
-    });
-}
-
-function renderProjectCards(projects) {
-    const container = document.getElementById('overviewProjectList');
-    if (!projects.length) {
-        container.innerHTML = '<div class="overview-empty"><p>No projects yet. <a href="/inclawbator">Launch your first token</a></p></div>';
-        return;
-    }
-
-    container.innerHTML = '';
-    projects.slice(0, 5).forEach(p => {
-        const status = (p.status || 'pending').toLowerCase();
-        const badgeClass = status === 'funded' ? 'funded' : status === 'building' ? 'building' : status === 'live' ? 'live' : 'pending';
-        const el = document.createElement('div');
-        el.className = 'overview-item';
-        el.innerHTML = `
-            <div class="overview-item-info">
-                <div class="overview-item-title">${esc(p.token_name || p.name || 'Untitled')}</div>
-                <div class="overview-item-sub">${p.token_ticker ? '$' + esc(p.token_ticker) : ''} ${p.created_at ? '· ' + timeAgo(p.created_at) : ''}</div>
-            </div>
-            <span class="overview-item-badge ${badgeClass}">${esc(status)}</span>
-            <a href="/inclawbator/${p.id}" class="overview-item-action">Manage</a>
-        `;
-        container.appendChild(el);
     });
 }
 
