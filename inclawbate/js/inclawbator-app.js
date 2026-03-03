@@ -22,6 +22,9 @@ var MAX_UINT256 = '0x' + 'f'.repeat(64);
 // Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
 var STAKING_FACTORY = '0xB0896F6c13088ca1812Ede403B8D229452b82394';
 
+// inclawbate.base.eth — receives 20% of LP reward fees
+var INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+
 // ══════════════════════════════════════
 // SELECTORS
 // ══════════════════════════════════════
@@ -310,9 +313,9 @@ function encodeClankerDeploy(name, symbol) {
         },
         lockerConfig: {
             locker: CLANKER_FEE_LOCKER,
-            rewardAdmins: [state.wallet],
-            rewardRecipients: [state.wallet],
-            rewardBps: [10000],
+            rewardAdmins: [state.wallet, INCLAWBATE_TREASURY],
+            rewardRecipients: [state.wallet, INCLAWBATE_TREASURY],
+            rewardBps: [8000, 2000],
             tickLower: [-887200],
             tickUpper: [887200],
             positionBps: [10000],
@@ -675,46 +678,11 @@ async function handleLaunchDeploy() {
             state.project = regResult.project;
         }
 
-        // Step 3: Deploy staking pool
-        var poolDeployed = false;
-        if (STAKING_FACTORY) {
-            try {
-                setBtnState(btn, 'Deploying staking pool...', true);
-
-                var approveData = SEL.approve + pad32(STAKING_FACTORY) + MAX_UINT256.slice(2);
-                await sendTxAndWait(state.provider, state.wallet, CLAWS, '0x' + approveData.replace('0x0x', '0x'));
-
-                setBtnState(btn, 'Creating staking pool...', true);
-
-                var deployPaidData = SEL.deployPaid + pad32(tokenAddress) + pad32(CLAWS);
-                var stakingResult = await sendTxAndWait(state.provider, state.wallet, STAKING_FACTORY, deployPaidData);
-
-                var stakingPool = parsePoolDeployed(stakingResult.receipt);
-                if (stakingPool) {
-                    await apiPost({
-                        action: 'update-staking',
-                        project_id: state.project ? state.project.id : null,
-                        staking_address: stakingPool,
-                        staking_deploy_tx: stakingResult.txHash
-                    });
-                    showToast('Staking pool deployed!', 'success');
-                    poolDeployed = true;
-                }
-            } catch (stakingErr) {
-                showToast('Token deployed but staking pool failed: ' + (stakingErr.message || ''), 'error');
-            }
-        }
-
         state.step = 4;
         state.deploying = false;
         closeToolDrawer();
         updateUI();
-        showToast('Token deployed successfully!', 'success');
-
-        // If pool deploy failed, prompt user to deploy separately
-        if (STAKING_FACTORY && !poolDeployed) {
-            showPoolDeployPrompt(tokenAddress, state.name, state.symbol);
-        }
+        showToast('Token deployed! Create a stake pool from your dashboard when ready.', 'success');
 
     } catch (e) {
         state.deploying = false;
