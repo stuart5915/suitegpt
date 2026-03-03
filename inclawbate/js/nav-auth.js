@@ -1,4 +1,4 @@
-// Inclawbate — Nav: Mobile Menu + Wallet Button
+// Inclawbate — Nav: Mobile Menu + Wallet Connect
 (function() {
     var nav = document.querySelector('.nav');
     var navLinks = document.querySelector('.nav-links');
@@ -45,16 +45,76 @@
                     }
                 });
             } else if (token && profile) {
-                // Logged in but no wallet address displayed — show name or handle
                 var label = profile.x_handle && !profile.x_handle.startsWith('w_')
                     ? '@' + profile.x_handle
                     : (profile.x_name || 'Connected');
-                walletEl.innerHTML = '<a href="/dashboard" class="nav-wallet-btn connected">' +
-                    '<span class="nav-wallet-dot"></span>' + label + '</a>';
+                walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
+                    '<span class="nav-wallet-dot"></span>' + label + '</button>';
+                document.getElementById('navWalletBtn').addEventListener('click', function() {
+                    if (confirm('Disconnect?')) {
+                        localStorage.removeItem('inclawbate_token');
+                        localStorage.removeItem('inclawbate_profile');
+                        renderWallet();
+                        window.location.reload();
+                    }
+                });
             } else {
-                walletEl.innerHTML = '<a href="/launch" class="nav-wallet-btn">Connect</a>';
+                walletEl.innerHTML = '<button class="nav-wallet-btn" id="navWalletBtn">Connect</button>';
+                document.getElementById('navWalletBtn').addEventListener('click', navWalletConnect);
             }
         }
+
+        async function navWalletConnect() {
+            if (!window.ethereum) {
+                alert('No wallet detected. Install MetaMask or Coinbase Wallet.');
+                return;
+            }
+
+            var btn = document.getElementById('navWalletBtn');
+            btn.textContent = 'Connecting…';
+            btn.disabled = true;
+
+            try {
+                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                var address = accounts[0];
+
+                var resp = await fetch('/api/inclawbate/wallet-connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: address })
+                });
+
+                var data = await resp.json();
+
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'Connection failed');
+                }
+
+                localStorage.setItem('inclawbate_token', data.token);
+                localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+
+                // Post API key for extension relay
+                if (data.profile.api_key) {
+                    window.postMessage({
+                        type: 'inclawbate-auth',
+                        apiKey: data.profile.api_key,
+                        xHandle: data.profile.x_handle
+                    }, '*');
+                }
+
+                renderWallet();
+                window.location.reload();
+            } catch (e) {
+                if (e.code !== 4001) {
+                    alert(e.message || 'Wallet connection failed');
+                }
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+            }
+        }
+
+        // Expose for other scripts
+        window.navWalletConnect = navWalletConnect;
 
         renderWallet();
     } catch(e) {}

@@ -57,8 +57,8 @@ function afterAuth(profile, token, dest) {
     }, 500);
 }
 
-// ── Wallet sign-in (same pattern as Build Studio) ──
-async function walletSignIn() {
+// ── Wallet connect (no signature — just eth_requestAccounts) ──
+async function walletConnect() {
     walletError.textContent = '';
 
     if (!window.ethereum) {
@@ -72,42 +72,27 @@ async function walletSignIn() {
     try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const address = accounts[0];
-        const timestamp = Math.floor(Date.now() / 1000);
-        const message = 'Sign in to Inclawbate\nWallet: ' + address + '\nTimestamp: ' + timestamp;
 
-        const signature = await window.ethereum.request({
-            method: 'personal_sign',
-            params: [message, address]
-        });
-
-        walletConnectBtn.textContent = 'Signing in...';
-
-        const resp = await fetch('/api/inclawbate/wallet-login', {
+        const resp = await fetch('/api/inclawbate/wallet-connect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ address, signature, message })
+            body: JSON.stringify({ address })
         });
 
         const data = await resp.json();
 
         if (!resp.ok || !data.success) {
-            throw new Error(data.error || 'Wallet login failed. Please try again.');
+            throw new Error(data.error || 'Connection failed. Please try again.');
         }
 
         localStorage.setItem('inclawbate_token', data.token);
         localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
 
-        // Show connected state
-        const short = address.slice(0, 6) + '...' + address.slice(-4);
-        walletDisplay.textContent = short;
-        walletDisplay.classList.remove('hidden');
-        walletConnectBtn.classList.add('hidden');
-
         const dest = getPostLoginRedirect();
         afterAuth(data.profile, data.token, dest);
 
     } catch (err) {
-        if (err.code !== 4001) { // user rejected
+        if (err.code !== 4001) {
             walletError.textContent = err.message || 'Wallet connection failed';
         }
         walletConnectBtn.disabled = false;
@@ -145,6 +130,6 @@ function init() {
 }
 
 // ── Connect Wallet button ──
-walletConnectBtn?.addEventListener('click', walletSignIn);
+walletConnectBtn?.addEventListener('click', walletConnect);
 
 init();

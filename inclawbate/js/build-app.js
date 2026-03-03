@@ -1268,24 +1268,17 @@
         try {
             var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             var address = accounts[0];
-            var timestamp = Math.floor(Date.now() / 1000);
-            var message = 'Sign in to Inclawbate Build Studio\nWallet: ' + address + '\nTimestamp: ' + timestamp;
 
-            var signature = await window.ethereum.request({
-                method: 'personal_sign',
-                params: [message, address]
-            });
-
-            var resp = await fetch('/api/inclawbate/wallet-login', {
+            var resp = await fetch('/api/inclawbate/wallet-connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address: address, signature: signature, message: message })
+                body: JSON.stringify({ address: address })
             });
 
             var data = await resp.json();
 
             if (!resp.ok || !data.success) {
-                alert(data.error || 'Wallet login failed. Please try again.');
+                alert(data.error || 'Wallet connection failed. Please try again.');
                 return;
             }
 
