@@ -18,7 +18,8 @@ var ADMIN_WALLETS = [
     '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
     '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
     '0x9fe6e70079d9cbab7693b70a11764d70cf26ce0e',
-    '0x18b18e245122f4bda5f2ee4f25c702e05c241d49'
+    '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
+    '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3'
 ];
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
