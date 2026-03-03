@@ -25,6 +25,22 @@ const MODEL_TIERS = {
     pro:      { model: 'claude-opus-4-6-20250214',   credits: 60, label: 'Pro' }
 };
 
+// Per-token costs in USD (from Anthropic pricing)
+const TOKEN_PRICING = {
+    'claude-haiku-4-5-20251001':  { input: 0.80 / 1e6, output: 4.00 / 1e6 },
+    'claude-sonnet-4-5-20250929': { input: 3.00 / 1e6, output: 15.00 / 1e6 },
+    'claude-opus-4-6-20250214':   { input: 15.00 / 1e6, output: 75.00 / 1e6 }
+};
+const USD_PER_CREDIT = 0.005;
+const COST_MARGIN = 1.3; // 30% margin over raw API cost
+
+function calcActualCredits(model, inputTokens, outputTokens) {
+    const pricing = TOKEN_PRICING[model];
+    if (!pricing) return 0;
+    const rawUsd = (inputTokens * pricing.input) + (outputTokens * pricing.output);
+    return Math.ceil((rawUsd * COST_MARGIN) / USD_PER_CREDIT);
+}
+
 const SYSTEM_PROMPT = `You are a expert web developer AI. The user will describe a website, app, or page they want built. You generate complete, self-contained HTML files.
 
 Rules:
@@ -140,9 +156,25 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // ── GET: list sessions or load one ──
+    // ── GET: estimate or list sessions or load one ──
     if (req.method === 'GET') {
-        const { session_id } = req.query;
+        const { session_id, estimate, model, code_length } = req.query;
+
+        if (estimate === 'true') {
+            const tierKey = model || 'fast';
+            const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
+            const codeLen = parseInt(code_length) || 0;
+            // Rough token estimate: code chars / 3.5 + system prompt (~1500) for input, ~12000 for output
+            const estInputTokens = Math.ceil(codeLen / 3.5) + 1500;
+            const estOutputTokens = 12000;
+            const estimatedCredits = calcActualCredits(tier.model, estInputTokens, estOutputTokens);
+            const surcharge = Math.max(0, estimatedCredits - tier.credits);
+            return res.json({
+                base_credits: tier.credits,
+                estimated_surcharge: surcharge,
+                estimated_credits: tier.credits + surcharge
+            });
+        }
 
         if (session_id) {
             // Load single session + messages
@@ -325,7 +357,32 @@ export default async function handler(req, res) {
 
         const assistantText = data.content?.[0]?.text || '';
         const code = extractHtml(assistantText);
-        const tokensUsed = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
+        const inputTokens = data.usage?.input_tokens || 0;
+        const outputTokens = data.usage?.output_tokens || 0;
+        const tokensUsed = inputTokens + outputTokens;
+
+        // Calculate token-based surcharge
+        let surcharge = 0;
+        if (!admin) {
+            const actualCredits = calcActualCredits(tier.model, inputTokens, outputTokens);
+            if (actualCredits > tier.credits) {
+                surcharge = actualCredits - tier.credits;
+                // Deduct surcharge from remaining balance
+                const canDeduct = Math.min(surcharge, creditsRemaining);
+                if (canDeduct > 0) {
+                    const { data: updated } = await supabase
+                        .from('human_profiles')
+                        .update({ credits: creditsRemaining - canDeduct })
+                        .eq('id', profileId)
+                        .select('credits')
+                        .single();
+                    if (updated) creditsRemaining = updated.credits;
+                }
+                if (surcharge > canDeduct) {
+                    console.warn(`Credit shortfall: user ${profileId} owes ${surcharge - canDeduct} credits (surcharge=${surcharge}, available=${canDeduct})`);
+                }
+            }
+        }
 
         // Save user message
         await supabase.from('build_messages').insert({
@@ -343,7 +400,7 @@ export default async function handler(req, res) {
             content: assistantText,
             code: code,
             tokens_used: tokensUsed,
-            credits_charged: admin ? 0 : tier.credits
+            credits_charged: admin ? 0 : tier.credits + surcharge
         });
 
         // Update session with latest code
@@ -366,7 +423,8 @@ export default async function handler(req, res) {
             code: code,
             credits_remaining: creditsRemaining,
             tier_used: tierKey,
-            credits_charged: admin ? 0 : tier.credits
+            credits_charged: admin ? 0 : tier.credits + surcharge,
+            surcharge: surcharge
         });
 
     } catch (error) {

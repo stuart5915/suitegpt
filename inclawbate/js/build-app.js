@@ -414,11 +414,64 @@
         els.chatInput.focus();
     }
 
+    // ── Cost Estimation & Confirmation ──
+    async function estimateEditCost() {
+        if (!state.currentCode) return null;
+        try {
+            var resp = await fetch(API_BASE + '?estimate=true&model=' + state.selectedModel + '&code_length=' + state.currentCode.length, {
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            if (!resp.ok) return null;
+            return await resp.json();
+        } catch (e) { return null; }
+    }
+
+    function showCostConfirmation(estimate) {
+        return new Promise(function (resolve) {
+            // Remove existing modal if any
+            var existing = document.querySelector('.cost-confirm-overlay');
+            if (existing) existing.remove();
+
+            var overlay = document.createElement('div');
+            overlay.className = 'cost-confirm-overlay active';
+            overlay.innerHTML =
+                '<div class="cost-confirm-modal">' +
+                    '<h3>Estimated Cost</h3>' +
+                    '<div class="cost-row"><span>Base cost</span><span>' + estimate.base_credits + ' credits</span></div>' +
+                    '<div class="cost-row extra"><span>Context surcharge (est.)</span><span>+' + estimate.estimated_surcharge + ' credits</span></div>' +
+                    '<div class="cost-row total"><span>Estimated total</span><span>~' + estimate.estimated_credits + ' credits</span></div>' +
+                    '<div class="cost-confirm-actions">' +
+                        '<button class="cost-cancel-btn">Cancel</button>' +
+                        '<button class="cost-continue-btn">Continue</button>' +
+                    '</div>' +
+                '</div>';
+
+            overlay.querySelector('.cost-cancel-btn').onclick = function () {
+                overlay.remove();
+                resolve(false);
+            };
+            overlay.querySelector('.cost-continue-btn').onclick = function () {
+                overlay.remove();
+                resolve(true);
+            };
+            document.body.appendChild(overlay);
+        });
+    }
+
     // ── Send Message ──
     async function sendMessage() {
         if (state.sending) return;
         var message = els.chatInput.value.trim();
         if (!message) return;
+
+        // Gate: show cost confirmation for first message when editing/forking existing code
+        if (!state.sessionId && state.currentCode) {
+            var estimate = await estimateEditCost();
+            if (estimate && estimate.estimated_surcharge > 0) {
+                var confirmed = await showCostConfirmation(estimate);
+                if (!confirmed) return; // user cancelled — message stays in input
+            }
+        }
 
         state.sending = true;
         els.chatInput.value = '';
@@ -508,6 +561,15 @@
 
             // Show assistant message
             appendMessage('assistant', data.message, data.code);
+
+            // Show surcharge notice if extra credits were charged
+            if (data.surcharge > 0) {
+                var notice = document.createElement('div');
+                notice.className = 'chat-msg system-notice';
+                notice.textContent = 'Context surcharge: +' + data.surcharge + ' credits (' + data.credits_charged + ' total)';
+                els.chatMessages.appendChild(notice);
+                scrollChat();
+            }
 
             // Update preview
             if (data.code) {
@@ -1429,6 +1491,17 @@
         return div.innerHTML;
     }
 
+    // ── Variable pricing hints ──
+    function showVariablePricingHints() {
+        var costs = document.querySelectorAll('.model-cost');
+        costs.forEach(function (el) {
+            var text = el.textContent.trim();
+            if (!text.includes('+')) {
+                el.textContent = text.replace(' cr', '+ cr');
+            }
+        });
+    }
+
     // ── Edit Detection ──
     function checkEditSource() {
         try {
@@ -1447,6 +1520,7 @@
             if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
             updatePreview(state.currentCode);
             appendMessage('assistant', 'Editing "' + (edit.name || 'App') + '". Make changes and hit Publish to update.');
+            showVariablePricingHints();
             return true;
         } catch (e) { return false; }
     }
@@ -1470,6 +1544,7 @@
             if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
             updatePreview(state.currentCode);
             appendMessage('assistant', 'Forked from "' + (fork.name || 'App') + '". The code is loaded in preview — edit it with chat or publish directly.');
+            showVariablePricingHints();
             return true;
         } catch (e) { return false; }
     }
