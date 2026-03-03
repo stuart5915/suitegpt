@@ -9,7 +9,10 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -29,7 +32,7 @@ export default async function handler(req, res) {
 
     const { wallet_address, message } = req.body;
 
-    if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+    if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 
@@ -88,7 +91,7 @@ export default async function handler(req, res) {
                     .from('inclawbate_conversations')
                     .insert({
                         human_id: human.id,
-                        agent_address: ADMIN_WALLET,
+                        agent_address: ADMIN_WALLETS[0],
                         agent_name: 'inclawbate',
                         payment_amount: 0,
                         payment_tx: 'welcome_' + human.id

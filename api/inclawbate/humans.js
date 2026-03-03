@@ -18,7 +18,10 @@ const supabase = createClient(
 
 const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
 
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -204,7 +207,7 @@ export default async function handler(req, res) {
         // Admin ban/unban action
         if (req.body?.action === 'ban') {
             const { wallet_address, x_handle, banned } = req.body;
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             if (!x_handle) {
@@ -228,7 +231,7 @@ export default async function handler(req, res) {
         // Admin set/unset philanthropy recipient
         if (req.body?.action === 'set-philanthropy') {
             const { wallet_address, x_handle, is_recipient, note } = req.body;
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             if (!x_handle) {

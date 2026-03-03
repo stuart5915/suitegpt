@@ -10,7 +10,10 @@ const ALLOWED_ORIGINS = [
     'https://www.inclawbate.com'
 ];
 
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -121,7 +124,7 @@ export default async function handler(req, res) {
         if (action === 'update-config') {
             const { wallet_address, current_pool, next_pool, last_distributed, total_distributed, week_ends_at, top_n } = req.body;
 
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
@@ -238,7 +241,7 @@ export default async function handler(req, res) {
         // Backwards compat: no action = admin config update
         if (!action) {
             const { wallet_address, current_pool, next_pool, last_distributed, total_distributed, week_ends_at, top_n } = req.body;
-            if (!wallet_address || wallet_address.toLowerCase() !== ADMIN_WALLET) {
+            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             const updates = { updated_at: new Date().toISOString() };

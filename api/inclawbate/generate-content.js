@@ -7,7 +7,10 @@ const ALLOWED_ORIGINS = [
 ];
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 
 const SYSTEM_PROMPTS = {
     artstu: `You are ghostwriting tweets for @artstu — a builder in AI + crypto, founder of inclawbate, based in Canada.

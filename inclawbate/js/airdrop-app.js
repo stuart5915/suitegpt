@@ -7,7 +7,10 @@ const INCLAWNCH_ADDRESS = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 const DISPERSE_ADDRESS = '0xD152f549545093347A162Dce210e7293f1452150';
 const BASE_CHAIN_ID = '0x2105';
 const API_BASE = '/api/inclawbate';
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 
 async function ensureBase(p) {
     try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }); }
@@ -165,7 +168,7 @@ connectBtn.addEventListener('click', async () => {
             }
         }
 
-        if (userAddress.toLowerCase() !== ADMIN_WALLET) {
+        if (!ADMIN_WALLETS.includes(userAddress.toLowerCase())) {
             walletStatus.textContent = 'Unauthorized wallet. Admin only.';
             walletStatus.className = 'airdrop-status error';
             userAddress = null;
@@ -2854,7 +2857,7 @@ document.getElementById('angelWithdrawBtn').addEventListener('click', async func
     status.className = 'airdrop-status';
 
     try {
-        var data = WITHDRAW_INCLAWNCH_SEL + pad32(ADMIN_WALLET);
+        var data = WITHDRAW_INCLAWNCH_SEL + pad32(ADMIN_WALLETS[0]);
         var txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{ from: userAddress, to: ANGEL_NFT_ADDRESS, data: data }]

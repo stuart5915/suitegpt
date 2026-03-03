@@ -28,8 +28,11 @@ export default async function handler(req, res) {
     const { tx_hash, agent_address, agent_name, recipients, starting_message } = req.body;
 
     // Admin auth — only the protocol wallet can create batch hires
-    const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
-    if (!agent_address || agent_address.toLowerCase() !== ADMIN_WALLET) {
+    const ADMIN_WALLETS = [
+        '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+        '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+    ];
+    if (!agent_address || !ADMIN_WALLETS.includes(agent_address.toLowerCase())) {
         return res.status(403).json({ error: 'Unauthorized' });
     }
 

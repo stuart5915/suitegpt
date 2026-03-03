@@ -75,7 +75,10 @@ async function verifyDepositTx(txHash) {
     return { valid: true, amount };
 }
 
-const ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
+const ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -166,7 +169,7 @@ export default async function handler(req, res) {
         // Admin: pending applications
         if (req.query.pending === 'true') {
             const reqWallet = (req.headers['x-wallet'] || '').toLowerCase();
-            if (reqWallet !== ADMIN_WALLET) {
+            if (!ADMIN_WALLETS.includes(reqWallet)) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             const { data: pending, error: pendErr } = await supabase

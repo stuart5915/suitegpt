@@ -13,7 +13,10 @@ var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
-var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd'.toLowerCase();
+var ADMIN_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+];
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
 // Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
@@ -149,7 +152,7 @@ async function connectWallet() {
         if (accounts.length > 0) {
             state.wallet = accounts[0].toLowerCase();
             state.provider = window.ethereum;
-            state.isAdmin = state.wallet === ADMIN_WALLET;
+            state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
             } catch (e) {
@@ -1349,7 +1352,7 @@ async function init() {
             if (accounts.length > 0) {
                 state.wallet = accounts[0].toLowerCase();
                 state.provider = window.ethereum;
-                state.isAdmin = state.wallet === ADMIN_WALLET;
+                state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
                 updateUI();
             }
         } catch (e) {}
