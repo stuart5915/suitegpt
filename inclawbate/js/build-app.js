@@ -1042,6 +1042,56 @@
         }
     }
 
+    async function scanDeposits() {
+        if (!window.ethereum) {
+            els.buyResult.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
+            els.buyResult.className = 'buy-result error';
+            return;
+        }
+
+        var scanLink = document.getElementById('scanDepositsLink');
+        if (scanLink) scanLink.style.pointerEvents = 'none';
+        els.buyResult.textContent = 'Scanning chain for uncredited deposits...';
+        els.buyResult.className = 'buy-result';
+
+        try {
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var wallet = accounts[0];
+
+            var resp = await fetch('/api/inclawbate/credits', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ action: 'scan-deposits', wallet: wallet })
+            });
+            var result = await resp.json();
+
+            if (!resp.ok) {
+                els.buyResult.textContent = result.error || 'Scan failed.';
+                els.buyResult.className = 'buy-result error';
+            } else if (result.credited > 0) {
+                els.buyResult.textContent = 'Found ' + result.new_deposits + ' uncredited deposit(s) — +' + result.credited + ' credits added! Balance: ' + result.credits_total;
+                els.buyResult.className = 'buy-result success';
+                state.credits = result.credits_total;
+                updateCredits();
+                if (els.buyCurrentBalance) els.buyCurrentBalance.textContent = result.credits_total + ' credits';
+            } else if (result.found > 0) {
+                els.buyResult.textContent = 'Found ' + result.found + ' deposit(s), all already credited. No new credits to add.';
+                els.buyResult.className = 'buy-result';
+            } else {
+                els.buyResult.textContent = 'No CLAWS deposits found from this wallet in the last ~3 hours.';
+                els.buyResult.className = 'buy-result';
+            }
+        } catch (e) {
+            els.buyResult.textContent = e.message || 'Scan failed.';
+            els.buyResult.className = 'buy-result error';
+        } finally {
+            if (scanLink) scanLink.style.pointerEvents = '';
+        }
+    }
+
     // ── Pay with Card (Stripe) ──
     async function buyWithCard() {
         var amount = buyState.selectedAmount;
@@ -1410,6 +1460,7 @@
         pickCredits: pickCredits,
         onCustomCredits: onCustomCredits,
         sendClawsTx: sendClawsTx,
+        scanDeposits: scanDeposits,
         buyWithCard: buyWithCard,
         usePrompt: usePrompt,
         shufflePrompts: shufflePrompts,

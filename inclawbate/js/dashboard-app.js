@@ -1107,8 +1107,10 @@ async function dashScanDeposits() {
         } else if (result.credited > 0) {
             resultEl.textContent = 'Found ' + result.new_deposits + ' uncredited deposit(s) — +' + result.credited + ' credits added! Balance: ' + result.credits_total;
             resultEl.className = 'buy-result success';
-            document.getElementById('ovCredits').textContent = result.credits_total;
-            document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
+            const ovEl = document.getElementById('ovCredits');
+            if (ovEl) ovEl.textContent = result.credits_total;
+            const balEl = document.getElementById('dashBuyBalance');
+            if (balEl) balEl.textContent = result.credits_total + ' credits';
         } else if (result.found > 0) {
             resultEl.textContent = 'Found ' + result.found + ' deposit(s), all already credited. No new credits to add.';
             resultEl.className = 'buy-result';
