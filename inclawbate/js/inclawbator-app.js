@@ -746,7 +746,7 @@ function showPoolDeployPrompt(tokenAddress, name, symbol) {
 
     overlay.querySelector('.pool-deploy-prompt-go').addEventListener('click', function() {
         overlay.remove();
-        openTool('pool');
+        openToolDrawer('pool');
     });
 
     overlay.querySelector('.pool-deploy-prompt-dismiss').addEventListener('click', function() {
