@@ -910,7 +910,7 @@ async function handleIncubationSubmit() {
         closeToolDrawer();
         updateUI();
         showToast('Application submitted! We\'ll reach out within 48 hours.', 'success');
-        setTimeout(function() { window.location.href = '/team'; }, 2500);
+        setTimeout(function() { window.location.href = '/dashboard'; }, 2500);
     } catch (e) {
         state.deploying = false;
         setBtnState(btn, 'Submit Application', false);
