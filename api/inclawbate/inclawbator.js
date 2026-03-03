@@ -563,6 +563,51 @@ export default async function handler(req, res) {
             return res.status(200).json({ ok: true });
         }
 
+        // ── Launch AI agent for an existing app ──
+        if (action === 'launch-agent') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { app_id, agent_persona, agent_posts_per_day, creator_wallet } = req.body;
+            if (!app_id) return res.status(400).json({ error: 'app_id required' });
+            if (!creator_wallet) return res.status(400).json({ error: 'creator_wallet required' });
+
+            // Verify app exists in user_apps
+            const { data: app, error: appErr } = await supabase
+                .from('user_apps')
+                .select('id, name, slug, description')
+                .eq('id', app_id)
+                .maybeSingle();
+
+            if (appErr || !app) return res.status(404).json({ error: 'App not found' });
+
+            const postsPerDay = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .insert({
+                    creator_wallet: creator_wallet.toLowerCase(),
+                    creator_profile_id: user.sub || null,
+                    token_name: app.name,
+                    token_symbol: (app.slug || app.name.slice(0, 10)).toUpperCase(),
+                    description: app.description || null,
+                    website_url: app.id,
+                    tier: 'agent',
+                    status: 'active',
+                    fee_split_bps: 10000,
+                    agent_enabled: true,
+                    agent_persona: agent_persona || null,
+                    agent_posts_per_day: postsPerDay,
+                    agent_credits: 10,
+                    agent_status: 'active'
+                })
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(201).json({ project: data });
+        }
+
         return res.status(400).json({ error: 'Unknown action' });
     }
 

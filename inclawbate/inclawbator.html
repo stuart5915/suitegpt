@@ -1092,6 +1092,12 @@
             <p class="tool-card-desc">Content schedules, social posting, asset creation, and growth strategy &mdash; powered by AI.</p>
             <span class="tool-card-cta">Get Started</span>
         </a>
+        <div class="tool-card" data-tool="agent">
+            <div class="tool-card-icon">&#129302;</div>
+            <h3 class="tool-card-title">Launch AI Agent</h3>
+            <p class="tool-card-desc">Attach an AI hype agent to any app in the ecosystem. Posts on X automatically.</p>
+            <button class="tool-card-cta">Launch Agent</button>
+        </div>
     </div>
 
     <!-- ═══ Tool Drawer ═══ -->
@@ -1129,34 +1135,6 @@
             <div class="drawer-info">
                 Clanker handles LP fees. You set how much of your share goes to CLAWS stakers.
             </div>
-            <div class="form-group">
-                <label class="agent-toggle">
-                    <input type="checkbox" id="launchAgentEnabled">
-                    <span class="agent-toggle-label">Enable AI Hype Agent</span>
-                </label>
-                <p class="agent-toggle-hint">Starts with 10 free credits. 1 credit per post. Anyone can feed more.</p>
-                <div id="launchAgentOptions" class="agent-options">
-                    <div class="form-group">
-                        <label class="form-label" for="launchAgentPersona">Agent Personality (optional)</label>
-                        <p class="form-hint">Guide the AI's voice. e.g. "Aggressive degen energy" or "Calm and technical"</p>
-                        <textarea id="launchAgentPersona" class="form-input" placeholder="e.g. Bullish and meme-heavy, loves crab puns" maxlength="280"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="launchAgentPostsPerDay">Posts per Day</label>
-                        <select id="launchAgentPostsPerDay" class="agent-select">
-                            <option value="1">1 per day</option>
-                            <option value="2">2 per day</option>
-                            <option value="4" selected>4 per day</option>
-                            <option value="6">6 per day</option>
-                            <option value="8">8 per day</option>
-                            <option value="12">12 per day</option>
-                            <option value="24">Every hour</option>
-                            <option value="48">Every 30 min</option>
-                            <option value="96">Every 15 min</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
             <button id="deployLaunchBtn" class="deploy-btn">Deploy Token</button>
         </div>
 
@@ -1180,31 +1158,6 @@
             </div>
             <div class="deploy-fee-badge">
                 Cost: <strong id="partnerFeeDisplay">Loading...</strong> CLAWS
-            </div>
-            <div class="form-group">
-                <label class="agent-toggle">
-                    <input type="checkbox" id="poolAgentEnabled">
-                    <span class="agent-toggle-label">Enable AI Hype Agent</span>
-                </label>
-                <p class="agent-toggle-hint">Starts with 10 free credits. 1 credit per post.</p>
-                <div id="poolAgentOptions" class="agent-options">
-                    <div class="form-group">
-                        <label class="form-label" for="poolAgentPersona">Agent Personality (optional)</label>
-                        <textarea id="poolAgentPersona" class="form-input" placeholder="e.g. Bullish and meme-heavy" maxlength="280"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="poolAgentPostsPerDay">Posts per Day</label>
-                        <select id="poolAgentPostsPerDay" class="agent-select">
-                            <option value="1">1 per day</option>
-                            <option value="2">2 per day</option>
-                            <option value="4" selected>4 per day</option>
-                            <option value="6">6 per day</option>
-                            <option value="8">8 per day</option>
-                            <option value="12">12 per day</option>
-                            <option value="24">Every hour</option>
-                        </select>
-                    </div>
-                </div>
             </div>
             <button id="deployPoolBtn" class="deploy-btn">Deploy Pool</button>
         </div>
@@ -1242,32 +1195,49 @@
                 <p class="form-hint">Token launch, tokenomics design, marketing, development, community building, etc.</p>
                 <textarea id="incHelpNeeded" class="form-input" placeholder="Describe what support you're looking for..." maxlength="1000" style="min-height:120px"></textarea>
             </div>
+            <button id="submitIncubationBtn" class="deploy-btn">Submit Application</button>
+        </div>
+
+        <!-- ── Launch AI Agent ── -->
+        <div id="drawerAgent" class="drawer-content">
+            <h3 class="drawer-title">&#129302; Launch AI Agent</h3>
+            <div class="drawer-info">
+                Select an app from the Inclawbate ecosystem and attach an AI agent that posts on X. Starts with 10 free credits (1 per post). Anyone can feed more.
+            </div>
             <div class="form-group">
-                <label class="agent-toggle">
-                    <input type="checkbox" id="incAgentEnabled">
-                    <span class="agent-toggle-label">Enable AI Hype Agent</span>
-                </label>
-                <p class="agent-toggle-hint">Starts with 10 free credits. 1 credit per post.</p>
-                <div id="incAgentOptions" class="agent-options">
-                    <div class="form-group">
-                        <label class="form-label" for="incAgentPersona">Agent Personality (optional)</label>
-                        <textarea id="incAgentPersona" class="form-input" placeholder="e.g. Calm and technical" maxlength="280"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="incAgentPostsPerDay">Posts per Day</label>
-                        <select id="incAgentPostsPerDay" class="agent-select">
-                            <option value="1">1 per day</option>
-                            <option value="2">2 per day</option>
-                            <option value="4" selected>4 per day</option>
-                            <option value="6">6 per day</option>
-                            <option value="8">8 per day</option>
-                            <option value="12">12 per day</option>
-                            <option value="24">Every hour</option>
-                        </select>
-                    </div>
+                <label class="form-label" for="agentAppSelect">Select App</label>
+                <p class="form-hint">Choose which app the agent will promote</p>
+                <select id="agentAppSelect" class="agent-select">
+                    <option value="">Loading apps...</option>
+                </select>
+            </div>
+            <div id="agentAppPreview" class="partner-token-preview hidden">
+                <div class="token-icon" id="agentAppIcon">?</div>
+                <div class="token-info">
+                    <div class="token-name-display" id="agentAppName">--</div>
+                    <div class="token-symbol-display" id="agentAppDesc">--</div>
                 </div>
             </div>
-            <button id="submitIncubationBtn" class="deploy-btn">Submit Application</button>
+            <div class="form-group">
+                <label class="form-label" for="agentPersona">Agent Personality (optional)</label>
+                <p class="form-hint">Guide the AI's voice. e.g. "Aggressive degen energy" or "Calm and technical"</p>
+                <textarea id="agentPersona" class="form-input" placeholder="e.g. Bullish and meme-heavy, loves crab puns" maxlength="280"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="agentPostsPerDay">Posts per Day</label>
+                <select id="agentPostsPerDay" class="agent-select">
+                    <option value="1">1 per day</option>
+                    <option value="2">2 per day</option>
+                    <option value="4" selected>4 per day</option>
+                    <option value="6">6 per day</option>
+                    <option value="8">8 per day</option>
+                    <option value="12">12 per day</option>
+                    <option value="24">Every hour</option>
+                    <option value="48">Every 30 min</option>
+                    <option value="96">Every 15 min</option>
+                </select>
+            </div>
+            <button id="deployAgentBtn" class="deploy-btn">Launch Agent</button>
         </div>
     </div>
 

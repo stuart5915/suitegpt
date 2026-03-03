@@ -413,11 +413,14 @@ function openToolDrawer(tool) {
     }
 
     // Show correct content
-    var drawers = { launch: 'drawerLaunch', pool: 'drawerPool', incubate: 'drawerIncubate' };
+    var drawers = { launch: 'drawerLaunch', pool: 'drawerPool', incubate: 'drawerIncubate', agent: 'drawerAgent' };
     Object.keys(drawers).forEach(function(key) {
         var el = document.getElementById(drawers[key]);
         if (el) el.classList.toggle('active', key === tool);
     });
+
+    // Load apps when agent drawer opens
+    if (tool === 'agent') loadAgentApps();
 
     // Scroll drawer into view
     if (drawer) {
@@ -473,18 +476,88 @@ function onPartnerAddressInput() {
 }
 
 // ══════════════════════════════════════
-// AGENT HELPERS
+// LAUNCH AI AGENT
 // ══════════════════════════════════════
 
-function getAgentFieldsFrom(prefix) {
-    var checkbox = document.getElementById(prefix + 'AgentEnabled');
-    var persona = document.getElementById(prefix + 'AgentPersona');
-    var posts = document.getElementById(prefix + 'AgentPostsPerDay');
-    return {
-        enabled: checkbox ? checkbox.checked : false,
-        persona: persona ? persona.value.trim() : '',
-        postsPerDay: posts ? parseInt(posts.value) || 4 : 4
-    };
+var agentAppsCache = null;
+
+async function loadAgentApps() {
+    var select = document.getElementById('agentAppSelect');
+    if (!select) return;
+
+    if (agentAppsCache) {
+        populateAppSelect(select, agentAppsCache);
+        return;
+    }
+
+    select.innerHTML = '<option value="">Loading apps...</option>';
+
+    try {
+        var res = await fetch('/api/inclawbate/apps?limit=50&sort=trending');
+        var data = await res.json();
+        agentAppsCache = data.apps || [];
+        populateAppSelect(select, agentAppsCache);
+    } catch (e) {
+        select.innerHTML = '<option value="">Failed to load apps</option>';
+    }
+}
+
+function populateAppSelect(select, apps) {
+    if (!apps || apps.length === 0) {
+        select.innerHTML = '<option value="">No apps available</option>';
+        return;
+    }
+    var html = '<option value="">Choose an app...</option>';
+    apps.forEach(function(app) {
+        html += '<option value="' + app.id + '" data-name="' + escapeHtml(app.name) + '" data-desc="' + escapeHtml(app.description || '') + '">' + escapeHtml(app.name) + (app.category ? ' (' + app.category + ')' : '') + '</option>';
+    });
+    select.innerHTML = html;
+}
+
+async function handleAgentLaunch() {
+    if (state.deploying) return;
+
+    var appSelect = document.getElementById('agentAppSelect');
+    var appId = appSelect ? appSelect.value : '';
+    var persona = document.getElementById('agentPersona').value.trim();
+    var postsPerDay = parseInt(document.getElementById('agentPostsPerDay').value) || 4;
+
+    if (!appId) return showToast('Please select an app', 'error');
+
+    if (!state.wallet) {
+        await connectWallet();
+        if (!state.wallet) return;
+    }
+
+    state.deploying = true;
+    var btn = document.getElementById('deployAgentBtn');
+    setBtnState(btn, 'Launching agent...', true);
+
+    try {
+        var result = await apiPost({
+            action: 'launch-agent',
+            app_id: appId,
+            agent_persona: persona || null,
+            agent_posts_per_day: postsPerDay,
+            creator_wallet: state.wallet
+        });
+
+        if (result.error) {
+            showToast('Agent launch failed: ' + result.error, 'error');
+            state.deploying = false;
+            setBtnState(btn, 'Launch Agent', false);
+            return;
+        }
+
+        state.deploying = false;
+        closeToolDrawer();
+        showToast('AI Agent launched! First post within 30 minutes.', 'success');
+
+    } catch (e) {
+        state.deploying = false;
+        setBtnState(btn, 'Launch Agent', false);
+        showToast('Agent launch failed: ' + (e.message || 'Unknown error'), 'error');
+    }
 }
 
 // ══════════════════════════════════════
@@ -499,7 +572,6 @@ async function handleLaunchDeploy() {
     var desc = document.getElementById('launchDesc').value.trim();
     var website = document.getElementById('launchWebsite').value.trim();
     var splitPct = parseInt(document.getElementById('feeSplit').value) || 100;
-    var agent = getAgentFieldsFrom('launch');
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
@@ -540,10 +612,7 @@ async function handleLaunchDeploy() {
             website_url: website,
             fee_split_bps: splitPct * 100,
             tier: 'permissionless',
-            creator_wallet: state.wallet,
-            agent_enabled: agent.enabled,
-            agent_persona: agent.persona || null,
-            agent_posts_per_day: agent.postsPerDay
+            creator_wallet: state.wallet
         });
 
         if (regResult.error) {
@@ -608,7 +677,6 @@ async function handlePoolDeploy() {
     var desc = document.getElementById('poolDesc').value.trim();
     var tokenName = document.getElementById('partnerTokenName').textContent;
     var tokenSymbol = document.getElementById('partnerTokenSymbol').textContent.replace('$', '');
-    var agent = getAgentFieldsFrom('pool');
 
     if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
     if (!tokenName || tokenName === '--') return showToast('Enter a valid token address first', 'error');
@@ -647,10 +715,7 @@ async function handlePoolDeploy() {
             description: desc,
             fee_split_bps: 10000,
             tier: 'partner',
-            creator_wallet: state.wallet,
-            agent_enabled: agent.enabled,
-            agent_persona: agent.persona || null,
-            agent_posts_per_day: agent.postsPerDay
+            creator_wallet: state.wallet
         });
 
         // Step 4: Update staking address
@@ -694,7 +759,6 @@ async function handleIncubationSubmit() {
     var telegram = document.getElementById('incTelegram').value.trim();
     var logoUrl = document.getElementById('incLogoUrl').value.trim();
     var helpNeeded = document.getElementById('incHelpNeeded').value.trim();
-    var agent = getAgentFieldsFrom('inc');
 
     if (!name) return showToast('Project name is required', 'error');
     if (!xHandle && !telegram) return showToast('Please provide at least an X handle or Telegram so we can reach you', 'error');
@@ -721,10 +785,7 @@ async function handleIncubationSubmit() {
             logo_url: logoUrl,
             fee_split_bps: 10000,
             tier: 'incubated',
-            creator_wallet: state.wallet,
-            agent_enabled: agent.enabled,
-            agent_persona: agent.persona || null,
-            agent_posts_per_day: agent.postsPerDay
+            creator_wallet: state.wallet
         });
 
         if (regResult.error) {
@@ -979,7 +1040,7 @@ function resetForm() {
     ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
      'partnerTokenAddress', 'poolDesc',
      'incProjectName', 'incVision', 'incXHandle', 'incTelegram', 'incLogoUrl', 'incHelpNeeded',
-     'launchAgentPersona', 'poolAgentPersona', 'incAgentPersona'].forEach(function(id) {
+     'agentPersona'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -988,15 +1049,13 @@ function resetForm() {
     var slider = document.getElementById('feeSplit');
     if (slider) { slider.value = 100; initSlider(); }
 
-    // Reset agent toggles
-    ['launchAgentEnabled', 'poolAgentEnabled', 'incAgentEnabled'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.checked = false;
-    });
-    ['launchAgentOptions', 'poolAgentOptions', 'incAgentOptions'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('visible');
-    });
+    // Reset agent drawer
+    var agentPostsPerDay = document.getElementById('agentPostsPerDay');
+    if (agentPostsPerDay) agentPostsPerDay.value = '4';
+    var agentAppSelect = document.getElementById('agentAppSelect');
+    if (agentAppSelect) agentAppSelect.value = '';
+    var agentAppPreview = document.getElementById('agentAppPreview');
+    if (agentAppPreview) agentAppPreview.classList.add('hidden');
 
     // Reset partner token preview
     var preview = document.getElementById('partnerTokenPreview');
@@ -1144,16 +1203,26 @@ async function init() {
     var batchBtn = document.getElementById('batchDistributeBtn');
     if (batchBtn) batchBtn.addEventListener('click', handleBatchDistribute);
 
-    // Agent toggles (one per drawer)
-    ['launch', 'pool', 'inc'].forEach(function(prefix) {
-        var checkbox = document.getElementById(prefix + 'AgentEnabled');
-        var options = document.getElementById(prefix + 'AgentOptions');
-        if (checkbox && options) {
-            checkbox.addEventListener('change', function() {
-                options.classList.toggle('visible', checkbox.checked);
-            });
-        }
-    });
+    // Bind agent launch
+    var deployAgentBtn = document.getElementById('deployAgentBtn');
+    if (deployAgentBtn) deployAgentBtn.addEventListener('click', handleAgentLaunch);
+
+    // Agent app selector — show preview on change
+    var agentAppSelect = document.getElementById('agentAppSelect');
+    if (agentAppSelect) {
+        agentAppSelect.addEventListener('change', function() {
+            var preview = document.getElementById('agentAppPreview');
+            var selected = agentAppSelect.options[agentAppSelect.selectedIndex];
+            if (agentAppSelect.value && selected) {
+                document.getElementById('agentAppName').textContent = selected.getAttribute('data-name') || '--';
+                document.getElementById('agentAppDesc').textContent = selected.getAttribute('data-desc') || '--';
+                document.getElementById('agentAppIcon').textContent = (selected.getAttribute('data-name') || '?')[0];
+                if (preview) preview.classList.remove('hidden');
+            } else {
+                if (preview) preview.classList.add('hidden');
+            }
+        });
+    }
 
     // Partner token address lookup
     var partnerAddrInput = document.getElementById('partnerTokenAddress');
