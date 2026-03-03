@@ -316,6 +316,8 @@ async function loadProjects() {
             for (const p of tokens) {
                 tokenContainer.appendChild(renderProjectCard(p));
             }
+            // Fetch prices async (non-blocking)
+            fetchTokenPrices(tokens);
         } else {
             tokenContainer.innerHTML = '<div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
         }
@@ -337,9 +339,20 @@ function renderProjectCard(p) {
     const created = p.created_at ? timeAgo(p.created_at) : '';
     const iconLetter = (symbol || name)[0].toUpperCase();
 
+    // Price row placeholder (filled async)
+    const priceRowHtml = addr ? `<div class="project-card-price" id="price-${esc(addr)}" style="display:none"></div>` : '';
+
+    // Chart embed (hidden by default)
+    const chartHtml = addr ? `<div class="project-card-chart" id="chart-${esc(addr)}" style="display:none">
+        <iframe src="https://dexscreener.com/base/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
+    </div>` : '';
+
     // Build action buttons
     let actionsHtml = '';
     if (addr) {
+        actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
+        actionsHtml += `<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=${esc(addr)}&chain=base" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
+        actionsHtml += `<a href="https://www.clanker.world/clanker/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Clanker</a>`;
         actionsHtml += `<a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
     }
     if (!p.staking_address && status === 'active' && addr) {
@@ -374,7 +387,9 @@ function renderProjectCard(p) {
             ${addr ? `<span><a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
             ${created ? `<span>${created}</span>` : ''}
         </div>
+        ${priceRowHtml}
         ${actionsHtml ? `<div class="project-card-actions">${actionsHtml}</div>` : ''}
+        ${chartHtml}
     `;
 
     // Wire copy button
@@ -383,6 +398,17 @@ function renderProjectCard(p) {
         navigator.clipboard.writeText(text);
         e.currentTarget.textContent = '✓';
         setTimeout(() => { e.currentTarget.innerHTML = '&#128203;'; }, 1500);
+    });
+
+    // Wire chart toggle
+    card.querySelector('.chart-toggle')?.addEventListener('click', (e) => {
+        const chartAddr = e.currentTarget.dataset.chartAddr;
+        const chartDiv = document.getElementById('chart-' + chartAddr);
+        if (chartDiv) {
+            const isOpen = chartDiv.style.display !== 'none';
+            chartDiv.style.display = isOpen ? 'none' : 'block';
+            e.currentTarget.textContent = isOpen ? 'Chart' : 'Hide Chart';
+        }
     });
 
     // Wire fund button
@@ -402,6 +428,75 @@ function renderProjectCard(p) {
     });
 
     return card;
+}
+
+// ── Token Price Fetch ──
+async function fetchTokenPrices(tokens) {
+    const addrs = tokens.filter(p => p.token_address).map(p => p.token_address);
+    if (!addrs.length) return;
+
+    // Dedupe and fetch each
+    const unique = [...new Set(addrs.map(a => a.toLowerCase()))];
+    for (const addr of unique) {
+        fetchSingleTokenPrice(addr);
+    }
+}
+
+async function fetchSingleTokenPrice(addr) {
+    try {
+        const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr);
+        const data = await res.json();
+        if (!data || !data.pairs || !data.pairs.length) return;
+
+        // Pick best pair by liquidity
+        const candidates = data.pairs.filter(function(p) {
+            return p.baseToken && p.baseToken.address &&
+                p.baseToken.address.toLowerCase() === addr.toLowerCase() &&
+                parseFloat(p.priceUsd) > 0;
+        });
+        if (!candidates.length) return;
+        candidates.sort(function(a, b) {
+            return (parseFloat(b.liquidity?.usd) || 0) - (parseFloat(a.liquidity?.usd) || 0);
+        });
+
+        const best = candidates[0];
+        const price = parseFloat(best.priceUsd);
+        const change24h = parseFloat(best.priceChange?.h24) || 0;
+        const liq = parseFloat(best.liquidity?.usd) || 0;
+
+        // Update DOM
+        const el = document.getElementById('price-' + addr) || document.getElementById('price-' + best.baseToken.address);
+        if (!el) return;
+
+        const changeClass = change24h >= 0 ? 'up' : 'down';
+        const changeArrow = change24h >= 0 ? '▲' : '▼';
+        const changeSign = change24h >= 0 ? '+' : '';
+        const liqStr = liq >= 1000 ? '$' + (liq / 1000).toFixed(1) + 'K' : '$' + Math.round(liq);
+
+        el.innerHTML = `
+            <span class="price-value">$${formatPrice(price)}</span>
+            <span class="price-change ${changeClass}">${changeArrow} ${changeSign}${change24h.toFixed(1)}%</span>
+            <span class="price-liq">Liq: ${liqStr}</span>
+        `;
+        el.style.display = '';
+    } catch (e) {
+        // silent — price just won't show
+    }
+}
+
+function formatPrice(n) {
+    if (n >= 1) return n.toFixed(2);
+    if (n >= 0.01) return n.toFixed(4);
+    // Count leading zeros after decimal
+    const str = n.toFixed(20);
+    const match = str.match(/^0\.(0+)/);
+    const zeros = match ? match[1].length : 0;
+    if (zeros >= 4) {
+        // Subscript notation: 0.0₅1234
+        const sig = str.slice(2 + zeros, 2 + zeros + 4);
+        return '0.0<sub>' + zeros + '</sub>' + sig;
+    }
+    return n.toFixed(zeros + 4);
 }
 
 // ── Staking Pools ──
