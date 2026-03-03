@@ -894,12 +894,13 @@
         var bHaiku = document.getElementById('breakdownHaiku');
         var bSonnet = document.getElementById('breakdownSonnet');
         var bOpus = document.getElementById('breakdownOpus');
+        var cardIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
         if (!amount || !buyState.clawsPerCredit) {
             els.buyCostValue.textContent = '--';
             els.buySendBtn.disabled = true;
             if (els.buyCardBtn) {
                 els.buyCardBtn.disabled = true;
-                els.buyCardBtn.textContent = '\uD83D\uDCB3 Pay with Card';
+                els.buyCardBtn.innerHTML = cardIcon + 'Pay with Card';
             }
             if (bHaiku) bHaiku.textContent = '--';
             if (bSonnet) bSonnet.textContent = '--';
@@ -914,10 +915,10 @@
         if (els.buyCardBtn) {
             if (amount >= 100) {
                 els.buyCardBtn.disabled = false;
-                els.buyCardBtn.textContent = '\uD83D\uDCB3 Pay with Card \u2014 $' + totalUsd;
+                els.buyCardBtn.innerHTML = cardIcon + 'Pay with Card — $' + totalUsd;
             } else {
                 els.buyCardBtn.disabled = true;
-                els.buyCardBtn.textContent = '\uD83D\uDCB3 Card min $0.50 (100 credits)';
+                els.buyCardBtn.innerHTML = cardIcon + 'Card min $0.50 (100 credits)';
             }
         }
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
