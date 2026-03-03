@@ -971,8 +971,15 @@
 
     // ── Detail Modal ──
     async function openDetail(appId) {
-        // Find app in current state first
+        // Find app in current state, or fetch by ID
         var app = state.apps.find(function(a) { return a.id === appId; });
+        if (!app) {
+            try {
+                var resp = await fetch(API + '?id=' + appId);
+                var data = await resp.json();
+                if (data.app) app = data.app;
+            } catch (e) { /* ignore */ }
+        }
         if (!app) return;
 
         var overlay = document.createElement('div');
@@ -1279,7 +1286,11 @@
 
     // ── Init — load for everyone, no auth gate ──
     checkParams();
-    loadApps();
+    loadApps().then(function() {
+        var params = new URLSearchParams(window.location.search);
+        var appId = params.get('id');
+        if (appId) openDetail(appId);
+    });
 
     // ── Public API ──
     window.AppStore = {
