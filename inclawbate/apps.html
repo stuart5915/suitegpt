@@ -21,9 +21,9 @@
         body { opacity: 1; background: var(--bg-deepest); }
 
         .apps-page {
-            max-width: 800px;
+            max-width: var(--max-width);
             margin: 0 auto;
-            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-xl) var(--space-3xl);
         }
 
         /* ── Hero ── */
@@ -34,7 +34,7 @@
         }
         .apps-hero h1 {
             font-family: var(--font-display);
-            font-size: 2.4rem;
+            font-size: 2.8rem;
             font-weight: 900;
             background: var(--title-gradient);
             -webkit-background-clip: text;
@@ -44,10 +44,57 @@
             margin-bottom: var(--space-sm);
         }
         .apps-hero p {
-            font-size: 1rem;
+            font-size: 1.05rem;
             color: var(--text-secondary);
-            max-width: 500px;
-            margin: 0 auto;
+            max-width: 520px;
+            margin: 0 auto var(--space-lg);
+        }
+        .apps-hero-stats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-xl);
+            margin-bottom: var(--space-lg);
+        }
+        .apps-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .apps-stat-num {
+            font-family: var(--font-mono);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .apps-stat-label {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .apps-hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 12px var(--space-xl);
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 12px hsla(9, 60%, 54%, 0.2);
+        }
+        .apps-hero-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow-lg);
+            color: #fff;
         }
 
         /* ── Controls ── */
@@ -84,7 +131,7 @@
             color: #fff;
         }
         .apps-search {
-            width: 200px;
+            width: 220px;
             padding: var(--space-sm) var(--space-md);
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
@@ -108,89 +155,83 @@
             outline: none;
         }
 
-        /* ── Feed ── */
-        .apps-feed {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
+        /* ── Grid ── */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: var(--space-lg);
         }
 
+        /* ── Card ── */
         .app-card {
-            display: flex;
-            align-items: flex-start;
-            gap: var(--space-lg);
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg);
-            padding: var(--space-lg);
+            overflow: hidden;
             cursor: pointer;
-            transition: border-color 0.15s ease, background 0.15s ease;
+            transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
             animation: fadeUp 0.3s ease both;
         }
         .app-card:hover {
             border-color: var(--border-bright);
-            background: var(--bg-card-hover);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
         }
 
-        /* Upvote column */
-        .app-upvote {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            min-width: 40px;
-            flex-shrink: 0;
+        /* Preview area */
+        .app-card-preview {
+            width: 100%;
+            height: 180px;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
         }
-        .app-upvote-btn {
-            background: none;
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            width: 36px;
-            height: 36px;
+        .app-card-preview iframe {
+            width: 200%;
+            height: 200%;
+            border: none;
+            pointer-events: none;
+            transform: scale(0.5);
+            transform-origin: top left;
+        }
+        .app-card-placeholder {
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            color: var(--text-dim);
+            font-size: 3rem;
+            background: linear-gradient(135deg, hsla(9, 40%, 40%, 0.15), hsla(172, 30%, 40%, 0.15));
         }
-        .app-upvote-btn:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-        }
-        .app-upvote-btn.upvoted {
-            background: var(--accent-primary);
-            border-color: var(--accent-primary);
-            color: #fff;
-        }
-        .app-upvote-btn svg { width: 14px; height: 14px; }
-        .app-upvote-count {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-        }
-        .app-upvote-btn.upvoted + .app-upvote-count { color: var(--accent-primary); }
 
-        /* Info column */
-        .app-info { flex: 1; min-width: 0; }
-        .app-name {
+        /* Info area */
+        .app-card-info {
+            padding: var(--space-md) var(--space-lg) var(--space-lg);
+        }
+        .app-card-name {
             font-size: 1rem;
             font-weight: 800;
             color: var(--text-primary);
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .app-desc {
-            font-size: 0.85rem;
+        .app-card-desc {
+            font-size: 0.82rem;
             color: var(--text-secondary);
             line-height: 1.5;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            margin-bottom: var(--space-sm);
+            margin-bottom: var(--space-md);
+            min-height: 2.46em;
         }
-        .app-meta {
+
+        /* Meta row */
+        .app-card-meta {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
@@ -198,17 +239,23 @@
         }
         .app-creator {
             font-family: var(--font-mono);
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: var(--text-dim);
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .app-badge {
             display: inline-block;
             padding: 2px var(--space-sm);
             border-radius: var(--radius-full);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.03em;
+            flex-shrink: 0;
         }
         .app-badge.cat {
             background: hsla(240, 10%, 30%, 0.4);
@@ -222,117 +269,212 @@
             background: hsla(32, 40%, 30%, 0.3);
             color: var(--sand-300);
         }
-
-        /* Thumbnail */
-        .app-thumb {
-            width: 64px;
-            height: 64px;
-            border-radius: var(--radius-md);
+        .app-card-upvote {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: none;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
             flex-shrink: 0;
+        }
+        .app-card-upvote:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        .app-card-upvote.upvoted {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: #fff;
+        }
+        .app-card-upvote svg { width: 12px; height: 12px; }
+
+        /* ── Detail Modal ── */
+        .app-detail-overlay {
+            position: fixed;
+            inset: 0;
+            background: hsla(240, 20%, 3%, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 500;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.6rem;
-            background: linear-gradient(135deg, hsla(9, 40%, 40%, 0.3), hsla(172, 30%, 40%, 0.3));
+            padding: var(--space-xl);
+            animation: fadeIn 0.2s ease;
         }
-
-        /* ── Expanded Detail ── */
-        .app-detail {
-            display: none;
-            margin-top: var(--space-md);
-            padding-top: var(--space-md);
-            border-top: 1px solid var(--border-subtle);
+        .app-detail-modal {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 720px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: modalIn 0.25s var(--ease-smooth);
         }
-        .app-card.expanded .app-detail { display: block; }
-        .app-detail-desc {
-            font-size: 0.9rem;
+        .app-detail-close {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            justify-content: flex-end;
+            padding: var(--space-md) var(--space-lg) 0;
+        }
+        .app-detail-close button {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: var(--space-md);
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+        .app-detail-close button:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        .app-detail-preview {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+        }
+        .app-detail-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .app-detail-preview .app-card-placeholder {
+            height: 100%;
+            font-size: 4rem;
+        }
+        .app-detail-body {
+            padding: var(--space-xl) var(--space-xl) var(--space-2xl);
+        }
+        .app-detail-name {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .app-detail-desc {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: var(--space-lg);
         }
         .app-detail-tags {
             display: flex;
             gap: var(--space-xs);
             flex-wrap: wrap;
-            margin-bottom: var(--space-md);
+            margin-bottom: var(--space-lg);
         }
         .app-tag {
             padding: 2px var(--space-sm);
-            background: var(--bg-elevated);
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-full);
             font-size: 0.7rem;
             color: var(--text-dim);
             font-family: var(--font-mono);
         }
-        .app-preview-frame {
-            width: 100%;
-            height: 360px;
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-md);
-            background: #fff;
-            margin-bottom: var(--space-md);
+        .app-detail-creator {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-dim);
         }
         .app-detail-actions {
             display: flex;
             gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
         }
         .app-use-btn {
-            padding: var(--space-sm) var(--space-xl);
+            padding: 12px var(--space-xl);
             background: var(--accent-gradient);
             color: #fff;
             border: none;
             border-radius: var(--radius-md);
             font-family: var(--font-body);
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             font-weight: 700;
             cursor: pointer;
             text-decoration: none;
-            transition: opacity 0.15s ease;
-        }
-        .app-use-btn:hover { opacity: 0.85; }
-
-        /* ── Empty + Loading ── */
-        .apps-empty, .apps-loading {
-            text-align: center;
-            padding: var(--space-3xl) var(--space-xl);
-            color: var(--text-dim);
-        }
-        .apps-empty a { color: var(--accent-primary); }
-
-        /* ── Pagination ── */
-        .apps-pagination {
-            display: flex;
+            transition: all 0.15s ease;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: var(--space-md);
-            margin-top: var(--space-xl);
+            gap: var(--space-sm);
         }
-        .apps-pagination button {
-            padding: var(--space-sm) var(--space-lg);
+        .app-use-btn:hover { opacity: 0.88; color: #fff; }
+        .app-fork-btn {
+            padding: 12px var(--space-xl);
             background: var(--bg-card);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
             color: var(--text-secondary);
             font-family: var(--font-body);
-            font-size: 0.85rem;
+            font-size: 0.88rem;
+            font-weight: 700;
             cursor: pointer;
+            transition: all 0.15s ease;
         }
-        .apps-pagination button:disabled { opacity: 0.3; cursor: default; }
-        .apps-pagination span {
-            font-size: 0.85rem;
-            color: var(--text-dim);
+        .app-fork-btn:hover {
+            border-color: var(--border-bright);
+            color: var(--text-primary);
+        }
+        .app-detail-upvote {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px var(--space-lg);
+            background: none;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
             font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
         }
+        .app-detail-upvote:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        .app-detail-upvote.upvoted {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: #fff;
+        }
+        .app-detail-upvote svg { width: 14px; height: 14px; }
 
-        /* ── Unlock + Tip UI ── */
+        /* Unlock + Tip sections in modal */
         .app-unlock-section, .app-tip-section {
-            margin-top: var(--space-md);
-            padding-top: var(--space-md);
+            margin-top: var(--space-lg);
+            padding-top: var(--space-lg);
             border-top: 1px solid var(--border-subtle);
         }
         .app-unlock-section h4, .app-tip-section h4 {
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             color: var(--text-primary);
             margin-bottom: var(--space-sm);
         }
@@ -356,7 +498,7 @@
         .app-tx-input {
             flex: 1;
             padding: var(--space-sm) var(--space-md);
-            background: var(--bg-elevated);
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             color: var(--text-primary);
@@ -387,7 +529,7 @@
         }
         .app-tip-btn {
             padding: var(--space-xs) var(--space-md);
-            background: var(--bg-elevated);
+            background: var(--bg-card);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-full);
             color: var(--text-secondary);
@@ -413,19 +555,68 @@
         .app-result.success { color: var(--seafoam-400); }
         .app-result.error { color: #ef4444; }
 
+        /* ── Empty + Loading ── */
+        .apps-empty, .apps-loading {
+            text-align: center;
+            padding: var(--space-3xl) var(--space-xl);
+            color: var(--text-dim);
+            grid-column: 1 / -1;
+        }
+        .apps-empty a { color: var(--accent-primary); }
+
+        /* ── Pagination ── */
+        .apps-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-top: var(--space-xl);
+        }
+        .apps-pagination button {
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .apps-pagination button:disabled { opacity: 0.3; cursor: default; }
+        .apps-pagination span {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+        }
+
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
         /* ── Mobile ── */
-        @media (max-width: 640px) {
-            .apps-hero h1 { font-size: 1.8rem; }
+        @media (max-width: 768px) {
+            .apps-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .apps-hero h1 { font-size: 2rem; }
             .apps-controls { flex-direction: column; align-items: stretch; }
             .apps-search { width: 100%; }
-            .app-thumb { display: none; }
-            .app-card { gap: var(--space-md); }
-            .app-preview-frame { height: 240px; }
+            .apps-grid { grid-template-columns: 1fr; }
+            .app-detail-overlay { padding: 0; align-items: flex-end; }
+            .app-detail-modal {
+                max-height: 95vh;
+                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+                max-width: 100%;
+            }
+            .app-detail-preview { height: 260px; }
+            .app-detail-actions { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -448,7 +639,18 @@
     <!-- Hero -->
     <div class="apps-hero">
         <h1>App Store</h1>
-        <p>Discover apps built on Inclawbate. Upvote your favorites.</p>
+        <p>Discover apps built on Inclawbate. Use them, fork them, build your own.</p>
+        <div class="apps-hero-stats">
+            <div class="apps-stat">
+                <span class="apps-stat-num" id="statApps">--</span>
+                <span class="apps-stat-label">Apps</span>
+            </div>
+            <div class="apps-stat">
+                <span class="apps-stat-num" id="statBuilders">--</span>
+                <span class="apps-stat-label">Builders</span>
+            </div>
+        </div>
+        <a href="/build" class="apps-hero-cta">Build Your Own</a>
     </div>
 
     <!-- Controls -->
@@ -469,8 +671,8 @@
         </select>
     </div>
 
-    <!-- Feed -->
-    <div id="appsFeed" class="apps-feed">
+    <!-- Grid -->
+    <div id="appsFeed" class="apps-grid">
         <div class="apps-loading">Loading apps...</div>
     </div>
 
@@ -494,12 +696,15 @@
         page: 1,
         pages: 1,
         apps: [],
-        expandedId: null
+        total: 0
     };
 
     var searchTimer = null;
     var feedEl = document.getElementById('appsFeed');
     var paginationEl = document.getElementById('appsPagination');
+
+    // Category emoji map
+    var catEmoji = { tools: '\u{1F527}', games: '\u{1F3AE}', creative: '\u{1F3A8}', finance: '\u{1F4B0}', social: '\u{1F4AC}', other: '\u{1F680}' };
 
     // ── Auth ──
     function getToken() { return localStorage.getItem('inclawbate_token'); }
@@ -545,7 +750,7 @@
         var params = new URLSearchParams({
             sort: state.sort,
             page: state.page,
-            limit: 20
+            limit: 18
         });
         if (state.category !== 'all') params.set('category', state.category);
         if (state.search) params.set('search', state.search);
@@ -559,6 +764,13 @@
 
             state.apps = data.apps || [];
             state.pages = data.pages || 1;
+            state.total = data.total || 0;
+
+            // Update stats
+            document.getElementById('statApps').textContent = data.total || state.apps.length;
+            if (data.builders !== undefined) {
+                document.getElementById('statBuilders').textContent = data.builders;
+            }
 
             renderFeed();
         } catch(e) {
@@ -566,7 +778,7 @@
         }
     }
 
-    // ── Render ──
+    // ── Render Grid ──
     function renderFeed() {
         if (state.apps.length === 0) {
             feedEl.innerHTML = '<div class="apps-empty">No apps found. <a href="/build">Build the first one!</a></div>';
@@ -589,82 +801,33 @@
                 : '<span class="app-badge free">Free</span>';
 
             var catLabel = app.category ? app.category.charAt(0).toUpperCase() + app.category.slice(1) : 'Other';
+            var emoji = catEmoji[app.category] || catEmoji.other;
 
-            // Icon based on category
-            var icons = { tools: '&#128295;', games: '&#127918;', creative: '&#127912;', finance: '&#128176;', social: '&#128172;', other: '&#128640;' };
-            var icon = icons[app.category] || icons.other;
-
-            var tags = (app.tags || []);
-            var tagsHtml = tags.map(function(t) { return '<span class="app-tag">' + escapeHtml(t) + '</span>'; }).join('');
-
-            var isPaid = app.claws_price > 0;
-            var appIdSafe = app.id.replace(/'/g, '');
-
-            // Build unlock section for paid apps
-            var unlockHtml = '';
-            if (isPaid && app.creator_wallet) {
-                unlockHtml =
-                    '<div class="app-unlock-section" id="unlock-' + appIdSafe + '">' +
-                        '<h4>Unlock for ' + formatNum(app.claws_price) + ' CLAWS</h4>' +
-                        '<p class="app-unlock-info">Send ' + formatNum(app.claws_price) + ' CLAWS to <strong style="font-family:var(--font-mono);font-size:0.7rem;">' + app.creator_wallet.slice(0, 8) + '...' + app.creator_wallet.slice(-6) + '</strong>, then paste the tx hash below.</p>' +
-                        '<div class="app-tx-row">' +
-                            '<input class="app-tx-input" type="text" placeholder="0x..." id="unlock-tx-' + appIdSafe + '" onclick="event.stopPropagation()">' +
-                            '<button class="app-verify-btn" onclick="event.stopPropagation(); AppStore.unlock(\'' + appIdSafe + '\')">Verify</button>' +
-                        '</div>' +
-                        '<div class="app-result" id="unlock-result-' + appIdSafe + '"></div>' +
-                    '</div>';
+            // Preview area
+            var previewHtml;
+            if (app.has_code) {
+                previewHtml = '<div class="app-card-preview"><iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe></div>';
+            } else {
+                previewHtml = '<div class="app-card-preview"><div class="app-card-placeholder">' + emoji + '</div></div>';
             }
 
-            // Build tip section
-            var tipHtml =
-                '<div class="app-tip-section">' +
-                    '<h4>Tip Creator</h4>' +
-                    (app.creator_wallet
-                        ? '<div class="app-tip-amounts">' +
-                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 10)">10 CLAWS</button>' +
-                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 50)">50 CLAWS</button>' +
-                            '<button class="app-tip-btn" onclick="event.stopPropagation(); AppStore.selectTip(\'' + appIdSafe + '\', 100)">100 CLAWS</button>' +
-                          '</div>' +
-                          '<div class="app-tx-row">' +
-                            '<input class="app-tx-input" type="text" placeholder="Paste tip tx hash..." id="tip-tx-' + appIdSafe + '" onclick="event.stopPropagation()">' +
-                            '<button class="app-verify-btn" onclick="event.stopPropagation(); AppStore.tip(\'' + appIdSafe + '\')">Verify Tip</button>' +
-                          '</div>' +
-                          '<div class="app-result" id="tip-result-' + appIdSafe + '"></div>'
-                        : '<p class="app-unlock-info">Creator has no wallet set.</p>') +
-                '</div>';
-
             card.innerHTML =
-                '<div class="app-upvote">' +
-                    '<button class="app-upvote-btn' + (app.has_upvoted ? ' upvoted' : '') + '" data-id="' + app.id + '" onclick="event.stopPropagation(); AppStore.upvote(\'' + app.id + '\', this)">' +
-                        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>' +
-                    '</button>' +
-                    '<span class="app-upvote-count">' + (app.upvote_count || 0) + '</span>' +
-                '</div>' +
-                '<div class="app-info">' +
-                    '<div class="app-name">' + escapeHtml(app.name || app.slug) + '</div>' +
-                    '<div class="app-desc">' + escapeHtml(app.description || '') + '</div>' +
-                    '<div class="app-meta">' +
+                previewHtml +
+                '<div class="app-card-info">' +
+                    '<div class="app-card-name">' + escapeHtml(app.name || app.slug) + '</div>' +
+                    '<div class="app-card-desc">' + escapeHtml(app.description || '') + '</div>' +
+                    '<div class="app-card-meta">' +
                         '<span class="app-creator">' + escapeHtml(creator) + '</span>' +
                         '<span class="app-badge cat">' + catLabel + '</span>' +
                         priceBadge +
+                        '<button class="app-card-upvote' + (app.has_upvoted ? ' upvoted' : '') + '" data-id="' + app.id + '" onclick="event.stopPropagation(); AppStore.upvote(\'' + app.id + '\', this)">' +
+                            '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>' +
+                            '<span>' + (app.upvote_count || 0) + '</span>' +
+                        '</button>' +
                     '</div>' +
-                    '<div class="app-detail">' +
-                        '<div class="app-detail-desc">' + escapeHtml(app.description || '') + '</div>' +
-                        (tagsHtml ? '<div class="app-detail-tags">' + tagsHtml + '</div>' : '') +
-                        (app.has_code
-                            ? '<iframe class="app-preview-frame" src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>'
-                            : '<div class="app-preview-placeholder" style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);border-radius:12px;border:1px solid var(--border-default);color:var(--text-muted);font-size:0.9rem;">' + (app.app_url ? 'External app — click Use App to open' : 'No preview available') + '</div>') +
-                        '<div class="app-detail-actions">' +
-                            '<a class="app-use-btn" href="' + (app.has_code ? ('/s/' + encodeURIComponent(app.slug)) : (app.app_url || '#')) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
-                            '<button class="app-use-btn" style="background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-secondary);" onclick="event.stopPropagation(); AppStore.fork(\'' + appIdSafe + '\')">Fork</button>' +
-                        '</div>' +
-                        unlockHtml +
-                        tipHtml +
-                    '</div>' +
-                '</div>' +
-                '<div class="app-thumb">' + icon + '</div>';
+                '</div>';
 
-            card.addEventListener('click', function() { toggleExpand(card, app.id); });
+            card.addEventListener('click', function() { openDetail(app.id); });
             feedEl.appendChild(card);
         });
 
@@ -679,16 +842,112 @@
         }
     }
 
-    function toggleExpand(card, id) {
-        if (state.expandedId === id) {
-            card.classList.remove('expanded');
-            state.expandedId = null;
+    // ── Detail Modal ──
+    async function openDetail(appId) {
+        // Find app in current state first
+        var app = state.apps.find(function(a) { return a.id === appId; });
+        if (!app) return;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'app-detail-overlay';
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeDetail();
+        });
+
+        var creator = app.creator_x_handle
+            ? '@' + app.creator_x_handle
+            : (app.creator_wallet ? app.creator_wallet.slice(0, 6) + '...' + app.creator_wallet.slice(-4) : 'Anonymous');
+
+        var emoji = catEmoji[app.category] || catEmoji.other;
+
+        // Preview
+        var previewHtml;
+        if (app.has_code) {
+            previewHtml = '<iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>';
         } else {
-            // Collapse previous
-            var prev = feedEl.querySelector('.app-card.expanded');
-            if (prev) prev.classList.remove('expanded');
-            card.classList.add('expanded');
-            state.expandedId = id;
+            previewHtml = '<div class="app-card-placeholder">' + emoji + '</div>';
+        }
+
+        var tags = (app.tags || []);
+        var tagsHtml = tags.length
+            ? '<div class="app-detail-tags">' + tags.map(function(t) { return '<span class="app-tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>'
+            : '';
+
+        var isPaid = app.claws_price > 0;
+        var appIdSafe = app.id.replace(/'/g, '');
+
+        // Unlock section for paid apps
+        var unlockHtml = '';
+        if (isPaid && app.creator_wallet) {
+            unlockHtml =
+                '<div class="app-unlock-section" id="unlock-' + appIdSafe + '">' +
+                    '<h4>Unlock for ' + formatNum(app.claws_price) + ' CLAWS</h4>' +
+                    '<p class="app-unlock-info">Send <strong>' + formatNum(app.claws_price) + ' CLAWS</strong> to <code style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">' + app.creator_wallet.slice(0, 8) + '...' + app.creator_wallet.slice(-6) + '</code>, then paste the tx hash below.</p>' +
+                    '<div class="app-tx-row">' +
+                        '<input class="app-tx-input" type="text" placeholder="0x..." id="unlock-tx-' + appIdSafe + '">' +
+                        '<button class="app-verify-btn" onclick="AppStore.unlock(\'' + appIdSafe + '\')">Verify</button>' +
+                    '</div>' +
+                    '<div class="app-result" id="unlock-result-' + appIdSafe + '"></div>' +
+                '</div>';
+        }
+
+        // Tip section
+        var tipHtml =
+            '<div class="app-tip-section">' +
+                '<h4>Tip Creator</h4>' +
+                (app.creator_wallet
+                    ? '<div class="app-tip-amounts">' +
+                        '<button class="app-tip-btn" onclick="AppStore.selectTip(\'' + appIdSafe + '\', 10, this)">10 CLAWS</button>' +
+                        '<button class="app-tip-btn" onclick="AppStore.selectTip(\'' + appIdSafe + '\', 50, this)">50 CLAWS</button>' +
+                        '<button class="app-tip-btn" onclick="AppStore.selectTip(\'' + appIdSafe + '\', 100, this)">100 CLAWS</button>' +
+                      '</div>' +
+                      '<div class="app-tx-row">' +
+                        '<input class="app-tx-input" type="text" placeholder="Paste tip tx hash..." id="tip-tx-' + appIdSafe + '">' +
+                        '<button class="app-verify-btn" onclick="AppStore.tip(\'' + appIdSafe + '\')">Verify Tip</button>' +
+                      '</div>' +
+                      '<div class="app-result" id="tip-result-' + appIdSafe + '"></div>'
+                    : '<p class="app-unlock-info">Creator has no wallet set.</p>') +
+            '</div>';
+
+        var modal = document.createElement('div');
+        modal.className = 'app-detail-modal';
+        modal.innerHTML =
+            '<div class="app-detail-close"><button onclick="AppStore.closeDetail()" title="Close">&times;</button></div>' +
+            '<div class="app-detail-preview">' + previewHtml + '</div>' +
+            '<div class="app-detail-body">' +
+                '<div class="app-detail-name">' + escapeHtml(app.name || app.slug) + '</div>' +
+                '<div class="app-detail-creator">Built by ' + escapeHtml(creator) + '</div>' +
+                '<div class="app-detail-desc">' + escapeHtml(app.description || '') + '</div>' +
+                tagsHtml +
+                '<div class="app-detail-actions">' +
+                    '<a class="app-use-btn" href="' + (app.has_code ? ('/s/' + encodeURIComponent(app.slug)) : (app.app_url || '#')) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
+                    '<button class="app-fork-btn" onclick="AppStore.fork(\'' + appIdSafe + '\')">Fork</button>' +
+                    '<button class="app-detail-upvote' + (app.has_upvoted ? ' upvoted' : '') + '" data-id="' + app.id + '" onclick="AppStore.upvote(\'' + app.id + '\', this)">' +
+                        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>' +
+                        '<span>' + (app.upvote_count || 0) + '</span>' +
+                    '</button>' +
+                '</div>' +
+                unlockHtml +
+                tipHtml +
+            '</div>';
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        // Close on Escape
+        overlay._escHandler = function(e) {
+            if (e.key === 'Escape') closeDetail();
+        };
+        document.addEventListener('keydown', overlay._escHandler);
+    }
+
+    function closeDetail() {
+        var overlay = document.querySelector('.app-detail-overlay');
+        if (overlay) {
+            if (overlay._escHandler) document.removeEventListener('keydown', overlay._escHandler);
+            overlay.remove();
+            document.body.style.overflow = '';
         }
     }
 
@@ -712,9 +971,16 @@
 
             if (resp.ok) {
                 btn.classList.toggle('upvoted', data.upvoted);
-                var countEl = btn.parentNode.querySelector('.app-upvote-count');
+                var countEl = btn.querySelector('span');
                 if (countEl && data.upvote_count !== undefined) {
                     countEl.textContent = data.upvote_count;
+                }
+                // Also update the card's upvote button if we're in the modal
+                var cardBtn = feedEl.querySelector('.app-card-upvote[data-id="' + appId + '"]');
+                if (cardBtn && cardBtn !== btn) {
+                    cardBtn.classList.toggle('upvoted', data.upvoted);
+                    var cardCount = cardBtn.querySelector('span');
+                    if (cardCount) cardCount.textContent = data.upvote_count;
                 }
             }
         } catch(e) { /* silent */ }
@@ -767,7 +1033,6 @@
             if (resp.ok && data.unlocked) {
                 resultEl.textContent = 'Unlocked! Paid ' + data.amount + ' CLAWS.';
                 resultEl.className = 'app-result success';
-                // Replace unlock section with success
                 var section = document.getElementById('unlock-' + appId);
                 if (section) {
                     section.innerHTML = '<div class="app-unlock-status">Unlocked</div>';
@@ -783,13 +1048,12 @@
     }
 
     // ── Tip ──
-    function selectTip(appId, amount) {
-        // Highlight selected button
-        var section = document.getElementById('tip-tx-' + appId);
-        if (section) section.focus();
-        var btns = section ? section.closest('.app-tip-section').querySelectorAll('.app-tip-btn') : [];
+    function selectTip(appId, amount, btnEl) {
+        var tipInput = document.getElementById('tip-tx-' + appId);
+        if (tipInput) tipInput.focus();
+        var btns = btnEl ? btnEl.closest('.app-tip-amounts').querySelectorAll('.app-tip-btn') : [];
         btns.forEach(function(b) { b.classList.remove('active'); });
-        event.target.classList.add('active');
+        if (btnEl) btnEl.classList.add('active');
     }
 
     async function tip(appId) {
@@ -878,18 +1142,9 @@
         }
     }
 
-    // ── Admin Gate (temporary — requires wallet login) ──
-
-    // ── Init ──
+    // ── Init — load for everyone, no auth gate ──
     checkParams();
-    if (!isLoggedIn()) {
-        feedEl.innerHTML = '<div class="apps-empty" style="padding:80px 20px;">' +
-            '<h2 style="color:var(--text-primary);margin-bottom:12px;">App Store — Coming Soon</h2>' +
-            '<p style="color:var(--text-secondary);">We\'re curating the first wave of apps. Check back shortly.</p>' +
-            '</div>';
-    } else {
-        loadApps();
-    }
+    loadApps();
 
     // ── Public API ──
     window.AppStore = {
@@ -899,7 +1154,9 @@
         selectTip: selectTip,
         fork: fork,
         nextPage: nextPage,
-        prevPage: prevPage
+        prevPage: prevPage,
+        openDetail: openDetail,
+        closeDetail: closeDetail
     };
 })();
 </script>

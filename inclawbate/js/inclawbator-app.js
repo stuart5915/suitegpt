@@ -422,6 +422,9 @@ function openToolDrawer(tool) {
     // Load apps when agent drawer opens
     if (tool === 'agent') loadAgentApps();
 
+    // Load user's tokens when pool drawer opens
+    if (tool === 'pool') loadPoolTokens();
+
     // Scroll drawer into view
     if (drawer) {
         setTimeout(function() { drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
@@ -443,36 +446,86 @@ function closeToolDrawer() {
     });
 }
 
-// Partner token address lookup
-var partnerDebounceTimer = null;
+// Pool token selector — load user's launched tokens
+var poolTokensCache = null;
 
-function onPartnerAddressInput() {
-    clearTimeout(partnerDebounceTimer);
-    var input = document.getElementById('partnerTokenAddress');
-    var preview = document.getElementById('partnerTokenPreview');
-    var val = input.value.trim();
+async function loadPoolTokens() {
+    var loading = document.getElementById('poolTokenLoading');
+    var noTokens = document.getElementById('poolNoTokens');
+    var form = document.getElementById('poolTokenForm');
+    var select = document.getElementById('poolTokenSelect');
 
-    if (!val || val.length !== 42 || !val.startsWith('0x')) {
-        preview.classList.add('hidden');
+    if (!loading || !noTokens || !form || !select) return;
+
+    // Must be connected
+    if (!state.wallet) {
+        loading.classList.add('hidden');
+        noTokens.classList.remove('hidden');
+        noTokens.querySelector('p').textContent = 'Connect your wallet first.';
+        form.classList.add('hidden');
         return;
     }
 
-    partnerDebounceTimer = setTimeout(async function() {
-        try {
-            var info = await readTokenInfo(val);
-            if (info.name && info.symbol) {
-                document.getElementById('partnerTokenName').textContent = info.name;
-                document.getElementById('partnerTokenSymbol').textContent = '$' + info.symbol;
-                document.getElementById('partnerTokenIcon').textContent = info.symbol[0];
-                preview.classList.remove('hidden');
-            } else {
-                preview.classList.add('hidden');
-                showToast('Could not read token info. Is this a valid ERC20 on Base?', 'error');
-            }
-        } catch (e) {
+    // If already cached, use it
+    if (poolTokensCache) {
+        showPoolTokenForm(poolTokensCache, loading, noTokens, form, select);
+        return;
+    }
+
+    loading.classList.remove('hidden');
+    noTokens.classList.add('hidden');
+    form.classList.add('hidden');
+
+    try {
+        var res = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(state.wallet.toLowerCase()));
+        var data = await res.json();
+        var projects = (data.projects || []).filter(function(p) {
+            return p.token_address && p.status === 'active' && !p.staking_address;
+        });
+        poolTokensCache = projects;
+        showPoolTokenForm(projects, loading, noTokens, form, select);
+    } catch (e) {
+        loading.textContent = 'Failed to load tokens.';
+    }
+}
+
+function showPoolTokenForm(projects, loading, noTokens, form, select) {
+    loading.classList.add('hidden');
+
+    if (projects.length === 0) {
+        noTokens.classList.remove('hidden');
+        noTokens.querySelector('p').textContent = "You don't have any tokens without a staking pool. Launch a token first, or all your tokens already have pools.";
+        form.classList.add('hidden');
+        return;
+    }
+
+    noTokens.classList.add('hidden');
+    form.classList.remove('hidden');
+
+    // Populate select
+    select.innerHTML = '<option value="">Choose a token...</option>';
+    projects.forEach(function(p) {
+        var opt = document.createElement('option');
+        opt.value = p.token_address;
+        opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')';
+        opt.dataset.name = p.token_name || '';
+        opt.dataset.symbol = p.token_symbol || '';
+        select.appendChild(opt);
+    });
+
+    // Wire select change to update preview
+    select.onchange = function() {
+        var preview = document.getElementById('partnerTokenPreview');
+        var selected = select.options[select.selectedIndex];
+        if (select.value && selected.dataset.name) {
+            document.getElementById('partnerTokenName').textContent = selected.dataset.name;
+            document.getElementById('partnerTokenSymbol').textContent = '$' + selected.dataset.symbol;
+            document.getElementById('partnerTokenIcon').textContent = (selected.dataset.symbol || '?')[0];
+            preview.classList.remove('hidden');
+        } else {
             preview.classList.add('hidden');
         }
-    }, 600);
+    };
 }
 
 // ══════════════════════════════════════
@@ -673,13 +726,14 @@ async function handleLaunchDeploy() {
 async function handlePoolDeploy() {
     if (state.deploying) return;
 
-    var tokenAddress = document.getElementById('partnerTokenAddress').value.trim();
+    var select = document.getElementById('poolTokenSelect');
+    var tokenAddress = select ? select.value : '';
     var desc = document.getElementById('poolDesc').value.trim();
     var tokenName = document.getElementById('partnerTokenName').textContent;
     var tokenSymbol = document.getElementById('partnerTokenSymbol').textContent.replace('$', '');
 
-    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Valid token address required', 'error');
-    if (!tokenName || tokenName === '--') return showToast('Enter a valid token address first', 'error');
+    if (!tokenAddress || tokenAddress.length !== 42) return showToast('Select a token first', 'error');
+    if (!tokenName || tokenName === '--') return showToast('Select a token first', 'error');
 
     if (!state.wallet) {
         await connectWallet();
@@ -704,33 +758,44 @@ async function handlePoolDeploy() {
         var stakingPool = parsePoolDeployed(result.receipt);
         if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
 
-        setBtnState(btn, 'Registering project...', true);
+        setBtnState(btn, 'Linking staking pool...', true);
 
-        // Step 3: Register with API as partner
-        var regResult = await apiPost({
-            action: 'register',
-            token_address: tokenAddress,
-            token_name: tokenName,
-            token_symbol: tokenSymbol,
-            description: desc,
-            fee_split_bps: 10000,
-            tier: 'partner',
-            creator_wallet: state.wallet
-        });
-
-        // Step 4: Update staking address
-        if (regResult.project) {
+        // Step 3: Find existing project for this token and update staking address
+        var existingProject = poolTokensCache ? poolTokensCache.find(function(p) { return p.token_address === tokenAddress; }) : null;
+        if (existingProject && existingProject.id) {
             await apiPost({
                 action: 'update-staking',
-                project_id: regResult.project.id,
+                project_id: existingProject.id,
                 staking_address: stakingPool,
                 staking_deploy_tx: result.txHash
             });
-            state.project = regResult.project;
+            state.project = existingProject;
+        } else {
+            // Fallback: register as partner (shouldn't happen with new flow)
+            var regResult = await apiPost({
+                action: 'register',
+                token_address: tokenAddress,
+                token_name: tokenName,
+                token_symbol: tokenSymbol,
+                description: desc,
+                fee_split_bps: 10000,
+                tier: 'partner',
+                creator_wallet: state.wallet
+            });
+            if (regResult.project) {
+                await apiPost({
+                    action: 'update-staking',
+                    project_id: regResult.project.id,
+                    staking_address: stakingPool,
+                    staking_deploy_tx: result.txHash
+                });
+                state.project = regResult.project;
+            }
         }
 
         state.step = 7; // partner success
         state.deploying = false;
+        poolTokensCache = null; // Invalidate cache so it refreshes
         closeToolDrawer();
         updateUI();
         showToast('Staking deployed!', 'success');
@@ -1038,7 +1103,7 @@ function resetForm() {
 
     // Clear all form inputs
     ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
-     'partnerTokenAddress', 'poolDesc',
+     'poolDesc',
      'incProjectName', 'incVision', 'incXHandle', 'incTelegram', 'incLogoUrl', 'incHelpNeeded',
      'agentPersona'].forEach(function(id) {
         var el = document.getElementById(id);
@@ -1057,9 +1122,12 @@ function resetForm() {
     var agentAppPreview = document.getElementById('agentAppPreview');
     if (agentAppPreview) agentAppPreview.classList.add('hidden');
 
-    // Reset partner token preview
+    // Reset partner token preview + select
     var preview = document.getElementById('partnerTokenPreview');
     if (preview) preview.classList.add('hidden');
+    var poolSelect = document.getElementById('poolTokenSelect');
+    if (poolSelect) poolSelect.value = '';
+    poolTokensCache = null;
 
     // Hide success states
     ['successStep', 'incubatedSuccessStep', 'partnerSuccessStep'].forEach(function(id) {
@@ -1223,10 +1291,6 @@ async function init() {
             }
         });
     }
-
-    // Partner token address lookup
-    var partnerAddrInput = document.getElementById('partnerTokenAddress');
-    if (partnerAddrInput) partnerAddrInput.addEventListener('input', onPartnerAddressInput);
 
     // Load deploy fee for partner display
     readDeployFee().then(function(fee) {
