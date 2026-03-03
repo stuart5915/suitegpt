@@ -1,5 +1,13 @@
 // Inclawbate — Dashboard Controller (Single Overview Page)
-import { getStoredAuth, logout } from './x-auth-client.js';
+
+function getStoredAuth() {
+    try {
+        const token = localStorage.getItem('inclawbate_token');
+        const profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+        if (token && profile) return { token, profile };
+    } catch (e) {}
+    return null;
+}
 
 const API_BASE = '/api/inclawbate';
 
@@ -708,11 +716,9 @@ function openFundModal(poolAddr, poolName, projectId) {
 function init() {
     const auth = getStoredAuth();
     if (!auth) {
-        document.getElementById('loginGate').classList.remove('hidden');
+        document.getElementById('connectBanner')?.classList.remove('hidden');
         return;
     }
-
-    document.getElementById('dashboardView').classList.remove('hidden');
 
     // Fetch fresh profile for Telegram status
     const profile = auth.profile;
