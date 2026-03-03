@@ -12,6 +12,24 @@
     });
     try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
     window._eip6963Providers = discovered;
+
+    // Await provider: re-dispatches requestProvider and waits up to 1s for late wallets
+    window._awaitProvider = function() {
+        if (window.ethereum) return Promise.resolve(window.ethereum);
+        return new Promise(function(resolve) {
+            try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
+            var timeout = setTimeout(function() { resolve(window.ethereum || null); }, 1000);
+            function handler(ev) {
+                if (ev.detail && ev.detail.provider) {
+                    clearTimeout(timeout);
+                    window.removeEventListener('eip6963:announceProvider', handler);
+                    if (!window.ethereum) window.ethereum = ev.detail.provider;
+                    resolve(window.ethereum);
+                }
+            }
+            window.addEventListener('eip6963:announceProvider', handler);
+        });
+    };
 })();
 
 (function() {
@@ -80,14 +98,20 @@
         }
 
         async function navWalletConnect() {
-            if (!window.ethereum) {
-                alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
-                return;
-            }
-
             var btn = document.getElementById('navWalletBtn');
             btn.textContent = 'Connecting…';
             btn.disabled = true;
+
+            // Wait for late-loading wallets (Base Wallet, etc.)
+            if (!window.ethereum && window._awaitProvider) {
+                await window._awaitProvider();
+            }
+            if (!window.ethereum) {
+                alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+                return;
+            }
 
             try {
                 var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });

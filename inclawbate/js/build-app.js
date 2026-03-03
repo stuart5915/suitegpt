@@ -1506,8 +1506,9 @@
 
     // ── Wallet Connect ──
     async function connectWallet() {
+        if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
         if (!window.ethereum) {
-            alert('No wallet detected. Install MetaMask or another browser wallet to continue.');
+            alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
             return;
         }
 

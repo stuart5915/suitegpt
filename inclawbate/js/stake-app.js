@@ -835,6 +835,9 @@ function renderPoolPage(pool, key) {
 async function connectPoolWallet() {
     if (walletAddr) return walletAddr;
 
+    // Wait for late-loading wallets (Base Wallet EIP-6963)
+    if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
+
     if (window.ethereum) {
         try {
             var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1695,7 +1698,8 @@ async function init() {
         });
     }
 
-    // Auto-reconnect saved wallet
+    // Auto-reconnect saved wallet (wait for late-loading wallets)
+    if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
     try {
         var saved = localStorage.getItem('_stake_wallet');
         if (saved && window.ethereum) {

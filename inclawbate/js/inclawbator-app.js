@@ -159,8 +159,12 @@ var state = {
 // ══════════════════════════════════════
 
 async function connectWallet() {
+    // Wait for late-loading wallets (Base Wallet EIP-6963)
+    if (!window.ethereum && window._awaitProvider) {
+        await window._awaitProvider();
+    }
     if (!window.ethereum) {
-        showToast('MetaMask not detected. Please install MetaMask.', 'error');
+        showToast('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.', 'error');
         return;
     }
     try {
@@ -1356,13 +1360,16 @@ async function init() {
     var accordionToggle = document.getElementById('learnAccordionToggle');
     if (accordionToggle) accordionToggle.addEventListener('click', toggleAccordion);
 
-    // Auto-connect if previously connected
-    if (window.ethereum) {
+    // Auto-connect if previously connected (wait for late-loading wallets)
+    var autoProvider = window.ethereum;
+    if (!autoProvider && window._awaitProvider) autoProvider = await window._awaitProvider();
+    if (autoProvider) {
         try {
-            var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            var accounts = await autoProvider.request({ method: 'eth_accounts' });
             if (accounts.length > 0) {
                 state.wallet = accounts[0].toLowerCase();
-                state.provider = window.ethereum;
+                state.provider = autoProvider;
+                if (!window.ethereum) window.ethereum = autoProvider;
                 state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
                 updateUI();
                 loadClawsBalance();
