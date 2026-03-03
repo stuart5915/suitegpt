@@ -93,7 +93,10 @@ function renderProfileCard(profile) {
             ${handle ? `<div class="overview-profile-handle">${esc(handle)}</div>` : ''}
         </div>
         <div class="profile-credits-area">
-            <div class="profile-sub-badge" id="profileSubBadge">Free</div>
+            <div class="profile-sub-row">
+                <span class="profile-sub-badge" id="profileSubBadge">Free</span>
+                <a href="#" class="profile-sub-upgrade" id="profileSubUpgrade">Get a plan</a>
+            </div>
             <div class="profile-credits-row">
                 <span class="profile-credits-count" id="profileCredits">--</span>
                 <span class="profile-credits-label">credits</span>
@@ -107,7 +110,12 @@ function renderProfileCard(profile) {
     `;
 
     document.getElementById('profileBuyBtn')?.addEventListener('click', () => {
-        document.getElementById('overviewCredits')?.scrollIntoView({ behavior: 'smooth' });
+        openBuyModal('credits');
+    });
+
+    document.getElementById('profileSubUpgrade')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openBuyModal('subscribe');
     });
 
     document.getElementById('dashDisconnect')?.addEventListener('click', () => {
@@ -922,7 +930,30 @@ const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 const BASE_CHAIN_ID = '0x2105';
 const buyState = { clawsPerCredit: 0, selectedAmount: 250, clawsPrice: 0 };
 
+function openBuyModal(tab) {
+    const modal = document.getElementById('buyCreditsModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    // Switch to requested tab
+    if (tab) {
+        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.getElementById('dashBuyCredits').classList.toggle('active', tab === 'credits');
+        document.getElementById('dashBuySubscribe').classList.toggle('active', tab === 'subscribe');
+    }
+}
+
+function closeBuyModal() {
+    const modal = document.getElementById('buyCreditsModal');
+    if (modal) modal.classList.add('hidden');
+}
+
 function initBuyCredits() {
+    // Modal close handlers
+    document.getElementById('buyModalClose')?.addEventListener('click', closeBuyModal);
+    document.querySelector('.buy-modal-backdrop')?.addEventListener('click', closeBuyModal);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeBuyModal();
+    });
     // Tab switching
     document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1230,6 +1261,8 @@ async function loadSubscriptionStatus() {
                 profileBadge.textContent = t.label;
                 profileBadge.classList.add('active');
             }
+            const upgradeLink = document.getElementById('profileSubUpgrade');
+            if (upgradeLink) upgradeLink.textContent = 'Manage';
 
             document.getElementById('subTierName').textContent = t.label + ' Plan';
             const badge = document.getElementById('subStatusBadge');
@@ -1463,6 +1496,7 @@ function init() {
     // Handle Stripe payment return
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
+        openBuyModal('credits');
         const cr = params.get('credits');
         const resultEl = document.getElementById('dashBuyResult');
         if (resultEl) {
@@ -1471,6 +1505,7 @@ function init() {
         }
         window.history.replaceState({}, '', '/dashboard');
     } else if (params.get('payment') === 'cancelled') {
+        openBuyModal('credits');
         const resultEl = document.getElementById('dashBuyResult');
         if (resultEl) {
             resultEl.textContent = 'Payment cancelled.';
@@ -1478,10 +1513,7 @@ function init() {
         }
         window.history.replaceState({}, '', '/dashboard');
     } else if (params.get('subscription') === 'success') {
-        // Switch to Subscribe tab and show success message
-        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'subscribe'));
-        document.getElementById('dashBuyCredits').classList.remove('active');
-        document.getElementById('dashBuySubscribe').classList.add('active');
+        openBuyModal('subscribe');
         const resultEl = document.getElementById('subResult');
         if (resultEl) {
             resultEl.textContent = 'Subscribed! Your credits have been added.';
@@ -1489,9 +1521,7 @@ function init() {
         }
         window.history.replaceState({}, '', '/dashboard');
     } else if (params.get('subscription') === 'cancelled') {
-        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'subscribe'));
-        document.getElementById('dashBuyCredits').classList.remove('active');
-        document.getElementById('dashBuySubscribe').classList.add('active');
+        openBuyModal('subscribe');
         window.history.replaceState({}, '', '/dashboard');
     }
 

@@ -123,6 +123,18 @@
         .sub-result { margin-top:12px; font-size:0.84rem; text-align:center; }
         .sub-result.success { color:var(--seafoam-300); }
         .sub-result.error { color:#ef4444; }
+        /* Buy Credits Modal Overlay */
+        .buy-modal-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; }
+        .buy-modal-overlay.hidden { display:none; }
+        .buy-modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); }
+        .buy-modal-dialog { position:relative; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; margin:var(--space-lg); border-radius:var(--radius-2xl); background:linear-gradient(165deg, #13131e 0%, #0e0e18 50%, #12101c 100%); border:1px solid hsla(240, 8%, 24%, 0.6); }
+        .buy-modal-header { display:flex; align-items:center; justify-content:space-between; padding:var(--space-lg) var(--space-xl) 0; }
+        .buy-modal-header h3 { font-size:1.1rem; font-weight:800; color:var(--text-primary); margin:0; }
+        .buy-modal-close { background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer; padding:0 4px; line-height:1; transition:color 0.15s; }
+        .buy-modal-close:hover { color:var(--text-primary); }
+        .buy-modal-dialog .dash-buy-panel { border:none; border-radius:0 0 var(--radius-2xl) var(--radius-2xl); }
+        .buy-modal-dialog::-webkit-scrollbar { width:6px; }
+        .buy-modal-dialog::-webkit-scrollbar-thumb { background:var(--border-subtle); border-radius:3px; }
     </style>
 </head>
 <body>
@@ -228,132 +240,137 @@
                     <div class="overview-empty"><p>Loading...</p></div>
                 </div>
             </div>
-            <div class="overview-section" id="overviewCredits">
-                <div class="overview-section-header">
-                    <h3>Get Credits</h3>
-                </div>
-                <div class="dash-buy-panel">
-                    <div class="buy-tab-bar">
-                        <button class="buy-tab-btn active" data-tab="credits">Buy Credits</button>
-                        <button class="buy-tab-btn" data-tab="subscribe">Subscribe</button>
-                    </div>
-
-                    <!-- Credits Tab -->
-                    <div id="dashBuyCredits" class="buy-tab-content active">
-                        <p class="buy-modal-subtitle">Credits are used per message — cost varies by model</p>
-                        <div class="buy-info-row">
-                            <span class="label">Your balance</span>
-                            <span class="value" id="dashBuyBalance">--</span>
-                        </div>
-                        <div class="buy-info-row" style="border-bottom:none;">
-                            <span class="label">Rate</span>
-                            <span class="value" id="dashBuyRate">Loading...</span>
-                        </div>
-                        <label class="buy-amount-label">How many credits?</label>
-                        <div class="buy-amount-presets">
-                            <button class="buy-preset" data-amount="50">50</button>
-                            <button class="buy-preset active" data-amount="250">250</button>
-                            <button class="buy-preset" data-amount="1000">1,000</button>
-                            <button class="buy-preset" data-amount="5000">5,000</button>
-                        </div>
-                        <div class="buy-custom-row">
-                            <input id="dashBuyCustom" class="buy-custom-input" type="number" min="1" max="100000" placeholder="Or type a custom amount...">
-                        </div>
-                        <div class="buy-cost-display">
-                            <span class="buy-cost-label">Total cost</span>
-                            <span class="buy-cost-value" id="dashBuyCost">--</span>
-                        </div>
-                        <div class="buy-breakdown">
-                            <div class="buy-breakdown-title">Messages you'll get</div>
-                            <div class="buy-breakdown-rows">
-                                <div class="buy-breakdown-row"><span class="buy-breakdown-model">Haiku</span><span class="buy-breakdown-cost">5 cr/msg</span><span class="buy-breakdown-count" id="dashBrkHaiku">--</span></div>
-                                <div class="buy-breakdown-row"><span class="buy-breakdown-model">Sonnet</span><span class="buy-breakdown-cost">15 cr/msg</span><span class="buy-breakdown-count" id="dashBrkSonnet">--</span></div>
-                                <div class="buy-breakdown-row"><span class="buy-breakdown-model">Opus</span><span class="buy-breakdown-cost">60 cr/msg</span><span class="buy-breakdown-count" id="dashBrkOpus">--</span></div>
-                            </div>
-                        </div>
-                        <button id="dashBuyCardBtn" class="buy-pay-btn" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Pay with Card</button>
-                        <div class="buy-divider"><span>or pay with crypto</span></div>
-                        <button id="dashBuySendBtn" class="buy-send-btn" disabled>Pay with CLAWS</button>
-                        <div id="dashBuyResult" class="buy-result"></div>
-                        <div class="buy-footer">
-                            <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Don't have CLAWS? Buy on Uniswap &rarr;</a>
-                        </div>
-                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
-                            <a href="#" id="scanDepositsLink" style="color:var(--text-dim);font-size:0.75rem;text-decoration:none;" onclick="dashScanDeposits();return false;">Already sent CLAWS? Check for uncredited deposits &rarr;</a>
-                        </div>
-                    </div>
-
-                    <!-- Subscribe Tab -->
-                    <div id="dashBuySubscribe" class="buy-tab-content">
-                        <!-- Active subscription view (shown when subscribed) -->
-                        <div id="subActiveView" style="display:none;">
-                            <div class="sub-status-card">
-                                <div class="sub-status-header">
-                                    <span class="sub-status-tier" id="subTierName">--</span>
-                                    <span class="sub-status-badge" id="subStatusBadge">--</span>
-                                </div>
-                                <div class="sub-detail-row">
-                                    <span class="sub-detail-label">Credits / month</span>
-                                    <span class="sub-detail-value" id="subCreditsMonth">--</span>
-                                </div>
-                                <div class="sub-detail-row">
-                                    <span class="sub-detail-label">Monthly cost</span>
-                                    <span class="sub-detail-value" id="subMonthlyCost">--</span>
-                                </div>
-                                <div class="sub-detail-row">
-                                    <span class="sub-detail-label">Next renewal</span>
-                                    <span class="sub-detail-value" id="subRenewalDate">--</span>
-                                </div>
-                                <div class="sub-actions" id="subActions">
-                                    <button class="sub-change-btn" id="subChangeBtn">Change Plan</button>
-                                    <button class="sub-cancel-btn" id="subCancelBtn">Cancel</button>
-                                </div>
-                                <div id="subResult" class="sub-result"></div>
-                            </div>
-                            <!-- Tier picker for changing plans (hidden until Change Plan clicked) -->
-                            <div id="subChangeTiers" class="sub-change-tiers" style="display:none;">
-                                <p class="buy-modal-subtitle" style="margin-top:12px;">Switch to a different plan</p>
-                                <div class="sub-tiers" id="subChangeTierCards"></div>
-                            </div>
-                        </div>
-
-                        <!-- Tier picker view (shown when no subscription) -->
-                        <div id="subPickerView">
-                            <p class="buy-modal-subtitle">Monthly plans — credits reload every month</p>
-                            <div class="sub-tiers">
-                                <div class="sub-tier-card" data-tier="spark" data-credits="1500" data-price="600">
-                                    <div class="sub-tier-name">Spark</div>
-                                    <div class="sub-tier-price">$6<span>/mo</span></div>
-                                    <div class="sub-tier-credits">1,500 cr/mo</div>
-                                    <div class="sub-tier-save">Save 20%</div>
-                                    <ul class="sub-tier-breakdown"><li>300 Haiku msgs</li><li>100 Sonnet msgs</li><li>25 Opus msgs</li></ul>
-                                    <button class="sub-tier-btn">Subscribe to Spark</button>
-                                </div>
-                                <div class="sub-tier-card" data-tier="builder" data-credits="5000" data-price="1900">
-                                    <div class="sub-tier-name">Builder</div>
-                                    <div class="sub-tier-price">$19<span>/mo</span></div>
-                                    <div class="sub-tier-credits">5,000 cr/mo</div>
-                                    <div class="sub-tier-save">Save 24%</div>
-                                    <ul class="sub-tier-breakdown"><li>1,000 Haiku msgs</li><li>333 Sonnet msgs</li><li>83 Opus msgs</li></ul>
-                                    <button class="sub-tier-btn">Subscribe to Builder</button>
-                                </div>
-                                <div class="sub-tier-card" data-tier="studio" data-credits="15000" data-price="5500">
-                                    <div class="sub-tier-name">Studio</div>
-                                    <div class="sub-tier-price">$55<span>/mo</span></div>
-                                    <div class="sub-tier-credits">15,000 cr/mo</div>
-                                    <div class="sub-tier-save">Save 27%</div>
-                                    <ul class="sub-tier-breakdown"><li>3,000 Haiku msgs</li><li>1,000 Sonnet msgs</li><li>250 Opus msgs</li></ul>
-                                    <button class="sub-tier-btn">Subscribe to Studio</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
         </div>
     </div>
 
+</div>
+
+<!-- Buy Credits Modal -->
+<div id="buyCreditsModal" class="buy-modal-overlay hidden">
+    <div class="buy-modal-backdrop"></div>
+    <div class="buy-modal-dialog">
+        <div class="buy-modal-header">
+            <h3>Get Credits</h3>
+            <button type="button" class="buy-modal-close" id="buyModalClose">&times;</button>
+        </div>
+        <div class="dash-buy-panel">
+            <div class="buy-tab-bar">
+                <button class="buy-tab-btn active" data-tab="credits">Buy Credits</button>
+                <button class="buy-tab-btn" data-tab="subscribe">Subscribe</button>
+            </div>
+
+            <!-- Credits Tab -->
+            <div id="dashBuyCredits" class="buy-tab-content active">
+                <p class="buy-modal-subtitle">Credits are used per message — cost varies by model</p>
+                <div class="buy-info-row">
+                    <span class="label">Your balance</span>
+                    <span class="value" id="dashBuyBalance">--</span>
+                </div>
+                <div class="buy-info-row" style="border-bottom:none;">
+                    <span class="label">Rate</span>
+                    <span class="value" id="dashBuyRate">Loading...</span>
+                </div>
+                <label class="buy-amount-label">How many credits?</label>
+                <div class="buy-amount-presets">
+                    <button class="buy-preset" data-amount="50">50</button>
+                    <button class="buy-preset active" data-amount="250">250</button>
+                    <button class="buy-preset" data-amount="1000">1,000</button>
+                    <button class="buy-preset" data-amount="5000">5,000</button>
+                </div>
+                <div class="buy-custom-row">
+                    <input id="dashBuyCustom" class="buy-custom-input" type="number" min="1" max="100000" placeholder="Or type a custom amount...">
+                </div>
+                <div class="buy-cost-display">
+                    <span class="buy-cost-label">Total cost</span>
+                    <span class="buy-cost-value" id="dashBuyCost">--</span>
+                </div>
+                <div class="buy-breakdown">
+                    <div class="buy-breakdown-title">Messages you'll get</div>
+                    <div class="buy-breakdown-rows">
+                        <div class="buy-breakdown-row"><span class="buy-breakdown-model">Haiku</span><span class="buy-breakdown-cost">5 cr/msg</span><span class="buy-breakdown-count" id="dashBrkHaiku">--</span></div>
+                        <div class="buy-breakdown-row"><span class="buy-breakdown-model">Sonnet</span><span class="buy-breakdown-cost">15 cr/msg</span><span class="buy-breakdown-count" id="dashBrkSonnet">--</span></div>
+                        <div class="buy-breakdown-row"><span class="buy-breakdown-model">Opus</span><span class="buy-breakdown-cost">60 cr/msg</span><span class="buy-breakdown-count" id="dashBrkOpus">--</span></div>
+                    </div>
+                </div>
+                <button id="dashBuyCardBtn" class="buy-pay-btn" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Pay with Card</button>
+                <div class="buy-divider"><span>or pay with crypto</span></div>
+                <button id="dashBuySendBtn" class="buy-send-btn" disabled>Pay with CLAWS</button>
+                <div id="dashBuyResult" class="buy-result"></div>
+                <div class="buy-footer">
+                    <a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379&chain=base" target="_blank">Don't have CLAWS? Buy on Uniswap &rarr;</a>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+                    <a href="#" id="scanDepositsLink" style="color:var(--text-dim);font-size:0.75rem;text-decoration:none;" onclick="dashScanDeposits();return false;">Already sent CLAWS? Check for uncredited deposits &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Subscribe Tab -->
+            <div id="dashBuySubscribe" class="buy-tab-content">
+                <!-- Active subscription view (shown when subscribed) -->
+                <div id="subActiveView" style="display:none;">
+                    <div class="sub-status-card">
+                        <div class="sub-status-header">
+                            <span class="sub-status-tier" id="subTierName">--</span>
+                            <span class="sub-status-badge" id="subStatusBadge">--</span>
+                        </div>
+                        <div class="sub-detail-row">
+                            <span class="sub-detail-label">Credits / month</span>
+                            <span class="sub-detail-value" id="subCreditsMonth">--</span>
+                        </div>
+                        <div class="sub-detail-row">
+                            <span class="sub-detail-label">Monthly cost</span>
+                            <span class="sub-detail-value" id="subMonthlyCost">--</span>
+                        </div>
+                        <div class="sub-detail-row">
+                            <span class="sub-detail-label">Next renewal</span>
+                            <span class="sub-detail-value" id="subRenewalDate">--</span>
+                        </div>
+                        <div class="sub-actions" id="subActions">
+                            <button class="sub-change-btn" id="subChangeBtn">Change Plan</button>
+                            <button class="sub-cancel-btn" id="subCancelBtn">Cancel</button>
+                        </div>
+                        <div id="subResult" class="sub-result"></div>
+                    </div>
+                    <!-- Tier picker for changing plans (hidden until Change Plan clicked) -->
+                    <div id="subChangeTiers" class="sub-change-tiers" style="display:none;">
+                        <p class="buy-modal-subtitle" style="margin-top:12px;">Switch to a different plan</p>
+                        <div class="sub-tiers" id="subChangeTierCards"></div>
+                    </div>
+                </div>
+
+                <!-- Tier picker view (shown when no subscription) -->
+                <div id="subPickerView">
+                    <p class="buy-modal-subtitle">Monthly plans — credits reload every month</p>
+                    <div class="sub-tiers">
+                        <div class="sub-tier-card" data-tier="spark" data-credits="1500" data-price="600">
+                            <div class="sub-tier-name">Spark</div>
+                            <div class="sub-tier-price">$6<span>/mo</span></div>
+                            <div class="sub-tier-credits">1,500 cr/mo</div>
+                            <div class="sub-tier-save">Save 20%</div>
+                            <ul class="sub-tier-breakdown"><li>300 Haiku msgs</li><li>100 Sonnet msgs</li><li>25 Opus msgs</li></ul>
+                            <button class="sub-tier-btn">Subscribe to Spark</button>
+                        </div>
+                        <div class="sub-tier-card" data-tier="builder" data-credits="5000" data-price="1900">
+                            <div class="sub-tier-name">Builder</div>
+                            <div class="sub-tier-price">$19<span>/mo</span></div>
+                            <div class="sub-tier-credits">5,000 cr/mo</div>
+                            <div class="sub-tier-save">Save 24%</div>
+                            <ul class="sub-tier-breakdown"><li>1,000 Haiku msgs</li><li>333 Sonnet msgs</li><li>83 Opus msgs</li></ul>
+                            <button class="sub-tier-btn">Subscribe to Builder</button>
+                        </div>
+                        <div class="sub-tier-card" data-tier="studio" data-credits="15000" data-price="5500">
+                            <div class="sub-tier-name">Studio</div>
+                            <div class="sub-tier-price">$55<span>/mo</span></div>
+                            <div class="sub-tier-credits">15,000 cr/mo</div>
+                            <div class="sub-tier-save">Save 27%</div>
+                            <ul class="sub-tier-breakdown"><li>3,000 Haiku msgs</li><li>1,000 Sonnet msgs</li><li>250 Opus msgs</li></ul>
+                            <button class="sub-tier-btn">Subscribe to Studio</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="/js/nav-auth.js"></script>
