@@ -86,7 +86,6 @@ function renderProfileCard(profile) {
             <div class="overview-profile-name">${esc(name)}</div>
             ${handle ? `<div class="overview-profile-handle">${esc(handle)}</div>` : ''}
         </div>
-        <a href="${profileHref}" class="overview-profile-link">View Profile</a>
         <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
     `;
 
