@@ -102,7 +102,7 @@ async function verifyDepositTx(txHash) {
     return { valid: true, amount };
 }
 
-async function scanRecentDeposits(walletAddress, profileId, xHandle) {
+async function scanRecentDeposits(walletAddress, profileId) {
     // Get current block number
     const latestBlock = await rpcCall('eth_blockNumber', []);
     if (!latestBlock) return { error: 'Unable to reach Base RPC' };
@@ -167,8 +167,8 @@ async function scanRecentDeposits(walletAddress, profileId, xHandle) {
 
         // Add credits
         const { error: creditErr } = await supabase
-            .rpc('add_inclawbate_credits', {
-                target_handle: xHandle.toLowerCase(),
+            .rpc('add_credits_by_id', {
+                target_id: profileId,
                 credit_amount: credits
             });
 
@@ -196,7 +196,7 @@ export default async function handler(req, res) {
             // Extension flow: lookup by API key
             const { data, error } = await supabase
                 .from('human_profiles')
-                .select('id, x_handle, credits')
+                .select('id, credits')
                 .eq('api_key', apiKey)
                 .single();
 
@@ -225,9 +225,9 @@ export default async function handler(req, res) {
                 }
             } catch (e) { /* non-critical */ }
 
-            const FREE_HANDLES = ['artstu'];
-            const isFree = FREE_HANDLES.includes(data.x_handle?.toLowerCase());
-            return res.status(200).json({ credits: isFree ? 999999 : data.credits, handle: data.x_handle, unread });
+            const FREE_IDS = []; // Add profile UUIDs here if needed
+            const isFree = FREE_IDS.includes(data.id);
+            return res.status(200).json({ credits: isFree ? 999999 : data.credits, unread });
         }
 
         // Dashboard flow: JWT auth
@@ -276,20 +276,35 @@ export default async function handler(req, res) {
         }
 
         if (action === 'add-credits') {
-            const { handle, amount, admin_secret } = req.body;
+            const { handle, profile_id, amount, admin_secret } = req.body;
             const expectedSecret = process.env.INCLAWBATE_ADMIN_SECRET;
 
             if (!expectedSecret || admin_secret !== expectedSecret) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
-            if (!handle || !amount || typeof amount !== 'number' || amount <= 0) {
-                return res.status(400).json({ error: 'handle and positive amount required' });
+            if (!amount || typeof amount !== 'number' || amount <= 0) {
+                return res.status(400).json({ error: 'positive amount required' });
+            }
+
+            // Support lookup by profile_id or handle (backwards compat)
+            let targetId = profile_id;
+            if (!targetId && handle) {
+                const { data: p } = await supabase
+                    .from('human_profiles')
+                    .select('id')
+                    .ilike('x_handle', handle)
+                    .single();
+                targetId = p?.id;
+            }
+
+            if (!targetId) {
+                return res.status(400).json({ error: 'profile_id or handle required' });
             }
 
             const { data: newBalance, error } = await supabase
-                .rpc('add_inclawbate_credits', {
-                    target_handle: handle.toLowerCase(),
+                .rpc('add_credits_by_id', {
+                    target_id: targetId,
                     credit_amount: Math.floor(amount)
                 });
 
@@ -297,7 +312,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: error.message || 'Failed to add credits' });
             }
 
-            return res.status(200).json({ credits: newBalance, handle: handle.toLowerCase() });
+            return res.status(200).json({ credits: newBalance, profile_id: targetId });
         }
 
         if (action === 'scan-deposits') {
@@ -313,7 +328,7 @@ export default async function handler(req, res) {
 
             const { data: profile, error: profileErr } = await supabase
                 .from('human_profiles')
-                .select('id, x_handle, credits')
+                .select('id, credits')
                 .eq('id', user.sub)
                 .single();
 
@@ -321,7 +336,7 @@ export default async function handler(req, res) {
                 return res.status(404).json({ error: 'Profile not found' });
             }
 
-            const result = await scanRecentDeposits(wallet, profile.id, profile.x_handle);
+            const result = await scanRecentDeposits(wallet, profile.id);
 
             if (result.error) {
                 return res.status(503).json({ error: result.error });
@@ -382,10 +397,10 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: `Deposit too small. At current price, minimum ~${Math.ceil(tokensPerCredit)} CLAWS for 1 credit.` });
             }
 
-            // Get user's handle for add_inclawbate_credits RPC
+            // Get user's profile for add_credits_by_id RPC
             const { data: profile, error: profileErr } = await supabase
                 .from('human_profiles')
-                .select('id, x_handle')
+                .select('id')
                 .eq('id', user.sub)
                 .single();
 
@@ -412,8 +427,8 @@ export default async function handler(req, res) {
 
             // Add credits
             const { data: newBalance, error: creditErr } = await supabase
-                .rpc('add_inclawbate_credits', {
-                    target_handle: profile.x_handle.toLowerCase(),
+                .rpc('add_credits_by_id', {
+                    target_id: profile.id,
                     credit_amount: credits
                 });
 

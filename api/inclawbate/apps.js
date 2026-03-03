@@ -130,11 +130,14 @@ export default async function handler(req, res) {
             const offset = (pageNum - 1) * limitNum;
 
             const creator = req.query.creator;
+            const creatorId = req.query.creator_id;
             let query = supabase
                 .from('user_apps')
                 .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' });
 
-            if (creator) {
+            if (creatorId) {
+                query = query.eq('user_id', creatorId);
+            } else if (creator) {
                 query = query.ilike('creator_x_handle', creator);
             } else {
                 query = query.eq('is_public', true);
@@ -237,7 +240,7 @@ export default async function handler(req, res) {
                     staking_address: proj ? proj.staking_address : null
                 };
                 // Include code when creator is fetching their own apps (for edit)
-                if (creator && code) entry.code = code;
+                if ((creator || creatorId) && code) entry.code = code;
                 return entry;
             });
 

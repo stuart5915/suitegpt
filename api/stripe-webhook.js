@@ -60,7 +60,7 @@ export default async function handler(req, res) {
                 const { tier, credits, profileId, handle } = session.metadata;
                 const creditCount = parseInt(credits);
 
-                console.log(`Inclawbate subscription started! Handle: ${handle}, Tier: ${tier}, Credits: ${creditCount}`);
+                console.log(`Inclawbate subscription started! Profile: ${profileId}, Tier: ${tier}, Credits: ${creditCount}`);
 
                 // Save subscription info to profile
                 const subscriptionId = session.subscription;
@@ -86,15 +86,15 @@ export default async function handler(req, res) {
 
                 // Add initial credits
                 const { data: newBalance, error: rpcErr } = await supabase
-                    .rpc('add_inclawbate_credits', {
-                        target_handle: handle.toLowerCase(),
+                    .rpc('add_credits_by_id', {
+                        target_id: profileId,
                         credit_amount: creditCount
                     });
 
                 if (rpcErr) {
                     console.error('Failed to add subscription credits:', rpcErr);
                 } else {
-                    console.log(`Subscription: added ${creditCount} credits to @${handle} (balance: ${newBalance})`);
+                    console.log(`Subscription: added ${creditCount} credits to profile ${profileId} (balance: ${newBalance})`);
                 }
 
                 // Log deposit
@@ -107,16 +107,15 @@ export default async function handler(req, res) {
 
             } else if (session.metadata.product === 'inclawbate') {
                 // ── Inclawbate one-time credit purchase ──
-                const handle = session.metadata.handle;
                 const profileId = session.metadata.profileId;
                 const credits = parseInt(session.metadata.credits);
                 const amount = parseFloat(session.metadata.amount);
 
-                console.log(`Inclawbate payment! Handle: ${handle}, Credits: ${credits}, Amount: $${amount}`);
+                console.log(`Inclawbate payment! Profile: ${profileId}, Credits: ${credits}, Amount: $${amount}`);
 
                 const { data: newBalance, error: rpcErr } = await supabase
-                    .rpc('add_inclawbate_credits', {
-                        target_handle: handle.toLowerCase(),
+                    .rpc('add_credits_by_id', {
+                        target_id: profileId,
                         credit_amount: credits
                     });
 
@@ -132,7 +131,7 @@ export default async function handler(req, res) {
                     credits_granted: credits
                 });
 
-                console.log(`Inclawbate: added ${credits} credits to @${handle} (balance: ${newBalance})`);
+                console.log(`Inclawbate: added ${credits} credits to profile ${profileId} (balance: ${newBalance})`);
 
             } else {
                 // ── Existing SUITE credit purchase ──
@@ -202,22 +201,22 @@ export default async function handler(req, res) {
                 return res.status(200).json({ received: true });
             }
 
-            const { tier, credits, profileId, handle } = meta;
+            const { tier, credits, profileId } = meta;
             const creditCount = parseInt(credits);
 
-            console.log(`Subscription renewal! Handle: ${handle}, Tier: ${tier}, Credits: ${creditCount}`);
+            console.log(`Subscription renewal! Profile: ${profileId}, Tier: ${tier}, Credits: ${creditCount}`);
 
             // Add monthly credits
             const { data: newBalance, error: rpcErr } = await supabase
-                .rpc('add_inclawbate_credits', {
-                    target_handle: handle.toLowerCase(),
+                .rpc('add_credits_by_id', {
+                    target_id: profileId,
                     credit_amount: creditCount
                 });
 
             if (rpcErr) {
                 console.error('Failed to add renewal credits:', rpcErr);
             } else {
-                console.log(`Renewal: added ${creditCount} credits to @${handle} (balance: ${newBalance})`);
+                console.log(`Renewal: added ${creditCount} credits to profile ${profileId} (balance: ${newBalance})`);
             }
 
             // Update period end

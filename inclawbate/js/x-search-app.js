@@ -1,7 +1,7 @@
 // X Search — Frontend Logic
 // Search tweets, engage (like/retweet/reply), AI-generated replies
 
-import { isLoggedIn } from '/js/x-auth-client.js';
+function isLoggedIn() { return !!localStorage.getItem('inclawbate_token'); }
 
 const API = '/api/inclawbate/x-search';
 
