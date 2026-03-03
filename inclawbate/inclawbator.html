@@ -134,148 +134,181 @@
         }
 
         /* ── Flywheel ── */
+        @property --fw-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
         .flywheel {
             text-align: center;
             margin-bottom: var(--space-3xl);
+            position: relative;
+            overflow: visible;
         }
+        .flywheel-bg-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 620px;
+            height: 620px;
+            transform: translate(-50%, -40%);
+            background: radial-gradient(circle, hsla(9, 52%, 56%, 0.05) 0%, hsla(172, 30%, 56%, 0.025) 40%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(60px);
+        }
+
         .flywheel-ring {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-xl);
-            max-width: 680px;
+            grid-template-columns: 1fr 52px 1fr;
+            grid-template-rows: auto 52px auto;
+            max-width: 720px;
             margin: 0 auto;
             position: relative;
+            z-index: 1;
         }
+
+        /* ── Nodes ── */
         .flywheel-node {
             position: relative;
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
-            padding: var(--space-lg) var(--space-md);
+            padding: 28px 20px;
             text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+        /* Rotating border glow */
+        .flywheel-node::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: var(--radius-xl);
+            padding: 1px;
+            background: conic-gradient(from var(--fw-angle), transparent 25%, var(--node-color) 50%, transparent 75%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: fw-spin 4s linear infinite;
+            opacity: 0.35;
+            transition: opacity 0.3s;
+        }
+        /* Inner ambient glow */
+        .flywheel-node::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 15%;
+            right: 15%;
+            height: 50%;
+            background: radial-gradient(ellipse, var(--node-glow) 0%, transparent 70%);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .flywheel-node:hover { transform: translateY(-3px); box-shadow: 0 8px 36px -8px var(--node-glow); }
+        .flywheel-node:hover::before { opacity: 0.85; }
+
+        @keyframes fw-spin { to { --fw-angle: 360deg; } }
+
+        /* Node colors & grid placement */
+        .flywheel-node-1 { --node-color: var(--lobster-400); --node-glow: hsla(9, 52%, 56%, 0.25); grid-column: 1; grid-row: 1; }
+        .flywheel-node-2 { --node-color: hsl(38, 65%, 55%); --node-glow: hsla(38, 65%, 55%, 0.25); grid-column: 3; grid-row: 1; }
+        .flywheel-node-3 { --node-color: var(--seafoam-400); --node-glow: hsla(172, 32%, 48%, 0.25); grid-column: 3; grid-row: 3; }
+        .flywheel-node-4 { --node-color: hsl(265, 45%, 62%); --node-glow: hsla(265, 45%, 62%, 0.25); grid-column: 1; grid-row: 3; }
+
         .flywheel-node-num {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             font-family: var(--font-display);
             font-weight: 800;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: #fff;
-            background: var(--lobster-400);
+            background: var(--node-color);
             margin-bottom: var(--space-sm);
+            position: relative;
+            z-index: 1;
         }
-        .flywheel-node-icon {
-            font-size: 1.8rem;
-            line-height: 1;
-            margin-bottom: var(--space-xs, 6px);
-        }
-        .flywheel-node-title {
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 1rem;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .flywheel-node-desc {
-            font-family: var(--font-body);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            line-height: 1.55;
-        }
-        /* Node 3 and 4 swap order so layout reads clockwise */
-        .flywheel-node-3 { order: 2; }
-        .flywheel-node-4 { order: 1; }
+        .flywheel-node-icon { font-size: 1.6rem; line-height: 1; margin-bottom: 6px; position: relative; z-index: 1; }
+        .flywheel-node-title { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin-bottom: 4px; position: relative; z-index: 1; }
+        .flywheel-node-desc { font-family: var(--font-body); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.55; position: relative; z-index: 1; }
 
-        /* Arrows between nodes */
-        .flywheel-node-1::after,
-        .flywheel-node-2::after,
-        .flywheel-node-3::after,
-        .flywheel-node-4::after {
-            position: absolute;
-            font-size: 1.4rem;
-            font-weight: 700;
-            line-height: 1;
-            z-index: 2;
+        /* ── Connection arrows ── */
+        .fw-conn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        /* 1 → 2  (right arrow, coral) */
-        .flywheel-node-1::after {
-            content: '→';
-            color: var(--lobster-300);
-            right: calc(-1 * var(--space-xl) / 2 - 8px);
-            top: 50%;
-            transform: translateY(-50%);
+        .fw-conn svg { overflow: visible; }
+        .fw-flow-line {
+            stroke-dasharray: 6 8;
+            animation: fw-dash 1.2s linear infinite;
         }
-        /* 2 → 3  (down arrow, coral) */
-        .flywheel-node-2::after {
-            content: '↓';
-            color: var(--lobster-300);
-            bottom: calc(-1 * var(--space-xl) / 2 - 10px);
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        /* 3 → 4  (left arrow, teal) */
-        .flywheel-node-3::after {
-            content: '←';
-            color: var(--seafoam-300);
-            left: calc(-1 * var(--space-xl) / 2 - 8px);
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        /* 4 → 1  (up arrow, teal) */
-        .flywheel-node-4::after {
-            content: '↑';
-            color: var(--seafoam-300);
-            top: calc(-1 * var(--space-xl) / 2 - 10px);
-            left: 50%;
-            transform: translateX(-50%);
-        }
+        @keyframes fw-dash { to { stroke-dashoffset: -28; } }
+        .fw-conn polygon { animation: fw-arrow-pulse 2.5s ease-in-out infinite; }
+        @keyframes fw-arrow-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 
-        /* Center label */
+        /* ── Center hub ── */
         .flywheel-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 96px;
-            height: 96px;
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+        }
+        .flywheel-center-hub {
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: var(--font-display);
-            font-weight: 800;
-            font-size: 0.68rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            line-height: 1.3;
-            text-align: center;
-            z-index: 3;
+            position: relative;
+            box-shadow: 0 0 24px hsla(9, 52%, 56%, 0.1), 0 0 48px hsla(172, 32%, 48%, 0.06);
         }
+        .flywheel-center-hub::before {
+            content: '';
+            position: absolute;
+            inset: -7px;
+            border-radius: 50%;
+            border: 1.5px dashed hsla(9, 52%, 56%, 0.25);
+            animation: fw-ring 14s linear infinite;
+        }
+        .flywheel-center-hub::after {
+            content: '';
+            position: absolute;
+            inset: -16px;
+            border-radius: 50%;
+            background: radial-gradient(circle, hsla(9, 52%, 56%, 0.08), transparent 70%);
+            animation: fw-pulse 3s ease-in-out infinite;
+        }
+        @keyframes fw-ring { to { transform: rotate(360deg); } }
+        @keyframes fw-pulse { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.35); opacity: 1; } }
+        .flywheel-center-icon { font-size: 1.15rem; position: relative; z-index: 1; }
 
-        /* Tagline */
+        /* ── Tagline ── */
         .flywheel-tagline {
             font-family: var(--font-mono);
             font-size: 0.78rem;
             color: var(--text-dim);
-            margin-top: var(--space-lg);
+            margin-top: var(--space-xl);
             letter-spacing: 0.02em;
         }
+        .flywheel-tagline span { color: var(--lobster-300); }
 
         @media (max-width: 700px) {
-            .flywheel-ring { gap: var(--space-md); }
-            .flywheel-node { padding: var(--space-md) var(--space-sm); }
-            .flywheel-center { width: 78px; height: 78px; font-size: 0.6rem; }
-            .flywheel-node-1::after { right: calc(-1 * var(--space-md) / 2 - 6px); }
-            .flywheel-node-2::after { bottom: calc(-1 * var(--space-md) / 2 - 8px); }
-            .flywheel-node-3::after { left: calc(-1 * var(--space-md) / 2 - 6px); }
-            .flywheel-node-4::after { top: calc(-1 * var(--space-md) / 2 - 8px); }
+            .flywheel-ring { grid-template-columns: 1fr 36px 1fr; grid-template-rows: auto 36px auto; }
+            .flywheel-node { padding: 20px 14px; }
+            .flywheel-center-hub { width: 36px; height: 36px; }
+            .flywheel-center-icon { font-size: 0.9rem; }
+            .flywheel-bg-glow { width: 360px; height: 360px; }
         }
 
         /* ── Section headings ── */
@@ -1207,39 +1240,78 @@
 
     <!-- ═══ Flywheel ═══ -->
     <section class="flywheel">
+        <div class="flywheel-bg-glow"></div>
         <p class="section-label">The Flywheel</p>
         <h2 class="section-title">Every piece feeds the next</h2>
 
         <div class="flywheel-ring">
+            <!-- Row 1 -->
             <div class="flywheel-node flywheel-node-1">
                 <div class="flywheel-node-num">1</div>
                 <div class="flywheel-node-icon">🚀</div>
                 <div class="flywheel-node-title">Launch Token</div>
-                <div class="flywheel-node-desc">Deploy on Base. Auto LP, 1% swap fee.</div>
+                <div class="flywheel-node-desc">Deploy on Base with auto-LP. Every swap generates fees for your community.</div>
             </div>
+
+            <div class="fw-conn">
+                <svg width="52" height="20" viewBox="0 0 52 20" fill="none">
+                    <line x1="4" y1="10" x2="36" y2="10" stroke="hsl(9,52%,56%)" stroke-width="2" stroke-linecap="round" class="fw-flow-line"/>
+                    <polygon points="36,4 48,10 36,16" fill="hsl(9,52%,56%)"/>
+                </svg>
+            </div>
+
             <div class="flywheel-node flywheel-node-2">
                 <div class="flywheel-node-num">2</div>
-                <div class="flywheel-node-icon">🥩</div>
-                <div class="flywheel-node-title">Stake Pool</div>
-                <div class="flywheel-node-desc">Holders stake, earn CLAWS from fees.</div>
+                <div class="flywheel-node-icon">💰</div>
+                <div class="flywheel-node-title">Stake &amp; Earn</div>
+                <div class="flywheel-node-desc">Holders stake tokens and earn CLAWS from every transaction. Passive income, on autopilot.</div>
             </div>
+
+            <!-- Row 2 -->
+            <div class="fw-conn">
+                <svg width="20" height="52" viewBox="0 0 20 52" fill="none">
+                    <line x1="10" y1="48" x2="10" y2="16" stroke="hsl(265,45%,62%)" stroke-width="2" stroke-linecap="round" class="fw-flow-line"/>
+                    <polygon points="4,16 10,4 16,16" fill="hsl(265,45%,62%)"/>
+                </svg>
+            </div>
+
+            <div class="flywheel-center">
+                <div class="flywheel-center-hub">
+                    <span class="flywheel-center-icon">🦞</span>
+                </div>
+            </div>
+
+            <div class="fw-conn">
+                <svg width="20" height="52" viewBox="0 0 20 52" fill="none">
+                    <line x1="10" y1="4" x2="10" y2="36" stroke="hsl(38,65%,55%)" stroke-width="2" stroke-linecap="round" class="fw-flow-line"/>
+                    <polygon points="4,36 10,48 16,36" fill="hsl(38,65%,55%)"/>
+                </svg>
+            </div>
+
+            <!-- Row 3 -->
             <div class="flywheel-node flywheel-node-4">
                 <div class="flywheel-node-num">4</div>
                 <div class="flywheel-node-icon">📣</div>
                 <div class="flywheel-node-title">Promote</div>
-                <div class="flywheel-node-desc">AI agent + marketing drive awareness.</div>
+                <div class="flywheel-node-desc">AI agents and marketing amplify reach. More users means more swaps and fees.</div>
             </div>
+
+            <div class="fw-conn">
+                <svg width="52" height="20" viewBox="0 0 52 20" fill="none">
+                    <line x1="48" y1="10" x2="16" y2="10" stroke="hsl(172,32%,48%)" stroke-width="2" stroke-linecap="round" class="fw-flow-line"/>
+                    <polygon points="16,4 4,10 16,16" fill="hsl(172,32%,48%)"/>
+                </svg>
+            </div>
+
             <div class="flywheel-node flywheel-node-3">
                 <div class="flywheel-node-num">3</div>
                 <div class="flywheel-node-icon">🛠️</div>
                 <div class="flywheel-node-title">Build App</div>
-                <div class="flywheel-node-desc">Create with AI. Publish to your slug.</div>
+                <div class="flywheel-node-desc">Create with AI, publish to your slug. Charge users and agents &mdash; keep the revenue.</div>
             </div>
-
-            <div class="flywheel-center">Growth<br>Engine</div>
         </div>
 
-        <p class="flywheel-tagline">More swaps → more fees → more rewards → more holders → repeat</p>
+        <p class="flywheel-tagline">Swap fees <span>&rarr;</span> Staker rewards <span>&rarr;</span> App revenue <span>&rarr;</span> Community growth <span>&rarr;</span> &infin;</p>
     </section>
 
     <!-- ═══ Tool Grid ═══ -->
@@ -1323,25 +1395,34 @@
         <!-- ── Create Stake Pool ── -->
         <div id="drawerPool" class="drawer-content">
             <h3 class="drawer-title">&#129689; Create Stake Pool</h3>
-            <div class="form-group">
-                <label class="form-label" for="partnerTokenAddress">Token Contract Address</label>
-                <input id="partnerTokenAddress" class="form-input" type="text" placeholder="0x..." maxlength="42">
+            <div id="poolTokenLoading" class="drawer-info" style="text-align:center;color:var(--text-dim);">Loading your tokens...</div>
+            <div id="poolNoTokens" class="drawer-info hidden" style="text-align:center;">
+                <p style="margin-bottom:var(--space-md);color:var(--text-secondary);">You haven't launched a token yet.</p>
+                <button class="deploy-btn" style="width:auto;display:inline-flex;" onclick="openTool('launch')">Launch a Token First</button>
             </div>
-            <div id="partnerTokenPreview" class="partner-token-preview hidden">
-                <div class="token-icon" id="partnerTokenIcon">?</div>
-                <div class="token-info">
-                    <div class="token-name-display" id="partnerTokenName">--</div>
-                    <div class="token-symbol-display" id="partnerTokenSymbol">--</div>
+            <div id="poolTokenForm" class="hidden">
+                <div class="form-group">
+                    <label class="form-label" for="poolTokenSelect">Select Your Token</label>
+                    <select id="poolTokenSelect" class="form-input" style="cursor:pointer;">
+                        <option value="">Choose a token...</option>
+                    </select>
                 </div>
+                <div id="partnerTokenPreview" class="partner-token-preview hidden">
+                    <div class="token-icon" id="partnerTokenIcon">?</div>
+                    <div class="token-info">
+                        <div class="token-name-display" id="partnerTokenName">--</div>
+                        <div class="token-symbol-display" id="partnerTokenSymbol">--</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="poolDesc">Description (optional)</label>
+                    <textarea id="poolDesc" class="form-input" placeholder="About this staking pool..." maxlength="280"></textarea>
+                </div>
+                <div class="deploy-fee-badge">
+                    Cost: <strong id="partnerFeeDisplay">Loading...</strong> CLAWS
+                </div>
+                <button id="deployPoolBtn" class="deploy-btn">Deploy Pool</button>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="poolDesc">Description (optional)</label>
-                <textarea id="poolDesc" class="form-input" placeholder="About this staking pool..." maxlength="280"></textarea>
-            </div>
-            <div class="deploy-fee-badge">
-                Cost: <strong id="partnerFeeDisplay">Loading...</strong> CLAWS
-            </div>
-            <button id="deployPoolBtn" class="deploy-btn">Deploy Pool</button>
         </div>
 
         <!-- ── Request Incubation ── -->
@@ -1497,10 +1578,13 @@
         <button class="deploy-btn launch-another-btn" onclick="resetForm()">Launch Another</button>
     </div>
 
-    <!-- ═══ View Live Projects link ═══ -->
-    <div style="text-align:center;margin-bottom:var(--space-3xl)">
+    <!-- ═══ View Live Projects + Dashboard links ═══ -->
+    <div style="text-align:center;margin-bottom:var(--space-3xl);display:flex;gap:var(--space-md);justify-content:center;flex-wrap:wrap">
         <a href="/apps" class="hero-cta" style="display:inline-flex;font-size:0.88rem;padding:12px 28px;text-decoration:none">
             View Live Projects &#8594;
+        </a>
+        <a href="/dashboard" class="hero-cta" style="display:inline-flex;font-size:0.88rem;padding:12px 28px;text-decoration:none;background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-secondary)">
+            Go to Dashboard &#8594;
         </a>
     </div>
 
