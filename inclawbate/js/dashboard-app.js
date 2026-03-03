@@ -186,9 +186,9 @@ async function loadProjects() {
         const data = await res.json();
         const all = data.projects || [];
 
-        // Split: incubated apps vs launched tokens
-        const applications = all.filter(p => p.tier === 'incubated' && !p.token_address);
-        const tokens = all.filter(p => p.tier !== 'incubated' || p.token_address);
+        // Split: pending/rejected incubation applications vs active projects & tokens
+        const applications = all.filter(p => p.tier === 'incubated' && !p.token_address && p.status !== 'active');
+        const tokens = all.filter(p => p.tier !== 'incubated' || p.token_address || p.status === 'active');
 
         // Sort each: active first, then pending, then rejected; within group by date desc
         const statusOrder = { active: 0, pending: 1, rejected: 2 };
