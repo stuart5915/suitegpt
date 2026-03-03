@@ -165,16 +165,17 @@ export default async function handler(req, res) {
                 return res.status(500).json({ error: 'Query failed', detail: error.message, code: error.code });
             }
 
-            // Check upvotes for authenticated user
+            // Check upvotes and unlocks for authenticated user
             let upvotedSet = new Set();
+            let unlockedSet = new Set();
             if (user && apps.length > 0) {
                 const appIds = apps.map(a => a.id);
-                const { data: uvs } = await supabase
-                    .from('app_upvotes')
-                    .select('app_id')
-                    .eq('profile_id', user.sub)
-                    .in('app_id', appIds);
+                const [{ data: uvs }, { data: ulks }] = await Promise.all([
+                    supabase.from('app_upvotes').select('app_id').eq('profile_id', user.sub).in('app_id', appIds),
+                    supabase.from('app_unlocks').select('app_id').eq('profile_id', user.sub).in('app_id', appIds)
+                ]);
                 if (uvs) uvs.forEach(u => upvotedSet.add(u.app_id));
+                if (ulks) ulks.forEach(u => unlockedSet.add(u.app_id));
             }
 
             // Enrich with token/staking data from inclawbator_projects
@@ -211,6 +212,7 @@ export default async function handler(req, res) {
                     ...rest,
                     has_code: !!code,
                     has_upvoted: upvotedSet.has(a.id),
+                    has_unlocked: unlockedSet.has(a.id),
                     token_symbol: proj ? proj.token_symbol : null,
                     token_address: proj ? proj.token_address : null,
                     staking_address: proj ? proj.staking_address : null
