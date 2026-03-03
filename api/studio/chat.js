@@ -22,7 +22,7 @@ const FREE_HANDLES = ['artstu'];
 const MODEL_TIERS = {
     fast:     { model: 'claude-haiku-4-5-20251001',  credits: 5,  label: 'Fast' },
     standard: { model: 'claude-sonnet-4-5-20250929', credits: 15, label: 'Standard' },
-    pro:      { model: 'claude-opus-4-6-20250214',   credits: 40, label: 'Pro' }
+    pro:      { model: 'claude-opus-4-6-20250214',   credits: 60, label: 'Pro' }
 };
 
 const SYSTEM_PROMPT = `You are a expert web developer AI. The user will describe a website, app, or page they want built. You generate complete, self-contained HTML files.
@@ -39,8 +39,43 @@ Rules:
 - Use semantic HTML5 elements
 - Add smooth animations and transitions where appropriate
 - Ensure accessibility basics (alt tags, aria labels, contrast)
+- You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
 
-Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.`;
+Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
+
+## Available SDKs (auto-injected into every published app)
+
+### CLAWS SDK — window.CLAWS
+Handles crypto payments via CLAWS token on Base chain.
+- CLAWS.pay(amount, recipientAddress) → sends CLAWS tokens, returns tx hash
+- CLAWS.balance() → returns user's CLAWS balance (number)
+- CLAWS.tipCreator(amount?) → sends CLAWS to the app creator (default 10)
+- CLAWS.gate(amount, callback) → paywall: user pays, then callback(err, txHash)
+- CLAWS.creatorWallet → the app creator's wallet address
+- CLAWS.appId → the app's unique ID
+
+### AppDB SDK — window.AppDB
+Persistent key-value database for every app. Data survives page reloads and tab closes.
+Two scopes: user-scoped (private to each visitor) and global (shared across all visitors).
+
+User-scoped (private per visitor):
+- await AppDB.get(key) → returns stored value or null
+- await AppDB.set(key, value) → stores any JSON-serializable value
+- await AppDB.delete(key) → removes a key
+- await AppDB.list() → returns [{key, value}, ...] of all user keys
+
+Global (shared across all visitors of this app):
+- await AppDB.getGlobal(key) → returns globally stored value or null
+- await AppDB.setGlobal(key, value) → stores value visible to all users
+- await AppDB.deleteGlobal(key) → removes a global key
+- await AppDB.listGlobal() → returns [{key, value}, ...] of all global keys
+
+Usage guidelines:
+- Use global scope for leaderboards, polls, guestbooks, shared counters, public data
+- Use user scope for personal settings, saved progress, user profiles, private notes
+- Values can be any JSON type: strings, numbers, objects, arrays
+- Max 100KB per value, 1000 keys per scope
+- All methods are async — always use await`;
 
 function setCors(req, res) {
     const origin = req.headers.origin;

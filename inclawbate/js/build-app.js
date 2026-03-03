@@ -88,6 +88,22 @@
             'A music visualizer that reacts to microphone input',
             'A metronome app with adjustable BPM and time signatures',
             'A soundboard with customizable audio clips'
+        ],
+        appdb: [
+            'A multiplayer quiz game with a global leaderboard using AppDB',
+            'A shared todo list where anyone can add and check off items using AppDB',
+            'A guestbook where visitors leave messages stored in AppDB',
+            'A voting/poll app with live results saved in AppDB',
+            'A cloud-synced personal journal that saves entries with AppDB',
+            'A bookmark manager that saves links per user with AppDB'
+        ],
+        libraries: [
+            'A dashboard with interactive Chart.js charts and live data',
+            'A 3D model viewer using Three.js with orbit controls',
+            'An interactive map with Leaflet and custom markers',
+            'A drag-and-drop Kanban board with SortableJS',
+            'A markdown editor with live preview using Marked.js',
+            'A physics simulation with bouncing balls using Matter.js'
         ]
     };
 
@@ -761,7 +777,7 @@
         els.buySendBtn.disabled = false;
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
         if (bSonnet) bSonnet.textContent = Math.floor(amount / 15) + ' msgs';
-        if (bOpus) bOpus.textContent = Math.floor(amount / 40) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 60) + ' msgs';
     }
 
     async function sendClawsTx() {
@@ -890,7 +906,7 @@
 
             // Add category label if filtered
             if (category) {
-                var names = { apis: 'Live APIs', wallet: 'CLAWS Wallet', canvas: 'Canvas & WebGL', images: 'Image Assets', web3: 'Web3 / DeFi', audio: 'Audio & Speech' };
+                var names = { apis: 'Live APIs', wallet: 'CLAWS Wallet', canvas: 'Canvas & WebGL', appdb: 'AppDb', images: 'Image Assets', web3: 'Web3 / DeFi', audio: 'Audio & Speech', libraries: 'Libraries' };
                 var label = document.createElement('div');
                 label.className = 'cap-category-label';
                 label.innerHTML = names[category] + ' ideas <button onclick="window.BuildApp.selectCap(null)">Show all</button>';
@@ -908,16 +924,73 @@
         }, existing.length > 0 ? 200 : 0);
     }
 
+    var CAP_DESCRIPTIONS = {
+        apis: 'Fetch live data from any public API — crypto prices, weather, news, and more.',
+        wallet: 'Accept CLAWS payments, tip jars, paywalls, and token-gated features.',
+        canvas: 'Build games, animations, and visualizations with Canvas and WebGL.',
+        appdb: 'Persistent database for your app — leaderboards, user accounts, shared data.',
+        images: 'Upload and display your own images — portfolios, galleries, product pages.',
+        web3: 'Token swaps, wallet dashboards, on-chain data, and DeFi interfaces.',
+        audio: 'Sound effects, text-to-speech, voice recording, and music visualizers.',
+        libraries: 'Use Chart.js, Three.js, Leaflet, and other popular libraries via CDN.'
+    };
+
     function selectCap(category) {
+        var expandEl = document.getElementById('capExpand');
+        var innerEl = document.getElementById('capExpandInner');
+
+        // Toggle: click same pill again = collapse
+        if (category === activeCategory) {
+            activeCategory = null;
+            if (expandEl) expandEl.classList.remove('open');
+            var items = document.querySelectorAll('.cap-pill');
+            items.forEach(function (item) { item.classList.remove('active'); });
+            renderWelcomePrompts(null);
+            return;
+        }
+
         activeCategory = category;
 
-        // Toggle active state on capability items
-        var items = document.querySelectorAll('.cap-item');
+        // Toggle active state on pills
+        var items = document.querySelectorAll('.cap-pill');
         items.forEach(function (item) {
             item.classList.toggle('active', category && item.getAttribute('data-cap') === category);
         });
 
+        if (category && expandEl && innerEl) {
+            var pool = CATEGORY_PROMPTS[category] || [];
+            var indices = pickRandomIndices(pool.length, 3);
+            var desc = CAP_DESCRIPTIONS[category] || '';
+
+            var html = '<div class="cap-expand-desc">' + desc + '</div>';
+            html += '<div class="cap-expand-prompts">';
+            indices.forEach(function (idx) {
+                html += '<button class="cap-expand-prompt" onclick="window.BuildApp.useCapPrompt(\'' + pool[idx].replace(/'/g, "\\'") + '\')">' + pool[idx] + '</button>';
+            });
+            html += '</div>';
+            html += '<button class="cap-expand-shuffle" onclick="window.BuildApp.shuffleCapExpand()">';
+            html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>';
+            html += ' Shuffle</button>';
+
+            innerEl.innerHTML = html;
+            expandEl.classList.add('open');
+        } else if (expandEl) {
+            expandEl.classList.remove('open');
+        }
+
         renderWelcomePrompts(category);
+    }
+
+    function useCapPrompt(text) {
+        usePrompt(text);
+    }
+
+    function shuffleCapExpand() {
+        if (!activeCategory) return;
+        // Force re-render of expand panel with new random prompts
+        var savedCat = activeCategory;
+        activeCategory = null; // Temporarily clear so selectCap doesn't toggle off
+        selectCap(savedCat);
     }
 
     function shufflePrompts() {
@@ -1099,7 +1172,9 @@
         connectWallet: connectWallet,
         handleFileSelect: handleFileSelect,
         removeAttach: removeAttach,
-        selectCap: selectCap
+        selectCap: selectCap,
+        useCapPrompt: useCapPrompt,
+        shuffleCapExpand: shuffleCapExpand
     };
 
     // ── Boot ──

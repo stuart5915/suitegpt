@@ -817,49 +817,103 @@
             color: var(--text-primary);
             margin: 0 0 8px;
         }
-        .build-capabilities {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .cap-pills {
+            display: flex;
             gap: 6px;
             width: 100%;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 2px 0;
         }
-        .cap-item {
-            display: flex;
+        .cap-pills::-webkit-scrollbar { display: none; }
+        .cap-pill {
+            display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 7px 9px;
+            gap: 4px;
+            padding: 5px 10px;
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
-            font-size: 0.72rem;
+            border-radius: 999px;
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            font-weight: 600;
             color: var(--text-secondary);
-            text-align: left;
+            white-space: nowrap;
             cursor: pointer;
             transition: all var(--transition-fast);
+            flex-shrink: 0;
         }
-        .cap-item:hover {
+        .cap-pill:hover {
             border-color: var(--accent-primary);
             background: rgba(99, 102, 241, 0.06);
         }
-        .cap-item.active {
+        .cap-pill.active {
             border-color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.1);
-        }
-        .cap-icon {
-            font-size: 0.95rem;
-            flex-shrink: 0;
-            width: 18px;
-            text-align: center;
-        }
-        .cap-label strong {
-            display: block;
+            background: rgba(99, 102, 241, 0.12);
             color: var(--text-primary);
-            font-size: 0.7rem;
         }
-        .cap-label span {
+        .cap-pill-icon { font-size: 0.85rem; }
+        .cap-expand {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+            width: 100%;
+            margin-top: 0;
+        }
+        .cap-expand.open {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+        .cap-expand-inner {
+            padding: 8px 10px;
+            background: rgba(99, 102, 241, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+        }
+        .cap-expand-desc {
+            font-size: 0.68rem;
             color: var(--text-dim);
-            font-size: 0.6rem;
+            margin-bottom: 6px;
         }
+        .cap-expand-prompts {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .cap-expand-prompt {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 5px 10px;
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.72rem;
+            cursor: pointer;
+            text-align: left;
+            transition: border-color var(--transition-fast), color var(--transition-fast);
+        }
+        .cap-expand-prompt:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+        .cap-expand-shuffle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            padding: 3px 10px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+            font-size: 0.65rem;
+            cursor: pointer;
+            align-self: center;
+        }
+        .cap-expand-shuffle:hover { color: var(--text-secondary); }
         .chat-header-prompts {
             display: flex;
             flex-direction: column;
@@ -1238,31 +1292,18 @@
         <div class="chat-panel">
             <div class="chat-header-area" id="chatHeaderArea">
                 <div class="chat-header-title">What can you build?</div>
-                <div class="build-capabilities" id="buildCapabilities">
-                    <div class="cap-item" data-cap="apis" onclick="window.BuildApp.selectCap('apis')">
-                        <div class="cap-icon">&#127760;</div>
-                        <div class="cap-label"><strong>Live APIs</strong><span>Fetch any public API</span></div>
-                    </div>
-                    <div class="cap-item" data-cap="wallet" onclick="window.BuildApp.selectCap('wallet')">
-                        <div class="cap-icon">&#128176;</div>
-                        <div class="cap-label"><strong>CLAWS Wallet</strong><span>Payments & paywalls</span></div>
-                    </div>
-                    <div class="cap-item" data-cap="canvas" onclick="window.BuildApp.selectCap('canvas')">
-                        <div class="cap-icon">&#127912;</div>
-                        <div class="cap-label"><strong>Canvas & WebGL</strong><span>Games & visualizations</span></div>
-                    </div>
-                    <div class="cap-item" data-cap="images" onclick="window.BuildApp.selectCap('images')">
-                        <div class="cap-icon">&#128247;</div>
-                        <div class="cap-label"><strong>Image Assets</strong><span>Upload your own images</span></div>
-                    </div>
-                    <div class="cap-item" data-cap="web3" onclick="window.BuildApp.selectCap('web3')">
-                        <div class="cap-icon">&#9981;&#65039;</div>
-                        <div class="cap-label"><strong>Web3 / DeFi</strong><span>Swap UIs, token dashboards</span></div>
-                    </div>
-                    <div class="cap-item" data-cap="audio" onclick="window.BuildApp.selectCap('audio')">
-                        <div class="cap-icon">&#128266;</div>
-                        <div class="cap-label"><strong>Audio & Speech</strong><span>Web Audio, TTS, recognition</span></div>
-                    </div>
+                <div class="cap-pills" id="buildCapabilities">
+                    <button class="cap-pill" data-cap="apis" onclick="window.BuildApp.selectCap('apis')"><span class="cap-pill-icon">&#127760;</span> APIs</button>
+                    <button class="cap-pill" data-cap="wallet" onclick="window.BuildApp.selectCap('wallet')"><span class="cap-pill-icon">&#128176;</span> Wallet</button>
+                    <button class="cap-pill" data-cap="canvas" onclick="window.BuildApp.selectCap('canvas')"><span class="cap-pill-icon">&#127912;</span> Canvas</button>
+                    <button class="cap-pill" data-cap="appdb" onclick="window.BuildApp.selectCap('appdb')"><span class="cap-pill-icon">&#128190;</span> AppDb</button>
+                    <button class="cap-pill" data-cap="images" onclick="window.BuildApp.selectCap('images')"><span class="cap-pill-icon">&#128247;</span> Images</button>
+                    <button class="cap-pill" data-cap="web3" onclick="window.BuildApp.selectCap('web3')"><span class="cap-pill-icon">&#9981;&#65039;</span> Web3</button>
+                    <button class="cap-pill" data-cap="audio" onclick="window.BuildApp.selectCap('audio')"><span class="cap-pill-icon">&#128266;</span> Audio</button>
+                    <button class="cap-pill" data-cap="libraries" onclick="window.BuildApp.selectCap('libraries')"><span class="cap-pill-icon">&#128230;</span> Libraries</button>
+                </div>
+                <div class="cap-expand" id="capExpand">
+                    <div class="cap-expand-inner" id="capExpandInner"></div>
                 </div>
                 <div class="chat-header-prompts" id="chatHeaderPrompts">
                     <!-- Prompts populated by JS -->
@@ -1298,7 +1339,7 @@
                     </button>
                     <button class="model-option" data-model="pro" onclick="window.BuildApp.setModel('pro')">
                         <span class="model-name">Opus</span>
-                        <span class="model-cost">40 cr</span>
+                        <span class="model-cost">60 cr</span>
                         <button class="model-info-btn" onclick="event.stopPropagation()">i<div class="model-info-tooltip"><strong>Claude Opus 4.6</strong><br>Maximum detail & reasoning<br>200K context window<br>Best for complex apps</div></button>
                     </button>
                     <span class="model-hint" id="modelHint">Fast & lightweight</span>
@@ -1423,7 +1464,7 @@
                 </div>
                 <div class="buy-breakdown-row">
                     <span class="buy-breakdown-model">Opus</span>
-                    <span class="buy-breakdown-cost">40 cr/msg</span>
+                    <span class="buy-breakdown-cost">60 cr/msg</span>
                     <span class="buy-breakdown-count" id="breakdownOpus">--</span>
                 </div>
             </div>
