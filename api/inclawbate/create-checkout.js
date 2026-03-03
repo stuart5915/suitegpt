@@ -32,11 +32,14 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { credits } = req.body;
+        const { credits, return_path } = req.body;
 
         if (!credits || typeof credits !== 'number' || credits < MIN_CREDITS || credits > 100000) {
             return res.status(400).json({ error: `Credits must be between ${MIN_CREDITS} and 100,000` });
         }
+
+        // Allow caller to specify return page (default: /build)
+        const basePath = (return_path && /^\/[a-z]/.test(return_path)) ? return_path : '/build';
 
         const amount = Math.round(credits * PRICE_PER_CREDIT * 100) / 100; // dollars
 
@@ -57,8 +60,8 @@ export default async function handler(req, res) {
                 },
             ],
             mode: 'payment',
-            success_url: `https://inclawbate.com/build?payment=success&credits=${credits}`,
-            cancel_url: 'https://inclawbate.com/build?payment=cancelled',
+            success_url: `https://inclawbate.com${basePath}?payment=success&credits=${credits}`,
+            cancel_url: `https://inclawbate.com${basePath}?payment=cancelled`,
             metadata: {
                 product: 'inclawbate',
                 profileId: user.sub,

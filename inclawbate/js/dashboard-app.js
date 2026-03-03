@@ -759,12 +759,6 @@ function initBuyCredits() {
     // Pay with CLAWS
     document.getElementById('dashBuySendBtn')?.addEventListener('click', dashSendClawsTx);
 
-    // Subscription cards
-    document.querySelectorAll('.dash-buy-panel .sub-tier-card').forEach(card => {
-        card.addEventListener('click', () => {
-            alert('Subscriptions coming soon! For now, buy credits with CLAWS tokens.');
-        });
-    });
 
     // Fetch price
     fetchClawsPrice();
@@ -920,7 +914,7 @@ async function dashBuyWithCard() {
         const resp = await fetch(`${API_BASE}/create-checkout`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ credits: amount })
+            body: JSON.stringify({ credits: amount, return_path: '/dashboard' })
         });
         const data = await resp.json();
 
@@ -940,6 +934,25 @@ async function dashBuyWithCard() {
 
 // ── Init ──
 function init() {
+    // Handle Stripe payment return
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+        const cr = params.get('credits');
+        const resultEl = document.getElementById('dashBuyResult');
+        if (resultEl) {
+            resultEl.textContent = (cr ? cr + ' credits' : 'Credits') + ' added! Refreshing balance...';
+            resultEl.className = 'buy-result success';
+        }
+        window.history.replaceState({}, '', '/dashboard');
+    } else if (params.get('payment') === 'cancelled') {
+        const resultEl = document.getElementById('dashBuyResult');
+        if (resultEl) {
+            resultEl.textContent = 'Payment cancelled.';
+            resultEl.className = 'buy-result error';
+        }
+        window.history.replaceState({}, '', '/dashboard');
+    }
+
     const auth = getStoredAuth();
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
