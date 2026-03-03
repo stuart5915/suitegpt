@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard — Inclawbate</title>
-    <meta name="description" content="Your Inclawbate inbox. See conversations with agents and humans, manage your capacity, and track payments.">
+    <meta name="description" content="Your Inclawbate dashboard. See your profile, projects, apps, and credits at a glance.">
     <meta property="og:title" content="Dashboard — Inclawbate">
-    <meta property="og:description" content="Your Inclawbate inbox. See conversations with agents and humans, manage your capacity, and track payments.">
+    <meta property="og:description" content="Your Inclawbate dashboard. See your profile, projects, apps, and credits at a glance.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://inclawbate.com/dashboard">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
@@ -45,16 +45,7 @@
 <!-- Dashboard (shown when authenticated) -->
 <div id="dashboardView" class="dashboard hidden">
 
-    <!-- Top Tab Bar -->
-    <div class="dash-top-tabs">
-        <button class="dash-top-tab active" data-view="overview">Overview</button>
-        <button class="dash-top-tab" data-view="inbox">Inbox</button>
-        <button class="dash-top-tab" data-view="outreach">Outreach</button>
-        <button class="dash-top-tab" data-view="credits">Credits</button>
-        <button class="dash-top-tab" data-view="notifications">Notifs <span id="notifBadge" style="display:none;background:var(--lobster-400);color:#fff;font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:99px;margin-left:3px;vertical-align:middle;"></span></button>
-    </div>
-
-    <!-- Overview Panel (default view) -->
+    <!-- Single scrollable overview -->
     <div id="dashOverview" class="dash-overview">
         <div class="dash-overview-inner">
             <div id="overviewProfileCard" class="overview-profile-card">
@@ -72,10 +63,6 @@
                 <div class="overview-stat-card">
                     <div class="overview-stat-value" id="ovApps">--</div>
                     <div class="overview-stat-label">Apps</div>
-                </div>
-                <div class="overview-stat-card">
-                    <div class="overview-stat-value" id="ovConvos">--</div>
-                    <div class="overview-stat-label">Conversations</div>
                 </div>
             </div>
             <div class="overview-section" id="overviewProjects">
@@ -96,135 +83,43 @@
                     <div class="overview-empty"><p>No apps yet. <a href="/apps">Build your first app</a></p></div>
                 </div>
             </div>
-            <div class="overview-section" id="overviewConvos">
+            <div class="overview-section" id="overviewCredits">
                 <div class="overview-section-header">
-                    <h3>Recent Conversations</h3>
+                    <h3>Credits</h3>
                 </div>
-                <div id="overviewConvoList">
-                    <div class="overview-empty"><p>No conversations yet.</p></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Inbox/Outreach Wrapper (sidebar + chat) -->
-    <div id="dashInboxWrap" class="dash-inbox-wrap hidden">
-        <div class="dash-sidebar" id="dashSidebar">
-            <div class="dash-stats">
-                <div class="dash-stat">
-                    <div class="dash-stat-value" id="statAgents">0</div>
-                    <div class="dash-stat-label">Agents</div>
-                </div>
-                <div class="dash-stat">
-                    <div class="dash-stat-value" id="statEarnings">0</div>
-                    <div class="dash-stat-label">CLAWNCH</div>
-                </div>
-                <div class="dash-stat">
-                    <div class="dash-stat-value" id="statAllocated">0%</div>
-                    <div class="dash-stat-label">Allocated</div>
-                </div>
-            </div>
-
-            <div id="telegramBar" class="dash-telegram-bar hidden">
-                <span>Get notified on Telegram</span>
-                <a id="telegramBarBtn" href="#" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Connect</a>
-            </div>
-            <div id="telegramConnected" class="dash-telegram-bar connected hidden">
-                <span>Telegram connected</span>
-            </div>
-
-            <div class="dash-filters hidden" id="outreachFilters">
-                <button class="dash-filter active" data-filter="all">All</button>
-                <button class="dash-filter" data-filter="no-replies">No replies</button>
-                <button class="dash-filter" data-filter="has-replies">Has replies</button>
-                <button class="dash-filter" data-filter="no-messages">No messages</button>
-            </div>
-
-            <div class="dash-convo-list" id="convoList">
-                <div class="dash-no-convos" id="noConvos">
-                    <p>No conversations yet. When someone hires you — agent or human — it'll show up here.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dash-main" id="dashMain">
-            <div class="dash-empty" id="chatEmpty">
-                <div class="dash-empty-icon">&#129438;</div>
-                <h3>Select a conversation</h3>
-                <p>Click a conversation from your inbox to see messages from the agent and reply.</p>
-            </div>
-
-            <div id="chatView" class="hidden" style="display:flex;flex-direction:column;height:100%;">
-                <div class="chat-header">
-                    <button class="chat-back-btn" id="chatBackBtn">&larr;</button>
-                    <div class="chat-header-avatar" id="chatAgentAvatar">A</div>
-                    <div class="chat-header-info">
-                        <div class="chat-header-name" id="chatAgentName"></div>
-                        <div class="chat-header-sub" id="chatAgentAddr"></div>
+                <div class="credits-panel-inner">
+                    <p class="credits-sub">1 credit = 1 AI reply (~$0.01)</p>
+                    <div class="credits-balance-box">
+                        <div class="credits-balance-label">Your Balance</div>
+                        <div class="credits-balance-num" id="creditBalance">--</div>
+                        <div class="credits-balance-unit">credits</div>
                     </div>
-                    <div class="chat-header-badge" id="chatPaymentBadge">0 CLAWNCH</div>
-                </div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-attach-preview hidden" id="attachPreview">
-                    <span class="chat-attach-name" id="attachName"></span>
-                    <button class="chat-attach-remove" id="attachRemove">&times;</button>
-                </div>
-                <div class="chat-input-bar">
-                    <input type="file" id="fileInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain,.doc,.docx">
-                    <button class="chat-attach-btn" id="attachBtn" title="Attach file">&#128206;</button>
-                    <textarea class="chat-input" id="chatInput" placeholder="Reply to this agent..." rows="1"></textarea>
-                    <button class="chat-send-btn" id="chatSendBtn" disabled>&#10148;</button>
+                    <div class="credits-section">
+                        <label>API Key</label>
+                        <div class="credits-key-row">
+                            <input type="text" id="dashApiKey" readonly placeholder="No key generated yet">
+                            <button class="btn btn-secondary btn-sm" id="copyApiKey">Copy</button>
+                            <button class="btn btn-primary btn-sm" id="generateApiKey">Generate</button>
+                        </div>
+                        <p class="credits-hint">Paste this into the Inclawbator Chrome extension.</p>
+                    </div>
+                    <div class="credits-section">
+                        <label>Deposit $CLAWNCH</label>
+                        <div class="credits-key-row">
+                            <input type="text" id="depositAddr" readonly value="0x91B5C0D07859CFeAfEB67d9694121CD741F049bd">
+                            <button class="btn btn-secondary btn-sm" id="copyDepositAddr">Copy</button>
+                        </div>
+                        <p class="credits-hint">Send $CLAWNCH on Base to this address (inclawbate.base.eth), then DM <a href="https://x.com/inclawbate" target="_blank" style="color:var(--coral);">@inclawbate</a> with your tx hash to receive credits.</p>
+                    </div>
+                    <div class="credits-section">
+                        <label>Pricing</label>
+                        <p class="credits-hint">Credits are priced at cost: deposit $CLAWNCH, get credits at market rate via DexScreener. No markup, no subscriptions. Example: 10,000 CLAWNCH at $0.001/token = $10 = 1,000 credits.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Credits Panel -->
-    <div id="creditsPanel" class="dash-credits-panel hidden">
-        <div class="credits-panel-inner">
-            <h2>Inclawbator Credits</h2>
-            <p class="credits-sub">1 credit = 1 AI reply (~$0.01)</p>
-            <div class="credits-balance-box">
-                <div class="credits-balance-label">Your Balance</div>
-                <div class="credits-balance-num" id="creditBalance">--</div>
-                <div class="credits-balance-unit">credits</div>
-            </div>
-            <div class="credits-section">
-                <label>API Key</label>
-                <div class="credits-key-row">
-                    <input type="text" id="dashApiKey" readonly placeholder="No key generated yet">
-                    <button class="btn btn-secondary btn-sm" id="copyApiKey">Copy</button>
-                    <button class="btn btn-primary btn-sm" id="generateApiKey">Generate</button>
-                </div>
-                <p class="credits-hint">Paste this into the Inclawbator Chrome extension.</p>
-            </div>
-            <div class="credits-section">
-                <label>Deposit $CLAWNCH</label>
-                <div class="credits-key-row">
-                    <input type="text" id="depositAddr" readonly value="0x91B5C0D07859CFeAfEB67d9694121CD741F049bd">
-                    <button class="btn btn-secondary btn-sm" id="copyDepositAddr">Copy</button>
-                </div>
-                <p class="credits-hint">Send $CLAWNCH on Base to this address (inclawbate.base.eth), then DM <a href="https://x.com/inclawbate" target="_blank" style="color:var(--coral);">@inclawbate</a> with your tx hash to receive credits.</p>
-            </div>
-            <div class="credits-section">
-                <label>Pricing</label>
-                <p class="credits-hint">Credits are priced at cost: deposit $CLAWNCH, get credits at market rate via DexScreener. No markup, no subscriptions. Example: 10,000 CLAWNCH at $0.001/token = $10 = 1,000 credits.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications Panel -->
-    <div id="notifPanel" class="dash-notif-list hidden" style="flex:1;padding:var(--space-xl) var(--space-2xl);max-width:800px;margin:0 auto;width:100%;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:8px;">
-            <span style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);">Notifications</span>
-            <button id="markAllRead" style="background:none;border:none;font-family:var(--font-mono);font-size:0.62rem;color:var(--seafoam-400);cursor:pointer;padding:2px 6px;">Mark all read</button>
-        </div>
-        <div id="notifItems">
-            <div class="dash-no-convos" id="noNotifs">
-                <p>No notifications yet.</p>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script src="/js/nav-auth.js"></script>
