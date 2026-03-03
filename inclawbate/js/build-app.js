@@ -432,17 +432,30 @@
             var existing = document.querySelector('.cost-confirm-overlay');
             if (existing) existing.remove();
 
+            var hasSurcharge = estimate.estimated_surcharge > 0;
+            var codeSize = state.currentCode ? (state.currentCode.length / 1024).toFixed(0) + 'KB' : '';
+            var rows = '';
+
+            if (hasSurcharge) {
+                rows =
+                    '<div class="cost-row"><span>Base cost</span><span>' + estimate.base_credits + ' credits</span></div>' +
+                    '<div class="cost-row extra"><span>Context surcharge (est.)</span><span>+' + estimate.estimated_surcharge + ' credits</span></div>' +
+                    '<div class="cost-row total"><span>Estimated total</span><span>~' + estimate.estimated_credits + ' credits</span></div>';
+            } else {
+                rows =
+                    '<div class="cost-row total"><span>Cost per message</span><span>' + estimate.base_credits + ' credits</span></div>';
+            }
+
             var overlay = document.createElement('div');
             overlay.className = 'cost-confirm-overlay active';
             overlay.innerHTML =
                 '<div class="cost-confirm-modal">' +
-                    '<h3>Estimated Cost</h3>' +
-                    '<div class="cost-row"><span>Base cost</span><span>' + estimate.base_credits + ' credits</span></div>' +
-                    '<div class="cost-row extra"><span>Context surcharge (est.)</span><span>+' + estimate.estimated_surcharge + ' credits</span></div>' +
-                    '<div class="cost-row total"><span>Estimated total</span><span>~' + estimate.estimated_credits + ' credits</span></div>' +
+                    '<h3>Editing ' + (codeSize ? codeSize + ' app' : 'existing app') + '</h3>' +
+                    '<p class="cost-confirm-desc">Larger apps use more tokens and may cost extra credits per message.</p>' +
+                    rows +
                     '<div class="cost-confirm-actions">' +
                         '<button class="cost-cancel-btn">Cancel</button>' +
-                        '<button class="cost-continue-btn">Continue</button>' +
+                        '<button class="cost-continue-btn">Send</button>' +
                     '</div>' +
                 '</div>';
 
@@ -467,7 +480,7 @@
         // Gate: show cost confirmation for first message when editing/forking existing code
         if (!state.sessionId && state.currentCode) {
             var estimate = await estimateEditCost();
-            if (estimate && estimate.estimated_surcharge > 0) {
+            if (estimate) {
                 var confirmed = await showCostConfirmation(estimate);
                 if (!confirmed) return; // user cancelled — message stays in input
             }
