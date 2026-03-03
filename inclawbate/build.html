@@ -153,7 +153,7 @@
             padding: var(--space-sm) var(--space-lg);
             background: var(--bg-card);
             border-bottom: 1px solid var(--border-default);
-            min-height: 48px;
+            min-height: 40px;
             flex-shrink: 0;
         }
         .build-back {
@@ -176,54 +176,71 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .build-credits {
+        /* ── Action Bar (below model selector) ── */
+        .action-bar {
             display: flex;
             align-items: center;
-            gap: var(--space-xs);
+            gap: 10px;
+            padding-top: 10px;
+            margin-top: 8px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .action-credits {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 999px;
             font-family: var(--font-mono);
             white-space: nowrap;
         }
-        .build-credits-count {
+        .action-credits-icon { font-size: 0.85rem; }
+        .action-credits-count {
             font-size: 0.85rem;
             font-weight: 700;
             color: var(--seafoam-400);
         }
-        .build-credits-count.low { color: #f59e0b; }
-        .build-credits-count.empty { color: #ef4444; }
-        .build-credits-label {
+        .action-credits-count.low { color: #f59e0b; }
+        .action-credits-count.empty { color: #ef4444; }
+        .action-credits-label {
             font-size: 0.75rem;
             color: var(--text-dim);
         }
-        .buy-credits-btn {
-            padding: 2px var(--space-sm);
-            background: none;
-            border: 1px solid var(--seafoam-400);
+        .action-buy-btn {
+            padding: 6px 16px;
+            background: var(--accent-gradient);
+            border: none;
             border-radius: 999px;
-            color: var(--seafoam-400);
+            color: #fff;
             font-family: var(--font-body);
-            font-size: 0.7rem;
+            font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
-            transition: background var(--transition-fast), color var(--transition-fast);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            white-space: nowrap;
         }
-        .buy-credits-btn:hover {
-            background: var(--seafoam-400);
-            color: #fff;
+        .action-buy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
-        .build-publish-btn {
-            padding: var(--space-xs) var(--space-md);
+        .action-publish-btn {
+            margin-left: auto;
+            padding: 6px 16px;
             background: var(--seafoam-400);
             color: #fff;
             border: none;
-            border-radius: var(--radius-sm);
+            border-radius: 999px;
             font-family: var(--font-body);
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
-            transition: opacity var(--transition-fast);
+            transition: transform var(--transition-fast), opacity var(--transition-fast);
+            white-space: nowrap;
         }
-        .build-publish-btn:hover { opacity: 0.85; }
-        .build-publish-btn:disabled { opacity: 0.4; cursor: default; }
+        .action-publish-btn:hover { transform: translateY(-1px); }
+        .action-publish-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 
         /* Model Selector */
         .model-selector {
@@ -819,14 +836,11 @@
         }
         .cap-pills {
             display: flex;
+            flex-wrap: wrap;
             gap: 6px;
             width: 100%;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
             padding: 2px 0;
         }
-        .cap-pills::-webkit-scrollbar { display: none; }
         .cap-pill {
             display: inline-flex;
             align-items: center;
@@ -842,7 +856,7 @@
             white-space: nowrap;
             cursor: pointer;
             transition: all var(--transition-fast);
-            flex-shrink: 0;
+            position: relative;
         }
         .cap-pill:hover {
             border-color: var(--accent-primary);
@@ -854,6 +868,53 @@
             color: var(--text-primary);
         }
         .cap-pill-icon { font-size: 0.85rem; }
+        .cap-pill-info {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            margin-left: 2px;
+            cursor: help;
+            flex-shrink: 0;
+        }
+        .cap-pill-info:hover { background: rgba(99, 102, 241, 0.15); color: var(--text-secondary); }
+        .cap-pill-tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
+            font-size: 0.65rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            white-space: normal;
+            width: 180px;
+            text-align: center;
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
+        .cap-pill-tip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1a1a2e;
+        }
+        .cap-pill-info:hover + .cap-pill-tip,
+        .cap-pill-tip:hover { display: block; }
         .cap-expand {
             overflow: hidden;
             max-height: 0;
@@ -1049,7 +1110,7 @@
             border-radius: var(--radius-xl);
             padding: var(--space-2xl);
             width: 90%;
-            max-width: 440px;
+            max-width: 560px;
         }
         .buy-modal h3 {
             color: var(--text-primary);
@@ -1293,14 +1354,14 @@
             <div class="chat-header-area" id="chatHeaderArea">
                 <div class="chat-header-title">What can you build?</div>
                 <div class="cap-pills" id="buildCapabilities">
-                    <button class="cap-pill" data-cap="apis" onclick="window.BuildApp.selectCap('apis')"><span class="cap-pill-icon">&#127760;</span> APIs</button>
-                    <button class="cap-pill" data-cap="wallet" onclick="window.BuildApp.selectCap('wallet')"><span class="cap-pill-icon">&#128176;</span> Wallet</button>
-                    <button class="cap-pill" data-cap="canvas" onclick="window.BuildApp.selectCap('canvas')"><span class="cap-pill-icon">&#127912;</span> Canvas</button>
-                    <button class="cap-pill" data-cap="appdb" onclick="window.BuildApp.selectCap('appdb')"><span class="cap-pill-icon">&#128190;</span> AppDb</button>
-                    <button class="cap-pill" data-cap="images" onclick="window.BuildApp.selectCap('images')"><span class="cap-pill-icon">&#128247;</span> Images</button>
-                    <button class="cap-pill" data-cap="web3" onclick="window.BuildApp.selectCap('web3')"><span class="cap-pill-icon">&#9981;&#65039;</span> Web3</button>
-                    <button class="cap-pill" data-cap="audio" onclick="window.BuildApp.selectCap('audio')"><span class="cap-pill-icon">&#128266;</span> Audio</button>
-                    <button class="cap-pill" data-cap="libraries" onclick="window.BuildApp.selectCap('libraries')"><span class="cap-pill-icon">&#128230;</span> Libraries</button>
+                    <button class="cap-pill" data-cap="apis" onclick="window.BuildApp.selectCap('apis')"><span class="cap-pill-icon">&#127760;</span> APIs <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Fetch live data from any public API — crypto prices, weather, news</span></button>
+                    <button class="cap-pill" data-cap="wallet" onclick="window.BuildApp.selectCap('wallet')"><span class="cap-pill-icon">&#128176;</span> Wallet <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Accept CLAWS payments, tip jars, paywalls, and token-gated content</span></button>
+                    <button class="cap-pill" data-cap="canvas" onclick="window.BuildApp.selectCap('canvas')"><span class="cap-pill-icon">&#127912;</span> Canvas <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Build games, animations, and visualizations with Canvas & WebGL</span></button>
+                    <button class="cap-pill" data-cap="appdb" onclick="window.BuildApp.selectCap('appdb')"><span class="cap-pill-icon">&#128190;</span> AppDb <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Persistent database — leaderboards, user accounts, shared data that survives reloads</span></button>
+                    <button class="cap-pill" data-cap="images" onclick="window.BuildApp.selectCap('images')"><span class="cap-pill-icon">&#128247;</span> Images <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Upload and display your own images — portfolios, galleries, product pages</span></button>
+                    <button class="cap-pill" data-cap="web3" onclick="window.BuildApp.selectCap('web3')"><span class="cap-pill-icon">&#9981;&#65039;</span> Web3 <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Token swaps, wallet dashboards, on-chain data, and DeFi interfaces</span></button>
+                    <button class="cap-pill" data-cap="audio" onclick="window.BuildApp.selectCap('audio')"><span class="cap-pill-icon">&#128266;</span> Audio <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Sound effects, text-to-speech, voice recording, and music visualizers</span></button>
+                    <button class="cap-pill" data-cap="libraries" onclick="window.BuildApp.selectCap('libraries')"><span class="cap-pill-icon">&#128230;</span> Libraries <span class="cap-pill-info" onclick="event.stopPropagation()">i</span><span class="cap-pill-tip">Use Chart.js, Three.js, Leaflet, and other popular libraries via CDN</span></button>
                 </div>
                 <div class="cap-expand" id="capExpand">
                     <div class="cap-expand-inner" id="capExpandInner"></div>
