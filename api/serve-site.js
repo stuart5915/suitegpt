@@ -161,14 +161,15 @@ export default async function handler(req, res) {
             }
         }
 
-        // Inject CLAWS SDK before </body>
+        // Inject CLAWS SDK + AppDB SDK before </body>
         let html = data.code;
         const sdkAttrs = `data-creator-wallet="${data.creator_wallet || ''}" data-app-id="${data.id}"`;
         const sdkTag = `<script src="https://inclawbate.com/js/claws-sdk.js" ${sdkAttrs}></script>`;
+        const appdbTag = `<script src="https://inclawbate.com/js/appdb-sdk.js" data-app-id="${data.id}"></script>`;
         if (html.includes('</body>')) {
-            html = html.replace('</body>', sdkTag + '\n</body>');
+            html = html.replace('</body>', sdkTag + '\n' + appdbTag + '\n</body>');
         } else {
-            html += '\n' + sdkTag;
+            html += '\n' + sdkTag + '\n' + appdbTag;
         }
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
