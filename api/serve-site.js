@@ -150,11 +150,7 @@ export default async function handler(req, res) {
                 unlocked = !!unlock;
             }
 
-            // Allow iframe previews from the app store (Referer check)
-            const referer = req.headers.referer || '';
-            const isPreview = referer.includes('/apps') || referer.includes('inclawbate.com/apps');
-
-            if (!unlocked && !isPreview) {
+            if (!unlocked) {
                 res.setHeader('Content-Type', 'text/html; charset=utf-8');
                 res.setHeader('Cache-Control', 'no-cache, no-store');
                 return res.status(402).send(paywallPage(data));
