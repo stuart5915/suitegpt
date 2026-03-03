@@ -15773,6 +15773,105 @@
             color: var(--text-tertiary);
         }
 
+        .build-attach-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+        .build-attach-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+        }
+        .build-attach-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .build-attach-thumb {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .build-attach-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .build-attach-thumb .remove-thumb {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+            padding: 0;
+        }
+        .build-attach-thumb .thumb-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 2px 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .iter-attach-btn {
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+        .iter-attach-btn:hover {
+            color: var(--accent-primary);
+        }
+        .iter-attach-preview {
+            display: flex;
+            gap: 6px;
+            padding: 4px 8px;
+            flex-wrap: wrap;
+        }
+        .chat-msg-images {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .chat-msg-images img {
+            width: 48px;
+            height: 48px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
         .create-screen-name-input {
             width: 100%;
             padding: 14px 20px;
@@ -19887,6 +19986,14 @@
                                 onkeydown="handleQuickAppKeydown(event)"
                                 oninput="onQuickAppInput()"
                             ></textarea>
+                            <button class="build-attach-btn" onclick="document.getElementById('buildFileInput').click()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                                </svg>
+                                Attach Images
+                            </button>
+                            <input type="file" id="buildFileInput" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none" onchange="handleBuildFileSelect(this.files, 'build')">
+                            <div class="build-attach-preview" id="buildAttachPreview"></div>
                         </div>
 
                         <div class="quick-app-ideas">
@@ -37764,6 +37871,78 @@ This is required. Do NOT call AI APIs without charging credits first. The SUITE 
 
 Use localStorage for data persistence. All browser APIs are available (Canvas, Audio, Speech, etc).`;
 
+        // === Build Studio Image Attachments ===
+        window.buildAttachments = [];
+        window.iterationAttachments = [];
+
+        async function uploadBuildAsset(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const session = supabaseClient ? (await supabaseClient.auth.getSession()).data.session : null;
+                        if (!session) { reject(new Error('Not signed in')); return; }
+                        const resp = await fetch('/api/upload-asset', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                            body: JSON.stringify({ file_data: reader.result, file_name: file.name, file_type: file.type })
+                        });
+                        const data = await resp.json();
+                        if (!resp.ok) throw new Error(data.error || 'Upload failed');
+                        resolve({ url: data.url, name: file.name, type: file.type });
+                    } catch (e) { reject(e); }
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleBuildFileSelect(files, target) {
+            const arr = target === 'build' ? window.buildAttachments : window.iterationAttachments;
+            const previewId = target === 'build' ? 'buildAttachPreview' : 'iterAttachPreview';
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                if (file.size > 3 * 1024 * 1024) { showToast('Image too large (max 3MB)'); continue; }
+                try {
+                    const result = await uploadBuildAsset(file);
+                    arr.push(result);
+                    renderAttachPreviews(arr, previewId, target);
+                } catch (e) {
+                    console.error('Upload failed:', e);
+                    showToast('Upload failed: ' + e.message);
+                }
+            }
+            // Reset file input so same file can be re-selected
+            const inputId = target === 'build' ? 'buildFileInput' : 'iterFileInput';
+            const input = document.getElementById(inputId);
+            if (input) input.value = '';
+        }
+
+        function renderAttachPreviews(arr, containerId, target) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = arr.map((a, i) => `
+                <div class="build-attach-thumb">
+                    <img src="${a.url}" alt="${a.name}">
+                    <button class="remove-thumb" onclick="removeBuildAttach(${i}, '${target}')">&times;</button>
+                    <div class="thumb-name">${a.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function removeBuildAttach(index, target) {
+            const arr = target === 'build' ? window.buildAttachments : window.iterationAttachments;
+            const previewId = target === 'build' ? 'buildAttachPreview' : 'iterAttachPreview';
+            arr.splice(index, 1);
+            renderAttachPreviews(arr, previewId, target);
+        }
+
+        function formatImageAssetsPrompt(attachments) {
+            if (!attachments || attachments.length === 0) return '';
+            const lines = attachments.map((a, i) => `${i + 1}. "${a.name}" → ${a.url}`);
+            return `\n\nIMAGE ASSETS (use these URLs directly in <img> tags or as CSS background-image URLs where appropriate):\n${lines.join('\n')}`;
+        }
+
         async function buildQuickApp() {
             const input = document.getElementById('quickAppInput');
             const btn = document.getElementById('quickAppBuildBtn');
@@ -37789,9 +37968,10 @@ Use localStorage for data persistence. All browser APIs are available (Canvas, A
             showBuildProgress();
 
             try {
-                const extraContext = hasDetailedPrompts
+                const imageContext = formatImageAssetsPrompt(window.buildAttachments);
+                const extraContext = (hasDetailedPrompts
                     ? `\n\nDetailed specs provided by user:\nFEATURES: ${featuresPrompt}\nDESIGN: ${designPrompt}\nINTERACTIONS: ${interactionsPrompt}`
-                    : '';
+                    : '') + imageContext;
 
                 const buildPlan = await generateBuildPlan(idea, extraContext);
 
@@ -37945,7 +38125,14 @@ Return JSON in this exact format:
                     </div>
                     <div class="proposal-chat-messages" id="quickAppChatMessages" style="display: none;"></div>
                     <div class="proposal-chat-input-area">
+                        <div class="iter-attach-preview" id="iterAttachPreview"></div>
                         <div class="proposal-chat-input-wrapper">
+                            <button class="iter-attach-btn" onclick="document.getElementById('iterFileInput').click()" title="Attach image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                                </svg>
+                            </button>
+                            <input type="file" id="iterFileInput" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none" onchange="handleBuildFileSelect(this.files, 'iteration')">
                             <textarea class="proposal-chat-input" id="quickAppChatInput" placeholder="Tweak something between steps..." rows="1" onkeydown="handleQuickAppChatKeydown(event)"></textarea>
                             <button class="proposal-chat-send" onclick="sendQuickAppIteration()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -38028,7 +38215,7 @@ Requirements:
 - Use placeholder content where features will be added later
 - Make it visually polished even as a shell
 ${SUITE_API_REFERENCE}
-
+${formatImageAssetsPrompt(window.buildAttachments)}
 Output ONLY the complete HTML code, starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
                 } else {
                     buildPrompt = `Here is the current HTML of an app being built step-by-step:
@@ -38048,7 +38235,7 @@ Rules:
 - Maintain the same visual style and theme.
 - If this feature needs AI, use the available APIs below.
 ${SUITE_API_REFERENCE}
-
+${formatImageAssetsPrompt(window.buildAttachments)}
 Output ONLY the COMPLETE updated HTML (with all existing + new code), starting with <!DOCTYPE html> and ending with </html>. No explanations or markdown.`;
                 }
 
@@ -38247,10 +38434,16 @@ Output ONLY the COMPLETE updated HTML (with all existing + new code), starting w
             const userMessage = input.value.trim();
             input.value = '';
 
+            // Capture current iteration attachments for this message
+            const msgAttachments = [...window.iterationAttachments];
+            const attachHtml = msgAttachments.length > 0
+                ? `<div class="chat-msg-images">${msgAttachments.map(a => `<img src="${a.url}" alt="${a.name}" title="${a.name}">`).join('')}</div>`
+                : '';
+
             // Add user message to UI
             messagesContainer.innerHTML += `
                 <div class="proposal-message user">
-                    <div class="proposal-message-content">${userMessage}</div>
+                    <div class="proposal-message-content">${userMessage}${attachHtml}</div>
                 </div>
             `;
 
@@ -38276,7 +38469,7 @@ ${window.quickAppResult.html}
 \`\`\`
 
 The user wants this change: "${userMessage}"
-
+${formatImageAssetsPrompt(window.iterationAttachments)}
 Apply the requested change and output the COMPLETE updated HTML. Start with <!DOCTYPE html> and end with </html>. No explanations, just the code.`,
                         model: 'gemini-3-flash-preview',
                         generationConfig: { temperature: 0.5, maxOutputTokens: 32000 }
@@ -38305,6 +38498,10 @@ Apply the requested change and output the COMPLETE updated HTML. Start with <!DO
                             <div class="proposal-message-content">Done! I've applied the change. What else would you like to adjust?</div>
                         </div>
                     `;
+
+                    // Clear iteration attachments after successful apply
+                    window.iterationAttachments = [];
+                    renderAttachPreviews([], 'iterAttachPreview', 'iteration');
                 } else {
                     throw new Error('No HTML in response');
                 }
@@ -38782,12 +38979,49 @@ window.addEventListener('message', function(e) {
                 }
 
                 alert(`"${name}" saved!`);
+
+                // Fire-and-forget: auto-generate app icon
+                const appId = window.quickAppResult.savedAppId;
+                if (appId) {
+                    generateAppIcon(appId, name, idea).catch(e => console.warn('Auto-icon failed:', e));
+                }
+
                 exitQuickAppPreview();
                 goBackToBuilderChoice();
 
             } catch (error) {
                 console.error('Save failed:', error);
                 alert('Failed to save app. Please try again.');
+            }
+        }
+
+        async function generateAppIcon(appId, appName, appDescription) {
+            try {
+                const iconPrompt = `App icon for "${appName}": ${appDescription}. Clean, minimal, flat design icon on a solid color background. No text. Square format.`;
+                const resp = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: iconPrompt, aspectRatio: '1:1' })
+                });
+                const data = await resp.json();
+                if (!data.image) return;
+
+                // Upload the generated icon
+                const session = supabaseClient ? (await supabaseClient.auth.getSession()).data.session : null;
+                if (!session) return;
+                const uploadResp = await fetch('/api/upload-asset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ file_data: data.image, file_name: `${appId}-icon.png`, file_type: 'image/png' })
+                });
+                const uploadData = await uploadResp.json();
+                if (!uploadData.url) return;
+
+                // Update user_apps with icon_url
+                await supabaseClient.from('user_apps').update({ icon_url: uploadData.url }).eq('id', appId);
+                renderSidebarApps();
+            } catch (e) {
+                console.warn('generateAppIcon error:', e);
             }
         }
 
