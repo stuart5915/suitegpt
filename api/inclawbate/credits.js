@@ -68,9 +68,15 @@ async function rpcCall(method, params) {
 }
 
 async function verifyDepositTx(txHash) {
-    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+    // Poll for receipt — tx may not be mined yet when called immediately after send
+    let receipt = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+        receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+        if (receipt) break;
+        await new Promise(r => setTimeout(r, 2000)); // wait 2s between attempts
+    }
     if (!receipt || receipt.status !== '0x1') {
-        return { valid: false, reason: 'Transaction failed or not found' };
+        return { valid: false, reason: receipt ? 'Transaction reverted on-chain' : 'Transaction not found after waiting. It may still be pending — try again in a moment.' };
     }
 
     const transferLog = (receipt.logs || []).find(log =>

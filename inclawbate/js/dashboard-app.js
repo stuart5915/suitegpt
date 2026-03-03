@@ -1048,9 +1048,9 @@ async function dashSendClawsTx() {
             params: [{ from, to: CLAWS_ADDRESS, data }]
         });
 
-        resultEl.textContent = 'Transaction sent! Verifying...';
+        resultEl.textContent = 'Transaction sent! Waiting for confirmation...';
 
-        // Verify deposit
+        // Verify deposit (backend now polls for receipt)
         const resp = await fetch(`${API_BASE}/credits`, {
             method: 'POST',
             headers: authHeaders(),
@@ -1064,7 +1064,8 @@ async function dashSendClawsTx() {
             document.getElementById('ovCredits').textContent = result.credits_total;
             document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
         } else {
-            resultEl.textContent = result.error || 'Verification failed.';
+            resultEl.innerHTML = (result.error || 'Verification failed.') +
+                ' <a href="#" onclick="dashRetryDeposit(\'' + txHash + '\');return false;" style="color:#6366f1;text-decoration:underline;">Retry verification</a>';
             resultEl.className = 'buy-result error';
             sendBtn.disabled = false;
         }
@@ -1074,6 +1075,39 @@ async function dashSendClawsTx() {
         } else {
             resultEl.textContent = e.message || 'Transaction failed.';
         }
+        resultEl.className = 'buy-result error';
+        sendBtn.disabled = false;
+    }
+}
+
+async function dashRetryDeposit(txHash) {
+    const resultEl = document.getElementById('dashBuyResult');
+    const sendBtn = document.getElementById('dashBuyClawsBtn');
+    resultEl.textContent = 'Retrying verification...';
+    resultEl.className = 'buy-result';
+    sendBtn.disabled = true;
+
+    try {
+        const resp = await fetch(`${API_BASE}/credits`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
+        });
+        const result = await resp.json();
+
+        if (resp.ok) {
+            resultEl.textContent = '+' + result.credits_added + ' credits added! New balance: ' + result.credits_total;
+            resultEl.className = 'buy-result success';
+            document.getElementById('ovCredits').textContent = result.credits_total;
+            document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
+        } else {
+            resultEl.innerHTML = (result.error || 'Verification failed.') +
+                ' <a href="#" onclick="dashRetryDeposit(\'' + txHash + '\');return false;" style="color:#6366f1;text-decoration:underline;">Retry</a>';
+            resultEl.className = 'buy-result error';
+            sendBtn.disabled = false;
+        }
+    } catch (e) {
+        resultEl.textContent = e.message || 'Retry failed.';
         resultEl.className = 'buy-result error';
         sendBtn.disabled = false;
     }
