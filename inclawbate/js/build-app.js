@@ -15,6 +15,7 @@
         sending: false,
         title: 'New Project',
         forkedFrom: null,  // { app_id, name } if forked
+        editingApp: null,  // { id, slug, name } if editing existing app
         selectedModel: 'fast'
     };
 
@@ -702,6 +703,17 @@
         els.publishConfirm.disabled = true;
         els.slugPreview.textContent = 'inclawbate.com/s/...';
 
+        // Editing existing app — pre-fill and lock slug
+        if (state.editingApp) {
+            if (nameEl) nameEl.value = state.editingApp.name || '';
+            els.publishSlug.value = state.editingApp.slug || '';
+            els.publishSlug.readOnly = true;
+            els.publishSlug.style.opacity = '0.6';
+            onSlugInput();
+            if (nameEl) nameEl.focus();
+            return;
+        }
+
         // Auto-generate slug from title
         if (state.title && state.title !== 'New Project') {
             var autoSlug = state.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 63);
@@ -709,6 +721,8 @@
             onSlugInput();
         }
 
+        els.publishSlug.readOnly = false;
+        els.publishSlug.style.opacity = '';
         if (nameEl) nameEl.focus();
     }
 
@@ -768,7 +782,8 @@
                     code: state.currentCode,
                     email: email,
                     description: appDesc || 'Built with Inclawbate Build Studio',
-                    source: state.forkedFrom ? 'build-studio-fork' : 'build-studio',
+                    update: state.editingApp ? true : undefined,
+                    source: state.editingApp ? 'build-studio-edit' : (state.forkedFrom ? 'build-studio-fork' : 'build-studio'),
                     category: category,
                     claws_price: priceVal,
                     creator_wallet: creatorWallet,
@@ -1402,6 +1417,28 @@
         return div.innerHTML;
     }
 
+    // ── Edit Detection ──
+    function checkEditSource() {
+        try {
+            var raw = sessionStorage.getItem('edit_source');
+            if (!raw) return false;
+            sessionStorage.removeItem('edit_source');
+            var edit = JSON.parse(raw);
+            if (!edit.code) return false;
+
+            state.editingApp = { id: edit.app_id, slug: edit.slug, name: edit.name };
+            state.currentCode = edit.code;
+            state.title = edit.name || 'Untitled App';
+
+            showView('build');
+            els.buildTitle.textContent = state.title;
+            if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
+            updatePreview(state.currentCode);
+            appendMessage('assistant', 'Editing "' + (edit.name || 'App') + '". Make changes and hit Publish to update.');
+            return true;
+        } catch (e) { return false; }
+    }
+
     // ── Fork Detection ──
     function checkForkSource() {
         try {
@@ -1442,7 +1479,8 @@
         // Handle Stripe payment return
         checkPaymentReturn();
 
-        // Check if we're loading from a fork
+        // Check if we're loading from an edit or fork
+        if (checkEditSource()) return;
         if (checkForkSource()) return;
 
         loadProjects();

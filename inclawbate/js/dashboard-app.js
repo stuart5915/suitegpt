@@ -118,7 +118,8 @@ function renderAppCards(apps) {
             <div class="app-actions">
                 <button type="button" class="overview-item-action app-actions-toggle">Manage</button>
                 <div class="app-actions-menu">
-                    <a href="/apps/${esc(a.slug || a.id)}">View on Store</a>
+                    <a href="/s/${esc(a.slug || a.id)}" target="_blank">View App</a>
+                    <button type="button" class="app-actions-edit">Edit</button>
                     <button type="button" class="app-actions-delete" data-id="${esc(a.id)}" data-name="${esc(a.name || 'Untitled App')}">Delete</button>
                 </div>
             </div>
@@ -130,6 +131,18 @@ function renderAppCards(apps) {
             const wasOpen = menu.classList.contains('open');
             closeAllAppMenus();
             if (!wasOpen) menu.classList.add('open');
+        });
+
+        el.querySelector('.app-actions-edit').addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAllAppMenus();
+            sessionStorage.setItem('edit_source', JSON.stringify({
+                app_id: a.id,
+                name: a.name || 'Untitled App',
+                slug: a.slug,
+                code: a.code
+            }));
+            window.location.href = '/build';
         });
 
         el.querySelector('.app-actions-delete').addEventListener('click', (e) => {
