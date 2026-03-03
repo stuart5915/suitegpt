@@ -346,14 +346,39 @@ function encodeClankerDeploy(name, symbol) {
     return iface.encodeFunctionData('deployToken', [deploymentConfig]);
 }
 
+var TOKEN_CREATED_TOPIC = '0x9299d1d1a88d8e1abdc591ae7a167a6bc63a8f17d695804e9091ee33aa89fb67';
+var TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+var ZERO_ADDR_TOPIC = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
 function parseDeployedToken(receipt) {
     if (!receipt || !receipt.logs) return null;
-    for (var i = 0; i < receipt.logs.length; i++) {
-        var log = receipt.logs[i];
+    var logs = receipt.logs;
+
+    // Strategy 1: Find TokenCreated event from Clanker V4
+    for (var i = 0; i < logs.length; i++) {
+        var log = logs[i];
         if (log.address && log.address.toLowerCase() === CLANKER_V4.toLowerCase() && log.topics && log.topics.length >= 2) {
             return '0x' + log.topics[1].slice(26);
         }
     }
+
+    // Strategy 2: Find TokenCreated event by signature (any emitter)
+    for (var i = 0; i < logs.length; i++) {
+        var log = logs[i];
+        if (log.topics && log.topics[0] === TOKEN_CREATED_TOPIC && log.topics.length >= 2) {
+            return '0x' + log.topics[1].slice(26);
+        }
+    }
+
+    // Strategy 3: Find first Transfer from address(0) — the token mint
+    // The log.address of that Transfer IS the new token contract
+    for (var i = 0; i < logs.length; i++) {
+        var log = logs[i];
+        if (log.topics && log.topics[0] === TRANSFER_TOPIC && log.topics[1] === ZERO_ADDR_TOPIC && log.address) {
+            return log.address.length === 42 ? log.address : '0x' + log.address.slice(26);
+        }
+    }
+
     return null;
 }
 
@@ -664,6 +689,15 @@ async function handleLaunchDeploy() {
         var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200');
 
         var tokenAddress = parseDeployedToken(result.receipt);
+
+        // Fallback: re-fetch receipt via public RPC (mobile wallets sometimes return incomplete logs)
+        if (!tokenAddress) {
+            var rpcReceipt = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [result.txHash] });
+            if (rpcReceipt && rpcReceipt.result) {
+                tokenAddress = parseDeployedToken(rpcReceipt.result);
+            }
+        }
+
         if (!tokenAddress) {
             throw new Error('Could not find deployed token address in transaction');
         }
