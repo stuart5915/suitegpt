@@ -65,6 +65,10 @@ async function loadOverview() {
     const balEl = document.getElementById('dashBuyBalance');
     if (balEl) balEl.textContent = creditCount + ' credits';
 
+    // Update profile card credits
+    const profileCreditsEl = document.getElementById('profileCredits');
+    if (profileCreditsEl) profileCreditsEl.textContent = creditCount.toLocaleString();
+
     renderAppCards(appsData?.apps || []);
 
 }
@@ -74,7 +78,6 @@ function renderProfileCard(profile) {
     card.classList.remove('hidden');
     const name = profile.x_name || profile.x_handle || 'Anonymous';
     const handle = profile.x_handle && !profile.x_handle.startsWith('w_') ? `@${profile.x_handle}` : '';
-    const profileHref = profile.x_handle ? `/u/${encodeURIComponent(profile.x_handle)}` : '#';
 
     let avatarHtml;
     if (profile.x_avatar_url) {
@@ -89,8 +92,23 @@ function renderProfileCard(profile) {
             <div class="overview-profile-name">${esc(name)}</div>
             ${handle ? `<div class="overview-profile-handle">${esc(handle)}</div>` : ''}
         </div>
+        <div class="profile-credits-area">
+            <div class="profile-sub-badge" id="profileSubBadge">Free</div>
+            <div class="profile-credits-row">
+                <span class="profile-credits-count" id="profileCredits">--</span>
+                <span class="profile-credits-label">credits</span>
+                <span class="profile-credits-info" id="profileCreditsInfo" tabindex="0">i
+                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (5), Sonnet (15), Opus (60).</span>
+                </span>
+            </div>
+            <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
+        </div>
         <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
     `;
+
+    document.getElementById('profileBuyBtn')?.addEventListener('click', () => {
+        document.getElementById('overviewCredits')?.scrollIntoView({ behavior: 'smooth' });
+    });
 
     document.getElementById('dashDisconnect')?.addEventListener('click', () => {
         localStorage.removeItem('inclawbate_token');
@@ -1199,12 +1217,19 @@ async function loadSubscriptionStatus() {
         const activeView = document.getElementById('subActiveView');
         const pickerView = document.getElementById('subPickerView');
 
+        // Update profile badge
+        const profileBadge = document.getElementById('profileSubBadge');
+
         if (data.status === 'active' || data.status === 'canceled' || data.status === 'past_due') {
             // Show active subscription view
             activeView.style.display = '';
             pickerView.style.display = 'none';
 
             const t = SUB_TIERS[data.tier] || { credits: 0, price: '?', label: data.tier || '?' };
+            if (profileBadge) {
+                profileBadge.textContent = t.label;
+                profileBadge.classList.add('active');
+            }
 
             document.getElementById('subTierName').textContent = t.label + ' Plan';
             const badge = document.getElementById('subStatusBadge');
