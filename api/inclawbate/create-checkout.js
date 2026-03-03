@@ -5,7 +5,7 @@
 import Stripe from 'stripe';
 import { authenticateRequest } from './x-callback.js';
 
-const stripe = new Stripe(process.env.INCLAWBATE_STRIPE_SECRET_KEY);
+const stripe = new Stripe((process.env.INCLAWBATE_STRIPE_SECRET_KEY || '').trim());
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',

@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { buffer } from 'micro';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const stripeInclawbate = new Stripe(process.env.INCLAWBATE_STRIPE_SECRET_KEY);
+const stripeInclawbate = new Stripe((process.env.INCLAWBATE_STRIPE_SECRET_KEY || '').trim());
 
 // Initialize Supabase with service role key for admin access
 const supabase = createClient(

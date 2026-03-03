@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
 
-const stripe = new Stripe(process.env.INCLAWBATE_STRIPE_SECRET_KEY);
+const stripe = new Stripe((process.env.INCLAWBATE_STRIPE_SECRET_KEY || '').trim());
 
 const supabase = createClient(
     process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co',
