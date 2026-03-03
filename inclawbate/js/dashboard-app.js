@@ -1061,7 +1061,7 @@ async function dashSendClawsTx() {
             document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
         } else {
             resultEl.innerHTML = (result.error || 'Verification failed.') +
-                ' <a href="#" onclick="dashRetryDeposit(\'' + txHash + '\');return false;" style="color:#6366f1;text-decoration:underline;">Retry verification</a>';
+                ' <a href="#" onclick="dashScanDeposits();return false;" style="color:#6366f1;text-decoration:underline;">Scan for uncredited deposits</a>';
             resultEl.className = 'buy-result error';
             sendBtn.disabled = false;
         }
@@ -1076,36 +1076,51 @@ async function dashSendClawsTx() {
     }
 }
 
-async function dashRetryDeposit(txHash) {
+async function dashScanDeposits() {
     const resultEl = document.getElementById('dashBuyResult');
-    const sendBtn = document.getElementById('dashBuyClawsBtn');
-    resultEl.textContent = 'Retrying verification...';
+    const scanLink = document.getElementById('scanDepositsLink');
+
+    if (!window.ethereum) {
+        resultEl.textContent = 'No wallet detected. Install MetaMask or another browser wallet.';
+        resultEl.className = 'buy-result error';
+        return;
+    }
+
+    if (scanLink) scanLink.style.pointerEvents = 'none';
+    resultEl.textContent = 'Scanning chain for uncredited deposits...';
     resultEl.className = 'buy-result';
-    sendBtn.disabled = true;
 
     try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const wallet = accounts[0];
+
         const resp = await fetch(`${API_BASE}/credits`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ action: 'deposit', tx_hash: txHash })
+            body: JSON.stringify({ action: 'scan-deposits', wallet })
         });
         const result = await resp.json();
 
-        if (resp.ok) {
-            resultEl.textContent = '+' + result.credits_added + ' credits added! New balance: ' + result.credits_total;
+        if (!resp.ok) {
+            resultEl.textContent = result.error || 'Scan failed.';
+            resultEl.className = 'buy-result error';
+        } else if (result.credited > 0) {
+            resultEl.textContent = 'Found ' + result.new_deposits + ' uncredited deposit(s) — +' + result.credited + ' credits added! Balance: ' + result.credits_total;
             resultEl.className = 'buy-result success';
             document.getElementById('ovCredits').textContent = result.credits_total;
             document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
+        } else if (result.found > 0) {
+            resultEl.textContent = 'Found ' + result.found + ' deposit(s), all already credited. No new credits to add.';
+            resultEl.className = 'buy-result';
         } else {
-            resultEl.innerHTML = (result.error || 'Verification failed.') +
-                ' <a href="#" onclick="dashRetryDeposit(\'' + txHash + '\');return false;" style="color:#6366f1;text-decoration:underline;">Retry</a>';
-            resultEl.className = 'buy-result error';
-            sendBtn.disabled = false;
+            resultEl.textContent = 'No CLAWS deposits found from this wallet in the last ~3 hours.';
+            resultEl.className = 'buy-result';
         }
     } catch (e) {
-        resultEl.textContent = e.message || 'Retry failed.';
+        resultEl.textContent = e.message || 'Scan failed.';
         resultEl.className = 'buy-result error';
-        sendBtn.disabled = false;
+    } finally {
+        if (scanLink) scanLink.style.pointerEvents = '';
     }
 }
 

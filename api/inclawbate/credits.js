@@ -4,6 +4,7 @@
 // POST {action:"generate-key"}  — generate/regenerate API key (JWT)
 // POST {action:"add-credits", handle, amount, admin_secret} — admin top-up
 // POST {action:"deposit", tx_hash} — self-service CLAWS deposit (JWT)
+// POST {action:"scan-deposits", wallet} — auto-scan chain for uncredited deposits (JWT)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -99,6 +100,82 @@ async function verifyDepositTx(txHash) {
     }
 
     return { valid: true, amount };
+}
+
+async function scanRecentDeposits(walletAddress, profileId, xHandle) {
+    // Get current block number
+    const latestBlock = await rpcCall('eth_blockNumber', []);
+    if (!latestBlock) return { error: 'Unable to reach Base RPC' };
+
+    const currentBlock = parseInt(latestBlock, 16);
+    const fromBlock = '0x' + Math.max(0, currentBlock - 5000).toString(16);
+
+    // Pad addresses for topics (32 bytes)
+    const paddedFrom = '0x' + walletAddress.slice(2).toLowerCase().padStart(64, '0');
+    const paddedTo = '0x' + PROTOCOL_WALLET.slice(2).padStart(64, '0');
+
+    // Query ERC20 Transfer logs: from user → protocol wallet
+    const logs = await rpcCall('eth_getLogs', [{
+        fromBlock,
+        toBlock: 'latest',
+        address: CLAWS_ADDRESS,
+        topics: [ERC20_TRANSFER_TOPIC, paddedFrom, paddedTo]
+    }]);
+
+    if (!logs || !Array.isArray(logs)) return { found: 0, credited: 0 };
+
+    // Check which tx hashes are already credited
+    const txHashes = logs.map(l => l.transactionHash.toLowerCase());
+    if (txHashes.length === 0) return { found: 0, credited: 0 };
+
+    const { data: existing } = await supabase
+        .from('inclawbate_deposits')
+        .select('tx_hash')
+        .in('tx_hash', txHashes);
+
+    const existingSet = new Set((existing || []).map(d => d.tx_hash));
+    const uncredited = logs.filter(l => !existingSet.has(l.transactionHash.toLowerCase()));
+
+    if (uncredited.length === 0) return { found: txHashes.length, credited: 0 };
+
+    // Fetch price once for all deposits
+    const livePrice = await fetchClawsPrice();
+    if (livePrice <= 0) return { error: 'Unable to fetch CLAWS price. Try again in a moment.' };
+
+    const tokensPerCredit = getTokensPerCredit(livePrice);
+    let totalCredited = 0;
+
+    for (const log of uncredited) {
+        const txHash = log.transactionHash.toLowerCase();
+        const amount = Number(BigInt(log.data)) / 1e18;
+        if (amount <= 0) continue;
+
+        const credits = Math.floor(amount / tokensPerCredit);
+        if (credits <= 0) continue;
+
+        // Record deposit (unique constraint on tx_hash prevents duplicates)
+        const { error: insertErr } = await supabase
+            .from('inclawbate_deposits')
+            .insert({
+                profile_id: profileId,
+                tx_hash: txHash,
+                clawnch_amount: amount,
+                credits_granted: credits
+            });
+
+        if (insertErr) continue; // skip if duplicate or error
+
+        // Add credits
+        const { error: creditErr } = await supabase
+            .rpc('add_inclawbate_credits', {
+                target_handle: xHandle.toLowerCase(),
+                credit_amount: credits
+            });
+
+        if (!creditErr) totalCredited += credits;
+    }
+
+    return { found: txHashes.length, credited: totalCredited, new_deposits: uncredited.length };
 }
 
 export default async function handler(req, res) {
@@ -221,6 +298,48 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ credits: newBalance, handle: handle.toLowerCase() });
+        }
+
+        if (action === 'scan-deposits') {
+            const user = authenticateRequest(req);
+            if (!user) {
+                return res.status(401).json({ error: 'Authentication required' });
+            }
+
+            const { wallet } = req.body;
+            if (!wallet || typeof wallet !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+                return res.status(400).json({ error: 'Valid wallet address required' });
+            }
+
+            const { data: profile, error: profileErr } = await supabase
+                .from('human_profiles')
+                .select('id, x_handle, credits')
+                .eq('id', user.sub)
+                .single();
+
+            if (profileErr || !profile) {
+                return res.status(404).json({ error: 'Profile not found' });
+            }
+
+            const result = await scanRecentDeposits(wallet, profile.id, profile.x_handle);
+
+            if (result.error) {
+                return res.status(503).json({ error: result.error });
+            }
+
+            // Fetch updated balance
+            const { data: updated } = await supabase
+                .from('human_profiles')
+                .select('credits')
+                .eq('id', user.sub)
+                .single();
+
+            return res.status(200).json({
+                found: result.found,
+                credited: result.credited,
+                new_deposits: result.new_deposits || 0,
+                credits_total: updated?.credits ?? profile.credits
+            });
         }
 
         if (action === 'deposit') {
