@@ -173,6 +173,9 @@ const STAKING_SEL = {
     stakerCount:    '0xdff69787',
     rewardRate:     '0x7b0a47ee',
     periodEnd:      '0x506ec095',
+    pause:          '0x8456cb59',
+    unpause:        '0x3f4ba83a',
+    paused:         '0x5c975abb',
 };
 
 function pad32(hex) { return hex.replace('0x', '').padStart(64, '0'); }
@@ -247,6 +250,8 @@ async function loadStakingPools() {
         for (const project of projects) {
             const card = document.createElement('div');
             card.className = 'staking-pool-card';
+            card._projectId = project.id;
+            card._poolAddr = project.staking_address;
             card.innerHTML = `
                 <div class="staking-pool-header">
                     <div class="staking-pool-icon">${(project.token_symbol || '?')[0]}</div>
@@ -255,6 +260,7 @@ async function loadStakingPools() {
                         <div class="staking-pool-symbol">$${esc(project.token_symbol || '???')}</div>
                     </div>
                 </div>
+                <div class="staking-pool-analytics" data-field="analytics"></div>
                 <div class="staking-pool-stats">
                     <div class="staking-pool-stat">
                         <div class="staking-pool-stat-val" data-field="staked">--</div>
@@ -271,20 +277,45 @@ async function loadStakingPools() {
                 </div>
                 <div class="staking-pool-reward-bar"><div class="staking-pool-reward-fill" data-field="bar" style="width:0%"></div></div>
                 <div class="staking-pool-actions">
-                    <button class="staking-pool-fund-btn" data-pool="${esc(project.staking_address)}" data-name="${esc(project.token_name || 'Pool')}">Fund Rewards</button>
+                    <button class="staking-pool-fund-btn" data-pool="${esc(project.staking_address)}" data-name="${esc(project.token_name || 'Pool')}" data-project="${esc(project.id)}">Fund Rewards</button>
+                    <button class="staking-pool-pause-btn" data-pool="${esc(project.staking_address)}" data-field="pauseBtn">Pause</button>
                     <a href="https://basescan.org/address/${esc(project.staking_address)}" target="_blank" rel="noopener" class="staking-pool-view-btn">BaseScan</a>
+                </div>
+                <div class="staking-pool-history" data-field="history">
+                    <button class="staking-pool-history-toggle" data-field="historyToggle">Distribution History &#9662;</button>
+                    <div class="staking-pool-history-list" data-field="historyList" style="display:none"></div>
                 </div>
             `;
 
             // Wire fund button
             card.querySelector('.staking-pool-fund-btn').addEventListener('click', (e) => {
-                openFundModal(e.target.dataset.pool, e.target.dataset.name);
+                const btn = e.target;
+                openFundModal(btn.dataset.pool, btn.dataset.name, btn.dataset.project);
+            });
+
+            // Wire pause/unpause button
+            card.querySelector('.staking-pool-pause-btn').addEventListener('click', (e) => {
+                handlePauseToggle(card, e.target);
+            });
+
+            // Wire history toggle
+            card.querySelector('[data-field="historyToggle"]').addEventListener('click', () => {
+                const list = card.querySelector('[data-field="historyList"]');
+                const toggle = card.querySelector('[data-field="historyToggle"]');
+                const isOpen = list.style.display !== 'none';
+                list.style.display = isOpen ? 'none' : 'block';
+                toggle.innerHTML = isOpen ? 'Distribution History &#9662;' : 'Distribution History &#9652;';
             });
 
             container.appendChild(card);
 
-            // Load on-chain stats async
-            loadPoolStats(card, project.staking_address);
+            // Load on-chain stats + distribution history in parallel
+            Promise.all([
+                loadPoolStats(card, project.staking_address),
+                loadDistributions(card, project.id)
+            ]).then(([_, distributions]) => {
+                renderPoolAnalytics(card, distributions);
+            });
         }
     } catch (e) {
         container.innerHTML = '<div class="overview-empty"><p>Failed to load pools.</p></div>';
@@ -293,27 +324,45 @@ async function loadStakingPools() {
 
 async function loadPoolStats(card, poolAddr) {
     try {
-        const [totalHex, countHex, rateHex, endHex] = await Promise.all([
+        const [totalHex, countHex, rateHex, endHex, pausedHex] = await Promise.all([
             rpcCall(poolAddr, STAKING_SEL.totalStaked),
             rpcCall(poolAddr, STAKING_SEL.stakerCount),
             rpcCall(poolAddr, STAKING_SEL.rewardRate),
             rpcCall(poolAddr, STAKING_SEL.periodEnd),
+            rpcCall(poolAddr, STAKING_SEL.paused),
         ]);
 
         const total = fromWei(totalHex);
         const stakers = Number(BigInt(countHex || '0x0'));
         const rate = fromWei(rateHex);
         const periodEnd = Number(BigInt(endHex || '0x0'));
+        const isPaused = pausedHex && BigInt(pausedHex) === 1n;
         const now = Math.floor(Date.now() / 1000);
+
+        // Store stats on card for analytics
+        card._onChainStats = { total, stakers, rate, periodEnd, isPaused };
 
         card.querySelector('[data-field="staked"]').textContent = fmt(total);
         card.querySelector('[data-field="stakers"]').textContent = fmt(stakers);
         card.querySelector('[data-field="rate"]').textContent = fmt(rate * 86400);
 
+        // Paused state
+        const pauseBtn = card.querySelector('[data-field="pauseBtn"]');
+        const nameEl = card.querySelector('.staking-pool-name');
+        if (isPaused) {
+            card.classList.add('is-paused');
+            if (!nameEl.querySelector('.staking-pool-paused-badge')) {
+                nameEl.insertAdjacentHTML('afterend', '<span class="staking-pool-paused-badge">Paused</span>');
+            }
+            pauseBtn.textContent = 'Unpause';
+            pauseBtn.classList.add('is-unpause');
+        } else {
+            pauseBtn.textContent = 'Pause';
+        }
+
         // Reward period progress bar
         const bar = card.querySelector('[data-field="bar"]');
         if (periodEnd > now) {
-            // Still active — show remaining as a percentage (arbitrary: assume 30 day periods)
             const remaining = periodEnd - now;
             const pct = Math.min(100, Math.max(5, (remaining / (30 * 86400)) * 100));
             bar.style.width = pct + '%';
@@ -325,7 +374,119 @@ async function loadPoolStats(card, poolAddr) {
     }
 }
 
-function openFundModal(poolAddr, poolName) {
+async function loadDistributions(card, projectId) {
+    try {
+        const res = await fetch(`${API_BASE}/inclawbator?distributions=${encodeURIComponent(projectId)}`);
+        const data = await res.json();
+        const distributions = data.distributions || [];
+
+        card._distributions = distributions;
+
+        const list = card.querySelector('[data-field="historyList"]');
+        const historySection = card.querySelector('[data-field="history"]');
+
+        if (distributions.length === 0) {
+            historySection.style.display = 'none';
+            return distributions;
+        }
+
+        list.innerHTML = distributions.map(d => {
+            const amount = parseFloat(d.amount) || 0;
+            const days = Math.round((d.duration_seconds || 0) / 86400);
+            const ago = timeAgo(d.created_at);
+            const txLink = d.tx_hash ? `https://basescan.org/tx/${d.tx_hash}` : '#';
+            return `<div class="staking-pool-history-item">
+                <div class="staking-pool-history-amount">${fmt(amount)} CLAWS</div>
+                <div class="staking-pool-history-meta">${days}d period · ${ago}</div>
+                ${d.tx_hash ? `<a href="${txLink}" target="_blank" rel="noopener" class="staking-pool-history-tx">tx</a>` : ''}
+            </div>`;
+        }).join('');
+
+        return distributions;
+    } catch (e) {
+        return [];
+    }
+}
+
+async function handlePauseToggle(card, btn) {
+    const auth = getStoredAuth();
+    if (!auth) { alert('Connect your wallet first.'); return; }
+
+    const wallet = auth.profile.wallet_address;
+    const poolAddr = card._poolAddr;
+    const isPaused = card.classList.contains('is-paused');
+    const selector = isPaused ? STAKING_SEL.unpause : STAKING_SEL.pause;
+
+    btn.disabled = true;
+    btn.textContent = isPaused ? 'Unpausing...' : 'Pausing...';
+
+    try {
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        }
+
+        await sendTx(wallet, poolAddr, selector);
+
+        // Toggle state
+        if (isPaused) {
+            card.classList.remove('is-paused');
+            const badge = card.querySelector('.staking-pool-paused-badge');
+            if (badge) badge.remove();
+            btn.textContent = 'Pause';
+            btn.classList.remove('is-unpause');
+        } else {
+            card.classList.add('is-paused');
+            const nameEl = card.querySelector('.staking-pool-name');
+            nameEl.insertAdjacentHTML('afterend', '<span class="staking-pool-paused-badge">Paused</span>');
+            btn.textContent = 'Unpause';
+            btn.classList.add('is-unpause');
+        }
+    } catch (e) {
+        btn.textContent = isPaused ? 'Unpause' : 'Pause';
+        alert(e.message || 'Transaction failed');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function renderPoolAnalytics(card, distributions) {
+    const el = card.querySelector('[data-field="analytics"]');
+    if (!distributions || distributions.length === 0) {
+        el.style.display = 'none';
+        return;
+    }
+
+    const totalDistributed = distributions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    const eventCount = distributions.length;
+
+    // Mini bar chart of last 5 distributions
+    const recent = distributions.slice(0, 5).reverse();
+    const maxAmount = Math.max(...recent.map(d => parseFloat(d.amount) || 0), 1);
+
+    const barsHtml = recent.map(d => {
+        const amount = parseFloat(d.amount) || 0;
+        const pct = Math.max(8, (amount / maxAmount) * 100);
+        return `<div class="analytics-bar" style="height:${pct}%" title="${fmt(amount)} CLAWS"></div>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="analytics-summary">
+            <div class="analytics-metric">
+                <div class="analytics-metric-val">${fmt(totalDistributed)}</div>
+                <div class="analytics-metric-label">Total Distributed</div>
+            </div>
+            <div class="analytics-metric">
+                <div class="analytics-metric-val">${eventCount}</div>
+                <div class="analytics-metric-label">Funding Events</div>
+            </div>
+        </div>
+        <div class="analytics-bars">${barsHtml}</div>
+    `;
+    el.style.display = '';
+}
+
+function openFundModal(poolAddr, poolName, projectId) {
     const auth = getStoredAuth();
     if (!auth) { alert('Connect your wallet first.'); return; }
 
@@ -396,7 +557,25 @@ function openFundModal(poolAddr, poolName) {
             // Step 2: depositRewards(amount, duration)
             btn.textContent = 'Funding pool...';
             const depositData = STAKING_SEL.depositRewards + amountWei + durationSec;
-            await sendTx(wallet, poolAddr, depositData);
+            const receipt = await sendTx(wallet, poolAddr, depositData);
+
+            // Record distribution
+            if (projectId && receipt?.transactionHash) {
+                try {
+                    await fetch(`${API_BASE}/inclawbator`, {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: JSON.stringify({
+                            action: 'record-distribution-owner',
+                            project_id: projectId,
+                            staking_address: poolAddr,
+                            amount: amountRaw,
+                            duration_seconds: durationDays * 86400,
+                            tx_hash: receipt.transactionHash
+                        })
+                    });
+                } catch (e) { /* non-critical */ }
+            }
 
             resultEl.textContent = `Funded ${fmt(amountRaw)} CLAWS over ${durationDays} days!`;
             resultEl.className = 'fund-modal-result success';

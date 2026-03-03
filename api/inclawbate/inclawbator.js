@@ -1,10 +1,12 @@
 // Inclawbator — Project Registry API
 // GET                              — list active projects (public, cached 60s)
 // GET ?wallet=0x...                — projects by creator wallet
+// GET ?distributions=<project_id>  — distribution history for a project
 // POST action:"register"           — create project (JWT auth)
 // POST action:"update-staking"     — set staking address after factory deploy (JWT auth, owner only)
 // POST action:"approve"            — admin approves incubated project (admin_secret)
 // POST action:"record-distribution"— log reward distribution (admin_secret)
+// POST action:"record-distribution-owner" — log reward distribution (JWT auth, owner only)
 // POST action:"update-fees"        — admin updates total_fees_claimed (admin_secret)
 // POST action:"feed-agent"         — deposit CLAWS to feed a project's AI agent
 
@@ -132,6 +134,20 @@ export default async function handler(req, res) {
                 .limit(10);
 
             return res.status(200).json({ project: safe, agent_posts: posts || [] });
+        }
+
+        // Distribution history for a project
+        const distProjectId = req.query.distributions;
+        if (distProjectId) {
+            const { data, error } = await supabase
+                .from('inclawbator_distributions')
+                .select('*')
+                .eq('project_id', distProjectId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ distributions: data || [] });
         }
 
         const wallet = req.query.wallet;
@@ -376,6 +392,65 @@ export default async function handler(req, res) {
                     .from('inclawbator_projects')
                     .update({
                         total_rewards_distributed: parseFloat(proj.total_rewards_distributed || 0) + parseFloat(amount)
+                    })
+                    .eq('id', project_id);
+            }
+
+            return res.status(200).json({ ok: true });
+        }
+
+        // ── Owner: record distribution (JWT auth) ──
+        if (action === 'record-distribution-owner') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id, staking_address, amount, duration_seconds, tx_hash } = req.body;
+            if (!project_id || !staking_address || !amount || !duration_seconds || !tx_hash) {
+                return res.status(400).json({ error: 'project_id, staking_address, amount, duration_seconds, tx_hash required' });
+            }
+
+            // Verify ownership
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+
+            const { error: distErr } = await supabase
+                .from('inclawbator_distributions')
+                .insert({
+                    project_id,
+                    staking_address: staking_address.toLowerCase(),
+                    amount,
+                    duration_seconds,
+                    tx_hash,
+                    distributed_by: 'owner'
+                });
+
+            if (distErr) {
+                if (distErr.code === '23505') return res.status(409).json({ error: 'Distribution tx already recorded' });
+                return res.status(500).json({ error: distErr.message });
+            }
+
+            // Increment total_rewards_distributed
+            const { data: proj } = await supabase
+                .from('inclawbator_projects')
+                .select('total_rewards_distributed')
+                .eq('id', project_id)
+                .single();
+
+            if (proj) {
+                await supabase
+                    .from('inclawbator_projects')
+                    .update({
+                        total_rewards_distributed: parseFloat(proj.total_rewards_distributed || 0) + parseFloat(amount),
+                        last_distribution_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     })
                     .eq('id', project_id);
             }

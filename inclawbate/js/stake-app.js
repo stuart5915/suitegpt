@@ -554,6 +554,8 @@ function renderOverview() {
     var rewardsSection = document.getElementById('stakeRewardsSection');
     var ubiGrid = document.getElementById('stakeGridUbi');
     var partnerGrid = document.getElementById('stakeGridPartner');
+    var inclawbatorGrid = document.getElementById('stakeGridInclawbator');
+    var inclawbatorSection = document.getElementById('stakeInclawbatorSection');
     var totalTvl = 0;
 
     // Sort: featured first, then by TVL descending
@@ -568,6 +570,7 @@ function renderOverview() {
     var rewardsHtml = '';
     var ubiHtml = '';
     var partnerHtml = '';
+    var inclawbatorHtml = '';
 
     // Populate CLAWS hero stats
     var clawsStats = poolStats['claws'] || {};
@@ -601,6 +604,8 @@ function renderOverview() {
         totalTvl += result.tvl;
         if (pool.category === 'rewards') {
             rewardsHtml += result.html;
+        } else if (pool.category === 'inclawbator') {
+            inclawbatorHtml += result.html;
         } else if (pool.category === 'partner') {
             partnerHtml += result.html;
         } else {
@@ -635,13 +640,15 @@ function renderOverview() {
     rewardsSection.style.display = rewardsHtml ? '' : 'none';
     ubiGrid.innerHTML = ubiHtml;
     partnerGrid.innerHTML = partnerHtml;
+    inclawbatorGrid.innerHTML = inclawbatorHtml;
+    inclawbatorSection.style.display = inclawbatorHtml ? '' : 'none';
 
     // Update header
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    [rewardsGrid, ubiGrid, partnerGrid].forEach(function(grid) {
+    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid].forEach(function(grid) {
         grid.querySelectorAll('.stake-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 var href = card.getAttribute('href');
@@ -1659,7 +1666,7 @@ async function init() {
                     buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
                     chartLink: 'https://dexscreener.com/base/' + p.token_address,
                     featured: false,
-                    category: p.tier === 'incubated' ? 'ubi' : 'partner',
+                    category: 'inclawbator',
                     dynamic: true
                 };
             });

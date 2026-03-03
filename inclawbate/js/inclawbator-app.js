@@ -675,6 +675,7 @@ async function handleLaunchDeploy() {
         }
 
         // Step 3: Deploy staking pool
+        var poolDeployed = false;
         if (STAKING_FACTORY) {
             try {
                 setBtnState(btn, 'Deploying staking pool...', true);
@@ -696,6 +697,7 @@ async function handleLaunchDeploy() {
                         staking_deploy_tx: stakingResult.txHash
                     });
                     showToast('Staking pool deployed!', 'success');
+                    poolDeployed = true;
                 }
             } catch (stakingErr) {
                 showToast('Token deployed but staking pool failed: ' + (stakingErr.message || ''), 'error');
@@ -708,6 +710,11 @@ async function handleLaunchDeploy() {
         updateUI();
         showToast('Token deployed successfully!', 'success');
 
+        // If pool deploy failed, prompt user to deploy separately
+        if (STAKING_FACTORY && !poolDeployed) {
+            showPoolDeployPrompt(tokenAddress, state.name, state.symbol);
+        }
+
     } catch (e) {
         state.deploying = false;
         setBtnState(btn, 'Deploy Token', false);
@@ -717,6 +724,36 @@ async function handleLaunchDeploy() {
             showToast('Deploy failed: ' + (e.message || 'Unknown error'), 'error');
         }
     }
+}
+
+function showPoolDeployPrompt(tokenAddress, name, symbol) {
+    var overlay = document.createElement('div');
+    overlay.className = 'pool-deploy-prompt-overlay';
+    overlay.innerHTML = '<div class="pool-deploy-prompt">' +
+        '<div class="pool-deploy-prompt-icon">&#128170;</div>' +
+        '<h3>Staking Pool Not Deployed</h3>' +
+        '<p>Your token <strong>$' + (symbol || name || '').toUpperCase() + '</strong> was deployed successfully, but the staking pool couldn\'t be created automatically.</p>' +
+        '<p>You can deploy it now from the Create Stake Pool tool.</p>' +
+        '<div class="pool-deploy-prompt-actions">' +
+            '<button class="btn btn-primary pool-deploy-prompt-go">Deploy Pool Now</button>' +
+            '<button class="btn btn-secondary pool-deploy-prompt-dismiss">Dismiss</button>' +
+        '</div>' +
+    '</div>';
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.querySelector('.pool-deploy-prompt-go').addEventListener('click', function() {
+        overlay.remove();
+        openTool('pool');
+    });
+
+    overlay.querySelector('.pool-deploy-prompt-dismiss').addEventListener('click', function() {
+        overlay.remove();
+    });
+
+    document.body.appendChild(overlay);
 }
 
 // ══════════════════════════════════════
