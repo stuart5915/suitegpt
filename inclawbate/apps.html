@@ -269,6 +269,59 @@
             background: hsla(32, 40%, 30%, 0.3);
             color: var(--sand-300);
         }
+        .app-badge.stake {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: hsla(172, 40%, 30%, 0.3);
+            color: var(--seafoam-300);
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .app-badge.stake:hover {
+            background: hsla(172, 40%, 35%, 0.45);
+        }
+        .app-badge.token {
+            background: hsla(32, 40%, 30%, 0.3);
+            color: var(--sand-300);
+        }
+        .app-badge-apy {
+            font-size: 0.58rem;
+            opacity: 0.8;
+        }
+        .app-detail-stake {
+            margin: var(--space-md) 0;
+        }
+        .app-detail-stake-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border: 1.5px solid var(--seafoam-300);
+            border-radius: var(--radius-full);
+            background: hsla(172, 40%, 30%, 0.15);
+            color: var(--seafoam-300);
+            font-size: 0.82rem;
+            font-weight: 700;
+            font-family: var(--font-body);
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .app-detail-stake-link:hover {
+            background: hsla(172, 40%, 30%, 0.3);
+            transform: translateY(-1px);
+        }
+        .app-detail-token-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            background: hsla(32, 40%, 30%, 0.3);
+            color: var(--sand-300);
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
         .app-card-upvote {
             display: inline-flex;
             align-items: center;
@@ -800,6 +853,16 @@
                 ? '<span class="app-badge paid">' + formatNum(app.claws_price) + ' CLAWS</span>'
                 : '<span class="app-badge free">Free</span>';
 
+            var tokenBadge = '';
+            if (app.staking_address && app.token_symbol) {
+                tokenBadge = '<a class="app-badge stake" href="/stake/' + encodeURIComponent(app.token_symbol) + '" onclick="event.stopPropagation()">' +
+                    '$' + escapeHtml(app.token_symbol) +
+                    ' <span class="app-badge-apy" data-pool="' + escapeHtml(app.staking_address) + '"></span>' +
+                '</a>';
+            } else if (app.token_symbol) {
+                tokenBadge = '<span class="app-badge token">$' + escapeHtml(app.token_symbol) + '</span>';
+            }
+
             var catLabel = app.category ? app.category.charAt(0).toUpperCase() + app.category.slice(1) : 'Other';
             var emoji = catEmoji[app.category] || catEmoji.other;
 
@@ -820,6 +883,7 @@
                         '<span class="app-creator">' + escapeHtml(creator) + '</span>' +
                         '<span class="app-badge cat">' + catLabel + '</span>' +
                         priceBadge +
+                        tokenBadge +
                         '<button class="app-card-upvote' + (app.has_upvoted ? ' upvoted' : '') + '" data-id="' + app.id + '" onclick="event.stopPropagation(); AppStore.upvote(\'' + app.id + '\', this)">' +
                             '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>' +
                             '<span>' + (app.upvote_count || 0) + '</span>' +
@@ -839,6 +903,69 @@
             document.getElementById('pageInfo').textContent = state.page + ' / ' + state.pages;
         } else {
             paginationEl.style.display = 'none';
+        }
+
+        fetchCardApys();
+    }
+
+    // ── Batch APY Fetch ──
+    async function fetchCardApys() {
+        var els = document.querySelectorAll('[data-pool]');
+        if (!els.length) return;
+
+        var poolMap = {};
+        els.forEach(function(el) {
+            var addr = el.getAttribute('data-pool');
+            if (addr) poolMap[addr] = poolMap[addr] || [];
+            poolMap[addr].push(el);
+        });
+
+        var RPC = 'https://mainnet.base.org';
+        var addresses = Object.keys(poolMap);
+
+        var calls = [];
+        addresses.forEach(function(addr) {
+            var padded = addr.slice(2).toLowerCase().padStart(64, '0');
+            // totalStaked(address(0)) — we use totalStaked() selector 0x817b1cd2
+            calls.push(
+                fetch(RPC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: addr, data: '0x817b1cd2' }, 'latest'] })
+                }).then(function(r) { return r.json(); }).catch(function() { return null; })
+            );
+            // rewardRate() — selector 0x7b0a47ee
+            calls.push(
+                fetch(RPC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'eth_call', params: [{ to: addr, data: '0x7b0a47ee' }, 'latest'] })
+                }).then(function(r) { return r.json(); }).catch(function() { return null; })
+            );
+        });
+
+        var results = await Promise.allSettled(calls);
+
+        for (var i = 0; i < addresses.length; i++) {
+            var stakedRes = results[i * 2];
+            var rateRes = results[i * 2 + 1];
+
+            var staked = stakedRes && stakedRes.status === 'fulfilled' && stakedRes.value && stakedRes.value.result
+                ? Number(BigInt(stakedRes.value.result)) : 0;
+            var rate = rateRes && rateRes.status === 'fulfilled' && rateRes.value && rateRes.value.result
+                ? Number(BigInt(rateRes.value.result)) : 0;
+
+            var apyText = '';
+            if (staked > 0 && rate > 0) {
+                var apy = (rate * 86400 * 365 / staked) * 100;
+                apyText = apy >= 1 ? Math.round(apy) + '% APY' : apy.toFixed(1) + '% APY';
+            }
+
+            poolMap[addresses[i]].forEach(function(el) {
+                if (apyText) {
+                    el.textContent = apyText;
+                }
+            });
         }
     }
 
@@ -872,6 +999,13 @@
         var tagsHtml = tags.length
             ? '<div class="app-detail-tags">' + tags.map(function(t) { return '<span class="app-tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>'
             : '';
+
+        var stakingHtml = '';
+        if (app.staking_address && app.token_symbol) {
+            stakingHtml = '<div class="app-detail-stake"><a class="app-detail-stake-link" href="/stake/' + encodeURIComponent(app.token_symbol) + '">Stake $' + escapeHtml(app.token_symbol) + ' &rarr;</a></div>';
+        } else if (app.token_symbol) {
+            stakingHtml = '<div class="app-detail-stake"><span class="app-detail-token-badge">$' + escapeHtml(app.token_symbol) + '</span></div>';
+        }
 
         var isPaid = app.claws_price > 0;
         var appIdSafe = app.id.replace(/'/g, '');
@@ -919,6 +1053,7 @@
                 '<div class="app-detail-creator">Built by ' + escapeHtml(creator) + '</div>' +
                 '<div class="app-detail-desc">' + escapeHtml(app.description || '') + '</div>' +
                 tagsHtml +
+                stakingHtml +
                 '<div class="app-detail-actions">' +
                     '<a class="app-use-btn" href="' + (app.has_code ? ('/s/' + encodeURIComponent(app.slug)) : (app.app_url || '#')) + '" target="_blank" onclick="event.stopPropagation()">Use App</a>' +
                     '<button class="app-fork-btn" onclick="AppStore.fork(\'' + appIdSafe + '\')">Fork</button>' +

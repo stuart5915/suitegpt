@@ -177,12 +177,43 @@ export default async function handler(req, res) {
                 if (uvs) uvs.forEach(u => upvotedSet.add(u.app_id));
             }
 
+            // Enrich with token/staking data from inclawbator_projects
+            let projectByAppId = {};
+            let projectByWallet = {};
+            if (apps.length > 0) {
+                const appIds = apps.map(a => a.id);
+                const creatorWallets = [...new Set(apps.map(a => a.creator_wallet).filter(Boolean))];
+
+                const orFilters = [];
+                if (appIds.length) orFilters.push(`website_url.in.(${appIds.join(',')})`);
+                if (creatorWallets.length) orFilters.push(`creator_wallet.in.(${creatorWallets.join(',')})`);
+
+                if (orFilters.length) {
+                    const { data: projects } = await supabase
+                        .from('inclawbator_projects')
+                        .select('id, website_url, creator_wallet, token_address, token_symbol, staking_address')
+                        .eq('status', 'active')
+                        .or(orFilters.join(','));
+
+                    if (projects) {
+                        projects.forEach(p => {
+                            if (p.website_url) projectByAppId[p.website_url] = p;
+                            if (p.creator_wallet) projectByWallet[p.creator_wallet] = p;
+                        });
+                    }
+                }
+            }
+
             const results = apps.map(a => {
                 const { code, ...rest } = a;
+                const proj = projectByAppId[a.id] || projectByWallet[a.creator_wallet] || null;
                 return {
                     ...rest,
                     has_code: !!code,
-                    has_upvoted: upvotedSet.has(a.id)
+                    has_upvoted: upvotedSet.has(a.id),
+                    token_symbol: proj ? proj.token_symbol : null,
+                    token_address: proj ? proj.token_address : null,
+                    staking_address: proj ? proj.staking_address : null
                 };
             });
 
