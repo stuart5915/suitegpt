@@ -862,7 +862,7 @@
         els.buyCurrentBalance.textContent = state.credits !== null ? state.credits + ' credits' : '--';
 
         // Reset preset buttons to default (50)
-        buyState.selectedAmount = 250;
+        buyState.selectedAmount = 50;
         var presets = els.buyOverlay.querySelectorAll('.buy-preset');
         presets.forEach(function (btn) {
             btn.classList.toggle('active', btn.getAttribute('data-amount') === '50');
