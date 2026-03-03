@@ -35,7 +35,7 @@ var POOLS = {
         color: 'hsl(172, 32%, 48%)',
         colorDim: 'hsla(172, 32%, 48%, 0.12)',
         glow: 'hsla(172, 32%, 48%, 0.18)',
-        description: 'Rewards have ended. INCLAWNCH staking has migrated to CLAWS.',
+        description: 'Rewards have ended. Staking has migrated to CLAWS.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
@@ -49,14 +49,14 @@ var POOLS = {
         ticker: 'CLAWNCH',
         token: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-        rewardTicker: 'INCLAWNCH',
+        rewardTicker: 'CLAWS',
         staking: '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9',
         decimals: 18,
         logo: '/inclawbate/assets/clawnchlogo.jpg',
         color: 'hsl(32, 50%, 50%)',
         colorDim: 'hsla(32, 50%, 50%, 0.12)',
         glow: 'hsla(32, 50%, 50%, 0.18)',
-        description: 'The OG. Stake CLAWNCH, earn INCLAWNCH rewards.',
+        description: 'The OG. Stake CLAWNCH, earn CLAWS rewards.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
@@ -68,14 +68,14 @@ var POOLS = {
         ticker: 'S4H',
         token: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
         rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-        rewardTicker: 'INCLAWNCH',
+        rewardTicker: 'CLAWS',
         staking: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
         decimals: 18,
         logo: '/salvation4humanity/assets/s4hlogo.png',
         color: 'hsl(35, 38%, 38%)',
         colorDim: 'hsla(35, 38%, 38%, 0.12)',
         glow: 'hsla(35, 38%, 38%, 0.18)',
-        description: 'AI-powered online church community. Stake S4H, earn INCLAWNCH rewards.',
+        description: 'AI-powered online church community. Stake S4H, earn CLAWS rewards.',
         website: 'https://salvation4humanity.com',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
         chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
@@ -128,7 +128,7 @@ var COMING_SOON = [
         color: 'hsl(280, 60%, 55%)',
         colorDim: 'hsla(280, 60%, 55%, 0.12)',
         glow: 'hsla(280, 60%, 55%, 0.18)',
-        description: 'Wellness brand powering mindful living. Trading fees buy INCLAWNCH and flow back to stakers.',
+        description: 'Wellness brand powering mindful living. Trading fees buy CLAWS and flow back to stakers.',
         platform: 'mirrormind.life',
         category: 'ubi'
     }
@@ -748,6 +748,9 @@ function renderPoolPage(pool, key) {
     }
     if (pool.chartLink) {
         linksHtml += '<a href="' + pool.chartLink + '" target="_blank" rel="noopener" class="pool-link">Chart <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
+    }
+    if (pool.token) {
+        linksHtml += '<a href="https://www.clanker.world/clanker/' + pool.token + '" target="_blank" rel="noopener" class="pool-link">Clanker <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     }
     linksHtml += '<a href="https://basescan.org/address/' + pool.staking + '" target="_blank" rel="noopener" class="pool-link">Contract <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     if (pool.auditLink) {
@@ -1655,7 +1658,7 @@ async function init() {
                     ticker: p.token_symbol,
                     token: p.token_address,
                     rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-                    rewardTicker: 'INCLAWNCH',
+                    rewardTicker: 'CLAWS',
                     staking: p.staking_address,
                     decimals: 18,
                     logo: p.logo_url || '',
