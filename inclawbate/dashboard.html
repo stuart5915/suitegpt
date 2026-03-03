@@ -88,6 +88,7 @@
         .sub-tier-card:hover { border-color:var(--lobster-300); transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.4); }
         .sub-tier-name { font-size:0.88rem; font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
         .sub-tier-price { font-size:1.6rem; font-weight:800; color:var(--text-primary); margin-bottom:4px; }
+        .sub-tier-price span { font-size:0.75rem; font-weight:600; color:var(--text-dim); }
         .sub-tier-credits { font-size:0.88rem; font-weight:700; color:var(--seafoam-300); font-family:var(--font-mono); margin-bottom:4px; }
         .sub-tier-save { display:inline-block; font-size:0.65rem; color:var(--lobster-100); font-weight:700; background:hsla(9,52%,56%,0.12); padding:2px 10px; border-radius:999px; margin-bottom:14px; }
         .sub-tier-breakdown { list-style:none; padding:0; margin:0 0 16px 0; }
@@ -96,6 +97,32 @@
         .sub-tier-btn { width:100%; padding:10px 0; background:hsla(240,4%,20%,0.5); border:1px solid hsla(240,4%,28%,0.5); border-radius:var(--radius-md); color:var(--text-primary); font-family:var(--font-body); font-size:0.8rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
         .sub-tier-btn:hover { background:var(--accent-gradient); border-color:transparent; color:#fff; box-shadow:0 4px 16px hsla(9,60%,54%,0.3); }
         @media (max-width: 768px) { .sub-tiers { flex-direction:column; } }
+        /* Active subscription status card */
+        .sub-status-card { background:linear-gradient(165deg,hsla(240,8%,14%,1) 0%,hsla(240,8%,10%,1) 100%); border:1px solid hsla(240,4%,22%,0.6); border-radius:var(--radius-xl); padding:24px; }
+        .sub-status-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .sub-status-tier { font-size:1.1rem; font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.04em; }
+        .sub-status-badge { display:inline-block; font-size:0.68rem; font-weight:700; padding:3px 10px; border-radius:999px; }
+        .sub-status-badge.active { background:hsla(142,52%,48%,0.15); color:#4ade80; }
+        .sub-status-badge.canceled { background:hsla(40,80%,50%,0.15); color:#facc15; }
+        .sub-status-badge.past_due { background:hsla(0,70%,50%,0.15); color:#f87171; }
+        .sub-detail-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-size:0.84rem; }
+        .sub-detail-row + .sub-detail-row { border-top:1px solid hsla(240,4%,18%,0.6); }
+        .sub-detail-label { color:var(--text-dim); }
+        .sub-detail-value { color:var(--text-primary); font-weight:700; font-family:var(--font-mono); font-size:0.82rem; }
+        .sub-actions { display:flex; gap:8px; margin-top:16px; }
+        .sub-actions button { flex:1; padding:10px 0; border-radius:var(--radius-md); font-family:var(--font-body); font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .sub-change-btn { background:hsla(240,4%,20%,0.5); border:1px solid hsla(240,4%,28%,0.5); color:var(--text-primary); }
+        .sub-change-btn:hover { border-color:var(--lobster-300); color:var(--lobster-200); }
+        .sub-cancel-btn { background:transparent; border:1px solid hsla(0,60%,50%,0.3); color:hsla(0,70%,60%,0.8); }
+        .sub-cancel-btn:hover { border-color:hsla(0,60%,50%,0.6); color:#f87171; }
+        .sub-reactivate-btn { background:transparent; border:1px solid hsla(142,52%,48%,0.3); color:#4ade80; }
+        .sub-reactivate-btn:hover { border-color:hsla(142,52%,48%,0.6); }
+        .sub-change-tiers { margin-top:16px; }
+        .sub-change-tiers .sub-tier-card { cursor:pointer; }
+        .sub-change-tiers .sub-tier-card.current { opacity:0.5; pointer-events:none; border-color:var(--seafoam-300); }
+        .sub-result { margin-top:12px; font-size:0.84rem; text-align:center; }
+        .sub-result.success { color:var(--seafoam-300); }
+        .sub-result.error { color:#ef4444; }
     </style>
 </head>
 <body>
@@ -246,31 +273,66 @@
 
                     <!-- Subscribe Tab -->
                     <div id="dashBuySubscribe" class="buy-tab-content">
-                        <p class="buy-modal-subtitle">Credit bundles — save vs. buying individually</p>
-                        <div class="sub-tiers">
-                            <div class="sub-tier-card" data-tier="spark" data-credits="1500" data-price="600">
-                                <div class="sub-tier-name">Spark</div>
-                                <div class="sub-tier-price">$6</div>
-                                <div class="sub-tier-credits">1,500 cr</div>
-                                <div class="sub-tier-save">Save 20%</div>
-                                <ul class="sub-tier-breakdown"><li>300 Haiku msgs</li><li>100 Sonnet msgs</li><li>25 Opus msgs</li></ul>
-                                <button class="sub-tier-btn">Choose Spark</button>
+                        <!-- Active subscription view (shown when subscribed) -->
+                        <div id="subActiveView" style="display:none;">
+                            <div class="sub-status-card">
+                                <div class="sub-status-header">
+                                    <span class="sub-status-tier" id="subTierName">--</span>
+                                    <span class="sub-status-badge" id="subStatusBadge">--</span>
+                                </div>
+                                <div class="sub-detail-row">
+                                    <span class="sub-detail-label">Credits / month</span>
+                                    <span class="sub-detail-value" id="subCreditsMonth">--</span>
+                                </div>
+                                <div class="sub-detail-row">
+                                    <span class="sub-detail-label">Monthly cost</span>
+                                    <span class="sub-detail-value" id="subMonthlyCost">--</span>
+                                </div>
+                                <div class="sub-detail-row">
+                                    <span class="sub-detail-label">Next renewal</span>
+                                    <span class="sub-detail-value" id="subRenewalDate">--</span>
+                                </div>
+                                <div class="sub-actions" id="subActions">
+                                    <button class="sub-change-btn" id="subChangeBtn">Change Plan</button>
+                                    <button class="sub-cancel-btn" id="subCancelBtn">Cancel</button>
+                                </div>
+                                <div id="subResult" class="sub-result"></div>
                             </div>
-                            <div class="sub-tier-card" data-tier="builder" data-credits="5000" data-price="1900">
-                                <div class="sub-tier-name">Builder</div>
-                                <div class="sub-tier-price">$19</div>
-                                <div class="sub-tier-credits">5,000 cr</div>
-                                <div class="sub-tier-save">Save 24%</div>
-                                <ul class="sub-tier-breakdown"><li>1,000 Haiku msgs</li><li>333 Sonnet msgs</li><li>83 Opus msgs</li></ul>
-                                <button class="sub-tier-btn">Choose Builder</button>
+                            <!-- Tier picker for changing plans (hidden until Change Plan clicked) -->
+                            <div id="subChangeTiers" class="sub-change-tiers" style="display:none;">
+                                <p class="buy-modal-subtitle" style="margin-top:12px;">Switch to a different plan</p>
+                                <div class="sub-tiers" id="subChangeTierCards"></div>
                             </div>
-                            <div class="sub-tier-card" data-tier="studio" data-credits="15000" data-price="5500">
-                                <div class="sub-tier-name">Studio</div>
-                                <div class="sub-tier-price">$55</div>
-                                <div class="sub-tier-credits">15,000 cr</div>
-                                <div class="sub-tier-save">Save 27%</div>
-                                <ul class="sub-tier-breakdown"><li>3,000 Haiku msgs</li><li>1,000 Sonnet msgs</li><li>250 Opus msgs</li></ul>
-                                <button class="sub-tier-btn">Choose Studio</button>
+                        </div>
+
+                        <!-- Tier picker view (shown when no subscription) -->
+                        <div id="subPickerView">
+                            <p class="buy-modal-subtitle">Monthly plans — credits reload every month</p>
+                            <div class="sub-tiers">
+                                <div class="sub-tier-card" data-tier="spark" data-credits="1500" data-price="600">
+                                    <div class="sub-tier-name">Spark</div>
+                                    <div class="sub-tier-price">$6<span>/mo</span></div>
+                                    <div class="sub-tier-credits">1,500 cr/mo</div>
+                                    <div class="sub-tier-save">Save 20%</div>
+                                    <ul class="sub-tier-breakdown"><li>300 Haiku msgs</li><li>100 Sonnet msgs</li><li>25 Opus msgs</li></ul>
+                                    <button class="sub-tier-btn">Subscribe to Spark</button>
+                                </div>
+                                <div class="sub-tier-card" data-tier="builder" data-credits="5000" data-price="1900">
+                                    <div class="sub-tier-name">Builder</div>
+                                    <div class="sub-tier-price">$19<span>/mo</span></div>
+                                    <div class="sub-tier-credits">5,000 cr/mo</div>
+                                    <div class="sub-tier-save">Save 24%</div>
+                                    <ul class="sub-tier-breakdown"><li>1,000 Haiku msgs</li><li>333 Sonnet msgs</li><li>83 Opus msgs</li></ul>
+                                    <button class="sub-tier-btn">Subscribe to Builder</button>
+                                </div>
+                                <div class="sub-tier-card" data-tier="studio" data-credits="15000" data-price="5500">
+                                    <div class="sub-tier-name">Studio</div>
+                                    <div class="sub-tier-price">$55<span>/mo</span></div>
+                                    <div class="sub-tier-credits">15,000 cr/mo</div>
+                                    <div class="sub-tier-save">Save 27%</div>
+                                    <ul class="sub-tier-breakdown"><li>3,000 Haiku msgs</li><li>1,000 Sonnet msgs</li><li>250 Opus msgs</li></ul>
+                                    <button class="sub-tier-btn">Subscribe to Studio</button>
+                                </div>
                             </div>
                         </div>
                     </div>

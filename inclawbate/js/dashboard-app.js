@@ -759,10 +759,17 @@ function initBuyCredits() {
     // Pay with CLAWS
     document.getElementById('dashBuySendBtn')?.addEventListener('click', dashSendClawsTx);
 
-    // Subscription tier cards → Stripe checkout
-    document.querySelectorAll('.dash-buy-panel .sub-tier-card').forEach(card => {
-        card.addEventListener('click', () => dashBuyTier(card));
+    // Subscription tier cards in the picker view → subscription checkout
+    document.querySelectorAll('#subPickerView .sub-tier-card').forEach(card => {
+        card.addEventListener('click', () => dashSubscribeTier(card));
     });
+
+    // Subscription action buttons
+    document.getElementById('subChangeBtn')?.addEventListener('click', toggleChangeTiers);
+    document.getElementById('subCancelBtn')?.addEventListener('click', cancelSubscription);
+
+    // Load subscription status
+    loadSubscriptionStatus();
 
     // Fetch price
     fetchClawsPrice();
@@ -936,21 +943,89 @@ async function dashBuyWithCard() {
     }
 }
 
-async function dashBuyTier(card) {
-    const credits = parseInt(card.dataset.credits);
+// ── Subscription Management ──
+const SUB_TIERS = {
+    spark:   { credits: 1500,  price: '$6',  label: 'Spark'   },
+    builder: { credits: 5000,  price: '$19', label: 'Builder' },
+    studio:  { credits: 15000, price: '$55', label: 'Studio'  },
+};
+
+let currentSub = { tier: null, status: 'none', current_period_end: null };
+
+async function loadSubscriptionStatus() {
+    const auth = getStoredAuth();
+    if (!auth) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/subscription`, { headers: authHeaders() });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        currentSub = data;
+
+        const activeView = document.getElementById('subActiveView');
+        const pickerView = document.getElementById('subPickerView');
+
+        if (data.status === 'active' || data.status === 'canceled' || data.status === 'past_due') {
+            // Show active subscription view
+            activeView.style.display = '';
+            pickerView.style.display = 'none';
+
+            const t = SUB_TIERS[data.tier] || { credits: 0, price: '?', label: data.tier || '?' };
+
+            document.getElementById('subTierName').textContent = t.label + ' Plan';
+            const badge = document.getElementById('subStatusBadge');
+            badge.className = 'sub-status-badge ' + data.status;
+            badge.textContent = data.status === 'active' ? 'Active' :
+                                data.status === 'canceled' ? 'Cancels at period end' :
+                                'Past due';
+
+            document.getElementById('subCreditsMonth').textContent = t.credits.toLocaleString();
+            document.getElementById('subMonthlyCost').textContent = t.price + '/mo';
+
+            const periodEnd = data.current_period_end ? new Date(data.current_period_end) : null;
+            document.getElementById('subRenewalDate').textContent = periodEnd
+                ? periodEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : '--';
+
+            // Toggle cancel vs reactivate button
+            const cancelBtn = document.getElementById('subCancelBtn');
+            if (data.status === 'canceled') {
+                cancelBtn.className = 'sub-reactivate-btn';
+                cancelBtn.textContent = 'Reactivate';
+                cancelBtn.onclick = reactivateSubscription;
+            } else {
+                cancelBtn.className = 'sub-cancel-btn';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.onclick = cancelSubscription;
+            }
+
+            // Hide change tiers on refresh
+            document.getElementById('subChangeTiers').style.display = 'none';
+        } else {
+            // Show tier picker
+            activeView.style.display = 'none';
+            pickerView.style.display = '';
+        }
+    } catch (e) {
+        // Silently fail, picker stays visible
+    }
+}
+
+async function dashSubscribeTier(card) {
+    const tier = card.dataset.tier;
     const btn = card.querySelector('.sub-tier-btn');
-    const resultEl = document.getElementById('dashBuyResult');
-    if (!credits || !btn) return;
+    const resultEl = document.getElementById('subResult') || document.getElementById('dashBuyResult');
+    if (!tier || !btn) return;
 
     btn.disabled = true;
     btn.textContent = 'Redirecting...';
     if (resultEl) resultEl.innerHTML = '';
 
     try {
-        const resp = await fetch(`${API_BASE}/create-checkout`, {
+        const resp = await fetch(`${API_BASE}/subscription`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ credits: credits, return_path: '/dashboard' })
+            body: JSON.stringify({ action: 'create', tier })
         });
         const data = await resp.json();
 
@@ -959,18 +1034,168 @@ async function dashBuyTier(card) {
         } else {
             if (resultEl) {
                 resultEl.textContent = data.error || 'Failed to start checkout.';
-                resultEl.className = 'buy-result error';
+                resultEl.className = 'sub-result error';
             }
             btn.disabled = false;
-            btn.textContent = 'Choose ' + card.dataset.tier.charAt(0).toUpperCase() + card.dataset.tier.slice(1);
+            btn.textContent = 'Subscribe to ' + (SUB_TIERS[tier]?.label || tier);
         }
     } catch (e) {
         if (resultEl) {
             resultEl.textContent = 'Network error. Try again.';
-            resultEl.className = 'buy-result error';
+            resultEl.className = 'sub-result error';
         }
         btn.disabled = false;
-        btn.textContent = 'Choose ' + card.dataset.tier.charAt(0).toUpperCase() + card.dataset.tier.slice(1);
+        btn.textContent = 'Subscribe to ' + (SUB_TIERS[tier]?.label || tier);
+    }
+}
+
+function toggleChangeTiers() {
+    const panel = document.getElementById('subChangeTiers');
+    if (panel.style.display === 'none') {
+        panel.style.display = '';
+        renderChangeTierCards();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function renderChangeTierCards() {
+    const container = document.getElementById('subChangeTierCards');
+    container.innerHTML = '';
+
+    for (const [key, t] of Object.entries(SUB_TIERS)) {
+        const isCurrent = key === currentSub.tier;
+        const card = document.createElement('div');
+        card.className = 'sub-tier-card' + (isCurrent ? ' current' : '');
+        card.innerHTML = `
+            <div class="sub-tier-name">${t.label}</div>
+            <div class="sub-tier-price">${t.price}<span>/mo</span></div>
+            <div class="sub-tier-credits">${t.credits.toLocaleString()} cr/mo</div>
+            <button class="sub-tier-btn">${isCurrent ? 'Current Plan' : 'Switch to ' + t.label}</button>
+        `;
+        if (!isCurrent) {
+            card.addEventListener('click', () => changeTier(key, card));
+        }
+        container.appendChild(card);
+    }
+}
+
+async function changeTier(newTier, card) {
+    const btn = card.querySelector('.sub-tier-btn');
+    const resultEl = document.getElementById('subResult');
+    btn.disabled = true;
+    btn.textContent = 'Switching...';
+    if (resultEl) resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(`${API_BASE}/subscription`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'change', tier: newTier })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.ok) {
+            if (resultEl) {
+                resultEl.textContent = 'Switched to ' + (SUB_TIERS[newTier]?.label || newTier) + '!';
+                resultEl.className = 'sub-result success';
+            }
+            loadSubscriptionStatus();
+        } else {
+            if (resultEl) {
+                resultEl.textContent = data.error || 'Failed to change plan.';
+                resultEl.className = 'sub-result error';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Switch to ' + (SUB_TIERS[newTier]?.label || newTier);
+        }
+    } catch (e) {
+        if (resultEl) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'sub-result error';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Switch to ' + (SUB_TIERS[newTier]?.label || newTier);
+    }
+}
+
+async function cancelSubscription() {
+    if (!confirm('Cancel your subscription? You\'ll keep access until the current period ends.')) return;
+
+    const cancelBtn = document.getElementById('subCancelBtn');
+    const resultEl = document.getElementById('subResult');
+    cancelBtn.disabled = true;
+    cancelBtn.textContent = 'Cancelling...';
+    if (resultEl) resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(`${API_BASE}/subscription`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'cancel' })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.ok) {
+            if (resultEl) {
+                resultEl.textContent = 'Subscription cancelled. You\'ll keep access until the period ends.';
+                resultEl.className = 'sub-result success';
+            }
+            loadSubscriptionStatus();
+        } else {
+            if (resultEl) {
+                resultEl.textContent = data.error || 'Failed to cancel.';
+                resultEl.className = 'sub-result error';
+            }
+            cancelBtn.disabled = false;
+            cancelBtn.textContent = 'Cancel';
+        }
+    } catch (e) {
+        if (resultEl) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'sub-result error';
+        }
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel';
+    }
+}
+
+async function reactivateSubscription() {
+    const btn = document.getElementById('subCancelBtn');
+    const resultEl = document.getElementById('subResult');
+    btn.disabled = true;
+    btn.textContent = 'Reactivating...';
+    if (resultEl) resultEl.innerHTML = '';
+
+    try {
+        const resp = await fetch(`${API_BASE}/subscription`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'reactivate' })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.ok) {
+            if (resultEl) {
+                resultEl.textContent = 'Subscription reactivated!';
+                resultEl.className = 'sub-result success';
+            }
+            loadSubscriptionStatus();
+        } else {
+            if (resultEl) {
+                resultEl.textContent = data.error || 'Failed to reactivate.';
+                resultEl.className = 'sub-result error';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Reactivate';
+        }
+    } catch (e) {
+        if (resultEl) {
+            resultEl.textContent = 'Network error. Try again.';
+            resultEl.className = 'sub-result error';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Reactivate';
     }
 }
 
@@ -992,6 +1217,22 @@ function init() {
             resultEl.textContent = 'Payment cancelled.';
             resultEl.className = 'buy-result error';
         }
+        window.history.replaceState({}, '', '/dashboard');
+    } else if (params.get('subscription') === 'success') {
+        // Switch to Subscribe tab and show success message
+        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'subscribe'));
+        document.getElementById('dashBuyCredits').classList.remove('active');
+        document.getElementById('dashBuySubscribe').classList.add('active');
+        const resultEl = document.getElementById('subResult');
+        if (resultEl) {
+            resultEl.textContent = 'Subscribed! Your credits have been added.';
+            resultEl.className = 'sub-result success';
+        }
+        window.history.replaceState({}, '', '/dashboard');
+    } else if (params.get('subscription') === 'cancelled') {
+        document.querySelectorAll('.dash-buy-panel .buy-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'subscribe'));
+        document.getElementById('dashBuyCredits').classList.remove('active');
+        document.getElementById('dashBuySubscribe').classList.add('active');
         window.history.replaceState({}, '', '/dashboard');
     }
 
