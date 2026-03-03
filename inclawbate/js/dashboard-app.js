@@ -65,10 +65,6 @@ async function loadOverview() {
 
     renderAppCards(appsData?.apps || []);
 
-    // Populate API key
-    if (creditsData?.api_key) {
-        document.getElementById('dashApiKey').value = creditsData.api_key;
-    }
 }
 
 function renderProfileCard(profile) {
@@ -1454,38 +1450,6 @@ function init() {
             }
         })
         .catch(() => {});
-
-    // Wire API key buttons
-    document.getElementById('generateApiKey')?.addEventListener('click', async () => {
-        const btn = document.getElementById('generateApiKey');
-        btn.disabled = true;
-        btn.textContent = '...';
-        try {
-            const res = await fetch(`${API_BASE}/credits`, {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify({ action: 'generate-key' })
-            });
-            const data = await res.json();
-            if (data.api_key) {
-                document.getElementById('dashApiKey').value = data.api_key;
-            }
-        } catch (err) {}
-        finally {
-            btn.disabled = false;
-            btn.textContent = 'Generate';
-        }
-    });
-
-    document.getElementById('copyApiKey')?.addEventListener('click', () => {
-        const input = document.getElementById('dashApiKey');
-        if (input.value) {
-            navigator.clipboard.writeText(input.value);
-            const btn = document.getElementById('copyApiKey');
-            btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-        }
-    });
 
     // Init buy credits panel
     initBuyCredits();
