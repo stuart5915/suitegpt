@@ -107,8 +107,22 @@ function renderProfileCard(profile) {
             <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-            <a href="/u/${esc(profile.x_handle)}" class="overview-profile-link" style="color:var(--lobster-300);border-color:var(--lobster-300);">Edit Profile</a>
+            <button type="button" class="overview-profile-link" id="dashEditProfile" style="color:var(--lobster-300);border-color:var(--lobster-300);">Edit Profile</button>
             <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
+        </div>
+        <div id="dashEditForm" class="hidden" style="width:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-subtle);">
+            <div style="margin-bottom:10px;">
+                <label style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);display:block;margin-bottom:4px;">Display Name</label>
+                <input class="input" id="dashEditName" placeholder="How you want to appear" maxlength="100" style="width:100%;font-size:0.9rem;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-family:var(--font-mono);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);display:block;margin-bottom:4px;">Tagline</label>
+                <input class="input" id="dashEditTagline" placeholder="One line about what you do" maxlength="200" style="width:100%;font-size:0.9rem;">
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="btn btn-primary btn-sm" id="dashEditSave">Save</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="dashEditCancel">Cancel</button>
+            </div>
         </div>
     `;
 
@@ -119,6 +133,47 @@ function renderProfileCard(profile) {
     document.getElementById('profileSubUpgrade')?.addEventListener('click', (e) => {
         e.preventDefault();
         openBuyModal('subscribe');
+    });
+
+    document.getElementById('dashEditProfile')?.addEventListener('click', () => {
+        const form = document.getElementById('dashEditForm');
+        form.classList.remove('hidden');
+        document.getElementById('dashEditName').value = profile.display_name || '';
+        document.getElementById('dashEditTagline').value = profile.tagline || '';
+        document.getElementById('dashEditProfile').style.display = 'none';
+    });
+
+    document.getElementById('dashEditCancel')?.addEventListener('click', () => {
+        document.getElementById('dashEditForm').classList.add('hidden');
+        document.getElementById('dashEditProfile').style.display = '';
+    });
+
+    document.getElementById('dashEditSave')?.addEventListener('click', async () => {
+        const btn = document.getElementById('dashEditSave');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        try {
+            const resp = await fetch(`${API_BASE}/humans`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    display_name: document.getElementById('dashEditName').value.trim() || null,
+                    tagline: document.getElementById('dashEditTagline').value.trim()
+                })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Save failed');
+            // Update local storage and re-render
+            const stored = JSON.parse(localStorage.getItem('inclawbate_profile') || '{}');
+            Object.assign(stored, data.profile);
+            localStorage.setItem('inclawbate_profile', JSON.stringify(stored));
+            renderProfileCard(stored);
+        } catch (err) {
+            alert('Failed to save: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save';
+        }
     });
 
     document.getElementById('dashDisconnect')?.addEventListener('click', () => {
