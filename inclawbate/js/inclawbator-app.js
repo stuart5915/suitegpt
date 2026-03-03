@@ -818,6 +818,7 @@ async function handlePoolDeploy() {
                 staking_address: stakingPool,
                 staking_deploy_tx: result.txHash
             });
+            existingProject.staking_address = stakingPool;
             state.project = existingProject;
         } else {
             // Fallback: register as partner (shouldn't happen with new flow)
@@ -832,6 +833,7 @@ async function handlePoolDeploy() {
                 creator_wallet: state.wallet
             });
             if (regResult.project) {
+                regResult.project.staking_address = stakingPool;
                 await apiPost({
                     action: 'update-staking',
                     project_id: regResult.project.id,
