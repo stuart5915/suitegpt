@@ -412,6 +412,11 @@
         btns.forEach(function (btn) {
             btn.classList.toggle('active', btn.getAttribute('data-model') === tier);
         });
+        var hint = document.getElementById('modelHint');
+        if (hint) {
+            var hints = { fast: 'Fast & lightweight', standard: 'Balanced quality', pro: 'Maximum detail' };
+            hint.textContent = hints[tier] || '';
+        }
     }
 
     async function fetchCredits() {

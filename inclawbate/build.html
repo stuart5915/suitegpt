@@ -228,17 +228,15 @@
         /* Model Selector */
         .model-selector {
             display: flex;
-            gap: 2px;
-            background: var(--bg-deepest);
-            border-radius: var(--radius-md);
-            padding: 2px;
-            flex-shrink: 0;
+            align-items: center;
+            gap: 6px;
+            padding-top: 8px;
         }
         .model-option {
-            padding: 4px 10px;
-            background: none;
-            border: none;
-            border-radius: calc(var(--radius-md) - 2px);
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border-default);
+            border-radius: 999px;
             color: var(--text-dim);
             font-family: var(--font-body);
             font-size: 0.72rem;
@@ -248,16 +246,22 @@
             white-space: nowrap;
         }
         .model-option:hover {
-            color: var(--text-secondary);
+            border-color: var(--text-dim);
         }
         .model-option.active {
             background: var(--accent-primary);
+            border-color: var(--accent-primary);
             color: #fff;
         }
         .model-cost {
             font-size: 0.65rem;
             opacity: 0.7;
             font-weight: 400;
+        }
+        .model-hint {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-left: auto;
         }
 
         /* Panels */
@@ -880,6 +884,7 @@
             .build-credits-label { display: none; }
             .model-cost { display: none; }
             .model-option { padding: 4px 8px; font-size: 0.68rem; }
+            .model-hint { display: none; }
         }
     </style>
 </head>
@@ -920,11 +925,6 @@
     <div class="build-header">
         <button class="build-back" onclick="window.BuildApp.goBack()" title="Back to projects">&larr;</button>
         <div id="buildTitle" class="build-title">New Project</div>
-        <div class="model-selector">
-            <button class="model-option active" data-model="fast" onclick="window.BuildApp.setModel('fast')">Fast <span class="model-cost">5 cr</span></button>
-            <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">Standard <span class="model-cost">15 cr</span></button>
-            <button class="model-option" data-model="pro" onclick="window.BuildApp.setModel('pro')">Pro <span class="model-cost">25 cr</span></button>
-        </div>
         <div id="buildCredits" class="build-credits">
             <span id="creditsCount" class="build-credits-count">--</span>
             <span class="build-credits-label">credits</span>
@@ -954,6 +954,21 @@
                     <button id="chatSend" class="chat-send" onclick="window.BuildApp.send()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
                     </button>
+                </div>
+                <div class="model-selector">
+                    <button class="model-option active" data-model="fast" onclick="window.BuildApp.setModel('fast')">
+                        <span class="model-name">Fast</span>
+                        <span class="model-cost">5 cr</span>
+                    </button>
+                    <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">
+                        <span class="model-name">Standard</span>
+                        <span class="model-cost">15 cr</span>
+                    </button>
+                    <button class="model-option" data-model="pro" onclick="window.BuildApp.setModel('pro')">
+                        <span class="model-name">Pro</span>
+                        <span class="model-cost">25 cr</span>
+                    </button>
+                    <span class="model-hint" id="modelHint">Fast & lightweight</span>
                 </div>
             </div>
         </div>
