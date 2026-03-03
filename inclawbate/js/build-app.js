@@ -47,7 +47,21 @@
             'A news aggregator that fetches top headlines from NewsAPI',
             'A GitHub profile viewer that shows repos and stats from the GitHub API',
             'A stock ticker widget with live price updates',
-            'A sports scoreboard fetching live game data'
+            'A sports scoreboard fetching live game data',
+            'A movie search app that pulls ratings and posters from OMDB API',
+            'A currency converter with live exchange rates from ExchangeRate API',
+            'A random quote generator that fetches quotes from a public API',
+            'A recipe finder that searches meals by ingredient using TheMealDB',
+            'A space tracker showing ISS location in real time',
+            'A dictionary app with definitions, synonyms, and pronunciation',
+            'A Pokémon explorer that fetches stats and sprites from PokéAPI',
+            'A public transit arrival board using a city transit API',
+            'A COVID or health stats dashboard with historical charts',
+            'A timezone converter that shows clocks for multiple cities',
+            'A joke generator that fetches random jokes from JokeAPI',
+            'An earthquake tracker showing recent seismic activity on a map',
+            'A book search app using the Open Library API',
+            'A dog breed explorer with photos from the Dog CEO API'
         ],
         wallet: [
             'A tip jar page where visitors can send CLAWS tokens to the creator',
@@ -55,7 +69,21 @@
             'A digital art gallery where each piece can be purchased with CLAWS',
             'A creator subscription page with CLAWS-gated tiers',
             'A bounty board where users pay CLAWS to post and claim tasks',
-            'A donation tracker showing live CLAWS contributions'
+            'A donation tracker showing live CLAWS contributions',
+            'A pay-per-download file sharing page with CLAWS payments',
+            'A freelance marketplace where clients pay CLAWS for gigs',
+            'A charity fundraiser page with CLAWS donation progress bar',
+            'A token-gated members-only community page',
+            'A microtipping blog where readers tip per paragraph with CLAWS',
+            'A raffle page where users buy entries with CLAWS tokens',
+            'A tutoring marketplace with CLAWS-based session booking',
+            'A prediction market where users bet CLAWS on outcomes',
+            'An escrow service page for safe peer-to-peer CLAWS trades',
+            'A crowdfunding page where backers pledge CLAWS to projects',
+            'A pay-what-you-want music store with CLAWS payments',
+            'A digital coupon marketplace bought and sold with CLAWS',
+            'A token-gated event ticketing page using CLAWS',
+            'A creator merch store with CLAWS checkout'
         ],
         canvas: [
             'A retro snake game with high score tracking',
@@ -63,7 +91,21 @@
             'A pixel art drawing tool with color palette and export',
             'A 3D spinning cube with WebGL shading',
             'A platformer game with physics and level progression',
-            'A data visualization dashboard with animated bar and pie charts'
+            'A data visualization dashboard with animated bar and pie charts',
+            'A breakout/brick-breaker game with levels and power-ups',
+            'A generative art canvas that creates unique patterns on each load',
+            'A drawing whiteboard with pen sizes, colors, and undo',
+            'A flappy bird clone with animated sprites',
+            'A maze generator and solver with animated pathfinding',
+            'A fireworks display that launches on click',
+            'A mandelbrot fractal explorer with zoom and pan',
+            'A tower defense game with enemy waves and placeable turrets',
+            'A pong game with AI opponent and score tracking',
+            'A cloth simulation that drapes and tears on interaction',
+            'An analog clock with smooth sweeping second hand',
+            'A starfield animation with parallax depth effect',
+            'A connect-four game with gravity drop animations',
+            'A fluid simulation where you paint with colorful particles'
         ],
         images: [
             'A portfolio gallery with uploaded project screenshots',
@@ -71,7 +113,21 @@
             'A real estate listing page with property photos',
             'A team page with staff headshots and bios',
             'A product landing page with hero banner and feature images',
-            'A photo blog with grid layout and lightbox'
+            'A photo blog with grid layout and lightbox',
+            'A before-and-after image comparison slider',
+            'An image carousel with swipe gestures and thumbnails',
+            'A moodboard builder where you arrange uploaded images freely',
+            'A recipe card generator with food photos and instructions',
+            'A travel destination showcase with full-bleed hero images',
+            'An event invitation page with photo collage header',
+            'A pet adoption listing page with animal photos and details',
+            'A fashion lookbook with grid and full-screen gallery views',
+            'A wedding photo gallery with date, venue, and slideshow',
+            'An art portfolio with category filters and zoom view',
+            'A product comparison page with side-by-side images',
+            'A nature photography showcase with masonry grid layout',
+            'A yearbook-style page with photo grid and captions',
+            'A screenshot gallery for app store marketing'
         ],
         web3: [
             'A token swap interface connected to Uniswap on Base',
@@ -79,7 +135,21 @@
             'A token holder leaderboard fetching on-chain data',
             'A DEX price chart pulling from DexScreener API',
             'A staking calculator showing APY and projected rewards',
-            'An NFT gallery that displays tokens from a wallet address'
+            'An NFT gallery that displays tokens from a wallet address',
+            'A gas price tracker showing current Base network fees',
+            'A multi-chain portfolio viewer for ETH, Base, and Arbitrum',
+            'A DAO voting interface with proposal list and vote buttons',
+            'A token vesting schedule viewer with unlock countdown',
+            'An airdrop eligibility checker for a wallet address',
+            'A block explorer lite that shows recent transactions on Base',
+            'A whale watcher that tracks large token transfers',
+            'A yield farming dashboard comparing APYs across protocols',
+            'An ENS name lookup tool that resolves addresses and avatars',
+            'A multi-sig wallet interface for approving group transactions',
+            'A token launch countdown page with live price feed',
+            'A DeFi position tracker showing LP and lending balances',
+            'An on-chain activity feed for a given wallet address',
+            'A memecoin screener with volume, holders, and price change'
         ],
         audio: [
             'A drum machine with 8 pads and different sound samples',
@@ -87,7 +157,21 @@
             'A voice memo recorder with playback and waveform display',
             'A music visualizer that reacts to microphone input',
             'A metronome app with adjustable BPM and time signatures',
-            'A soundboard with customizable audio clips'
+            'A soundboard with customizable audio clips',
+            'A piano keyboard you can play with mouse or keyboard keys',
+            'A lo-fi beat maker with looping tracks and volume sliders',
+            'A podcast player with speed control and bookmarks',
+            'A white noise generator with rain, ocean, and forest sounds',
+            'An audio spectrum analyzer with colorful frequency bars',
+            'A vocal pitch detector that shows your note in real time',
+            'A DJ mixer with two decks and a crossfader',
+            'A sound effects board for live streaming or video calls',
+            'A chord progression builder that plays back in sequence',
+            'A karaoke lyrics display with synced scrolling',
+            'A binaural beats generator with frequency controls',
+            'A sample slicer that chops audio into triggerable pads',
+            'A guitar tuner that listens and shows how sharp or flat you are',
+            'An alarm clock app with selectable ringtones and snooze'
         ],
         appdb: [
             'A multiplayer quiz game with a global leaderboard using AppDB',
@@ -95,7 +179,21 @@
             'A guestbook where visitors leave messages stored in AppDB',
             'A voting/poll app with live results saved in AppDB',
             'A cloud-synced personal journal that saves entries with AppDB',
-            'A bookmark manager that saves links per user with AppDB'
+            'A bookmark manager that saves links per user with AppDB',
+            'A habit tracker that logs daily streaks per user with AppDB',
+            'A flashcard study app with saved decks stored in AppDB',
+            'A recipe box where users save and share recipes via AppDB',
+            'A bug tracker with issue cards saved in AppDB',
+            'A multiplayer tic-tac-toe game with match history in AppDB',
+            'A fitness log that tracks workouts and PRs with AppDB',
+            'A link shortener that stores and tracks clicks via AppDB',
+            'A collaborative wishlist where groups add items via AppDB',
+            'A mood journal that charts your mood over time using AppDB',
+            'A micro-blog feed where users post short updates via AppDB',
+            'A classroom attendance tracker with AppDB persistence',
+            'A movie watchlist with ratings saved per user in AppDB',
+            'A shared grocery list app with real-time sync via AppDB',
+            'A community event board with RSVPs stored in AppDB'
         ],
         libraries: [
             'A dashboard with interactive Chart.js charts and live data',
@@ -103,11 +201,26 @@
             'An interactive map with Leaflet and custom markers',
             'A drag-and-drop Kanban board with SortableJS',
             'A markdown editor with live preview using Marked.js',
-            'A physics simulation with bouncing balls using Matter.js'
+            'A physics simulation with bouncing balls using Matter.js',
+            'A code editor with syntax highlighting using CodeMirror',
+            'A gantt chart project planner using Frappe Gantt',
+            'An animated solar system using Three.js with orbiting planets',
+            'A CSV data explorer with sortable tables using Tabulator',
+            'A flowchart builder using Mermaid.js for diagrams',
+            'A 3D terrain generator using Three.js with height maps',
+            'A real-time collaborative whiteboard using Fabric.js',
+            'A network graph visualizer using D3.js force layout',
+            'A calendar scheduler with event drag-and-drop using FullCalendar',
+            'An image annotation tool with drawing overlays using Fabric.js',
+            'A math equation renderer with live preview using KaTeX',
+            'A slide deck presenter using Reveal.js with custom themes',
+            'A rich text editor with formatting toolbar using Quill.js',
+            'A data-driven scatter plot explorer using Chart.js'
         ]
     };
 
     var currentPromptIndices = [];
+    var lastShownIndices = [];
     var activeCategory = null;
 
     var FOLLOWUP_SUGGESTIONS = [
@@ -170,6 +283,7 @@
         els.buyRate = $('buyRate');
         els.buyCostValue = $('buyCostValue');
         els.buySendBtn = $('buySendBtn');
+        els.buyCardBtn = $('buyCardBtn');
         els.buyCustomAmount = $('buyCustomAmount');
     }
 
@@ -889,11 +1003,21 @@
     }
 
     // ── Refreshable Welcome Prompts ──
-    function pickRandomIndices(poolSize, count) {
+    function pickRandomIndices(poolSize, count, exclude) {
         var indices = [];
-        while (indices.length < count && indices.length < poolSize) {
+        var avoid = exclude || [];
+        // Try to pick indices not in the exclude list
+        var attempts = 0;
+        while (indices.length < count && attempts < 200) {
             var r = Math.floor(Math.random() * poolSize);
-            if (indices.indexOf(r) === -1) indices.push(r);
+            if (indices.indexOf(r) === -1 && avoid.indexOf(r) === -1) indices.push(r);
+            attempts++;
+        }
+        // If pool is too small to fully avoid, fill remaining from any unused index
+        if (indices.length < count && indices.length < poolSize) {
+            for (var i = 0; i < poolSize && indices.length < count; i++) {
+                if (indices.indexOf(i) === -1) indices.push(i);
+            }
         }
         return indices;
     }
@@ -917,7 +1041,7 @@
         setTimeout(function () {
             container.querySelectorAll('.build-welcome-prompt').forEach(function (el) { el.remove(); });
 
-            currentPromptIndices = pickRandomIndices(pool.length, 3);
+            currentPromptIndices = pickRandomIndices(pool.length, 3, currentPromptIndices);
 
             var shuffleBtn = container.querySelector('.shuffle-prompts-btn');
 
@@ -969,6 +1093,7 @@
         }
 
         activeCategory = category;
+        lastShownIndices = [];
 
         // Toggle active state on pills
         var items = document.querySelectorAll('.cap-pill');
@@ -978,7 +1103,8 @@
 
         if (category && expandEl && innerEl) {
             var pool = CATEGORY_PROMPTS[category] || [];
-            var indices = pickRandomIndices(pool.length, 3);
+            var indices = pickRandomIndices(pool.length, 3, lastShownIndices);
+            lastShownIndices = indices;
             var desc = CAP_DESCRIPTIONS[category] || '';
 
             var html = '<div class="cap-expand-desc">' + desc + '</div>';
