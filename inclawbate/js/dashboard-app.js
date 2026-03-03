@@ -101,7 +101,7 @@ function renderProfileCard(profile) {
                 <span class="profile-credits-count" id="profileCredits">--</span>
                 <span class="profile-credits-label">credits</span>
                 <span class="profile-credits-info" id="profileCreditsInfo" tabindex="0">i
-                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (5), Sonnet (15), Opus (60).</span>
+                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (10), Sonnet (35), Opus (150).</span>
                 </span>
             </div>
             <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
@@ -1061,9 +1061,9 @@ function updateDashBuyCost() {
             cardBtn.innerHTML = cardIcon + 'Card min $0.50 (100 credits)';
         }
     }
-    if (bH) bH.textContent = Math.floor(amount / 5) + ' msgs';
-    if (bS) bS.textContent = Math.floor(amount / 15) + ' msgs';
-    if (bO) bO.textContent = Math.floor(amount / 60) + ' msgs';
+    if (bH) bH.textContent = Math.floor(amount / 10) + ' msgs';
+    if (bS) bS.textContent = Math.floor(amount / 35) + ' msgs';
+    if (bO) bO.textContent = Math.floor(amount / 150) + ' msgs';
 }
 
 async function dashSendClawsTx() {

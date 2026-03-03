@@ -483,7 +483,7 @@
         appendMessage('user', message);
 
         // Optimistic credit deduction — backend charges upfront too
-        var tierCost = { fast: 5, standard: 15, pro: 60 }[state.selectedModel] || 5;
+        var tierCost = { fast: 10, standard: 35, pro: 150 }[state.selectedModel] || 10;
         if (state.credits !== null) {
             state.credits = Math.max(0, state.credits - tierCost);
             updateCredits();
@@ -671,7 +671,7 @@
         if (state.credits === null) return;
         els.creditsCount.textContent = state.credits;
         els.creditsCount.className = 'action-credits-count' +
-            (state.credits <= 0 ? ' empty' : state.credits <= 5 ? ' low' : '');
+            (state.credits <= 0 ? ' empty' : state.credits < 10 ? ' low' : '');
     }
 
     // ── Image Attachments ──
@@ -1042,9 +1042,9 @@
                 els.buyCardBtn.innerHTML = cardIcon + 'Card min $0.50 (100 credits)';
             }
         }
-        if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
-        if (bSonnet) bSonnet.textContent = Math.floor(amount / 15) + ' msgs';
-        if (bOpus) bOpus.textContent = Math.floor(amount / 60) + ' msgs';
+        if (bHaiku) bHaiku.textContent = Math.floor(amount / 10) + ' msgs';
+        if (bSonnet) bSonnet.textContent = Math.floor(amount / 35) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 150) + ' msgs';
     }
 
     async function sendClawsTx() {
