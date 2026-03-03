@@ -136,8 +136,11 @@ function isAdmin(profile) {
 }
 
 function extractHtml(text) {
+    // Try closed code block first, then fallback for truncated responses
     const match = text.match(/```html\s*([\s\S]*?)```/);
-    return match ? match[1].trim() : null;
+    if (match) return match[1].trim();
+    const truncated = text.match(/```html\s*([\s\S]+)/);
+    return truncated ? truncated[1].trim() : null;
 }
 
 function autoTitle(message) {

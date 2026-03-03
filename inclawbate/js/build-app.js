@@ -671,8 +671,8 @@
         if (role === 'user') {
             div.textContent = content;
         } else {
-            // Strip the HTML code block from display, show explanation only
-            var displayText = content.replace(/```html[\s\S]*?```/g, '').trim();
+            // Strip the HTML code block from display (handles truncated responses too)
+            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').trim();
             if (!displayText && code) displayText = 'Here\'s your updated site:';
             div.textContent = displayText;
             if (code) {
@@ -1550,7 +1550,10 @@
     // ── Client-side HTML extraction (fallback for streaming) ──
     function extractHtmlClient(text) {
         var match = text.match(/```html\s*([\s\S]*?)```/);
-        return match ? match[1].trim() : null;
+        if (match) return match[1].trim();
+        // Fallback for truncated responses (no closing ```)
+        var truncated = text.match(/```html\s*([\s\S]+)/);
+        return truncated ? truncated[1].trim() : null;
     }
 
     // ── Escape HTML ──
