@@ -27,13 +27,23 @@ export default async function handler(req, res) {
     }
 
     const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const secrets = [
+        process.env.STRIPE_WEBHOOK_SECRET,
+        process.env.INCLAWBATE_STRIPE_WEBHOOK_SECRET,
+    ].filter(Boolean);
 
     let event;
 
     try {
         const rawBody = await buffer(req);
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+        // Try each webhook secret — supports multiple Stripe accounts
+        for (const secret of secrets) {
+            try {
+                event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+                break;
+            } catch (_) { /* try next */ }
+        }
+        if (!event) throw new Error('No matching webhook secret');
     } catch (err) {
         console.error('Webhook signature verification failed:', err.message);
         return res.status(400).json({ error: `Webhook Error: ${err.message}` });
