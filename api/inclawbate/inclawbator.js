@@ -9,6 +9,8 @@
 // POST action:"record-distribution-owner" — log reward distribution (JWT auth, owner only)
 // POST action:"update-fees"        — admin updates total_fees_claimed (admin_secret)
 // POST action:"feed-agent"         — deposit CLAWS to feed a project's AI agent
+// POST action:"delete-application" — owner deletes a pending/rejected application (JWT auth)
+// POST action:"update-application" — owner updates application fields (JWT auth)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -684,6 +686,75 @@ export default async function handler(req, res) {
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(201).json({ project: data });
+        }
+
+        // ── Owner: delete application ──
+        if (action === 'delete-application') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id } = req.body;
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id, status, token_address')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+            if (!['pending', 'rejected'].includes(project.status)) {
+                return res.status(400).json({ error: 'Can only delete pending or rejected applications' });
+            }
+
+            const { error } = await supabase
+                .from('inclawbator_projects')
+                .delete()
+                .eq('id', project_id);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true });
+        }
+
+        // ── Owner: update application ──
+        if (action === 'update-application') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id, token_name, description, logo_url } = req.body;
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id, token_address')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+            if (project.token_address) {
+                return res.status(400).json({ error: 'Cannot edit projects with a launched token' });
+            }
+
+            const updates = { updated_at: new Date().toISOString() };
+            if (token_name !== undefined) updates.token_name = token_name;
+            if (description !== undefined) updates.description = description;
+            if (logo_url !== undefined) updates.logo_url = logo_url || null;
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .update(updates)
+                .eq('id', project_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ project: data });
         }
 
         return res.status(400).json({ error: 'Unknown action' });

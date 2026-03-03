@@ -250,6 +250,13 @@ function renderProjectCard(p) {
     if (p.agent_enabled) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
     }
+    // Edit / Delete for incubation applications (no token launched yet)
+    if (tier === 'incubated' && !addr) {
+        actionsHtml += `<button type="button" class="project-card-action" data-edit-project="${esc(p.id)}">Edit</button>`;
+        if (status === 'pending' || status === 'rejected') {
+            actionsHtml += `<button type="button" class="project-card-action" data-delete-project="${esc(p.id)}" data-delete-name="${esc(name)}">Delete</button>`;
+        }
+    }
 
     card.innerHTML = `
         <div class="project-card-header">
@@ -281,6 +288,16 @@ function renderProjectCard(p) {
     card.querySelector('.project-card-action.primary[data-pool]')?.addEventListener('click', (e) => {
         const btn = e.currentTarget;
         openFundModal(btn.dataset.pool, btn.dataset.name, btn.dataset.project);
+    });
+
+    // Wire edit button
+    card.querySelector('[data-edit-project]')?.addEventListener('click', () => {
+        openEditApplicationModal(p);
+    });
+
+    // Wire delete button
+    card.querySelector('[data-delete-project]')?.addEventListener('click', (e) => {
+        deleteApplication(e.currentTarget.dataset.deleteProject, e.currentTarget.dataset.deleteName);
     });
 
     return card;
@@ -724,6 +741,145 @@ function openFundModal(poolAddr, poolName, projectId) {
     // Escape to close
     const escHandler = (e) => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
     document.addEventListener('keydown', escHandler);
+}
+
+// ── Edit / Delete Application ──
+
+function parseDescription(raw) {
+    const result = { vision: '', helpNeeded: '', contact: '' };
+    if (!raw) return result;
+    const helpIdx = raw.indexOf('--- HELP NEEDED ---');
+    const contactIdx = raw.indexOf('--- CONTACT ---');
+    if (helpIdx === -1 && contactIdx === -1) {
+        result.vision = raw.trim();
+    } else if (helpIdx !== -1 && contactIdx !== -1) {
+        result.vision = raw.slice(0, helpIdx).trim();
+        result.helpNeeded = raw.slice(helpIdx + 19, contactIdx).trim();
+        result.contact = raw.slice(contactIdx + 15).trim();
+    } else if (helpIdx !== -1) {
+        result.vision = raw.slice(0, helpIdx).trim();
+        result.helpNeeded = raw.slice(helpIdx + 19).trim();
+    } else {
+        result.vision = raw.slice(0, contactIdx).trim();
+        result.contact = raw.slice(contactIdx + 15).trim();
+    }
+    return result;
+}
+
+function buildDescription(vision, helpNeeded, contact) {
+    let desc = (vision || '').trim();
+    if (helpNeeded && helpNeeded.trim()) desc += '\n\n--- HELP NEEDED ---\n' + helpNeeded.trim();
+    if (contact && contact.trim()) desc += '\n\n--- CONTACT ---\n' + contact.trim();
+    return desc;
+}
+
+function openEditApplicationModal(project) {
+    const auth = getStoredAuth();
+    if (!auth) { alert('Connect your wallet first.'); return; }
+
+    const parsed = parseDescription(project.description);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fund-modal-overlay';
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    const modal = document.createElement('div');
+    modal.className = 'fund-modal';
+    modal.innerHTML = `
+        <div class="fund-modal-title">Edit Application</div>
+        <label class="fund-modal-label">Project Name</label>
+        <input class="fund-modal-input" type="text" id="editAppName" value="${esc(project.token_name || '')}">
+        <label class="fund-modal-label">Description / Vision</label>
+        <textarea class="fund-modal-input" id="editAppVision" rows="3" style="resize:vertical">${esc(parsed.vision)}</textarea>
+        <label class="fund-modal-label">Help Needed</label>
+        <textarea class="fund-modal-input" id="editAppHelp" rows="2" style="resize:vertical">${esc(parsed.helpNeeded)}</textarea>
+        <label class="fund-modal-label">Contact Info</label>
+        <input class="fund-modal-input" type="text" id="editAppContact" value="${esc(parsed.contact)}">
+        <div class="fund-modal-actions">
+            <button class="fund-modal-submit" id="editAppSave">Save Changes</button>
+            <button class="fund-modal-cancel" id="editAppCancel">Cancel</button>
+        </div>
+        <div class="fund-modal-result" id="editAppResult"></div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    modal.querySelector('#editAppCancel').addEventListener('click', () => overlay.remove());
+
+    modal.querySelector('#editAppSave').addEventListener('click', async () => {
+        const btn = modal.querySelector('#editAppSave');
+        const resultEl = modal.querySelector('#editAppResult');
+        const nameVal = modal.querySelector('#editAppName').value.trim();
+
+        if (!nameVal) {
+            resultEl.textContent = 'Project name is required';
+            resultEl.className = 'fund-modal-result error';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        resultEl.textContent = '';
+        resultEl.className = 'fund-modal-result';
+
+        const description = buildDescription(
+            modal.querySelector('#editAppVision').value,
+            modal.querySelector('#editAppHelp').value,
+            modal.querySelector('#editAppContact').value
+        );
+
+        try {
+            const resp = await fetch(`${API_BASE}/inclawbator`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    action: 'update-application',
+                    project_id: project.id,
+                    token_name: nameVal,
+                    description
+                })
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Update failed');
+
+            resultEl.textContent = 'Application updated!';
+            resultEl.className = 'fund-modal-result success';
+            btn.textContent = 'Saved!';
+
+            setTimeout(() => {
+                overlay.remove();
+                loadProjects();
+            }, 1200);
+        } catch (e) {
+            resultEl.textContent = e.message || 'Update failed';
+            resultEl.className = 'fund-modal-result error';
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+        }
+    });
+
+    const escHandler = (e) => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
+    document.addEventListener('keydown', escHandler);
+}
+
+async function deleteApplication(projectId, projectName) {
+    if (!confirm(`Delete application for "${projectName}"? This cannot be undone.`)) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/inclawbator`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'delete-application', project_id: projectId })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Delete failed');
+        loadProjects();
+    } catch (e) {
+        alert(e.message || 'Failed to delete application');
+    }
 }
 
 // ── Buy Credits ──
