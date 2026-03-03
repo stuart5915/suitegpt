@@ -30,6 +30,10 @@
             var token = localStorage.getItem('inclawbate_token');
             var profile = null;
             try { profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null'); } catch(e) {}
+            // Sync token to cookie so server-side pages (paywall) can read it
+            if (token) {
+                document.cookie = 'inclawbate_token=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
+            }
 
             if (token && profile && profile.wallet_address) {
                 var addr = profile.wallet_address;
@@ -39,6 +43,7 @@
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
                     localStorage.removeItem('inclawbate_token');
                     localStorage.removeItem('inclawbate_profile');
+                    document.cookie = 'inclawbate_token=; path=/; max-age=0';
                     renderWallet();
                     window.location.reload();
                 });
@@ -51,6 +56,7 @@
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
                     localStorage.removeItem('inclawbate_token');
                     localStorage.removeItem('inclawbate_profile');
+                    document.cookie = 'inclawbate_token=; path=/; max-age=0';
                     renderWallet();
                     window.location.reload();
                 });
@@ -88,6 +94,7 @@
 
                 localStorage.setItem('inclawbate_token', data.token);
                 localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+                document.cookie = 'inclawbate_token=' + encodeURIComponent(data.token) + '; path=/; max-age=2592000; SameSite=Lax';
 
                 // Post API key for extension relay
                 if (data.profile.api_key) {

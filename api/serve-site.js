@@ -177,6 +177,7 @@ async function unlockApp() {
         if (resp.ok && result.unlocked) {
             status.textContent = 'Unlocked! Reloading...';
             status.className = 'status success';
+            document.cookie = 'inclawbate_token=' + encodeURIComponent(getToken()) + '; path=/; max-age=2592000; SameSite=Lax';
             setTimeout(function() { location.reload(); }, 1000);
         } else {
             status.textContent = result.error || 'Verification failed. Try again in a moment.';
