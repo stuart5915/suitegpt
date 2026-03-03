@@ -19,6 +19,12 @@ const supabase = createClient(
 const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const FREE_HANDLES = ['artstu'];
 
+const MODEL_TIERS = {
+    fast:     { model: 'claude-haiku-4-5-20251001',  credits: 5,  label: 'Fast' },
+    standard: { model: 'claude-sonnet-4-5-20250929', credits: 15, label: 'Standard' },
+    pro:      { model: 'claude-opus-4-6-20250214',   credits: 25, label: 'Pro' }
+};
+
 const SYSTEM_PROMPT = `You are a expert web developer AI. The user will describe a website, app, or page they want built. You generate complete, self-contained HTML files.
 
 Rules:
@@ -139,11 +145,15 @@ export default async function handler(req, res) {
     const profile = await getProfile(profileId);
     const admin = isAdmin(profile);
 
+    // Resolve model tier
+    const tierKey = req.body?.model || 'fast';
+    const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
+
     // Credit check
-    if (!admin && (!profile || profile.credits <= 0)) {
+    if (!admin && (!profile || profile.credits < tier.credits)) {
         return res.status(402).json({
-            error: 'Buy credits with $CLAWS to keep building.',
-            credits: 0
+            error: 'Not enough credits. ' + tier.label + ' requires ' + tier.credits + ' credits.',
+            credits: profile?.credits || 0
         });
     }
 
@@ -212,7 +222,7 @@ export default async function handler(req, res) {
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-5-20250929',
+                model: tier.model,
                 max_tokens: 8000,
                 system: SYSTEM_PROMPT,
                 messages: contextMessages
@@ -248,7 +258,7 @@ export default async function handler(req, res) {
             content: assistantText,
             code: code,
             tokens_used: tokensUsed,
-            credits_charged: admin ? 0 : 1
+            credits_charged: admin ? 0 : tier.credits
         });
 
         // Update session with latest code
@@ -264,12 +274,22 @@ export default async function handler(req, res) {
                 .eq('id', sessionId);
         }
 
-        // Deduct 1 credit
+        // Deduct credits based on tier
         let creditsRemaining = profile?.credits || 0;
         if (!admin) {
-            const { data: newBalance } = await supabase
-                .rpc('deduct_inclawbate_credit', { profile_id: profileId });
-            creditsRemaining = newBalance >= 0 ? newBalance : 0;
+            const { data: updated, error: creditErr } = await supabase
+                .from('human_profiles')
+                .update({ credits: profile.credits - tier.credits })
+                .eq('id', profileId)
+                .gte('credits', tier.credits)
+                .select('credits')
+                .single();
+
+            if (creditErr || !updated) {
+                creditsRemaining = 0;
+            } else {
+                creditsRemaining = updated.credits;
+            }
         }
 
         return res.json({
@@ -277,7 +297,9 @@ export default async function handler(req, res) {
             title: sessionTitle,
             message: assistantText,
             code: code,
-            credits_remaining: creditsRemaining
+            credits_remaining: creditsRemaining,
+            tier_used: tierKey,
+            credits_charged: admin ? 0 : tier.credits
         });
 
     } catch (error) {

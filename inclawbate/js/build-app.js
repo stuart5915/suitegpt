@@ -14,7 +14,8 @@
         credits: null,
         sending: false,
         title: 'New Project',
-        forkedFrom: null  // { app_id, name } if forked
+        forkedFrom: null,  // { app_id, name } if forked
+        selectedModel: 'fast'
     };
 
     // ── DOM refs ──
@@ -215,7 +216,8 @@
                 },
                 body: JSON.stringify({
                     session_id: state.sessionId,
-                    message: message
+                    message: message,
+                    model: state.selectedModel
                 })
             });
 
@@ -345,6 +347,15 @@
         els.creditsCount.textContent = state.credits;
         els.creditsCount.className = 'build-credits-count' +
             (state.credits <= 0 ? ' empty' : state.credits <= 5 ? ' low' : '');
+    }
+
+    // ── Model Selector ──
+    function setModel(tier) {
+        state.selectedModel = tier;
+        var btns = document.querySelectorAll('.model-option');
+        btns.forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-model') === tier);
+        });
     }
 
     async function fetchCredits() {
@@ -688,6 +699,7 @@
         newProject: newProject,
         send: sendMessage,
         goBack: goBack,
+        setModel: setModel,
         switchTab: switchTab,
         openPublish: openPublish,
         closePublish: closePublish,
