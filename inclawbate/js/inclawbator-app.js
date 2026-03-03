@@ -925,11 +925,6 @@ async function loadAdminPanel() {
         if (pendingList) pendingList.innerHTML = '<p style="color:var(--text-dim);text-align:center">Failed to load</p>';
     }
 
-    try {
-        var data = await apiGet();
-        var pools = (data.projects || []).filter(function(p) { return p.staking_address; });
-        renderAdminTable(pools);
-    } catch (e) {}
 }
 
 function renderPendingApps(apps) {
@@ -1000,106 +995,6 @@ async function rejectProject(id) {
     }
 }
 
-function renderAdminTable(pools) {
-    var tbody = document.getElementById('adminPoolsBody');
-    if (!tbody) return;
-
-    if (pools.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No pools with staking addresses yet</td></tr>';
-        return;
-    }
-
-    var totalFees = pools.reduce(function(sum, p) { return sum + parseFloat(p.total_fees_claimed || 0); }, 0);
-
-    tbody.innerHTML = pools.map(function(p) {
-        var fees = parseFloat(p.total_fees_claimed || 0);
-        var share = totalFees > 0 ? ((fees / totalFees) * 100).toFixed(1) : '0.0';
-
-        return '<tr>' +
-            '<td>' + escapeHtml(p.token_name) + ' <span style="color:var(--text-dim)">$' + escapeHtml(p.token_symbol) + '</span></td>' +
-            '<td><code style="font-size:0.75rem">' + shortAddr(p.staking_address) + '</code></td>' +
-            '<td>' + fmt(fees) + '</td>' +
-            '<td>' + share + '%</td>' +
-            '<td>' + fmt(parseFloat(p.total_rewards_distributed || 0)) + '</td>' +
-        '</tr>';
-    }).join('');
-}
-
-async function handleBatchDistribute() {
-    if (!state.isAdmin || !state.wallet) return;
-
-    var amountEl = document.getElementById('distAmount');
-    var daysEl = document.getElementById('distDays');
-
-    var totalAmount = parseFloat(amountEl.value);
-    var days = parseInt(daysEl.value);
-
-    if (!totalAmount || totalAmount <= 0) return showToast('Enter a valid amount', 'error');
-    if (!days || days <= 0) return showToast('Enter valid duration in days', 'error');
-
-    var durationSeconds = days * 86400;
-
-    var data = await apiGet();
-    var pools = (data.projects || []).filter(function(p) { return p.staking_address; });
-
-    if (pools.length === 0) return showToast('No pools with staking addresses', 'error');
-
-    var totalFees = pools.reduce(function(sum, p) { return sum + parseFloat(p.total_fees_claimed || 0); }, 0);
-
-    if (totalFees <= 0) {
-        var equalShare = totalAmount / pools.length;
-        pools.forEach(function(p) { p._share = equalShare; });
-    } else {
-        pools.forEach(function(p) {
-            var fees = parseFloat(p.total_fees_claimed || 0);
-            p._share = (fees / totalFees) * totalAmount;
-        });
-    }
-
-    var btn = document.getElementById('batchDistributeBtn');
-    btn.disabled = true;
-    btn.textContent = 'Distributing...';
-
-    try {
-        for (var i = 0; i < pools.length; i++) {
-            var pool = pools[i];
-            var shareWei = BigInt(Math.floor(pool._share * 1e18)).toString(16).padStart(64, '0');
-            var durHex = BigInt(durationSeconds).toString(16).padStart(64, '0');
-
-            btn.textContent = 'Approving ' + (i + 1) + '/' + pools.length + '...';
-
-            var approveData = SEL.approve + pad32(pool.staking_address) + shareWei;
-            await sendTxAndWait(state.provider, state.wallet, CLAWS, approveData);
-
-            btn.textContent = 'Depositing ' + (i + 1) + '/' + pools.length + '...';
-
-            var depositData = SEL.depositRewards + shareWei + durHex;
-            var result = await sendTxAndWait(state.provider, state.wallet, pool.staking_address, depositData);
-
-            await apiPost({
-                action: 'record-distribution',
-                admin_secret: prompt('Admin secret for recording:'),
-                project_id: pool.id,
-                staking_address: pool.staking_address,
-                amount: pool._share,
-                duration_seconds: durationSeconds,
-                tx_hash: result.txHash,
-                distributed_by: state.wallet
-            });
-
-            showToast('Distributed to ' + pool.token_name, 'success');
-        }
-
-        btn.textContent = 'Batch Distribute';
-        btn.disabled = false;
-        showToast('All distributions complete!', 'success');
-        loadAdminPanel();
-    } catch (e) {
-        btn.textContent = 'Batch Distribute';
-        btn.disabled = false;
-        showToast('Distribution failed: ' + (e.message || 'Unknown error'), 'error');
-    }
-}
 
 // ══════════════════════════════════════
 // FORM RESET
@@ -1254,9 +1149,6 @@ async function init() {
     var submitIncBtn = document.getElementById('submitIncubationBtn');
     if (submitIncBtn) submitIncBtn.addEventListener('click', handleIncubationSubmit);
 
-    // Bind admin distribute
-    var batchBtn = document.getElementById('batchDistributeBtn');
-    if (batchBtn) batchBtn.addEventListener('click', handleBatchDistribute);
 
     // Bind agent launch
     var deployAgentBtn = document.getElementById('deployAgentBtn');
