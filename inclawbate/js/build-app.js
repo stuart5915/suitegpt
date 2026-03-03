@@ -962,6 +962,8 @@
             if (expandEl) expandEl.classList.remove('open');
             var items = document.querySelectorAll('.cap-pill');
             items.forEach(function (item) { item.classList.remove('active'); });
+            var promptsEl = document.getElementById('chatHeaderPrompts');
+            if (promptsEl) promptsEl.style.display = '';
             renderWelcomePrompts(null);
             return;
         }
@@ -995,11 +997,13 @@
             expandEl.classList.remove('open');
         }
 
-        // Only show welcome prompts when no pill is active (accordion handles it otherwise)
-        if (category) {
-            renderWelcomePrompts(null);  // clear welcome prompts — accordion has them
-        } else {
-            renderWelcomePrompts(null);  // show generic starter prompts
+        // Hide welcome prompts when accordion is open, show when collapsed
+        var promptsEl = document.getElementById('chatHeaderPrompts');
+        if (category && promptsEl) {
+            promptsEl.style.display = 'none';
+        } else if (promptsEl) {
+            promptsEl.style.display = '';
+            renderWelcomePrompts(null);
         }
     }
 
