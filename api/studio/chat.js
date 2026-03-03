@@ -23,9 +23,9 @@ const ADMIN_WALLETS = [
 const FREE_HANDLES = ['artstu'];
 
 const MODEL_TIERS = {
-    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10,  label: 'Fast',     maxTokens: 8192  },
-    standard: { model: 'claude-sonnet-4-6',         credits: 35,  label: 'Standard', maxTokens: 16384 },
-    pro:      { model: 'claude-opus-4-6',           credits: 150, label: 'Pro',      maxTokens: 32000 }
+    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10, label: 'Fast',     maxTokens: 8192  },
+    standard: { model: 'claude-sonnet-4-6',         credits: 25, label: 'Standard', maxTokens: 16384 },
+    pro:      { model: 'claude-opus-4-6',           credits: 50, label: 'Pro',      maxTokens: 32000 }
 };
 
 // Per-token costs in USD (from Anthropic pricing)

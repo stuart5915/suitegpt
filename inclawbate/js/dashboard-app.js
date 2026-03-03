@@ -46,8 +46,8 @@ async function loadOverview() {
 
     const [credits, apps] = await Promise.allSettled([
         fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-        profile.x_handle
-            ? fetch(`${API_BASE}/apps?creator=${encodeURIComponent(profile.x_handle)}`).then(r => r.ok ? r.json() : null)
+        profile.id
+            ? fetch(`${API_BASE}/apps?creator_id=${encodeURIComponent(profile.id)}`).then(r => r.ok ? r.json() : null)
             : Promise.resolve(null)
     ]);
 
@@ -73,24 +73,25 @@ async function loadOverview() {
 
 }
 
+function shortWallet(addr) {
+    if (!addr) return '';
+    return addr.slice(0, 6) + '…' + addr.slice(-4);
+}
+
 function renderProfileCard(profile) {
     const card = document.getElementById('overviewProfileCard');
     card.classList.remove('hidden');
-    const name = profile.display_name || profile.x_name || profile.x_handle || 'Anonymous';
-    const handle = profile.x_handle && !profile.x_handle.startsWith('w_') ? `@${profile.x_handle}` : '';
+    const name = profile.display_name || shortWallet(profile.wallet_address) || 'Anonymous';
+    const walletDisplay = profile.wallet_address ? shortWallet(profile.wallet_address) : '';
 
-    let avatarHtml;
-    if (profile.x_avatar_url) {
-        avatarHtml = `<img src="${esc(profile.x_avatar_url)}" class="overview-profile-avatar" alt="">`;
-    } else {
-        avatarHtml = `<div class="overview-profile-avatar-fallback">${name[0].toUpperCase()}</div>`;
-    }
+    const initial = (profile.display_name || profile.wallet_address || 'A')[0].toUpperCase();
+    const avatarHtml = `<div class="overview-profile-avatar-fallback">${initial}</div>`;
 
     card.innerHTML = `
         ${avatarHtml}
         <div class="overview-profile-info">
             <div class="overview-profile-name">${esc(name)}</div>
-            ${handle ? `<div class="overview-profile-handle">${esc(handle)}</div>` : ''}
+            ${walletDisplay ? `<div class="overview-profile-handle" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-dim);">${esc(walletDisplay)}</div>` : ''}
         </div>
         <div class="profile-credits-area">
             <div class="profile-sub-row">
@@ -101,7 +102,7 @@ function renderProfileCard(profile) {
                 <span class="profile-credits-count" id="profileCredits">--</span>
                 <span class="profile-credits-label">credits</span>
                 <span class="profile-credits-info" id="profileCreditsInfo" tabindex="0">i
-                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (10), Sonnet (35), Opus (150).</span>
+                    <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (10), Sonnet (25), Opus (50).</span>
                 </span>
             </div>
             <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
@@ -1120,8 +1121,8 @@ function updateDashBuyCost() {
         }
     }
     if (bH) bH.textContent = Math.floor(amount / 10) + ' msgs';
-    if (bS) bS.textContent = Math.floor(amount / 35) + ' msgs';
-    if (bO) bO.textContent = Math.floor(amount / 150) + ' msgs';
+    if (bS) bS.textContent = Math.floor(amount / 25) + ' msgs';
+    if (bO) bO.textContent = Math.floor(amount / 50) + ' msgs';
 }
 
 async function dashSendClawsTx() {

@@ -502,7 +502,7 @@
         appendMessage('user', message);
 
         // Optimistic credit deduction — backend charges upfront too
-        var tierCost = { fast: 10, standard: 35, pro: 150 }[state.selectedModel] || 10;
+        var tierCost = { fast: 10, standard: 25, pro: 50 }[state.selectedModel] || 10;
         if (state.credits !== null) {
             state.credits = Math.max(0, state.credits - tierCost);
             updateCredits();
@@ -1117,8 +1117,8 @@
             }
         }
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 10) + ' msgs';
-        if (bSonnet) bSonnet.textContent = Math.floor(amount / 35) + ' msgs';
-        if (bOpus) bOpus.textContent = Math.floor(amount / 150) + ' msgs';
+        if (bSonnet) bSonnet.textContent = Math.floor(amount / 25) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 50) + ' msgs';
     }
 
     async function sendClawsTx() {
