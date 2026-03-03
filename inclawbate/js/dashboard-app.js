@@ -1,4 +1,4 @@
-// Inclawbate — Dashboard Controller (Inbox + Chat)
+// Inclawbate — Dashboard Controller (Overview + Inbox + Chat)
 // Capacity is market-driven: agent share = total CLAWNCH paid / all CLAWNCH paid
 import { getStoredAuth, logout } from './x-auth-client.js';
 
@@ -10,6 +10,7 @@ let pollTimer = null;
 let lastMessageTime = null;
 let currentDirection = 'inbound';
 let currentFilter = 'all';
+let currentView = 'overview';
 let sending = false;
 let pendingFile = null; // { file, name, type, dataUrl }
 const seenMessageIds = new Set();
@@ -58,7 +59,6 @@ function renderAttachment(msg) {
 }
 
 // ── Agent Shares (market-driven) ──
-// Groups all payments by agent_address across all conversations
 function getAgentShares() {
     const agentTotals = {};
     conversations.forEach(c => {
@@ -77,6 +77,191 @@ function getAgentShares() {
         shares[addr] = totalPaid > 0 ? Math.round((a.total_paid / totalPaid) * 100) : 0;
     });
     return { shares, totalPaid };
+}
+
+// ── Top Tab Switching ──
+function switchTab(view) {
+    if (view === currentView) return;
+    currentView = view;
+
+    // Update active tab
+    document.querySelectorAll('.dash-top-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.dash-top-tab[data-view="${view}"]`)?.classList.add('active');
+
+    // Hide all panels
+    document.getElementById('dashOverview').classList.add('hidden');
+    document.getElementById('dashInboxWrap').classList.add('hidden');
+    document.getElementById('creditsPanel').classList.add('hidden');
+    document.getElementById('notifPanel').classList.add('hidden');
+
+    // Close any active chat
+    activeConvoId = null;
+    stopPolling();
+
+    if (view === 'overview') {
+        document.getElementById('dashOverview').classList.remove('hidden');
+        loadOverview();
+    } else if (view === 'inbox') {
+        currentDirection = 'inbound';
+        document.getElementById('dashInboxWrap').classList.remove('hidden');
+        document.getElementById('outreachFilters').classList.add('hidden');
+        resetChatPanel();
+        loadConversations();
+    } else if (view === 'outreach') {
+        currentDirection = 'outbound';
+        document.getElementById('dashInboxWrap').classList.remove('hidden');
+        resetChatPanel();
+        loadConversations();
+    } else if (view === 'credits') {
+        document.getElementById('creditsPanel').classList.remove('hidden');
+        loadCreditsPanel();
+    } else if (view === 'notifications') {
+        document.getElementById('notifPanel').classList.remove('hidden');
+        loadNotifications();
+    }
+}
+
+function resetChatPanel() {
+    document.getElementById('chatView')?.classList.add('hidden');
+    document.getElementById('chatEmpty')?.classList.remove('hidden');
+    document.getElementById('dashSidebar')?.classList.remove('chat-open');
+    document.getElementById('dashMain')?.classList.add('no-chat');
+    currentFilter = 'all';
+    document.querySelectorAll('.dash-filter').forEach(c => c.classList.remove('active'));
+    document.querySelector('.dash-filter[data-filter="all"]')?.classList.add('active');
+}
+
+// ── Overview ──
+async function loadOverview() {
+    const auth = getStoredAuth();
+    if (!auth) return;
+    const profile = auth.profile;
+
+    renderProfileCard(profile);
+
+    // Parallel fetch all data
+    const [credits, projects, convos, apps] = await Promise.allSettled([
+        fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
+        profile.wallet_address
+            ? fetch(`${API_BASE}/inclawbator?wallet=${encodeURIComponent(profile.wallet_address)}`).then(r => r.ok ? r.json() : null)
+            : Promise.resolve(null),
+        fetch(`${API_BASE}/conversations`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
+        profile.x_handle
+            ? fetch(`${API_BASE}/apps?creator=${encodeURIComponent(profile.x_handle)}`).then(r => r.ok ? r.json() : null)
+            : Promise.resolve(null)
+    ]);
+
+    const creditsData = credits.status === 'fulfilled' ? credits.value : null;
+    const projectsData = projects.status === 'fulfilled' ? projects.value : null;
+    const convosData = convos.status === 'fulfilled' ? convos.value : null;
+    const appsData = apps.status === 'fulfilled' ? apps.value : null;
+
+    // Update stat cards
+    document.getElementById('ovCredits').textContent = creditsData?.credits ?? 0;
+    document.getElementById('ovProjects').textContent = projectsData?.projects?.length ?? 0;
+    document.getElementById('ovApps').textContent = appsData?.apps?.length ?? appsData?.total ?? 0;
+    document.getElementById('ovConvos').textContent = convosData?.conversations?.length ?? 0;
+
+    renderProjectCards(projectsData?.projects || []);
+    renderAppCards(appsData?.apps || []);
+    renderRecentConvos(convosData?.conversations || []);
+}
+
+function renderProfileCard(profile) {
+    const card = document.getElementById('overviewProfileCard');
+    const name = profile.x_name || profile.x_handle || 'Anonymous';
+    const handle = profile.x_handle && !profile.x_handle.startsWith('w_') ? `@${profile.x_handle}` : '';
+    const profileHref = profile.x_handle ? `/u/${encodeURIComponent(profile.x_handle)}` : '#';
+
+    let avatarHtml;
+    if (profile.x_avatar_url) {
+        avatarHtml = `<img src="${esc(profile.x_avatar_url)}" class="overview-profile-avatar" alt="">`;
+    } else {
+        avatarHtml = `<div class="overview-profile-avatar-fallback">${name[0].toUpperCase()}</div>`;
+    }
+
+    card.innerHTML = `
+        ${avatarHtml}
+        <div class="overview-profile-info">
+            <div class="overview-profile-name">${esc(name)}</div>
+            ${handle ? `<div class="overview-profile-handle">${esc(handle)}</div>` : ''}
+        </div>
+        <a href="${profileHref}" class="overview-profile-link">View Profile</a>
+    `;
+}
+
+function renderProjectCards(projects) {
+    const container = document.getElementById('overviewProjectList');
+    if (!projects.length) {
+        container.innerHTML = '<div class="overview-empty"><p>No projects yet. <a href="/inclawbator">Launch your first token</a></p></div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    projects.slice(0, 5).forEach(p => {
+        const status = (p.status || 'pending').toLowerCase();
+        const badgeClass = status === 'funded' ? 'funded' : status === 'building' ? 'building' : status === 'live' ? 'live' : 'pending';
+        const el = document.createElement('div');
+        el.className = 'overview-item';
+        el.innerHTML = `
+            <div class="overview-item-info">
+                <div class="overview-item-title">${esc(p.token_name || p.name || 'Untitled')}</div>
+                <div class="overview-item-sub">${p.token_ticker ? '$' + esc(p.token_ticker) : ''} ${p.created_at ? '· ' + timeAgo(p.created_at) : ''}</div>
+            </div>
+            <span class="overview-item-badge ${badgeClass}">${esc(status)}</span>
+            <a href="/inclawbator/${p.id}" class="overview-item-action">Manage</a>
+        `;
+        container.appendChild(el);
+    });
+}
+
+function renderAppCards(apps) {
+    const container = document.getElementById('overviewAppList');
+    if (!apps.length) {
+        container.innerHTML = '<div class="overview-empty"><p>No apps yet. <a href="/apps">Build your first app</a></p></div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    apps.slice(0, 5).forEach(a => {
+        const el = document.createElement('div');
+        el.className = 'overview-item';
+        el.innerHTML = `
+            <div class="overview-item-info">
+                <div class="overview-item-title">${esc(a.name || 'Untitled App')}</div>
+                <div class="overview-item-sub">${a.upvote_count ? a.upvote_count + ' upvotes' : '0 upvotes'} · ${a.category || 'App'}</div>
+            </div>
+            <a href="/apps/${a.slug || a.id}" class="overview-item-action">View</a>
+        `;
+        container.appendChild(el);
+    });
+}
+
+function renderRecentConvos(convos) {
+    const container = document.getElementById('overviewConvoList');
+    if (!convos.length) {
+        container.innerHTML = '<div class="overview-empty"><p>No conversations yet.</p></div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    convos.slice(0, 5).forEach(c => {
+        const name = c.agent_name || 'Unknown Agent';
+        const el = document.createElement('div');
+        el.className = 'overview-item';
+        el.style.cursor = 'pointer';
+        el.innerHTML = `
+            <div class="overview-item-info">
+                <div class="overview-item-title">${esc(name)}</div>
+                <div class="overview-item-sub">${timeAgo(c.last_message_at || c.created_at)}</div>
+            </div>
+        `;
+        el.addEventListener('click', () => {
+            switchTab('inbox');
+            setTimeout(() => openConversation(c.id), 300);
+        });
+        container.appendChild(el);
+    });
 }
 
 // ── Init ──
@@ -117,78 +302,10 @@ function init() {
             }
         });
 
-    // Tab switching
-    document.querySelectorAll('.dash-tab').forEach(tab => {
+    // Top tab switching
+    document.querySelectorAll('.dash-top-tab').forEach(tab => {
         tab.addEventListener('click', () => {
-            const dir = tab.dataset.dir;
-            if (dir === currentDirection) return;
-            currentDirection = dir;
-            document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            // Close any open conversation
-            activeConvoId = null;
-            stopPolling();
-            document.getElementById('chatView').classList.add('hidden');
-            document.getElementById('chatEmpty').classList.remove('hidden');
-            document.getElementById('dashSidebar').classList.remove('chat-open');
-            document.getElementById('dashMain').classList.add('no-chat');
-
-            // Toggle credits panel vs conversation view
-            const creditsPanel = document.getElementById('creditsPanel');
-            const convoList = document.getElementById('convoList');
-            const statsEl = document.querySelector('.dash-stats');
-            const telegramBar = document.getElementById('telegramBar');
-            const telegramConn = document.getElementById('telegramConnected');
-
-            if (dir === 'credits') {
-                convoList.classList.add('hidden');
-                statsEl.classList.add('hidden');
-                telegramBar.classList.add('hidden');
-                telegramConn.classList.add('hidden');
-                creditsPanel.classList.remove('hidden');
-                document.getElementById('notifList').classList.add('hidden');
-                document.getElementById('dashMain').classList.add('hidden');
-                loadCreditsPanel();
-                return;
-            }
-
-            if (dir === 'notifications') {
-                convoList.classList.add('hidden');
-                statsEl.classList.add('hidden');
-                telegramBar.classList.add('hidden');
-                telegramConn.classList.add('hidden');
-                creditsPanel.classList.add('hidden');
-                document.getElementById('notifList').classList.remove('hidden');
-                document.getElementById('dashMain').classList.add('hidden');
-                document.getElementById('outreachFilters').classList.add('hidden');
-                loadNotifications();
-                return;
-            }
-
-            // Restore conversation view
-            creditsPanel.classList.add('hidden');
-            document.getElementById('notifList').classList.add('hidden');
-            convoList.classList.remove('hidden');
-            statsEl.classList.remove('hidden');
-            document.getElementById('dashMain').classList.remove('hidden');
-
-            // Reset filter
-            currentFilter = 'all';
-            document.querySelectorAll('.dash-filter').forEach(c => c.classList.remove('active'));
-            document.querySelector('.dash-filter[data-filter="all"]')?.classList.add('active');
-
-            // Update empty state text
-            const emptyEl = document.getElementById('chatEmpty');
-            if (dir === 'outbound') {
-                emptyEl.querySelector('h3').textContent = 'Select a conversation';
-                emptyEl.querySelector('p').textContent = 'Click a conversation to see your outreach messages.';
-            } else {
-                emptyEl.querySelector('h3').textContent = 'Select a conversation';
-                emptyEl.querySelector('p').textContent = 'Click a conversation from your inbox to see messages from the agent and reply.';
-            }
-
-            loadConversations();
+            switchTab(tab.dataset.view);
         });
     });
 
@@ -243,7 +360,8 @@ function init() {
         });
     });
 
-    loadConversations();
+    // Default to overview
+    loadOverview();
 
     // Load unread notification count for badge
     loadNotifBadge();
@@ -290,7 +408,6 @@ async function loadConversations() {
 
 function updateStats() {
     if (currentDirection === 'outbound') {
-        // Outreach stats: humans hired, CLAWNCH sent, conversations
         const totalSent = conversations.reduce((sum, c) => sum + (parseFloat(c.payment_amount) || 0), 0);
         const uniqueHumans = new Set(conversations.map(c => c.human_id)).size;
         document.getElementById('statAgents').textContent = uniqueHumans;
@@ -301,7 +418,6 @@ function updateStats() {
         document.querySelector('.dash-stat:nth-child(2) .dash-stat-label').textContent = 'CLAWNCH Sent';
         document.querySelector('.dash-stat:nth-child(3) .dash-stat-label').textContent = 'Conversations';
     } else {
-        // Inbound stats (original)
         const { shares, totalPaid } = getAgentShares();
         const uniqueAgents = Object.keys(shares).filter(addr => shares[addr] >= 1).length;
         const allocated = totalPaid > 0 ? 100 : 0;
@@ -346,10 +462,8 @@ function renderConversationList() {
         const amount = parseFloat(c.payment_amount) || 0;
 
         if (currentDirection === 'outbound') {
-            // Show the hired human's info
             const name = c.human_x_name || c.human_x_handle || 'Unknown';
             const initial = name[0].toUpperCase();
-            // Status dot
             let statusClass = 'no-messages';
             if (c.message_count > 0 && c.has_human_reply) statusClass = 'replied';
             else if (c.message_count > 0) statusClass = 'unreplied';
@@ -369,7 +483,6 @@ function renderConversationList() {
                 <div class="dash-convo-status ${statusClass}" title="${statusClass === 'replied' ? 'Has replied' : statusClass === 'unreplied' ? 'Awaiting reply' : 'No messages'}"></div>
             `;
         } else {
-            // Inbound: show agent info (original behavior)
             const initial = (c.agent_name || 'A')[0].toUpperCase();
             const agentShare = shares[c.agent_address] || 0;
             el.innerHTML = `
@@ -412,7 +525,6 @@ async function openConversation(convoId) {
         const amount = parseFloat(convo.payment_amount) || 0;
 
         if (currentDirection === 'outbound') {
-            // Outbound: show the hired human's info
             const name = convo.human_x_name || convo.human_x_handle || 'Unknown';
             const avatarEl = document.getElementById('chatAgentAvatar');
             if (convo.human_x_avatar_url) {
@@ -425,7 +537,6 @@ async function openConversation(convoId) {
             document.getElementById('chatPaymentBadge').textContent = amount > 0 ? `${amount.toLocaleString()} CLAWNCH sent` : 'No payment yet';
             document.getElementById('chatInput').placeholder = convo.human_x_handle ? `Message @${convo.human_x_handle}...` : 'Send a message...';
         } else {
-            // Inbound: show agent info (original behavior)
             const initial = (convo.agent_name || 'A')[0].toUpperCase();
             document.getElementById('chatAgentAvatar').innerHTML = '';
             document.getElementById('chatAgentAvatar').textContent = initial;
@@ -529,7 +640,6 @@ function appendMessages(messages) {
         container.innerHTML = '';
     }
 
-    // Deduplicate — skip messages we've already rendered
     const newMsgs = messages.filter(msg => !seenMessageIds.has(msg.id));
     if (newMsgs.length === 0) return;
 
@@ -572,7 +682,6 @@ async function sendMessage() {
     try {
         let fileData = null;
 
-        // Upload file first if attached
         if (pendingFile) {
             const inputBar = document.querySelector('.chat-input-bar');
             inputBar.classList.add('chat-attach-uploading');
@@ -650,10 +759,8 @@ function updateSendBtn() {
 
 // ── Events ──
 
-// Send button
 document.getElementById('chatSendBtn')?.addEventListener('click', sendMessage);
 
-// Enter to send (shift+enter for newline)
 document.getElementById('chatInput')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -661,19 +768,16 @@ document.getElementById('chatInput')?.addEventListener('keydown', (e) => {
     }
 });
 
-// Enable/disable send button based on input or attachment
 document.getElementById('chatInput')?.addEventListener('input', (e) => {
     updateSendBtn();
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
 });
 
-// Attach file button
 document.getElementById('attachBtn')?.addEventListener('click', () => {
     document.getElementById('fileInput')?.click();
 });
 
-// File input change
 document.getElementById('fileInput')?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -700,10 +804,8 @@ document.getElementById('fileInput')?.addEventListener('change', (e) => {
     reader.readAsDataURL(file);
 });
 
-// Remove attachment
 document.getElementById('attachRemove')?.addEventListener('click', clearAttachment);
 
-// Mobile back button
 document.getElementById('chatBackBtn')?.addEventListener('click', () => {
     document.getElementById('dashSidebar').classList.remove('chat-open');
     document.getElementById('dashMain').classList.add('no-chat');

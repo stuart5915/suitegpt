@@ -128,10 +128,16 @@ export default async function handler(req, res) {
             const limitNum = Math.min(50, Math.max(1, parseInt(rawLimit) || 20));
             const offset = (pageNum - 1) * limitNum;
 
+            const creator = req.query.creator;
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' })
-                .eq('is_public', true);
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' });
+
+            if (creator) {
+                query = query.ilike('creator_x_handle', creator);
+            } else {
+                query = query.eq('is_public', true);
+            }
 
             if (category && category !== 'all') {
                 query = query.eq('category', category);

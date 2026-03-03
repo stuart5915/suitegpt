@@ -30,7 +30,7 @@
         <a href="/angel" class="nav-link">NFT</a>
         <a href="/apps" class="nav-link">Apps</a>
         <a href="/inclawbator" class="nav-link">Inclawbator</a>
-        <a href="/team" class="nav-link">Team</a>
+        <a href="/dashboard" class="nav-link active">Dashboard</a>
     </div>
 </nav>
 
@@ -45,79 +45,150 @@
 <!-- Dashboard (shown when authenticated) -->
 <div id="dashboardView" class="dashboard hidden">
 
-    <!-- Sidebar: Conversation List -->
-    <div class="dash-sidebar" id="dashSidebar">
-        <div class="dash-sidebar-header">
-            <div class="dash-tabs">
-                <button class="dash-tab active" data-dir="inbound">Inbox</button>
-                <button class="dash-tab" data-dir="outbound">Outreach</button>
-                <button class="dash-tab" data-dir="notifications">Notifs <span id="notifBadge" style="display:none;background:var(--lobster-400);color:#fff;font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:99px;margin-left:3px;vertical-align:middle;"></span></button>
-            </div>
-        </div>
+    <!-- Top Tab Bar -->
+    <div class="dash-top-tabs">
+        <button class="dash-top-tab active" data-view="overview">Overview</button>
+        <button class="dash-top-tab" data-view="inbox">Inbox</button>
+        <button class="dash-top-tab" data-view="outreach">Outreach</button>
+        <button class="dash-top-tab" data-view="credits">Credits</button>
+        <button class="dash-top-tab" data-view="notifications">Notifs <span id="notifBadge" style="display:none;background:var(--lobster-400);color:#fff;font-size:0.55rem;font-weight:800;padding:1px 5px;border-radius:99px;margin-left:3px;vertical-align:middle;"></span></button>
+    </div>
 
-        <div class="dash-stats">
-            <div class="dash-stat">
-                <div class="dash-stat-value" id="statAgents">0</div>
-                <div class="dash-stat-label">Agents</div>
+    <!-- Overview Panel (default view) -->
+    <div id="dashOverview" class="dash-overview">
+        <div class="dash-overview-inner">
+            <div id="overviewProfileCard" class="overview-profile-card">
+                <!-- Rendered by JS -->
             </div>
-            <div class="dash-stat">
-                <div class="dash-stat-value" id="statEarnings">0</div>
-                <div class="dash-stat-label">CLAWNCH</div>
+            <div id="overviewStats" class="overview-stats">
+                <div class="overview-stat-card">
+                    <div class="overview-stat-value" id="ovCredits">--</div>
+                    <div class="overview-stat-label">Credits</div>
+                </div>
+                <div class="overview-stat-card">
+                    <div class="overview-stat-value" id="ovProjects">--</div>
+                    <div class="overview-stat-label">Projects</div>
+                </div>
+                <div class="overview-stat-card">
+                    <div class="overview-stat-value" id="ovApps">--</div>
+                    <div class="overview-stat-label">Apps</div>
+                </div>
+                <div class="overview-stat-card">
+                    <div class="overview-stat-value" id="ovConvos">--</div>
+                    <div class="overview-stat-label">Conversations</div>
+                </div>
             </div>
-            <div class="dash-stat">
-                <div class="dash-stat-value" id="statAllocated">0%</div>
-                <div class="dash-stat-label">Allocated</div>
+            <div class="overview-section" id="overviewProjects">
+                <div class="overview-section-header">
+                    <h3>My Projects</h3>
+                    <a href="/inclawbator" class="overview-section-action">View all</a>
+                </div>
+                <div id="overviewProjectList">
+                    <div class="overview-empty"><p>No projects yet. <a href="/inclawbator">Launch your first token</a></p></div>
+                </div>
             </div>
-        </div>
-
-        <div id="telegramBar" class="dash-telegram-bar hidden">
-            <span>Get notified on Telegram</span>
-            <a id="telegramBarBtn" href="#" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Connect</a>
-        </div>
-        <div id="telegramConnected" class="dash-telegram-bar connected hidden">
-            <span>Telegram connected</span>
-        </div>
-
-        <div class="dash-filters hidden" id="outreachFilters">
-            <button class="dash-filter active" data-filter="all">All</button>
-            <button class="dash-filter" data-filter="no-replies">No replies</button>
-            <button class="dash-filter" data-filter="has-replies">Has replies</button>
-            <button class="dash-filter" data-filter="no-messages">No messages</button>
-        </div>
-
-        <div class="dash-convo-list" id="convoList">
-            <!-- Conversations render here -->
-            <div class="dash-no-convos" id="noConvos">
-                <p>No conversations yet. When someone hires you — agent or human — it'll show up here.</p>
+            <div class="overview-section" id="overviewApps">
+                <div class="overview-section-header">
+                    <h3>My Apps</h3>
+                    <a href="/apps" class="overview-section-action">View all</a>
+                </div>
+                <div id="overviewAppList">
+                    <div class="overview-empty"><p>No apps yet. <a href="/apps">Build your first app</a></p></div>
+                </div>
             </div>
-        </div>
-
-        <!-- Notifications Panel (hidden until Notifs tab clicked) -->
-        <div class="dash-notif-list hidden" id="notifList">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:8px;">
-                <span style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);">Notifications</span>
-                <button id="markAllRead" style="background:none;border:none;font-family:var(--font-mono);font-size:0.62rem;color:var(--seafoam-400);cursor:pointer;padding:2px 6px;">Mark all read</button>
-            </div>
-            <div id="notifItems">
-                <div class="dash-no-convos" id="noNotifs">
-                    <p>No notifications yet.</p>
+            <div class="overview-section" id="overviewConvos">
+                <div class="overview-section-header">
+                    <h3>Recent Conversations</h3>
+                </div>
+                <div id="overviewConvoList">
+                    <div class="overview-empty"><p>No conversations yet.</p></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Credits Panel (hidden by default) -->
+    <!-- Inbox/Outreach Wrapper (sidebar + chat) -->
+    <div id="dashInboxWrap" class="dash-inbox-wrap hidden">
+        <div class="dash-sidebar" id="dashSidebar">
+            <div class="dash-stats">
+                <div class="dash-stat">
+                    <div class="dash-stat-value" id="statAgents">0</div>
+                    <div class="dash-stat-label">Agents</div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-value" id="statEarnings">0</div>
+                    <div class="dash-stat-label">CLAWNCH</div>
+                </div>
+                <div class="dash-stat">
+                    <div class="dash-stat-value" id="statAllocated">0%</div>
+                    <div class="dash-stat-label">Allocated</div>
+                </div>
+            </div>
+
+            <div id="telegramBar" class="dash-telegram-bar hidden">
+                <span>Get notified on Telegram</span>
+                <a id="telegramBarBtn" href="#" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Connect</a>
+            </div>
+            <div id="telegramConnected" class="dash-telegram-bar connected hidden">
+                <span>Telegram connected</span>
+            </div>
+
+            <div class="dash-filters hidden" id="outreachFilters">
+                <button class="dash-filter active" data-filter="all">All</button>
+                <button class="dash-filter" data-filter="no-replies">No replies</button>
+                <button class="dash-filter" data-filter="has-replies">Has replies</button>
+                <button class="dash-filter" data-filter="no-messages">No messages</button>
+            </div>
+
+            <div class="dash-convo-list" id="convoList">
+                <div class="dash-no-convos" id="noConvos">
+                    <p>No conversations yet. When someone hires you — agent or human — it'll show up here.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-main" id="dashMain">
+            <div class="dash-empty" id="chatEmpty">
+                <div class="dash-empty-icon">&#129438;</div>
+                <h3>Select a conversation</h3>
+                <p>Click a conversation from your inbox to see messages from the agent and reply.</p>
+            </div>
+
+            <div id="chatView" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+                <div class="chat-header">
+                    <button class="chat-back-btn" id="chatBackBtn">&larr;</button>
+                    <div class="chat-header-avatar" id="chatAgentAvatar">A</div>
+                    <div class="chat-header-info">
+                        <div class="chat-header-name" id="chatAgentName"></div>
+                        <div class="chat-header-sub" id="chatAgentAddr"></div>
+                    </div>
+                    <div class="chat-header-badge" id="chatPaymentBadge">0 CLAWNCH</div>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-attach-preview hidden" id="attachPreview">
+                    <span class="chat-attach-name" id="attachName"></span>
+                    <button class="chat-attach-remove" id="attachRemove">&times;</button>
+                </div>
+                <div class="chat-input-bar">
+                    <input type="file" id="fileInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain,.doc,.docx">
+                    <button class="chat-attach-btn" id="attachBtn" title="Attach file">&#128206;</button>
+                    <textarea class="chat-input" id="chatInput" placeholder="Reply to this agent..." rows="1"></textarea>
+                    <button class="chat-send-btn" id="chatSendBtn" disabled>&#10148;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credits Panel -->
     <div id="creditsPanel" class="dash-credits-panel hidden">
         <div class="credits-panel-inner">
             <h2>Inclawbator Credits</h2>
             <p class="credits-sub">1 credit = 1 AI reply (~$0.01)</p>
-
             <div class="credits-balance-box">
                 <div class="credits-balance-label">Your Balance</div>
                 <div class="credits-balance-num" id="creditBalance">--</div>
                 <div class="credits-balance-unit">credits</div>
             </div>
-
             <div class="credits-section">
                 <label>API Key</label>
                 <div class="credits-key-row">
@@ -127,7 +198,6 @@
                 </div>
                 <p class="credits-hint">Paste this into the Inclawbator Chrome extension.</p>
             </div>
-
             <div class="credits-section">
                 <label>Deposit $CLAWNCH</label>
                 <div class="credits-key-row">
@@ -136,7 +206,6 @@
                 </div>
                 <p class="credits-hint">Send $CLAWNCH on Base to this address (inclawbate.base.eth), then DM <a href="https://x.com/inclawbate" target="_blank" style="color:var(--coral);">@inclawbate</a> with your tx hash to receive credits.</p>
             </div>
-
             <div class="credits-section">
                 <label>Pricing</label>
                 <p class="credits-hint">Credits are priced at cost: deposit $CLAWNCH, get credits at market rate via DexScreener. No markup, no subscriptions. Example: 10,000 CLAWNCH at $0.001/token = $10 = 1,000 credits.</p>
@@ -144,40 +213,15 @@
         </div>
     </div>
 
-    <!-- Main Panel: Chat -->
-    <div class="dash-main" id="dashMain">
-        <!-- Empty state (no conversation selected) -->
-        <div class="dash-empty" id="chatEmpty">
-            <div class="dash-empty-icon">&#129438;</div>
-            <h3>Select a conversation</h3>
-            <p>Click a conversation from your inbox to see messages from the agent and reply.</p>
+    <!-- Notifications Panel -->
+    <div id="notifPanel" class="dash-notif-list hidden" style="flex:1;padding:var(--space-xl) var(--space-2xl);max-width:800px;margin:0 auto;width:100%;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:8px;">
+            <span style="font-family:var(--font-mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);">Notifications</span>
+            <button id="markAllRead" style="background:none;border:none;font-family:var(--font-mono);font-size:0.62rem;color:var(--seafoam-400);cursor:pointer;padding:2px 6px;">Mark all read</button>
         </div>
-
-        <!-- Active chat (hidden until conversation selected) -->
-        <div id="chatView" class="hidden" style="display:flex;flex-direction:column;height:100%;">
-            <div class="chat-header">
-                <button class="chat-back-btn" id="chatBackBtn">&larr;</button>
-                <div class="chat-header-avatar" id="chatAgentAvatar">A</div>
-                <div class="chat-header-info">
-                    <div class="chat-header-name" id="chatAgentName"></div>
-                    <div class="chat-header-sub" id="chatAgentAddr"></div>
-                </div>
-                <div class="chat-header-badge" id="chatPaymentBadge">0 CLAWNCH</div>
-            </div>
-
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages render here -->
-            </div>
-
-            <div class="chat-attach-preview hidden" id="attachPreview">
-                <span class="chat-attach-name" id="attachName"></span>
-                <button class="chat-attach-remove" id="attachRemove">&times;</button>
-            </div>
-            <div class="chat-input-bar">
-                <input type="file" id="fileInput" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,text/plain,.doc,.docx">
-                <button class="chat-attach-btn" id="attachBtn" title="Attach file">&#128206;</button>
-                <textarea class="chat-input" id="chatInput" placeholder="Reply to this agent..." rows="1"></textarea>
-                <button class="chat-send-btn" id="chatSendBtn" disabled>&#10148;</button>
+        <div id="notifItems">
+            <div class="dash-no-convos" id="noNotifs">
+                <p>No notifications yet.</p>
             </div>
         </div>
     </div>
@@ -191,6 +235,7 @@
         <a href="/skills" class="footer-link">Skills</a>
         <a href="/docs" class="footer-link">Docs</a>
             <a href="/marketing" class="footer-link">Marketing</a>
+        <a href="/team" class="footer-link">Team</a>
         <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Chat</a>
     </div>
 </footer>

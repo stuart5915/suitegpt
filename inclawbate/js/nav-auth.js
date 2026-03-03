@@ -33,8 +33,8 @@
         const navLinks = document.querySelector('.nav-links');
         if (!navLinks) return;
 
-        // Swap "Launch Profile" for avatar+handle with dropdown
-        const launchBtn = navLinks.querySelector('a[href="/launch"]');
+        // Swap "Dashboard" link for avatar+handle with dropdown
+        const launchBtn = navLinks.querySelector('a[href="/dashboard"]');
         if (launchBtn) {
             const wrapper = document.createElement('div');
             wrapper.className = 'nav-user-wrap';
@@ -73,7 +73,7 @@
             const profileHref = profile.x_handle ? `/u/${encodeURIComponent(profile.x_handle)}` : '#';
             dropdown.innerHTML = `
                 <a href="${profileHref}" class="nav-dropdown-item">Profile</a>
-                <a href="/dashboard" class="nav-dropdown-item nav-inbox-link">Inbox</a>
+                <a href="/dashboard" class="nav-dropdown-item nav-inbox-link">Dashboard</a>
                 <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="nav-dropdown-item">Chat</a>
                 <button type="button" class="nav-dropdown-item nav-disconnect">Disconnect</button>
             `;
@@ -100,36 +100,33 @@
                 localStorage.removeItem('inclawbate_last_inbox');
                 window.location.reload();
             });
-        }
 
-        // Check for unread conversations
-        if (!token) return;
-
-        const inboxLink = dropdown.querySelector('.nav-inbox-link');
-        if (!inboxLink) return;
-
-        inboxLink.style.position = 'relative';
-
-        fetch('/api/inclawbate/conversations', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (!data || !data.conversations || data.conversations.length === 0) return;
-
-            const lastVisit = localStorage.getItem('inclawbate_last_inbox') || '1970-01-01';
-            const unread = data.conversations.filter(c =>
-                new Date(c.last_message_at) > new Date(lastVisit)
-            ).length;
-
-            if (unread > 0) {
-                const badge = document.createElement('span');
-                badge.className = 'nav-badge';
-                badge.textContent = unread > 9 ? '9+' : unread;
-                inboxLink.appendChild(badge);
+            // Check for unread conversations
+            if (token) {
+                const inboxLink = dropdown.querySelector('.nav-inbox-link');
+                if (inboxLink) {
+                    inboxLink.style.position = 'relative';
+                    fetch('/api/inclawbate/conversations', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (!data || !data.conversations || data.conversations.length === 0) return;
+                        const lastVisit = localStorage.getItem('inclawbate_last_inbox') || '1970-01-01';
+                        const unread = data.conversations.filter(c =>
+                            new Date(c.last_message_at) > new Date(lastVisit)
+                        ).length;
+                        if (unread > 0) {
+                            const badge = document.createElement('span');
+                            badge.className = 'nav-badge';
+                            badge.textContent = unread > 9 ? '9+' : unread;
+                            inboxLink.appendChild(badge);
+                        }
+                    })
+                    .catch(() => {});
+                }
             }
-        })
-        .catch(() => {});
+        }
 
     } catch (e) {
         // Silently fail
