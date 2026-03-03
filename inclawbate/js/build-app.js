@@ -40,7 +40,59 @@
         'A quiz app with multiple choice questions and scoring'
     ];
 
+    var CATEGORY_PROMPTS = {
+        apis: [
+            'A crypto price dashboard that fetches live prices from DexScreener',
+            'A weather app that pulls real-time forecasts from a public API',
+            'A news aggregator that fetches top headlines from NewsAPI',
+            'A GitHub profile viewer that shows repos and stats from the GitHub API',
+            'A stock ticker widget with live price updates',
+            'A sports scoreboard fetching live game data'
+        ],
+        wallet: [
+            'A tip jar page where visitors can send CLAWS tokens to the creator',
+            'A paywalled article site — readers pay CLAWS to unlock premium content',
+            'A digital art gallery where each piece can be purchased with CLAWS',
+            'A creator subscription page with CLAWS-gated tiers',
+            'A bounty board where users pay CLAWS to post and claim tasks',
+            'A donation tracker showing live CLAWS contributions'
+        ],
+        canvas: [
+            'A retro snake game with high score tracking',
+            'An interactive particle system that reacts to mouse movement',
+            'A pixel art drawing tool with color palette and export',
+            'A 3D spinning cube with WebGL shading',
+            'A platformer game with physics and level progression',
+            'A data visualization dashboard with animated bar and pie charts'
+        ],
+        images: [
+            'A portfolio gallery with uploaded project screenshots',
+            'A restaurant menu page with food photography',
+            'A real estate listing page with property photos',
+            'A team page with staff headshots and bios',
+            'A product landing page with hero banner and feature images',
+            'A photo blog with grid layout and lightbox'
+        ],
+        web3: [
+            'A token swap interface connected to Uniswap on Base',
+            'A wallet dashboard showing ETH and ERC-20 token balances',
+            'A token holder leaderboard fetching on-chain data',
+            'A DEX price chart pulling from DexScreener API',
+            'A staking calculator showing APY and projected rewards',
+            'An NFT gallery that displays tokens from a wallet address'
+        ],
+        audio: [
+            'A drum machine with 8 pads and different sound samples',
+            'A text-to-speech reader that speaks any pasted text aloud',
+            'A voice memo recorder with playback and waveform display',
+            'A music visualizer that reacts to microphone input',
+            'A metronome app with adjustable BPM and time signatures',
+            'A soundboard with customizable audio clips'
+        ]
+    };
+
     var currentPromptIndices = [];
+    var activeCategory = null;
 
     var FOLLOWUP_SUGGESTIONS = [
         'Add a contact form',
@@ -84,7 +136,7 @@
         els.creditsCount = $('creditsCount');
         els.publishBtn = $('publishBtn');
         els.chatMessages = $('chatMessages');
-        els.buildWelcome = $('buildWelcome');
+        els.chatHeaderArea = $('chatHeaderArea');
         els.chatInput = $('chatInput');
         els.chatSend = $('chatSend');
         els.previewFrame = $('previewFrame');
@@ -183,7 +235,7 @@
         // Clear messages but keep welcome hidden
         var msgs = els.chatMessages.querySelectorAll('.chat-msg');
         msgs.forEach(function (m) { m.remove(); });
-        if (els.buildWelcome) els.buildWelcome.style.display = 'none';
+        if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
         resetPreview();
         showView('build');
         els.buildTitle.textContent = 'Loading...';
@@ -223,7 +275,7 @@
         var msgs = els.chatMessages.querySelectorAll('.chat-msg');
         msgs.forEach(function (m) { m.remove(); });
         removeSuggestionChips();
-        if (els.buildWelcome) els.buildWelcome.style.display = '';
+        if (els.chatHeaderArea) els.chatHeaderArea.style.display = '';
         els.buildTitle.textContent = 'New Project';
         resetPreview();
         showView('build');
@@ -336,7 +388,7 @@
     // ── Chat Helpers ──
     function appendMessage(role, content, code) {
         // Hide welcome on first message
-        if (els.buildWelcome) els.buildWelcome.style.display = 'none';
+        if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + role;
@@ -804,39 +856,63 @@
         return indices;
     }
 
-    function renderWelcomePrompts() {
-        var container = document.querySelector('.build-welcome-prompts');
+    function renderWelcomePrompts(category) {
+        var container = document.getElementById('chatHeaderPrompts');
         if (!container) return;
 
-        // Remove existing prompt buttons (keep the shuffle button)
+        var pool = category && CATEGORY_PROMPTS[category] ? CATEGORY_PROMPTS[category] : STARTER_PROMPTS;
+
+        // Remove existing prompt buttons (keep the shuffle button and category label)
         var existing = container.querySelectorAll('.build-welcome-prompt');
         existing.forEach(function (el) {
             el.classList.add('fade-out');
         });
 
+        // Remove old category label
+        var oldLabel = container.querySelector('.cap-category-label');
+        if (oldLabel) oldLabel.remove();
+
         setTimeout(function () {
-            // Remove old buttons
             container.querySelectorAll('.build-welcome-prompt').forEach(function (el) { el.remove(); });
 
-            // Pick 3 new random prompts
-            currentPromptIndices = pickRandomIndices(STARTER_PROMPTS.length, 3);
+            currentPromptIndices = pickRandomIndices(pool.length, 3);
 
-            // Insert before the shuffle button
             var shuffleBtn = container.querySelector('.shuffle-prompts-btn');
+
+            // Add category label if filtered
+            if (category) {
+                var names = { apis: 'Live APIs', wallet: 'CLAWS Wallet', canvas: 'Canvas & WebGL', images: 'Image Assets', web3: 'Web3 / DeFi', audio: 'Audio & Speech' };
+                var label = document.createElement('div');
+                label.className = 'cap-category-label';
+                label.innerHTML = names[category] + ' ideas <button onclick="window.BuildApp.selectCap(null)">Show all</button>';
+                container.insertBefore(label, shuffleBtn);
+            }
 
             currentPromptIndices.forEach(function (idx, i) {
                 var btn = document.createElement('button');
                 btn.className = 'build-welcome-prompt fade-in';
                 btn.style.animationDelay = (i * 0.08) + 's';
-                btn.textContent = STARTER_PROMPTS[idx];
-                btn.addEventListener('click', function () { usePrompt(STARTER_PROMPTS[idx]); });
+                btn.textContent = pool[idx];
+                btn.addEventListener('click', function () { usePrompt(pool[idx]); });
                 container.insertBefore(btn, shuffleBtn);
             });
         }, existing.length > 0 ? 200 : 0);
     }
 
+    function selectCap(category) {
+        activeCategory = category;
+
+        // Toggle active state on capability items
+        var items = document.querySelectorAll('.cap-item');
+        items.forEach(function (item) {
+            item.classList.toggle('active', category && item.getAttribute('data-cap') === category);
+        });
+
+        renderWelcomePrompts(category);
+    }
+
     function shufflePrompts() {
-        renderWelcomePrompts();
+        renderWelcomePrompts(activeCategory);
     }
 
     // ── Follow-up Suggestion Chips ──
@@ -965,7 +1041,7 @@
             // Go straight to build view with code loaded
             showView('build');
             els.buildTitle.textContent = state.title;
-            if (els.buildWelcome) els.buildWelcome.style.display = 'none';
+            if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
             updatePreview(state.currentCode);
             appendMessage('assistant', 'Forked from "' + (fork.name || 'App') + '". The code is loaded in preview — edit it with chat or publish directly.');
             return true;
@@ -1013,7 +1089,8 @@
         shufflePrompts: shufflePrompts,
         connectWallet: connectWallet,
         handleFileSelect: handleFileSelect,
-        removeAttach: removeAttach
+        removeAttach: removeAttach,
+        selectCap: selectCap
     };
 
     // ── Boot ──
