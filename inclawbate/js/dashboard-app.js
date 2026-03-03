@@ -1290,20 +1290,6 @@ function init() {
     // Init buy credits panel
     initBuyCredits();
 
-    // Check Stripe payment return
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get('payment');
-    if (payment) {
-        history.replaceState(null, '', window.location.pathname);
-        if (payment === 'success') {
-            const credits = params.get('credits');
-            setTimeout(() => {
-                alert(credits ? 'Payment successful! ' + credits + ' credits added.' : 'Payment successful! Credits are being added.');
-                loadOverview();
-            }, 500);
-        }
-    }
-
     loadOverview();
     loadProjects();
     loadStakingPools();
