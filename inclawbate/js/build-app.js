@@ -897,6 +897,10 @@
         if (!amount || !buyState.clawsPerCredit) {
             els.buyCostValue.textContent = '--';
             els.buySendBtn.disabled = true;
+            if (els.buyCardBtn) {
+                els.buyCardBtn.disabled = true;
+                els.buyCardBtn.textContent = '\uD83D\uDCB3 Pay with Card';
+            }
             if (bHaiku) bHaiku.textContent = '--';
             if (bSonnet) bSonnet.textContent = '--';
             if (bOpus) bOpus.textContent = '--';
@@ -906,6 +910,16 @@
         var totalUsd = (amount * 0.005).toFixed(2);
         els.buyCostValue.textContent = totalClaws.toLocaleString() + ' CLAWS (~$' + totalUsd + ')';
         els.buySendBtn.disabled = false;
+        // Update card button — minimum 100 credits ($0.50 Stripe floor)
+        if (els.buyCardBtn) {
+            if (amount >= 100) {
+                els.buyCardBtn.disabled = false;
+                els.buyCardBtn.textContent = '\uD83D\uDCB3 Pay with Card \u2014 $' + totalUsd;
+            } else {
+                els.buyCardBtn.disabled = true;
+                els.buyCardBtn.textContent = '\uD83D\uDCB3 Card min $0.50 (100 credits)';
+            }
+        }
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 5) + ' msgs';
         if (bSonnet) bSonnet.textContent = Math.floor(amount / 15) + ' msgs';
         if (bOpus) bOpus.textContent = Math.floor(amount / 60) + ' msgs';
@@ -999,6 +1013,59 @@
             els.buyResult.textContent = 'Network error. Try again.';
             els.buyResult.className = 'buy-result error';
             els.buySendBtn.disabled = false;
+        }
+    }
+
+    // ── Pay with Card (Stripe) ──
+    async function buyWithCard() {
+        var amount = buyState.selectedAmount;
+        if (!amount || amount < 100) return;
+
+        els.buyCardBtn.disabled = true;
+        els.buyResult.innerHTML = '';
+
+        try {
+            var resp = await fetch('/api/inclawbate/create-checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ credits: amount })
+            });
+            var data = await resp.json();
+
+            if (resp.ok && data.url) {
+                window.location.href = data.url;
+            } else {
+                els.buyResult.textContent = data.error || 'Failed to start checkout.';
+                els.buyResult.className = 'buy-result error';
+                els.buyCardBtn.disabled = false;
+            }
+        } catch (e) {
+            els.buyResult.textContent = 'Network error. Try again.';
+            els.buyResult.className = 'buy-result error';
+            els.buyCardBtn.disabled = false;
+        }
+    }
+
+    // ── Payment Return Handler ──
+    function checkPaymentReturn() {
+        var params = new URLSearchParams(window.location.search);
+        var payment = params.get('payment');
+        if (!payment) return;
+
+        // Clean URL
+        var clean = window.location.pathname;
+        history.replaceState(null, '', clean);
+
+        if (payment === 'success') {
+            var credits = params.get('credits');
+            var msg = credits ? 'Payment successful! ' + credits + ' credits are being added.' : 'Payment successful! Credits are being added.';
+            setTimeout(function () {
+                alert(msg);
+                fetchCredits();
+            }, 300);
         }
     }
 
@@ -1296,6 +1363,9 @@
         // Fetch credits on load
         fetchCredits();
 
+        // Handle Stripe payment return
+        checkPaymentReturn();
+
         // Check if we're loading from a fork
         if (checkForkSource()) return;
 
@@ -1321,6 +1391,7 @@
         pickCredits: pickCredits,
         onCustomCredits: onCustomCredits,
         sendClawsTx: sendClawsTx,
+        buyWithCard: buyWithCard,
         usePrompt: usePrompt,
         shufflePrompts: shufflePrompts,
         connectWallet: connectWallet,

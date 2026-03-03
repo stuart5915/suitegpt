@@ -42,50 +42,76 @@ export default async function handler(req, res) {
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-
-        // Extract metadata
-        const walletAddress = session.metadata.walletAddress;
         const credits = parseInt(session.metadata.credits);
         const amount = parseFloat(session.metadata.amount);
 
-        console.log(`Payment successful! Wallet: ${walletAddress}, Credits: ${credits}, Amount: $${amount}`);
-
         try {
-            // Find user by wallet address
-            const { data: user, error: userError } = await supabase
-                .from('users')
-                .select('id, credits')
-                .eq('wallet_address', walletAddress.toLowerCase())
-                .single();
+            if (session.metadata.product === 'inclawbate') {
+                // ── Inclawbate credit purchase ──
+                const handle = session.metadata.handle;
+                const profileId = session.metadata.profileId;
 
-            if (userError || !user) {
-                console.error('User not found for wallet:', walletAddress);
-                // Still return 200 to Stripe - we'll handle manually
-                return res.status(200).json({ received: true, warning: 'User not found' });
+                console.log(`Inclawbate payment! Handle: ${handle}, Credits: ${credits}, Amount: $${amount}`);
+
+                const { data: newBalance, error: rpcErr } = await supabase
+                    .rpc('add_inclawbate_credits', {
+                        target_handle: handle.toLowerCase(),
+                        credit_amount: credits
+                    });
+
+                if (rpcErr) {
+                    console.error('Failed to add Inclawbate credits:', rpcErr);
+                    return res.status(200).json({ received: true, warning: 'Credits update failed' });
+                }
+
+                // Log to inclawbate_deposits
+                await supabase.from('inclawbate_deposits').insert({
+                    profile_id: profileId,
+                    tx_hash: 'stripe_' + session.id,
+                    clawnch_amount: 0,
+                    credits_granted: credits
+                });
+
+                console.log(`Inclawbate: added ${credits} credits to @${handle} (balance: ${newBalance})`);
+
+            } else {
+                // ── Existing SUITE credit purchase ──
+                const walletAddress = session.metadata.walletAddress;
+
+                console.log(`SUITE payment! Wallet: ${walletAddress}, Credits: ${credits}, Amount: $${amount}`);
+
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('id, credits')
+                    .eq('wallet_address', walletAddress.toLowerCase())
+                    .single();
+
+                if (userError || !user) {
+                    console.error('User not found for wallet:', walletAddress);
+                    return res.status(200).json({ received: true, warning: 'User not found' });
+                }
+
+                const newCredits = (user.credits || 0) + credits;
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ credits: newCredits })
+                    .eq('id', user.id);
+
+                if (updateError) {
+                    console.error('Failed to update credits:', updateError);
+                    return res.status(200).json({ received: true, warning: 'Credits update failed' });
+                }
+
+                await supabase.from('credit_transactions').insert({
+                    user_id: user.id,
+                    amount: credits,
+                    type: 'purchase_fiat',
+                    description: `Purchased ${credits} credits via card ($${amount})`,
+                    stripe_session_id: session.id,
+                });
+
+                console.log(`Successfully added ${credits} credits to user ${user.id}`);
             }
-
-            // Add credits to user
-            const newCredits = (user.credits || 0) + credits;
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ credits: newCredits })
-                .eq('id', user.id);
-
-            if (updateError) {
-                console.error('Failed to update credits:', updateError);
-                return res.status(200).json({ received: true, warning: 'Credits update failed' });
-            }
-
-            // Log the transaction
-            await supabase.from('credit_transactions').insert({
-                user_id: user.id,
-                amount: credits,
-                type: 'purchase_fiat',
-                description: `Purchased ${credits} credits via card ($${amount})`,
-                stripe_session_id: session.id,
-            });
-
-            console.log(`Successfully added ${credits} credits to user ${user.id}`);
 
         } catch (dbError) {
             console.error('Database error:', dbError);
