@@ -37,12 +37,10 @@
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
                     '<span class="nav-wallet-dot"></span>' + short + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
-                    if (confirm('Disconnect wallet?')) {
-                        localStorage.removeItem('inclawbate_token');
-                        localStorage.removeItem('inclawbate_profile');
-                        renderWallet();
-                        window.location.reload();
-                    }
+                    localStorage.removeItem('inclawbate_token');
+                    localStorage.removeItem('inclawbate_profile');
+                    renderWallet();
+                    window.location.reload();
                 });
             } else if (token && profile) {
                 var label = profile.x_handle && !profile.x_handle.startsWith('w_')
@@ -51,12 +49,10 @@
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
                     '<span class="nav-wallet-dot"></span>' + label + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
-                    if (confirm('Disconnect?')) {
-                        localStorage.removeItem('inclawbate_token');
-                        localStorage.removeItem('inclawbate_profile');
-                        renderWallet();
-                        window.location.reload();
-                    }
+                    localStorage.removeItem('inclawbate_token');
+                    localStorage.removeItem('inclawbate_profile');
+                    renderWallet();
+                    window.location.reload();
                 });
             } else {
                 walletEl.innerHTML = '<button class="nav-wallet-btn" id="navWalletBtn">Connect</button>';
