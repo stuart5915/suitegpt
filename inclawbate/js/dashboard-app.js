@@ -381,6 +381,7 @@ function renderProjectCard(p) {
             </div>
             <div class="project-card-badges">
                 <span class="project-status-badge ${esc(status)}">${esc(status)}</span>
+                ${p.allocation_pct > 0 ? `<span class="project-status-badge" style="background:hsla(9,52%,56%,0.15);color:#e07356;border-color:hsla(9,52%,56%,0.3)">${p.allocation_pct}% Allocated</span>` : ''}
             </div>
         </div>
         <div class="project-card-meta">

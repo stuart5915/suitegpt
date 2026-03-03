@@ -77,6 +77,37 @@ async function verifyDepositTx(txHash) {
     return { valid: true, amount };
 }
 
+const DEAD_ADDRESS = '0x000000000000000000000000000000000000dead';
+const VALID_ALLOCATION_PCTS = [0, 1, 2, 5, 10];
+const ALLOCATION_BURN_COSTS = { 0: 0, 1: 1000000, 2: 2000000, 5: 5000000, 10: 10000000 };
+
+async function verifyBurnTx(txHash, fromWallet, expectedAmount) {
+    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+    if (!receipt || receipt.status !== '0x1') {
+        return { valid: false, reason: 'Burn transaction failed or not found' };
+    }
+    const transferLog = (receipt.logs || []).find(log =>
+        log.address.toLowerCase() === CLAWS_ADDRESS &&
+        log.topics[0] === ERC20_TRANSFER_TOPIC
+    );
+    if (!transferLog) {
+        return { valid: false, reason: 'No CLAWS transfer found in burn transaction' };
+    }
+    const from = '0x' + transferLog.topics[1].slice(26).toLowerCase();
+    const to = '0x' + transferLog.topics[2].slice(26).toLowerCase();
+    const amount = Number(BigInt(transferLog.data)) / 1e18;
+    if (to !== DEAD_ADDRESS) {
+        return { valid: false, reason: 'Transfer was not sent to the burn address' };
+    }
+    if (from !== fromWallet.toLowerCase()) {
+        return { valid: false, reason: 'Burn was not from the expected wallet' };
+    }
+    if (amount < expectedAmount) {
+        return { valid: false, reason: 'Burn amount insufficient: ' + amount + ' < ' + expectedAmount };
+    }
+    return { valid: true, amount };
+}
+
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
     '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
@@ -209,7 +240,8 @@ export default async function handler(req, res) {
                 token_address, token_name, token_symbol, deploy_tx_hash,
                 description, website_url, x_handle, telegram_url, logo_url,
                 fee_split_bps, tier, creator_wallet, color, color_dim, glow,
-                agent_enabled, agent_persona, agent_posts_per_day
+                agent_enabled, agent_persona, agent_posts_per_day,
+                burn_tx_hash, allocation_pct, burn_amount
             } = req.body;
 
             if (!token_name || !creator_wallet) {
@@ -224,6 +256,24 @@ export default async function handler(req, res) {
             const validTiers = ['incubated', 'permissionless', 'byt', 'ecosystem', 'partner'];
             const projectTier = validTiers.includes(tier) ? tier : 'permissionless';
             const status = (projectTier === 'incubated') ? 'pending' : 'active';
+
+            // Allocation / burn validation
+            const allocPct = parseInt(allocation_pct) || 0;
+            if (!VALID_ALLOCATION_PCTS.includes(allocPct)) {
+                return res.status(400).json({ error: 'Invalid allocation_pct. Must be 0, 1, 2, 5, or 10.' });
+            }
+            let verifiedBurnAmount = 0;
+            if (allocPct > 0) {
+                if (!burn_tx_hash) {
+                    return res.status(400).json({ error: 'burn_tx_hash required for allocation > 0%' });
+                }
+                const expectedBurn = ALLOCATION_BURN_COSTS[allocPct];
+                const burnVerify = await verifyBurnTx(burn_tx_hash, creator_wallet, expectedBurn);
+                if (!burnVerify.valid) {
+                    return res.status(400).json({ error: 'Burn verification failed: ' + burnVerify.reason });
+                }
+                verifiedBurnAmount = burnVerify.amount;
+            }
 
             // Agent config
             const wantsAgent = agent_enabled === true;
@@ -253,7 +303,10 @@ export default async function handler(req, res) {
                     agent_persona: wantsAgent ? (agent_persona || null) : null,
                     agent_posts_per_day: wantsAgent ? postsPerDay : 4,
                     agent_credits: wantsAgent ? 10 : 0,
-                    agent_status: wantsAgent ? 'active' : 'dormant'
+                    agent_status: wantsAgent ? 'active' : 'dormant',
+                    burn_tx_hash: burn_tx_hash || null,
+                    allocation_pct: allocPct,
+                    burn_amount: verifiedBurnAmount || 0
                 })
                 .select()
                 .single();

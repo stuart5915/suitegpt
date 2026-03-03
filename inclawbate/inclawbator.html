@@ -554,6 +554,79 @@
             transform: none;
         }
 
+        /* ── Allocation Tiers ── */
+        .allocation-section {
+            margin-top: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        .allocation-section .form-label {
+            margin-bottom: var(--space-sm);
+        }
+        .allocation-tiers {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .allocation-tier {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px 6px;
+            text-align: center;
+            background: var(--bg-elevated);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .allocation-tier:hover {
+            border-color: var(--border-default);
+        }
+        .allocation-tier.selected {
+            border-color: var(--lobster-400);
+            background: hsla(9, 52%, 56%, 0.08);
+        }
+        .allocation-tier-pct {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .allocation-tier-cost {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .allocation-tier.selected .allocation-tier-pct {
+            color: var(--lobster-400);
+        }
+        .allocation-balance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: var(--space-sm);
+        }
+        .allocation-balance .insufficient {
+            color: var(--lobster-400);
+        }
+        .allocation-warning {
+            display: none;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--lobster-400);
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: hsla(9, 52%, 56%, 0.06);
+            border: 1px solid hsla(9, 52%, 56%, 0.15);
+            border-radius: var(--radius-md);
+        }
+        .allocation-warning.visible {
+            display: block;
+        }
+
         /* Success state */
         .success-card {
             display: none;
@@ -1448,6 +1521,36 @@
                 <label class="form-label" for="launchWebsite">Website URL (optional)</label>
                 <input id="launchWebsite" class="form-input" type="url" placeholder="https://yourproject.com">
             </div>
+            <div class="allocation-section">
+                <label class="form-label">Dev Allocation (burn CLAWS for token supply)</label>
+                <div class="allocation-tiers" id="allocationTiers">
+                    <div class="allocation-tier selected" data-pct="0" onclick="window.selectAllocationTier(0)">
+                        <div class="allocation-tier-pct">None</div>
+                        <div class="allocation-tier-cost">Free</div>
+                    </div>
+                    <div class="allocation-tier" data-pct="1" onclick="window.selectAllocationTier(1)">
+                        <div class="allocation-tier-pct">1%</div>
+                        <div class="allocation-tier-cost">1M CLAWS</div>
+                    </div>
+                    <div class="allocation-tier" data-pct="2" onclick="window.selectAllocationTier(2)">
+                        <div class="allocation-tier-pct">2%</div>
+                        <div class="allocation-tier-cost">2M CLAWS</div>
+                    </div>
+                    <div class="allocation-tier" data-pct="5" onclick="window.selectAllocationTier(5)">
+                        <div class="allocation-tier-pct">5%</div>
+                        <div class="allocation-tier-cost">5M CLAWS</div>
+                    </div>
+                    <div class="allocation-tier" data-pct="10" onclick="window.selectAllocationTier(10)">
+                        <div class="allocation-tier-pct">10%</div>
+                        <div class="allocation-tier-cost">10M CLAWS</div>
+                    </div>
+                </div>
+                <div class="allocation-balance" id="allocationBalance" style="display:none">
+                    <span>Balance: <span id="clawsBalanceDisplay">0</span> CLAWS</span>
+                    <span id="allocationCostDisplay"></span>
+                </div>
+                <div class="allocation-warning" id="allocationWarning">Insufficient CLAWS balance. You need more CLAWS to select this tier.</div>
+            </div>
             <div class="drawer-info" style="margin-top:var(--space-md)">
                 <strong>Fee Structure</strong><br>
                 Every buy &amp; sell has a <strong>1% fee</strong> split between you and the Inclawbate ecosystem:<br>
@@ -1599,6 +1702,14 @@
         <div class="success-detail">
             <div class="success-detail-label">Staking</div>
             <div class="success-detail-value">Staking pool will be deployed shortly. Check back on the Stake page.</div>
+        </div>
+        <div id="burnSuccessNote" class="success-detail" style="display:none">
+            <div class="success-detail-label">Dev Allocation</div>
+            <div class="success-detail-value">
+                <span id="burnSuccessText"></span><br>
+                <a id="burnTxLink" href="#" target="_blank" rel="noopener" style="color:var(--seafoam-300)">View burn tx on BaseScan</a><br>
+                <span style="color:var(--text-dim);font-size:0.85em">Tokens claimable after 7-day lockup</span>
+            </div>
         </div>
         <div id="agentSuccessNote" class="success-detail" style="display:none">
             <div class="success-detail-label">AI Agent</div>

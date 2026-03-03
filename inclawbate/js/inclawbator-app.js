@@ -13,6 +13,10 @@ var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
+var TRANSFER_SEL = '0xa9059cbb'; // transfer(address,uint256)
+var CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
+var ALLOCATION_TIERS = { 0: 0, 1: 1000000, 2: 2000000, 5: 5000000, 10: 10000000 };
+var DEFAULT_SUPPLY = 100000000000; // 100B tokens
 var ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
     '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
@@ -145,6 +149,9 @@ var state = {
     deployTxHash: null,
     isAdmin: false,
     projects: [],
+    allocationPct: 0,
+    clawsBalance: 0,
+    burnTxHash: null,
 };
 
 // ══════════════════════════════════════
@@ -174,6 +181,7 @@ async function connectWallet() {
             }
             updateUI();
             updateComingSoonGate();
+            loadClawsBalance();
         }
     } catch (e) {
         showToast('Wallet connection failed', 'error');
@@ -232,6 +240,69 @@ async function apiPost(body) {
     });
     return res.json();
 }
+
+// ══════════════════════════════════════
+// ALLOCATION / BURN HELPERS
+// ══════════════════════════════════════
+
+async function loadClawsBalance() {
+    if (!state.wallet) return;
+    var hex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
+    state.clawsBalance = Number(BigInt(hex)) / 1e18;
+    updateAllocationUI();
+}
+
+function selectAllocationTier(pct) {
+    state.allocationPct = pct;
+
+    // Update UI selection
+    document.querySelectorAll('.allocation-tier').forEach(function(el) {
+        el.classList.toggle('selected', parseInt(el.dataset.pct) === pct);
+    });
+
+    // Load balance if not already loaded and tier > 0
+    if (pct > 0 && state.wallet && state.clawsBalance === 0) {
+        loadClawsBalance();
+    }
+
+    updateAllocationUI();
+}
+
+function updateAllocationUI() {
+    var balanceEl = document.getElementById('allocationBalance');
+    var balanceDisplay = document.getElementById('clawsBalanceDisplay');
+    var costDisplay = document.getElementById('allocationCostDisplay');
+    var warningEl = document.getElementById('allocationWarning');
+
+    if (state.allocationPct === 0) {
+        if (balanceEl) balanceEl.style.display = 'none';
+        if (warningEl) warningEl.classList.remove('visible');
+        return;
+    }
+
+    if (balanceEl) balanceEl.style.display = 'flex';
+    if (balanceDisplay) balanceDisplay.textContent = fmt(state.clawsBalance);
+
+    var cost = ALLOCATION_TIERS[state.allocationPct] || 0;
+    if (costDisplay) costDisplay.textContent = 'Cost: ' + fmt(cost) + ' CLAWS';
+
+    var insufficient = state.clawsBalance < cost && state.wallet;
+    if (warningEl) {
+        warningEl.classList.toggle('visible', insufficient);
+    }
+}
+
+function buildMerkleRoot(address, amount) {
+    // Single-leaf merkle tree using OpenZeppelin StandardMerkleTree format
+    // Leaf = keccak256(keccak256(abi.encode(address, uint256)))
+    var coder = ethers.AbiCoder.defaultAbiCoder();
+    var leafValue = coder.encode(['address', 'uint256'], [address, amount]);
+    var innerHash = ethers.keccak256(leafValue);
+    var root = ethers.keccak256(innerHash);
+    return root;
+}
+
+window.selectAllocationTier = selectAllocationTier;
 
 // ══════════════════════════════════════
 // CLANKER V4 DEPLOY
@@ -342,6 +413,27 @@ function encodeClankerDeploy(name, symbol) {
         },
         extensionConfigs: []
     };
+
+    // Add airdrop extension if allocation selected
+    if (state.allocationPct > 0) {
+        var extensionBps = state.allocationPct * 100; // e.g. 5% = 500 bps
+        var tokenAmount = BigInt(DEFAULT_SUPPLY) * BigInt(state.allocationPct) / 100n * BigInt('1000000000000000000'); // tokens in wei
+        var merkleRoot = buildMerkleRoot(state.wallet, tokenAmount);
+
+        // extensionData = abi.encode(address admin, bytes32 merkleRoot, uint256 lockupDuration, uint256 vestingDuration)
+        var coder = ethers.AbiCoder.defaultAbiCoder();
+        var extensionData = coder.encode(
+            ['address', 'bytes32', 'uint256', 'uint256'],
+            [state.wallet, merkleRoot, 604800, 0] // 7 days lockup, instant vesting
+        );
+
+        deploymentConfig.extensionConfigs = [{
+            extension: CLANKER_AIRDROP_V2,
+            msgValue: 0,
+            extensionBps: extensionBps,
+            extensionData: extensionData
+        }];
+    }
 
     return iface.encodeFunctionData('deployToken', [deploymentConfig]);
 }
@@ -680,10 +772,32 @@ async function handleLaunchDeploy() {
     }
 
     state.deploying = true;
+    state.burnTxHash = null;
     var btn = document.getElementById('deployLaunchBtn');
-    setBtnState(btn, 'Deploying token...', true);
+    var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
 
     try {
+        // Step 0: Burn CLAWS if allocation selected
+        if (state.allocationPct > 0 && burnAmount > 0) {
+            // Check balance
+            var balHex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
+            var bal = Number(BigInt(balHex)) / 1e18;
+            if (bal < burnAmount) {
+                state.deploying = false;
+                return showToast('Insufficient CLAWS balance. Need ' + fmt(burnAmount) + ' CLAWS.', 'error');
+            }
+
+            setBtnState(btn, 'Burning ' + fmt(burnAmount) + ' CLAWS...', true);
+
+            // Transfer CLAWS to dead address (burn)
+            var burnAmountWei = BigInt(burnAmount) * BigInt('1000000000000000000');
+            var burnData = TRANSFER_SEL + pad32(DEAD_ADDRESS) + pad32(toHex(burnAmountWei));
+            var burnResult = await sendTxAndWait(state.provider, state.wallet, CLAWS, burnData);
+            state.burnTxHash = burnResult.txHash;
+        }
+
+        setBtnState(btn, 'Deploying token...', true);
+
         // Step 1: Deploy token via Clanker v4
         var calldata = encodeClankerDeploy(name, symbol);
         var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200');
@@ -718,7 +832,10 @@ async function handleLaunchDeploy() {
             website_url: website,
             fee_split_bps: 2000,
             tier: 'permissionless',
-            creator_wallet: state.wallet
+            creator_wallet: state.wallet,
+            burn_tx_hash: state.burnTxHash || null,
+            allocation_pct: state.allocationPct,
+            burn_amount: burnAmount
         });
 
         if (regResult.error) {
@@ -1051,6 +1168,8 @@ function resetForm() {
     state.project = null;
     state.deployedToken = null;
     state.deployTxHash = null;
+    state.allocationPct = 0;
+    state.burnTxHash = null;
 
     // Clear all form inputs
     ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
@@ -1075,6 +1194,9 @@ function resetForm() {
     var poolSelect = document.getElementById('poolTokenSelect');
     if (poolSelect) poolSelect.value = '';
     poolTokensCache = null;
+
+    // Reset allocation tier UI
+    selectAllocationTier(0);
 
     // Hide success states
     ['successStep', 'incubatedSuccessStep', 'partnerSuccessStep'].forEach(function(id) {
@@ -1134,6 +1256,15 @@ function updateUI() {
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
         var agentNote = document.getElementById('agentSuccessNote');
         if (agentNote && state.project && state.project.agent_enabled) agentNote.style.display = 'block';
+        // Burn/allocation info
+        var burnNote = document.getElementById('burnSuccessNote');
+        if (burnNote && state.allocationPct > 0 && state.burnTxHash) {
+            burnNote.style.display = 'block';
+            var burnText = document.getElementById('burnSuccessText');
+            if (burnText) burnText.textContent = 'Burned ' + fmt(ALLOCATION_TIERS[state.allocationPct]) + ' CLAWS for ' + state.allocationPct + '% allocation';
+            var burnLink = document.getElementById('burnTxLink');
+            if (burnLink) burnLink.href = 'https://basescan.org/tx/' + state.burnTxHash;
+        }
     } else if (state.step === 5 && incubatedSuccessStep) {
         incubatedSuccessStep.style.display = 'block';
         var incProjectIdEl = incubatedSuccessStep.querySelector('.incubated-project-id');
@@ -1231,6 +1362,7 @@ async function init() {
                 state.provider = window.ethereum;
                 state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
                 updateUI();
+                loadClawsBalance();
             }
         } catch (e) {}
     }
