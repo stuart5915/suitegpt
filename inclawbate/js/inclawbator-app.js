@@ -15,7 +15,8 @@ var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2'
 ];
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
@@ -233,8 +234,9 @@ async function apiPost(body) {
 
 var CLANKER_SELECTOR = 'df40224a';
 var WETH_BASE = '0x4200000000000000000000000000000000000006';
-var CLANKER_HOOK_STATIC = '0xDd5EeaFf7BD481AD55Db083062b13a3cdf0A68CC';
-var CLANKER_FEE_LOCKER = '0xF3622742b1E446D92e45E22923Ef11C2fcD55D68';
+var CLANKER_HOOK_STATIC_V2 = '0xb429d62f8f3bFFb98CdB9569533eA23bF0Ba28CC';
+var CLANKER_LP_LOCKER = '0x63D2DfEA64b3433F4071A98665bcD7Ca14d93496';
+var CLANKER_SNIPER_AUCTION = '0xebB25BB797D82CB78E1bc70406b13233c0854413';
 var ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
 var DEPLOY_TOKEN_ABI = [{
@@ -293,6 +295,15 @@ function encodeClankerDeploy(name, symbol) {
     crypto.getRandomValues(saltBytes);
     var salt = '0x' + Array.from(saltBytes).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 
+    // Static fee pool data for ClankerHookStaticFeeV2
+    // Encodes 1% clankerFee + 1% pairedFee (matches current Clanker deploys)
+    // Extracted from verified successful deploy tx
+    var STATIC_FEE_POOL_DATA = '0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000027100000000000000000000000000000000000000000000000000000000000002710';
+
+    // Sniper auction MEV module data: startingFee=666777, endingFee=41673, secondsToDecay=15
+    // Anti-sniper protection matching current Clanker deploys
+    var SNIPER_MEV_DATA = '0x00000000000000000000000000000000000000000000000000000000000a2c99000000000000000000000000000000000000000000000000000000000000a2c9000000000000000000000000000000000000000000000000000000000000000f';
+
     var deploymentConfig = {
         tokenConfig: {
             tokenAdmin: state.wallet,
@@ -305,25 +316,25 @@ function encodeClankerDeploy(name, symbol) {
             originatingChainId: 8453
         },
         poolConfig: {
-            hook: CLANKER_HOOK_STATIC,
+            hook: CLANKER_HOOK_STATIC_V2,
             pairedToken: WETH_BASE,
-            tickIfToken0IsClanker: -199200,
-            tickSpacing: 100,
-            poolData: '0x'
+            tickIfToken0IsClanker: -230400,
+            tickSpacing: 200,
+            poolData: STATIC_FEE_POOL_DATA
         },
         lockerConfig: {
-            locker: CLANKER_FEE_LOCKER,
+            locker: CLANKER_LP_LOCKER,
             rewardAdmins: [state.wallet, INCLAWBATE_TREASURY],
             rewardRecipients: [state.wallet, INCLAWBATE_TREASURY],
             rewardBps: [8000, 2000],
-            tickLower: [-887200],
-            tickUpper: [887200],
+            tickLower: [-230400],
+            tickUpper: [-120000],
             positionBps: [10000],
             lockerData: '0x'
         },
         mevModuleConfig: {
-            mevModule: ZERO_ADDR,
-            mevModuleData: '0x'
+            mevModule: CLANKER_SNIPER_AUCTION,
+            mevModuleData: SNIPER_MEV_DATA
         },
         extensionConfigs: []
     };

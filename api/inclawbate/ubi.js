@@ -35,7 +35,8 @@ const UNSTAKE_WALLET = '0xa4d6f012003fe6ad2774a874c8c98ee69d17f286';
 const DEPOSIT_WALLET = UNSTAKE_WALLET; // new stakes go to unstake wallet so it self-funds
 const ADMIN_WALLETS = [
     PROTOCOL_WALLET,
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2'
 ];
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 

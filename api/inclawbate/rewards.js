@@ -12,7 +12,8 @@ const ALLOWED_ORIGINS = [
 
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2'
 ];
 const CLAWNCH_ADDRESS = '0xa1f72459dfa10bad200ac160ecd78c6b77a747be';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';

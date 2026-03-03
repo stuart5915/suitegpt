@@ -21,7 +21,8 @@ const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e'
+    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2'
 ];
 const FREE_HANDLES = ['artstu'];
 
