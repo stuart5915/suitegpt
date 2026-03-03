@@ -133,6 +133,151 @@
             background: var(--seafoam-400);
         }
 
+        /* ── Flywheel ── */
+        .flywheel {
+            text-align: center;
+            margin-bottom: var(--space-3xl);
+        }
+        .flywheel-ring {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-xl);
+            max-width: 680px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .flywheel-node {
+            position: relative;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg) var(--space-md);
+            text-align: center;
+        }
+        .flywheel-node-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.78rem;
+            color: #fff;
+            background: var(--lobster-400);
+            margin-bottom: var(--space-sm);
+        }
+        .flywheel-node-icon {
+            font-size: 1.8rem;
+            line-height: 1;
+            margin-bottom: var(--space-xs, 6px);
+        }
+        .flywheel-node-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .flywheel-node-desc {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+        /* Node 3 and 4 swap order so layout reads clockwise */
+        .flywheel-node-3 { order: 2; }
+        .flywheel-node-4 { order: 1; }
+
+        /* Arrows between nodes */
+        .flywheel-node-1::after,
+        .flywheel-node-2::after,
+        .flywheel-node-3::after,
+        .flywheel-node-4::after {
+            position: absolute;
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1;
+            z-index: 2;
+        }
+        /* 1 → 2  (right arrow, coral) */
+        .flywheel-node-1::after {
+            content: '→';
+            color: var(--lobster-300);
+            right: calc(-1 * var(--space-xl) / 2 - 8px);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        /* 2 → 3  (down arrow, coral) */
+        .flywheel-node-2::after {
+            content: '↓';
+            color: var(--lobster-300);
+            bottom: calc(-1 * var(--space-xl) / 2 - 10px);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        /* 3 → 4  (left arrow, teal) */
+        .flywheel-node-3::after {
+            content: '←';
+            color: var(--seafoam-300);
+            left: calc(-1 * var(--space-xl) / 2 - 8px);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        /* 4 → 1  (up arrow, teal) */
+        .flywheel-node-4::after {
+            content: '↑';
+            color: var(--seafoam-300);
+            top: calc(-1 * var(--space-xl) / 2 - 10px);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Center label */
+        .flywheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            line-height: 1.3;
+            text-align: center;
+            z-index: 3;
+        }
+
+        /* Tagline */
+        .flywheel-tagline {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            margin-top: var(--space-lg);
+            letter-spacing: 0.02em;
+        }
+
+        @media (max-width: 700px) {
+            .flywheel-ring { gap: var(--space-md); }
+            .flywheel-node { padding: var(--space-md) var(--space-sm); }
+            .flywheel-center { width: 78px; height: 78px; font-size: 0.6rem; }
+            .flywheel-node-1::after { right: calc(-1 * var(--space-md) / 2 - 6px); }
+            .flywheel-node-2::after { bottom: calc(-1 * var(--space-md) / 2 - 8px); }
+            .flywheel-node-3::after { left: calc(-1 * var(--space-md) / 2 - 6px); }
+            .flywheel-node-4::after { top: calc(-1 * var(--space-md) / 2 - 8px); }
+        }
+
         /* ── Section headings ── */
         .section {
             margin-bottom: var(--space-4xl);
@@ -1058,6 +1203,43 @@
                 </div>
             </div>
         </div>
+    </section>
+
+    <!-- ═══ Flywheel ═══ -->
+    <section class="flywheel">
+        <p class="section-label">The Flywheel</p>
+        <h2 class="section-title">Every piece feeds the next</h2>
+
+        <div class="flywheel-ring">
+            <div class="flywheel-node flywheel-node-1">
+                <div class="flywheel-node-num">1</div>
+                <div class="flywheel-node-icon">🚀</div>
+                <div class="flywheel-node-title">Launch Token</div>
+                <div class="flywheel-node-desc">Deploy on Base. Auto LP, 1% swap fee.</div>
+            </div>
+            <div class="flywheel-node flywheel-node-2">
+                <div class="flywheel-node-num">2</div>
+                <div class="flywheel-node-icon">🥩</div>
+                <div class="flywheel-node-title">Stake Pool</div>
+                <div class="flywheel-node-desc">Holders stake, earn CLAWS from fees.</div>
+            </div>
+            <div class="flywheel-node flywheel-node-4">
+                <div class="flywheel-node-num">4</div>
+                <div class="flywheel-node-icon">📣</div>
+                <div class="flywheel-node-title">Promote</div>
+                <div class="flywheel-node-desc">AI agent + marketing drive awareness.</div>
+            </div>
+            <div class="flywheel-node flywheel-node-3">
+                <div class="flywheel-node-num">3</div>
+                <div class="flywheel-node-icon">🛠️</div>
+                <div class="flywheel-node-title">Build App</div>
+                <div class="flywheel-node-desc">Create with AI. Publish to your slug.</div>
+            </div>
+
+            <div class="flywheel-center">Growth<br>Engine</div>
+        </div>
+
+        <p class="flywheel-tagline">More swaps → more fees → more rewards → more holders → repeat</p>
     </section>
 
     <!-- ═══ Tool Grid ═══ -->
