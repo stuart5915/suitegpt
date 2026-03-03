@@ -20,9 +20,9 @@ const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const FREE_HANDLES = ['artstu'];
 
 const MODEL_TIERS = {
-    fast:     { model: 'claude-haiku-4-5-20251001',  credits: 10,  label: 'Fast' },
-    standard: { model: 'claude-sonnet-4-5-20250929', credits: 35,  label: 'Standard' },
-    pro:      { model: 'claude-opus-4-6-20250214',   credits: 150, label: 'Pro' }
+    fast:     { model: 'claude-haiku-4-5-20251001',  credits: 10,  label: 'Fast',     maxTokens: 8192  },
+    standard: { model: 'claude-sonnet-4-5-20250929', credits: 35,  label: 'Standard', maxTokens: 16384 },
+    pro:      { model: 'claude-opus-4-6-20250214',   credits: 150, label: 'Pro',      maxTokens: 32000 }
 };
 
 // Per-token costs in USD (from Anthropic pricing)
@@ -58,6 +58,61 @@ Rules:
 - You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
+
+## Available SDKs (auto-injected into every published app)
+
+### CLAWS SDK — window.CLAWS
+Handles crypto payments via CLAWS token on Base chain.
+- CLAWS.pay(amount, recipientAddress) → sends CLAWS tokens, returns tx hash
+- CLAWS.balance() → returns user's CLAWS balance (number)
+- CLAWS.tipCreator(amount?) → sends CLAWS to the app creator (default 10)
+- CLAWS.gate(amount, callback) → paywall: user pays, then callback(err, txHash)
+- CLAWS.creatorWallet → the app creator's wallet address
+- CLAWS.appId → the app's unique ID
+
+### AppDB SDK — window.AppDB
+Persistent key-value database for every app. Data survives page reloads and tab closes.
+Two scopes: user-scoped (private to each visitor) and global (shared across all visitors).
+
+User-scoped (private per visitor):
+- await AppDB.get(key) → returns stored value or null
+- await AppDB.set(key, value) → stores any JSON-serializable value
+- await AppDB.delete(key) → removes a key
+- await AppDB.list() → returns [{key, value}, ...] of all user keys
+
+Global (shared across all visitors of this app):
+- await AppDB.getGlobal(key) → returns globally stored value or null
+- await AppDB.setGlobal(key, value) → stores value visible to all users
+- await AppDB.deleteGlobal(key) → removes a global key
+- await AppDB.listGlobal() → returns [{key, value}, ...] of all global keys
+
+Usage guidelines:
+- Use global scope for leaderboards, polls, guestbooks, shared counters, public data
+- Use user scope for personal settings, saved progress, user profiles, private notes
+- Values can be any JSON type: strings, numbers, objects, arrays
+- Max 100KB per value, 1000 keys per scope
+- All methods are async — always use await`;
+
+const SYSTEM_PROMPT_EDIT = `You are an expert web developer AI editing an existing HTML app.
+
+Rules:
+- Output ONLY search/replace edit blocks — NEVER the full file
+- Each block replaces an exact section of the existing code
+- You may output multiple blocks per response
+- SEARCH text must match the existing code EXACTLY (copy lines verbatim)
+- Keep edits minimal — only the lines that change, plus 1-2 surrounding lines for uniqueness
+- For deletions, leave REPLACE empty
+- For insertions, SEARCH the lines where new code goes after, include them + new code in REPLACE
+- If the change is so large it affects >60% of the file, output a full \`\`\`html block instead
+
+Format:
+<<<<<<< SEARCH
+exact lines from existing code
+=======
+replacement lines
+>>>>>>> REPLACE
+
+You may include a brief explanation before/between edit blocks.
 
 ## Available SDKs (auto-injected into every published app)
 
@@ -143,6 +198,55 @@ function extractHtml(text) {
     return truncated ? truncated[1].trim() : null;
 }
 
+function hasEditBlocks(text) {
+    return text.includes('<<<<<<< SEARCH');
+}
+
+function parseEditBlocks(text) {
+    const blocks = [];
+    const regex = /<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        blocks.push({ search: match[1], replace: match[2] });
+    }
+    return blocks;
+}
+
+function applyEdits(code, blocks) {
+    const errors = [];
+    for (let i = 0; i < blocks.length; i++) {
+        const { search, replace } = blocks[i];
+        // Try exact match first
+        const idx = code.indexOf(search);
+        if (idx !== -1) {
+            code = code.slice(0, idx) + replace + code.slice(idx + search.length);
+            continue;
+        }
+        // Fallback: normalize trailing whitespace per line
+        const normSearch = search.split('\n').map(l => l.trimEnd()).join('\n');
+        const normCode = code.split('\n').map(l => l.trimEnd()).join('\n');
+        const normIdx = normCode.indexOf(normSearch);
+        if (normIdx !== -1) {
+            // Map normalized index back to original code
+            // Count original chars up to the same line/position
+            const linesBefore = normCode.slice(0, normIdx).split('\n').length - 1;
+            const origLines = code.split('\n');
+            let origStart = 0;
+            for (let j = 0; j < linesBefore; j++) origStart += origLines[j].length + 1;
+            const searchLineCount = search.split('\n').length;
+            let origEnd = origStart;
+            for (let j = linesBefore; j < linesBefore + searchLineCount; j++) {
+                origEnd += (origLines[j]?.length || 0) + 1;
+            }
+            origEnd--; // remove trailing newline overshoot
+            code = code.slice(0, origStart) + replace + code.slice(origEnd);
+            continue;
+        }
+        errors.push('Block ' + (i + 1) + ': no match for SEARCH text');
+    }
+    return { code, errors };
+}
+
 function autoTitle(message) {
     // Take first 50 chars, clean up
     const clean = message.replace(/\n/g, ' ').trim();
@@ -164,12 +268,14 @@ export default async function handler(req, res) {
         const { session_id, estimate, model, code_length } = req.query;
 
         if (estimate === 'true') {
+            const { is_edit } = req.query;
             const tierKey = model || 'fast';
             const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
             const codeLen = parseInt(code_length) || 0;
-            // Rough token estimate: code chars / 3.5 + system prompt (~1500) for input, ~12000 for output
+            // Rough token estimate: code chars / 3.5 + system prompt (~1500) for input
+            // Edit mode outputs ~3000 tokens (search/replace blocks), full mode ~12000
             const estInputTokens = Math.ceil(codeLen / 3.5) + 1500;
-            const estOutputTokens = 12000;
+            const estOutputTokens = is_edit === 'true' ? 3000 : 12000;
             const estimatedCredits = calcActualCredits(tier.model, estInputTokens, estOutputTokens);
             const surcharge = Math.max(0, estimatedCredits - tier.credits);
             return res.json({
@@ -281,17 +387,26 @@ export default async function handler(req, res) {
             sessionId = newSession.id;
             sessionTitle = newSession.title;
         } else {
-            // Verify ownership
+            // Verify ownership and load current_code for edit mode
             const { data: existing } = await supabase
                 .from('build_sessions')
-                .select('id, title')
+                .select('id, title, current_code')
                 .eq('id', sessionId)
                 .eq('profile_id', profileId)
                 .single();
 
             if (!existing) return res.status(404).json({ error: 'Session not found.' });
             sessionTitle = existing.title;
+            // Use session's stored code if available
+            if (existing.current_code && !current_code) {
+                req.body._session_code = existing.current_code;
+            }
         }
+
+        // Determine edit mode — do we have existing code to edit?
+        let existingCode = req.body._session_code || null;
+        if (!existingCode && current_code) existingCode = current_code;
+        const isEditMode = !!existingCode;
 
         // Fetch last 20 messages for context
         const { data: history } = await supabase
@@ -306,25 +421,58 @@ export default async function handler(req, res) {
             content: m.content
         }));
 
-        // If no history but current_code provided (edit/fork), inject it as context
-        // Cap at 40KB to keep Claude's processing within the 60s function timeout
-        if (contextMessages.length === 0 && current_code) {
+        // Context injection depends on edit mode
+        if (contextMessages.length === 0 && existingCode) {
             const MAX_CODE = 40000;
-            const trimmedCode = current_code.length > MAX_CODE
-                ? current_code.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
-                : current_code;
-            contextMessages.push({
-                role: 'user',
-                content: 'Here is my existing app code:\n\n```html\n' + trimmedCode + '\n```\n\nI want to make a change to it.'
-            });
-            contextMessages.push({
-                role: 'assistant',
-                content: 'I can see your app. Tell me what you\'d like to change and I\'ll output the complete updated HTML file.'
-            });
+            const trimmedCode = existingCode.length > MAX_CODE
+                ? existingCode.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
+                : existingCode;
+            if (isEditMode) {
+                contextMessages.push({
+                    role: 'user',
+                    content: 'Here is the current app code:\n\n```html\n' + trimmedCode + '\n```\n\nTell me what to change and I\'ll provide search/replace edit blocks.'
+                });
+                contextMessages.push({
+                    role: 'assistant',
+                    content: 'I can see your app. Tell me what you\'d like to change and I\'ll provide minimal search/replace edit blocks.'
+                });
+            } else {
+                contextMessages.push({
+                    role: 'user',
+                    content: 'Here is my existing app code:\n\n```html\n' + trimmedCode + '\n```\n\nI want to make a change to it.'
+                });
+                contextMessages.push({
+                    role: 'assistant',
+                    content: 'I can see your app. Tell me what you\'d like to change and I\'ll output the complete updated HTML file.'
+                });
+            }
+        } else if (isEditMode && contextMessages.length > 0) {
+            // Re-inject current code every 3rd user message to prevent drift
+            const userMsgCount = contextMessages.filter(m => m.role === 'user').length;
+            if (userMsgCount % 3 === 0) {
+                const MAX_CODE = 40000;
+                const trimmedCode = existingCode.length > MAX_CODE
+                    ? existingCode.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
+                    : existingCode;
+                // Append code reminder after history, before the new user message (pushed below)
+                contextMessages.push({
+                    role: 'user',
+                    content: 'For reference, here is the current app code:\n\n```html\n' + trimmedCode + '\n```'
+                });
+                contextMessages.push({
+                    role: 'assistant',
+                    content: 'Got it, I have the current code. What would you like to change?'
+                });
+            }
         }
 
         // Add current user message
         contextMessages.push({ role: 'user', content: message });
+
+        // Choose prompt and max_tokens based on edit mode
+        const systemPrompt = isEditMode ? SYSTEM_PROMPT_EDIT : SYSTEM_PROMPT;
+        const editMaxTokens = { fast: 4096, standard: 6000, pro: 8192 };
+        const maxTokens = isEditMode ? (editMaxTokens[tierKey] || 4096) : tier.maxTokens;
 
         // Call Claude with streaming to avoid Vercel 60s timeout
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -336,9 +484,9 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: tier.model,
-                max_tokens: 16000,
+                max_tokens: maxTokens,
                 stream: true,
-                system: SYSTEM_PROMPT,
+                system: systemPrompt,
                 messages: contextMessages
             })
         });
@@ -403,7 +551,21 @@ export default async function handler(req, res) {
             }
         }
 
-        const code = extractHtml(assistantText);
+        let code = null;
+        if (isEditMode) {
+            // Fallback: Claude sent a full HTML file despite edit mode (large changes)
+            const fullHtml = extractHtml(assistantText);
+            if (fullHtml) {
+                code = fullHtml;
+            } else if (hasEditBlocks(assistantText)) {
+                const blocks = parseEditBlocks(assistantText);
+                const result = applyEdits(existingCode, blocks);
+                code = result.code;
+                if (result.errors.length > 0) console.warn('Edit block failures:', result.errors);
+            }
+        } else {
+            code = extractHtml(assistantText);
+        }
         const tokensUsed = inputTokens + outputTokens;
 
         // Calculate token-based surcharge

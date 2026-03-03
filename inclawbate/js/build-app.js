@@ -418,7 +418,7 @@
     async function estimateEditCost() {
         if (!state.currentCode) return null;
         try {
-            var resp = await fetch(API_BASE + '?estimate=true&model=' + state.selectedModel + '&code_length=' + state.currentCode.length, {
+            var resp = await fetch(API_BASE + '?estimate=true&model=' + state.selectedModel + '&code_length=' + state.currentCode.length + '&is_edit=true', {
                 headers: { 'Authorization': 'Bearer ' + getToken() }
             });
             if (!resp.ok) return null;
@@ -671,8 +671,8 @@
         if (role === 'user') {
             div.textContent = content;
         } else {
-            // Strip the HTML code block from display (handles truncated responses too)
-            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').trim();
+            // Strip the HTML code block and edit blocks from display (handles truncated responses too)
+            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').replace(/<<<<<<< SEARCH[\s\S]*?>>>>>>> REPLACE/g, '').trim();
             if (!displayText && code) displayText = 'Here\'s your updated site:';
             div.textContent = displayText;
             if (code) {
