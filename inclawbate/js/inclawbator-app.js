@@ -97,7 +97,7 @@ async function contractRead(to, data) {
     return (json && json.result) || '0x0';
 }
 
-async function sendTxAndWait(provider, from, to, data) {
+async function sendTxAndWait(provider, from, to, data, gasLimit) {
     try {
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
     } catch (switchErr) {
@@ -108,9 +108,11 @@ async function sendTxAndWait(provider, from, to, data) {
             });
         }
     }
+    var txParams = { from: from, to: to, data: data };
+    if (gasLimit) txParams.gas = gasLimit;
     var txHash = await provider.request({
         method: 'eth_sendTransaction',
-        params: [{ from: from, to: to, data: data }]
+        params: [txParams]
     });
     for (var i = 0; i < 90; i++) {
         await new Promise(function(r) { setTimeout(r, 2000); });
@@ -657,7 +659,7 @@ async function handleLaunchDeploy() {
     try {
         // Step 1: Deploy token via Clanker v4
         var calldata = encodeClankerDeploy(name, symbol);
-        var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata);
+        var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200');
 
         var tokenAddress = parseDeployedToken(result.receipt);
         if (!tokenAddress) {
