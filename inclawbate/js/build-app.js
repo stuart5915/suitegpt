@@ -546,14 +546,11 @@
                 return;
             }
 
-            var data = await resp.json();
-
-            if (resp.status === 401) {
-                logout();
-                return;
-            }
-
-            if (!resp.ok) {
+            // Non-streaming error responses (401, 402, etc.) come as JSON
+            var contentType = resp.headers.get('content-type') || '';
+            if (!contentType.includes('text/event-stream')) {
+                var data = await resp.json();
+                if (resp.status === 401) { logout(); return; }
                 appendMessage('assistant', data.error || 'Something went wrong.');
                 if (resp.status === 402) openBuyCredits();
                 state.sending = false;
@@ -561,33 +558,75 @@
                 return;
             }
 
-            // Update state
-            if (data.session_id) state.sessionId = data.session_id;
-            if (data.title && state.title === 'New Project') {
-                state.title = data.title;
-                els.buildTitle.textContent = state.title;
-            }
-            if (data.credits_remaining !== undefined) {
-                state.credits = data.credits_remaining;
-                updateCredits();
+            // ── Read SSE stream ──
+            var streamedText = '';
+            var streamDiv = document.createElement('div');
+            streamDiv.className = 'chat-msg assistant';
+            streamDiv.textContent = '';
+            els.chatMessages.appendChild(streamDiv);
+
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder();
+            var sseBuffer = '';
+            var doneData = null;
+
+            while (true) {
+                var chunk = await reader.read();
+                if (chunk.done) break;
+
+                sseBuffer += decoder.decode(chunk.value, { stream: true });
+                var sseLines = sseBuffer.split('\n');
+                sseBuffer = sseLines.pop();
+
+                for (var i = 0; i < sseLines.length; i++) {
+                    var line = sseLines[i];
+                    if (!line.startsWith('data: ')) continue;
+                    try {
+                        var evt = JSON.parse(line.slice(6));
+                        if (evt.type === 'session') {
+                            if (evt.session_id) state.sessionId = evt.session_id;
+                            if (evt.title && state.title === 'New Project') {
+                                state.title = evt.title;
+                                els.buildTitle.textContent = state.title;
+                            }
+                        } else if (evt.type === 'delta') {
+                            streamedText += evt.text;
+                            // Show streaming text (strip code blocks for display)
+                            var display = streamedText.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').trim();
+                            streamDiv.textContent = display || 'Generating...';
+                            scrollChat();
+                        } else if (evt.type === 'done') {
+                            doneData = evt;
+                        }
+                    } catch (e) { /* skip */ }
+                }
             }
 
-            // Show assistant message
-            appendMessage('assistant', data.message, data.code);
+            // ── Process final result ──
+            // Replace streaming div with final message
+            streamDiv.remove();
+            var finalCode = doneData ? doneData.code : extractHtmlClient(streamedText);
+            var displayText = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
+            if (!displayText && finalCode) displayText = 'Here\'s your updated site:';
+            appendMessage('assistant', streamedText, finalCode);
 
-            // Show surcharge notice if extra credits were charged
-            if (data.surcharge > 0) {
-                var notice = document.createElement('div');
-                notice.className = 'chat-msg system-notice';
-                notice.textContent = 'Context surcharge: +' + data.surcharge + ' credits (' + data.credits_charged + ' total)';
-                els.chatMessages.appendChild(notice);
-                scrollChat();
+            if (doneData) {
+                if (doneData.credits_remaining !== undefined) {
+                    state.credits = doneData.credits_remaining;
+                    updateCredits();
+                }
+                if (doneData.surcharge > 0) {
+                    var notice = document.createElement('div');
+                    notice.className = 'chat-msg system-notice';
+                    notice.textContent = 'Context surcharge: +' + doneData.surcharge + ' credits (' + doneData.credits_charged + ' total)';
+                    els.chatMessages.appendChild(notice);
+                    scrollChat();
+                }
             }
 
-            // Update preview
-            if (data.code) {
-                state.currentCode = data.code;
-                updatePreview(data.code);
+            if (finalCode) {
+                state.currentCode = finalCode;
+                updatePreview(finalCode);
                 setTimeout(showSuggestionChips, 400);
             }
 
@@ -1495,6 +1534,12 @@
                 sendMessage();
             }
         });
+    }
+
+    // ── Client-side HTML extraction (fallback for streaming) ──
+    function extractHtmlClient(text) {
+        var match = text.match(/```html\s*([\s\S]*?)```/);
+        return match ? match[1].trim() : null;
     }
 
     // ── Escape HTML ──

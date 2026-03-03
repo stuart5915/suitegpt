@@ -323,7 +323,7 @@ export default async function handler(req, res) {
         // Add current user message
         contextMessages.push({ role: 'user', content: message });
 
-        // Call Claude
+        // Call Claude with streaming to avoid Vercel 60s timeout
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -334,31 +334,73 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: tier.model,
                 max_tokens: 16000,
+                stream: true,
                 system: SYSTEM_PROMPT,
                 messages: contextMessages
             })
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            console.error('Anthropic error:', data);
-            // Refund credits — Claude API failed, user shouldn't pay
+            let errMsg = 'Failed to generate code.';
+            try { const errData = await response.json(); errMsg = errData.error?.message || errMsg; } catch (e) {}
+            console.error('Anthropic error:', response.status, errMsg);
             if (!admin) {
                 await supabase.from('human_profiles')
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
             }
             return res.status(response.status).json({
-                error: data.error?.message || 'Failed to generate code.',
+                error: errMsg,
                 credits_remaining: creditsRemaining + tier.credits
             });
         }
 
-        const assistantText = data.content?.[0]?.text || '';
+        // Set up SSE streaming to client
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        // Send session info immediately so client can track it
+        res.write('data: ' + JSON.stringify({ type: 'session', session_id: sessionId, title: sessionTitle }) + '\n\n');
+
+        // Read the SSE stream from Anthropic
+        let assistantText = '';
+        let inputTokens = 0;
+        let outputTokens = 0;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const payload = line.slice(6).trim();
+                if (payload === '[DONE]') continue;
+
+                try {
+                    const event = JSON.parse(payload);
+
+                    if (event.type === 'content_block_delta' && event.delta?.text) {
+                        assistantText += event.delta.text;
+                        // Forward text chunk to client
+                        res.write('data: ' + JSON.stringify({ type: 'delta', text: event.delta.text }) + '\n\n');
+                    } else if (event.type === 'message_delta' && event.usage) {
+                        outputTokens = event.usage.output_tokens || 0;
+                    } else if (event.type === 'message_start' && event.message?.usage) {
+                        inputTokens = event.message.usage.input_tokens || 0;
+                    }
+                } catch (e) { /* skip unparseable lines */ }
+            }
+        }
+
         const code = extractHtml(assistantText);
-        const inputTokens = data.usage?.input_tokens || 0;
-        const outputTokens = data.usage?.output_tokens || 0;
         const tokensUsed = inputTokens + outputTokens;
 
         // Calculate token-based surcharge
@@ -367,7 +409,6 @@ export default async function handler(req, res) {
             const actualCredits = calcActualCredits(tier.model, inputTokens, outputTokens);
             if (actualCredits > tier.credits) {
                 surcharge = actualCredits - tier.credits;
-                // Deduct surcharge from remaining balance
                 const canDeduct = Math.min(surcharge, creditsRemaining);
                 if (canDeduct > 0) {
                     const { data: updated } = await supabase
@@ -384,7 +425,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // Save user message
+        // Save messages to DB
         await supabase.from('build_messages').insert({
             session_id: sessionId,
             role: 'user',
@@ -393,7 +434,6 @@ export default async function handler(req, res) {
             credits_charged: 0
         });
 
-        // Save assistant message
         await supabase.from('build_messages').insert({
             session_id: sessionId,
             role: 'assistant',
@@ -403,7 +443,6 @@ export default async function handler(req, res) {
             credits_charged: admin ? 0 : tier.credits + surcharge
         });
 
-        // Update session with latest code
         if (code) {
             await supabase
                 .from('build_sessions')
@@ -416,16 +455,17 @@ export default async function handler(req, res) {
                 .eq('id', sessionId);
         }
 
-        return res.json({
-            session_id: sessionId,
-            title: sessionTitle,
-            message: assistantText,
+        // Send final event with metadata
+        res.write('data: ' + JSON.stringify({
+            type: 'done',
             code: code,
             credits_remaining: creditsRemaining,
             tier_used: tierKey,
             credits_charged: admin ? 0 : tier.credits + surcharge,
             surcharge: surcharge
-        });
+        }) + '\n\n');
+
+        return res.end();
 
     } catch (error) {
         console.error('Build studio error:', error);
