@@ -763,6 +763,14 @@
     // Category emoji map
     var catEmoji = { tools: '\u{1F527}', games: '\u{1F3AE}', creative: '\u{1F3A8}', finance: '\u{1F4B0}', social: '\u{1F4AC}', other: '\u{1F680}' };
 
+    // ── Creator display: display_name > @x_handle > 0xABCD...1234 > Anonymous ──
+    function creatorLabel(app) {
+        if (app.creator_display_name) return app.creator_display_name;
+        if (app.creator_x_handle && !app.creator_x_handle.startsWith('w_')) return '@' + app.creator_x_handle;
+        if (app.creator_wallet) return app.creator_wallet.slice(0, 6) + '...' + app.creator_wallet.slice(-4);
+        return 'Anonymous';
+    }
+
     // ── Auth ──
     function getToken() { return localStorage.getItem('inclawbate_token'); }
     function getProfile() {
@@ -849,9 +857,7 @@
             card.className = 'app-card';
             card.style.animationDelay = (i * 0.04) + 's';
 
-            var creator = app.creator_x_handle
-                ? '@' + app.creator_x_handle
-                : (app.creator_wallet ? app.creator_wallet.slice(0, 6) + '...' + app.creator_wallet.slice(-4) : 'Anonymous');
+            var creator = creatorLabel(app);
 
             var priceBadge = app.claws_price > 0
                 ? '<span class="app-badge paid">' + formatNum(app.claws_price) + ' CLAWS</span>' + (app.has_unlocked ? '<span class="app-badge owned">Owned</span>' : '')
@@ -992,9 +998,7 @@
             if (e.target === overlay) closeDetail();
         });
 
-        var creator = app.creator_x_handle
-            ? '@' + app.creator_x_handle
-            : (app.creator_wallet ? app.creator_wallet.slice(0, 6) + '...' + app.creator_wallet.slice(-4) : 'Anonymous');
+        var creator = creatorLabel(app);
 
         var emoji = catEmoji[app.category] || catEmoji.other;
 

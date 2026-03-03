@@ -110,17 +110,18 @@ export default async function handler(req, res) {
                 if (error || !app) return res.status(404).json({ error: 'App not found' });
 
                 let has_upvoted = false;
+                const lookups = [];
                 if (user) {
-                    const { data: uv } = await supabase
-                        .from('app_upvotes')
-                        .select('id')
-                        .eq('profile_id', user.sub)
-                        .eq('app_id', id)
-                        .maybeSingle();
-                    has_upvoted = !!uv;
+                    lookups.push(supabase.from('app_upvotes').select('id').eq('profile_id', user.sub).eq('app_id', id).maybeSingle());
                 }
+                if (app.creator_x_handle) {
+                    lookups.push(supabase.from('human_profiles').select('display_name').eq('x_handle', app.creator_x_handle.toLowerCase()).maybeSingle());
+                }
+                const lookupResults = await Promise.all(lookups);
+                if (user) has_upvoted = !!lookupResults[0]?.data;
+                const creatorProfile = app.creator_x_handle ? lookupResults[user ? 1 : 0]?.data : null;
 
-                return res.json({ app: { ...app, has_upvoted } });
+                return res.json({ app: { ...app, has_upvoted, creator_display_name: creatorProfile?.display_name || null } });
             }
 
             // List apps
@@ -178,6 +179,23 @@ export default async function handler(req, res) {
                 if (ulks) ulks.forEach(u => unlockedSet.add(u.app_id));
             }
 
+            // Batch-lookup display_name for app creators
+            let displayNameMap = {};
+            if (apps.length > 0) {
+                const handles = [...new Set(apps.map(a => a.creator_x_handle).filter(Boolean).map(h => h.toLowerCase()))];
+                if (handles.length > 0) {
+                    const { data: profiles } = await supabase
+                        .from('human_profiles')
+                        .select('x_handle, display_name')
+                        .in('x_handle', handles);
+                    if (profiles) {
+                        profiles.forEach(p => {
+                            if (p.display_name) displayNameMap[p.x_handle] = p.display_name;
+                        });
+                    }
+                }
+            }
+
             // Enrich with token/staking data from inclawbator_projects
             let projectByAppId = {};
             let projectByWallet = {};
@@ -213,6 +231,7 @@ export default async function handler(req, res) {
                     has_code: !!code,
                     has_upvoted: upvotedSet.has(a.id),
                     has_unlocked: unlockedSet.has(a.id),
+                    creator_display_name: a.creator_x_handle ? (displayNameMap[a.creator_x_handle.toLowerCase()] || null) : null,
                     token_symbol: proj ? proj.token_symbol : null,
                     token_address: proj ? proj.token_address : null,
                     staking_address: proj ? proj.staking_address : null

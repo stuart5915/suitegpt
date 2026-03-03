@@ -48,9 +48,10 @@
                     window.location.reload();
                 });
             } else if (token && profile) {
-                var label = profile.x_handle && !profile.x_handle.startsWith('w_')
-                    ? '@' + profile.x_handle
-                    : (profile.x_name || 'Connected');
+                var label = profile.display_name
+                    || (profile.x_handle && !profile.x_handle.startsWith('w_') ? '@' + profile.x_handle : null)
+                    || profile.x_name
+                    || 'Connected';
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
                     '<span class="nav-wallet-dot"></span>' + label + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {

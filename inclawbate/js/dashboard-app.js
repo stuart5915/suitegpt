@@ -76,7 +76,7 @@ async function loadOverview() {
 function renderProfileCard(profile) {
     const card = document.getElementById('overviewProfileCard');
     card.classList.remove('hidden');
-    const name = profile.x_name || profile.x_handle || 'Anonymous';
+    const name = profile.display_name || profile.x_name || profile.x_handle || 'Anonymous';
     const handle = profile.x_handle && !profile.x_handle.startsWith('w_') ? `@${profile.x_handle}` : '';
 
     let avatarHtml;
@@ -106,7 +106,10 @@ function renderProfileCard(profile) {
             </div>
             <button type="button" class="profile-buy-btn" id="profileBuyBtn">Buy Credits</button>
         </div>
-        <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <a href="/u/${esc(profile.x_handle)}" class="overview-profile-link" style="color:var(--lobster-300);border-color:var(--lobster-300);">Edit Profile</a>
+            <button type="button" class="overview-profile-link" id="dashDisconnect" style="color:var(--text-dim);border-color:var(--border-subtle);">Disconnect</button>
+        </div>
     `;
 
     document.getElementById('profileBuyBtn')?.addEventListener('click', () => {

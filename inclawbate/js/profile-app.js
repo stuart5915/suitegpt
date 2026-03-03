@@ -117,7 +117,8 @@ function refreshAvatarIfStale(p) {
 }
 
 function renderProfile(p) {
-    document.title = `${p.x_name || p.x_handle} — inclawbate`;
+    const displayName = p.display_name || p.x_name || p.x_handle;
+    document.title = `${displayName} — inclawbate`;
 
     // Avatar
     const avatarEl = document.getElementById('profileAvatar');
@@ -129,11 +130,20 @@ function renderProfile(p) {
     } else {
         avatarEl.classList.add('hidden');
         avatarFallback.classList.remove('hidden');
-        avatarFallback.textContent = (p.x_name || p.x_handle || '?')[0].toUpperCase();
+        avatarFallback.textContent = (displayName || '?')[0].toUpperCase();
     }
 
-    document.getElementById('profileName').textContent = p.x_name || p.x_handle;
-    document.getElementById('profileHandle').innerHTML = `<a href="https://x.com/${esc(p.x_handle)}" target="_blank" rel="noopener">@${esc(p.x_handle)}</a>`;
+    document.getElementById('profileName').textContent = displayName;
+    // Show @handle for real X users, show 0x... for wallet users, hide for wallet users with w_ prefix
+    const isWalletUser = p.x_handle && p.x_handle.startsWith('w_');
+    if (isWalletUser && p.wallet_address) {
+        const short = p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4);
+        document.getElementById('profileHandle').innerHTML = `<span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text-dim);">${esc(short)}</span>`;
+    } else if (!isWalletUser) {
+        document.getElementById('profileHandle').innerHTML = `<a href="https://x.com/${esc(p.x_handle)}" target="_blank" rel="noopener">@${esc(p.x_handle)}</a>`;
+    } else {
+        document.getElementById('profileHandle').innerHTML = '';
+    }
     document.getElementById('profileTagline').textContent = p.tagline || '';
 
     const isAllocated = currentAllocation.length > 0;
@@ -289,9 +299,9 @@ function renderProfile(p) {
     }
 
     // Set up payment modal
-    document.getElementById('payHumanName').textContent = p.x_name || p.x_handle;
-    document.getElementById('payRecipient').textContent = `@${p.x_handle}`;
-    document.getElementById('paySuccessName').textContent = p.x_name || p.x_handle;
+    document.getElementById('payHumanName').textContent = displayName;
+    document.getElementById('payRecipient').textContent = isWalletUser ? (p.wallet_address ? p.wallet_address.slice(0, 6) + '...' + p.wallet_address.slice(-4) : p.x_handle) : `@${p.x_handle}`;
+    document.getElementById('paySuccessName').textContent = displayName;
 
     showSection('page');
 }
@@ -304,6 +314,7 @@ function openEditModal() {
     if (!currentProfile) return;
 
     // Pre-fill fields
+    document.getElementById('editDisplayName').value = currentProfile.display_name || '';
     document.getElementById('editTagline').value = currentProfile.tagline || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
     document.getElementById('editWallet').value = currentProfile.wallet_address || '';
@@ -379,6 +390,7 @@ async function saveProfile() {
     try {
         const editRespTime = document.getElementById('editResponseTime').value;
         const updates = {
+            display_name: document.getElementById('editDisplayName').value.trim() || null,
             tagline: document.getElementById('editTagline').value.trim(),
             bio: document.getElementById('editBio').value.trim(),
             skills: editSkills,

@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         // Find existing profile by wallet address
         let { data: profile } = await supabase
             .from('human_profiles')
-            .select('id, wallet_address, api_key, credits, x_handle, x_name, x_avatar_url')
+            .select('id, wallet_address, api_key, credits, x_handle, x_name, x_avatar_url, display_name')
             .eq('wallet_address', addrLower)
             .single();
 
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
                     available_capacity: 100,
                     availability: 'available'
                 })
-                .select('id, wallet_address, api_key, credits, x_handle, x_name')
+                .select('id, wallet_address, api_key, credits, x_handle, x_name, display_name')
                 .single();
 
             if (createErr) {
@@ -103,6 +103,7 @@ export default async function handler(req, res) {
                 x_handle: profile.x_handle,
                 x_name: profile.x_name,
                 x_avatar_url: profile.x_avatar_url || null,
+                display_name: profile.display_name || null,
                 wallet_address: profile.wallet_address,
                 credits: profile.credits || 0,
                 api_key: profile.api_key

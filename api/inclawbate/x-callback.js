@@ -168,6 +168,7 @@ export default async function handler(req, res) {
                 x_handle: profile.x_handle,
                 x_name: profile.x_name,
                 x_avatar_url: profile.x_avatar_url,
+                display_name: profile.display_name || null,
                 bio: profile.bio,
                 tagline: profile.tagline,
                 skills: profile.skills,

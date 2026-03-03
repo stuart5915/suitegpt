@@ -16,7 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
+const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
 
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
@@ -265,10 +265,11 @@ export default async function handler(req, res) {
             const {
                 tagline, bio, skills,
                 wallet_address, available_capacity,
-                availability, creative_freedom
+                availability, creative_freedom, display_name
             } = req.body;
 
             const updates = {};
+            if (display_name !== undefined) updates.display_name = display_name ? String(display_name).slice(0, 100) : null;
             if (tagline !== undefined) updates.tagline = String(tagline).slice(0, 200);
             if (bio !== undefined) updates.bio = String(bio).slice(0, 2000);
             if (skills !== undefined && Array.isArray(skills)) updates.skills = skills.slice(0, 20).map(s => String(s).slice(0, 50).toLowerCase());
