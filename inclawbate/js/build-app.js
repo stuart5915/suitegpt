@@ -428,6 +428,13 @@
         removeSuggestionChips();
         appendMessage('user', message);
 
+        // Optimistic credit deduction — backend charges upfront too
+        var tierCost = { fast: 5, standard: 15, pro: 60 }[state.selectedModel] || 5;
+        if (state.credits !== null) {
+            state.credits = Math.max(0, state.credits - tierCost);
+            updateCredits();
+        }
+
         // Show thinking indicator
         var thinkingEl = document.createElement('div');
         thinkingEl.className = 'chat-msg thinking';

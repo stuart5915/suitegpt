@@ -197,10 +197,36 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'AI service not configured.' });
     }
 
+    // Deduct credits BEFORE calling Claude so users can't skip payment
+    let creditsRemaining = profile?.credits || 0;
+    if (!admin) {
+        const { data: updated, error: creditErr } = await supabase
+            .from('human_profiles')
+            .update({ credits: profile.credits - tier.credits })
+            .eq('id', profileId)
+            .gte('credits', tier.credits)
+            .select('credits')
+            .single();
+
+        if (creditErr || !updated) {
+            return res.status(402).json({
+                error: 'Failed to deduct credits.',
+                credits: profile?.credits || 0
+            });
+        }
+        creditsRemaining = updated.credits;
+    }
+
     try {
         const { session_id, message } = req.body;
 
         if (!message || !message.trim()) {
+            // Refund — no work done
+            if (!admin) {
+                await supabase.from('human_profiles')
+                    .update({ credits: creditsRemaining + tier.credits })
+                    .eq('id', profileId);
+            }
             return res.status(400).json({ error: 'Message is required.' });
         }
 
@@ -268,8 +294,15 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             console.error('Anthropic error:', data);
+            // Refund credits — Claude API failed, user shouldn't pay
+            if (!admin) {
+                await supabase.from('human_profiles')
+                    .update({ credits: creditsRemaining + tier.credits })
+                    .eq('id', profileId);
+            }
             return res.status(response.status).json({
-                error: data.error?.message || 'Failed to generate code.'
+                error: data.error?.message || 'Failed to generate code.',
+                credits_remaining: creditsRemaining + tier.credits
             });
         }
 
@@ -307,24 +340,6 @@ export default async function handler(req, res) {
                 .from('build_sessions')
                 .update({ updated_at: new Date().toISOString() })
                 .eq('id', sessionId);
-        }
-
-        // Deduct credits based on tier
-        let creditsRemaining = profile?.credits || 0;
-        if (!admin) {
-            const { data: updated, error: creditErr } = await supabase
-                .from('human_profiles')
-                .update({ credits: profile.credits - tier.credits })
-                .eq('id', profileId)
-                .gte('credits', tier.credits)
-                .select('credits')
-                .single();
-
-            if (creditErr || !updated) {
-                creditsRemaining = 0;
-            } else {
-                creditsRemaining = updated.credits;
-            }
         }
 
         return res.json({
