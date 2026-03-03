@@ -272,7 +272,7 @@
                 },
                 body: JSON.stringify({
                     session_id: state.sessionId,
-                    message: message,
+                    message: message + getAttachmentPrompt(),
                     model: state.selectedModel
                 })
             });
@@ -323,6 +323,10 @@
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             appendMessage('assistant', 'Network error. Please try again.');
         }
+
+        // Clear attachments after send
+        chatAttachments = [];
+        renderChatAttachPreviews();
 
         state.sending = false;
         els.chatSend.disabled = false;
@@ -406,6 +410,65 @@
             (state.credits <= 0 ? ' empty' : state.credits <= 5 ? ' low' : '');
     }
 
+    // ── Image Attachments ──
+    var chatAttachments = [];
+
+    async function handleFileSelect(files) {
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            if (!file.type.startsWith('image/')) continue;
+            if (file.size > 3 * 1024 * 1024) { alert('Image too large (max 3MB)'); continue; }
+            try {
+                var url = await uploadFile(file);
+                chatAttachments.push({ url: url, name: file.name });
+                renderChatAttachPreviews();
+            } catch (e) {
+                console.error('Upload failed:', e);
+            }
+        }
+        var input = document.getElementById('chatFileInput');
+        if (input) input.value = '';
+    }
+
+    function uploadFile(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = async function () {
+                try {
+                    var resp = await fetch('/api/upload-asset', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+                        body: JSON.stringify({ file_data: reader.result, file_name: file.name, file_type: file.type })
+                    });
+                    var data = await resp.json();
+                    if (!resp.ok) throw new Error(data.error || 'Upload failed');
+                    resolve(data.url);
+                } catch (e) { reject(e); }
+            };
+            reader.onerror = function () { reject(reader.error); };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderChatAttachPreviews() {
+        var container = document.getElementById('chatAttachPreview');
+        if (!container) return;
+        container.innerHTML = chatAttachments.map(function (a, i) {
+            return '<div class="chat-attach-thumb"><img src="' + a.url + '" alt="' + a.name + '"><button class="remove-thumb" onclick="window.BuildApp.removeAttach(' + i + ')">&times;</button></div>';
+        }).join('');
+    }
+
+    function removeAttach(index) {
+        chatAttachments.splice(index, 1);
+        renderChatAttachPreviews();
+    }
+
+    function getAttachmentPrompt() {
+        if (chatAttachments.length === 0) return '';
+        var lines = chatAttachments.map(function (a, i) { return (i + 1) + '. "' + a.name + '" → ' + a.url; });
+        return '\n\nIMAGE ASSETS (use these URLs directly in <img> tags or as CSS background-image URLs where appropriate):\n' + lines.join('\n');
+    }
+
     // ── Model Selector ──
     function setModel(tier) {
         state.selectedModel = tier;
@@ -415,7 +478,7 @@
         });
         var hint = document.getElementById('modelHint');
         if (hint) {
-            var hints = { fast: 'Fast & lightweight', standard: 'Balanced quality', pro: 'Maximum detail' };
+            var hints = { fast: 'Haiku — fast & lightweight', standard: 'Sonnet — balanced quality', pro: 'Opus — maximum detail' };
             hint.textContent = hints[tier] || '';
         }
     }
@@ -948,7 +1011,9 @@
         sendClawsTx: sendClawsTx,
         usePrompt: usePrompt,
         shufflePrompts: shufflePrompts,
-        connectWallet: connectWallet
+        connectWallet: connectWallet,
+        handleFileSelect: handleFileSelect,
+        removeAttach: removeAttach
     };
 
     // ── Boot ──

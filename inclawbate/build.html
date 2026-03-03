@@ -244,6 +244,7 @@
             cursor: pointer;
             transition: all var(--transition-fast);
             white-space: nowrap;
+            position: relative;
         }
         .model-option:hover {
             border-color: var(--text-dim);
@@ -262,6 +263,91 @@
             font-size: 0.7rem;
             color: var(--text-dim);
             margin-left: auto;
+        }
+        .model-info-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.55rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 2px;
+            vertical-align: middle;
+            position: relative;
+        }
+        .model-info-btn:hover { background: rgba(255,255,255,0.15); }
+        .model-info-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.72rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .model-info-btn:hover .model-info-tooltip { display: block; }
+        .model-info-tooltip strong { color: var(--accent-primary); }
+        /* Chat attach */
+        .chat-attach-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 0 4px;
+            display: flex;
+            align-items: center;
+            transition: color var(--transition-fast);
+            flex-shrink: 0;
+            height: 44px;
+        }
+        .chat-attach-btn:hover { color: var(--accent-primary); }
+        .chat-attach-btn svg { width: 20px; height: 20px; }
+        .chat-attach-preview {
+            display: flex;
+            gap: 6px;
+            padding: 6px 0;
+            flex-wrap: wrap;
+        }
+        .chat-attach-thumb {
+            position: relative;
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-default);
+        }
+        .chat-attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .chat-attach-thumb .remove-thumb {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 16px;
+            height: 16px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 11px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+            padding: 0;
         }
 
         /* Panels */
@@ -1069,7 +1155,12 @@
                 </div>
             </div>
             <div class="chat-input-area">
+                <div class="chat-attach-preview" id="chatAttachPreview"></div>
                 <div class="chat-input-wrap">
+                    <button class="chat-attach-btn" onclick="document.getElementById('chatFileInput').click()" title="Attach image">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </button>
+                    <input type="file" id="chatFileInput" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none" onchange="window.BuildApp.handleFileSelect(this.files)">
                     <textarea id="chatInput" class="chat-input" placeholder="Describe what you want to build..." rows="1"></textarea>
                     <button id="chatSend" class="chat-send" onclick="window.BuildApp.send()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
@@ -1077,16 +1168,19 @@
                 </div>
                 <div class="model-selector">
                     <button class="model-option active" data-model="fast" onclick="window.BuildApp.setModel('fast')">
-                        <span class="model-name">Fast</span>
+                        <span class="model-name">Haiku</span>
                         <span class="model-cost">5 cr</span>
+                        <button class="model-info-btn" onclick="event.stopPropagation()">i<div class="model-info-tooltip"><strong>Claude Haiku 4.5</strong><br>Fast & lightweight<br>200K context window<br>Best for quick iterations</div></button>
                     </button>
                     <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">
-                        <span class="model-name">Standard</span>
+                        <span class="model-name">Sonnet</span>
                         <span class="model-cost">15 cr</span>
+                        <button class="model-info-btn" onclick="event.stopPropagation()">i<div class="model-info-tooltip"><strong>Claude Sonnet 4.5</strong><br>Balanced quality & speed<br>200K context window<br>Great for most builds</div></button>
                     </button>
                     <button class="model-option" data-model="pro" onclick="window.BuildApp.setModel('pro')">
-                        <span class="model-name">Pro</span>
+                        <span class="model-name">Opus</span>
                         <span class="model-cost">25 cr</span>
+                        <button class="model-info-btn" onclick="event.stopPropagation()">i<div class="model-info-tooltip"><strong>Claude Opus 4.6</strong><br>Maximum detail & reasoning<br>200K context window<br>Best for complex apps</div></button>
                     </button>
                     <span class="model-hint" id="modelHint">Fast & lightweight</span>
                 </div>
