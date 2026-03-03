@@ -18,7 +18,9 @@ const supabase = createClient(
 
 const ADMIN_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0x612abfe54269515f0cc63b4a12fee32d48889ff2'
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
+    '0x9fe6e70079d9cbab7693b70a11764d70cf26ce0e',
+    '0x18b18e245122f4bda5f2ee4f25c702e05c241d49'
 ];
 const FREE_HANDLES = ['artstu'];
 
