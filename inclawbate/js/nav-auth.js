@@ -1,4 +1,19 @@
 // Inclawbate — Nav: Mobile Menu + Wallet Connect
+
+// EIP-6963 polyfill: discover wallets (Base Wallet, MetaMask, Rabby, etc.)
+// If window.ethereum is missing, assign the first discovered provider so all code works.
+(function() {
+    var discovered = [];
+    window.addEventListener('eip6963:announceProvider', function(e) {
+        if (e.detail && e.detail.provider) {
+            discovered.push(e.detail);
+            if (!window.ethereum) window.ethereum = e.detail.provider;
+        }
+    });
+    try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
+    window._eip6963Providers = discovered;
+})();
+
 (function() {
     var nav = document.querySelector('.nav');
     var navLinks = document.querySelector('.nav-links');
@@ -66,7 +81,7 @@
 
         async function navWalletConnect() {
             if (!window.ethereum) {
-                alert('No wallet detected. Install MetaMask or Coinbase Wallet.');
+                alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
                 return;
             }
 
