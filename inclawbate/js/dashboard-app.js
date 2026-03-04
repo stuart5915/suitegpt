@@ -410,7 +410,7 @@ function renderProjectCard(p) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
     }
     if (p.id) {
-        actionsHtml += `<a href="/project?id=${esc(p.id)}" class="project-card-action">Settings</a>`;
+        actionsHtml += `<a href="/inclawbator/${esc(p.id)}" class="project-card-action">Settings</a>`;
     }
     // Edit / Delete for incubation applications (no token launched yet)
     if (tier === 'incubated' && !addr) {
