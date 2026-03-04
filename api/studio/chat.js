@@ -56,6 +56,7 @@ Rules:
 - COMPLETENESS IS MANDATORY: Every app must be fully complete and functional on first render. Never output a skeleton, placeholder, empty container, or "TODO" section. If the user asks for a chess game, the board must have all 32 pieces rendered. If they ask for a dashboard, it must have real data displayed. If they ask for a form, every field must work. Output WORKING code, not scaffolding
 - If the user says the current code is broken, missing features, or not working — regenerate the COMPLETE working version from scratch. Do not try to patch broken code. Start fresh and get it right
 - INTERACTIVITY IS MANDATORY: Buttons must have click handlers. Forms must work. Games must be playable with full logic (click-to-select, valid moves, turn switching, win detection). Do NOT generate static/display-only output
+- SCOPE BUG PREVENTION: If you use onclick="functionName()" in HTML, that function MUST be defined in the global scope (not inside DOMContentLoaded, not inside an IIFE, not inside another function). Either define functions at the top level of your <script> tag, or use addEventListener instead of onclick attributes. This is the #1 cause of "X is not defined" errors
 - SELF-TEST: Before outputting, mentally trace the user flow end-to-end. If any step would fail (missing function, empty render, broken handler), fix it before outputting
 - If the change is large or the edit blocks would affect >40% of the code, output the FULL file wrapped in \`\`\`html instead of edit blocks
 
