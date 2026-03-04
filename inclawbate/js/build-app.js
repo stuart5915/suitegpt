@@ -814,9 +814,6 @@
         els.previewFrame.srcdoc = codeWithHandler;
         els.codeContent.textContent = code;
         els.publishBtn.disabled = false;
-        // Show subtle incubation hint
-        var hint = document.getElementById('incubationHint');
-        if (hint) hint.style.display = 'block';
         // Reset error state for new preview
         state.previewErrors = [];
         hideErrorBanner();
