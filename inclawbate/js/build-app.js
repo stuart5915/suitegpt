@@ -350,22 +350,26 @@
                 var date = new Date(s.updated_at || s.created_at).toLocaleDateString();
                 var pub = s.published_at ? '<span class="published"> &middot; Published</span>' : '';
 
-                // Preview thumbnail
-                var previewHtml = '<div class="project-card-preview">';
-                if (s.current_code) {
-                    previewHtml += '<iframe srcdoc="' + escapeHtml(s.current_code) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe>';
-                } else {
-                    previewHtml += '<div class="project-card-preview-empty">&#128196;</div>';
-                }
-                previewHtml += '</div>';
-
                 card.innerHTML =
-                    previewHtml +
+                    '<div class="project-card-preview"></div>' +
                     '<div class="project-card-info">' +
                         '<div class="project-card-title">' + escapeHtml(s.title) + '</div>' +
                         '<div class="project-card-meta">' + date + pub + '</div>' +
                     '</div>' +
                     '<button type="button" class="project-card-delete" title="Delete project">&times;</button>';
+
+                // Build preview via DOM to avoid srcdoc escaping issues
+                var previewEl = card.querySelector('.project-card-preview');
+                if (s.current_code) {
+                    var iframe = document.createElement('iframe');
+                    iframe.sandbox = 'allow-scripts';
+                    iframe.loading = 'lazy';
+                    iframe.tabIndex = -1;
+                    iframe.srcdoc = s.current_code;
+                    previewEl.appendChild(iframe);
+                } else {
+                    previewEl.innerHTML = '<div class="project-card-preview-empty">&#128196;</div>';
+                }
 
                 card.querySelector('.project-card-info').addEventListener('click', function () { openSession(s.id); });
                 card.querySelector('.project-card-preview').addEventListener('click', function () { openSession(s.id); });
