@@ -851,6 +851,10 @@
         els.publishConfirm.disabled = true;
         els.slugPreview.textContent = 'inclawbate.com/s/...';
 
+        // Show/hide delete button
+        var delBtn = document.getElementById('publishDeleteBtn');
+        if (delBtn) delBtn.style.display = state.editingApp ? '' : 'none';
+
         // Editing existing app — pre-fill and lock slug
         if (state.editingApp) {
             if (nameEl) nameEl.value = state.editingApp.name || '';
@@ -896,6 +900,40 @@
         els.publishSlug.value = raw;
         els.slugPreview.textContent = raw ? 'inclawbate.com/s/' + raw : 'inclawbate.com/s/...';
         els.publishConfirm.disabled = !raw || raw.length < 2;
+    }
+
+    async function deletePublishedApp() {
+        if (!state.editingApp || !state.editingApp.slug) return;
+        if (!confirm('Delete "' + (state.editingApp.name || state.editingApp.slug) + '"? This cannot be undone.')) return;
+
+        var profile = getProfile();
+        var email = (profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'build@inclawbate.com');
+
+        els.publishResult.innerHTML = 'Deleting...';
+        els.publishResult.className = 'publish-result';
+
+        try {
+            var resp = await fetch(PUBLISH_API, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: state.editingApp.slug, email: email })
+            });
+            var data = await resp.json();
+            if (data.success) {
+                state.editingApp = null;
+                els.publishResult.innerHTML = 'App deleted.';
+                els.publishResult.className = 'publish-result';
+                var delBtn = document.getElementById('publishDeleteBtn');
+                if (delBtn) delBtn.style.display = 'none';
+                setTimeout(function() { closePublish(); }, 1200);
+            } else {
+                els.publishResult.textContent = data.error || 'Failed to delete.';
+                els.publishResult.className = 'publish-result error';
+            }
+        } catch (e) {
+            els.publishResult.textContent = 'Network error. Try again.';
+            els.publishResult.className = 'publish-result error';
+        }
     }
 
     function onPaidToggle() {
@@ -963,6 +1001,24 @@
                 var storeLink = isListed ? ' | <a href="/apps" target="_blank">View in App Store</a>' : '';
                 els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>' + storeLink;
                 els.publishResult.className = 'publish-result';
+
+                // Track as editing app so re-publish sends update: true
+                if (!state.editingApp) {
+                    state.editingApp = {
+                        slug: slug,
+                        name: (document.getElementById('publishName') || {}).value || state.title,
+                        description: (document.getElementById('publishDesc') || {}).value || '',
+                        category: (document.getElementById('publishCategory') || {}).value || 'other',
+                        tags: (document.getElementById('publishTags') || {}).value || '',
+                        claws_price: parseFloat((document.getElementById('publishPrice') || {}).value) || 0
+                    };
+                    // Lock slug field for future publishes
+                    els.publishSlug.readOnly = true;
+                    els.publishSlug.style.opacity = '0.6';
+                    // Show delete button now that app exists
+                    var delBtn = document.getElementById('publishDeleteBtn');
+                    if (delBtn) delBtn.style.display = '';
+                }
 
                 // Update session with slug
                 if (state.sessionId) {
@@ -1684,6 +1740,7 @@
         onSlugInput: onSlugInput,
         onPaidToggle: onPaidToggle,
         publish: publish,
+        deletePublishedApp: deletePublishedApp,
         openBuyCredits: openBuyCredits,
         closeBuyCredits: closeBuyCredits,
         switchBuyTab: switchBuyTab,

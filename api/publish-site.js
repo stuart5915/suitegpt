@@ -30,7 +30,7 @@ async function isSlugAvailable(slug) {
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -42,6 +42,37 @@ export default async function handler(req, res) {
         if (!SLUG_RE.test(slug)) return res.json({ available: false, reason: 'invalid' });
         const available = await isSlugAvailable(slug);
         return res.json({ available });
+    }
+
+    // DELETE — remove published app
+    if (req.method === 'DELETE') {
+        try {
+            const { slug, email } = req.body || {};
+            if (!slug || !email) {
+                return res.status(400).json({ error: 'Missing required fields: slug, email' });
+            }
+            const cleanSlug = slug.toLowerCase().trim();
+            const { data: existing } = await supabase
+                .from('user_apps')
+                .select('id, publisher_email')
+                .eq('slug', cleanSlug)
+                .maybeSingle();
+            if (!existing) {
+                return res.status(404).json({ error: 'App not found.' });
+            }
+            if (existing.publisher_email !== email) {
+                return res.status(403).json({ error: 'You can only delete your own app.' });
+            }
+            const { error: delErr } = await supabase
+                .from('user_apps')
+                .delete()
+                .eq('slug', cleanSlug);
+            if (delErr) throw delErr;
+            return res.json({ success: true, deleted: true });
+        } catch (err) {
+            console.error('publish-site DELETE error:', err);
+            return res.status(500).json({ error: 'Failed to delete: ' + (err?.message || String(err)) });
+        }
     }
 
     // POST — publish or update
