@@ -814,6 +814,9 @@
         els.previewFrame.srcdoc = codeWithHandler;
         els.codeContent.textContent = code;
         els.publishBtn.disabled = false;
+        // Show subtle incubation hint
+        var hint = document.getElementById('incubationHint');
+        if (hint) hint.style.display = 'block';
         // Reset error state for new preview
         state.previewErrors = [];
         hideErrorBanner();
@@ -854,7 +857,14 @@
                 '<div class="error-banner-actions">' +
                     (state.autoFixAttempts < state.maxAutoFix
                         ? '<button class="error-autofix-btn" onclick="window.BuildApp.autoFix()">&#9889; Auto-fix errors</button>'
-                        : '<span class="error-maxed">Auto-fix limit reached. Describe the issue manually.</span>') +
+                        : '<div class="error-incubation-cta">' +
+                            '<div class="cta-headline">Need something more advanced?</div>' +
+                            '<div class="cta-body">Our incubation program builds production-grade apps with multi-page routing, API integrations, databases, and ongoing dev support. We\'ll review your project and come back with a quote.</div>' +
+                            '<div class="cta-buttons">' +
+                                '<button class="incubation-cta-btn primary" onclick="window.BuildApp.openIncubation(\'incubation\')">Request Incubation</button>' +
+                                '<button class="incubation-cta-btn secondary" onclick="window.BuildApp.openIncubation(\'super\')">Super Incubation</button>' +
+                            '</div>' +
+                          '</div>') +
                 '</div>' +
             '</div>';
         banner.style.display = 'block';
@@ -1947,6 +1957,128 @@
         loadProjects();
     }
 
+    // ── Incubation Request ──
+    var incubationTier = 'incubation';
+
+    function openIncubation(tier) {
+        incubationTier = tier || 'incubation';
+        var overlay = document.getElementById('incubationOverlay');
+        if (!overlay) return;
+
+        // Update tier card selection
+        var cards = overlay.querySelectorAll('.incubation-tier-card');
+        cards.forEach(function(c) { c.classList.toggle('selected', c.dataset.tier === incubationTier); });
+
+        // Pre-fill project name from session title
+        var nameInput = document.getElementById('incReqName');
+        if (nameInput && state.title && state.title !== 'New Project') {
+            nameInput.value = state.title;
+        }
+
+        // Pre-fill description with session context
+        var descInput = document.getElementById('incReqDesc');
+        if (descInput) {
+            var ctx = '';
+            if (state.previewErrors.length > 0) {
+                ctx = 'Auto-fix couldn\'t resolve these errors:\n' +
+                    state.previewErrors.map(function(e) { return '- ' + e.message; }).join('\n') + '\n\n';
+            }
+            if (state.sessionId) ctx += 'Build session: ' + state.sessionId + '\n';
+            descInput.value = ctx;
+        }
+
+        // Reset result
+        var result = document.getElementById('incReqResult');
+        if (result) { result.style.display = 'none'; result.textContent = ''; }
+
+        var btn = document.getElementById('incReqSubmit');
+        if (btn) { btn.disabled = false; btn.textContent = 'Submit Request'; }
+
+        overlay.classList.add('active');
+    }
+
+    function closeIncubation() {
+        var overlay = document.getElementById('incubationOverlay');
+        if (overlay) overlay.classList.remove('active');
+    }
+
+    function selectIncubationTier(tier) {
+        incubationTier = tier;
+        var overlay = document.getElementById('incubationOverlay');
+        if (!overlay) return;
+        var cards = overlay.querySelectorAll('.incubation-tier-card');
+        cards.forEach(function(c) { c.classList.toggle('selected', c.dataset.tier === tier); });
+    }
+
+    async function submitIncubation() {
+        var name = (document.getElementById('incReqName').value || '').trim();
+        var desc = (document.getElementById('incReqDesc').value || '').trim();
+        var contactMethod = document.getElementById('incReqContact').value;
+        var handle = (document.getElementById('incReqHandle').value || '').trim();
+        var btn = document.getElementById('incReqSubmit');
+        var result = document.getElementById('incReqResult');
+
+        if (!name) { result.style.display = 'block'; result.style.color = '#f87171'; result.textContent = 'Please enter a project name.'; return; }
+        if (!handle) { result.style.display = 'block'; result.style.color = '#f87171'; result.textContent = 'Please enter your contact handle.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        // Build description with session context
+        var fullDesc = desc;
+        fullDesc += '\n\n--- TIER ---\n' + (incubationTier === 'super' ? 'Super Incubation' : 'Incubation');
+        if (state.sessionId) fullDesc += '\n\n--- BUILD SESSION ---\nbuild_session_id: ' + state.sessionId;
+        fullDesc += '\n\n--- CONTACT ---\n' + contactMethod + ': ' + handle;
+
+        var profile = getProfile();
+        var wallet = profile && profile.wallet_address ? profile.wallet_address : null;
+        var xHandle = contactMethod === 'x_dms' ? handle.replace(/^@/, '') : '';
+        var telegram = contactMethod === 'telegram' ? handle : '';
+
+        try {
+            var token = getToken();
+            var resp = await fetch('/api/inclawbate/inclawbator', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    action: 'register',
+                    token_name: name,
+                    description: fullDesc,
+                    x_handle: xHandle,
+                    telegram_url: telegram,
+                    fee_split_bps: 10000,
+                    tier: 'incubated',
+                    creator_wallet: wallet || ''
+                })
+            });
+
+            var data = await resp.json();
+            if (data.error) {
+                result.style.display = 'block';
+                result.style.color = '#f87171';
+                result.textContent = 'Failed: ' + data.error;
+                btn.disabled = false;
+                btn.textContent = 'Submit Request';
+                return;
+            }
+
+            result.style.display = 'block';
+            result.style.color = '#a5b4fc';
+            result.textContent = 'Application submitted! We\'ll review and reach out within 48 hours with a quote.';
+            btn.textContent = 'Submitted!';
+            setTimeout(closeIncubation, 3000);
+        } catch (e) {
+            result.style.display = 'block';
+            result.style.color = '#f87171';
+            result.textContent = 'Error: ' + (e.message || 'Unknown error');
+            btn.disabled = false;
+            btn.textContent = 'Submit Request';
+        }
+    }
+
     // ── Expose Public API ──
     window.BuildApp = {
         newProject: newProject,
@@ -1979,7 +2111,11 @@
         selectCap: selectCap,
         useCapPrompt: useCapPrompt,
         shuffleCapExpand: shuffleCapExpand,
-        autoFix: autoFix
+        autoFix: autoFix,
+        openIncubation: openIncubation,
+        closeIncubation: closeIncubation,
+        selectIncubationTier: selectIncubationTier,
+        submitIncubation: submitIncubation
     };
 
     // ── Boot ──

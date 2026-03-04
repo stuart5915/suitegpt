@@ -1043,6 +1043,7 @@ async function handleIncubationSubmit() {
     try {
         var description = vision;
         if (helpNeeded) description += '\n\n--- HELP NEEDED ---\n' + helpNeeded;
+        description += '\n\n--- TIER ---\n' + (selectedIncTier === 'super' ? 'Super Incubation' : 'Incubation');
         description += '\n\n--- CONTACT ---\n' + contactMethod + ': ' + contactHandle;
 
         var xHandle = contactMethod === 'x_dms' ? contactHandle.replace(/^@/, '') : '';
@@ -1245,11 +1246,26 @@ function resetForm() {
     updateUI();
 }
 
+// ── Tier Selection for Incubation ──
+var selectedIncTier = 'incubation';
+
+function selectTier(tier) {
+    selectedIncTier = tier;
+    var cards = document.querySelectorAll('#incTierCards .inc-tier-card');
+    cards.forEach(function(c) {
+        var isSel = c.dataset.tier === tier;
+        c.classList.toggle('selected', isSel);
+        c.style.borderColor = isSel ? '#6366f1' : '';
+        c.style.background = isSel ? 'rgba(99,102,241,0.08)' : '';
+    });
+}
+
 // Expose to onclick handlers
 window.resetForm = resetForm;
 window.approveProject = approveProject;
 window.rejectProject = rejectProject;
 window.openToolDrawer = openToolDrawer;
+window.IncApp = { selectTier: selectTier };
 
 // ══════════════════════════════════════
 // UI UPDATE
