@@ -383,14 +383,6 @@ function renderProjectCard(p) {
     // Price row placeholder (filled async)
     const priceRowHtml = addr ? `<div class="project-card-price" id="price-${esc(addr)}" style="display:none"></div>` : '';
 
-    // LP fees row placeholder (filled async)
-    const feesRowHtml = addr ? `<div class="project-card-fees" id="fees-${esc(addr)}" style="display:none">
-        <span class="fees-label">LP Fees:</span>
-        <span class="fees-value" id="fees-weth-${esc(addr)}">--</span>
-        <span class="fees-token-value" id="fees-token-${esc(addr)}"></span>
-        <button type="button" class="fees-claim-btn" data-token="${esc(addr)}">Claim</button>
-    </div>` : '';
-
     // Chart embed (hidden by default)
     const chartHtml = addr ? `<div class="project-card-chart" id="chart-${esc(addr)}" style="display:none">
         <iframe src="https://dexscreener.com/base/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
@@ -474,7 +466,6 @@ function renderProjectCard(p) {
             ${created ? `<span>${created}</span>` : ''}
         </div>
         ${priceRowHtml}
-        ${feesRowHtml}
         ${actionsHtml ? `<div class="project-card-actions">${actionsHtml}</div>` : ''}
         ${allocationHtml}
         ${chartHtml}
@@ -519,11 +510,6 @@ function renderProjectCard(p) {
     card.querySelector('.allocation-claim-btn')?.addEventListener('click', (e) => {
         const btn = e.currentTarget;
         claimAllocation(btn.dataset.token, btn.dataset.project, parseInt(btn.dataset.alloc), btn);
-    });
-
-    // Wire LP fee claim button
-    card.querySelector('.fees-claim-btn')?.addEventListener('click', (e) => {
-        claimLPFees(e.currentTarget.dataset.token, e.currentTarget);
     });
 
     return card;
@@ -598,60 +584,41 @@ function formatPrice(n) {
     return n.toFixed(zeros + 4);
 }
 
-// ── LP Fee Claiming ──
+// ── LP Fee Claiming (wallet-level, not per-token) ──
 async function fetchLPFees(tokens, wallet) {
-    const addrs = tokens.filter(p => p.token_address).map(p => p.token_address);
-    if (!addrs.length || !wallet) return;
-    const unique = [...new Set(addrs.map(a => a.toLowerCase()))];
-    for (const addr of unique) {
-        fetchSingleTokenFees(addr, wallet);
-    }
-}
-
-async function fetchSingleTokenFees(tokenAddr, wallet) {
+    if (!wallet) return;
     try {
-        // feesToClaim(wallet, WETH)
+        // feesToClaim(wallet, WETH) — total across all Clanker tokens
         const wethData = FEE_SEL.feesToClaim + pad32(wallet) + pad32(WETH_BASE);
         const wethHex = await rpcCall(CLANKER_FEE_LOCKER, wethData);
         const wethAmt = fromWei(wethHex);
 
-        // feesToClaim(wallet, tokenAddr)
-        const tokenData = FEE_SEL.feesToClaim + pad32(wallet) + pad32(tokenAddr);
-        const tokenHex = await rpcCall(CLANKER_FEE_LOCKER, tokenData);
-        const tokenAmt = fromWei(tokenHex);
+        if (wethAmt <= 0) return;
 
-        if (wethAmt <= 0 && tokenAmt <= 0) return;
+        const banner = document.getElementById('lpFeesBanner');
+        const wethEl = document.getElementById('lpFeesWeth');
+        const claimBtn = document.getElementById('lpFeesClaimBtn');
+        if (!banner) return;
 
-        const feesEl = document.getElementById('fees-' + tokenAddr) || document.getElementById('fees-' + tokenAddr.toLowerCase());
-        if (!feesEl) return;
+        wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
+        banner.style.display = '';
 
-        const wethEl = document.getElementById('fees-weth-' + tokenAddr) || document.getElementById('fees-weth-' + tokenAddr.toLowerCase());
-        const tokenEl = document.getElementById('fees-token-' + tokenAddr) || document.getElementById('fees-token-' + tokenAddr.toLowerCase());
-
-        if (wethEl && wethAmt > 0) {
-            wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
-        } else if (wethEl) {
-            wethEl.textContent = '';
-        }
-
-        if (tokenEl && tokenAmt > 0) {
-            tokenEl.textContent = (wethAmt > 0 ? ' + ' : '') + fmt(tokenAmt) + ' tokens';
-        }
-
-        feesEl.style.display = '';
+        // Wire claim button (remove old listener first)
+        const newBtn = claimBtn.cloneNode(true);
+        claimBtn.parentNode.replaceChild(newBtn, claimBtn);
+        newBtn.addEventListener('click', () => claimLPFees(wallet, newBtn));
     } catch (e) {
-        // silent — fees just won't show
+        // silent
     }
 }
 
-async function claimLPFees(tokenAddr, btn) {
-    const feesEl = btn.closest('.project-card-fees');
+async function claimLPFees(wallet, btn) {
     try {
         const provider = window.ethereum;
         if (!provider) { alert('No wallet connected'); return; }
 
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const wallet = accounts[0];
+        wallet = accounts[0];
 
         // Switch to Base
         try {
@@ -664,44 +631,19 @@ async function claimLPFees(tokenAddr, btn) {
         btn.disabled = true;
         btn.textContent = 'Claiming...';
 
-        // Check WETH claimable
-        const wethCheckData = FEE_SEL.feesToClaim + pad32(wallet) + pad32(WETH_BASE);
-        const wethHex = await rpcCall(CLANKER_FEE_LOCKER, wethCheckData);
-        const wethAmt = fromWei(wethHex);
-
-        // Check token claimable
-        const tokenCheckData = FEE_SEL.feesToClaim + pad32(wallet) + pad32(tokenAddr);
-        const tokenHex = await rpcCall(CLANKER_FEE_LOCKER, tokenCheckData);
-        const tokenAmt = fromWei(tokenHex);
-
         // Claim WETH fees
-        if (wethAmt > 0) {
-            const claimData = FEE_SEL.claim + pad32(wallet) + pad32(WETH_BASE);
-            const receipt = await sendTx(wallet, CLANKER_FEE_LOCKER, claimData);
-            if (receipt.status === '0x0') throw new Error('WETH claim reverted');
-        }
-
-        // Claim token fees
-        if (tokenAmt > 0) {
-            const claimData = FEE_SEL.claim + pad32(wallet) + pad32(tokenAddr);
-            const receipt = await sendTx(wallet, CLANKER_FEE_LOCKER, claimData);
-            if (receipt.status === '0x0') throw new Error('Token claim reverted');
-        }
+        const claimData = FEE_SEL.claim + pad32(wallet) + pad32(WETH_BASE);
+        const receipt = await sendTx(wallet, CLANKER_FEE_LOCKER, claimData);
+        if (receipt.status === '0x0') throw new Error('Claim reverted');
 
         btn.textContent = 'Claimed!';
-        btn.style.borderColor = 'var(--seafoam-400)';
-        btn.style.color = 'var(--seafoam-400)';
 
-        // Re-fetch fees after short delay
+        // Re-fetch after delay
         setTimeout(() => {
             const auth = getStoredAuth();
             if (auth && auth.profile.wallet_address) {
-                fetchSingleTokenFees(tokenAddr, auth.profile.wallet_address);
+                fetchLPFees([], auth.profile.wallet_address);
             }
-            btn.disabled = false;
-            btn.textContent = 'Claim';
-            btn.style.borderColor = '';
-            btn.style.color = '';
         }, 3000);
     } catch (e) {
         btn.disabled = false;
