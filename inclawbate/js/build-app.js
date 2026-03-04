@@ -392,6 +392,12 @@
                 appendMessage(m.role, m.content, m.code);
             });
 
+            // If session has no code and no messages, it was likely interrupted
+            if (!data.session.current_code && (!data.messages || data.messages.length === 0)) {
+                appendMessage('assistant', 'This session was interrupted before it could finish. Type your prompt again to continue building.');
+                if (els.chatHeaderArea) els.chatHeaderArea.style.display = '';
+            }
+
             scrollChat();
         } catch (e) {
             els.buildTitle.textContent = 'Error loading session';
