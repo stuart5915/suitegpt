@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sermons — Inclawbate</title>
+    <meta name="description" content="Write and manage sermons. Wallet-gated for team members.">
+    <meta property="og:title" content="Sermons — Inclawbate">
+    <meta property="og:description" content="Sermon writer for team members.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/sermons">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&family=Caveat:wght@400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* ══════════════════════════════════════
+           SERMONS PAGE
+           ══════════════════════════════════════ */
+
+        .sermons-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height, 64px) + 32px) 24px 64px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .sermons-page::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 40% at 20% 0%, hsla(9, 50%, 45%, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, hsla(172, 30%, 40%, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* ── Gate ── */
+        .gate-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            gap: 20px;
+        }
+        .gate-screen h2 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary, #f0ece4);
+        }
+        .gate-screen p {
+            color: var(--text-secondary, #a09888);
+            font-size: 0.95rem;
+        }
+        .gate-btn {
+            padding: 12px 32px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            color: #fff;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .gate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(192,57,43,0.3); }
+
+        /* ── List view ── */
+        .list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .list-header h1 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-primary, #f0ece4);
+            margin: 0;
+        }
+        .back-link {
+            color: var(--text-secondary, #a09888);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-family: 'Nunito', sans-serif;
+            transition: color 0.15s;
+        }
+        .back-link:hover { color: var(--text-primary, #f0ece4); }
+
+        .btn-new {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            color: #fff;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-new:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(192,57,43,0.3); }
+
+        .sermons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .sermon-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .sermon-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(192,57,43,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .sermon-card-title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--text-primary, #f0ece4);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sermon-card-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary, #a09888);
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary, #a09888);
+            font-family: 'Nunito', sans-serif;
+        }
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+        .empty-state p { font-size: 0.95rem; }
+
+        /* ── Editor view ── */
+        .editor-topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .editor-back {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            color: var(--text-secondary, #a09888);
+            padding: 6px 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .editor-back:hover { background: rgba(255,255,255,0.1); }
+
+        .title-input {
+            flex: 1;
+            min-width: 200px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary, #f0ece4);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .title-input:focus { border-color: rgba(192,57,43,0.4); }
+
+        .save-status {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-secondary, #a09888);
+            min-width: 60px;
+        }
+
+        .btn-delete {
+            background: rgba(192,57,43,0.15);
+            border: 1px solid rgba(192,57,43,0.25);
+            border-radius: 8px;
+            color: #e74c3c;
+            padding: 6px 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-delete:hover { background: rgba(192,57,43,0.3); }
+
+        /* ── Formatting toolbar ── */
+        .format-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            position: sticky;
+            top: var(--nav-height, 64px);
+            z-index: 10;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .format-toolbar select,
+        .format-toolbar input[type="color"] {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: var(--text-primary, #f0ece4);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            cursor: pointer;
+            outline: none;
+        }
+        .format-toolbar select option {
+            background: #1a1a2e;
+            color: #f0ece4;
+        }
+        .format-toolbar input[type="color"] {
+            width: 28px;
+            height: 28px;
+            padding: 2px;
+            border-radius: 6px;
+        }
+        .fmt-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            color: var(--text-secondary, #a09888);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: background 0.1s, color 0.1s;
+            font-family: 'Nunito', sans-serif;
+        }
+        .fmt-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary, #f0ece4); }
+        .fmt-sep {
+            width: 1px;
+            height: 20px;
+            background: rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+
+        /* ── Paper ── */
+        .paper-wrapper {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 40px;
+        }
+        .paper {
+            width: 816px;
+            min-height: 1056px;
+            background: #fffef9;
+            border-radius: 4px;
+            box-shadow: 0 2px 24px rgba(0,0,0,0.35);
+            position: relative;
+            overflow: hidden;
+        }
+        .paper-lines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent 28px,
+                #c8d4e0 28px,
+                #c8d4e0 29px
+            );
+            pointer-events: none;
+        }
+        .paper-margin {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 88px;
+            width: 2px;
+            background: #e8a0a0;
+            pointer-events: none;
+        }
+        .paper-content {
+            position: relative;
+            min-height: 1056px;
+            padding: 29px 40px 40px 104px;
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            line-height: 29px;
+            color: #1a1a2e;
+            outline: none;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .paper-content:empty::before {
+            content: 'Begin writing your sermon...';
+            color: #b0a898;
+            font-style: italic;
+            pointer-events: none;
+        }
+
+        /* ── Responsive paper scaling ── */
+        @media (max-width: 880px) {
+            .paper-wrapper {
+                overflow-x: auto;
+            }
+            .paper {
+                transform-origin: top left;
+            }
+        }
+
+        /* ── Print styles ── */
+        @media print {
+            body { background: #fff !important; }
+            .sermons-page::before,
+            .format-toolbar,
+            .editor-topbar,
+            nav { display: none !important; }
+            .sermons-page { padding: 0 !important; max-width: none !important; }
+            .paper {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Shared nav -->
+    <nav id="main-nav"></nav>
+    <script src="/inclawbate/js/nav-auth.js"></script>
+
+    <div class="sermons-page">
+        <!-- Gate: connect wallet -->
+        <div id="gate-connect" class="gate-screen">
+            <h2>Sermon Writer</h2>
+            <p>Connect your wallet to access sermons. Team members only.</p>
+            <button class="gate-btn" id="btn-connect">Connect Wallet</button>
+        </div>
+
+        <!-- Gate: not a team member -->
+        <div id="gate-denied" class="gate-screen" style="display:none">
+            <h2>Access Denied</h2>
+            <p>Wallet <code id="denied-wallet" style="font-size:0.85rem;color:#e74c3c"></code> is not on the team.</p>
+            <a href="/team" class="back-link">Back to Team</a>
+        </div>
+
+        <!-- List view -->
+        <div id="list-view" style="display:none">
+            <a href="/team" class="back-link">&larr; Back to Team</a>
+            <div class="list-header" style="margin-top:16px">
+                <h1>Your Sermons</h1>
+                <button class="btn-new" id="btn-new-sermon">+ New Sermon</button>
+            </div>
+            <div id="sermons-grid" class="sermons-grid"></div>
+            <div id="empty-state" class="empty-state" style="display:none">
+                <div class="empty-icon">&#x1F4DC;</div>
+                <p>No sermons yet. Click "+ New Sermon" to start writing.</p>
+            </div>
+        </div>
+
+        <!-- Editor view -->
+        <div id="editor-view" style="display:none">
+            <div class="editor-topbar">
+                <button class="editor-back" id="btn-editor-back">&larr; Back</button>
+                <input type="text" class="title-input" id="sermon-title" placeholder="Sermon Title" maxlength="200">
+                <span class="save-status" id="save-status"></span>
+                <button class="btn-delete" id="btn-delete-sermon">Delete</button>
+            </div>
+
+            <!-- Formatting toolbar -->
+            <div class="format-toolbar">
+                <select id="fmt-font" title="Font family">
+                    <option value="Caveat">Caveat</option>
+                    <option value="Dancing Script">Dancing Script</option>
+                    <option value="Cormorant Garamond">Cormorant Garamond</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Nunito">Nunito</option>
+                </select>
+                <select id="fmt-size" title="Font size">
+                    <option value="14px">14</option>
+                    <option value="16px">16</option>
+                    <option value="18px" selected>18</option>
+                    <option value="20px">20</option>
+                    <option value="22px">22</option>
+                    <option value="24px">24</option>
+                    <option value="28px">28</option>
+                    <option value="32px">32</option>
+                </select>
+                <select id="fmt-spacing" title="Line spacing">
+                    <option value="24px">Tight</option>
+                    <option value="29px" selected>College Rule</option>
+                    <option value="36px">Wide</option>
+                    <option value="44px">Double</option>
+                </select>
+                <div class="fmt-sep"></div>
+                <button class="fmt-btn" id="fmt-bold" title="Bold"><b>B</b></button>
+                <button class="fmt-btn" id="fmt-italic" title="Italic"><i>I</i></button>
+                <button class="fmt-btn" id="fmt-underline" title="Underline"><u>U</u></button>
+                <div class="fmt-sep"></div>
+                <button class="fmt-btn" id="fmt-left" title="Align left" style="font-size:0.7rem">&#x25C0;</button>
+                <button class="fmt-btn" id="fmt-center" title="Align center" style="font-size:0.7rem">&#x25CF;</button>
+                <button class="fmt-btn" id="fmt-right" title="Align right" style="font-size:0.7rem">&#x25B6;</button>
+                <div class="fmt-sep"></div>
+                <input type="color" id="fmt-color" value="#1a1a2e" title="Font color">
+            </div>
+
+            <!-- Paper -->
+            <div class="paper-wrapper" id="paper-wrapper">
+                <div class="paper" id="paper">
+                    <div class="paper-lines" id="paper-lines"></div>
+                    <div class="paper-margin"></div>
+                    <div class="paper-content" id="paper-content" contenteditable="true" spellcheck="true"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/inclawbate/js/sermons-app.js"></script>
+</body>
+</html>
