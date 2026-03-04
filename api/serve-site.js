@@ -241,13 +241,20 @@ export default async function handler(req, res) {
             let unlocked = false;
 
             if (user) {
-                const { data: unlock } = await supabase
-                    .from('app_unlocks')
-                    .select('id')
-                    .eq('profile_id', user.sub)
-                    .eq('app_id', data.id)
-                    .maybeSingle();
-                unlocked = !!unlock;
+                // Creator always has access to their own app
+                if (data.creator_wallet && user.wallet_address && user.wallet_address.toLowerCase() === data.creator_wallet.toLowerCase()) {
+                    unlocked = true;
+                }
+
+                if (!unlocked) {
+                    const { data: unlock } = await supabase
+                        .from('app_unlocks')
+                        .select('id')
+                        .eq('profile_id', user.sub)
+                        .eq('app_id', data.id)
+                        .maybeSingle();
+                    unlocked = !!unlock;
+                }
             }
 
             if (!unlocked) {
