@@ -177,9 +177,11 @@ export default async function handler(req, res) {
         if (action === 'add-card') {
             if (!hasRole(member, 'member')) return res.status(403).json({ error: 'Members and above can create cards' });
 
-            const { title, description, column_id, priority, assigned_to, board_id } = req.body;
+            const { title, description, column_id, priority, assigned_to, assign_all, board_id } = req.body;
             if (!title || !column_id) return res.status(400).json({ error: 'title and column_id required' });
             if (!board_id) return res.status(400).json({ error: 'board_id required' });
+
+            const isAll = assign_all === true;
 
             const { data: existing } = await supabase
                 .from('team_cards')
@@ -197,7 +199,8 @@ export default async function handler(req, res) {
                     column_id,
                     board_id,
                     priority: priority || 'normal',
-                    assigned_to: assigned_to || null,
+                    assigned_to: isAll ? null : (assigned_to || null),
+                    assign_all: isAll,
                     position: nextPos,
                     created_by: member.id
                 })
@@ -210,7 +213,7 @@ export default async function handler(req, res) {
 
         // ── Update card (member own, editor+ any) ──
         if (action === 'update-card') {
-            const { card_id, column_id, position, title, description, priority, assigned_to } = req.body;
+            const { card_id, column_id, position, title, description, priority, assigned_to, assign_all } = req.body;
             if (!card_id) return res.status(400).json({ error: 'card_id required' });
 
             // Check permission
@@ -230,7 +233,11 @@ export default async function handler(req, res) {
             if (title !== undefined) updates.title = title;
             if (description !== undefined) updates.description = description;
             if (priority !== undefined) updates.priority = priority;
-            if (assigned_to !== undefined) updates.assigned_to = assigned_to || null;
+            if (assign_all !== undefined) {
+                updates.assign_all = assign_all === true;
+                if (assign_all === true) updates.assigned_to = null;
+            }
+            if (assigned_to !== undefined && assign_all !== true) updates.assigned_to = assigned_to || null;
 
             const { data, error } = await supabase
                 .from('team_cards')

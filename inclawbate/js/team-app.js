@@ -353,7 +353,9 @@ function renderCard(card, members) {
 
     var assignee = '';
     var assigneeRole = '';
-    if (card.assigned_to) {
+    if (card.assign_all) {
+        assignee = 'Everyone';
+    } else if (card.assigned_to) {
         var member = members.find(function(m) { return m.id === card.assigned_to; });
         if (member) {
             assignee = member.display_name || shortenWallet(member.wallet_address);
@@ -430,7 +432,7 @@ function openCardModal(card) {
         modalCardCol.appendChild(opt);
     });
 
-    modalCardAssn.innerHTML = '<option value="">Unassigned</option>';
+    modalCardAssn.innerHTML = '<option value="">Unassigned</option><option value="everyone">Everyone</option>';
     boardData.members.forEach(function(m) {
         var opt = document.createElement('option');
         opt.value = m.id;
@@ -445,7 +447,7 @@ function openCardModal(card) {
         modalCardDesc.value = card.description || '';
         modalCardCol.value = card.column_id;
         modalCardPri.value = card.priority || 'normal';
-        modalCardAssn.value = card.assigned_to || '';
+        modalCardAssn.value = card.assign_all ? 'everyone' : (card.assigned_to || '');
         btnDeleteCard.style.display = '';
     } else {
         modalTitle.textContent = 'New Card';
@@ -471,6 +473,8 @@ async function saveCard() {
     if (!title) { modalCardTitle.focus(); return; }
 
     var cardId = modalCardId.value;
+    var assnVal = modalCardAssn.value;
+    var isEveryone = assnVal === 'everyone';
     var payload;
 
     if (cardId) {
@@ -481,7 +485,8 @@ async function saveCard() {
             description: modalCardDesc.value.trim(),
             column_id: modalCardCol.value,
             priority: modalCardPri.value,
-            assigned_to: modalCardAssn.value || null
+            assign_all: isEveryone,
+            assigned_to: isEveryone ? null : (assnVal || null)
         };
     } else {
         payload = {
@@ -490,7 +495,8 @@ async function saveCard() {
             description: modalCardDesc.value.trim(),
             column_id: modalCardCol.value,
             priority: modalCardPri.value,
-            assigned_to: modalCardAssn.value || null,
+            assign_all: isEveryone,
+            assigned_to: isEveryone ? null : (assnVal || null),
             board_id: activeBoardId
         };
     }
