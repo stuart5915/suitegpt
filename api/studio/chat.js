@@ -30,26 +30,12 @@ const ADMIN_WALLETS = [
 const FREE_HANDLES = ['artstu'];
 
 const MODEL_TIERS = {
-    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10, label: 'Fast',     maxTokens: 16384  },
-    standard: { model: 'claude-sonnet-4-6',         credits: 25, label: 'Standard', maxTokens: 64000 },
-    pro:      { model: 'claude-opus-4-6',           credits: 50, label: 'Pro',      maxTokens: 64000 }
+    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10,  label: 'Fast',     maxTokens: 16384  },
+    standard: { model: 'claude-sonnet-4-6',         credits: 50,  label: 'Standard', maxTokens: 64000 },
+    pro:      { model: 'claude-opus-4-6',           credits: 100, label: 'Pro',      maxTokens: 64000 }
 };
 
-// Per-token costs in USD (from Anthropic pricing)
-const TOKEN_PRICING = {
-    'claude-haiku-4-5-20251001': { input: 1.00 / 1e6, output: 5.00 / 1e6 },
-    'claude-sonnet-4-6':         { input: 3.00 / 1e6, output: 15.00 / 1e6 },
-    'claude-opus-4-6':           { input: 5.00 / 1e6, output: 25.00 / 1e6 }
-};
 const USD_PER_CREDIT = 0.005;
-const COST_MARGIN = 1.3; // 30% margin over raw API cost
-
-function calcActualCredits(model, inputTokens, outputTokens) {
-    const pricing = TOKEN_PRICING[model];
-    if (!pricing) return 0;
-    const rawUsd = (inputTokens * pricing.input) + (outputTokens * pricing.output);
-    return Math.ceil((rawUsd * COST_MARGIN) / USD_PER_CREDIT);
-}
 
 const SYSTEM_PROMPT = `You are a expert web developer AI. The user will describe a website, app, or page they want built. You generate complete, self-contained HTML files.
 
@@ -287,20 +273,12 @@ export default async function handler(req, res) {
         const { session_id, estimate, model, code_length } = req.query;
 
         if (estimate === 'true') {
-            const { is_edit } = req.query;
             const tierKey = model || 'fast';
             const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
-            const codeLen = parseInt(code_length) || 0;
-            // Rough token estimate: code chars / 3.5 + system prompt (~1500) for input
-            // Edit mode outputs ~3000 tokens (search/replace blocks), full mode ~12000
-            const estInputTokens = Math.ceil(codeLen / 3.5) + 1500;
-            const estOutputTokens = is_edit === 'true' ? 3000 : 12000;
-            const estimatedCredits = calcActualCredits(tier.model, estInputTokens, estOutputTokens);
-            const surcharge = Math.max(0, estimatedCredits - tier.credits);
             return res.json({
                 base_credits: tier.credits,
-                estimated_surcharge: surcharge,
-                estimated_credits: tier.credits + surcharge
+                estimated_surcharge: 0,
+                estimated_credits: tier.credits
             });
         }
 
@@ -647,28 +625,6 @@ export default async function handler(req, res) {
         }
         const tokensUsed = inputTokens + outputTokens;
 
-        // Calculate token-based surcharge
-        let surcharge = 0;
-        if (!admin) {
-            const actualCredits = calcActualCredits(tier.model, inputTokens, outputTokens);
-            if (actualCredits > tier.credits) {
-                surcharge = actualCredits - tier.credits;
-                const canDeduct = Math.min(surcharge, creditsRemaining);
-                if (canDeduct > 0) {
-                    const { data: updated } = await supabase
-                        .from('human_profiles')
-                        .update({ credits: creditsRemaining - canDeduct })
-                        .eq('id', profileId)
-                        .select('credits')
-                        .single();
-                    if (updated) creditsRemaining = updated.credits;
-                }
-                if (surcharge > canDeduct) {
-                    console.warn(`Credit shortfall: user ${profileId} owes ${surcharge - canDeduct} credits (surcharge=${surcharge}, available=${canDeduct})`);
-                }
-            }
-        }
-
         // Save messages to DB
         await supabase.from('build_messages').insert({
             session_id: sessionId,
@@ -684,7 +640,7 @@ export default async function handler(req, res) {
             content: assistantText,
             code: code,
             tokens_used: tokensUsed,
-            credits_charged: admin ? 0 : tier.credits + surcharge
+            credits_charged: admin ? 0 : tier.credits
         });
 
         if (code) {
@@ -705,8 +661,8 @@ export default async function handler(req, res) {
             code: code,
             credits_remaining: creditsRemaining,
             tier_used: tierKey,
-            credits_charged: admin ? 0 : tier.credits + surcharge,
-            surcharge: surcharge
+            credits_charged: admin ? 0 : tier.credits,
+            surcharge: 0
         }) + '\n\n');
 
         return res.end();

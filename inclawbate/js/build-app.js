@@ -492,26 +492,15 @@
             var existing = document.querySelector('.cost-confirm-overlay');
             if (existing) existing.remove();
 
-            var hasSurcharge = estimate.estimated_surcharge > 0;
             var codeSize = state.currentCode ? (state.currentCode.length / 1024).toFixed(0) + 'KB' : '';
-            var rows = '';
-
-            if (hasSurcharge) {
-                rows =
-                    '<div class="cost-row"><span>Base cost</span><span>' + estimate.base_credits + ' credits</span></div>' +
-                    '<div class="cost-row extra"><span>Context surcharge (est.)</span><span>+' + estimate.estimated_surcharge + ' credits</span></div>' +
-                    '<div class="cost-row total"><span>Estimated total</span><span>~' + estimate.estimated_credits + ' credits</span></div>';
-            } else {
-                rows =
-                    '<div class="cost-row total"><span>Cost per message</span><span>' + estimate.base_credits + ' credits</span></div>';
-            }
+            var rows = '<div class="cost-row total"><span>Cost per message</span><span>' + estimate.base_credits + ' credits</span></div>';
 
             var overlay = document.createElement('div');
             overlay.className = 'cost-confirm-overlay active';
             overlay.innerHTML =
                 '<div class="cost-confirm-modal">' +
                     '<h3>Editing ' + (codeSize ? codeSize + ' app' : 'existing app') + '</h3>' +
-                    '<p class="cost-confirm-desc">Larger apps use more tokens and may cost extra credits per message.</p>' +
+                    '<p class="cost-confirm-desc">This will use credits from your balance.</p>' +
                     rows +
                     '<div class="cost-confirm-actions">' +
                         '<button class="cost-cancel-btn">Cancel</button>' +
@@ -690,13 +679,6 @@
                 if (doneData.credits_remaining !== undefined) {
                     state.credits = doneData.credits_remaining;
                     updateCredits();
-                }
-                if (doneData.surcharge > 0) {
-                    var notice = document.createElement('div');
-                    notice.className = 'chat-msg system-notice';
-                    notice.textContent = 'Context surcharge: +' + doneData.surcharge + ' credits (' + doneData.credits_charged + ' total)';
-                    els.chatMessages.appendChild(notice);
-                    scrollChat();
                 }
             }
 
@@ -1267,8 +1249,8 @@
             }
         }
         if (bHaiku) bHaiku.textContent = Math.floor(amount / 10) + ' msgs';
-        if (bSonnet) bSonnet.textContent = Math.floor(amount / 25) + ' msgs';
-        if (bOpus) bOpus.textContent = Math.floor(amount / 50) + ' msgs';
+        if (bSonnet) bSonnet.textContent = Math.floor(amount / 50) + ' msgs';
+        if (bOpus) bOpus.textContent = Math.floor(amount / 100) + ' msgs';
     }
 
     async function sendClawsTx() {
