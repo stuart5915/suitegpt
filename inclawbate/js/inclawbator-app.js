@@ -194,13 +194,7 @@ async function connectWallet() {
 }
 
 function updateComingSoonGate() {
-    var overlay = document.getElementById('comingSoonOverlay');
-    if (!overlay) return;
-    if (state.isAdmin) {
-        overlay.classList.add('hidden');
-    } else {
-        overlay.classList.remove('hidden');
-    }
+    // Gate removed — Inclawbator is now public
 }
 
 // ══════════════════════════════════════
