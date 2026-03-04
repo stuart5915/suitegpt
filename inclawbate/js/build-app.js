@@ -437,8 +437,19 @@
                 appendMessage(m.role, m.content, m.code);
             });
 
-            // If session has no code and no messages, it was likely interrupted
-            if (!data.session.current_code && (!data.messages || data.messages.length === 0)) {
+            // If session has no saved code, try to recover from message history
+            if (!data.session.current_code && data.messages && data.messages.length > 0) {
+                var lastCode = null;
+                for (var mi = data.messages.length - 1; mi >= 0; mi--) {
+                    if (data.messages[mi].code) { lastCode = data.messages[mi].code; break; }
+                }
+                if (lastCode) {
+                    state.currentCode = lastCode;
+                    updatePreview(lastCode);
+                } else {
+                    appendMessage('assistant', 'This session was interrupted before it could finish. Type your prompt again to continue building.');
+                }
+            } else if (!data.session.current_code && (!data.messages || data.messages.length === 0)) {
                 appendMessage('assistant', 'This session was interrupted before it could finish. Type your prompt again to continue building.');
                 if (els.chatHeaderArea) els.chatHeaderArea.style.display = '';
             }

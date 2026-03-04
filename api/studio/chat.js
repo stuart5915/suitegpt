@@ -52,7 +52,7 @@ Rules:
 - Add smooth animations and transitions where appropriate
 - Ensure accessibility basics (alt tags, aria labels, contrast)
 - You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
-- For games (chess, checkers, etc.), ALWAYS render the board with all pieces on first generation. Use Unicode symbols for game pieces (e.g. ♔♕♖♗♘♙ for chess). Never output a skeleton or placeholder — the game must be playable immediately
+- For games (chess, checkers, tic-tac-toe, etc.): This is CRITICAL — you MUST generate a fully working, playable game on the FIRST message. The board must have visible squares/cells with proper colors, and ALL pieces must be rendered using Unicode symbols (chess: ♔♕♖♗♘♙♚♛♜♝♞♟). The board MUST use CSS grid or table with alternating background colors for squares. Initialize the game state array with all pieces in their starting positions and render from that state. Test your logic mentally: if you create an 8x8 board, every square must have a background color and the correct piece character. NEVER output an empty board, skeleton, or placeholder
 - If the change is large or the edit blocks would affect >40% of the code, output the FULL file wrapped in \`\`\`html instead of edit blocks
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
@@ -103,7 +103,7 @@ Rules:
 - For insertions, SEARCH the lines where new code goes after, include them + new code in REPLACE
 - If the change is large or affects >40% of the file, output a full \`\`\`html block instead
 - NEVER remove or break existing working functionality when making edits
-- For games: always preserve the board rendering, pieces, and game logic when editing
+- For games: always preserve the board rendering, pieces, and game logic when editing. If the board is empty/broken, output a full \`\`\`html block with a complete working game instead of trying to patch it
 
 Format:
 <<<<<<< SEARCH
