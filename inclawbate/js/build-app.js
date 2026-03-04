@@ -737,8 +737,13 @@
         if (role === 'user') {
             div.textContent = content;
         } else {
-            // Strip the HTML code block and edit blocks from display (handles truncated responses too)
-            var displayText = content.replace(/```html[\s\S]*?```/g, '').replace(/```html[\s\S]*/g, '').replace(/<{4,8} SEARCH[\s\S]*?>{4,8} REPLACE/g, '').trim();
+            // Strip HTML code blocks, edit blocks, and any leftover markers from display
+            var displayText = content
+                .replace(/```html[\s\S]*?```/g, '')
+                .replace(/```html[\s\S]*/g, '')
+                .replace(/<{3,8}\s*SEARCH[\s\S]*?>{3,8}\s*REPLACE/g, '')
+                .replace(/^[<>={3,8}\s]*(SEARCH|REPLACE|=======).*$/gm, '')
+                .trim();
             if (!displayText && code) displayText = 'Here\'s your updated site:';
             div.textContent = displayText;
             if (code) {

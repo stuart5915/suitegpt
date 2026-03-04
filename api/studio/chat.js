@@ -619,15 +619,24 @@ export default async function handler(req, res) {
                 const blocks = parseEditBlocks(assistantText);
                 if (blocks.length === 0) {
                     console.warn('Edit blocks detected but regex parsed 0 blocks');
+                    // Edit blocks detected but couldn't parse — keep existing code
+                    code = existingCode;
                 } else {
                     const result = applyEdits(existingCode, blocks);
                     if (result.applied > 0) {
                         code = result.code;
+                    } else {
+                        // All blocks failed to match — keep existing code unchanged
+                        console.warn('All edit blocks failed, preserving existing code');
+                        code = existingCode;
                     }
                     if (result.errors.length > 0) {
                         console.warn('Edit block failures (' + result.applied + '/' + blocks.length + ' applied):', result.errors);
                     }
                 }
+            } else {
+                // Edit mode but no code block and no edit blocks — keep existing code
+                code = existingCode;
             }
         } else {
             code = extractHtml(assistantText);
