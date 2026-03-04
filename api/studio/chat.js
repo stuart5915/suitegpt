@@ -18,7 +18,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ADMIN_WALLETS = [
+const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
     '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
     '0x9fe6e70079d9cbab7693b70a11764d70cf26ce0e',
@@ -191,7 +191,7 @@ async function getProfile(profileId) {
 }
 
 function isAdmin(profile) {
-    return ADMIN_WALLETS.includes(profile?.wallet_address?.toLowerCase())
+    return FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
 }
 

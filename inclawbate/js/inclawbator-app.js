@@ -17,15 +17,7 @@ var TRANSFER_SEL = '0xa9059cbb'; // transfer(address,uint256)
 var CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
 var ALLOCATION_TIERS = { 0: 0, 1: 1000000, 2: 2000000, 5: 5000000, 10: 10000000 };
 var DEFAULT_SUPPLY = 100000000000; // 100B tokens
-var ADMIN_WALLETS = [
-    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
-    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
-    '0x9fe6e70079d9cbab7693b70a11764d70cf26ce0e',
-    '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
-    '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
-    '0x1f1beee127bcb87a9d639138746e4c5a696278e5'
-];
+var SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
 // Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
@@ -173,7 +165,7 @@ async function connectWallet() {
         if (accounts.length > 0) {
             state.wallet = accounts[0].toLowerCase();
             state.provider = window.ethereum;
-            state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
+            state.isAdmin = state.wallet === SUPER_ADMIN;
             try {
                 await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
             } catch (e) {
@@ -1576,7 +1568,7 @@ async function init() {
                 state.wallet = accounts[0].toLowerCase();
                 state.provider = autoProvider;
                 if (!window.ethereum) window.ethereum = autoProvider;
-                state.isAdmin = ADMIN_WALLETS.includes(state.wallet);
+                state.isAdmin = state.wallet === SUPER_ADMIN;
                 updateUI();
                 loadClawsBalance();
             }

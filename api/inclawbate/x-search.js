@@ -19,7 +19,7 @@ const X_BEARER_TOKEN = process.env.X_BEARER_TOKEN;
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ADMIN_WALLETS = [
+const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
     '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
     '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
-    const isAdmin = ADMIN_WALLETS.includes(profile.wallet_address?.toLowerCase())
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile.x_handle?.toLowerCase());
 
     const { action } = req.body;

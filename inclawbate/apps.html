@@ -353,6 +353,53 @@
         }
         .app-card-upvote svg { width: 12px; height: 12px; }
 
+        /* ── Moderation buttons ── */
+        .app-card-mod {
+            display: flex;
+            gap: 6px;
+            padding: 6px 10px 2px;
+        }
+        .mod-btn {
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 1px solid;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: none;
+            transition: all 0.15s ease;
+        }
+        .mod-hide {
+            color: #f59e0b;
+            border-color: rgba(245,158,11,0.3);
+        }
+        .mod-hide:hover { background: rgba(245,158,11,0.15); }
+        .mod-delete {
+            color: #ef4444;
+            border-color: rgba(239,68,68,0.3);
+        }
+        .mod-delete:hover { background: rgba(239,68,68,0.15); }
+        .mod-unhide {
+            color: #22c55e;
+            border-color: rgba(34,197,94,0.3);
+        }
+        .mod-unhide:hover { background: rgba(34,197,94,0.15); }
+        .app-card.moderated {
+            opacity: 0.45;
+            border: 1px dashed rgba(239,68,68,0.4);
+        }
+        .app-card.moderated:hover { opacity: 0.7; }
+        .admin-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--sand-400);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .admin-toggle input { cursor: pointer; }
+
         /* ── Detail Modal ── */
         .app-detail-overlay {
             position: fixed;
@@ -689,6 +736,7 @@
         <a href="/apps" class="nav-link active">Apps</a>
         <a href="/inclawbator" class="nav-link">Inclawbator</a>
         <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
     </div>
 </nav>
 
@@ -726,6 +774,10 @@
             <option value="newest">Newest</option>
             <option value="popular">Most Popular</option>
         </select>
+        <label class="admin-toggle" id="showHiddenToggle" style="display:none">
+            <input type="checkbox" id="showHiddenCheck">
+            <span>Show Hidden</span>
+        </label>
     </div>
 
     <!-- Grid -->
@@ -753,7 +805,8 @@
         page: 1,
         pages: 1,
         apps: [],
-        total: 0
+        total: 0,
+        showHidden: false
     };
 
     var searchTimer = null;
@@ -777,6 +830,12 @@
         try { return JSON.parse(localStorage.getItem('inclawbate_profile')); } catch(e) { return null; }
     }
     function isLoggedIn() { return !!getToken() && !!getProfile(); }
+
+    var SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+    function isSuperAdmin() {
+        var p = getProfile();
+        return p && p.wallet_address && p.wallet_address.toLowerCase() === SUPER_ADMIN;
+    }
 
     // ── Category tabs ──
     document.querySelectorAll('.cat-tab').forEach(function(tab) {
@@ -807,6 +866,16 @@
         loadApps();
     });
 
+    // ── Show Hidden toggle (admin only) ──
+    if (isSuperAdmin()) {
+        document.getElementById('showHiddenToggle').style.display = 'inline-flex';
+    }
+    document.getElementById('showHiddenCheck').addEventListener('change', function(e) {
+        state.showHidden = e.target.checked;
+        state.page = 1;
+        loadApps();
+    });
+
     // ── Load Apps ──
     async function loadApps() {
         feedEl.innerHTML = '<div class="apps-loading">Loading apps...</div>';
@@ -819,6 +888,7 @@
         });
         if (state.category !== 'all') params.set('category', state.category);
         if (state.search) params.set('search', state.search);
+        if (state.showHidden) params.set('show_hidden', 'true');
 
         var headers = {};
         if (isLoggedIn()) headers['Authorization'] = 'Bearer ' + getToken();
@@ -854,7 +924,7 @@
         feedEl.innerHTML = '';
         state.apps.forEach(function(app, i) {
             var card = document.createElement('div');
-            card.className = 'app-card';
+            card.className = 'app-card' + (app.moderated ? ' moderated' : '');
             card.style.animationDelay = (i * 0.04) + 's';
 
             var creator = creatorLabel(app);
@@ -899,6 +969,12 @@
                             '<span>' + (app.upvote_count || 0) + '</span>' +
                         '</button>' +
                     '</div>' +
+                    (isSuperAdmin() ? '<div class="app-card-mod" onclick="event.stopPropagation()">' +
+                        (app.moderated
+                            ? '<button class="mod-btn mod-unhide" onclick="AppStore.moderate(\'' + app.id + '\', \'unhide\')" title="Unhide">Unhide</button>'
+                            : '<button class="mod-btn mod-hide" onclick="AppStore.moderate(\'' + app.id + '\', \'hide\')" title="Hide from store">Hide</button>') +
+                        '<button class="mod-btn mod-delete" onclick="AppStore.moderate(\'' + app.id + '\', \'delete\')" title="Delete permanently">Delete</button>' +
+                    '</div>' : '') +
                 '</div>';
 
             card.addEventListener('click', function() { openDetail(app.id); });
@@ -1300,6 +1376,30 @@
         if (appId) openDetail(appId);
     });
 
+    // ── Moderate (SUPER_ADMIN only) ──
+    async function moderate(appId, moderateAction) {
+        if (!isSuperAdmin()) return;
+        var label = moderateAction === 'delete' ? 'permanently delete' : 'hide';
+        if (!confirm('Are you sure you want to ' + label + ' this app?')) return;
+
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ action: 'moderate', app_id: appId, moderate_action: moderateAction })
+            });
+            var data = await resp.json();
+            if (!resp.ok) { alert(data.error || 'Failed'); return; }
+            alert('App ' + (data.action || moderateAction) + ' successfully');
+            loadApps();
+        } catch(e) {
+            alert('Moderation failed');
+        }
+    }
+
     // ── Public API ──
     window.AppStore = {
         upvote: upvote,
@@ -1310,7 +1410,8 @@
         nextPage: nextPage,
         prevPage: prevPage,
         openDetail: openDetail,
-        closeDetail: closeDetail
+        closeDetail: closeDetail,
+        moderate: moderate
     };
 })();
 </script>

@@ -16,7 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const ADMIN_WALLETS = [
+const FREE_CREDIT_WALLETS = [
     '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
     '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
     '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         .single();
 
     const FREE_HANDLES = ['artstu'];
-    const isAdmin = ADMIN_WALLETS.includes(profile?.wallet_address?.toLowerCase())
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
 
     if (!isAdmin && (!profile || profile.credits <= 0)) {

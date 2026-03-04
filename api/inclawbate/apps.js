@@ -9,6 +9,7 @@ const supabase = createClient(
 );
 
 const JWT_SECRET = process.env.INCLAWBATE_JWT_SECRET;
+const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
 // On-chain verification constants (CLAWS on Base)
 const CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379'.toLowerCase();
@@ -93,6 +94,10 @@ function getUser(req) {
     return verifyJwt(auth.replace('Bearer ', ''));
 }
 
+function isSuperAdmin(user) {
+    return user?.wallet_address?.toLowerCase() === SUPER_ADMIN;
+}
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -139,7 +144,7 @@ export default async function handler(req, res) {
             const creatorId = req.query.creator_id;
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, created_at', { count: 'exact' });
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, created_at', { count: 'exact' });
 
             const creatorWallet = req.query.creator_wallet;
             if (creatorId && creatorWallet) {
@@ -150,6 +155,10 @@ export default async function handler(req, res) {
                 query = query.ilike('creator_x_handle', creator);
             } else {
                 query = query.eq('is_public', true);
+                // Hide moderated apps from public listing (admins see all via show_hidden param)
+                if (!isSuperAdmin(user) || !req.query.show_hidden) {
+                    query = query.or('moderated.is.null,moderated.eq.false');
+                }
             }
 
             if (category && category !== 'all') {
@@ -410,7 +419,45 @@ export default async function handler(req, res) {
                 return res.json({ unlocked: !!unlock });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock' });
+            // ── Moderate (SUPER_ADMIN only) ──
+            if (action === 'moderate') {
+                if (!isSuperAdmin(user)) {
+                    return res.status(403).json({ error: 'Unauthorized' });
+                }
+
+                const { moderate_action } = req.body;
+
+                if (moderate_action === 'hide') {
+                    const { error: modErr } = await supabase
+                        .from('user_apps')
+                        .update({ moderated: true })
+                        .eq('id', app_id);
+                    if (modErr) throw modErr;
+                    return res.json({ moderated: true, action: 'hidden' });
+                }
+
+                if (moderate_action === 'unhide') {
+                    const { error: modErr } = await supabase
+                        .from('user_apps')
+                        .update({ moderated: false })
+                        .eq('id', app_id);
+                    if (modErr) throw modErr;
+                    return res.json({ moderated: false, action: 'unhidden' });
+                }
+
+                if (moderate_action === 'delete') {
+                    const { error: delErr } = await supabase
+                        .from('user_apps')
+                        .delete()
+                        .eq('id', app_id);
+                    if (delErr) throw delErr;
+                    return res.json({ deleted: true, action: 'deleted' });
+                }
+
+                return res.status(400).json({ error: 'Unknown moderate_action. Use: hide, unhide, delete' });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate' });
 
         } catch (err) {
             console.error('apps POST error:', err);

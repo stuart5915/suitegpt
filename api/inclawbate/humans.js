@@ -18,13 +18,7 @@ const supabase = createClient(
 
 const PUBLIC_FIELDS = 'id,x_handle,x_name,x_avatar_url,display_name,bio,tagline,skills,wallet_address,available_capacity,availability,response_time,timezone,portfolio_links,hire_count,telegram_chat_id,metadata,created_at,updated_at,airdrop_banned,ubi_total_received';
 
-const ADMIN_WALLETS = [
-    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
-    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
-    '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
-    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
-];
+const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
@@ -210,7 +204,7 @@ export default async function handler(req, res) {
         // Admin ban/unban action
         if (req.body?.action === 'ban') {
             const { wallet_address, x_handle, banned } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             if (!x_handle) {
@@ -234,7 +228,7 @@ export default async function handler(req, res) {
         // Admin set/unset philanthropy recipient
         if (req.body?.action === 'set-philanthropy') {
             const { wallet_address, x_handle, is_recipient, note } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             if (!x_handle) {

@@ -33,13 +33,7 @@ const INCLAWNCH_ADDRESS = '0xb0b6e0e9da530f68d713cc03a813b506205ac808';
 const PROTOCOL_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const UNSTAKE_WALLET = '0xa4d6f012003fe6ad2774a874c8c98ee69d17f286';
 const DEPOSIT_WALLET = UNSTAKE_WALLET; // new stakes go to unstake wallet so it self-funds
-const ADMIN_WALLETS = [
-    PROTOCOL_WALLET,
-    '0xa00e81ecedd4d007965997c6cc64d9372bec397e',
-    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
-    '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
-    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
-];
+const SUPER_ADMIN = PROTOCOL_WALLET;
 const ERC20_TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
 const TOKEN_ADDRESSES = {
@@ -498,7 +492,7 @@ export default async function handler(req, res) {
         // ── Update Config (admin only) ──
         if (action === 'update-config') {
             const { wallet_address, weekly_rate, daily_rate, reward_split_pct } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
@@ -573,7 +567,7 @@ export default async function handler(req, res) {
         // ── Mark Distribution Complete (admin only) ──
         if (action === 'mark-distributed') {
             const { wallet_address, token } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
@@ -645,7 +639,7 @@ export default async function handler(req, res) {
         // ── Mark Unstakes as Returned (admin only) ──
         if (action === 'mark-returned') {
             const { wallet_address, returns, tx_hash } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
@@ -728,7 +722,7 @@ export default async function handler(req, res) {
         // ── Record Auto-Stakes (admin only) ──
         if (action === 'record-auto-stakes') {
             const { wallet_address, recipients, distribution_count } = req.body;
-            if (!wallet_address || !ADMIN_WALLETS.includes(wallet_address.toLowerCase())) {
+            if (!wallet_address || wallet_address.toLowerCase() !== SUPER_ADMIN) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
             if (!Array.isArray(recipients) || recipients.length === 0) {
