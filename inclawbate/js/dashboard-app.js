@@ -87,6 +87,24 @@ async function loadOverview() {
 
 }
 
+async function refreshCredits() {
+    const btn = document.getElementById('profileCreditsRefresh');
+    if (btn) { btn.classList.add('spinning'); btn.disabled = true; }
+    try {
+        const resp = await fetch(`${API_BASE}/credits`, { headers: authHeaders() });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const count = data?.credits ?? 0;
+        const el = document.getElementById('profileCredits');
+        if (el) el.textContent = count.toLocaleString();
+        const balEl = document.getElementById('dashBuyBalance');
+        if (balEl) balEl.textContent = count + ' credits';
+    } catch (e) { /* silent */ }
+    finally {
+        if (btn) { btn.classList.remove('spinning'); btn.disabled = false; }
+    }
+}
+
 function shortWallet(addr) {
     if (!addr) return '';
     return addr.slice(0, 6) + '…' + addr.slice(-4);
@@ -115,6 +133,7 @@ function renderProfileCard(profile) {
             <div class="profile-credits-row">
                 <span class="profile-credits-count" id="profileCredits">--</span>
                 <span class="profile-credits-label">credits</span>
+                <button type="button" class="profile-credits-refresh" id="profileCreditsRefresh" title="Refresh balance">&#x21bb;</button>
                 <span class="profile-credits-info" id="profileCreditsInfo" tabindex="0">i
                     <span class="profile-credits-tooltip">Credits are used per AI message in Build Studio. Cost varies by model: Haiku (10), Sonnet (25), Opus (50).</span>
                 </span>
@@ -144,6 +163,8 @@ function renderProfileCard(profile) {
     document.getElementById('profileBuyBtn')?.addEventListener('click', () => {
         openBuyModal('credits');
     });
+
+    document.getElementById('profileCreditsRefresh')?.addEventListener('click', refreshCredits);
 
     document.getElementById('profileSubUpgrade')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1562,6 +1583,8 @@ async function dashSendClawsTx() {
             if (ovEl) ovEl.textContent = result.credits_total;
             const balEl = document.getElementById('dashBuyBalance');
             if (balEl) balEl.textContent = result.credits_total + ' credits';
+            const pcEl = document.getElementById('profileCredits');
+            if (pcEl) pcEl.textContent = result.credits_total.toLocaleString();
         } else {
             resultEl.innerHTML = (result.error || 'Verification failed.') +
                 ' <a href="#" onclick="dashScanDeposits();return false;" style="color:#6366f1;text-decoration:underline;">Scan for uncredited deposits</a>';
@@ -1614,6 +1637,8 @@ async function dashScanDeposits() {
             if (ovEl) ovEl.textContent = result.credits_total;
             const balEl = document.getElementById('dashBuyBalance');
             if (balEl) balEl.textContent = result.credits_total + ' credits';
+            const pcEl = document.getElementById('profileCredits');
+            if (pcEl) pcEl.textContent = result.credits_total.toLocaleString();
         } else if (result.found > 0) {
             resultEl.textContent = 'Found ' + result.found + ' deposit(s), all already credited. No new credits to add.';
             resultEl.className = 'buy-result';
