@@ -3,6 +3,8 @@
 // GET (no params) → list user's sessions
 // POST { session_id?, message } → generate code, save messages, deduct credit
 
+export const config = { maxDuration: 120 };
+
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from '../inclawbate/x-callback.js';
 
@@ -371,8 +373,13 @@ export default async function handler(req, res) {
         creditsRemaining = updated.credits;
     }
 
+    // Hoisted for access in catch block (partial save on error)
+    let sessionId = null;
+    let assistantText = '';
+    const message = req.body?.message;
+
     try {
-        const { session_id, message, current_code } = req.body;
+        const { session_id, current_code } = req.body;
 
         if (!message || !message.trim()) {
             // Refund — no work done
@@ -384,7 +391,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Message is required.' });
         }
 
-        let sessionId = session_id;
+        sessionId = session_id;
         let sessionTitle = '';
 
         // Create new session if needed
@@ -532,7 +539,7 @@ export default async function handler(req, res) {
         res.write('data: ' + JSON.stringify({ type: 'session', session_id: sessionId, title: sessionTitle }) + '\n\n');
 
         // Read the SSE stream from Anthropic
-        let assistantText = '';
+        assistantText = '';
         let inputTokens = 0;
         let outputTokens = 0;
         const reader = response.body.getReader();
@@ -659,6 +666,29 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Build studio error:', error);
-        return res.status(500).json({ error: 'Failed to generate. Please try again.' });
+
+        // Attempt to save partial work if we have a session and any streamed text
+        if (sessionId && assistantText && assistantText.length > 50) {
+            try {
+                const partialCode = extractHtml(assistantText);
+                await supabase.from('build_messages').insert([
+                    { session_id: sessionId, role: 'user', content: message, tokens_used: 0, credits_charged: 0 },
+                    { session_id: sessionId, role: 'assistant', content: assistantText, code: partialCode, tokens_used: 0, credits_charged: 0 }
+                ]);
+                if (partialCode) {
+                    await supabase.from('build_sessions')
+                        .update({ current_code: partialCode, updated_at: new Date().toISOString() })
+                        .eq('id', sessionId);
+                }
+                console.log('Saved partial result for session', sessionId, 'code:', !!partialCode);
+            } catch (saveErr) {
+                console.error('Failed to save partial result:', saveErr);
+            }
+        }
+
+        if (!res.headersSent) {
+            return res.status(500).json({ error: 'Failed to generate. Please try again.' });
+        }
+        try { res.end(); } catch (e) {}
     }
 }
