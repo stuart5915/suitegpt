@@ -990,6 +990,158 @@
             box-shadow: 0 2px 12px hsla(9, 50%, 45%, 0.3);
         }
 
+        /* ── Content Calendar ── */
+        .calendar-section {
+            margin-top: var(--space-xl);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeUp 0.5s ease-out 0.2s backwards;
+        }
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .calendar-header:hover { background: var(--bg-card); }
+        .calendar-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .calendar-header-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .calendar-header-toggle {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            transition: transform 0.3s;
+        }
+        .calendar-header-toggle.collapsed { transform: rotate(-90deg); }
+        .calendar-body {
+            transition: height 0.3s;
+        }
+        .calendar-body.collapsed {
+            height: 0;
+            overflow: hidden;
+        }
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+        }
+        .calendar-nav-btn {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 6px 14px;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calendar-nav-btn:hover {
+            border-color: var(--border-bright);
+            color: var(--text-primary);
+        }
+        .calendar-month-label {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text-primary);
+            min-width: 160px;
+            text-align: center;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 12px;
+            gap: 1px;
+        }
+        .calendar-day-header {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: center;
+            padding: 8px 4px;
+        }
+        .calendar-day {
+            min-height: 90px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .calendar-day:hover {
+            border-color: var(--border-bright);
+            background: var(--bg-elevated);
+        }
+        .calendar-day.today {
+            border-color: var(--lobster-400);
+            box-shadow: 0 0 0 1px var(--lobster-400);
+        }
+        .calendar-day.outside-month {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .calendar-day-num {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+        .cal-event {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            line-height: 1.4;
+        }
+        .cal-event:hover { opacity: 0.8; }
+        .cal-cat-twitter { background: hsla(210, 80%, 55%, 0.2); color: hsl(210, 80%, 70%); }
+        .cal-cat-content { background: hsla(145, 60%, 45%, 0.2); color: hsl(145, 60%, 65%); }
+        .cal-cat-meeting { background: hsla(43, 80%, 50%, 0.2); color: hsl(43, 80%, 70%); }
+        .cal-cat-sermon  { background: hsla(270, 60%, 55%, 0.2); color: hsl(270, 60%, 75%); }
+        .cal-cat-outreach { background: hsla(330, 60%, 55%, 0.2); color: hsl(330, 60%, 75%); }
+        .cal-cat-other   { background: hsla(0, 0%, 50%, 0.15); color: hsl(0, 0%, 65%); }
+        .cal-event.status-done { text-decoration: line-through; opacity: 0.5; }
+        .cal-event.status-cancelled { text-decoration: line-through; opacity: 0.35; }
+        .cal-more {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 768px) {
             .team-page { padding-left: var(--space-sm); padding-right: var(--space-sm); }
@@ -997,6 +1149,8 @@
             .board-title { font-size: 1.3rem; }
             .gate-screen h2 { font-size: 1.7rem; }
             .chat-body { height: 320px; }
+            .calendar-grid { overflow-x: auto; min-width: 600px; }
+            .calendar-day { min-height: 70px; }
         }
     </style>
 </head>
@@ -1053,6 +1207,24 @@
             <div class="board-loading">
                 <div class="loading-spinner"></div>
                 Loading board...
+            </div>
+        </div>
+
+        <!-- Content Calendar -->
+        <div class="calendar-section" id="calendar-section">
+            <div class="calendar-header" id="calendar-header">
+                <div class="calendar-header-left">
+                    <span class="calendar-header-title">Content Calendar</span>
+                </div>
+                <span class="calendar-header-toggle" id="calendar-toggle">&#9660;</span>
+            </div>
+            <div class="calendar-body" id="calendar-body">
+                <div class="calendar-nav">
+                    <button class="calendar-nav-btn" id="cal-prev">&#9664; Prev</button>
+                    <span class="calendar-month-label" id="cal-month-label"></span>
+                    <button class="calendar-nav-btn" id="cal-next">Next &#9654;</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
             </div>
         </div>
 
@@ -1115,6 +1287,60 @@
             <button class="modal-btn-delete" id="btn-delete-card" style="display:none">Delete Card</button>
             <button class="board-btn" id="btn-cancel-modal">Cancel</button>
             <button class="board-btn board-btn--primary" id="btn-save-card">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="event-modal">
+    <div class="modal">
+        <h3 id="event-modal-title">New Event</h3>
+        <input type="hidden" id="event-modal-id">
+        <div class="modal-field">
+            <label>Title</label>
+            <input type="text" id="event-modal-name" placeholder="Event title...">
+        </div>
+        <div class="modal-field">
+            <label>Description</label>
+            <textarea id="event-modal-desc" placeholder="Details..."></textarea>
+        </div>
+        <div class="modal-field">
+            <label>Date</label>
+            <input type="date" id="event-modal-date">
+        </div>
+        <div class="modal-field">
+            <label>Time (optional)</label>
+            <input type="time" id="event-modal-time">
+        </div>
+        <div class="modal-field">
+            <label>Category</label>
+            <select id="event-modal-category">
+                <option value="twitter">Twitter</option>
+                <option value="content" selected>Content</option>
+                <option value="meeting">Meeting</option>
+                <option value="sermon">Sermon</option>
+                <option value="outreach">Outreach</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>Status</label>
+            <select id="event-modal-status">
+                <option value="scheduled">Scheduled</option>
+                <option value="done">Done</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>Assigned To</label>
+            <select id="event-modal-assignee">
+                <option value="">Unassigned</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn-delete" id="btn-delete-event" style="display:none">Delete Event</button>
+            <button class="board-btn" id="btn-cancel-event">Cancel</button>
+            <button class="board-btn board-btn--primary" id="btn-save-event">Save</button>
         </div>
     </div>
 </div>

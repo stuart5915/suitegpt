@@ -14,6 +14,10 @@
 // POST action:"delete-channel"    — remove channel (admin only)
 // POST action:"add-board"         — create board (admin only)
 // POST action:"delete-board"      — remove board + cascade (admin only)
+// GET  ?calendar_board=ID&calendar_month=YYYY-MM — calendar events for board/month
+// POST action:"add-event"         — create calendar event (member+)
+// POST action:"update-event"      — edit calendar event (member own, editor+ any)
+// POST action:"delete-event"      — remove calendar event (member own, editor+ any)
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -116,6 +120,26 @@ export default async function handler(req, res) {
             const { data, error } = await query;
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ messages: data || [] });
+        }
+
+        // If requesting calendar events for a board+month
+        const calBoard = req.query.calendar_board;
+        const calMonth = req.query.calendar_month; // YYYY-MM
+        if (calBoard && calMonth) {
+            const [y, m] = calMonth.split('-').map(Number);
+            if (!y || !m || m < 1 || m > 12) return res.status(400).json({ error: 'Invalid calendar_month (YYYY-MM)' });
+            const firstDay = `${calMonth}-01`;
+            const lastDay = new Date(y, m, 0).toISOString().slice(0, 10); // last day of month
+            const { data, error } = await supabase
+                .from('team_calendar_events')
+                .select('*')
+                .eq('board_id', calBoard)
+                .gte('event_date', firstDay)
+                .lte('event_date', lastDay)
+                .order('event_date')
+                .order('event_time', { nullsFirst: false });
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ events: data || [] });
         }
 
         // Resolve active board
@@ -439,6 +463,7 @@ export default async function handler(req, res) {
                 await supabase.from('team_messages').delete().in('channel_id', channelIds);
             }
             await supabase.from('team_channels').delete().eq('board_id', board_id);
+            await supabase.from('team_calendar_events').delete().eq('board_id', board_id);
             await supabase.from('team_cards').delete().eq('board_id', board_id);
             await supabase.from('team_columns').delete().eq('board_id', board_id);
 
@@ -474,6 +499,92 @@ export default async function handler(req, res) {
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(201).json({ message: data });
+        }
+
+        // ── Add calendar event (member+) ──
+        if (action === 'add-event') {
+            if (!hasRole(member, 'member')) return res.status(403).json({ error: 'Members and above can create events' });
+            const { board_id, title, description, event_date, event_time, category, assigned_to } = req.body;
+            if (!board_id || !title || !event_date) return res.status(400).json({ error: 'board_id, title, event_date required' });
+
+            const validCats = ['twitter', 'content', 'meeting', 'sermon', 'outreach', 'other'];
+            const cat = validCats.includes(category) ? category : 'other';
+
+            const { data, error } = await supabase
+                .from('team_calendar_events')
+                .insert({
+                    board_id,
+                    title,
+                    description: description || null,
+                    event_date,
+                    event_time: event_time || null,
+                    category: cat,
+                    status: 'scheduled',
+                    assigned_to: assigned_to || null,
+                    created_by: member.id
+                })
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(201).json({ event: data });
+        }
+
+        // ── Update calendar event (member own / editor+ any) ──
+        if (action === 'update-event') {
+            if (!hasRole(member, 'member')) return res.status(403).json({ error: 'Viewers cannot edit events' });
+            const { event_id, title, description, event_date, event_time, category, status: evStatus, assigned_to } = req.body;
+            if (!event_id) return res.status(400).json({ error: 'event_id required' });
+
+            if (!hasRole(member, 'editor')) {
+                const { data: ev } = await supabase.from('team_calendar_events').select('created_by').eq('id', event_id).single();
+                if (!ev || ev.created_by !== member.id) {
+                    return res.status(403).json({ error: 'Members can only edit their own events' });
+                }
+            }
+
+            const validCats = ['twitter', 'content', 'meeting', 'sermon', 'outreach', 'other'];
+            const validStatuses = ['scheduled', 'done', 'cancelled'];
+            const updates = { updated_at: new Date().toISOString() };
+            if (title !== undefined) updates.title = title;
+            if (description !== undefined) updates.description = description;
+            if (event_date !== undefined) updates.event_date = event_date;
+            if (event_time !== undefined) updates.event_time = event_time || null;
+            if (category !== undefined && validCats.includes(category)) updates.category = category;
+            if (evStatus !== undefined && validStatuses.includes(evStatus)) updates.status = evStatus;
+            if (assigned_to !== undefined) updates.assigned_to = assigned_to || null;
+
+            const { data, error } = await supabase
+                .from('team_calendar_events')
+                .update(updates)
+                .eq('id', event_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ event: data });
+        }
+
+        // ── Delete calendar event (member own / editor+ any) ──
+        if (action === 'delete-event') {
+            if (!hasRole(member, 'member')) return res.status(403).json({ error: 'Viewers cannot delete events' });
+            const { event_id } = req.body;
+            if (!event_id) return res.status(400).json({ error: 'event_id required' });
+
+            if (!hasRole(member, 'editor')) {
+                const { data: ev } = await supabase.from('team_calendar_events').select('created_by').eq('id', event_id).single();
+                if (!ev || ev.created_by !== member.id) {
+                    return res.status(403).json({ error: 'Members can only delete their own events' });
+                }
+            }
+
+            const { error } = await supabase
+                .from('team_calendar_events')
+                .delete()
+                .eq('id', event_id);
+
+            if (error) return res.status(500).json({ error: error.message });
+            return res.status(200).json({ ok: true });
         }
 
         return res.status(400).json({ error: 'Unknown action' });

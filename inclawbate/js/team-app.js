@@ -30,6 +30,12 @@ let chatCollapsed = false;
 let chatUnreadDot = false;
 let channelUnreads = {}; // channelId -> boolean
 
+// Calendar state
+let calendarEvents = [];
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth();
+let calendarCollapsed = false;
+
 // ══════════════════════════════════════
 // DOM REFS
 // ══════════════════════════════════════
@@ -74,6 +80,31 @@ const chatChannels = document.getElementById('chat-channels');
 const chatMessagesEl = document.getElementById('chat-messages');
 const chatInput    = document.getElementById('chat-input');
 const chatSendBtn  = document.getElementById('chat-send-btn');
+
+// Calendar refs
+const calendarSection = document.getElementById('calendar-section');
+const calendarHeader  = document.getElementById('calendar-header');
+const calendarToggle  = document.getElementById('calendar-toggle');
+const calendarBody    = document.getElementById('calendar-body');
+const calendarGrid    = document.getElementById('calendar-grid');
+const calMonthLabel   = document.getElementById('cal-month-label');
+const calPrevBtn      = document.getElementById('cal-prev');
+const calNextBtn      = document.getElementById('cal-next');
+
+// Event modal refs
+const eventModal       = document.getElementById('event-modal');
+const eventModalTitle  = document.getElementById('event-modal-title');
+const eventModalId     = document.getElementById('event-modal-id');
+const eventModalName   = document.getElementById('event-modal-name');
+const eventModalDesc   = document.getElementById('event-modal-desc');
+const eventModalDate   = document.getElementById('event-modal-date');
+const eventModalTime   = document.getElementById('event-modal-time');
+const eventModalCat    = document.getElementById('event-modal-category');
+const eventModalStatus = document.getElementById('event-modal-status');
+const eventModalAssn   = document.getElementById('event-modal-assignee');
+const btnSaveEvent     = document.getElementById('btn-save-event');
+const btnDeleteEvent   = document.getElementById('btn-delete-event');
+const btnCancelEvent   = document.getElementById('btn-cancel-event');
 
 // ══════════════════════════════════════
 // ROLE HELPERS
@@ -165,6 +196,7 @@ async function checkAccess() {
         renderBoardTabs();
         renderBoard();
         initChat();
+        loadCalendarEvents();
 
         // Prompt for display name if not set
         if (boardData.me && !boardData.me.display_name) {
@@ -224,6 +256,12 @@ async function loadBoard(slug) {
         activeBoardId = data.activeBoard ? data.activeBoard.id : null;
 
         renderBoard();
+
+        // Reset calendar for new board
+        calendarEvents = [];
+        calendarYear = new Date().getFullYear();
+        calendarMonth = new Date().getMonth();
+        loadCalendarEvents();
 
         // Reset chat for new board
         activeChannelId = null;
@@ -990,6 +1028,232 @@ async function deleteChannel(channelId, title) {
 }
 
 // ══════════════════════════════════════
+// CONTENT CALENDAR
+// ══════════════════════════════════════
+var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DAY_HEADERS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+async function loadCalendarEvents() {
+    if (!activeBoardId) return;
+    var mm = String(calendarMonth + 1).padStart(2, '0');
+    var monthStr = calendarYear + '-' + mm;
+    try {
+        var resp = await fetch(API + '?calendar_board=' + activeBoardId + '&calendar_month=' + monthStr, {
+            headers: { 'X-Wallet-Address': walletAddress }
+        });
+        if (!resp.ok) return;
+        var data = await resp.json();
+        calendarEvents = data.events || [];
+        renderCalendar();
+    } catch (err) {
+        console.error('Load calendar failed:', err);
+    }
+}
+
+function renderCalendar() {
+    calMonthLabel.textContent = MONTH_NAMES[calendarMonth] + ' ' + calendarYear;
+    calendarGrid.innerHTML = '';
+
+    // Day headers
+    DAY_HEADERS.forEach(function(d) {
+        var hdr = document.createElement('div');
+        hdr.className = 'calendar-day-header';
+        hdr.textContent = d;
+        calendarGrid.appendChild(hdr);
+    });
+
+    var firstOfMonth = new Date(calendarYear, calendarMonth, 1);
+    var startDay = firstOfMonth.getDay(); // 0=Sun
+    var daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    var today = new Date();
+    var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+    // Previous month padding
+    var prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
+    for (var p = startDay - 1; p >= 0; p--) {
+        var dayNum = prevMonthDays - p;
+        var cell = document.createElement('div');
+        cell.className = 'calendar-day outside-month';
+        cell.innerHTML = '<span class="calendar-day-num">' + dayNum + '</span>';
+        calendarGrid.appendChild(cell);
+    }
+
+    // Current month days
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dateStr = calendarYear + '-' + String(calendarMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        var cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        if (dateStr === todayStr) cell.className += ' today';
+        cell.innerHTML = '<span class="calendar-day-num">' + d + '</span>';
+
+        // Find events for this day
+        var dayEvents = calendarEvents.filter(function(ev) { return ev.event_date === dateStr; });
+        var maxShow = 3;
+        dayEvents.slice(0, maxShow).forEach(function(ev) {
+            var pill = document.createElement('div');
+            pill.className = 'cal-event cal-cat-' + (ev.category || 'other');
+            if (ev.status === 'done') pill.className += ' status-done';
+            if (ev.status === 'cancelled') pill.className += ' status-cancelled';
+            pill.textContent = ev.title;
+            pill.title = ev.title + (ev.event_time ? ' @ ' + ev.event_time.slice(0, 5) : '');
+            pill.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openEventModal(ev, null);
+            });
+            cell.appendChild(pill);
+        });
+        if (dayEvents.length > maxShow) {
+            var more = document.createElement('div');
+            more.className = 'cal-more';
+            more.textContent = '+' + (dayEvents.length - maxShow) + ' more';
+            cell.appendChild(more);
+        }
+
+        // Click day to create new event
+        (function(ds) {
+            cell.addEventListener('click', function() {
+                if (hasRole('member')) openEventModal(null, ds);
+            });
+        })(dateStr);
+
+        calendarGrid.appendChild(cell);
+    }
+
+    // Next month padding (fill to complete last row)
+    var totalCells = startDay + daysInMonth;
+    var remainder = totalCells % 7;
+    if (remainder > 0) {
+        for (var n = 1; n <= 7 - remainder; n++) {
+            var cell = document.createElement('div');
+            cell.className = 'calendar-day outside-month';
+            cell.innerHTML = '<span class="calendar-day-num">' + n + '</span>';
+            calendarGrid.appendChild(cell);
+        }
+    }
+}
+
+function calPrevMonth() {
+    calendarMonth--;
+    if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+    loadCalendarEvents();
+}
+
+function calNextMonth() {
+    calendarMonth++;
+    if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+    loadCalendarEvents();
+}
+
+function openEventModal(event, prefillDate) {
+    // Populate assignee dropdown
+    eventModalAssn.innerHTML = '<option value="">Unassigned</option>';
+    if (boardData && boardData.members) {
+        boardData.members.forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.display_name || shortenWallet(m.wallet_address);
+            eventModalAssn.appendChild(opt);
+        });
+    }
+
+    if (event) {
+        eventModalTitle.textContent = 'Edit Event';
+        eventModalId.value = event.id;
+        eventModalName.value = event.title;
+        eventModalDesc.value = event.description || '';
+        eventModalDate.value = event.event_date;
+        eventModalTime.value = event.event_time ? event.event_time.slice(0, 5) : '';
+        eventModalCat.value = event.category || 'other';
+        eventModalStatus.value = event.status || 'scheduled';
+        eventModalAssn.value = event.assigned_to || '';
+        btnDeleteEvent.style.display = '';
+    } else {
+        eventModalTitle.textContent = 'New Event';
+        eventModalId.value = '';
+        eventModalName.value = '';
+        eventModalDesc.value = '';
+        eventModalDate.value = prefillDate || '';
+        eventModalTime.value = '';
+        eventModalCat.value = 'content';
+        eventModalStatus.value = 'scheduled';
+        eventModalAssn.value = '';
+        btnDeleteEvent.style.display = 'none';
+    }
+
+    eventModal.classList.add('active');
+    eventModalName.focus();
+}
+
+function closeEventModal() {
+    eventModal.classList.remove('active');
+}
+
+async function saveEvent() {
+    var title = eventModalName.value.trim();
+    if (!title) { eventModalName.focus(); return; }
+    var date = eventModalDate.value;
+    if (!date) { eventModalDate.focus(); return; }
+
+    var evId = eventModalId.value;
+    var payload;
+
+    if (evId) {
+        payload = {
+            action: 'update-event',
+            event_id: evId,
+            title: title,
+            description: eventModalDesc.value.trim(),
+            event_date: date,
+            event_time: eventModalTime.value || null,
+            category: eventModalCat.value,
+            status: eventModalStatus.value,
+            assigned_to: eventModalAssn.value || null
+        };
+    } else {
+        payload = {
+            action: 'add-event',
+            board_id: activeBoardId,
+            title: title,
+            description: eventModalDesc.value.trim(),
+            event_date: date,
+            event_time: eventModalTime.value || null,
+            category: eventModalCat.value,
+            assigned_to: eventModalAssn.value || null
+        };
+    }
+
+    btnSaveEvent.disabled = true;
+    btnSaveEvent.textContent = 'Saving...';
+
+    try {
+        await apiPost(payload);
+        closeEventModal();
+        await loadCalendarEvents();
+    } catch (err) {
+        console.error('Save event failed:', err);
+        alert('Failed to save event.');
+    } finally {
+        btnSaveEvent.disabled = false;
+        btnSaveEvent.textContent = 'Save';
+    }
+}
+
+async function deleteEvent() {
+    var evId = eventModalId.value;
+    if (!evId) return;
+    if (!confirm('Delete this event?')) return;
+
+    try {
+        await apiPost({ action: 'delete-event', event_id: evId });
+        closeEventModal();
+        await loadCalendarEvents();
+    } catch (err) {
+        console.error('Delete event failed:', err);
+        alert('Failed to delete event.');
+    }
+}
+
+// ══════════════════════════════════════
 // API HELPERS
 // ══════════════════════════════════════
 async function apiPost(body) {
@@ -1068,6 +1332,27 @@ function init() {
     if (btnAddChannelEl) btnAddChannelEl.addEventListener('click', addChannel);
     var btnAddBoardEl = document.getElementById('btn-add-board');
     if (btnAddBoardEl) btnAddBoardEl.addEventListener('click', addBoard);
+
+    // Calendar events
+    calendarHeader.addEventListener('click', function() {
+        calendarBody.classList.toggle('collapsed');
+        calendarToggle.classList.toggle('collapsed');
+        calendarCollapsed = calendarBody.classList.contains('collapsed');
+    });
+    calPrevBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        calPrevMonth();
+    });
+    calNextBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        calNextMonth();
+    });
+    btnSaveEvent.addEventListener('click', saveEvent);
+    btnDeleteEvent.addEventListener('click', deleteEvent);
+    btnCancelEvent.addEventListener('click', closeEventModal);
+    eventModal.addEventListener('click', function(e) {
+        if (e.target === eventModal) closeEventModal();
+    });
 
     // Chat events
     chatHeader.addEventListener('click', function() {
