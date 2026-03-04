@@ -184,6 +184,23 @@ async function connectWallet() {
                     });
                 }
             }
+
+            // Authenticate with API to get JWT (needed for project registration)
+            if (!localStorage.getItem('inclawbate_token')) {
+                try {
+                    var resp = await fetch('/api/inclawbate/wallet-connect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address: state.wallet })
+                    });
+                    var data = await resp.json();
+                    if (resp.ok && data.success && data.token) {
+                        localStorage.setItem('inclawbate_token', data.token);
+                        if (data.profile) localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+                    }
+                } catch (e) { /* silent — will retry on deploy */ }
+            }
+
             updateUI();
             updateComingSoonGate();
             loadClawsBalance();
@@ -822,6 +839,22 @@ async function handleLaunchDeploy() {
         state.deployTxHash = result.txHash;
 
         setBtnState(btn, 'Registering project...', true);
+
+        // Ensure we have a JWT before registering
+        if (!localStorage.getItem('inclawbate_token') && state.wallet) {
+            try {
+                var authResp = await fetch('/api/inclawbate/wallet-connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: state.wallet })
+                });
+                var authData = await authResp.json();
+                if (authResp.ok && authData.success && authData.token) {
+                    localStorage.setItem('inclawbate_token', authData.token);
+                    if (authData.profile) localStorage.setItem('inclawbate_profile', JSON.stringify(authData.profile));
+                }
+            } catch (e) { /* will fail gracefully below */ }
+        }
 
         // Step 2: Register with API
         var regResult = await apiPost({
