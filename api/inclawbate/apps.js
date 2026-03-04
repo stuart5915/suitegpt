@@ -253,11 +253,29 @@ export default async function handler(req, res) {
                 return entry;
             });
 
+            // Count unique builders across all public apps
+            let builders = 0;
+            if (!creator && !creatorId) {
+                const { data: allCreators } = await supabase
+                    .from('user_apps')
+                    .select('creator_wallet, creator_x_handle')
+                    .eq('is_public', true);
+                if (allCreators) {
+                    const builderSet = new Set();
+                    allCreators.forEach(a => {
+                        if (a.creator_wallet) builderSet.add(a.creator_wallet.toLowerCase());
+                        else if (a.creator_x_handle) builderSet.add(a.creator_x_handle.toLowerCase());
+                    });
+                    builders = builderSet.size;
+                }
+            }
+
             return res.json({
                 apps: results,
                 total: count,
                 page: pageNum,
-                pages: Math.ceil((count || 0) / limitNum)
+                pages: Math.ceil((count || 0) / limitNum),
+                builders
             });
 
         } catch (err) {
