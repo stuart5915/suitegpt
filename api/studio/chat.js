@@ -53,9 +53,10 @@ Rules:
 - Add smooth animations and transitions where appropriate
 - Ensure accessibility basics (alt tags, aria labels, contrast)
 - You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
-- For games (chess, checkers, tic-tac-toe, etc.): This is CRITICAL — you MUST generate a fully working, playable game on the FIRST message. The board must have visible squares/cells with proper colors, and ALL pieces must be rendered using Unicode symbols (chess: ♔♕♖♗♘♙♚♛♜♝♞♟). The board MUST use CSS grid or table with alternating background colors for squares. Initialize the game state array with all pieces in their starting positions and render from that state. Test your logic mentally: if you create an 8x8 board, every square must have a background color and the correct piece character. NEVER output an empty board, skeleton, or placeholder
-- INTERACTIVITY IS MANDATORY: Every app must be fully interactive on first render. Buttons must have click handlers. Forms must work. Games must be playable. Do NOT generate static/display-only output when the user expects interactivity. For games: implement click-to-select, valid-move highlighting, turn logic, and win detection from the first version
-- SELF-TEST: Before outputting code, mentally trace through the user flow. Click a chess piece — does the click handler exist? Does it highlight valid moves? Click a valid square — does the piece move? Does the turn switch? If any step fails, fix it before outputting
+- COMPLETENESS IS MANDATORY: Every app must be fully complete and functional on first render. Never output a skeleton, placeholder, empty container, or "TODO" section. If the user asks for a chess game, the board must have all 32 pieces rendered. If they ask for a dashboard, it must have real data displayed. If they ask for a form, every field must work. Output WORKING code, not scaffolding
+- If the user says the current code is broken, missing features, or not working — regenerate the COMPLETE working version from scratch. Do not try to patch broken code. Start fresh and get it right
+- INTERACTIVITY IS MANDATORY: Buttons must have click handlers. Forms must work. Games must be playable with full logic (click-to-select, valid moves, turn switching, win detection). Do NOT generate static/display-only output
+- SELF-TEST: Before outputting, mentally trace the user flow end-to-end. If any step would fail (missing function, empty render, broken handler), fix it before outputting
 - If the change is large or the edit blocks would affect >40% of the code, output the FULL file wrapped in \`\`\`html instead of edit blocks
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
@@ -481,9 +482,14 @@ export default async function handler(req, res) {
         // Determine edit mode — do we have existing code to edit?
         let existingCode = req.body._session_code || null;
         if (!existingCode && current_code) existingCode = current_code;
-        // Long prompts (>1500 chars) are almost always "build from scratch" requests,
-        // not small edits. Force full-file mode so Claude outputs complete HTML.
-        const isEditMode = !!existingCode && message.length < 1500;
+        // Determine if we should use edit mode or full regeneration
+        // Force full-file mode when:
+        // - Long prompts (>1500 chars) — likely "build from scratch"
+        // - Auto-fix messages (code has errors, patching broken code makes it worse)
+        // - User is asking for something fundamental that should exist (e.g. "add the pieces", "make it work")
+        const isAutoFix = /fix these errors|runtime.*errors|blank page|renders? a blank|corrected HTML/i.test(message);
+        const isFundamentalAsk = /add the .*(pieces|board|grid|cells|items|content|elements|layout)|make it (work|functional|playable|interactive)|it('s| is) (broken|empty|blank|not working)/i.test(message);
+        const isEditMode = !!existingCode && message.length < 1500 && !isAutoFix && !isFundamentalAsk;
 
         // Fetch last 20 messages for context
         const { data: history } = await supabase
