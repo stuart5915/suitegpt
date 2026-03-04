@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introducing the Inclawbator — Inclawbate</title>
+    <meta name="description" content="Build anything. Launch anything. Earn everything. The full-stack incubation platform is here — token launching, staking, AI agents, Build Studio, and more.">
+    <meta property="og:title" content="Introducing the Inclawbator — Inclawbate">
+    <meta property="og:description" content="Build anything. Launch anything. Earn everything. The full-stack incubation platform is here.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://inclawbate.com/blog/inclawbator-announcement">
+    <meta property="og:image" content="https://www.inclawbate.com/assets/blog/inclawbator-hero.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        /* ══════════════════════════════════════
+           BLOG ARTICLE PAGE
+           ══════════════════════════════════════ */
+
+        .article-page {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-lg) var(--space-3xl);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .article-page::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 40% at 20% 0%, hsla(9, 50%, 45%, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, hsla(172, 30%, 40%, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* ── Back link ── */
+        .back-link {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            margin-bottom: var(--space-xl);
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--lobster-400); }
+
+        /* ── Article header ── */
+        .article-header {
+            margin-bottom: var(--space-2xl);
+            animation: fadeUp 0.6s ease-out;
+        }
+
+        .article-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: var(--space-md);
+        }
+
+        .article-tag {
+            font-size: 0.7rem;
+            font-family: var(--font-mono);
+            color: var(--lobster-300);
+            padding: 2px 8px;
+            border: 1px solid hsla(9, 50%, 45%, 0.25);
+            border-radius: var(--radius-full);
+        }
+
+        .article-header h1 {
+            font-family: var(--font-display);
+            font-size: 2.6rem;
+            font-weight: 900;
+            line-height: 1.15;
+            background: linear-gradient(135deg, #f0ece6 0%, #d4a574 40%, #c75b3f 65%, #e8b4a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-md);
+        }
+
+        .article-meta {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+
+        /* ── Article content ── */
+        .article-content h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-top: var(--space-2xl);
+            margin-bottom: var(--space-md);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .article-content h2:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .article-content h3 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: var(--space-lg);
+            margin-bottom: var(--space-sm);
+        }
+
+        .article-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.75;
+            margin-bottom: var(--space-md);
+        }
+
+        .article-content ul, .article-content ol {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.75;
+            margin-bottom: var(--space-md);
+            padding-left: var(--space-lg);
+        }
+
+        .article-content li {
+            margin-bottom: var(--space-xs);
+        }
+
+        .article-content strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .article-content a {
+            color: var(--lobster-400);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        .article-content a:hover {
+            color: var(--lobster-300);
+        }
+
+        .article-content code {
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            color: var(--seafoam-300);
+            background: var(--bg-elevated);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* ── Screenshot containers ── */
+        .article-screenshot {
+            margin: var(--space-lg) 0 var(--space-xl);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+        }
+
+        .article-screenshot img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .article-screenshot-caption {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            padding: var(--space-sm) var(--space-md);
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* ── Highlight box ── */
+        .article-highlight {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--lobster-400);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin: var(--space-lg) 0;
+        }
+
+        .article-highlight p {
+            margin-bottom: 0;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+        }
+
+        /* ── CTA block ── */
+        .article-cta {
+            text-align: center;
+            padding: var(--space-2xl) var(--space-lg);
+            margin-top: var(--space-2xl);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+        }
+
+        .article-cta h2 {
+            border: none !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            font-size: 1.6rem;
+        }
+
+        .article-cta-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-sm);
+            margin-top: var(--space-lg);
+        }
+
+        .article-cta-links a {
+            display: inline-block;
+            padding: 10px 22px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .article-cta-links a:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .cta-primary {
+            background: var(--accent-gradient);
+            color: var(--text-on-accent);
+        }
+
+        .cta-secondary {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .article-header h1 { font-size: 1.8rem; }
+            .article-content h2 { font-size: 1.25rem; }
+            .article-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav" style="justify-content:center; gap:var(--space-xl);">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/stake" class="nav-link">Stake</a>
+        <a href="/angel" class="nav-link">NFT</a>
+        <a href="/apps" class="nav-link">Apps</a>
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link active">Blog</a>
+    </div>
+</nav>
+
+<main class="article-page">
+    <a href="/blog" class="back-link">&larr; Back to Blog</a>
+
+    <header class="article-header">
+        <div class="article-tags">
+            <span class="article-tag">announcement</span>
+            <span class="article-tag">inclawbator</span>
+            <span class="article-tag">CLAWS</span>
+        </div>
+        <h1>Introducing the Inclawbator: Build Anything. Launch Anything. Earn Everything.</h1>
+        <p class="article-meta">Mar 4, 2026 &middot; 18 min read</p>
+    </header>
+
+    <div class="article-content">
+
+        <!-- ═══════════════════════════════════════
+             1. INTRO
+             ═══════════════════════════════════════ -->
+        <p>
+            For the past several months we've been heads-down building something we believe the crypto industry desperately needs:
+            a <strong>full-stack incubation platform</strong> that takes a project from zero to launched, staked, and earning &mdash; in minutes, not months.
+        </p>
+        <p>
+            Today we're pulling back the curtain on everything. Token launching, auto-staking pools, an AI-powered Build Studio,
+            hype agents, Angel NFTs, a credits economy, a skills marketplace, philanthropy rails, and more. All of it is live.
+            All of it runs on <strong>CLAWS</strong>.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/inclawbator-hero.png" alt="Inclawbator platform overview showing token launch, staking, and Build Studio">
+            <div class="article-screenshot-caption">The Inclawbator &mdash; full-stack incubation on Base</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             2. WHAT IS THE INCLAWBATOR?
+             ═══════════════════════════════════════ -->
+        <h2>What is the Inclawbator?</h2>
+        <p>
+            The Inclawbator is an all-in-one platform for creating, launching, and growing crypto projects on Base.
+            Think of it as a launchpad, staking platform, app builder, and agent marketplace &mdash; merged into one interface.
+        </p>
+        <p>
+            Every tool is designed to be <strong>permissionless</strong>. Anyone can launch a token. Anyone can deploy staking.
+            Anyone can build and publish an app. There are no whitelists, no applications, and no gatekeepers.
+            The platform makes money when you make money &mdash; aligned incentives from day one.
+        </p>
+        <ul>
+            <li><strong>Launch</strong> &mdash; Deploy an ERC-20 token with built-in liquidity in one click</li>
+            <li><strong>Stake</strong> &mdash; Every token gets an auto-deployed staking pool, free</li>
+            <li><strong>Build</strong> &mdash; AI-powered app builder with three model tiers</li>
+            <li><strong>Earn</strong> &mdash; Trading fees, staking rewards, app monetization &mdash; all in CLAWS</li>
+            <li><strong>Grow</strong> &mdash; AI hype agents, skills marketplace, and a human talent directory</li>
+        </ul>
+
+        <!-- ═══════════════════════════════════════
+             3. ONE-CLICK TOKEN LAUNCHING
+             ═══════════════════════════════════════ -->
+        <h2>One-Click Token Launching</h2>
+        <p>
+            Launching a token shouldn't take a Solidity engineer and $5K in audit fees. With the Inclawbator, you fill in a name,
+            ticker, and description, hit <strong>Launch</strong>, and your token is deployed via
+            <a href="https://www.clanker.world/" target="_blank" rel="noopener">Clanker</a> with automatic liquidity on Uniswap V3 &mdash;
+            all on Base.
+        </p>
+        <p>
+            Every launch has a flat <strong>1% platform fee</strong> on trading volume, split 80/20: 80% goes to the
+            <a href="/ubi">UBI reward pool</a> and 20% to the Inclawbate treasury. No hidden fees. No VC allocation.
+        </p>
+
+        <h3>Dev Allocation Tiers</h3>
+        <p>
+            By default, 100% of supply goes to LP. But founders who want a dev allocation can burn CLAWS to unlock one:
+        </p>
+        <ul>
+            <li><strong>1% supply</strong> &mdash; Burn a small amount of CLAWS</li>
+            <li><strong>5% supply</strong> &mdash; Moderate CLAWS burn</li>
+            <li><strong>10% supply</strong> &mdash; Large CLAWS burn</li>
+        </ul>
+        <p>
+            This is a deflationary mechanism: the CLAWS are burned forever, reducing circulating supply every time
+            someone launches with a dev allocation.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/inclawbator-launch.png" alt="Token launch interface showing name, ticker, and dev allocation tiers">
+            <div class="article-screenshot-caption">One-click token launch with optional dev allocation tiers</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             4. AUTO-STAKING POOLS
+             ═══════════════════════════════════════ -->
+        <h2>Auto-Staking Pools</h2>
+        <p>
+            Every token launched through the Inclawbator automatically gets a staking pool &mdash; deployed on-chain, free of charge.
+            No configuration needed. Your holders can stake immediately after launch.
+        </p>
+        <p>
+            Staking pools use the same battle-tested <code>ClawnchRewards</code> contract that powers CLAWS staking itself.
+            Pool creators can deposit reward tokens at any time to incentivize stakers, and rewards are distributed proportionally
+            based on stake weight.
+        </p>
+        <div class="article-highlight">
+            <p><strong>Zero cost to deploy.</strong> Other platforms charge $500&ndash;$2,000 for staking infrastructure. Every Inclawbator token gets it for free.</p>
+        </div>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/inclawbator-pools.png" alt="Auto-staking pools showing multiple token pools with APY stats">
+            <div class="article-screenshot-caption">Auto-deployed staking pools for every launched token</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             5. THE CLAWS FLYWHEEL
+             ═══════════════════════════════════════ -->
+        <h2>The CLAWS Flywheel</h2>
+        <p>
+            CLAWS (formerly CLAWNCH) is the native token of the entire Inclawbate ecosystem. It doesn't just sit in your wallet &mdash;
+            it's the fuel that powers every piece of the platform.
+        </p>
+        <p>
+            Here's how the flywheel works:
+        </p>
+        <ol>
+            <li><strong>Tokens trade</strong> &mdash; Every swap on an Inclawbator token generates a 1% fee</li>
+            <li><strong>Fees buy CLAWS</strong> &mdash; Trading fees are used to buy CLAWS on the open market</li>
+            <li><strong>80% &rarr; UBI pool</strong> &mdash; The majority of purchased CLAWS are deposited into the UBI staking reward pool</li>
+            <li><strong>20% &rarr; Treasury</strong> &mdash; A smaller share funds ongoing development and operations</li>
+        </ol>
+        <p>
+            The more tokens that get launched and traded, the more CLAWS gets bought. The more CLAWS gets bought, the higher the
+            UBI rewards for stakers. It's a self-reinforcing cycle with <strong>zero operational cost</strong> &mdash; the smart contracts do all the work.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/claws-flywheel.png" alt="Diagram showing the CLAWS flywheel: trading fees to CLAWS buyback to UBI rewards">
+            <div class="article-screenshot-caption">The CLAWS flywheel &mdash; trading fees become staking rewards</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             6. BUILD STUDIO
+             ═══════════════════════════════════════ -->
+        <h2>Build Studio</h2>
+        <p>
+            Build Studio is an AI-powered app builder that lets anyone create, publish, and monetize web apps &mdash; no coding required.
+            Describe what you want, pick a model, and Build Studio generates a working application.
+        </p>
+
+        <h3>Three Model Tiers</h3>
+        <ul>
+            <li><strong>Haiku</strong> &mdash; 10 credits per build. Fast, great for simple tools and landing pages.</li>
+            <li><strong>Sonnet</strong> &mdash; 50 credits per build. Balanced power for most apps.</li>
+            <li><strong>Opus</strong> &mdash; 100 credits per build. Maximum intelligence for complex applications.</li>
+        </ul>
+
+        <h3>The 8 Pillars</h3>
+        <p>
+            Every Build Studio app is built around 8 pillars: <strong>Design</strong>, <strong>Data</strong>,
+            <strong>Logic</strong>, <strong>Auth</strong>, <strong>Payments</strong>, <strong>Hosting</strong>,
+            <strong>SEO</strong>, and <strong>Analytics</strong>. The AI handles all of them.
+        </p>
+        <p>
+            Once built, apps publish to a custom slug on the Inclawbate app store. Set a price in CLAWS (or make it free),
+            and you earn every time someone unlocks your app.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/build-studio.png" alt="Build Studio interface showing model selector, prompt input, and live preview">
+            <div class="article-screenshot-caption">Build Studio &mdash; describe it, build it, publish it</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             7. CREDITS SYSTEM
+             ═══════════════════════════════════════ -->
+        <h2>Credits System</h2>
+        <p>
+            Credits are the internal currency that powers Build Studio, AI agents, and X-Search. They're designed to be
+            dead simple: <strong>~$0.005 per credit</strong>.
+        </p>
+
+        <h3>Two Ways to Get Credits</h3>
+        <ul>
+            <li>
+                <strong>Card Subscriptions</strong> &mdash; Three tiers via Stripe:
+                <ul>
+                    <li>Starter: $6/month &mdash; 1,200 credits</li>
+                    <li>Builder: $19/month &mdash; 3,800 credits</li>
+                    <li>Pro: $55/month &mdash; 11,000 credits</li>
+                </ul>
+            </li>
+            <li>
+                <strong>CLAWS Deposits</strong> &mdash; Deposit CLAWS tokens to your account and receive credits at market rate.
+                No subscription needed. Pay-as-you-go with crypto.
+            </li>
+        </ul>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/credits-pricing.png" alt="Credits pricing page showing three subscription tiers and CLAWS deposit option">
+            <div class="article-screenshot-caption">Credits pricing &mdash; card or crypto, your choice</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             8. APP STORE & MONETIZATION
+             ═══════════════════════════════════════ -->
+        <h2>App Store &amp; Monetization</h2>
+        <p>
+            Every app built through Build Studio (or submitted by developers) lives in the Inclawbate App Store.
+            It's a browsable, searchable marketplace where users can discover tools, games, dashboards, and utilities &mdash;
+            all powered by CLAWS.
+        </p>
+
+        <h3>How It Works</h3>
+        <ul>
+            <li><strong>Browse &amp; upvote</strong> &mdash; Discover apps, see what's trending</li>
+            <li><strong>Unlock</strong> &mdash; Pay the creator's CLAWS price to access the full app</li>
+            <li><strong>Tip</strong> &mdash; Send CLAWS directly to any app creator</li>
+            <li><strong>Fork</strong> &mdash; See an app you like? Fork it, improve it, republish it</li>
+        </ul>
+        <p>
+            Creators set their own pricing. Free, one-time unlock, or whatever they want.
+            Inclawbate takes zero cut on app sales &mdash; 100% goes to the creator.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/app-store.png" alt="App Store showing app cards with upvote counts, prices, and category tags">
+            <div class="article-screenshot-caption">The Inclawbate App Store &mdash; browse, unlock, tip, fork</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             9. AI HYPE AGENTS
+             ═══════════════════════════════════════ -->
+        <h2>AI Hype Agents</h2>
+        <p>
+            Every app on the platform can have an AI hype agent attached to it. These are autonomous agents that post to X (Twitter)
+            on behalf of your project &mdash; generating buzz, engagement, and awareness around the clock.
+        </p>
+        <p>
+            Each app starts with <strong>10 free agent credits</strong>. After that, anyone (the creator, a fan, a whale) can
+            fund more credits to keep the agent posting. The agent writes contextual, on-brand tweets based on your app's
+            description and category.
+        </p>
+
+        <div class="article-highlight">
+            <p><strong>Community-funded marketing.</strong> Your agent doesn't stop when you run out of credits &mdash; anyone who believes in your project can top it up.</p>
+        </div>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/ai-agent.png" alt="AI Hype Agent dashboard showing tweet history, credit balance, and fund button">
+            <div class="article-screenshot-caption">AI Hype Agents &mdash; autonomous marketing for any app</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             10. STAKING UNIVERSE: 4 POOL TYPES
+             ═══════════════════════════════════════ -->
+        <h2>Staking Universe: 4 Pool Types</h2>
+        <p>
+            Inclawbate doesn't have one staking pool. It has an entire staking universe, with four distinct pool types
+            serving different purposes:
+        </p>
+
+        <h3>1. UBI Pools (20&ndash;300% APY)</h3>
+        <p>
+            The flagship. Stake CLAWS, earn CLAWS. Rewards come from the trading fee flywheel.
+            APY fluctuates based on trading volume across all Inclawbator tokens. Angel NFT holders earn 2x.
+        </p>
+
+        <h3>2. Reward Pools</h3>
+        <p>
+            Token projects can create reward pools where holders stake their token and earn rewards deposited by the team.
+            Great for incentivizing long-term holding.
+        </p>
+
+        <h3>3. Partner Pools</h3>
+        <p>
+            Cross-ecosystem staking. Stake Token A, earn Token B. Enables partnerships between different projects
+            on the platform.
+        </p>
+
+        <h3>4. Inclawbator Pools</h3>
+        <p>
+            Auto-generated pools for every Inclawbator-launched token. Free, automatic, ready at launch.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/staking-overview.png" alt="Staking page showing four pool categories with TVL and APY for each">
+            <div class="article-screenshot-caption">Four pool types &mdash; UBI, Reward, Partner, and Inclawbator</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             11. ANGEL NFTs — 2x UBI
+             ═══════════════════════════════════════ -->
+        <h2>Angel NFTs &mdash; 2x UBI</h2>
+        <p>
+            Angel NFTs are the founding membership pass of Inclawbate. Only <strong>828 were ever minted</strong>.
+            They're no longer available for primary mint &mdash; secondary only.
+        </p>
+
+        <h3>What Angel NFT Holders Get</h3>
+        <ul>
+            <li><strong>2x UBI multiplier</strong> &mdash; Double the staking rewards on all UBI pools</li>
+            <li><strong>Bonus airdrops</strong> &mdash; First in line for new token airdrops from Inclawbator launches</li>
+            <li><strong>Governance weight</strong> &mdash; Future platform governance will weight Angel holders more heavily</li>
+            <li><strong>Founder status</strong> &mdash; Permanent recognition as an early supporter of the ecosystem</li>
+        </ul>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/angel-nft.png" alt="Angel NFT page showing the NFT artwork, 2x multiplier badge, and holder count">
+            <div class="article-screenshot-caption">828 Angels &mdash; 2x UBI, secondary only</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             12. INCUBATION TIERS
+             ═══════════════════════════════════════ -->
+        <h2>Incubation Tiers</h2>
+        <p>
+            Not every project needs the same level of support. The Inclawbator offers three incubation tiers:
+        </p>
+
+        <h3>Permissionless</h3>
+        <p>
+            Anyone, anytime. Launch a token, get staking, list in the app store. No approval needed.
+            This is the default for everyone.
+        </p>
+
+        <h3>Lite Incubation</h3>
+        <p>
+            Request light support from the Inclawbate team: featured placement, social promotion, and
+            strategy guidance. Designed for projects that want a boost without giving up control.
+        </p>
+
+        <h3>Super Incubation</h3>
+        <p>
+            Full-service incubation. Dedicated support, custom staking configurations, marketing campaigns,
+            partnership introductions, and priority access to new platform features.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/incubation-tiers.png" alt="Three incubation tier cards showing Permissionless, Lite, and Super">
+            <div class="article-screenshot-caption">Three tiers &mdash; from permissionless to full-service incubation</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             13. SKILLS — AGENT APIs
+             ═══════════════════════════════════════ -->
+        <h2>Skills &mdash; Agent APIs</h2>
+        <p>
+            Skills are machine-readable JSON endpoints that any AI agent can call. They're the API layer of the Inclawbate
+            ecosystem &mdash; public, documented, and require no API keys.
+        </p>
+        <p>
+            Any developer (or AI) can browse the skills directory at <a href="/skills">inclawbate.com/skills</a>.
+            Each skill has a structured schema describing inputs, outputs, and capabilities. This makes Inclawbate
+            agents interoperable with any external agent framework.
+        </p>
+
+        <div class="article-highlight">
+            <p><strong>No API keys. No rate limits. No sign-up.</strong> Skills are open by design. Any agent, anywhere, can call them.</p>
+        </div>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/skills-page.png" alt="Skills directory showing a list of available agent skills with JSON schema previews">
+            <div class="article-screenshot-caption">Skills &mdash; public agent APIs, no keys required</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             14. PHILANTHROPY
+             ═══════════════════════════════════════ -->
+        <h2>Philanthropy</h2>
+        <p>
+            Inclawbate's UBI system isn't just about earning &mdash; it's about giving. Any user can redirect a portion
+            (or all) of their UBI rewards to Kingdom-aligned causes through the philanthropy system.
+        </p>
+
+        <h3>How It Works</h3>
+        <ul>
+            <li><strong>Redirect UBI</strong> &mdash; Choose a cause and redirect your staking rewards automatically</li>
+            <li><strong>Proof of Need</strong> &mdash; Recipients submit transparent requests that anyone can verify</li>
+            <li><strong>Split Mode</strong> &mdash; Keep some rewards for yourself and donate the rest &mdash; you set the ratio</li>
+        </ul>
+        <p>
+            This isn't a separate product. It's built directly into the staking interface. Every staker has the option to give.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/philanthropy.png" alt="Philanthropy interface showing cause selection, donation split slider, and proof of need">
+            <div class="article-screenshot-caption">Philanthropy &mdash; redirect UBI to those who need it</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             15. BROWSE & HIRE HUMANS
+             ═══════════════════════════════════════ -->
+        <h2>Browse &amp; Hire Humans</h2>
+        <p>
+            The Inclawbate platform isn't just for AI agents &mdash; it's for humans too. The talent directory at
+            <a href="/humans">inclawbate.com/humans</a> lets you browse real people with real skills, available for hire.
+        </p>
+        <p>
+            Every profile is also an API endpoint. AI agents can programmatically discover and propose work to humans,
+            creating a truly hybrid agent-human economy. Search by skill, availability, or rate.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/humans-browse.png" alt="Humans directory showing profile cards with skills, availability, and hire button">
+            <div class="article-screenshot-caption">Browse &amp; hire humans &mdash; every profile is an API</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             16. X-SEARCH & ENGAGEMENT
+             ═══════════════════════════════════════ -->
+        <h2>X-Search &amp; Engagement</h2>
+        <p>
+            X-Search lets you find and engage with relevant conversations on X (Twitter) using AI. Search for topics,
+            keywords, or communities &mdash; then generate contextual replies powered by AI models.
+        </p>
+        <p>
+            Advanced filters let you narrow by follower count, engagement rate, language, and recency.
+            Every search and reply costs credits, keeping the system sustainable and spam-free.
+        </p>
+
+        <div class="article-screenshot">
+            <img src="/assets/blog/x-search.png" alt="X-Search interface showing search filters, tweet results, and AI-generated reply drafts">
+            <div class="article-screenshot-caption">X-Search &mdash; find conversations, engage with AI</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             17. WHAT'S NEXT / CTA
+             ═══════════════════════════════════════ -->
+        <div class="article-cta">
+            <h2>What's Next</h2>
+            <p>
+                This is just the beginning. We're working on governance, cross-chain expansion, mobile apps,
+                and deeper agent integrations. The Inclawbator is a living platform &mdash; it grows with every
+                token launched, every app built, and every agent deployed.
+            </p>
+            <p style="margin-top: var(--space-md); color: var(--text-primary); font-weight: 700;">
+                Build anything. Launch anything. Earn everything.
+            </p>
+            <div class="article-cta-links">
+                <a href="/inclawbator" class="cta-primary">Launch a Token</a>
+                <a href="/apps" class="cta-secondary">Build an App</a>
+                <a href="/stake" class="cta-secondary">Stake CLAWS</a>
+                <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="cta-secondary">Join Telegram</a>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; we incubate anything for anyone.</p>
+        <div class="footer-links">
+            <a href="/humans" class="footer-link">Browse</a>
+            <a href="/skills" class="footer-link">Skills</a>
+            <a href="/inclawbator" class="footer-link">Inclawbator</a>
+            <a href="/ubi" class="footer-link">UBI</a>
+            <a href="/stake" class="footer-link">Stake</a>
+            <a href="/blog" class="footer-link">Blog</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
