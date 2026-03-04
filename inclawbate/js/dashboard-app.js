@@ -410,7 +410,7 @@ function renderProjectCard(p) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
     }
     if (p.id) {
-        actionsHtml += `<a href="/inclawbator/${esc(p.id)}" class="project-card-action">Settings</a>`;
+        actionsHtml += `<button type="button" class="project-card-action" data-settings-project="${esc(p.id)}">Settings</button>`;
     }
     // Edit / Delete for incubation applications (no token launched yet)
     if (tier === 'incubated' && !addr) {
@@ -511,6 +511,11 @@ function renderProjectCard(p) {
     // Wire delete button
     card.querySelector('[data-delete-project]')?.addEventListener('click', (e) => {
         deleteApplication(e.currentTarget.dataset.deleteProject, e.currentTarget.dataset.deleteName);
+    });
+
+    // Wire settings button
+    card.querySelector('[data-settings-project]')?.addEventListener('click', () => {
+        openTokenSettingsModal(p);
     });
 
     // Wire allocation claim button
@@ -1305,6 +1310,198 @@ function openEditApplicationModal(project) {
             resultEl.className = 'fund-modal-result error';
             btn.disabled = false;
             btn.textContent = 'Save Changes';
+        }
+    });
+
+    const escHandler = (e) => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
+    document.addEventListener('keydown', escHandler);
+}
+
+// ── Token Settings Modal ──
+let _settingsPendingLogo = null;
+
+function hslToHex(hslStr) {
+    const m = hslStr.match(/hsla?\(\s*(\d+),\s*(\d+)%?,\s*(\d+)%?/);
+    if (!m) return '#4ecca3';
+    let h = parseInt(m[1]) / 360, s = parseInt(m[2]) / 100, l = parseInt(m[3]) / 100;
+    let r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+        const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+    }
+    const toHex = x => { const hex = Math.round(x * 255).toString(16); return hex.length === 1 ? '0' + hex : hex; };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function hexToHsl(hex) {
+    let r = parseInt(hex.slice(1,3), 16) / 255, g = parseInt(hex.slice(3,5), 16) / 255, b = parseInt(hex.slice(5,7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b - r) / d + 2) / 6;
+        else h = ((r - g) / d + 4) / 6;
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function deriveColors(hex) {
+    const hsl = hexToHsl(hex);
+    return {
+        color: `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`,
+        color_dim: `hsla(${hsl.h}, ${Math.round(hsl.s * 0.4)}%, ${Math.round(hsl.l * 0.3)}%, 0.15)`,
+        glow: `0 0 30px hsla(${hsl.h}, ${hsl.s}%, ${hsl.l}%, 0.15)`
+    };
+}
+
+function openTokenSettingsModal(project) {
+    const auth = getStoredAuth();
+    if (!auth) { alert('Connect your wallet first.'); return; }
+
+    _settingsPendingLogo = null;
+    const currentHex = project.color ? hslToHex(project.color) : '#4ecca3';
+    const logoSrc = project.logo_url || '';
+    const iconLetter = ((project.token_symbol || project.token_name || '?')[0]).toUpperCase();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fund-modal-overlay';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const modal = document.createElement('div');
+    modal.className = 'fund-modal';
+    modal.style.maxWidth = '480px';
+    modal.innerHTML = `
+        <div class="fund-modal-title">Token Settings</div>
+        <div class="ts-logo-row">
+            <div class="ts-logo-preview" id="tsLogoPreview">
+                ${logoSrc
+                    ? `<img src="${esc(logoSrc)}" alt="" class="ts-logo-img">`
+                    : `<div class="ts-logo-letter">${iconLetter}</div>`
+                }
+            </div>
+            <button type="button" class="ts-logo-btn" id="tsLogoBtn">Upload Logo</button>
+            <input type="file" id="tsLogoFile" accept="image/*" style="display:none">
+        </div>
+        <label class="fund-modal-label">Description</label>
+        <textarea class="fund-modal-input" id="tsDesc" rows="3" style="resize:vertical" placeholder="What is this token about?">${esc(project.description || '')}</textarea>
+        <label class="fund-modal-label">Website URL</label>
+        <input class="fund-modal-input" type="url" id="tsWebsite" value="${esc(project.website_url || '')}" placeholder="https://...">
+        <label class="fund-modal-label">X / Twitter Handle</label>
+        <input class="fund-modal-input" type="text" id="tsXHandle" value="${esc(project.x_handle || '')}" placeholder="@yourtoken">
+        <label class="fund-modal-label">Telegram URL</label>
+        <input class="fund-modal-input" type="url" id="tsTelegram" value="${esc(project.telegram_url || '')}" placeholder="https://t.me/...">
+        <label class="fund-modal-label">Accent Color</label>
+        <div class="ts-color-row">
+            <input type="color" id="tsColor" value="${currentHex}">
+            <span class="ts-color-hex" id="tsColorHex">${currentHex}</span>
+        </div>
+        <div class="fund-modal-actions">
+            <button class="fund-modal-submit" id="tsSave">Save Settings</button>
+            <button class="fund-modal-cancel" id="tsCancel">Cancel</button>
+        </div>
+        <div class="fund-modal-result" id="tsResult"></div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Color picker live update
+    modal.querySelector('#tsColor').addEventListener('input', (e) => {
+        modal.querySelector('#tsColorHex').textContent = e.target.value;
+    });
+
+    // Logo upload
+    modal.querySelector('#tsLogoBtn').addEventListener('click', () => {
+        modal.querySelector('#tsLogoFile').click();
+    });
+    modal.querySelector('#tsLogoFile').addEventListener('change', async () => {
+        const file = modal.querySelector('#tsLogoFile').files[0];
+        if (!file) return;
+        const btn = modal.querySelector('#tsLogoBtn');
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+        try {
+            const reader = new FileReader();
+            const dataUrl = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            const resp = await fetch(`${API_BASE}/upload`, {
+                method: 'POST',
+                headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_data: dataUrl, file_name: file.name, file_type: file.type })
+            });
+            const data = await resp.json();
+            if (data.url) {
+                _settingsPendingLogo = data.url;
+                modal.querySelector('#tsLogoPreview').innerHTML = `<img src="${esc(data.url)}" alt="" class="ts-logo-img">`;
+            } else {
+                alert(data.error || 'Upload failed');
+            }
+        } catch (e) {
+            alert('Upload failed');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Upload Logo';
+    });
+
+    // Cancel
+    modal.querySelector('#tsCancel').addEventListener('click', () => overlay.remove());
+
+    // Save
+    modal.querySelector('#tsSave').addEventListener('click', async () => {
+        const btn = modal.querySelector('#tsSave');
+        const resultEl = modal.querySelector('#tsResult');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        resultEl.textContent = '';
+
+        const hex = modal.querySelector('#tsColor').value;
+        const colors = deriveColors(hex);
+
+        const body = {
+            action: 'update-project',
+            project_id: project.id,
+            description: modal.querySelector('#tsDesc').value.trim(),
+            website_url: modal.querySelector('#tsWebsite').value.trim(),
+            x_handle: modal.querySelector('#tsXHandle').value.trim().replace(/^@/, ''),
+            telegram_url: modal.querySelector('#tsTelegram').value.trim(),
+            color: colors.color,
+            color_dim: colors.color_dim,
+            glow: colors.glow
+        };
+        if (_settingsPendingLogo) body.logo_url = _settingsPendingLogo;
+
+        try {
+            const resp = await fetch(`${API_BASE}/inclawbator`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify(body)
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Update failed');
+
+            resultEl.textContent = 'Settings saved!';
+            resultEl.className = 'fund-modal-result success';
+            btn.textContent = 'Saved!';
+            _settingsPendingLogo = null;
+
+            setTimeout(() => {
+                overlay.remove();
+                loadProjects();
+            }, 1000);
+        } catch (e) {
+            resultEl.textContent = e.message || 'Save failed';
+            resultEl.className = 'fund-modal-result error';
+            btn.disabled = false;
+            btn.textContent = 'Save Settings';
         }
     });
 
