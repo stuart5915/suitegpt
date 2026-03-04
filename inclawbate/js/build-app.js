@@ -349,14 +349,55 @@
                 card.className = 'project-card';
                 var date = new Date(s.updated_at || s.created_at).toLocaleDateString();
                 var pub = s.published_at ? '<span class="published"> &middot; Published</span>' : '';
+
+                // Preview thumbnail
+                var previewHtml = '<div class="project-card-preview">';
+                if (s.current_code) {
+                    previewHtml += '<iframe srcdoc="' + escapeHtml(s.current_code) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe>';
+                } else {
+                    previewHtml += '<div class="project-card-preview-empty">&#128196;</div>';
+                }
+                previewHtml += '</div>';
+
                 card.innerHTML =
-                    '<div class="project-card-title">' + escapeHtml(s.title) + '</div>' +
-                    '<div class="project-card-meta">' + date + pub + '</div>';
-                card.addEventListener('click', function () { openSession(s.id); });
+                    previewHtml +
+                    '<div class="project-card-info">' +
+                        '<div class="project-card-title">' + escapeHtml(s.title) + '</div>' +
+                        '<div class="project-card-meta">' + date + pub + '</div>' +
+                    '</div>' +
+                    '<button type="button" class="project-card-delete" title="Delete project">&times;</button>';
+
+                card.querySelector('.project-card-info').addEventListener('click', function () { openSession(s.id); });
+                card.querySelector('.project-card-preview').addEventListener('click', function () { openSession(s.id); });
+                card.querySelector('.project-card-delete').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    deleteSession(s.id, s.title, card);
+                });
                 els.projectsList.appendChild(card);
             });
         } catch (e) {
             els.projectsList.innerHTML = '<div class="projects-empty"><p>Failed to load projects.</p></div>';
+        }
+    }
+
+    // ── Delete Session ──
+    async function deleteSession(sessionId, title, cardEl) {
+        if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
+        try {
+            var resp = await fetch(API_BASE + '?session_id=' + sessionId, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            if (resp.ok) {
+                cardEl.style.transition = 'opacity 0.25s';
+                cardEl.style.opacity = '0';
+                setTimeout(function () { cardEl.remove(); }, 250);
+            } else {
+                var data = await resp.json();
+                alert(data.error || 'Failed to delete.');
+            }
+        } catch (e) {
+            alert('Network error. Try again.');
         }
     }
 

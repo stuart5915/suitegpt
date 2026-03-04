@@ -163,7 +163,7 @@ function setCors(req, res) {
     if (ALLOWED_ORIGINS.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 }
@@ -323,11 +323,45 @@ export default async function handler(req, res) {
         // List all sessions for user
         const { data: sessions } = await supabase
             .from('build_sessions')
-            .select('id, title, slug, published_at, created_at, updated_at')
+            .select('id, title, slug, published_at, created_at, updated_at, current_code')
             .eq('profile_id', profileId)
             .order('updated_at', { ascending: false });
 
-        return res.json({ sessions: sessions || [] });
+        // Include code for preview thumbnails (cap at 50KB per session, first 20 only)
+        const sessionsWithPreview = (sessions || []).map((s, i) => ({
+            id: s.id,
+            title: s.title,
+            slug: s.slug,
+            published_at: s.published_at,
+            created_at: s.created_at,
+            updated_at: s.updated_at,
+            has_code: !!s.current_code,
+            current_code: (i < 20 && s.current_code && s.current_code.length < 50000) ? s.current_code : null
+        }));
+
+        return res.json({ sessions: sessionsWithPreview });
+    }
+
+    // ── DELETE: remove a session ──
+    if (req.method === 'DELETE') {
+        const { session_id } = req.query;
+        if (!session_id) return res.status(400).json({ error: 'session_id required' });
+
+        // Verify ownership
+        const { data: existing } = await supabase
+            .from('build_sessions')
+            .select('id')
+            .eq('id', session_id)
+            .eq('profile_id', profileId)
+            .single();
+
+        if (!existing) return res.status(404).json({ error: 'Session not found.' });
+
+        // Delete messages first, then session
+        await supabase.from('build_messages').delete().eq('session_id', session_id);
+        await supabase.from('build_sessions').delete().eq('id', session_id);
+
+        return res.json({ ok: true });
     }
 
     // ── POST: chat + generate code ──
