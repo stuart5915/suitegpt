@@ -66,6 +66,8 @@ Rules:
 - Add smooth animations and transitions where appropriate
 - Ensure accessibility basics (alt tags, aria labels, contrast)
 - You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
+- For games (chess, checkers, etc.), ALWAYS render the board with all pieces on first generation. Use Unicode symbols for game pieces (e.g. ♔♕♖♗♘♙ for chess). Never output a skeleton or placeholder — the game must be playable immediately
+- If the change is large or the edit blocks would affect >40% of the code, output the FULL file wrapped in \`\`\`html instead of edit blocks
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
 
@@ -113,7 +115,9 @@ Rules:
 - Keep edits minimal — only the lines that change, plus 1-2 surrounding lines for uniqueness
 - For deletions, leave REPLACE empty
 - For insertions, SEARCH the lines where new code goes after, include them + new code in REPLACE
-- If the change is so large it affects >60% of the file, output a full \`\`\`html block instead
+- If the change is large or affects >40% of the file, output a full \`\`\`html block instead
+- NEVER remove or break existing working functionality when making edits
+- For games: always preserve the board rendering, pieces, and game logic when editing
 
 Format:
 <<<<<<< SEARCH
@@ -524,7 +528,7 @@ export default async function handler(req, res) {
 
         // Choose prompt and max_tokens based on edit mode
         const systemPrompt = isEditMode ? SYSTEM_PROMPT_EDIT : SYSTEM_PROMPT;
-        const editMaxTokens = { fast: 4096, standard: 6000, pro: 8192 };
+        const editMaxTokens = { fast: 4096, standard: 12000, pro: 16000 };
         const maxTokens = isEditMode ? (editMaxTokens[tierKey] || 4096) : tier.maxTokens;
 
         // Call Claude with streaming to avoid Vercel 60s timeout
