@@ -30,9 +30,9 @@ const ADMIN_WALLETS = [
 const FREE_HANDLES = ['artstu'];
 
 const MODEL_TIERS = {
-    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10, label: 'Fast',     maxTokens: 8192  },
-    standard: { model: 'claude-sonnet-4-6',         credits: 25, label: 'Standard', maxTokens: 16384 },
-    pro:      { model: 'claude-opus-4-6',           credits: 50, label: 'Pro',      maxTokens: 32000 }
+    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10, label: 'Fast',     maxTokens: 16384  },
+    standard: { model: 'claude-sonnet-4-6',         credits: 25, label: 'Standard', maxTokens: 64000 },
+    pro:      { model: 'claude-opus-4-6',           credits: 50, label: 'Pro',      maxTokens: 64000 }
 };
 
 // Per-token costs in USD (from Anthropic pricing)
@@ -528,7 +528,7 @@ export default async function handler(req, res) {
 
         // Choose prompt and max_tokens based on edit mode
         const systemPrompt = isEditMode ? SYSTEM_PROMPT_EDIT : SYSTEM_PROMPT;
-        const editMaxTokens = { fast: 4096, standard: 12000, pro: 16000 };
+        const editMaxTokens = { fast: 8192, standard: 32000, pro: 32000 };
         const maxTokens = isEditMode ? (editMaxTokens[tierKey] || 4096) : tier.maxTokens;
 
         // Call Claude with streaming to avoid Vercel 60s timeout
