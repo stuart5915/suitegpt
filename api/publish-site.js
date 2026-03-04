@@ -108,10 +108,17 @@ export default async function handler(req, res) {
             if (is_listed !== undefined) updatePayload.is_listed = is_listed;
             if (user_id) updatePayload.user_id = user_id;
 
-            const { error: updateErr } = await supabase
+            let { error: updateErr } = await supabase
                 .from('user_apps')
                 .update(updatePayload)
                 .eq('slug', cleanSlug);
+
+            // If user_id FK fails, retry without it
+            if (updateErr && updateErr.code === '23503' && updatePayload.user_id) {
+                delete updatePayload.user_id;
+                const retry = await supabase.from('user_apps').update(updatePayload).eq('slug', cleanSlug);
+                updateErr = retry.error;
+            }
 
             if (updateErr) throw updateErr;
 
@@ -146,9 +153,16 @@ export default async function handler(req, res) {
             user_id: user_id || null,
         };
 
-        const { error: insertErr } = await supabase
+        let { error: insertErr } = await supabase
             .from('user_apps')
             .insert(insertPayload);
+
+        // If user_id FK fails, retry without it
+        if (insertErr && insertErr.code === '23503' && insertPayload.user_id) {
+            insertPayload.user_id = null;
+            const retry = await supabase.from('user_apps').insert(insertPayload);
+            insertErr = retry.error;
+        }
 
         if (insertErr) throw insertErr;
 
