@@ -62,7 +62,7 @@ export default async function handler(req, res) {
                         product_data: {
                             name: tierCents ? `Inclawbate Credits — ${credits.toLocaleString()} Bundle` : 'Inclawbate Credits',
                             description: `${credits.toLocaleString()} credits for Build Studio`,
-                            images: ['https://inclawbate.com/assets/clawsbanner.jpg'],
+                            images: ['https://inclawbate.com/assets/logo-banner.jpg'],
                         },
                         unit_amount: amountCents,
                     },
