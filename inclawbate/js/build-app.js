@@ -575,7 +575,7 @@
         thinkingEl.className = 'chat-msg thinking';
         thinkingEl.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>' +
             '<span class="thinking-status">Thinking...</span>' +
-            '<span class="thinking-note">This may take up to 30 seconds</span>';
+            '<span class="thinking-note">Complex apps may take a few minutes</span>';
         els.chatMessages.appendChild(thinkingEl);
         scrollChat();
 
@@ -637,10 +637,19 @@
             var decoder = new TextDecoder();
             var sseBuffer = '';
             var doneData = null;
+            var lastDataTime = Date.now();
+            var STREAM_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
             while (true) {
+                // Timeout guard: abort if no data for 5 minutes
+                var timeSinceLast = Date.now() - lastDataTime;
+                if (timeSinceLast > STREAM_TIMEOUT) {
+                    reader.cancel();
+                    throw new Error('Stream timed out — no data received for 5 minutes.');
+                }
                 var chunk = await reader.read();
                 if (chunk.done) break;
+                lastDataTime = Date.now();
 
                 sseBuffer += decoder.decode(chunk.value, { stream: true });
                 var sseLines = sseBuffer.split('\n');
@@ -702,6 +711,17 @@
             }
 
             if (finalCode) {
+                // Detect truncated output — missing closing tags means code was cut off
+                var isTruncated = !finalCode.includes('</html>') || !finalCode.includes('</script>');
+                if (isTruncated && state.autoFixAttempts < state.maxAutoFix) {
+                    appendMessage('assistant', '⚠️ Code appears truncated (output was cut off). Attempting to regenerate...');
+                    state.autoFixAttempts++;
+                    els.chatInput.value = 'The previous output was truncated and the code is incomplete — it\'s missing closing tags. Please regenerate the COMPLETE app from scratch, making sure to include ALL functions and closing tags. Output the full HTML file.';
+                    state.sending = false;
+                    els.chatSend.disabled = false;
+                    sendMessage();
+                    return;
+                }
                 if (state.currentCode) {
                     state.codeHistory.push(state.currentCode);
                     if (state.codeHistory.length > 20) state.codeHistory.shift();
