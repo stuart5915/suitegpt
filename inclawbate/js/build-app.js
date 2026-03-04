@@ -17,7 +17,10 @@
         title: 'New Project',
         forkedFrom: null,  // { app_id, name } if forked
         editingApp: null,  // { id, slug, name } if editing existing app
-        selectedModel: 'fast'
+        selectedModel: 'fast',
+        previewErrors: [],
+        autoFixAttempts: 0,
+        maxAutoFix: 2
     };
 
     // ── Starter Prompts Pool ──
@@ -537,6 +540,11 @@
         var message = els.chatInput.value.trim();
         if (!message) return;
 
+        // Reset auto-fix counter for user-initiated messages
+        if (message.indexOf('The generated code has runtime') !== 0) {
+            state.autoFixAttempts = 0;
+        }
+
         // Gate: show cost confirmation for first message when editing/forking existing code
         if (!state.sessionId && state.currentCode) {
             var estimate = await estimateEditCost();
@@ -761,13 +769,54 @@
         });
     }
 
+    // ── Error handler injection (client-side, matches server-side) ──
+    function injectErrorHandlerClient(html) {
+        var script = '<script>' +
+            '(function(){' +
+            'var errs=[];' +
+            'window.onerror=function(msg,src,line,col,err){' +
+            'errs.push({message:msg,line:line,col:col,stack:err&&err.stack||""});' +
+            'if(window.parent!==window)window.parent.postMessage({type:"studio-error",errors:errs},"*");' +
+            '};' +
+            'window.addEventListener("unhandledrejection",function(e){' +
+            'errs.push({message:String(e.reason),line:0});' +
+            'if(window.parent!==window)window.parent.postMessage({type:"studio-error",errors:errs},"*");' +
+            '});' +
+            'window.addEventListener("load",function(){' +
+            'setTimeout(function(){' +
+            'if(errs.length>0&&window.parent!==window){' +
+            'window.parent.postMessage({type:"studio-error",errors:errs},"*");' +
+            '}' +
+            'var body=document.body;' +
+            'if(body&&window.parent!==window){' +
+            'var text=(body.innerText||"").trim();' +
+            'var hasCanvas=body.querySelector("canvas,svg,img,video,iframe");' +
+            'var h=body.scrollHeight;' +
+            'if(!text&&!hasCanvas&&h<50){' +
+            'window.parent.postMessage({type:"studio-error",errors:[{message:"Page appears blank — no visible content rendered",line:0,blank:true}]},"*");' +
+            '}' +
+            '}' +
+            '},2000);' +
+            '});' +
+            '})();' +
+            '<\/script>';
+        if (html.indexOf('<head>') !== -1) return html.replace('<head>', '<head>' + script);
+        if (html.indexOf('<html>') !== -1) return html.replace('<html>', '<html><head>' + script + '</head>');
+        return script + html;
+    }
+
     // ── Preview ──
     function updatePreview(code) {
         els.previewEmpty.style.display = 'none';
         els.previewFrame.style.display = '';
-        els.previewFrame.srcdoc = code;
+        // Inject error handler if not already present
+        var codeWithHandler = code.indexOf('studio-error') === -1 ? injectErrorHandlerClient(code) : code;
+        els.previewFrame.srcdoc = codeWithHandler;
         els.codeContent.textContent = code;
         els.publishBtn.disabled = false;
+        // Reset error state for new preview
+        state.previewErrors = [];
+        hideErrorBanner();
     }
 
     function resetPreview() {
@@ -780,6 +829,103 @@
         // Reset tabs
         var tabs = document.querySelectorAll('.preview-tab');
         tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === 'preview'); });
+    }
+
+    // ── Error Banner ──
+    function showErrorBanner(errors) {
+        var banner = document.getElementById('errorBanner');
+        if (!banner) return;
+        var list = errors.map(function(e) {
+            return '<div class="error-item">' +
+                '<span class="error-msg">' + escapeHtml(e.message) + '</span>' +
+                (e.line ? ' <span class="error-line">line ' + e.line + '</span>' : '') +
+                '</div>';
+        }).join('');
+        banner.innerHTML =
+            '<div class="error-banner-header">' +
+                '<span class="error-banner-icon">&#9888;</span>' +
+                '<span class="error-banner-title">Runtime errors detected (' + errors.length + ')</span>' +
+                '<button class="error-toggle-btn" onclick="this.parentNode.parentNode.classList.toggle(\'collapsed\')">' +
+                    '&#9660;' +
+                '</button>' +
+            '</div>' +
+            '<div class="error-banner-body">' +
+                list +
+                '<div class="error-banner-actions">' +
+                    (state.autoFixAttempts < state.maxAutoFix
+                        ? '<button class="error-autofix-btn" onclick="window.BuildApp.autoFix()">&#9889; Auto-fix errors</button>'
+                        : '<span class="error-maxed">Auto-fix limit reached. Describe the issue manually.</span>') +
+                '</div>' +
+            '</div>';
+        banner.style.display = 'block';
+        banner.classList.remove('collapsed');
+    }
+
+    function hideErrorBanner() {
+        var banner = document.getElementById('errorBanner');
+        if (banner) {
+            banner.style.display = 'none';
+            banner.innerHTML = '';
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function handlePreviewErrors(errors) {
+        if (!errors || errors.length === 0) return;
+        state.previewErrors = errors;
+        showErrorBanner(errors);
+
+        // Auto-trigger first fix attempt automatically (Bolt.new-style UX)
+        if (state.autoFixAttempts < 1) {
+            setTimeout(function() {
+                if (!state.sending && state.previewErrors.length > 0) {
+                    autoFix();
+                }
+            }, 800);
+        }
+    }
+
+    function autoFix() {
+        if (state.sending) return;
+        if (state.autoFixAttempts >= state.maxAutoFix) return;
+        state.autoFixAttempts++;
+
+        var isBlank = state.previewErrors.some(function(e) { return e.blank; });
+        var errorSummary = state.previewErrors.map(function(e) {
+            return '- ' + e.message + (e.line ? ' (line ' + e.line + ')' : '');
+        }).join('\n');
+
+        var fixMessage;
+        if (isBlank) {
+            fixMessage = 'The generated code renders a blank page — nothing is visible. The page has no text content, no canvas/svg/images, and the body height is under 50px. This usually means the JavaScript failed silently or the DOM was never populated. Please fix the code so it renders correctly and output the complete corrected HTML.';
+        } else {
+            fixMessage = 'The generated code has runtime JavaScript errors:\n' + errorSummary + '\n\nPlease fix these errors and output the complete corrected HTML.';
+        }
+
+        // Insert the message and send
+        els.chatInput.value = fixMessage;
+        hideErrorBanner();
+        sendMessage();
+    }
+
+    // ── Listen for errors from preview iframe ──
+    var _errorDebounce = null;
+    function initErrorListener() {
+        window.addEventListener('message', function(event) {
+            if (!event.data || event.data.type !== 'studio-error') return;
+            // Only handle errors if we're not currently generating
+            if (state.sending) return;
+            // Debounce — iframe may post multiple times as errors accumulate
+            clearTimeout(_errorDebounce);
+            _errorDebounce = setTimeout(function() {
+                handlePreviewErrors(event.data.errors);
+            }, 500);
+        });
     }
 
     function undoCode() {
@@ -1781,6 +1927,7 @@
         cacheDom();
         setupInput();
         renderWelcomePrompts();
+        initErrorListener();
 
         if (!isLoggedIn()) {
             showView('auth');
@@ -1831,7 +1978,8 @@
         removeAttach: removeAttach,
         selectCap: selectCap,
         useCapPrompt: useCapPrompt,
-        shuffleCapExpand: shuffleCapExpand
+        shuffleCapExpand: shuffleCapExpand,
+        autoFix: autoFix
     };
 
     // ── Boot ──

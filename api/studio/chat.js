@@ -53,6 +53,8 @@ Rules:
 - Ensure accessibility basics (alt tags, aria labels, contrast)
 - You may use CDN-hosted libraries (Chart.js, Three.js, Leaflet, etc.) via <script src="..."> when the user's request benefits from them
 - For games (chess, checkers, tic-tac-toe, etc.): This is CRITICAL — you MUST generate a fully working, playable game on the FIRST message. The board must have visible squares/cells with proper colors, and ALL pieces must be rendered using Unicode symbols (chess: ♔♕♖♗♘♙♚♛♜♝♞♟). The board MUST use CSS grid or table with alternating background colors for squares. Initialize the game state array with all pieces in their starting positions and render from that state. Test your logic mentally: if you create an 8x8 board, every square must have a background color and the correct piece character. NEVER output an empty board, skeleton, or placeholder
+- INTERACTIVITY IS MANDATORY: Every app must be fully interactive on first render. Buttons must have click handlers. Forms must work. Games must be playable. Do NOT generate static/display-only output when the user expects interactivity. For games: implement click-to-select, valid-move highlighting, turn logic, and win detection from the first version
+- SELF-TEST: Before outputting code, mentally trace through the user flow. Click a chess piece — does the click handler exist? Does it highlight valid moves? Click a valid square — does the piece move? Does the turn switch? If any step fails, fix it before outputting
 - If the change is large or the edit blocks would affect >40% of the code, output the FULL file wrapped in \`\`\`html instead of edit blocks
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
@@ -188,6 +190,42 @@ async function getProfile(profileId) {
 function isAdmin(profile) {
     return ADMIN_WALLETS.includes(profile?.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
+}
+
+function injectErrorHandler(html) {
+    var script = '<script>\n' +
+        '(function(){\n' +
+        '  var errs=[];\n' +
+        '  window.onerror=function(msg,src,line,col,err){\n' +
+        '    errs.push({message:msg,line:line,col:col,stack:err&&err.stack||""});\n' +
+        '    if(window.parent!==window)window.parent.postMessage({type:"studio-error",errors:errs},"*");\n' +
+        '  };\n' +
+        '  window.addEventListener("unhandledrejection",function(e){\n' +
+        '    errs.push({message:String(e.reason),line:0});\n' +
+        '    if(window.parent!==window)window.parent.postMessage({type:"studio-error",errors:errs},"*");\n' +
+        '  });\n' +
+        '  window.addEventListener("load",function(){\n' +
+        '    setTimeout(function(){\n' +
+        '      if(errs.length>0&&window.parent!==window){\n' +
+        '        window.parent.postMessage({type:"studio-error",errors:errs},"*");\n' +
+        '      }\n' +
+        '      // Blank page detection: check if body has visible content\n' +
+        '      var body=document.body;\n' +
+        '      if(body&&window.parent!==window){\n' +
+        '        var text=(body.innerText||"").trim();\n' +
+        '        var hasCanvas=body.querySelector("canvas,svg,img,video,iframe");\n' +
+        '        var h=body.scrollHeight;\n' +
+        '        if(!text&&!hasCanvas&&h<50){\n' +
+        '          window.parent.postMessage({type:"studio-error",errors:[{message:"Page appears blank — no visible content rendered",line:0,blank:true}]},"*");\n' +
+        '        }\n' +
+        '      }\n' +
+        '    },2000);\n' +
+        '  });\n' +
+        '})();\n' +
+        '<\/script>';
+    if (html.includes('<head>')) return html.replace('<head>', '<head>' + script);
+    if (html.includes('<html>')) return html.replace('<html>', '<html><head>' + script + '</head>');
+    return script + html;
 }
 
 function extractHtml(text) {
@@ -624,6 +662,11 @@ export default async function handler(req, res) {
             code = extractHtml(assistantText);
         }
         const tokensUsed = inputTokens + outputTokens;
+
+        // Inject error handler into generated code for auto-error detection
+        if (code) {
+            code = injectErrorHandler(code);
+        }
 
         // Save messages to DB
         await supabase.from('build_messages').insert({
