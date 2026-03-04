@@ -379,6 +379,10 @@ function renderProjectCard(p) {
     const addrShort = addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '';
     const created = p.created_at ? timeAgo(p.created_at) : '';
     const iconLetter = (symbol || name)[0].toUpperCase();
+    const iconHtml = p.logo_url
+        ? `<img class="project-card-logo" src="${esc(p.logo_url)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            + `<div class="project-card-icon" style="display:none">${iconLetter}</div>`
+        : `<div class="project-card-icon">${iconLetter}</div>`;
 
     // Price row placeholder (filled async)
     const priceRowHtml = addr ? `<div class="project-card-price" id="price-${esc(addr)}" style="display:none"></div>` : '';
@@ -404,6 +408,9 @@ function renderProjectCard(p) {
     }
     if (p.agent_enabled) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
+    }
+    if (p.id) {
+        actionsHtml += `<a href="/project?id=${esc(p.id)}" class="project-card-action">Settings</a>`;
     }
     // Edit / Delete for incubation applications (no token launched yet)
     if (tier === 'incubated' && !addr) {
@@ -451,7 +458,7 @@ function renderProjectCard(p) {
 
     card.innerHTML = `
         <div class="project-card-header">
-            <div class="project-card-icon">${iconLetter}</div>
+            ${iconHtml}
             <div class="project-card-title">
                 <div class="project-card-name">${esc(name)}</div>
                 ${symbol ? `<div class="project-card-symbol">$${esc(symbol)}</div>` : ''}
@@ -835,7 +842,10 @@ async function loadStakingPools() {
             card._poolAddr = project.staking_address;
             card.innerHTML = `
                 <div class="staking-pool-header">
-                    <div class="staking-pool-icon">${(project.token_symbol || '?')[0]}</div>
+                    ${project.logo_url
+                        ? `<img class="staking-pool-logo" src="${esc(project.logo_url)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="staking-pool-icon" style="display:none">${(project.token_symbol || '?')[0]}</div>`
+                        : `<div class="staking-pool-icon">${(project.token_symbol || '?')[0]}</div>`
+                    }
                     <div class="staking-pool-title">
                         <div class="staking-pool-name">${esc(project.token_name || 'Unknown')}</div>
                         <div class="staking-pool-symbol">$${esc(project.token_symbol || '???')}</div>
