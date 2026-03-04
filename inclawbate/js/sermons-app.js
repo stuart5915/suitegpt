@@ -162,8 +162,8 @@ async function openSermon(id) {
     if (!res.ok) { alert('Failed to load sermon'); return; }
     const data = await res.json();
     currentSermon = data.sermon;
-    loadEditor();
     showView('editor');
+    loadEditor();
 }
 
 async function createSermon() {
@@ -174,8 +174,8 @@ async function createSermon() {
     if (!res.ok) { alert('Failed to create sermon'); return; }
     const data = await res.json();
     currentSermon = data.sermon;
-    loadEditor();
     showView('editor');
+    loadEditor();
 }
 
 function loadEditor() {
