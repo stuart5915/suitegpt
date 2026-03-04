@@ -3,7 +3,7 @@
 // GET (no params) → list user's sessions
 // POST { session_id?, message } → generate code, save messages, deduct credit
 
-export const config = { maxDuration: 120 };
+export const config = { maxDuration: 300 };
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from '../inclawbate/x-callback.js';
