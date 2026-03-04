@@ -201,7 +201,7 @@ function updateComingSoonGate() {
 // TOAST
 // ══════════════════════════════════════
 
-function showToast(msg, type) {
+function showToast(msg, type, duration) {
     var container = document.getElementById('toastContainer');
     if (!container) return;
     var toast = document.createElement('div');
@@ -213,7 +213,7 @@ function showToast(msg, type) {
     setTimeout(function() {
         toast.classList.add('hiding');
         setTimeout(function() { toast.remove(); }, 300);
-    }, 4000);
+    }, duration || 4000);
 }
 
 // ══════════════════════════════════════
@@ -841,16 +841,16 @@ async function handleLaunchDeploy() {
         });
 
         if (regResult.error) {
-            showToast('Token deployed but registration failed: ' + regResult.error, 'error');
+            showToast('Token deployed at ' + tokenAddress.slice(0,8) + '… but registration failed: ' + regResult.error + '. Visit your dashboard to retry.', 'error', 10000);
         } else {
             state.project = regResult.project;
+            showToast('Token deployed! Create a stake pool from your dashboard when ready.', 'success');
         }
 
         state.step = 4;
         state.deploying = false;
         closeToolDrawer();
         updateUI();
-        showToast('Token deployed! Create a stake pool from your dashboard when ready.', 'success');
 
     } catch (e) {
         state.deploying = false;
