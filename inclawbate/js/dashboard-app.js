@@ -1424,8 +1424,10 @@ async function dashSendClawsTx() {
         if (resp.ok) {
             resultEl.textContent = '+' + result.credits_added + ' credits added! New balance: ' + result.credits_total;
             resultEl.className = 'buy-result success';
-            document.getElementById('ovCredits').textContent = result.credits_total;
-            document.getElementById('dashBuyBalance').textContent = result.credits_total + ' credits';
+            const ovEl = document.getElementById('ovCredits');
+            if (ovEl) ovEl.textContent = result.credits_total;
+            const balEl = document.getElementById('dashBuyBalance');
+            if (balEl) balEl.textContent = result.credits_total + ' credits';
         } else {
             resultEl.innerHTML = (result.error || 'Verification failed.') +
                 ' <a href="#" onclick="dashScanDeposits();return false;" style="color:#6366f1;text-decoration:underline;">Scan for uncredited deposits</a>';
