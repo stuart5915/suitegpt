@@ -11,6 +11,7 @@
     var state = {
         sessionId: null,
         currentCode: null,
+        codeHistory: [],
         credits: null,
         sending: false,
         title: 'New Project',
@@ -401,6 +402,8 @@
     function newProject() {
         state.sessionId = null;
         state.currentCode = null;
+        state.codeHistory = [];
+        updateUndoBtn();
         state.title = 'New Project';
         // Remove chat messages but re-show welcome
         var msgs = els.chatMessages.querySelectorAll('.chat-msg');
@@ -647,6 +650,11 @@
             }
 
             if (finalCode) {
+                if (state.currentCode) {
+                    state.codeHistory.push(state.currentCode);
+                    if (state.codeHistory.length > 20) state.codeHistory.shift();
+                    updateUndoBtn();
+                }
                 state.currentCode = finalCode;
                 updatePreview(finalCode);
                 setTimeout(showSuggestionChips, 400);
@@ -723,6 +731,22 @@
         // Reset tabs
         var tabs = document.querySelectorAll('.preview-tab');
         tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === 'preview'); });
+    }
+
+    function undoCode() {
+        if (state.codeHistory.length === 0) return;
+        state.currentCode = state.codeHistory.pop();
+        updatePreview(state.currentCode);
+        updateUndoBtn();
+        appendMessage('system', 'Reverted to previous version.');
+    }
+
+    function updateUndoBtn() {
+        var btn = document.getElementById('undoBtn');
+        if (btn) {
+            btn.style.display = state.codeHistory.length > 0 ? '' : 'none';
+            btn.title = 'Undo (' + state.codeHistory.length + ')';
+        }
     }
 
     function switchTab(tab) {
@@ -1735,6 +1759,7 @@
         goBack: goBack,
         setModel: setModel,
         switchTab: switchTab,
+        undoCode: undoCode,
         openPublish: openPublish,
         closePublish: closePublish,
         onSlugInput: onSlugInput,
