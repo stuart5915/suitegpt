@@ -240,7 +240,11 @@ function renderAppCards(apps) {
                 app_id: a.id,
                 name: a.name || 'Untitled App',
                 slug: a.slug,
-                code: a.code
+                code: a.code,
+                description: a.description || '',
+                category: a.category || 'other',
+                tags: a.tags || '',
+                claws_price: a.claws_price || 0
             }));
             window.location.href = '/build';
         });

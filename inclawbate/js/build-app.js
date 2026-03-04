@@ -854,9 +854,22 @@
         // Editing existing app — pre-fill and lock slug
         if (state.editingApp) {
             if (nameEl) nameEl.value = state.editingApp.name || '';
+            if (descEl) descEl.value = state.editingApp.description || '';
             els.publishSlug.value = state.editingApp.slug || '';
             els.publishSlug.readOnly = true;
             els.publishSlug.style.opacity = '0.6';
+            var catEl = document.getElementById('publishCategory');
+            if (catEl) catEl.value = state.editingApp.category || 'other';
+            var tagsEl = document.getElementById('publishTags');
+            if (tagsEl) tagsEl.value = state.editingApp.tags || '';
+            var paidEl = document.getElementById('publishPaid');
+            var priceRowEl = document.getElementById('publishPriceRow');
+            var priceEl = document.getElementById('publishPrice');
+            if (state.editingApp.claws_price > 0) {
+                if (paidEl) paidEl.checked = true;
+                if (priceRowEl) priceRowEl.classList.add('visible');
+                if (priceEl) priceEl.value = state.editingApp.claws_price;
+            }
             onSlugInput();
             if (nameEl) nameEl.focus();
             return;
@@ -1596,7 +1609,7 @@
             var edit = JSON.parse(raw);
             if (!edit.code) return false;
 
-            state.editingApp = { id: edit.app_id, slug: edit.slug, name: edit.name };
+            state.editingApp = { id: edit.app_id, slug: edit.slug, name: edit.name, description: edit.description || '', category: edit.category || 'other', tags: edit.tags || '', claws_price: edit.claws_price || 0 };
             state.currentCode = edit.code;
             state.title = edit.name || 'Untitled App';
 
