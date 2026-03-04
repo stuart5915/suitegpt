@@ -25,7 +25,8 @@ const ADMIN_WALLETS = [
     '0x18b18e245122f4bda5f2ee4f25c702e05c241d49',
     '0x3392f862de3a2918c774cdc5c1662e2c02b9e5a3',
     '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
-    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
+    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9',
+    '0xff6d0522bd027d1c86c3ad8c55c5ca4711e1e79a'  // Heval
 ];
 const FREE_HANDLES = ['artstu'];
 
