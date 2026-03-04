@@ -11,6 +11,7 @@
 // POST action:"feed-agent"         — deposit CLAWS to feed a project's AI agent
 // POST action:"delete-application" — owner deletes a pending/rejected application (JWT auth)
 // POST action:"update-application" — owner updates application fields (JWT auth)
+// POST action:"update-project"          — owner updates appearance (logo, color) (JWT auth)
 // POST action:"record-allocation-claim" — owner records on-chain allocation claim (JWT auth)
 
 import { createClient } from '@supabase/supabase-js';
@@ -624,6 +625,44 @@ export default async function handler(req, res) {
                 claws_deposited: verification.amount,
                 price_usd: livePrice
             });
+        }
+
+        // ── Owner: update project appearance (logo, color) ──
+        if (action === 'update-project') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { project_id, logo_url, color, color_dim, glow } = req.body;
+            if (!project_id) return res.status(400).json({ error: 'project_id required' });
+
+            const { data: project } = await supabase
+                .from('inclawbator_projects')
+                .select('creator_profile_id')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_profile_id !== user.sub) {
+                return res.status(403).json({ error: 'Not the project owner' });
+            }
+
+            const updates = { updated_at: new Date().toISOString() };
+            if (logo_url !== undefined) updates.logo_url = logo_url || null;
+            if (color !== undefined) updates.color = color || null;
+            if (color_dim !== undefined) updates.color_dim = color_dim || null;
+            if (glow !== undefined) updates.glow = glow || null;
+
+            const { data, error } = await supabase
+                .from('inclawbator_projects')
+                .update(updates)
+                .eq('id', project_id)
+                .select()
+                .single();
+
+            if (error) return res.status(500).json({ error: error.message });
+            const { x_access_token: _t, x_access_secret: _s, ...safeResult } = data;
+            safeResult.x_connected = !!(_t && _s);
+            return res.status(200).json({ project: safeResult });
         }
 
         // ── Owner: update agent settings ──

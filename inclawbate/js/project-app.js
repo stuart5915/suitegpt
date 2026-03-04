@@ -203,43 +203,63 @@ function renderProject() {
         renderTweets();
     }
 
-    // Owner panel
+    // Owner panel — visible for ALL owners
     var isOwner = state.wallet && p.creator_wallet === state.wallet;
-    if (isOwner && p.agent_enabled) {
+    if (isOwner) {
         var ownerPanel = document.getElementById('ownerPanel');
         ownerPanel.classList.remove('hidden');
 
-        // X status
-        var xStatus = document.getElementById('ownerXStatus');
-        var connectBtn = document.getElementById('ownerConnectX');
-        var disconnectBtn = document.getElementById('ownerDisconnectX');
-
-        if (p.x_connected) {
-            xStatus.textContent = p.x_handle ? '@' + p.x_handle : 'Connected';
-            connectBtn.classList.add('hidden');
-            disconnectBtn.classList.remove('hidden');
-        } else {
-            xStatus.textContent = 'Not connected';
-            connectBtn.href = '/api/inclawbate/x-connect?project_id=' + p.id + '&wallet=' + state.wallet;
-            connectBtn.classList.remove('hidden');
-            disconnectBtn.classList.add('hidden');
+        // Pre-fill appearance controls
+        var logoPreview = document.getElementById('logoPreview');
+        if (p.logo_url) {
+            logoPreview.outerHTML = '<img id="logoPreview" src="' + escapeHtml(p.logo_url) + '" class="logo-preview" alt="Logo">';
+        }
+        var colorPicker = document.getElementById('accentColorPicker');
+        var colorHex = document.getElementById('accentColorHex');
+        if (p.color) {
+            var hex = hslToHex(p.color);
+            if (hex) {
+                colorPicker.value = hex;
+                colorHex.textContent = hex;
+            }
         }
 
-        // Posts per day
-        var postsSelect = document.getElementById('ownerPostsPerDay');
-        postsSelect.value = String(p.agent_posts_per_day || 4);
+        // Agent controls — only when agent_enabled
+        if (p.agent_enabled) {
+            document.getElementById('agentControlsSection').classList.remove('hidden');
 
-        // Persona
-        document.getElementById('ownerPersona').value = p.agent_persona || '';
+            // X status
+            var xStatus = document.getElementById('ownerXStatus');
+            var connectBtn = document.getElementById('ownerConnectX');
+            var disconnectBtn = document.getElementById('ownerDisconnectX');
 
-        // Pause/Resume button
-        var pauseBtn = document.getElementById('ownerPauseBtn');
-        if (p.agent_status === 'active') {
-            pauseBtn.textContent = 'Pause Agent';
-            pauseBtn.className = 'owner-btn owner-btn--danger';
-        } else {
-            pauseBtn.textContent = 'Resume Agent';
-            pauseBtn.className = 'owner-btn';
+            if (p.x_connected) {
+                xStatus.textContent = p.x_handle ? '@' + p.x_handle : 'Connected';
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+            } else {
+                xStatus.textContent = 'Not connected';
+                connectBtn.href = '/api/inclawbate/x-connect?project_id=' + p.id + '&wallet=' + state.wallet;
+                connectBtn.classList.remove('hidden');
+                disconnectBtn.classList.add('hidden');
+            }
+
+            // Posts per day
+            var postsSelect = document.getElementById('ownerPostsPerDay');
+            postsSelect.value = String(p.agent_posts_per_day || 4);
+
+            // Persona
+            document.getElementById('ownerPersona').value = p.agent_persona || '';
+
+            // Pause/Resume button
+            var pauseBtn = document.getElementById('ownerPauseBtn');
+            if (p.agent_status === 'active') {
+                pauseBtn.textContent = 'Pause Agent';
+                pauseBtn.className = 'owner-btn owner-btn--danger';
+            } else {
+                pauseBtn.textContent = 'Resume Agent';
+                pauseBtn.className = 'owner-btn';
+            }
         }
     }
 }
@@ -406,6 +426,149 @@ async function disconnectX() {
 }
 
 // ══════════════════════════════════════
+// APPEARANCE (Logo + Color)
+// ══════════════════════════════════════
+
+function hexToHsl(hex) {
+    hex = hex.replace('#', '');
+    var r = parseInt(hex.substring(0, 2), 16) / 255;
+    var g = parseInt(hex.substring(2, 4), 16) / 255;
+    var b = parseInt(hex.substring(4, 6), 16) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min) {
+        h = s = 0;
+    } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b - r) / d + 2) / 6;
+        else h = ((r - g) / d + 4) / 6;
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function hslToHex(hslStr) {
+    var m = hslStr.match(/hsl[a]?\(\s*(\d+),\s*(\d+)%?,\s*(\d+)%?/);
+    if (!m) return null;
+    var h = parseInt(m[1]) / 360, s = parseInt(m[2]) / 100, l = parseInt(m[3]) / 100;
+    var r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+        function hue2rgb(p, q, t) {
+            if (t < 0) t += 1; if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+    var toHex = function(x) { var hex = Math.round(x * 255).toString(16); return hex.length === 1 ? '0' + hex : hex; };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function deriveColors(hex) {
+    var hsl = hexToHsl(hex);
+    return {
+        color: 'hsl(' + hsl.h + ', ' + hsl.s + '%, ' + hsl.l + '%)',
+        color_dim: 'hsla(' + hsl.h + ', ' + Math.round(hsl.s * 0.4) + '%, ' + Math.round(hsl.l * 0.3) + '%, 0.15)',
+        glow: '0 0 30px hsla(' + hsl.h + ', ' + hsl.s + '%, ' + hsl.l + '%, 0.15)'
+    };
+}
+
+var pendingLogoUrl = null;
+
+function uploadLogo() {
+    var fileInput = document.getElementById('logoFileInput');
+    var file = fileInput.files[0];
+    if (!file) return;
+
+    var btn = document.getElementById('logoUploadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+
+    var reader = new FileReader();
+    reader.onload = async function() {
+        try {
+            var token = localStorage.getItem('inclawbate_token');
+            var res = await fetch('/api/inclawbate/upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    file_data: reader.result,
+                    file_name: file.name,
+                    file_type: file.type
+                })
+            });
+            var data = await res.json();
+            if (data.url) {
+                pendingLogoUrl = data.url;
+                var preview = document.getElementById('logoPreview');
+                var img = document.createElement('img');
+                img.id = 'logoPreview';
+                img.src = data.url;
+                img.className = 'logo-preview';
+                img.alt = 'Logo';
+                preview.replaceWith(img);
+                showToast('Logo uploaded', 'success');
+            } else {
+                showToast(data.error || 'Upload failed', 'error');
+            }
+        } catch (e) {
+            showToast('Upload failed', 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Upload Logo';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveAppearance() {
+    var p = state.project;
+    if (!p) return;
+
+    var btn = document.getElementById('saveAppearanceBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    var hex = document.getElementById('accentColorPicker').value;
+    var colors = deriveColors(hex);
+
+    var body = {
+        action: 'update-project',
+        project_id: p.id,
+        color: colors.color,
+        color_dim: colors.color_dim,
+        glow: colors.glow
+    };
+    if (pendingLogoUrl) {
+        body.logo_url = pendingLogoUrl;
+    }
+
+    var data = await apiPost(body);
+
+    btn.disabled = false;
+    btn.textContent = 'Save Appearance';
+
+    if (data.error) {
+        showToast(data.error, 'error');
+    } else {
+        showToast('Appearance saved', 'success');
+        pendingLogoUrl = null;
+        state.project = data.project;
+        renderProject();
+    }
+}
+
+// ══════════════════════════════════════
 // LOAD
 // ══════════════════════════════════════
 
@@ -463,6 +626,16 @@ function init() {
     document.getElementById('ownerSaveBtn').addEventListener('click', saveAgentSettings);
     document.getElementById('ownerPauseBtn').addEventListener('click', togglePause);
     document.getElementById('ownerDisconnectX').addEventListener('click', disconnectX);
+
+    // Wire up appearance controls
+    document.getElementById('logoUploadBtn').addEventListener('click', function() {
+        document.getElementById('logoFileInput').click();
+    });
+    document.getElementById('logoFileInput').addEventListener('change', uploadLogo);
+    document.getElementById('accentColorPicker').addEventListener('input', function() {
+        document.getElementById('accentColorHex').textContent = this.value;
+    });
+    document.getElementById('saveAppearanceBtn').addEventListener('click', saveAppearance);
 
     // Close modal on overlay click
     document.getElementById('feedModalOverlay').addEventListener('click', function(e) {

@@ -377,6 +377,76 @@
         }
         .owner-btn--danger:hover { border-color: var(--red); }
         .owner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ── Token Appearance Controls ── */
+        .appearance-section {
+            margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-xl);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .appearance-section-title {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
+        }
+        .logo-preview {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-subtle);
+        }
+        .logo-preview-placeholder {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 2px dashed var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .logo-upload-input {
+            display: none;
+        }
+        .logo-upload-btn {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            background: var(--bg-elevated);
+            transition: all var(--transition-base);
+        }
+        .logo-upload-btn:hover {
+            border-color: var(--border-default);
+            color: var(--text-primary);
+        }
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        .color-picker-input {
+            width: 40px; height: 40px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+        .color-picker-hex {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
         .owner-select {
             padding: 8px 12px;
             font-family: var(--font-mono);
@@ -622,33 +692,57 @@
         <div class="owner-panel">
             <div class="owner-title">Owner Controls</div>
 
-            <div class="owner-row" id="ownerXRow">
-                <span class="owner-label">X Account</span>
-                <span id="ownerXStatus" class="agent-meta"></span>
-                <a id="ownerConnectX" href="#" class="owner-btn">Connect X</a>
-                <button id="ownerDisconnectX" class="owner-btn owner-btn--danger hidden">Disconnect X</button>
+            <!-- Token Appearance -->
+            <div class="appearance-section">
+                <div class="appearance-section-title">Token Appearance</div>
+                <div class="owner-row">
+                    <span class="owner-label">Logo</span>
+                    <div id="logoPreview" class="logo-preview-placeholder">?</div>
+                    <input type="file" id="logoFileInput" class="logo-upload-input" accept="image/*">
+                    <button type="button" id="logoUploadBtn" class="logo-upload-btn">Upload Logo</button>
+                </div>
+                <div class="owner-row">
+                    <span class="owner-label">Accent Color</span>
+                    <div class="color-picker-row">
+                        <input type="color" id="accentColorPicker" class="color-picker-input" value="#e85d3a">
+                        <span id="accentColorHex" class="color-picker-hex">#e85d3a</span>
+                    </div>
+                </div>
+                <div class="owner-row">
+                    <button type="button" id="saveAppearanceBtn" class="owner-btn owner-btn--primary">Save Appearance</button>
+                </div>
             </div>
 
-            <div class="owner-row">
-                <span class="owner-label">Posts / Day</span>
-                <select id="ownerPostsPerDay" class="owner-select">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="12">12</option>
-                    <option value="24">24</option>
-                </select>
-            </div>
+            <!-- Agent Controls (only visible when agent_enabled) -->
+            <div id="agentControlsSection" class="hidden">
+                <div class="owner-row" id="ownerXRow">
+                    <span class="owner-label">X Account</span>
+                    <span id="ownerXStatus" class="agent-meta"></span>
+                    <a id="ownerConnectX" href="#" class="owner-btn">Connect X</a>
+                    <button id="ownerDisconnectX" class="owner-btn owner-btn--danger hidden">Disconnect X</button>
+                </div>
 
-            <div style="margin-bottom:var(--space-lg);">
-                <span class="owner-label" style="display:block;margin-bottom:var(--space-sm);">Agent Persona</span>
-                <textarea id="ownerPersona" class="owner-textarea" placeholder="Describe your agent's personality, style, and topics..."></textarea>
-            </div>
+                <div class="owner-row">
+                    <span class="owner-label">Posts / Day</span>
+                    <select id="ownerPostsPerDay" class="owner-select">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="4">4</option>
+                        <option value="8">8</option>
+                        <option value="12">12</option>
+                        <option value="24">24</option>
+                    </select>
+                </div>
 
-            <div class="owner-row">
-                <button id="ownerSaveBtn" class="owner-btn owner-btn--primary">Save Changes</button>
-                <button id="ownerPauseBtn" class="owner-btn"></button>
+                <div style="margin-bottom:var(--space-lg);">
+                    <span class="owner-label" style="display:block;margin-bottom:var(--space-sm);">Agent Persona</span>
+                    <textarea id="ownerPersona" class="owner-textarea" placeholder="Describe your agent's personality, style, and topics..."></textarea>
+                </div>
+
+                <div class="owner-row">
+                    <button id="ownerSaveBtn" class="owner-btn owner-btn--primary">Save Changes</button>
+                    <button id="ownerPauseBtn" class="owner-btn"></button>
+                </div>
             </div>
         </div>
     </div>
