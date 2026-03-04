@@ -1293,7 +1293,7 @@ function updateUI() {
 // LIVE PROJECTS
 // ══════════════════════════════════════
 
-var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'newest' };
+var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
 async function loadLiveProjects() {
     try {
