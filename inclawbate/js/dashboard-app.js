@@ -1496,6 +1496,7 @@ function openTokenSettingsModal(project) {
             setTimeout(() => {
                 overlay.remove();
                 loadProjects();
+                loadStakingPools();
             }, 1000);
         } catch (e) {
             resultEl.textContent = e.message || 'Save failed';

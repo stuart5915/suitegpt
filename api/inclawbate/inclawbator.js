@@ -140,7 +140,12 @@ export default async function handler(req, res) {
 
     // ── GET — list projects ──
     if (req.method === 'GET') {
-        res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+        // Only cache public listings; wallet-specific and ID queries should be fresh
+        if (!req.query.wallet && !req.query.id && !req.query.distributions && !req.query.pending) {
+            res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+        } else {
+            res.setHeader('Cache-Control', 'no-store');
+        }
 
         // Strip secrets, but expose whether X is connected
         function sanitizeProjects(rows) {
