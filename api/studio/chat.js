@@ -529,9 +529,9 @@ export default async function handler(req, res) {
                     content: 'I can see your app. Tell me what you\'d like to change and I\'ll output the complete updated HTML file.'
                 });
             }
-        } else if (isEditMode && contextMessages.length > 0) {
-            // Always re-inject current code in edit mode so Claude can write accurate SEARCH blocks
-            // Input tokens are cheap; failed edits from stale context are expensive
+        } else if (existingCode && contextMessages.length > 0) {
+            // Always re-inject current code so Claude can see what it's working with
+            // This is critical for auto-fix (full regen mode) AND edit mode
             const MAX_CODE = 40000;
             const trimmedCode = existingCode.length > MAX_CODE
                 ? existingCode.slice(0, MAX_CODE) + '\n<!-- ... code truncated for context -->'
@@ -542,7 +542,9 @@ export default async function handler(req, res) {
             });
             contextMessages.push({
                 role: 'assistant',
-                content: 'Got it, I have the current code. What would you like to change?'
+                content: isEditMode
+                    ? 'Got it, I have the current code. What would you like to change?'
+                    : 'Got it, I have the current code. I\'ll output the complete updated HTML file with your changes.'
             });
         }
 
