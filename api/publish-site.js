@@ -169,6 +169,7 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('publish-site error:', err);
-        return res.status(500).json({ error: 'Failed to publish. Please try again.' });
+        const detail = err?.message || err?.details || String(err);
+        return res.status(500).json({ error: 'Failed to publish: ' + detail });
     }
 }
