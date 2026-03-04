@@ -36,7 +36,13 @@ async function rpcCall(method, params) {
 }
 
 async function verifyClawsTransfer(txHash, expectedRecipient, minAmount) {
-    const receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+    // Retry up to 10 times (20s total) waiting for tx to be mined
+    let receipt = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+        receipt = await rpcCall('eth_getTransactionReceipt', [txHash]);
+        if (receipt) break;
+        await new Promise(r => setTimeout(r, 2000));
+    }
     if (!receipt || receipt.status !== '0x1') {
         return { valid: false, reason: 'Transaction failed or not found' };
     }
