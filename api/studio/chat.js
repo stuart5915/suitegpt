@@ -480,8 +480,8 @@ export default async function handler(req, res) {
         }
 
         // Determine edit mode — do we have existing code to edit?
-        let existingCode = req.body._session_code || null;
-        if (!existingCode && current_code) existingCode = current_code;
+        // Prefer client-sent current_code (always up-to-date), fall back to DB
+        let existingCode = current_code || req.body._session_code || null;
         // Determine if we should use edit mode or full regeneration
         // Force full-file mode when:
         // - Long prompts (>1500 chars) — likely "build from scratch"

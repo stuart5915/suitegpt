@@ -600,7 +600,7 @@
                     session_id: state.sessionId,
                     message: fullMessage,
                     model: state.selectedModel
-                }, !state.sessionId && state.currentCode ? { current_code: state.currentCode } : {}))
+                }, state.currentCode ? { current_code: state.currentCode } : {}))
             });
 
             if (resp.status === 504) {
