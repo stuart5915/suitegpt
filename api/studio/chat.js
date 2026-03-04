@@ -510,8 +510,13 @@ export default async function handler(req, res) {
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
             }
-            return res.status(response.status).json({
-                error: errMsg,
+            // Don't leak raw Anthropic billing/capacity errors to users
+            let userMsg = errMsg;
+            if (response.status === 429 || /credit balance|rate limit|overloaded/i.test(errMsg)) {
+                userMsg = 'AI service is temporarily unavailable. Please try again in a moment.';
+            }
+            return res.status(503).json({
+                error: userMsg,
                 credits_remaining: creditsRemaining + tier.credits
             });
         }
