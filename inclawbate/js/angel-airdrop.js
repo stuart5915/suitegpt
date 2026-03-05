@@ -8,7 +8,7 @@
     var ANGEL_NFT = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
     var DISPERSE = '0xD152f549545093347A162Dce210e7293f1452150';
     var BASE_CHAIN_ID = '0x2105';
-    var RPC_URLS = ['https://mainnet.base.org', 'https://base.llamarpc.com', 'https://base.drpc.org'];
+    var RPC_URLS = ['https://base.drpc.org', 'https://mainnet.base.org', 'https://base.llamarpc.com'];
 
     // ── Function selectors ──
     var SEL_TOTAL_MINTED = '0xa2309ff8';      // totalMinted()
@@ -72,37 +72,47 @@
         return Number(n).toLocaleString();
     }
 
-    async function rpcCall(body) {
-        for (var attempt = 0; attempt < RPC_URLS.length; attempt++) {
-            var url = RPC_URLS[(state.rpcIndex + attempt) % RPC_URLS.length];
-            try {
-                var res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                var json = await res.json();
-                return json;
-            } catch (e) {
-                state.rpcIndex = (state.rpcIndex + 1) % RPC_URLS.length;
-            }
-        }
-        throw new Error('All RPC endpoints failed');
+    async function rpcFetch(url, body) {
+        var res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.status === 429 || res.status === 503) throw new Error('Rate limited');
+        return await res.json();
     }
 
     async function contractRead(to, data) {
-        var json = await rpcCall({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] });
-        return json.result || '0x0';
+        var body = { jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] };
+        for (var i = 0; i < RPC_URLS.length; i++) {
+            try {
+                var json = await rpcFetch(RPC_URLS[i], body);
+                if (json.result && json.result !== '0x') return json.result;
+            } catch (e) { /* try next */ }
+        }
+        return '0x0';
     }
 
     async function batchRead(calls) {
         var batch = calls.map(function(c, i) {
             return { jsonrpc: '2.0', id: i + 1, method: 'eth_call', params: [{ to: c.to, data: c.data }, 'latest'] };
         });
-        var json = await rpcCall(batch);
-        if (!Array.isArray(json)) return calls.map(function() { return '0x0'; });
-        json.sort(function(a, b) { return a.id - b.id; });
-        return json.map(function(r) { return r.result || '0x0'; });
+        // Try batch RPC first
+        for (var i = 0; i < RPC_URLS.length; i++) {
+            try {
+                var json = await rpcFetch(RPC_URLS[i], batch);
+                if (Array.isArray(json)) {
+                    json.sort(function(a, b) { return a.id - b.id; });
+                    return json.map(function(r) { return r.result || '0x0'; });
+                }
+            } catch (e) { /* try next */ }
+        }
+        // Fallback: individual calls
+        var results = [];
+        for (var j = 0; j < calls.length; j++) {
+            results.push(await contractRead(calls[j].to, calls[j].data));
+        }
+        return results;
     }
 
     async function ensureBase() {
@@ -123,14 +133,16 @@
 
     async function waitReceipt(txHash, maxWait) {
         maxWait = maxWait || 90;
+        var body = { jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [txHash] };
         for (var i = 0; i < maxWait; i++) {
             await new Promise(function(r) { setTimeout(r, 2000); });
-            try {
-                var json = await rpcCall({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [txHash] });
-                if (json.result && json.result.status) {
-                    return json.result;
-                }
-            } catch (e) { /* retry */ }
+            for (var r = 0; r < RPC_URLS.length; r++) {
+                try {
+                    var json = await rpcFetch(RPC_URLS[r], body);
+                    if (json.result && json.result.status) return json.result;
+                    break; // got response but no receipt yet, wait and retry
+                } catch (e) { /* try next RPC */ }
+            }
         }
         return null;
     }
@@ -378,8 +390,6 @@
                 this.disabled = true;
                 document.getElementById('airdropLoadToken').disabled = false;
                 updateSteps();
-                // Start enumerating holders in background
-                enumerateHoldersAsync();
             } catch (e) {
                 statusEl.textContent = e.code === 4001 ? 'Connection rejected.' : 'Error: ' + e.message;
             }
@@ -461,6 +471,9 @@
         state.initialized = true;
         setupEvents();
 
+        // Always start enumerating holders (doesn't need a wallet)
+        enumerateHoldersAsync();
+
         // Auto-detect already connected wallet
         if (window.ethereum && window.ethereum.selectedAddress) {
             state.provider = window.ethereum;
@@ -470,7 +483,6 @@
             document.getElementById('airdropConnect').disabled = true;
             document.getElementById('airdropLoadToken').disabled = false;
             updateSteps();
-            enumerateHoldersAsync();
         }
     };
 
