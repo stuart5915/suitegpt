@@ -295,35 +295,25 @@ function restoreSelection() {
 // ══════════════════════════════════════
 function applyFontFamily(family) {
     const hasSelection = restoreSelection();
-    if (hasSelection) {
-        document.execCommand('fontName', false, family);
-        paperContent.focus();
-    } else {
-        // No selection — set as default for new text
-        const fallback = family === 'Georgia' ? 'serif' :
-                         (family === 'Caveat' || family === 'Dancing Script') ? 'cursive' : 'sans-serif';
-        paperContent.style.fontFamily = `'${family}', ${fallback}`;
-    }
+    if (!hasSelection) return; // nothing selected — do nothing
+    document.execCommand('fontName', false, family);
+    paperContent.focus();
 }
 
 function applyFontSize(size) {
     const hasSelection = restoreSelection();
-    if (hasSelection) {
-        // execCommand('fontSize') uses 1-7 scale, so we use it to wrap
-        // the selection, then replace the <font> tags with styled <span>s
-        document.execCommand('fontSize', false, '7');
-        const fontEls = paperContent.querySelectorAll('font[size="7"]');
-        fontEls.forEach(function(el) {
-            const span = document.createElement('span');
-            span.style.fontSize = size;
-            span.innerHTML = el.innerHTML;
-            el.parentNode.replaceChild(span, el);
-        });
-        paperContent.focus();
-    } else {
-        // No selection — set as default for new text
-        paperContent.style.fontSize = size;
-    }
+    if (!hasSelection) return; // nothing selected — do nothing
+    // execCommand('fontSize') uses 1-7 scale, so we use it to wrap
+    // the selection, then replace the <font> tags with styled <span>s
+    document.execCommand('fontSize', false, '7');
+    const fontEls = paperContent.querySelectorAll('font[size="7"]');
+    fontEls.forEach(function(el) {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.innerHTML = el.innerHTML;
+        el.parentNode.replaceChild(span, el);
+    });
+    paperContent.focus();
 }
 
 function applyLineSpacing(spacing) {
