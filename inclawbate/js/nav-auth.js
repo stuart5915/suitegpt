@@ -16,9 +16,10 @@
     // Await provider: re-dispatches requestProvider and waits up to 1s for late wallets
     window._awaitProvider = function() {
         if (window.ethereum) return Promise.resolve(window.ethereum);
+        if (window.phantom && window.phantom.ethereum) return Promise.resolve(window.phantom.ethereum);
         return new Promise(function(resolve) {
             try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
-            var timeout = setTimeout(function() { resolve(window.ethereum || null); }, 1000);
+            var timeout = setTimeout(function() { resolve(window.ethereum || (window.phantom && window.phantom.ethereum) || null); }, 1000);
             function handler(ev) {
                 if (ev.detail && ev.detail.provider) {
                     clearTimeout(timeout);
@@ -106,15 +107,16 @@
             if (!window.ethereum && window._awaitProvider) {
                 await window._awaitProvider();
             }
-            if (!window.ethereum) {
-                alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
+            var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+            if (!eth) {
+                alert('No wallet detected. Install MetaMask, Phantom, Coinbase Wallet, or Base Wallet.');
                 btn.textContent = 'Connect';
                 btn.disabled = false;
                 return;
             }
 
             try {
-                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                var accounts = await eth.request({ method: 'eth_requestAccounts' });
                 var address = accounts[0];
 
                 var resp = await fetch('/api/inclawbate/wallet-connect', {

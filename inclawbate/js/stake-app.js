@@ -670,7 +670,7 @@ var walletAddr = null;
 var walletBalance = 0;
 
 window.addClawsToWallet = async function() {
-    var provider = window.ethereum || (window.WalletKit && window.WalletKit.getProvider());
+    var provider = window.ethereum || (window.phantom && window.phantom.ethereum) || (window.WalletKit && window.WalletKit.getProvider());
     if (!provider) { alert('No wallet detected. Please install MetaMask or another wallet.'); return; }
     try {
         await provider.request({
@@ -689,7 +689,7 @@ function getProvider() {
     if (window.WalletKit && window.WalletKit.isConnected()) {
         return window.WalletKit.getProvider();
     }
-    return window.ethereum || null;
+    return window.ethereum || (window.phantom && window.phantom.ethereum) || null;
 }
 
 function renderPoolPage(pool, key) {
@@ -838,15 +838,16 @@ async function connectPoolWallet() {
     // Wait for late-loading wallets (Base Wallet EIP-6963)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
 
-    if (window.ethereum) {
+    var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+    if (eth) {
         try {
-            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var accounts = await eth.request({ method: 'eth_requestAccounts' });
             var addr = accounts[0];
             try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+                await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
             } catch (switchErr) {
                 if (switchErr.code === 4902) {
-                    await window.ethereum.request({
+                    await eth.request({
                         method: 'wallet_addEthereumChain',
                         params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
                     });
@@ -878,7 +879,7 @@ async function connectPoolWallet() {
     var confirmed = await stakeModal({
         icon: '\uD83E\uDD8A',
         title: 'No Wallet Found',
-        msg: 'Install a wallet extension like MetaMask or Coinbase Wallet to connect.',
+        msg: 'Install a wallet like MetaMask, Phantom, or Coinbase Wallet to connect.',
         confirmLabel: 'Get MetaMask',
         cancelLabel: 'Close',
     });
@@ -1222,11 +1223,12 @@ async function checkAdminAccess(addr, pool, key) {
 }
 
 async function connectAdminWallet() {
-    if (!window.ethereum) {
+    var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+    if (!eth) {
         var confirmed = await stakeModal({
             icon: '\uD83E\uDD8A',
             title: 'No Wallet Found',
-            msg: 'Install a wallet extension like MetaMask or Coinbase Wallet to connect.',
+            msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
             confirmLabel: 'Get MetaMask',
             cancelLabel: 'Close',
         });
@@ -1235,13 +1237,13 @@ async function connectAdminWallet() {
     }
 
     try {
-        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        var accounts = await eth.request({ method: 'eth_requestAccounts' });
         var addr = accounts[0];
         try {
-            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+            await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
         } catch (switchErr) {
             if (switchErr.code === 4902) {
-                await window.ethereum.request({
+                await eth.request({
                     method: 'wallet_addEthereumChain',
                     params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
                 });
