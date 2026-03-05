@@ -403,6 +403,8 @@ async function fetchAllPrices() {
 // ══════════════════════════════════════
 
 var poolStats = {}; // key -> { totalStaked, stakerCount, rewardRate, periodEnd, rewardPool }
+var rewardsTickInterval = null;
+var rewardsTickStart = 0;  // timestamp when we last fetched rewardPool
 
 async function fetchAllPoolStats() {
     var calls = [];
@@ -714,6 +716,7 @@ function renderPoolPage(pool, key) {
     document.getElementById('poolTotalStaked').textContent = stats.totalStaked ? fmt(stats.totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
     document.getElementById('poolRewardsLeft').textContent = stats.rewardPool ? fmt(stats.rewardPool) : '--';
+    if (stats.rewardRate > 0 && stats.rewardPool > 0) startRewardsTick(key);
 
     // Website banner
     var websiteBanner = document.getElementById('poolWebsiteBanner');
@@ -972,7 +975,32 @@ async function refreshPoolStats(key) {
     document.getElementById('poolApy').textContent = POOLS[key].retired ? '0%' : (apy > 0 ? Math.round(apy).toLocaleString('en-US') + '%' : '--');
     document.getElementById('poolTotalStaked').textContent = totalStaked > 0 ? fmt(totalStaked) : '--';
     document.getElementById('poolStakers').textContent = stakerCount > 0 ? stakerCount.toLocaleString('en-US') : '--';
-    document.getElementById('poolRewardsLeft').textContent = rewardPool > 0 ? fmt(rewardPool) : '--';
+    updateRewardsLeftDisplay(key);
+    startRewardsTick(key);
+}
+
+function updateRewardsLeftDisplay(key) {
+    var stats = poolStats[key];
+    if (!stats) return;
+    var now = Math.floor(Date.now() / 1000);
+    var elapsed = Math.max(0, now - rewardsTickStart);
+    // If period has ended, rewards stop draining
+    if (stats.periodEnd > 0 && now >= stats.periodEnd) {
+        elapsed = Math.max(0, stats.periodEnd - rewardsTickStart);
+    }
+    var drained = stats.rewardRate * elapsed;
+    var remaining = Math.max(0, stats.rewardPool - drained);
+    document.getElementById('poolRewardsLeft').textContent = remaining > 0 ? fmt(remaining) : '0';
+}
+
+function startRewardsTick(key) {
+    if (rewardsTickInterval) clearInterval(rewardsTickInterval);
+    rewardsTickStart = Math.floor(Date.now() / 1000);
+    var stats = poolStats[key];
+    if (!stats || stats.rewardRate <= 0 || stats.rewardPool <= 0) return;
+    rewardsTickInterval = setInterval(function() {
+        updateRewardsLeftDisplay(key);
+    }, 1000);
 }
 
 // ══════════════════════════════════════
