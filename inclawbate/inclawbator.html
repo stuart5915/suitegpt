@@ -342,12 +342,6 @@
             initial-value: 0deg;
             inherits: false;
         }
-        @keyframes rotate-gradient { to { --angle: 360deg; } }
-        @keyframes icon-pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.08); opacity: 0.85; }
-        }
-
         .toolkit-header {
             font-family: var(--font-display);
             font-size: 1.6rem;
@@ -366,13 +360,53 @@
             height: 3px;
             border-radius: 3px;
             background: linear-gradient(90deg, var(--lobster-400), var(--seafoam-400), var(--sand-300), var(--blue-400));
-            background-size: 200% 100%;
-            animation: shimmer-underline 4s ease-in-out infinite;
         }
-        @keyframes shimmer-underline {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+
+        /* Angel NFT banner */
+        .angel-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-left: 4px solid hsl(270, 40%, 58%);
+            border-radius: 14px;
+            padding: 20px 28px;
+            margin-bottom: var(--space-lg);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
+        .angel-banner:hover {
+            transform: translateY(-2px);
+            border-color: hsl(270, 40%, 65%);
+        }
+        .angel-banner-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+        .angel-banner-text { flex: 1; }
+        .angel-banner-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .angel-banner-desc {
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .angel-banner-cta {
+            flex-shrink: 0;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #fff;
+            background: hsl(270, 40%, 58%);
+            padding: 10px 24px;
+            border-radius: var(--radius-md);
+            transition: transform 0.2s ease;
+        }
+        .angel-banner:hover .angel-banner-cta { transform: translateY(-1px); }
 
         /* Accent color map */
         .tool-card-v2[data-accent="lobster"]  { --card-accent: hsl(9, 52%, 56%); }
@@ -394,59 +428,38 @@
         .tool-card-v2 {
             position: relative;
             border-radius: 18px;
-            padding: 2px;
-            background: conic-gradient(from var(--angle), transparent 60%, var(--card-accent) 100%);
-            animation: rotate-gradient 6s linear infinite;
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--card-accent);
+            background: var(--bg-card);
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
         .tool-card-v2:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .tool-card-v2:hover .tool-card-glow {
-            transform: scale(1.15);
-            opacity: 1;
-        }
-        .tool-card-v2:hover .tool-card-cta-v2 {
-            box-shadow: 0 0 20px color-mix(in srgb, var(--card-accent) 50%, transparent);
+            transform: translateY(-3px);
+            border-color: var(--card-accent);
         }
         .tool-card-v2.active {
-            box-shadow: 0 0 0 2px var(--card-accent), 0 4px 20px color-mix(in srgb, var(--card-accent) 35%, transparent);
+            border-color: var(--card-accent);
+            box-shadow: 0 0 0 1px var(--card-accent);
         }
 
-        .tool-card-glow {
-            position: absolute;
-            inset: -20px;
-            border-radius: 28px;
-            background: radial-gradient(ellipse at center, color-mix(in srgb, var(--card-accent) 20%, transparent), transparent 70%);
-            filter: blur(20px);
-            z-index: 0;
-            opacity: 0.6;
-            transition: transform 0.4s ease, opacity 0.4s ease;
-            pointer-events: none;
-        }
+        .tool-card-glow { display: none; }
 
         .tool-card-inner {
             position: relative;
             z-index: 1;
-            background: var(--bg-card);
-            border-radius: 16px;
             padding: 28px;
             display: flex;
             flex-direction: column;
             gap: var(--space-sm);
-            backdrop-filter: blur(8px);
             min-height: 200px;
         }
 
         .tool-card-v2 .tool-card-icon {
             font-size: 2.5rem;
             line-height: 1;
-            text-shadow: 0 0 20px var(--card-accent);
-            animation: icon-pulse 3s ease-in-out infinite;
         }
         .tool-card-v2 .tool-card-title {
             font-family: var(--font-display);
@@ -492,8 +505,7 @@
             border-radius: var(--radius-md);
             cursor: pointer;
             text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 0 12px color-mix(in srgb, var(--card-accent) 35%, transparent);
+            transition: transform 0.2s ease;
             margin-top: var(--space-xs);
         }
         .tool-card-cta-v2:hover {
@@ -1732,11 +1744,20 @@
         <p class="flywheel-tagline">Swap fees <span>&rarr;</span> Staker rewards <span>&rarr;</span> App revenue <span>&rarr;</span> Community growth <span>&rarr;</span> &infin;</p>
     </section>
 
+    <!-- ═══ Angel NFT Banner ═══ -->
+    <a href="/angel" class="angel-banner">
+        <div class="angel-banner-icon">😇</div>
+        <div class="angel-banner-text">
+            <div class="angel-banner-title">Angel NFT</div>
+            <div class="angel-banner-desc">Unlimited free access to all tools</div>
+        </div>
+        <div class="angel-banner-cta">Get Angel NFT</div>
+    </a>
+
     <!-- ═══ Tool Grid ═══ -->
     <h2 class="toolkit-header">Your Toolkit</h2>
     <div class="tool-grid-v2">
         <div class="tool-card-v2" data-tool="launch" data-accent="lobster">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128640;</div>
                 <div class="tool-card-body">
@@ -1747,7 +1768,6 @@
             </div>
         </div>
         <a href="/build" class="tool-card-v2" data-accent="seafoam">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128296;</div>
                 <div class="tool-card-body">
@@ -1758,7 +1778,6 @@
             </div>
         </a>
         <div class="tool-card-v2" data-tool="pool" data-accent="sand">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#x1F4B8;</div>
                 <div class="tool-card-body">
@@ -1769,7 +1788,6 @@
             </div>
         </div>
         <div class="tool-card-v2" data-tool="incubate" data-accent="blue">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#129438;</div>
                 <div class="tool-card-body">
@@ -1780,7 +1798,6 @@
             </div>
         </div>
         <div class="tool-card-v2" data-tool="marketing" data-accent="purple">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128227;</div>
                 <div class="tool-card-body">
@@ -1791,7 +1808,6 @@
             </div>
         </div>
         <div class="tool-card-v2" data-tool="agent" data-accent="amber">
-            <div class="tool-card-glow"></div>
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#129302;</div>
                 <div class="tool-card-body">
@@ -1801,19 +1817,6 @@
                 <button class="tool-card-cta-v2" disabled style="opacity:0.5;cursor:default;">Coming Soon</button>
             </div>
         </div>
-        <a href="/angel" style="text-decoration:none;">
-            <div class="tool-card-v2" data-tool="angel" data-accent="purple" style="cursor:pointer;">
-                <div class="tool-card-glow"></div>
-                <div class="tool-card-inner">
-                    <div class="tool-card-icon">😇</div>
-                    <div class="tool-card-body">
-                        <h3 class="tool-card-title">Angel NFT</h3>
-                        <p class="tool-card-desc">Unlimited free access to all tools</p>
-                    </div>
-                    <span class="tool-card-cta-v2">Get Angel NFT</span>
-                </div>
-            </div>
-        </a>
     </div>
 
     <!-- ═══ Tool Drawer ═══ -->
