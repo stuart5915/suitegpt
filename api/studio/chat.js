@@ -94,7 +94,23 @@ Usage guidelines:
 - Use user scope for personal settings, saved progress, user profiles, private notes
 - Values can be any JSON type: strings, numbers, objects, arrays
 - Max 100KB per value, 1000 keys per scope
-- All methods are async — always use await`;
+- All methods are async — always use await
+
+### Realtime SDK — window.Realtime
+Multiplayer for any app. Players in the same app see each other in real time.
+
+- await Realtime.connect(roomName?) — join a room (default: 'lobby')
+- Realtime.send(event, data) — broadcast to all players
+- Realtime.on(event, callback) — receive: callback(data, senderId)
+  Register listeners BEFORE calling connect()
+- Realtime.onJoin(cb) / onLeave(cb) — player join/leave callbacks
+- Realtime.getPlayers() — [{id, ...state}] of online players
+- Realtime.setMyState(state) — update your presence (e.g. {name, x, y, score})
+- Realtime.me.id — your unique player ID
+- Realtime.disconnect() — leave room
+
+Pattern: register on() listeners first, then await connect(), then send().
+Messages are ephemeral (not saved). Use AppDB for persistent data.`;
 
 const SYSTEM_PROMPT_EDIT = `You are an expert web developer AI editing an existing HTML app.
 
@@ -151,7 +167,23 @@ Usage guidelines:
 - Use user scope for personal settings, saved progress, user profiles, private notes
 - Values can be any JSON type: strings, numbers, objects, arrays
 - Max 100KB per value, 1000 keys per scope
-- All methods are async — always use await`;
+- All methods are async — always use await
+
+### Realtime SDK — window.Realtime
+Multiplayer for any app. Players in the same app see each other in real time.
+
+- await Realtime.connect(roomName?) — join a room (default: 'lobby')
+- Realtime.send(event, data) — broadcast to all players
+- Realtime.on(event, callback) — receive: callback(data, senderId)
+  Register listeners BEFORE calling connect()
+- Realtime.onJoin(cb) / onLeave(cb) — player join/leave callbacks
+- Realtime.getPlayers() — [{id, ...state}] of online players
+- Realtime.setMyState(state) — update your presence (e.g. {name, x, y, score})
+- Realtime.me.id — your unique player ID
+- Realtime.disconnect() — leave room
+
+Pattern: register on() listeners first, then await connect(), then send().
+Messages are ephemeral (not saved). Use AppDB for persistent data.`;
 
 function setCors(req, res) {
     const origin = req.headers.origin;
