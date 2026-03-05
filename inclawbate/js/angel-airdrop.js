@@ -24,11 +24,14 @@
 
     var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
+    var API_BASE = 'https://www.inclawbate.com/api/inclawbate';
+
     // ── State ──
     var state = {
         provider: null,
         account: null,
         holders: [],
+        myTokens: [],         // from inclawbator_projects
         tokenAddr: null,
         tokenName: '',
         tokenSymbol: '',
@@ -373,6 +376,68 @@
         document.getElementById('airdropExecute').disabled = insufficient;
     }
 
+    // ── Fetch user's launched tokens ──
+    async function fetchMyTokens(wallet) {
+        var loadingEl = document.getElementById('airdropMyTokensLoading');
+        loadingEl.style.display = '';
+        try {
+            var res = await fetch(API_BASE + '/inclawbator?wallet=' + encodeURIComponent(wallet.toLowerCase()));
+            var data = await res.json();
+            var projects = (data.projects || []).filter(function(p) { return p.token_address; });
+            state.myTokens = projects;
+            loadingEl.style.display = 'none';
+
+            if (projects.length > 0) {
+                var container = document.getElementById('airdropMyTokensList');
+                container.innerHTML = '';
+                projects.forEach(function(p) {
+                    var btn = document.createElement('button');
+                    btn.className = 'airdrop-my-token';
+                    btn.dataset.addr = p.token_address;
+                    btn.innerHTML = p.token_name + ' <span class="token-symbol">' + p.token_symbol + '</span>';
+                    btn.addEventListener('click', function() { selectMyToken(p); });
+                    container.appendChild(btn);
+                });
+                document.getElementById('airdropMyTokens').style.display = '';
+            }
+        } catch (e) {
+            loadingEl.style.display = 'none';
+        }
+    }
+
+    async function selectMyToken(project) {
+        // Highlight selected
+        document.querySelectorAll('.airdrop-my-token').forEach(function(b) {
+            b.classList.toggle('selected', b.dataset.addr === project.token_address);
+        });
+
+        // Fill the address input
+        document.getElementById('airdropTokenAddr').value = project.token_address;
+
+        // Auto-load token info
+        var statusEl = document.getElementById('airdropTokenStatus');
+        statusEl.textContent = 'Loading ' + project.token_symbol + '...';
+
+        try {
+            var info = await fetchTokenInfo(project.token_address, state.account);
+            state.tokenAddr = project.token_address;
+            state.tokenName = info.name;
+            state.tokenSymbol = info.symbol;
+            state.tokenDecimals = info.decimals;
+            state.tokenBalance = info.balance;
+
+            document.getElementById('airdropTokenName').textContent = info.name;
+            document.getElementById('airdropTokenSymbol').textContent = info.symbol;
+            document.getElementById('airdropTokenDecimals').textContent = info.decimals;
+            document.getElementById('airdropTokenBalance').textContent = fmtBalance(info.balance, info.decimals);
+            document.getElementById('airdropTokenInfo').style.display = '';
+            statusEl.textContent = '';
+            updateSteps();
+        } catch (e) {
+            statusEl.textContent = 'Failed to load token info.';
+        }
+    }
+
     // ── Event Handlers ──
     function setupEvents() {
         // Connect wallet
@@ -390,6 +455,7 @@
                 this.disabled = true;
                 document.getElementById('airdropLoadToken').disabled = false;
                 updateSteps();
+                fetchMyTokens(state.account);
             } catch (e) {
                 statusEl.textContent = e.code === 4001 ? 'Connection rejected.' : 'Error: ' + e.message;
             }
@@ -483,6 +549,7 @@
             document.getElementById('airdropConnect').disabled = true;
             document.getElementById('airdropLoadToken').disabled = false;
             updateSteps();
+            fetchMyTokens(state.account);
         }
     };
 

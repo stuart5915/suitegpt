@@ -662,6 +662,40 @@
             margin-bottom: var(--space-sm);
         }
         .airdrop-holder-count strong { color: hsl(280, 60%, 65%); }
+        .airdrop-my-tokens {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .airdrop-my-token {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: var(--radius-full);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            font-family: var(--font-display);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .airdrop-my-token:hover {
+            border-color: hsl(280, 60%, 55%);
+            color: hsl(280, 60%, 65%);
+        }
+        .airdrop-my-token.selected {
+            background: hsla(280, 60%, 55%, 0.15);
+            border-color: hsl(280, 60%, 55%);
+            color: hsl(280, 60%, 65%);
+        }
+        .airdrop-my-token .token-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
@@ -886,7 +920,13 @@
                         <div class="airdrop-step-title">Select Token</div>
                     </div>
                     <div class="airdrop-step-body">
-                        <p>Paste the ERC-20 token contract address you want to airdrop.</p>
+                        <p>Choose one of your launched tokens, or paste any ERC-20 address.</p>
+                        <div id="airdropMyTokens" style="display:none;margin-bottom:var(--space-sm)">
+                            <div style="font-family:var(--font-mono);font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Your Tokens</div>
+                            <div id="airdropMyTokensList" class="airdrop-my-tokens"></div>
+                        </div>
+                        <div id="airdropMyTokensLoading" class="airdrop-status" style="display:none">Loading your tokens...</div>
+                        <div style="font-family:var(--font-mono);font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Or paste address</div>
                         <div class="airdrop-input-row">
                             <input type="text" class="airdrop-input" id="airdropTokenAddr" placeholder="0x... token contract address" spellcheck="false">
                             <button class="airdrop-btn airdrop-btn--secondary" id="airdropLoadToken" disabled>Load</button>
