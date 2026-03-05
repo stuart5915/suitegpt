@@ -86,6 +86,16 @@
     }
 
     async function contractRead(to, data) {
+        // Use wallet provider first (more reliable, no rate limits)
+        if (state.provider) {
+            try {
+                var result = await state.provider.request({
+                    method: 'eth_call',
+                    params: [{ to: to, data: data }, 'latest']
+                });
+                if (result && result !== '0x') return result;
+            } catch (e) { /* fall through to public RPCs */ }
+        }
         var body = { jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] };
         for (var i = 0; i < RPC_URLS.length; i++) {
             try {
@@ -97,10 +107,24 @@
     }
 
     async function batchRead(calls) {
+        // Try wallet provider first (individual calls, but reliable)
+        if (state.provider) {
+            try {
+                var providerResults = [];
+                for (var k = 0; k < calls.length; k++) {
+                    var r = await state.provider.request({
+                        method: 'eth_call',
+                        params: [{ to: calls[k].to, data: calls[k].data }, 'latest']
+                    });
+                    providerResults.push(r || '0x0');
+                }
+                return providerResults;
+            } catch (e) { /* fall through to public RPCs */ }
+        }
+        // Try batch RPC
         var batch = calls.map(function(c, i) {
             return { jsonrpc: '2.0', id: i + 1, method: 'eth_call', params: [{ to: c.to, data: c.data }, 'latest'] };
         });
-        // Try batch RPC first
         for (var i = 0; i < RPC_URLS.length; i++) {
             try {
                 var json = await rpcFetch(RPC_URLS[i], batch);
@@ -110,7 +134,7 @@
                 }
             } catch (e) { /* try next */ }
         }
-        // Fallback: individual calls
+        // Fallback: individual calls via public RPCs
         var results = [];
         for (var j = 0; j < calls.length; j++) {
             results.push(await contractRead(calls[j].to, calls[j].data));
