@@ -295,25 +295,43 @@ function restoreSelection() {
 // ══════════════════════════════════════
 function applyFontFamily(family) {
     const hasSelection = restoreSelection();
-    if (!hasSelection) return; // nothing selected — do nothing
-    document.execCommand('fontName', false, family);
-    paperContent.focus();
+    if (hasSelection) {
+        document.execCommand('fontName', false, family);
+        paperContent.focus();
+    } else {
+        // No selection — insert a zero-width span at cursor so new typing uses this font
+        restoreSelection();
+        const span = document.createElement('span');
+        span.style.fontFamily = family;
+        span.appendChild(document.createTextNode('\u200B'));
+        document.execCommand('insertHTML', false, span.outerHTML);
+        paperContent.focus();
+    }
 }
 
 function applyFontSize(size) {
     const hasSelection = restoreSelection();
-    if (!hasSelection) return; // nothing selected — do nothing
-    // execCommand('fontSize') uses 1-7 scale, so we use it to wrap
-    // the selection, then replace the <font> tags with styled <span>s
-    document.execCommand('fontSize', false, '7');
-    const fontEls = paperContent.querySelectorAll('font[size="7"]');
-    fontEls.forEach(function(el) {
+    if (hasSelection) {
+        // execCommand('fontSize') uses 1-7 scale, so we use it to wrap
+        // the selection, then replace the <font> tags with styled <span>s
+        document.execCommand('fontSize', false, '7');
+        const fontEls = paperContent.querySelectorAll('font[size="7"]');
+        fontEls.forEach(function(el) {
+            const span = document.createElement('span');
+            span.style.fontSize = size;
+            span.innerHTML = el.innerHTML;
+            el.parentNode.replaceChild(span, el);
+        });
+        paperContent.focus();
+    } else {
+        // No selection — insert a zero-width span at cursor so new typing uses this size
+        restoreSelection();
         const span = document.createElement('span');
         span.style.fontSize = size;
-        span.innerHTML = el.innerHTML;
-        el.parentNode.replaceChild(span, el);
-    });
-    paperContent.focus();
+        span.appendChild(document.createTextNode('\u200B'));
+        document.execCommand('insertHTML', false, span.outerHTML);
+        paperContent.focus();
+    }
 }
 
 function applyLineSpacing(spacing) {
