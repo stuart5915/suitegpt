@@ -879,14 +879,28 @@ async function connectPoolWallet() {
         } catch (err) {}
     }
 
-    var confirmed = await stakeModal({
-        icon: '\uD83E\uDD8A',
-        title: 'No Wallet Found',
-        msg: 'Install a wallet like MetaMask, Phantom, or Coinbase Wallet to connect.',
-        confirmLabel: 'Get MetaMask',
-        cancelLabel: 'Close',
-    });
-    if (confirmed) window.open('https://metamask.io/download/', '_blank');
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+        var confirmed = await stakeModal({
+            icon: '\uD83D\uDC7B',
+            title: 'Open in Wallet App',
+            msg: 'To connect on mobile, open this page inside your wallet app\'s built-in browser (Phantom, MetaMask, or Coinbase Wallet).',
+            confirmLabel: 'Open in Phantom',
+            cancelLabel: 'Close',
+        });
+        if (confirmed) {
+            window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
+        }
+    } else {
+        var confirmed = await stakeModal({
+            icon: '\uD83E\uDD8A',
+            title: 'No Wallet Found',
+            msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
+            confirmLabel: 'Get MetaMask',
+            cancelLabel: 'Close',
+        });
+        if (confirmed) window.open('https://metamask.io/download/', '_blank');
+    }
     return null;
 }
 
@@ -1253,14 +1267,26 @@ async function checkAdminAccess(addr, pool, key) {
 async function connectAdminWallet() {
     var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
     if (!eth) {
-        var confirmed = await stakeModal({
-            icon: '\uD83E\uDD8A',
-            title: 'No Wallet Found',
-            msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
-            confirmLabel: 'Get MetaMask',
-            cancelLabel: 'Close',
-        });
-        if (confirmed) window.open('https://metamask.io/download/', '_blank');
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+            var confirmed = await stakeModal({
+                icon: '\uD83D\uDC7B',
+                title: 'Open in Wallet App',
+                msg: 'To connect on mobile, open this page inside your wallet app\'s built-in browser.',
+                confirmLabel: 'Open in Phantom',
+                cancelLabel: 'Close',
+            });
+            if (confirmed) window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
+        } else {
+            var confirmed = await stakeModal({
+                icon: '\uD83E\uDD8A',
+                title: 'No Wallet Found',
+                msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
+                confirmLabel: 'Get MetaMask',
+                cancelLabel: 'Close',
+            });
+            if (confirmed) window.open('https://metamask.io/download/', '_blank');
+        }
         return;
     }
 

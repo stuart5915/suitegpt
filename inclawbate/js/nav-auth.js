@@ -109,7 +109,14 @@
             }
             var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
             if (!eth) {
-                alert('No wallet detected. Install MetaMask, Phantom, Coinbase Wallet, or Base Wallet.');
+                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isMobile) {
+                    if (confirm('To connect on mobile, open this page in your wallet app\'s browser.\n\nOpen in Phantom?')) {
+                        window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
+                    }
+                } else {
+                    alert('No wallet detected. Install MetaMask, Phantom, Coinbase Wallet, or Base Wallet.');
+                }
                 btn.textContent = 'Connect';
                 btn.disabled = false;
                 return;
