@@ -20173,6 +20173,9 @@
                                                 Share an idea
                                             </button>
                                         </div>
+                                        <div style="text-align:center; margin-top:14px;">
+                                            <a href="/angel" style="color:#a78bfa; font-size:13px; text-decoration:none; opacity:0.8;">Have an Angel NFT? All builds are free. Mint yours →</a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -24172,7 +24175,17 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
             </button>
             <h2>Your Credits</h2>
 
-            <div class="credits-modal-balance">
+            <div id="angelVipBadge" style="display:none; text-align:center; padding:18px 0 10px;">
+                <div style="display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,#7c3aed22,#a78bfa22); border:1px solid #7c3aed55; border-radius:12px; padding:14px 22px;">
+                    <span style="font-size:28px;">😇</span>
+                    <div style="text-align:left;">
+                        <div style="font-weight:700; color:#a78bfa; font-size:15px;">Angel VIP</div>
+                        <div style="color:#ccc; font-size:13px;">Unlimited Credits</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="credits-modal-balance" id="creditsBalanceSection">
                 <span class="credits-modal-amount" id="creditsModalAmount">0</span>
                 <span class="credits-modal-label">credits available</span>
             </div>
@@ -24199,7 +24212,7 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                 </div>
             </div>
 
-            <div class="credits-modal-options">
+            <div class="credits-modal-options" id="creditsOptionsSection">
                 <button class="credits-modal-option" onclick="closeCreditsModal(); openBuyModal();">
                     <div class="credits-modal-option-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -24216,6 +24229,9 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
                     </svg>
                 </button>
 
+            </div>
+            <div id="angelPromoLink" style="text-align:center; padding:8px 0 4px;">
+                <a href="/angel" style="color:#a78bfa; font-size:13px; text-decoration:none; opacity:0.85;">Get unlimited access with Angel NFT →</a>
             </div>
         </div>
     </div>
@@ -24458,6 +24474,31 @@ Technical: JavaScript, HTML/CSS, React/React Native, Supabase (Postgres, Auth, S
         const BASE_RPC = 'https://mainnet.base.org';
         const CREDITS_PER_USDC = 1000;
         const BASE_AI_COST = 5; // credits per AI action — SUITE's floor cost
+        const ANGEL_NFT_ADDRESS = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
+
+        // Angel NFT ownership check — holders get unlimited free credits
+        window._angelHolderCache = {};
+        async function isAngelHolder(address) {
+            if (!address) return false;
+            const addr = address.toLowerCase();
+            if (window._angelHolderCache[addr] !== undefined) return window._angelHolderCache[addr];
+            try {
+                const selector = '0x70a08231'; // balanceOf(address)
+                const paddedAddr = addr.replace('0x', '').padStart(64, '0');
+                const resp = await fetch(BASE_RPC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: ANGEL_NFT_ADDRESS, data: selector + paddedAddr }, 'latest'] })
+                });
+                const json = await resp.json();
+                const balance = parseInt(json.result, 16);
+                window._angelHolderCache[addr] = balance > 0;
+                return balance > 0;
+            } catch (e) {
+                console.error('Angel NFT check failed:', e);
+                return false;
+            }
+        }
         // StakingRewards contract — decentralized reward pool on Base
         const STAKING_REWARDS_ADDRESS = '0x4e4B34DDAdd4e92c75a2446a26dba2a020dA02f7';
         const STAKING_REWARDS_ABI = [
@@ -38784,6 +38825,12 @@ window.addEventListener('message', function(e) {
                     return;
                 }
 
+                // Angel NFT holders get unlimited free credits
+                if (walletAddress.startsWith('0x') && await isAngelHolder(walletAddress)) {
+                    e.source?.postMessage({ type: 'suite-charge-result', chargeId, success: true, totalCharged: 0 }, '*');
+                    return;
+                }
+
                 // Determine if slug-based (file-based app) or UUID-based (DB app)
                 const isSlugBased = typeof appId === 'string' && !appId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
@@ -39839,12 +39886,20 @@ window.addEventListener('message', function(e) {
             }
 
             if (costEl) {
-                costEl.textContent = `${builderState.spec.cost} credits`;
+                const wallet = localStorage.getItem('connectedWallet');
+                const angelFree = wallet && window._angelHolderCache[wallet.toLowerCase()];
+                costEl.textContent = angelFree ? 'FREE — Angel NFT' : `${builderState.spec.cost} credits`;
+                if (angelFree) costEl.style.color = '#a78bfa';
+                else costEl.style.color = '';
             }
 
             // Update action button cost
             const actionCost = document.querySelector('.spec-action-cost');
-            if (actionCost) actionCost.textContent = `${builderState.spec.cost} credits`;
+            if (actionCost) {
+                const wallet = localStorage.getItem('connectedWallet');
+                const angelFree = wallet && window._angelHolderCache[wallet.toLowerCase()];
+                actionCost.textContent = angelFree ? 'FREE' : `${builderState.spec.cost} credits`;
+            }
         }
 
         function refineSpec() {
@@ -39857,8 +39912,10 @@ window.addEventListener('message', function(e) {
         }
 
         function submitBuildRequest() {
-            // In production, this would submit to the backend
-            alert(`Build request submitted!\n\nApp: ${builderState.spec.name}\nCost: ${builderState.spec.cost} credits\n\nYou'll be notified when your app is ready (typically within 24 hours).`);
+            const wallet = localStorage.getItem('connectedWallet');
+            const angelFree = wallet && window._angelHolderCache[wallet.toLowerCase()];
+            const costLine = angelFree ? 'Cost: FREE (Angel NFT)' : `Cost: ${builderState.spec.cost} credits`;
+            alert(`Build request submitted!\n\nApp: ${builderState.spec.name}\n${costLine}\n\nYou'll be notified when your app is ready (typically within 24 hours).`);
 
             // Reset and close
             builderState = {
@@ -40600,7 +40657,7 @@ window.addEventListener('message', function(e) {
         // ========================
         // CREDITS MODAL
         // ========================
-        function openCreditsModal() {
+        async function openCreditsModal() {
             closeProfileDropdown();
             const overlay = document.getElementById('creditsModalOverlay');
             const amountEl = document.getElementById('creditsModalAmount');
@@ -40609,6 +40666,14 @@ window.addEventListener('message', function(e) {
             if (amountEl) {
                 amountEl.textContent = userCredits.toLocaleString();
             }
+
+            // Check Angel NFT status
+            const wallet = localStorage.getItem('connectedWallet');
+            const isAngel = wallet ? await isAngelHolder(wallet) : false;
+            document.getElementById('angelVipBadge').style.display = isAngel ? 'block' : 'none';
+            document.getElementById('creditsBalanceSection').style.display = isAngel ? 'none' : '';
+            document.getElementById('creditsOptionsSection').style.display = isAngel ? 'none' : '';
+            document.getElementById('angelPromoLink').style.display = isAngel ? 'none' : 'block';
 
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
