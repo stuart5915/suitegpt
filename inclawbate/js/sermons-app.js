@@ -273,13 +273,37 @@ async function goBackToList() {
 // FORMATTING
 // ══════════════════════════════════════
 function applyFontFamily(family) {
-    const fallback = family === 'Georgia' ? 'serif' :
-                     (family === 'Caveat' || family === 'Dancing Script') ? 'cursive' : 'sans-serif';
-    paperContent.style.fontFamily = `'${family}', ${fallback}`;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed && paperContent.contains(sel.anchorNode)) {
+        // Apply to selection only — use execCommand trick then fix the element
+        document.execCommand('fontName', false, family);
+    } else {
+        // No selection — set as default for new text
+        const fallback = family === 'Georgia' ? 'serif' :
+                         (family === 'Caveat' || family === 'Dancing Script') ? 'cursive' : 'sans-serif';
+        paperContent.style.fontFamily = `'${family}', ${fallback}`;
+    }
 }
 
 function applyFontSize(size) {
-    paperContent.style.fontSize = size;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed && paperContent.contains(sel.anchorNode)) {
+        // Apply to selection only — execCommand('fontSize') uses 1-7 scale,
+        // so we use it to wrap selection, then replace with actual px size
+        document.execCommand('fontSize', false, '7');
+        // Find all font elements with size 7 and convert to spans with px
+        const fontEls = paperContent.querySelectorAll('font[size="7"]');
+        fontEls.forEach(function(el) {
+            const span = document.createElement('span');
+            span.style.fontSize = size;
+            span.innerHTML = el.innerHTML;
+            el.parentNode.replaceChild(span, el);
+        });
+        paperContent.focus();
+    } else {
+        // No selection — set as default for new text
+        paperContent.style.fontSize = size;
+    }
 }
 
 function applyLineSpacing(spacing) {
@@ -342,12 +366,38 @@ fmtColor.addEventListener('input', () => {
     execCmd('foreColor', fmtColor.value);
 });
 
+fmtFont.addEventListener('mousedown', (e) => {
+    // Save selection before dropdown steals focus
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        fmtFont._savedRange = sel.getRangeAt(0).cloneRange();
+    }
+});
 fmtFont.addEventListener('change', () => {
+    // Restore selection before applying
+    if (fmtFont._savedRange) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(fmtFont._savedRange);
+        fmtFont._savedRange = null;
+    }
     applyFontFamily(fmtFont.value);
     scheduleSave();
 });
 
+fmtSize.addEventListener('mousedown', (e) => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        fmtSize._savedRange = sel.getRangeAt(0).cloneRange();
+    }
+});
 fmtSize.addEventListener('change', () => {
+    if (fmtSize._savedRange) {
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(fmtSize._savedRange);
+        fmtSize._savedRange = null;
+    }
     applyFontSize(fmtSize.value);
     scheduleSave();
 });
