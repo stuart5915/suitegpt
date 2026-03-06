@@ -2043,6 +2043,133 @@
         } catch (e) { return false; }
     }
 
+    // ── Onboarding Tooltips ──
+    var onboardSteps = [
+        {
+            target: 'chatInput',
+            text: 'Describe what you want to build in plain English. Be as specific as you like — the more detail, the better the result.',
+            position: 'top',
+            highlight: true
+        },
+        {
+            target: '.model-selector',
+            text: '<strong>Pick your AI model.</strong> Haiku is fast and free-friendly. Sonnet is balanced. Pro (Opus) gives the best results for complex apps.',
+            position: 'top',
+            highlight: true
+        },
+        {
+            target: 'chatSend',
+            text: 'Hit this button or press <strong>Enter</strong> to send. The AI will build your app — it may take 30 seconds to a couple minutes for complex requests.',
+            position: 'top',
+            highlight: true
+        },
+        {
+            target: '.preview-panel',
+            text: 'Your app appears here as a <strong>live preview</strong>. You can keep chatting to make changes — just describe what to tweak.',
+            position: 'left',
+            highlight: false
+        },
+        {
+            target: 'publishBtn',
+            text: 'When you\'re happy, hit <strong>Publish</strong> to get a real URL you can share with anyone. No account needed!',
+            position: 'top',
+            highlight: true
+        }
+    ];
+
+    var onboardIndex = 0;
+    var onboardActive = false;
+
+    function shouldShowOnboarding() {
+        return !localStorage.getItem('inclawbate_onboard_done');
+    }
+
+    function startOnboarding() {
+        if (!shouldShowOnboarding()) return;
+        onboardIndex = 0;
+        onboardActive = true;
+        showOnboardStep();
+    }
+
+    function showOnboardStep() {
+        // Remove any existing tooltip
+        var existing = document.querySelector('.onboard-tip');
+        if (existing) existing.remove();
+        // Remove highlights
+        document.querySelectorAll('.onboard-highlight').forEach(function(el) {
+            el.classList.remove('onboard-highlight');
+        });
+
+        if (onboardIndex >= onboardSteps.length) {
+            finishOnboarding();
+            return;
+        }
+
+        var step = onboardSteps[onboardIndex];
+        var targetEl = step.target.charAt(0) === '.'
+            ? document.querySelector(step.target)
+            : document.getElementById(step.target);
+
+        if (!targetEl) { onboardIndex++; showOnboardStep(); return; }
+
+        if (step.highlight) targetEl.classList.add('onboard-highlight');
+
+        var tip = document.createElement('div');
+        tip.className = 'onboard-tip';
+        tip.innerHTML =
+            '<div class="onboard-tip-arrow ' + (step.position === 'top' ? 'bottom' : 'top') + '"></div>' +
+            '<div class="onboard-tip-step">Step ' + (onboardIndex + 1) + ' of ' + onboardSteps.length + '</div>' +
+            '<p class="onboard-tip-text">' + step.text + '</p>' +
+            '<div class="onboard-tip-actions">' +
+                '<button class="onboard-tip-next" onclick="window.BuildApp.onboardNext()">' +
+                    (onboardIndex < onboardSteps.length - 1 ? 'Next' : 'Got it!') +
+                '</button>' +
+                '<button class="onboard-tip-skip" onclick="window.BuildApp.onboardSkip()">Skip tour</button>' +
+            '</div>';
+
+        document.body.appendChild(tip);
+
+        // Position the tooltip
+        var rect = targetEl.getBoundingClientRect();
+        if (step.position === 'top') {
+            tip.style.left = Math.max(12, rect.left) + 'px';
+            tip.style.top = (rect.top - tip.offsetHeight - 12 + window.scrollY) + 'px';
+        } else {
+            tip.style.left = Math.max(12, rect.left - tip.offsetWidth - 12) + 'px';
+            tip.style.top = (rect.top + window.scrollY) + 'px';
+        }
+
+        // Clamp to viewport
+        var tipRect = tip.getBoundingClientRect();
+        if (tipRect.right > window.innerWidth - 12) {
+            tip.style.left = (window.innerWidth - tipRect.width - 12) + 'px';
+        }
+        if (tipRect.top < 0) {
+            tip.style.top = (rect.bottom + 12 + window.scrollY) + 'px';
+            var arrow = tip.querySelector('.onboard-tip-arrow');
+            if (arrow) { arrow.className = 'onboard-tip-arrow top'; }
+        }
+    }
+
+    function onboardNext() {
+        onboardIndex++;
+        showOnboardStep();
+    }
+
+    function onboardSkip() {
+        finishOnboarding();
+    }
+
+    function finishOnboarding() {
+        onboardActive = false;
+        localStorage.setItem('inclawbate_onboard_done', '1');
+        var existing = document.querySelector('.onboard-tip');
+        if (existing) existing.remove();
+        document.querySelectorAll('.onboard-highlight').forEach(function(el) {
+            el.classList.remove('onboard-highlight');
+        });
+    }
+
     // ── Init ──
     function init() {
         cacheDom();
@@ -2053,6 +2180,7 @@
         if (!isLoggedIn()) {
             // Skip auth gate — go straight to builder for anonymous use
             newProject();
+            setTimeout(startOnboarding, 600);
             return;
         }
 
@@ -2219,6 +2347,8 @@
         shufflePrompts: shufflePrompts,
         connectWallet: connectWallet,
         connectWalletFromNudge: connectWalletFromNudge,
+        onboardNext: onboardNext,
+        onboardSkip: onboardSkip,
         handleFileSelect: handleFileSelect,
         removeAttach: removeAttach,
         selectCap: selectCap,
