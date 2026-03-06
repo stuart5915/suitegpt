@@ -333,7 +333,10 @@ export default async function handler(req, res) {
                     agent_persona: wantsAgent ? (agent_persona || null) : null,
                     agent_posts_per_day: wantsAgent ? postsPerDay : 4,
                     agent_credits: wantsAgent ? 10 : 0,
-                    agent_status: wantsAgent ? 'active' : 'dormant'
+                    agent_status: wantsAgent ? 'active' : 'dormant',
+                    burn_tx_hash: burn_tx_hash || null,
+                    allocation_pct: allocPct,
+                    burn_amount: verifiedBurnAmount || 0
                 })
                 .select()
                 .single();
