@@ -2070,24 +2070,17 @@
             .mobile-gate { display: none !important; }
             .mobile-tab-bar { display: flex; }
 
-            /* Lock the page — prevent iOS Safari scroll/bounce entirely */
-            html {
-                position: fixed;
-                width: 100%;
-                height: 100%;
+            /* Prevent any page-level scrolling */
+            html, body {
                 overflow: hidden;
-            }
-            body {
-                position: fixed;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
+                overscroll-behavior: none;
+                height: var(--app-height, 100vh);
             }
             .build-view {
-                position: fixed !important;
-                top: 0; left: 0; right: 0; bottom: 0;
-                height: 100% !important;
+                height: var(--app-height, 100vh) !important;
+                max-height: var(--app-height, 100vh) !important;
                 box-sizing: border-box;
+                overflow: hidden;
             }
 
             .nav { padding: 0 var(--space-md); }
@@ -2115,28 +2108,27 @@
                 right: 0;
                 bottom: 0;
             }
-            .build-view .build-panels { position: relative; flex: 1; overflow: hidden; }
+            .build-view .build-panels { position: relative; flex: 1; overflow: hidden; min-height: 0; }
 
             /* Toggle visibility */
             .mobile-hidden { display: none !important; }
 
-            /* Chat input area — locked to viewport width */
+            /* Chat input area */
             .chat-input-area {
-                padding: 8px;
+                padding: 6px 8px;
                 flex-shrink: 0;
-                width: 100%;
                 box-sizing: border-box;
                 overflow: hidden;
             }
 
-            /* Send button and input row */
+            /* Send button and input row — prevent any overflow */
             .chat-input-wrap {
-                gap: 6px;
-                width: 100%;
+                gap: 4px;
                 box-sizing: border-box;
             }
-            .chat-input { padding: 10px; min-height: 40px; font-size: 0.85rem; min-width: 0; }
-            .chat-send { width: 40px; height: 40px; flex-shrink: 0; }
+            .chat-input { padding: 8px; min-height: 38px; font-size: 0.85rem; min-width: 0; flex: 1; }
+            .chat-send { width: 38px; height: 38px; flex-shrink: 0; }
+            .chat-send svg { width: 18px; height: 18px; }
             .chat-attach-btn { width: 28px; padding: 0; flex-shrink: 0; }
             .chat-attach-btn svg { width: 16px; height: 16px; }
 
@@ -2153,10 +2145,6 @@
             .action-credits-label { display: none; }
             .action-buy-btn { padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0; }
             .action-publish-btn { display: none; } /* Publish in tab bar instead */
-
-            /* When keyboard is open (input focused), hide model selector & action bar */
-            .chat-input-area:focus-within .model-selector { display: none; }
-            .chat-input-area:focus-within .action-bar { display: none; }
 
             /* Chat header area — expand to fill empty space, center content */
             .chat-header-area {
@@ -2273,6 +2261,18 @@
             margin-top: -4px;
         }
     </style>
+    <script>
+    // iOS keyboard viewport fix — sets --app-height to actual visible height
+    function setAppHeight() {
+        var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--app-height', h + 'px');
+    }
+    setAppHeight();
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', setAppHeight);
+    }
+    window.addEventListener('resize', setAppHeight);
+    </script>
 </head>
 <body>
 
