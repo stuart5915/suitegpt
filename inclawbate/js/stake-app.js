@@ -821,67 +821,48 @@ async function connectPoolWallet() {
     // Wait for late-loading wallets (Base Wallet EIP-6963)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
 
-    var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
-    if (eth) {
-        try {
-            var accounts = await eth.request({ method: 'eth_requestAccounts' });
-            var addr = accounts[0];
-            try {
-                await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
-            } catch (switchErr) {
-                if (switchErr.code === 4902) {
-                    await eth.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
-                    });
-                }
-            }
-            walletAddr = addr;
-            try { localStorage.setItem('_stake_wallet', addr); } catch (e) {}
-            if (currentPoolKey && POOLS[currentPoolKey]) {
-                onPoolWalletConnected(addr, POOLS[currentPoolKey], currentPoolKey);
-            }
-            return addr;
-        } catch (err) {
-            var msg = err.message || 'Connection failed';
-            if (msg.indexOf('not been authorized') !== -1 || msg.indexOf('User rejected') !== -1 || err.code === 4001) {
-                msg = 'Wallet rejected connection. Please approve the request in your wallet.';
-            }
-            stakeToast(msg, 'error');
-            return null;
-        }
-    }
-
-    if (window.WalletKit) {
-        try {
-            await window.WalletKit.open();
-            return null;
-        } catch (err) {}
-    }
-
+    var eth = null;
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-        var confirmed = await stakeModal({
-            icon: '\uD83D\uDC7B',
-            title: 'Open in Wallet App',
-            msg: 'To connect on mobile, open this page inside your wallet app\'s built-in browser (Phantom, MetaMask, or Coinbase Wallet).',
-            confirmLabel: 'Open in Phantom',
-            cancelLabel: 'Close',
-        });
-        if (confirmed) {
-            window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
-        }
-    } else {
-        var confirmed = await stakeModal({
-            icon: '\uD83E\uDD8A',
-            title: 'No Wallet Found',
-            msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
-            confirmLabel: 'Get MetaMask',
-            cancelLabel: 'Close',
-        });
-        if (confirmed) window.open('https://metamask.io/download/', '_blank');
+    var providers = window._eip6963Providers || [];
+
+    // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
+    if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (window.showWalletSelector) {
+        eth = await window.showWalletSelector();
     }
-    return null;
+
+    if (!eth) return null;
+
+    try {
+        var accounts = await eth.request({ method: 'eth_requestAccounts' });
+        var addr = accounts[0];
+        try {
+            await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await eth.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                });
+            }
+        }
+        walletAddr = addr;
+        try { localStorage.setItem('_stake_wallet', addr); } catch (e) {}
+        if (currentPoolKey && POOLS[currentPoolKey]) {
+            onPoolWalletConnected(addr, POOLS[currentPoolKey], currentPoolKey);
+        }
+        return addr;
+    } catch (err) {
+        var msg = err.message || 'Connection failed';
+        if (msg.indexOf('not been authorized') !== -1 || msg.indexOf('User rejected') !== -1 || err.code === 4001) {
+            msg = 'Wallet rejected connection. Please approve the request in your wallet.';
+        }
+        if (err.code !== 4001) stakeToast(msg, 'error');
+        return null;
+    }
 }
 
 function disconnectPoolWallet() {
@@ -1245,30 +1226,23 @@ async function checkAdminAccess(addr, pool, key) {
 }
 
 async function connectAdminWallet() {
-    var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
-    if (!eth) {
-        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-            var confirmed = await stakeModal({
-                icon: '\uD83D\uDC7B',
-                title: 'Open in Wallet App',
-                msg: 'To connect on mobile, open this page inside your wallet app\'s built-in browser.',
-                confirmLabel: 'Open in Phantom',
-                cancelLabel: 'Close',
-            });
-            if (confirmed) window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
-        } else {
-            var confirmed = await stakeModal({
-                icon: '\uD83E\uDD8A',
-                title: 'No Wallet Found',
-                msg: 'Install a wallet extension like MetaMask, Phantom, or Coinbase Wallet to connect.',
-                confirmLabel: 'Get MetaMask',
-                cancelLabel: 'Close',
-            });
-            if (confirmed) window.open('https://metamask.io/download/', '_blank');
-        }
-        return;
+    // Wait for late-loading wallets
+    if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
+
+    var eth = null;
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var providers = window._eip6963Providers || [];
+
+    // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
+    if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (window.showWalletSelector) {
+        eth = await window.showWalletSelector();
     }
+
+    if (!eth) return;
 
     try {
         var accounts = await eth.request({ method: 'eth_requestAccounts' });

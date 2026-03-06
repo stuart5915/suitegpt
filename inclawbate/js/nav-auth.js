@@ -1,4 +1,4 @@
-// Inclawbate — Nav: Mobile Menu + Wallet Connect
+// Inclawbate — Nav: Mobile Menu + Wallet Connect + Wallet Selector Modal
 
 // EIP-6963 polyfill: discover wallets (Base Wallet, MetaMask, Rabby, etc.)
 // If window.ethereum is missing, assign the first discovered provider so all code works.
@@ -29,6 +29,197 @@
                 }
             }
             window.addEventListener('eip6963:announceProvider', handler);
+        });
+    };
+})();
+
+// ══════════════════════════════════════
+// WALLET SELECTOR MODAL
+// ══════════════════════════════════════
+(function() {
+    // Known wallets for deep links + install links
+    var KNOWN_WALLETS = [
+        {
+            name: 'Coinbase Wallet',
+            rdns: 'com.coinbase.wallet',
+            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iIzAwNTJGRiIvPjxwYXRoIGQ9Ik0yNCAxMGMtNy43MzIgMC0xNCCA2LjI2OC0xNCAxNHM2LjI2OCAxNCAxNCAxNCAxNC02LjI2OCAxNC0xNC02LjI2OC0xNC0xNC0xNHptLTUgMTFhMiAyIDAgMDEyLTJoNmEyIDIgMCAwMTIgMnY2YTIgMiAwIDAxLTIgMmgtNmEyIDIgMCAwMS0yLTJ2LTZ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
+            deepLink: function(url) { return 'https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(url); },
+            installUrl: 'https://www.coinbase.com/wallet/downloads'
+        },
+        {
+            name: 'MetaMask',
+            rdns: 'io.metamask',
+            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iI0Y1ODQxRiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTUlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXNpemU9IjI2Ij7wn6aKPC90ZXh0Pjwvc3ZnPg==',
+            deepLink: function(url) { return 'https://metamask.app.link/dapp/' + url.replace(/^https?:\/\//, ''); },
+            installUrl: 'https://metamask.io/download/'
+        },
+        {
+            name: 'Phantom',
+            rdns: 'app.phantom',
+            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iIzU0MURGRSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTUlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXNpemU9IjI2Ij7wn5G7PC90ZXh0Pjwvc3ZnPg==',
+            deepLink: function(url) { return 'https://phantom.app/ul/browse/' + encodeURIComponent(url); },
+            installUrl: 'https://phantom.app/download'
+        },
+        {
+            name: 'Trust Wallet',
+            rdns: 'com.trustwallet.app',
+            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iIzMzNzVCQiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTUlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIiBmb250LXNpemU9IjI2Ij7wn5uhPC90ZXh0Pjwvc3ZnPg==',
+            deepLink: function(url) { return 'https://link.trustwallet.com/open_url?coin_id=8453&url=' + encodeURIComponent(url); },
+            installUrl: 'https://trustwallet.com/download'
+        }
+    ];
+
+    // Inject modal HTML + CSS once
+    var style = document.createElement('style');
+    style.textContent = [
+        '#walletSelectorOverlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}',
+        '#walletSelectorOverlay.visible{opacity:1;pointer-events:auto}',
+        '#walletSelectorModal{background:#141419;border:1px solid rgba(255,255,255,.1);border-radius:16px;max-width:380px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;transform:translateY(20px);transition:transform .2s}',
+        '#walletSelectorOverlay.visible #walletSelectorModal{transform:translateY(0)}',
+        '.ws-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}',
+        '.ws-header h3{margin:0;font-size:18px;color:#fff;font-weight:600}',
+        '.ws-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}',
+        '.ws-close:hover{color:#fff}',
+        '.ws-section{margin-bottom:12px}',
+        '.ws-section-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#666;margin-bottom:8px;padding-left:4px}',
+        '.ws-option{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer;transition:background .15s,border-color .15s;width:100%;margin-bottom:6px;text-decoration:none}',
+        '.ws-option:hover{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3)}',
+        '.ws-option img{width:36px;height:36px;border-radius:8px;flex-shrink:0}',
+        '.ws-option-info{flex:1;text-align:left}',
+        '.ws-option-name{color:#fff;font-size:14px;font-weight:500}',
+        '.ws-option-tag{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;flex-shrink:0}',
+        '.ws-tag-detected{background:rgba(52,211,153,.15);color:#34d399}',
+        '.ws-tag-open{background:rgba(99,102,241,.15);color:#818cf8}',
+        '.ws-tag-install{background:rgba(255,255,255,.08);color:#888}',
+    ].join('\n');
+    document.head.appendChild(style);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'walletSelectorOverlay';
+    overlay.innerHTML = '<div id="walletSelectorModal">' +
+        '<div class="ws-header"><h3>Connect Wallet</h3><button class="ws-close" id="wsClose">&times;</button></div>' +
+        '<div id="wsBody"></div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    // Close handlers
+    function hideModal() { overlay.classList.remove('visible'); }
+    document.getElementById('wsClose').addEventListener('click', hideModal);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) hideModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideModal(); });
+
+    // ── showWalletSelector() — returns Promise<provider | null> ──
+    window.showWalletSelector = function() {
+        return new Promise(function(resolve) {
+            var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            var body = document.getElementById('wsBody');
+            body.innerHTML = '';
+            var resolved = false;
+
+            function done(val) {
+                if (resolved) return;
+                resolved = true;
+                hideModal();
+                resolve(val);
+            }
+
+            if (isMobile) {
+                // ── Mobile: deep link buttons ──
+                var sec = document.createElement('div');
+                sec.className = 'ws-section';
+                sec.innerHTML = '<div class="ws-section-label">Open in Wallet App</div>';
+
+                KNOWN_WALLETS.forEach(function(w) {
+                    var a = document.createElement('a');
+                    a.className = 'ws-option';
+                    a.href = w.deepLink(window.location.href);
+                    a.innerHTML = '<img src="' + w.icon + '" alt="' + w.name + '">' +
+                        '<div class="ws-option-info"><div class="ws-option-name">' + w.name + '</div></div>' +
+                        '<span class="ws-option-tag ws-tag-open">Open</span>';
+                    sec.appendChild(a);
+                });
+                body.appendChild(sec);
+            } else {
+                // ── Desktop: show detected wallets + install links ──
+                // Re-request EIP-6963 to catch any late arrivals
+                try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
+                var providers = window._eip6963Providers || [];
+                var detectedRdns = {};
+
+                if (providers.length > 0) {
+                    var detSec = document.createElement('div');
+                    detSec.className = 'ws-section';
+                    detSec.innerHTML = '<div class="ws-section-label">Detected Wallets</div>';
+
+                    providers.forEach(function(p) {
+                        var info = p.info || {};
+                        var rdns = (info.rdns || '').toLowerCase();
+                        detectedRdns[rdns] = true;
+
+                        var btn = document.createElement('button');
+                        btn.className = 'ws-option';
+                        var iconSrc = info.icon || '';
+                        btn.innerHTML = (iconSrc ? '<img src="' + iconSrc + '" alt="' + (info.name || 'Wallet') + '">' : '<div style="width:36px;height:36px;border-radius:8px;background:#333;flex-shrink:0"></div>') +
+                            '<div class="ws-option-info"><div class="ws-option-name">' + (info.name || 'Unknown Wallet') + '</div></div>' +
+                            '<span class="ws-option-tag ws-tag-detected">Detected</span>';
+                        btn.addEventListener('click', function() { done(p.provider); });
+                        detSec.appendChild(btn);
+                    });
+                    body.appendChild(detSec);
+                }
+
+                // Other wallets (not detected) — show install links
+                var otherWallets = KNOWN_WALLETS.filter(function(w) { return !detectedRdns[w.rdns]; });
+                if (otherWallets.length > 0) {
+                    var otherSec = document.createElement('div');
+                    otherSec.className = 'ws-section';
+                    otherSec.innerHTML = '<div class="ws-section-label">' + (providers.length > 0 ? 'Other Wallets' : 'Install a Wallet') + '</div>';
+
+                    otherWallets.forEach(function(w) {
+                        var a = document.createElement('a');
+                        a.className = 'ws-option';
+                        a.href = w.installUrl;
+                        a.target = '_blank';
+                        a.rel = 'noopener';
+                        a.innerHTML = '<img src="' + w.icon + '" alt="' + w.name + '">' +
+                            '<div class="ws-option-info"><div class="ws-option-name">' + w.name + '</div></div>' +
+                            '<span class="ws-option-tag ws-tag-install">Install</span>';
+                        otherSec.appendChild(a);
+                    });
+                    body.appendChild(otherSec);
+                }
+
+                // If no EIP-6963 but window.ethereum exists (legacy), add a generic option
+                if (providers.length === 0 && window.ethereum) {
+                    var legSec = document.createElement('div');
+                    legSec.className = 'ws-section';
+                    legSec.innerHTML = '<div class="ws-section-label">Detected Wallets</div>';
+                    var btn = document.createElement('button');
+                    btn.className = 'ws-option';
+                    btn.innerHTML = '<div style="width:36px;height:36px;border-radius:8px;background:#6366f1;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0">W</div>' +
+                        '<div class="ws-option-info"><div class="ws-option-name">Browser Wallet</div></div>' +
+                        '<span class="ws-option-tag ws-tag-detected">Detected</span>';
+                    btn.addEventListener('click', function() { done(window.ethereum); });
+                    legSec.appendChild(btn);
+                    body.appendChild(legSec);
+                }
+            }
+
+            // Show modal — cancel on close
+            overlay.classList.add('visible');
+
+            // Override close to resolve null
+            var origHide = hideModal;
+            var closeBtn = document.getElementById('wsClose');
+            function cancelClose() { done(null); }
+            closeBtn.onclick = cancelClose;
+            var overlayClick = function(e) { if (e.target === overlay) cancelClose(); };
+            overlay.addEventListener('click', overlayClick);
+            var escHandler = function(e) { if (e.key === 'Escape') cancelClose(); };
+            document.addEventListener('keydown', escHandler);
+
+            // Clean up listeners when resolved
+            var origDone = done;
         });
     };
 })();
@@ -114,16 +305,22 @@
             if (!window.ethereum && window._awaitProvider) {
                 await window._awaitProvider();
             }
-            var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+
+            var eth = null;
+            var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            var providers = window._eip6963Providers || [];
+
+            // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
+            if (!isMobile && providers.length === 1) {
+                eth = providers[0].provider;
+            } else if (!isMobile && providers.length === 0 && window.ethereum) {
+                eth = window.ethereum;
+            } else {
+                // Show modal for: mobile, multiple providers, or no providers
+                eth = await window.showWalletSelector();
+            }
+
             if (!eth) {
-                var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if (isMobile) {
-                    if (confirm('To connect on mobile, open this page in your wallet app\'s browser.\n\nOpen in Phantom?')) {
-                        window.location.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(window.location.href);
-                    }
-                } else {
-                    alert('No wallet detected. Install MetaMask, Phantom, Coinbase Wallet, or Base Wallet.');
-                }
                 btn.textContent = 'Connect';
                 btn.disabled = false;
                 return;

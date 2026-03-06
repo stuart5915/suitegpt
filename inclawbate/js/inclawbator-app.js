@@ -158,21 +158,40 @@ async function connectWallet() {
     if (!window.ethereum && window._awaitProvider) {
         await window._awaitProvider();
     }
-    if (!window.ethereum) {
-        showToast('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.', 'error');
+
+    var eth = null;
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var providers = window._eip6963Providers || [];
+
+    // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
+    if (!isMobile && providers.length === 1) {
+        eth = providers[0].provider;
+    } else if (!isMobile && providers.length === 0 && window.ethereum) {
+        eth = window.ethereum;
+    } else if (window.showWalletSelector) {
+        eth = await window.showWalletSelector();
+    } else {
+        eth = window.ethereum;
+    }
+
+    if (!eth) {
+        if (!window.showWalletSelector) {
+            showToast('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.', 'error');
+        }
         return;
     }
+
     try {
-        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        var accounts = await eth.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
             state.wallet = accounts[0].toLowerCase();
-            state.provider = window.ethereum;
+            state.provider = eth;
             state.isAdmin = state.wallet === SUPER_ADMIN;
             try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+                await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
             } catch (e) {
                 if (e.code === 4902) {
-                    await window.ethereum.request({
+                    await eth.request({
                         method: 'wallet_addEthereumChain',
                         params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
                     });
@@ -201,7 +220,9 @@ async function connectWallet() {
             checkAngelNFT();
         }
     } catch (e) {
-        showToast('Wallet connection failed', 'error');
+        if (e.code !== 4001) {
+            showToast('Wallet connection failed', 'error');
+        }
     }
 }
 
