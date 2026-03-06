@@ -60,6 +60,21 @@
         walletEl.className = 'nav-wallet';
         nav.appendChild(walletEl);
 
+        async function disconnectWallet() {
+            localStorage.removeItem('inclawbate_token');
+            localStorage.removeItem('inclawbate_profile');
+            document.cookie = 'inclawbate_token=; path=/; max-age=0';
+            // Revoke wallet permissions so the picker shows again on next connect
+            var eth = window.ethereum || (window.phantom && window.phantom.ethereum);
+            if (eth) {
+                try {
+                    await eth.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] });
+                } catch(e) { /* Not all wallets support this */ }
+            }
+            renderWallet();
+            window.location.reload();
+        }
+
         function renderWallet() {
             var token = localStorage.getItem('inclawbate_token');
             var profile = null;
@@ -75,22 +90,14 @@
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
                     '<span class="nav-wallet-dot"></span>' + short + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
-                    localStorage.removeItem('inclawbate_token');
-                    localStorage.removeItem('inclawbate_profile');
-                    document.cookie = 'inclawbate_token=; path=/; max-age=0';
-                    renderWallet();
-                    window.location.reload();
+                    disconnectWallet();
                 });
             } else if (token && profile) {
                 var label = profile.display_name || 'Connected';
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
                     '<span class="nav-wallet-dot"></span>' + label + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
-                    localStorage.removeItem('inclawbate_token');
-                    localStorage.removeItem('inclawbate_profile');
-                    document.cookie = 'inclawbate_token=; path=/; max-age=0';
-                    renderWallet();
-                    window.location.reload();
+                    disconnectWallet();
                 });
             } else {
                 walletEl.innerHTML = '<button class="nav-wallet-btn" id="navWalletBtn">Connect</button>';
