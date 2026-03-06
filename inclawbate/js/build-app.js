@@ -851,17 +851,36 @@
     }
 
     // ── Preview ──
+    // SDK scripts to inject into preview so AppDB/CLAWS/Realtime don't crash
+    var SDK_TAGS = '<script src="https://inclawbate.com/js/claws-sdk.js" data-preview="true"><\/script>' +
+        '<script src="https://inclawbate.com/js/appdb-sdk.js" data-app-id="preview"><\/script>' +
+        '<script src="https://inclawbate.com/js/realtime-sdk.js" data-app-id="preview"><\/script>';
+
+    function injectSDKs(code) {
+        // Inject SDK scripts right after <head> so they load before app code
+        if (code.indexOf('appdb-sdk') !== -1 && code.indexOf('claws-sdk') !== -1) return code; // already has them
+        var headIdx = code.indexOf('<head>');
+        if (headIdx !== -1) {
+            return code.slice(0, headIdx + 6) + SDK_TAGS + code.slice(headIdx + 6);
+        }
+        // No <head> tag — prepend before everything
+        return SDK_TAGS + code;
+    }
+
     function updatePreview(code) {
         els.previewEmpty.style.display = 'none';
         els.previewFrame.style.display = '';
+        // Inject SDKs so AppDB/CLAWS/Realtime are available in preview
+        var codeWithSDKs = injectSDKs(code);
         // Inject error handler if not already present
-        var codeWithHandler = code.indexOf('studio-error') === -1 ? injectErrorHandlerClient(code) : code;
+        var codeWithHandler = codeWithSDKs.indexOf('studio-error') === -1 ? injectErrorHandlerClient(codeWithSDKs) : codeWithSDKs;
         els.previewFrame.srcdoc = codeWithHandler;
         els.codeContent.textContent = code;
         els.publishBtn.disabled = false;
         // Reset error state for new preview
         state.previewErrors = [];
         hideErrorBanner();
+        updateDownloadBtn();
     }
 
     function resetPreview() {
@@ -874,6 +893,7 @@
         // Reset tabs
         var tabs = document.querySelectorAll('.preview-tab');
         tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === 'preview'); });
+        updateDownloadBtn();
     }
 
     // ── Error Banner ──
@@ -1189,6 +1209,76 @@
         banner.innerHTML = '<span class="project-banner-icon">&#128193;</span> ' + text +
             ' <button class="project-clear-btn" onclick="window.BuildApp.clearProject()">&times;</button>';
         container.insertBefore(banner, container.firstChild);
+
+        // Auto-preview the loaded project
+        var previewHtml = buildProjectPreviewHtml();
+        if (previewHtml) {
+            state.currentCode = previewHtml;
+            updatePreview(previewHtml);
+        }
+    }
+
+    function buildProjectPreviewHtml() {
+        if (projectFiles.length === 0) return null;
+        // Find index.html or first .html file
+        var htmlFile = null;
+        for (var i = 0; i < projectFiles.length; i++) {
+            if (projectFiles[i].path === 'index.html') { htmlFile = projectFiles[i]; break; }
+        }
+        if (!htmlFile) {
+            for (var i = 0; i < projectFiles.length; i++) {
+                if (projectFiles[i].path.match(/\.html$/i)) { htmlFile = projectFiles[i]; break; }
+            }
+        }
+        if (!htmlFile) return null;
+
+        // Build lookup map of project files by path
+        var fileMap = {};
+        projectFiles.forEach(function (f) { fileMap[f.path] = f.content; });
+
+        var html = htmlFile.content;
+
+        // Inline <link rel="stylesheet" href="X"> where X matches a project file
+        html = html.replace(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/gi, function (tag) {
+            var hrefMatch = tag.match(/href=["']([^"']+)["']/);
+            if (!hrefMatch) return tag;
+            var href = hrefMatch[1].replace(/^\.\//, '');
+            if (fileMap[href]) {
+                return '<style>' + fileMap[href] + '</style>';
+            }
+            return tag;
+        });
+
+        // Inline <script src="X"> where X matches a project file
+        html = html.replace(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi, function (tag, src) {
+            var cleanSrc = src.replace(/^\.\//, '');
+            if (fileMap[cleanSrc]) {
+                return '<script>' + fileMap[cleanSrc] + '<\/script>';
+            }
+            return tag;
+        });
+
+        return html;
+    }
+
+    function downloadProject() {
+        if (!state.currentCode) return;
+        var name = projectFolderName || state.title || 'project';
+        name = name.replace(/[^a-zA-Z0-9_-]/g, '-');
+        var blob = new Blob([state.currentCode], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = name + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function updateDownloadBtn() {
+        var btn = document.getElementById('downloadBtn');
+        if (btn) btn.style.display = state.currentCode ? '' : 'none';
     }
 
     function clearProject() {
@@ -2517,6 +2607,7 @@
         removeAttach: removeAttach,
         handleFolderSelect: handleFolderSelect,
         clearProject: clearProject,
+        downloadProject: downloadProject,
         selectCap: selectCap,
         useCapPrompt: useCapPrompt,
         shuffleCapExpand: shuffleCapExpand,
