@@ -392,20 +392,12 @@
         }
 
         Realtime.connect('cinema').then(() => {
-            // Check if there's already a host
-            const players = Realtime.getPlayers();
-            const existingHost = players.find(p => p.state && p.state.role === 'host');
-
-            if (existingHost) {
-                setRole(false);
-            } else {
-                setRole(true);
-            }
-
-            updateViewerCount();
-
-            // Listen for sync events
+            // Listen for sync events FIRST — if we receive one, there's a host
+            let receivedSync = false;
             Realtime.on('sync', (data, senderId) => {
+                if (!receivedSync && !isHost) {
+                    receivedSync = true;
+                }
                 applySync(data);
             });
 
@@ -413,20 +405,27 @@
             Realtime.onJoin(() => updateViewerCount());
             Realtime.onLeave((p) => {
                 updateViewerCount();
-                // If the host left and we're the first remaining player, become host
+                // If the host left, become host
                 if (p.state && p.state.role === 'host') {
-                    const remaining = Realtime.getPlayers();
-                    if (remaining.length === 0 || remaining[0].id === Realtime.me.id) {
-                        setRole(true);
-                        document.getElementById('statusBar').innerHTML = '<span class="dot"></span> Host left — you are now the host';
-                    }
+                    setRole(true);
+                    heartbeatInterval = setInterval(() => broadcastSync(), 3000);
+                    document.getElementById('statusBar').innerHTML = '<span class="dot"></span> Host left — you are now the host';
                 }
             });
 
-            // Host heartbeat — broadcast state every 3s for late joiners
-            if (isHost) {
-                heartbeatInterval = setInterval(() => broadcastSync(), 3000);
-            }
+            // Wait for presence to sync before deciding role
+            setTimeout(() => {
+                const players = Realtime.getPlayers();
+                const existingHost = players.find(p => p.state && p.state.role === 'host');
+
+                if (existingHost || receivedSync) {
+                    setRole(false);
+                } else {
+                    setRole(true);
+                    heartbeatInterval = setInterval(() => broadcastSync(), 3000);
+                }
+                updateViewerCount();
+            }, 1500);
         });
 
         // Update time display
