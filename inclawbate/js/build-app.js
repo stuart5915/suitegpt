@@ -495,6 +495,8 @@
         msgs.forEach(function (m) { m.remove(); });
         removeSuggestionChips();
         if (els.chatHeaderArea) els.chatHeaderArea.style.display = '';
+        var cp = document.querySelector('.chat-panel');
+        if (cp) cp.classList.remove('has-messages');
         els.buildTitle.textContent = 'New Project';
         resetPreview();
         showView('build');
@@ -775,6 +777,9 @@
     function appendMessage(role, content, code) {
         // Hide welcome on first message
         if (els.chatHeaderArea) els.chatHeaderArea.style.display = 'none';
+        // Flag chat panel for mobile layout switch
+        var cp = document.querySelector('.chat-panel');
+        if (cp) cp.classList.add('has-messages');
 
         var div = document.createElement('div');
         div.className = 'chat-msg ' + role;
