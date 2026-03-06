@@ -610,7 +610,7 @@
         }, 3000);
 
         try {
-            var fullMessage = message + getAttachmentPrompt();
+            var fullMessage = message + getAttachmentPrompt() + getProjectPrompt();
 
             var fetchHeaders = { 'Content-Type': 'application/json' };
             if (getToken()) fetchHeaders['Authorization'] = 'Bearer ' + getToken();
@@ -1027,6 +1027,10 @@
     // ── Image Attachments ──
     var chatAttachments = [];
 
+    // ── Project Folder Files ──
+    var projectFiles = [];
+    var projectFolderName = '';
+
     async function handleFileSelect(files) {
         for (var i = 0; i < files.length; i++) {
             var file = files[i];
@@ -1081,6 +1085,130 @@
         if (chatAttachments.length === 0) return '';
         var lines = chatAttachments.map(function (a, i) { return (i + 1) + '. "' + a.name + '" → ' + a.url; });
         return '\n\nIMAGE ASSETS (use these URLs directly in <img> tags or as CSS background-image URLs where appropriate):\n' + lines.join('\n');
+    }
+
+    // ── Project Folder Loading ──
+    var SKIP_DIRS = ['node_modules', '.git', '.next', 'dist', 'build', '.vercel', '.cache', '__pycache__', '.svelte-kit'];
+    var SKIP_FILES = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'];
+    var BINARY_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.mp3', '.zip', '.pdf', '.svg', '.webp', '.avif', '.bmp', '.tiff', '.mov', '.avi', '.tar', '.gz', '.rar', '.7z', '.exe', '.dll', '.so', '.dylib', '.wasm', '.map'];
+    var MAX_FILE_SIZE = 100 * 1024; // 100KB per file
+    var MAX_TOTAL_SIZE = 500 * 1024; // 500KB total
+
+    function handleFolderSelect(files) {
+        if (!files || files.length === 0) return;
+        projectFiles = [];
+        projectFolderName = '';
+        var totalSize = 0;
+        var skipped = 0;
+
+        // Determine folder name from first file's path
+        var firstPath = files[0].webkitRelativePath || files[0].name;
+        projectFolderName = firstPath.split('/')[0] || 'project';
+
+        var textFiles = [];
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var path = file.webkitRelativePath || file.name;
+
+            // Skip directories
+            var parts = path.split('/');
+            var skipDir = false;
+            for (var j = 0; j < parts.length; j++) {
+                if (SKIP_DIRS.indexOf(parts[j]) !== -1) { skipDir = true; break; }
+            }
+            if (skipDir) continue;
+
+            // Skip specific files
+            var fileName = parts[parts.length - 1];
+            if (SKIP_FILES.indexOf(fileName) !== -1) continue;
+
+            // Skip binary extensions
+            var ext = fileName.lastIndexOf('.') !== -1 ? fileName.slice(fileName.lastIndexOf('.')).toLowerCase() : '';
+            if (BINARY_EXTS.indexOf(ext) !== -1) continue;
+
+            // Skip large files
+            if (file.size > MAX_FILE_SIZE) { skipped++; continue; }
+
+            // Check total cap
+            if (totalSize + file.size > MAX_TOTAL_SIZE) { skipped++; continue; }
+
+            totalSize += file.size;
+            // Remove the top-level folder from the relative path for cleaner display
+            var relativePath = parts.slice(1).join('/');
+            textFiles.push({ file: file, path: relativePath || fileName });
+        }
+
+        if (textFiles.length === 0) {
+            alert('No readable text files found in this folder.');
+            return;
+        }
+
+        var loaded = 0;
+        textFiles.forEach(function (entry) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                projectFiles.push({ path: entry.path, content: reader.result });
+                loaded++;
+                if (loaded === textFiles.length) {
+                    // Sort by path for consistent ordering
+                    projectFiles.sort(function (a, b) { return a.path.localeCompare(b.path); });
+                    renderProjectPreview(skipped);
+                }
+            };
+            reader.onerror = function () {
+                loaded++;
+                if (loaded === textFiles.length) {
+                    projectFiles.sort(function (a, b) { return a.path.localeCompare(b.path); });
+                    renderProjectPreview(skipped);
+                }
+            };
+            reader.readAsText(entry.file);
+        });
+
+        // Reset input so same folder can be re-selected
+        var input = document.getElementById('folderInput');
+        if (input) input.value = '';
+    }
+
+    function renderProjectPreview(skipped) {
+        var container = document.getElementById('chatAttachPreview');
+        if (!container) return;
+        // Keep existing image previews and add/replace project banner
+        var existing = container.querySelector('.project-files-banner');
+        if (existing) existing.remove();
+
+        if (projectFiles.length === 0) return;
+
+        var banner = document.createElement('div');
+        banner.className = 'project-files-banner';
+        var totalKB = 0;
+        projectFiles.forEach(function (f) { totalKB += f.content.length; });
+        totalKB = Math.round(totalKB / 1024);
+        var text = projectFiles.length + ' file' + (projectFiles.length !== 1 ? 's' : '') + ' loaded from <strong>' + projectFolderName + '</strong> (' + totalKB + 'KB)';
+        if (skipped > 0) text += ' <span style="opacity:0.6">· ' + skipped + ' skipped</span>';
+        banner.innerHTML = '<span class="project-banner-icon">&#128193;</span> ' + text +
+            ' <button class="project-clear-btn" onclick="window.BuildApp.clearProject()">&times;</button>';
+        container.insertBefore(banner, container.firstChild);
+    }
+
+    function clearProject() {
+        projectFiles = [];
+        projectFolderName = '';
+        var container = document.getElementById('chatAttachPreview');
+        if (container) {
+            var banner = container.querySelector('.project-files-banner');
+            if (banner) banner.remove();
+        }
+    }
+
+    function getProjectPrompt() {
+        if (projectFiles.length === 0) return '';
+        var lines = ['\n\nPROJECT FILES (loaded from user\'s local folder "' + projectFolderName + '"):'];
+        projectFiles.forEach(function (f) {
+            lines.push('--- ' + f.path + ' ---');
+            lines.push(f.content);
+        });
+        return lines.join('\n');
     }
 
     // ── Model Selector ──
@@ -2387,6 +2515,8 @@
         onboardSkip: onboardSkip,
         handleFileSelect: handleFileSelect,
         removeAttach: removeAttach,
+        handleFolderSelect: handleFolderSelect,
+        clearProject: clearProject,
         selectCap: selectCap,
         useCapPrompt: useCapPrompt,
         shuffleCapExpand: shuffleCapExpand,
