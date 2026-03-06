@@ -215,8 +215,10 @@ async function checkAngelNFT() {
         var balHex = await contractRead(ANGEL_NFT, SEL.balanceOf + pad32(state.wallet));
         state.hasAngelNFT = BigInt(balHex) > 0n;
     } catch (e) { state.hasAngelNFT = false; }
-    var badge = document.getElementById('angelFreeBanner');
-    if (badge) badge.style.display = state.hasAngelNFT ? 'flex' : 'none';
+    var promo = document.getElementById('angelPromo');
+    var banner = document.getElementById('angelFreeBanner');
+    if (promo) promo.style.display = state.hasAngelNFT ? 'none' : 'flex';
+    if (banner) banner.style.display = state.hasAngelNFT ? 'flex' : 'none';
     var freeBadge = document.getElementById('angelFreeBadge');
     if (freeBadge) freeBadge.style.display = state.hasAngelNFT ? 'inline' : 'none';
     updateAllocationUI();
