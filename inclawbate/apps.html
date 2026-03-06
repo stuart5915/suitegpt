@@ -98,6 +98,64 @@
             color: #fff;
         }
 
+        /* ── Concierge ── */
+        .app-concierge {
+            margin-bottom: var(--space-xl);
+        }
+        .concierge-input-row {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        .concierge-input-row input {
+            flex: 1;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .concierge-input-row input:focus {
+            border-color: var(--accent-primary);
+        }
+        .concierge-input-row button {
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .concierge-input-row button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .concierge-response {
+            margin-top: var(--space-sm);
+            padding: var(--space-md);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .concierge-response a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .concierge-response a:hover {
+            text-decoration: underline;
+        }
+
         /* ── Controls ── */
         .apps-controls {
             display: flex;
@@ -759,6 +817,15 @@
         <a href="/build" class="apps-hero-cta">Build Your Own</a>
     </div>
 
+    <!-- Concierge -->
+    <div class="app-concierge">
+        <div class="concierge-input-row">
+            <input type="text" id="conciergeInput" placeholder="What kind of app are you looking for?">
+            <button id="conciergeBtn">Ask</button>
+        </div>
+        <div id="conciergeResponse" class="concierge-response" style="display:none;"></div>
+    </div>
+
     <!-- Controls -->
     <div class="apps-controls">
         <div class="apps-categories">
@@ -1414,6 +1481,67 @@
         closeDetail: closeDetail,
         moderate: moderate
     };
+
+    // ── Concierge ──
+    (function() {
+        var input = document.getElementById('conciergeInput');
+        var btn = document.getElementById('conciergeBtn');
+        var responseEl = document.getElementById('conciergeResponse');
+
+        function askConcierge() {
+            var query = input.value.trim();
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+            responseEl.style.display = 'block';
+            responseEl.textContent = '...';
+
+            var appList = state.apps.map(function(a) {
+                return a.name + ' (' + (a.category || 'other') + '): ' + (a.description || 'No description');
+            }).join('\n');
+
+            var systemPrompt = 'You are a concierge for the Inclawbate app store. ' +
+                'Here are the current apps:\n' + appList + '\n\n' +
+                'When a user asks what they need, recommend matching apps by name. ' +
+                'If nothing matches, suggest they build one at inclawbate.com/build using the Inclawbator. ' +
+                'Keep responses short (2-4 sentences). Use app names exactly as listed.';
+
+            fetch('/api/groq', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: query }
+                    ],
+                    max_tokens: 300
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var text = data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Sorry, I couldn\'t process that.';
+                // Link app names
+                state.apps.forEach(function(app) {
+                    var escaped = app.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    text = text.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), '<a href="/apps/' + app.slug + '">' + app.name + '</a>');
+                });
+                responseEl.innerHTML = text;
+            })
+            .catch(function() {
+                responseEl.textContent = 'Something went wrong. Try again.';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Ask';
+            });
+        }
+
+        btn.addEventListener('click', askConcierge);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') askConcierge();
+        });
+    })();
 })();
 </script>
 
