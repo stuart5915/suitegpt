@@ -1118,6 +1118,7 @@
         if (!files || files.length === 0) return;
         projectFiles = [];
         projectFolderName = '';
+        projectFilesSent = false;
         var totalSize = 0;
         var skipped = 0;
 
@@ -1284,6 +1285,7 @@
     function clearProject() {
         projectFiles = [];
         projectFolderName = '';
+        projectFilesSent = false;
         var container = document.getElementById('chatAttachPreview');
         if (container) {
             var banner = container.querySelector('.project-files-banner');
@@ -1291,13 +1293,27 @@
         }
     }
 
+    var projectFilesSent = false;
+    var MAX_PROJECT_CHARS = 120000; // ~30K tokens — safe limit
+
     function getProjectPrompt() {
         if (projectFiles.length === 0) return '';
+        // Only send raw project files on the first message; after that current_code carries the state
+        if (projectFilesSent) return '';
+        projectFilesSent = true;
+
         var lines = ['\n\nPROJECT FILES (loaded from user\'s local folder "' + projectFolderName + '"):'];
-        projectFiles.forEach(function (f) {
-            lines.push('--- ' + f.path + ' ---');
-            lines.push(f.content);
-        });
+        var totalChars = 0;
+        for (var i = 0; i < projectFiles.length; i++) {
+            var header = '--- ' + projectFiles[i].path + ' ---\n';
+            var content = projectFiles[i].content;
+            if (totalChars + header.length + content.length > MAX_PROJECT_CHARS) {
+                lines.push('\n[... ' + (projectFiles.length - i) + ' more files omitted — project too large for single prompt]');
+                break;
+            }
+            totalChars += header.length + content.length;
+            lines.push(header + content);
+        }
         return lines.join('\n');
     }
 
