@@ -2076,18 +2076,23 @@
             .nav { padding: 0 var(--space-md); }
             .nav-links { display: none; }
 
+            /* Use dvh to account for Safari browser chrome */
+            body { height: 100dvh; height: -webkit-fill-available; }
+            .build-view { height: 100dvh !important; height: -webkit-fill-available !important; padding-bottom: 52px; box-sizing: border-box; }
+
             /* Build header compact */
             .build-header { padding: var(--space-xs) var(--space-md); min-height: 36px; gap: var(--space-sm); }
             .build-title { font-size: 0.85rem; }
             .build-new { font-size: 0.7rem; padding: 3px 8px; }
 
             /* Panels go full screen */
-            .build-panels { flex-direction: column; }
+            .build-panels { flex-direction: column; overflow: hidden; }
             .chat-panel {
                 width: 100% !important;
                 min-width: 0 !important;
                 border-right: none !important;
                 flex: 1;
+                overflow: hidden;
             }
             .preview-panel {
                 width: 100% !important;
@@ -2097,17 +2102,24 @@
                 right: 0;
                 bottom: 0;
             }
-            .build-view .build-panels { position: relative; flex: 1; }
+            .build-view .build-panels { position: relative; flex: 1; overflow: hidden; }
 
             /* Toggle visibility */
             .mobile-hidden { display: none !important; }
 
-            /* Bottom padding for tab bar */
-            .chat-input-area { padding-bottom: 60px; }
-            .preview-panel { padding-bottom: 52px; }
+            /* Chat input area — no extra bottom padding, build-view already accounts for tab bar */
+            .chat-input-area { padding: 8px; }
+            .preview-panel { padding-bottom: 0; }
+
+            /* Send button and input row */
+            .chat-input-wrap { gap: 6px; }
+            .chat-input { padding: 10px; min-height: 40px; font-size: 0.85rem; }
+            .chat-send { width: 40px; height: 40px; flex-shrink: 0; }
+            .chat-attach-btn { width: 32px; padding: 0; flex-shrink: 0; }
+            .chat-attach-btn svg { width: 18px; height: 18px; }
 
             /* Compact model selector */
-            .model-selector { flex-wrap: wrap; gap: 4px; }
+            .model-selector { flex-wrap: wrap; gap: 4px; padding-top: 6px; }
             .model-option { padding: 4px 8px; font-size: 0.68rem; }
             .model-hint { display: none; }
             .model-info-btn { display: none; }
@@ -2129,6 +2141,9 @@
 
             /* Starter prompts */
             .chat-header-prompts { gap: 4px; }
+
+            /* Chat messages scrolling */
+            .chat-messages { padding: var(--space-md); overflow-y: auto; -webkit-overflow-scrolling: touch; }
         }
 
         /* ── Cost Confirmation Modal ── */

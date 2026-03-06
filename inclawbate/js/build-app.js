@@ -2346,8 +2346,8 @@
 
     function showPreviewBadge() {
         if (window.innerWidth > 768) return;
-        var badge = document.getElementById('previewBadge');
-        if (badge) badge.classList.add('visible');
+        // Auto-switch to preview when AI finishes generating code
+        switchMobileTab('preview');
     }
 
     // ── Expose Public API ──
