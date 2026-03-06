@@ -174,9 +174,43 @@
         return null;
     }
 
+    // ── Public-RPC-only reads (always Base, ignores wallet provider) ──
+    async function publicContractRead(to, data) {
+        var body = { jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] };
+        for (var i = 0; i < RPC_URLS.length; i++) {
+            try {
+                var json = await rpcFetch(RPC_URLS[i], body);
+                if (json.result && json.result !== '0x') return json.result;
+            } catch (e) { /* try next */ }
+        }
+        return '0x0';
+    }
+
+    async function publicBatchRead(calls) {
+        var batch = calls.map(function(c, i) {
+            return { jsonrpc: '2.0', id: i + 1, method: 'eth_call', params: [{ to: c.to, data: c.data }, 'latest'] };
+        });
+        for (var i = 0; i < RPC_URLS.length; i++) {
+            try {
+                var json = await rpcFetch(RPC_URLS[i], batch);
+                if (Array.isArray(json)) {
+                    json.sort(function(a, b) { return a.id - b.id; });
+                    return json.map(function(r) { return r.result || '0x0'; });
+                }
+            } catch (e) { /* try next */ }
+        }
+        // Fallback: individual calls
+        var results = [];
+        for (var j = 0; j < calls.length; j++) {
+            results.push(await publicContractRead(calls[j].to, calls[j].data));
+        }
+        return results;
+    }
+
     // ── Enumerate Holders ──
+    // Always uses public Base RPCs — wallet may be on a different chain
     async function enumerateHolders() {
-        var totalHex = await contractRead(ANGEL_NFT, SEL_TOTAL_MINTED);
+        var totalHex = await publicContractRead(ANGEL_NFT, SEL_TOTAL_MINTED);
         var totalMinted = Number(BigInt(totalHex));
         if (totalMinted === 0) return [];
 
@@ -189,8 +223,9 @@
             for (var id = start; id <= end; id++) {
                 calls.push({ to: ANGEL_NFT, data: SEL_OWNER_OF + pad32('0x' + id.toString(16)) });
             }
-            var results = await batchRead(calls);
+            var results = await publicBatchRead(calls);
             for (var j = 0; j < results.length; j++) {
+                if (results[j].length < 66) continue; // skip invalid results
                 var owner = '0x' + results[j].slice(26);
                 if (owner !== '0x0000000000000000000000000000000000000000') {
                     holders[owner.toLowerCase()] = true;
