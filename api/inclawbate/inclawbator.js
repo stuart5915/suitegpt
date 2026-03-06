@@ -150,6 +150,22 @@ export default async function handler(req, res) {
             });
         }
 
+        // Single project by token address
+        const tokenAddr = req.query.token_address;
+        if (tokenAddr) {
+            const { data: project, error: projErr } = await supabase
+                .from('inclawbator_projects')
+                .select('*')
+                .eq('token_address', tokenAddr.toLowerCase())
+                .single();
+
+            if (projErr || !project) return res.status(404).json({ error: 'Project not found' });
+
+            const { x_access_token, x_access_secret, ...safe } = project;
+            safe.x_connected = !!(x_access_token && x_access_secret);
+            return res.status(200).json({ project: safe });
+        }
+
         // Single project by ID + agent posts
         const id = req.query.id;
         if (id) {

@@ -152,11 +152,8 @@ function renderTable() {
         var name = p.token_name || p.name || 'Unnamed';
         var symbol = p.token_symbol || '';
         var logoColor = colors[i % colors.length];
-        // API projects have UUID ids → project detail page; extras → Clanker
-        var isUUID = p.id && p.id.length > 8 && p.id.indexOf('-') !== -1;
-        var href = isUUID
-            ? '/inclawbator/' + p.id
-            : (p.token_address ? 'https://www.clanker.world/clanker/' + p.token_address : '/tokens');
+        // All tokens navigate to detail page
+        var href = p.token_address ? '/tokens/' + p.token_address : '/tokens';
 
         var logoHtml = p.logo_url
             ? '<img class="tok-logo" src="' + p.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
@@ -168,9 +165,12 @@ function renderTable() {
         if (p.agent_enabled) badges += '<span class="lp-badge-agent">Agent</span>';
 
         var actions = '';
+        var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
         if (p.token_address) {
-            actions = '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>'
-                + '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
+            if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
+                actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
+            }
+            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
         }
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';

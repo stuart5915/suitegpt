@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>Token — Inclawbate</title>
+    <meta name="description" content="Token details, chart, and trading links on Inclawbate.">
+    <meta property="og:title" content="Token — Inclawbate">
+    <meta property="og:description" content="Token details, chart, and trading links on Inclawbate.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/tokens">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; background: var(--bg-deepest); }
+
+        .td-page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-2xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        /* ── Loading / Not Found ── */
+        .td-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: var(--space-md);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+        .td-not-found {
+            text-align: center;
+            padding: var(--space-4xl) var(--space-lg);
+        }
+        .td-not-found h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+        .td-not-found p {
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+        }
+
+        /* ── Back link ── */
+        .td-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-xl);
+            transition: color var(--transition-fast);
+            text-decoration: none;
+        }
+        .td-back:hover { color: var(--text-secondary); }
+
+        /* ── Hero ── */
+        .td-hero {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        .td-logo {
+            width: 64px; height: 64px;
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .td-logo-placeholder {
+            width: 64px; height: 64px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.6rem;
+            color: #fff;
+            flex-shrink: 0;
+            background: #6366f1;
+        }
+        .td-hero-info { flex: 1; min-width: 0; }
+        .td-hero-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+        .td-name {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            line-height: 1.15;
+        }
+        .td-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .td-tier {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .td-tier-incubated   { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .td-tier-permissionless { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .td-tier-ecosystem   { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .td-tier-partner     { background: rgba(236,72,153,0.15); color: #f472b6; }
+        .td-desc {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-top: var(--space-sm);
+            line-height: 1.5;
+        }
+
+        /* ── Stats Grid ── */
+        .td-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-subtle);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: var(--space-xl);
+        }
+        .td-stat {
+            background: var(--bg-elevated);
+            padding: var(--space-md) var(--space-lg);
+        }
+        .td-stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+        .td-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .td-stat-value.positive { color: #4ade80; }
+        .td-stat-value.negative { color: #f87171; }
+
+        /* ── Links Row ── */
+        .td-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-xl);
+        }
+        .td-link {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 7px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: all 0.15s;
+            white-space: nowrap;
+            border: 1px solid;
+        }
+        .td-link:hover { opacity: 0.8; }
+        .td-link-website   { background: rgba(99,102,241,0.1); color: #818cf8; border-color: rgba(99,102,241,0.2); }
+        .td-link-x         { background: rgba(255,255,255,0.06); color: #d1d5db; border-color: rgba(255,255,255,0.12); }
+        .td-link-telegram   { background: rgba(56,189,248,0.1); color: #38bdf8; border-color: rgba(56,189,248,0.2); }
+        .td-link-clanker    { background: rgba(99,102,241,0.1); color: #818cf8; border-color: rgba(99,102,241,0.2); }
+        .td-link-uniswap    { background: rgba(236,72,153,0.1); color: #f472b6; border-color: rgba(236,72,153,0.2); }
+        .td-link-dexscreener { background: rgba(74,222,128,0.1); color: #4ade80; border-color: rgba(74,222,128,0.2); }
+        .td-link-stake       { background: rgba(45,212,191,0.1); color: #2dd4bf; border-color: rgba(45,212,191,0.2); }
+
+        /* ── Chart ── */
+        .td-chart {
+            margin-bottom: var(--space-xl);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+        .td-chart iframe {
+            width: 100%;
+            height: 420px;
+            border: none;
+        }
+
+        /* ── Owner Edit Panel ── */
+        .td-edit {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+        }
+        .td-edit-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+        .td-edit-row {
+            margin-bottom: var(--space-md);
+        }
+        .td-edit-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .td-edit-input {
+            width: 100%;
+            background: var(--bg-deepest);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .td-edit-input:focus { border-color: var(--accent-primary, #6366f1); }
+        textarea.td-edit-input {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .td-edit-save {
+            background: var(--accent-primary, #6366f1);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 10px 24px;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .td-edit-save:hover { opacity: 0.85; }
+        .td-edit-save:disabled { opacity: 0.4; cursor: not-allowed; }
+        .td-edit-msg {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            margin-top: var(--space-sm);
+        }
+        .td-edit-msg.success { color: #4ade80; }
+        .td-edit-msg.error { color: #f87171; }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: var(--space-2xl) var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.82rem;
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            .td-name { font-size: 1.25rem; }
+            .td-stats { grid-template-columns: 1fr 1fr; }
+            .td-chart iframe { height: 320px; }
+            .td-hero { gap: var(--space-md); }
+            .td-logo, .td-logo-placeholder { width: 48px; height: 48px; font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <a href="/stake" class="nav-link">Stake</a>
+        <a href="/angel" class="nav-link">NFT</a>
+        <a href="/apps" class="nav-link">Apps</a>
+        <a href="/tokens" class="nav-link active">Tokens</a>
+        <a href="/inclawbator" class="nav-link">Inclawbator</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+        <a href="/partners" class="nav-link">Partners</a>
+    </div>
+</nav>
+
+<div class="td-page">
+    <a href="/tokens" class="td-back">&larr; All Tokens</a>
+    <div id="tdContent">
+        <div class="td-loading">Loading token data...</div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2026 Inclawbate. Built on Base.</p>
+</footer>
+
+<script src="/js/nav-auth.js"></script>
+<script src="/js/token-detail-app.js"></script>
+
+</body>
+</html>
