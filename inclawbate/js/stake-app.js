@@ -555,11 +555,8 @@ function renderOverview() {
     var rewardsGrid = document.getElementById('stakeGridRewards');
     var rewardsSection = document.getElementById('stakeRewardsSection');
     var ubiGrid = document.getElementById('stakeGridUbi');
-    var partnerGrid = document.getElementById('stakeGridPartner');
     var inclawbatorGrid = document.getElementById('stakeGridInclawbator');
     var inclawbatorSection = document.getElementById('stakeInclawbatorSection');
-    var legacyGrid = document.getElementById('stakeGridLegacy');
-    var legacySection = document.getElementById('stakeLegacySection');
     var totalTvl = 0;
 
     // Sort: featured first, then by TVL descending
@@ -573,9 +570,7 @@ function renderOverview() {
 
     var rewardsHtml = '';
     var ubiHtml = '';
-    var partnerHtml = '';
     var inclawbatorHtml = '';
-    var legacyHtml = '';
 
     // Populate CLAWS hero stats
     var clawsStats = poolStats['claws'] || {};
@@ -607,14 +602,13 @@ function renderOverview() {
         if (key === 'claws') return;
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
+        // Partner & legacy pools live on /partners now — skip on overview
+        if (pool.category === 'partner' || pool.category === 'legacy') return;
+
         if (pool.category === 'rewards') {
             rewardsHtml += result.html;
         } else if (pool.category === 'inclawbator') {
             inclawbatorHtml += result.html;
-        } else if (pool.category === 'partner') {
-            partnerHtml += result.html;
-        } else if (pool.category === 'legacy') {
-            legacyHtml += result.html;
         } else {
             ubiHtml += result.html;
         }
@@ -622,35 +616,14 @@ function renderOverview() {
 
     // Coming soon pools in UBI section
     COMING_SOON.forEach(function(pool) {
-        if (pool.category === 'partner') {
-            partnerHtml += buildComingSoonCard(pool);
-        } else {
-            ubiHtml += buildComingSoonCard(pool);
-        }
+        ubiHtml += buildComingSoonCard(pool);
     });
-
-    // CTA card for partners
-    partnerHtml += '<a href="https://t.me/StuartDeFi" target="_blank" rel="noopener" class="stake-card stake-card--cta" ' +
-        'style="--pool-accent:var(--lobster-400);--pool-accent-dim:hsla(9,52%,56%,0.08);--pool-glow:hsla(9,52%,56%,0.12);border-style:dashed;">' +
-        '<div class="stake-card-cta-plus">+</div>' +
-        '<div class="stake-card-name">Your Token Here</div>' +
-        '<div class="stake-card-desc">Launch a staking pool for your token on Base. No code required. Live in 48 hours.</div>' +
-        '<div class="stake-card-stats" style="grid-template-columns:1fr;">' +
-            '<div class="stake-card-stat" style="align-items:center;">' +
-                '<span class="stake-card-stat-value" style="font-size:0.75rem;color:var(--text-secondary);">Non-custodial &middot; Branded page &middot; Free for founding partners</span>' +
-            '</div>' +
-        '</div>' +
-        '<div class="stake-card-cta">Message @StuartDeFi on Telegram &rarr;</div>' +
-    '</a>';
 
     rewardsGrid.innerHTML = rewardsHtml;
     rewardsSection.style.display = rewardsHtml ? '' : 'none';
     ubiGrid.innerHTML = ubiHtml;
-    partnerGrid.innerHTML = partnerHtml;
     inclawbatorGrid.innerHTML = inclawbatorHtml;
     inclawbatorSection.style.display = inclawbatorHtml ? '' : 'none';
-    legacyGrid.innerHTML = legacyHtml;
-    legacySection.style.display = legacyHtml ? '' : 'none';
 
     // Update header
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
