@@ -481,7 +481,33 @@ export default async function handler(req, res) {
                 return res.json({ success: true, allow_anonymous_publish: value });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish' });
+            // ── Claim anonymous apps after wallet connect ──
+            if (action === 'claim_anonymous') {
+                const { slugs } = req.body;
+                if (!Array.isArray(slugs) || !slugs.length) {
+                    return res.status(400).json({ error: 'slugs array required' });
+                }
+
+                // Only claim apps that are still anonymous
+                const cleanSlugs = slugs.slice(0, 20).map(s => s.toLowerCase().trim());
+                const email = user.x_handle ? user.x_handle + '@inclawbate.com' : 'anonymous@inclawbate.com';
+                const { data: claimed, error: claimErr } = await supabase
+                    .from('user_apps')
+                    .update({
+                        publisher_email: email,
+                        creator_wallet: user.wallet_address || null,
+                        creator_x_handle: user.x_handle || null,
+                        user_id: user.sub
+                    })
+                    .in('slug', cleanSlugs)
+                    .eq('publisher_email', 'anonymous@inclawbate.com')
+                    .select('slug');
+
+                if (claimErr) throw claimErr;
+                return res.json({ claimed: true, count: claimed ? claimed.length : 0 });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous' });
 
         } catch (err) {
             console.error('apps POST error:', err);

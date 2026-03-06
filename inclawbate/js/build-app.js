@@ -1271,9 +1271,21 @@
                 var storeLink = isListed ? ' | <a href="/apps" target="_blank">View in App Store</a>' : '';
                 var nudge = '';
                 if (!isLoggedIn()) {
+                    // Save slug to localStorage so we can claim it after wallet connect
+                    try {
+                        var pending = JSON.parse(localStorage.getItem('inclawbate_pending_apps') || '[]');
+                        if (pending.indexOf(slug) === -1) pending.push(slug);
+                        localStorage.setItem('inclawbate_pending_apps', JSON.stringify(pending));
+                    } catch (e) {}
                     nudge = '<div class="publish-nudge">' +
                         '<p>Want to edit this app later and save your projects?</p>' +
                         '<button class="publish-nudge-btn" onclick="window.BuildApp.connectWalletFromNudge()">Connect Wallet to Save</button>' +
+                        '<p class="publish-nudge-nowallet">Don\'t have a wallet? Get one free in 60 seconds:</p>' +
+                        '<div class="publish-nudge-links">' +
+                            '<a href="https://www.coinbase.com/wallet" target="_blank">Coinbase Wallet</a>' +
+                            '<a href="https://wallet.base.org" target="_blank">Base Wallet</a>' +
+                        '</div>' +
+                        '<p class="publish-nudge-reassure">Your app is already live — come back anytime and connect to claim it.</p>' +
                         '</div>';
                 }
                 els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>' + storeLink + nudge;
@@ -1879,6 +1891,7 @@
             localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
 
             fetchCredits();
+            await claimPendingApps();
             loadProjects();
         } catch (e) {
             if (e.code === 4001) return; // user rejected
@@ -1907,13 +1920,33 @@
             localStorage.setItem('inclawbate_token', data.token);
             localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
             fetchCredits();
+
+            // Claim any pending anonymous apps
+            await claimPendingApps();
+
             // Update the nudge area to show success
             var nudgeEl = document.querySelector('.publish-nudge');
-            if (nudgeEl) nudgeEl.innerHTML = '<p style="color:var(--seafoam-300)">Account connected! Your projects will be saved from now on.</p>';
+            if (nudgeEl) nudgeEl.innerHTML = '<p style="color:var(--seafoam-300)">Account connected! Your app is linked to your account.</p>';
         } catch (e) {
             if (e.code === 4001) return;
             alert('Wallet connection failed.');
         }
+    }
+
+    async function claimPendingApps() {
+        try {
+            var pending = JSON.parse(localStorage.getItem('inclawbate_pending_apps') || '[]');
+            if (!pending.length) return;
+            var token = getToken();
+            if (!token) return;
+            var resp = await fetch('/api/inclawbate/apps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ action: 'claim_anonymous', slugs: pending })
+            });
+            var data = await resp.json();
+            if (data.claimed) localStorage.removeItem('inclawbate_pending_apps');
+        } catch (e) { /* non-critical */ }
     }
 
     // ── Go Back ──
