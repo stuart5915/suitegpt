@@ -156,6 +156,69 @@
             text-decoration: underline;
         }
 
+        /* ── Suggestion Chips ── */
+        .concierge-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
+        }
+        .suggestion-chip {
+            padding: 6px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .suggestion-chip:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+            background: hsla(9, 60%, 54%, 0.08);
+        }
+
+        /* ── Regen Button ── */
+        .concierge-regen {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: var(--space-sm);
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .concierge-regen:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-secondary);
+        }
+
+        /* ── Suggest CTA ── */
+        .suggest-cta {
+            background: transparent;
+            border: 2px solid var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: none;
+        }
+        .suggest-cta:hover {
+            background: var(--accent-primary);
+            color: #fff;
+            box-shadow: var(--shadow-glow-lg);
+        }
+        .hero-ctas {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         /* ── Controls ── */
         .apps-controls {
             display: flex;
@@ -814,7 +877,10 @@
                 <span class="apps-stat-label">Builders</span>
             </div>
         </div>
-        <a href="/build" class="apps-hero-cta">Build Your Own</a>
+        <div class="hero-ctas">
+            <a href="/build" class="apps-hero-cta">Build Your Own</a>
+            <button class="apps-hero-cta suggest-cta" id="suggestBtn">Suggest an Idea</button>
+        </div>
     </div>
 
     <!-- Concierge -->
@@ -823,6 +889,7 @@
             <input type="text" id="conciergeInput" placeholder="What kind of app are you looking for?">
             <button id="conciergeBtn">Ask</button>
         </div>
+        <div id="conciergeSuggestions" class="concierge-suggestions"></div>
         <div id="conciergeResponse" class="concierge-response" style="display:none;"></div>
     </div>
 
@@ -1487,22 +1554,89 @@
         var input = document.getElementById('conciergeInput');
         var btn = document.getElementById('conciergeBtn');
         var responseEl = document.getElementById('conciergeResponse');
+        var suggestionsEl = document.getElementById('conciergeSuggestions');
+        var suggestBtn = document.getElementById('suggestBtn');
+        var lastQuery = '';
 
-        function askConcierge() {
-            var query = input.value.trim();
+        var chipPool = [
+            'a habit tracker with streaks',
+            'a multiplayer trivia game',
+            'a budget dashboard',
+            'a recipe organizer',
+            'a pomodoro timer',
+            'a mood journal',
+            'a flashcard quiz',
+            'a workout logger',
+            'a daily planner',
+            'a drawing canvas'
+        ];
+
+        // Pick 3 random chips
+        function renderChips() {
+            var shuffled = chipPool.slice().sort(function() { return Math.random() - 0.5; });
+            var picks = shuffled.slice(0, 3);
+            suggestionsEl.innerHTML = '';
+            picks.forEach(function(text) {
+                var chip = document.createElement('span');
+                chip.className = 'suggestion-chip';
+                chip.textContent = text;
+                chip.addEventListener('click', function() {
+                    input.value = text;
+                    askConcierge();
+                });
+                suggestionsEl.appendChild(chip);
+            });
+        }
+
+        function hideChips() {
+            suggestionsEl.style.display = 'none';
+        }
+
+        function getAppList() {
+            return state.apps.map(function(a) {
+                return a.name + ' (' + (a.category || 'other') + '): ' + (a.description || 'No description');
+            }).join('\n');
+        }
+
+        function linkAppNames(text) {
+            state.apps.forEach(function(app) {
+                var escaped = app.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                text = text.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), '<a href="#" onclick="event.preventDefault(); AppStore.openDetail(\'' + app.id + '\')">' + app.name + '</a>');
+            });
+            return text;
+        }
+
+        function showResponse(html, isSuggest) {
+            responseEl.style.display = 'block';
+            responseEl.innerHTML = html;
+            // Append regen button
+            var regen = document.createElement('button');
+            regen.className = 'concierge-regen';
+            regen.innerHTML = '&#x1f504; Try again';
+            regen.addEventListener('click', function() {
+                if (isSuggest) {
+                    suggestBtn.click();
+                } else {
+                    askConcierge(lastQuery);
+                }
+            });
+            responseEl.appendChild(regen);
+            responseEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function askConcierge(overrideQuery) {
+            var query = overrideQuery || input.value.trim();
             if (!query) return;
+            lastQuery = query;
 
             btn.disabled = true;
             btn.textContent = 'Thinking...';
             responseEl.style.display = 'block';
             responseEl.textContent = '...';
-
-            var appList = state.apps.map(function(a) {
-                return a.name + ' (' + (a.category || 'other') + '): ' + (a.description || 'No description');
-            }).join('\n');
+            hideChips();
 
             var systemPrompt = 'You are a concierge for the Inclawbate app store. ' +
-                'Here are the current apps:\n' + appList + '\n\n' +
+                'Here are the current apps:\n' + getAppList() + '\n\n' +
                 'When a user asks what they need, recommend matching apps by name. ' +
                 'If nothing matches, suggest they build one at inclawbate.com/build using the Inclawbator. ' +
                 'Keep responses short (2-4 sentences). Use app names exactly as listed.';
@@ -1521,12 +1655,7 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 var text = data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Sorry, I couldn\'t process that.';
-                // Link app names to open detail modal
-                state.apps.forEach(function(app) {
-                    var escaped = app.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    text = text.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), '<a href="#" onclick="event.preventDefault(); AppStore.openDetail(\'' + app.id + '\')">' + app.name + '</a>');
-                });
-                responseEl.innerHTML = text;
+                showResponse(linkAppNames(text));
             })
             .catch(function() {
                 responseEl.textContent = 'Something went wrong. Try again.';
@@ -1537,10 +1666,51 @@
             });
         }
 
-        btn.addEventListener('click', askConcierge);
+        // "Suggest an Idea" button
+        suggestBtn.addEventListener('click', function() {
+            suggestBtn.disabled = true;
+            suggestBtn.textContent = 'Thinking...';
+            responseEl.style.display = 'block';
+            responseEl.textContent = '...';
+            hideChips();
+
+            var appNames = state.apps.map(function(a) { return a.name; }).join(', ');
+            var systemPrompt = 'Here are the apps already on Inclawbate: ' + appNames + '. ' +
+                'Suggest ONE creative new app idea that doesn\'t exist yet. ' +
+                'Give a name, one-sentence description, and why it\'s useful. 3-4 sentences max.';
+
+            fetch('/api/groq', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: 'Suggest a new app idea for the Inclawbate ecosystem.' }
+                    ],
+                    max_tokens: 300
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var text = data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Sorry, couldn\'t generate an idea right now.';
+                var buildLink = '<br><a href="/build?idea=' + encodeURIComponent(text) + '" style="display:inline-block;margin-top:8px;padding:6px 14px;background:var(--accent-primary);color:#fff;border-radius:var(--radius-md);font-weight:700;font-size:0.85rem;">Build This &rarr;</a>';
+                showResponse(text + buildLink, true);
+            })
+            .catch(function() {
+                responseEl.textContent = 'Something went wrong. Try again.';
+            })
+            .finally(function() {
+                suggestBtn.disabled = false;
+                suggestBtn.textContent = 'Suggest an Idea';
+            });
+        });
+
+        btn.addEventListener('click', function() { askConcierge(); });
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') askConcierge();
         });
+
+        renderChips();
     })();
 })();
 </script>
