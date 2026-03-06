@@ -62,7 +62,9 @@ Rules:
 
 Output format: Always wrap your HTML in a single \`\`\`html code block. You may include a brief explanation before the code block, but the code block is required.
 
-## Available SDKs (auto-injected into every published app)
+## Available SDKs (auto-injected — do NOT add script tags for these)
+These SDKs are automatically loaded into every app. Do NOT include \`<script src="...sdk.js">\` tags — just call the APIs directly in your code.
+IMPORTANT: If a user's prompt does NOT require persistence, payments, or multiplayer, do NOT use these SDKs. Use plain localStorage for simple apps like todo lists.
 
 ### CLAWS SDK — window.CLAWS
 Handles crypto payments via CLAWS token on Base chain.
@@ -135,7 +137,9 @@ replacement lines
 
 You may include a brief explanation before/between edit blocks.
 
-## Available SDKs (auto-injected into every published app)
+## Available SDKs (auto-injected — do NOT add script tags for these)
+These SDKs are automatically loaded. Do NOT include \`<script src="...sdk.js">\` tags — just use the APIs directly.
+IMPORTANT: If the app does NOT need persistence, payments, or multiplayer, do NOT use these SDKs. Use plain localStorage for simple apps.
 
 ### CLAWS SDK — window.CLAWS
 Handles crypto payments via CLAWS token on Base chain.
