@@ -862,16 +862,40 @@ async function handleLaunchDeploy() {
 
         var tokenAddress = parseDeployedToken(result.receipt);
 
-        // Fallback: re-fetch receipt via public RPC (mobile wallets sometimes return incomplete logs)
+        // Fallback: re-fetch receipt via public RPC with retries
+        // Mobile wallets often return receipts with empty/incomplete logs
         if (!tokenAddress) {
-            var rpcReceipt = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [result.txHash] });
-            if (rpcReceipt && rpcReceipt.result) {
-                tokenAddress = parseDeployedToken(rpcReceipt.result);
+            for (var retryI = 0; retryI < 5 && !tokenAddress; retryI++) {
+                if (retryI > 0) await new Promise(function(r) { setTimeout(r, 3000); });
+                var rpcReceipt = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [result.txHash] });
+                if (rpcReceipt && rpcReceipt.result) {
+                    tokenAddress = parseDeployedToken(rpcReceipt.result);
+                }
             }
         }
 
+        // Last resort: check tx logs via debug trace or basescan
         if (!tokenAddress) {
-            throw new Error('Could not find deployed token address in transaction');
+            try {
+                var txData = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionByHash', params: [result.txHash] });
+                if (txData && txData.result && txData.result.to && txData.result.to.toLowerCase() === CLANKER_V4.toLowerCase()) {
+                    // Tx went to Clanker — check basescan API for token creation
+                    var bsResp = await fetch('https://api.basescan.org/api?module=account&action=tokentx&txhash=' + result.txHash + '&page=1&offset=5');
+                    var bsData = await bsResp.json();
+                    if (bsData.result && bsData.result.length > 0) {
+                        for (var bi = 0; bi < bsData.result.length; bi++) {
+                            if (bsData.result[bi].from === '0x0000000000000000000000000000000000000000') {
+                                tokenAddress = bsData.result[bi].contractAddress;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (e) { /* basescan fallback failed, continue */ }
+        }
+
+        if (!tokenAddress) {
+            throw new Error('Could not find deployed token address in transaction. Tx hash: ' + result.txHash + ' — check basescan.org and contact support if your token was created.');
         }
 
         state.deployedToken = tokenAddress;
