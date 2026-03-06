@@ -172,6 +172,28 @@
                     sec.appendChild(a);
                 });
                 body.appendChild(sec);
+
+                // ── WalletConnect for plain mobile browsers (Safari/Chrome) ──
+                if (window.WalletKit) {
+                    var wcSec = document.createElement('div');
+                    wcSec.className = 'ws-section';
+                    wcSec.innerHTML = '<div class="ws-section-label">Or Connect Remotely</div>';
+                    var wcBtn = document.createElement('button');
+                    wcBtn.className = 'ws-option';
+                    wcBtn.innerHTML = '<div style="width:36px;height:36px;border-radius:8px;background:#3396FF;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="12" viewBox="0 0 480 280" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M98.1 69.4c78.4-76.8 205.5-76.8 283.9 0l9.4 9.2c3.9 3.8 3.9 10 0 13.9l-32.2 31.6c-2 1.9-5.1 1.9-7.1 0l-13-12.7c-54.7-53.6-143.3-53.6-198 0l-13.9 13.6c-2 1.9-5.1 1.9-7.1 0L88 93.3c-3.9-3.8-3.9-10 0-13.9l10.1-10zm350.9 65.3 28.7 28.1c3.9 3.8 3.9 10 0 13.9L349.2 302.6c-3.9 3.8-10.3 3.8-14.2 0l-91.8-89.9c-1-.9-2.6-.9-3.5 0l-91.8 89.9c-3.9 3.8-10.3 3.8-14.2 0L5.2 176.7c-3.9-3.8-3.9-10 0-13.9l28.7-28.1c3.9-3.8 10.3-3.8 14.2 0l91.8 89.9c1 .9 2.6.9 3.5 0l91.8-89.9c3.9-3.8 10.3-3.8 14.2 0l91.8 89.9c1 .9 2.6.9 3.5 0l91.8-89.9c4-3.9 10.3-3.9 14.3 0z" fill="#fff"/></svg></div>' +
+                        '<div class="ws-option-info"><div class="ws-option-name">WalletConnect</div><div style="font-size:12px;color:#999;margin-top:2px">Scan with any wallet app</div></div>' +
+                        '<span class="ws-option-tag ws-tag-open">Connect</span>';
+                    wcBtn.addEventListener('click', function() {
+                        hideModal();
+                        WalletKit.onConnect(function() {
+                            var p = WalletKit.getProvider();
+                            if (p) done(p);
+                        });
+                        WalletKit.open();
+                    });
+                    wcSec.appendChild(wcBtn);
+                    body.appendChild(wcSec);
+                }
             } else {
                 // ── Desktop: show detected wallets + install links ──
                 // Re-request EIP-6963 to catch any late arrivals
@@ -235,6 +257,28 @@
                     btn.addEventListener('click', function() { done(window.ethereum); });
                     legSec.appendChild(btn);
                     body.appendChild(legSec);
+                }
+
+                // ── WalletConnect option (QR code) ──
+                if (window.WalletKit) {
+                    var wcSec = document.createElement('div');
+                    wcSec.className = 'ws-section';
+                    wcSec.innerHTML = '<div class="ws-section-label">WalletConnect</div>';
+                    var wcBtn = document.createElement('button');
+                    wcBtn.className = 'ws-option';
+                    wcBtn.innerHTML = '<div style="width:36px;height:36px;border-radius:8px;background:#3396FF;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="12" viewBox="0 0 480 280" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M98.1 69.4c78.4-76.8 205.5-76.8 283.9 0l9.4 9.2c3.9 3.8 3.9 10 0 13.9l-32.2 31.6c-2 1.9-5.1 1.9-7.1 0l-13-12.7c-54.7-53.6-143.3-53.6-198 0l-13.9 13.6c-2 1.9-5.1 1.9-7.1 0L88 93.3c-3.9-3.8-3.9-10 0-13.9l10.1-10zm350.9 65.3 28.7 28.1c3.9 3.8 3.9 10 0 13.9L349.2 302.6c-3.9 3.8-10.3 3.8-14.2 0l-91.8-89.9c-1-.9-2.6-.9-3.5 0l-91.8 89.9c-3.9 3.8-10.3 3.8-14.2 0L5.2 176.7c-3.9-3.8-3.9-10 0-13.9l28.7-28.1c3.9-3.8 10.3-3.8 14.2 0l91.8 89.9c1 .9 2.6.9 3.5 0l91.8-89.9c3.9-3.8 10.3-3.8 14.2 0l91.8 89.9c1 .9 2.6.9 3.5 0l91.8-89.9c4-3.9 10.3-3.9 14.3 0z" fill="#fff"/></svg></div>' +
+                        '<div class="ws-option-info"><div class="ws-option-name">WalletConnect</div><div style="font-size:12px;color:#999;margin-top:2px">Scan QR with your phone</div></div>' +
+                        '<span class="ws-option-tag ws-tag-open">Connect</span>';
+                    wcBtn.addEventListener('click', function() {
+                        hideModal();
+                        WalletKit.onConnect(function() {
+                            var p = WalletKit.getProvider();
+                            if (p) done(p);
+                        });
+                        WalletKit.open();
+                    });
+                    wcSec.appendChild(wcBtn);
+                    body.appendChild(wcSec);
                 }
             }
 
