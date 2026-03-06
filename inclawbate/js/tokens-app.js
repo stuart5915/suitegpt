@@ -5,6 +5,32 @@
 
 var API_BASE = '/api/inclawbate/inclawbator';
 
+// Featured tokens not in the inclawbator API
+var EXTRA_TOKENS = [
+    {
+        id: 'claws',
+        token_name: 'CLAWS',
+        token_symbol: 'CLAWS',
+        token_address: '0x7ca47B141639B893C6782823C0b219f872056379',
+        logo_url: '/inclawbate/assets/clawslogo.jpg',
+        status: 'active',
+        tier: 'ecosystem',
+        staking_address: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40',
+        created_at: '2025-01-01T00:00:00Z'
+    },
+    {
+        id: 's4h',
+        token_name: 'Salvation 4 Humanity',
+        token_symbol: 'S4H',
+        token_address: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
+        logo_url: '/salvation4humanity/assets/s4hlogo.png',
+        status: 'active',
+        tier: 'partner',
+        staking_address: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
+        created_at: '2025-06-01T00:00:00Z'
+    }
+];
+
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
 async function loadLiveProjects() {
@@ -12,9 +38,20 @@ async function loadLiveProjects() {
         var res = await fetch(API_BASE);
         if (!res.ok) throw new Error('Failed to fetch projects');
         var data = await res.json();
-        lpState.projects = (data.projects || data || []).filter(function(p) {
+        var apiProjects = (data.projects || data || []).filter(function(p) {
             return p.status === 'active' || p.status === 'launched';
         });
+        // Merge extra tokens (avoid duplicates by address)
+        var existingAddrs = {};
+        apiProjects.forEach(function(p) {
+            if (p.token_address) existingAddrs[p.token_address.toLowerCase()] = true;
+        });
+        EXTRA_TOKENS.forEach(function(t) {
+            if (!existingAddrs[t.token_address.toLowerCase()]) {
+                apiProjects.push(t);
+            }
+        });
+        lpState.projects = apiProjects;
         renderTable();
         fetchMarketCaps();
     } catch (e) {
