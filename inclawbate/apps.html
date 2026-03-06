@@ -1521,10 +1521,10 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 var text = data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Sorry, I couldn\'t process that.';
-                // Link app names
+                // Link app names to open detail modal
                 state.apps.forEach(function(app) {
                     var escaped = app.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    text = text.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), '<a href="/apps/' + app.slug + '">' + app.name + '</a>');
+                    text = text.replace(new RegExp('\\b' + escaped + '\\b', 'gi'), '<a href="#" onclick="event.preventDefault(); AppStore.openDetail(\'' + app.id + '\')">' + app.name + '</a>');
                 });
                 responseEl.innerHTML = text;
             })
