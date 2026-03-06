@@ -748,6 +748,7 @@
                 }
                 state.currentCode = finalCode;
                 updatePreview(finalCode);
+                showPreviewBadge();
                 setTimeout(showSuggestionChips, 400);
             }
 
@@ -2319,6 +2320,36 @@
         }
     }
 
+    // ── Mobile Tab Switching ──
+    function switchMobileTab(tab) {
+        var chatPanel = document.querySelector('.chat-panel');
+        var previewPanel = document.querySelector('.preview-panel');
+        var tabBar = document.getElementById('mobileTabBar');
+        if (!chatPanel || !previewPanel || !tabBar) return;
+
+        var tabs = tabBar.querySelectorAll('button');
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+
+        if (tab === 'preview') {
+            chatPanel.classList.add('mobile-hidden');
+            previewPanel.classList.remove('mobile-hidden');
+            tabs[1].classList.add('active');
+            // Clear badge
+            var badge = document.getElementById('previewBadge');
+            if (badge) badge.classList.remove('visible');
+        } else {
+            previewPanel.classList.add('mobile-hidden');
+            chatPanel.classList.remove('mobile-hidden');
+            tabs[0].classList.add('active');
+        }
+    }
+
+    function showPreviewBadge() {
+        if (window.innerWidth > 768) return;
+        var badge = document.getElementById('previewBadge');
+        if (badge) badge.classList.add('visible');
+    }
+
     // ── Expose Public API ──
     window.BuildApp = {
         newProject: newProject,
@@ -2358,7 +2389,8 @@
         openIncubation: openIncubation,
         closeIncubation: closeIncubation,
         selectIncubationTier: selectIncubationTier,
-        submitIncubation: submitIncubation
+        submitIncubation: submitIncubation,
+        switchMobileTab: switchMobileTab
     };
 
     // ── Boot ──

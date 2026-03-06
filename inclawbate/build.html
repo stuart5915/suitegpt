@@ -2021,10 +2021,114 @@
             box-shadow: 0 4px 16px hsla(9, 60%, 54%, 0.3);
         }
 
+        /* ── Mobile Tab Bar ── */
+        .mobile-tab-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-default);
+            z-index: 100;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-around;
+        }
+        .mobile-tab-bar button {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 0;
+            transition: color var(--transition-fast);
+            position: relative;
+        }
+        .mobile-tab-bar button .mtab-icon { font-size: 1.2rem; }
+        .mobile-tab-bar button.active { color: var(--accent-primary); }
+        .mobile-tab-bar button .mtab-badge {
+            display: none;
+            position: absolute;
+            top: 6px;
+            right: calc(50% - 16px);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--seafoam-400);
+        }
+        .mobile-tab-bar button .mtab-badge.visible { display: block; }
+
         /* ── Mobile ── */
         @media (max-width: 768px) {
-            .mobile-gate { display: flex; }
-            .auth-gate, .projects-view, .build-view, .nav { display: none !important; }
+            .mobile-gate { display: none !important; }
+            .mobile-tab-bar { display: flex; }
+
+            .nav { padding: 0 var(--space-md); }
+            .nav-links { display: none; }
+
+            /* Build header compact */
+            .build-header { padding: var(--space-xs) var(--space-md); min-height: 36px; gap: var(--space-sm); }
+            .build-title { font-size: 0.85rem; }
+            .build-new { font-size: 0.7rem; padding: 3px 8px; }
+
+            /* Panels go full screen */
+            .build-panels { flex-direction: column; }
+            .chat-panel {
+                width: 100% !important;
+                min-width: 0 !important;
+                border-right: none !important;
+                flex: 1;
+            }
+            .preview-panel {
+                width: 100% !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+            .build-view .build-panels { position: relative; flex: 1; }
+
+            /* Toggle visibility */
+            .mobile-hidden { display: none !important; }
+
+            /* Bottom padding for tab bar */
+            .chat-input-area { padding-bottom: 60px; }
+            .preview-panel { padding-bottom: 52px; }
+
+            /* Compact model selector */
+            .model-selector { flex-wrap: wrap; gap: 4px; }
+            .model-option { padding: 4px 8px; font-size: 0.68rem; }
+            .model-hint { display: none; }
+            .model-info-btn { display: none; }
+
+            /* Compact action bar */
+            .action-bar { flex-wrap: wrap; gap: 6px; padding-top: 6px; margin-top: 6px; }
+            .action-credits { padding: 4px 8px; }
+            .action-credits-count { font-size: 0.78rem; }
+            .action-credits-label { display: none; }
+            .action-buy-btn { padding: 4px 10px; font-size: 0.75rem; }
+            .action-publish-btn { display: none; } /* Publish in tab bar instead */
+
+            /* Chat header area compact */
+            .chat-header-area { padding: var(--space-sm); }
+            .chat-header-title { font-size: 0.9rem; }
+            .cap-pills { gap: 4px; }
+            .cap-pill { font-size: 0.68rem; padding: 4px 8px; }
+            .cap-pill-info { display: none; }
+
+            /* Starter prompts */
+            .chat-header-prompts { gap: 4px; }
         }
 
         /* ── Cost Confirmation Modal ── */
@@ -2230,7 +2334,7 @@
                 </div>
             </div>
         </div>
-        <div class="preview-panel">
+        <div class="preview-panel mobile-hidden">
             <div class="preview-toolbar">
                 <button class="preview-tab active" data-tab="preview" onclick="window.BuildApp.switchTab('preview')">Preview</button>
                 <button class="preview-tab" data-tab="code" onclick="window.BuildApp.switchTab('code')">Code</button>
@@ -2244,6 +2348,21 @@
             <div id="previewCode" class="preview-code"><pre id="codeContent"></pre></div>
             <div id="previewEmpty" class="preview-empty">Your preview will appear here</div>
         </div>
+    </div>
+    <div class="mobile-tab-bar" id="mobileTabBar">
+        <button class="active" onclick="window.BuildApp.switchMobileTab('chat')">
+            <span class="mtab-icon">&#128172;</span>
+            Chat
+        </button>
+        <button onclick="window.BuildApp.switchMobileTab('preview')">
+            <span class="mtab-icon">&#128065;</span>
+            Preview
+            <span class="mtab-badge" id="previewBadge"></span>
+        </button>
+        <button onclick="window.BuildApp.openPublish()">
+            <span class="mtab-icon">&#128640;</span>
+            Publish
+        </button>
     </div>
 </div>
 
