@@ -914,6 +914,10 @@
             <input type="checkbox" id="showHiddenCheck">
             <span>Show Hidden</span>
         </label>
+        <label class="admin-toggle" id="anonPublishToggle" style="display:none">
+            <input type="checkbox" id="anonPublishCheck" checked>
+            <span>Allow Anonymous Publishing</span>
+        </label>
     </div>
 
     <!-- Grid -->
@@ -1005,11 +1009,28 @@
     // ── Show Hidden toggle (admin only) ──
     if (isSuperAdmin()) {
         document.getElementById('showHiddenToggle').style.display = 'inline-flex';
+        document.getElementById('anonPublishToggle').style.display = 'inline-flex';
+        // Load current anonymous publish setting
+        fetch(API + '?get_settings=1').then(function(r) { return r.json(); }).then(function(d) {
+            if (d.settings) {
+                document.getElementById('anonPublishCheck').checked = d.settings.allow_anonymous_publish !== 'false';
+            }
+        }).catch(function() {});
     }
     document.getElementById('showHiddenCheck').addEventListener('change', function(e) {
         state.showHidden = e.target.checked;
         state.page = 1;
         loadApps();
+    });
+    document.getElementById('anonPublishCheck').addEventListener('change', function(e) {
+        var enabled = e.target.checked;
+        fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify({ action: 'toggle_anonymous_publish', app_id: '_', enabled: enabled })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.error) { alert(d.error); e.target.checked = !enabled; }
+        }).catch(function() { alert('Failed to update setting'); e.target.checked = !enabled; });
     });
 
     // ── Load Apps ──

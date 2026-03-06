@@ -1178,7 +1178,7 @@
         if (!confirm('Delete "' + (state.editingApp.name || state.editingApp.slug) + '"? This cannot be undone.')) return;
 
         var profile = getProfile();
-        var email = (profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'build@inclawbate.com');
+        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'anonymous@inclawbate.com';
 
         els.publishResult.innerHTML = 'Deleting...';
         els.publishResult.className = 'publish-result';
@@ -1228,7 +1228,7 @@
         els.publishResult.className = 'publish-result';
 
         var profile = getProfile();
-        var email = (profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : 'build@inclawbate.com');
+        var email = profile && profile.x_handle ? profile.x_handle + '@inclawbate.com' : '';
 
         // Collect new fields
         var appName = (document.getElementById('publishName') || {}).value || state.title;
@@ -1250,7 +1250,7 @@
                     name: appName,
                     slug: slug,
                     code: state.currentCode,
-                    email: email,
+                    email: email || undefined,
                     description: appDesc || 'Built with Inclawbate Build Studio',
                     update: state.editingApp ? true : undefined,
                     source: state.editingApp ? 'build-studio-edit' : (state.forkedFrom ? 'build-studio-fork' : 'build-studio'),

@@ -107,6 +107,16 @@ export default async function handler(req, res) {
     // ── GET — list apps ──
     if (req.method === 'GET') {
         try {
+            // Platform settings (public)
+            if (req.query.get_settings) {
+                const { data: settings } = await supabase
+                    .from('platform_settings')
+                    .select('key, value');
+                const result = {};
+                if (settings) settings.forEach(s => { result[s.key] = s.value; });
+                return res.json({ settings: result });
+            }
+
             const { category, search, sort, page, limit: rawLimit, id } = req.query;
             const user = getUser(req);
 
@@ -457,7 +467,21 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Unknown moderate_action. Use: hide, unhide, delete' });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate' });
+            // ── Toggle anonymous publishing (SUPER_ADMIN only) ──
+            if (action === 'toggle_anonymous_publish') {
+                if (!isSuperAdmin(user)) {
+                    return res.status(403).json({ error: 'Unauthorized' });
+                }
+                const { enabled } = req.body;
+                const value = enabled ? 'true' : 'false';
+                const { error: upsertErr } = await supabase
+                    .from('platform_settings')
+                    .upsert({ key: 'allow_anonymous_publish', value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+                if (upsertErr) throw upsertErr;
+                return res.json({ success: true, allow_anonymous_publish: value });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish' });
 
         } catch (err) {
             console.error('apps POST error:', err);

@@ -84,8 +84,21 @@ export default async function handler(req, res) {
                 forked_from_user_app, revenue_split, user_id } = req.body;
 
         // Validate required fields
-        if (!slug || !code || !email) {
-            return res.status(400).json({ error: 'Missing required fields: slug, code, email' });
+        if (!slug || !code) {
+            return res.status(400).json({ error: 'Missing required fields: slug, code' });
+        }
+
+        // If no email provided, check if anonymous publishing is allowed
+        const publishEmail = email || 'anonymous@inclawbate.com';
+        if (!email) {
+            const { data: setting } = await supabase
+                .from('platform_settings')
+                .select('value')
+                .eq('key', 'allow_anonymous_publish')
+                .maybeSingle();
+            if (setting && setting.value === 'false') {
+                return res.status(403).json({ error: 'Anonymous publishing is currently disabled. Please log in to publish.' });
+            }
         }
 
         const cleanSlug = slug.toLowerCase().trim();
@@ -121,7 +134,7 @@ export default async function handler(req, res) {
             if (!existing) {
                 return res.status(404).json({ error: 'Site not found.' });
             }
-            if (existing.publisher_email !== email) {
+            if (existing.publisher_email !== publishEmail) {
                 return res.status(403).json({ error: 'You can only update your own site.' });
             }
 
@@ -171,7 +184,7 @@ export default async function handler(req, res) {
             code,
             is_public: true,
             is_listed: is_listed === true,
-            publisher_email: email,
+            publisher_email: publishEmail,
             source: source || 'clients-publish',
             category: VALID_CATEGORIES.includes(category) ? category : 'other',
             claws_price: parseFloat(claws_price) || 0,
@@ -203,7 +216,7 @@ export default async function handler(req, res) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: name || cleanSlug,
-                email,
+                email: publishEmail,
                 business_name: name,
                 message: `Published site: https://inclawbate.com/s/${cleanSlug}`,
                 source: (source || 'clients') + '-publish',
