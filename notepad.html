@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notepad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+        .header h1 span { color: #6366f1; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .save-status {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.3);
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-sm:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .btn-sm.active { background: rgba(99,102,241,0.15); color: #a5b4fc; border-color: rgba(99,102,241,0.3); }
+        .tabs {
+            display: flex;
+            gap: 2px;
+            padding: 8px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.4);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .tab.active { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+        .tab-add {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px dashed rgba(255,255,255,0.15);
+            background: transparent;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .tab-add:hover { border-color: #6366f1; color: #6366f1; }
+        .editor-wrap {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        .editor {
+            flex: 1;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            resize: none;
+            outline: none;
+        }
+        .editor::placeholder { color: rgba(255,255,255,0.2); }
+        .preview {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+            line-height: 1.7;
+            font-size: 0.9rem;
+        }
+        .preview h1 { font-size: 1.6rem; margin: 16px 0 8px; color: #fff; }
+        .preview h2 { font-size: 1.3rem; margin: 14px 0 6px; color: #fff; }
+        .preview h3 { font-size: 1.1rem; margin: 12px 0 4px; color: #fff; }
+        .preview p { margin: 8px 0; }
+        .preview code {
+            background: rgba(99,102,241,0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+        .preview pre {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .preview pre code { background: transparent; padding: 0; }
+        .preview ul, .preview ol { padding-left: 24px; margin: 8px 0; }
+        .preview blockquote {
+            border-left: 3px solid #6366f1;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: rgba(255,255,255,0.6);
+        }
+        .preview a { color: #6366f1; }
+        .preview hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0; }
+        .footer {
+            padding: 8px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>&#128221;</span> Notepad</h1>
+        <div class="header-actions">
+            <span class="save-status" id="saveStatus">Saved</span>
+            <button class="btn-sm" id="previewBtn" onclick="togglePreview()">Preview</button>
+            <button class="btn-sm" onclick="downloadNote()">Download</button>
+            <button class="btn-sm" onclick="clearNote()">Clear</button>
+        </div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="editor-wrap">
+        <textarea class="editor" id="editor" placeholder="Start typing... Markdown supported."></textarea>
+        <div class="preview" id="preview"></div>
+    </div>
+
+    <div class="footer">
+        <span id="charCount">0 chars</span>
+        <span id="wordCount">0 words</span>
+    </div>
+
+<script>
+    let notes = {};
+    let activeTab = 'Note 1';
+    let previewMode = false;
+
+    function loadNotes() {
+        try {
+            const stored = localStorage.getItem('notepad-notes');
+            if (stored) notes = JSON.parse(stored);
+        } catch(e) {}
+        if (Object.keys(notes).length === 0) {
+            notes['Note 1'] = '';
+        }
+    }
+
+    function saveNotes() {
+        notes[activeTab] = document.getElementById('editor').value;
+        localStorage.setItem('notepad-notes', JSON.stringify(notes));
+        document.getElementById('saveStatus').textContent = 'Saved';
+    }
+
+    function renderTabs() {
+        const container = document.getElementById('tabs');
+        container.innerHTML = '';
+        Object.keys(notes).forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'tab' + (name === activeTab ? ' active' : '');
+            btn.textContent = name;
+            btn.onclick = () => switchTab(name);
+            // Double click to rename
+            btn.ondblclick = () => renameTab(name);
+            container.appendChild(btn);
+        });
+        const addBtn = document.createElement('button');
+        addBtn.className = 'tab-add';
+        addBtn.textContent = '+';
+        addBtn.onclick = addTab;
+        container.appendChild(addBtn);
+    }
+
+    function switchTab(name) {
+        saveNotes();
+        activeTab = name;
+        document.getElementById('editor').value = notes[name] || '';
+        renderTabs();
+        updateCounts();
+        if (previewMode) renderPreview();
+    }
+
+    function addTab() {
+        saveNotes();
+        let i = Object.keys(notes).length + 1;
+        let name = 'Note ' + i;
+        while (notes[name]) { i++; name = 'Note ' + i; }
+        notes[name] = '';
+        activeTab = name;
+        renderTabs();
+        document.getElementById('editor').value = '';
+        document.getElementById('editor').focus();
+        updateCounts();
+        saveNotes();
+    }
+
+    function renameTab(oldName) {
+        const newName = prompt('Rename note:', oldName);
+        if (!newName || newName === oldName || notes[newName]) return;
+        notes[newName] = notes[oldName];
+        delete notes[oldName];
+        if (activeTab === oldName) activeTab = newName;
+        renderTabs();
+        saveNotes();
+    }
+
+    function togglePreview() {
+        previewMode = !previewMode;
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const btn = document.getElementById('previewBtn');
+
+        if (previewMode) {
+            editor.style.display = 'none';
+            preview.style.display = 'block';
+            btn.classList.add('active');
+            renderPreview();
+        } else {
+            editor.style.display = 'block';
+            preview.style.display = 'none';
+            btn.classList.remove('active');
+        }
+    }
+
+    function renderPreview() {
+        const text = document.getElementById('editor').value;
+        document.getElementById('preview').innerHTML = simpleMarkdown(text);
+    }
+
+    function simpleMarkdown(text) {
+        let html = text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            // Code blocks
+            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+            // Inline code
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            // Headers
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            // Bold & italic
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            // Blockquote
+            .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+            // Unordered list
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            // Horizontal rule
+            .replace(/^---$/gm, '<hr>')
+            // Links
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        return '<p>' + html + '</p>';
+    }
+
+    function updateCounts() {
+        const text = document.getElementById('editor').value;
+        document.getElementById('charCount').textContent = text.length + ' chars';
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        document.getElementById('wordCount').textContent = words + ' words';
+    }
+
+    function downloadNote() {
+        const text = document.getElementById('editor').value;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = activeTab.replace(/\s+/g, '-').toLowerCase() + '.md';
+        a.click();
+    }
+
+    function clearNote() {
+        if (!confirm('Clear this note?')) return;
+        document.getElementById('editor').value = '';
+        saveNotes();
+        updateCounts();
+        if (previewMode) renderPreview();
+    }
+
+    // Init
+    loadNotes();
+    renderTabs();
+    document.getElementById('editor').value = notes[activeTab] || '';
+    updateCounts();
+
+    // Auto-save on typing
+    let saveTimeout;
+    document.getElementById('editor').addEventListener('input', () => {
+        document.getElementById('saveStatus').textContent = 'Saving...';
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveNotes, 500);
+        updateCounts();
+        if (previewMode) renderPreview();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveNotes();
+        }
+    });
+</script>
+</body>
+</html>

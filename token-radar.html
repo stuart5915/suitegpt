@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Radar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 800; color: #fff; }
+        .header h1 span { color: #6366f1; }
+        .header-sub { font-size: 0.8rem; color: rgba(255,255,255,0.3); }
+        .main { width: 100%; max-width: 800px; padding: 20px; }
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .search-bar input:focus { border-color: #6366f1; }
+        .btn {
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: none;
+            background: #6366f1;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .btn:hover { background: #5558e6; }
+        .btn:disabled { opacity: 0.4; }
+
+        .token-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            display: none;
+        }
+        .token-card.visible { display: block; }
+        .token-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .token-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(99,102,241,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #a5b4fc;
+        }
+        .token-name { font-size: 1.3rem; font-weight: 800; color: #fff; }
+        .token-symbol { color: rgba(255,255,255,0.4); font-size: 0.9rem; }
+        .token-addr {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.25);
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        .stat-value.green { color: #86efac; }
+        .stat-value.red { color: #fca5a5; }
+
+        .links { display: flex; gap: 8px; flex-wrap: wrap; }
+        .link-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .link-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.3);
+            display: none;
+        }
+        .loading.visible { display: block; }
+        .error-msg {
+            text-align: center;
+            padding: 20px;
+            color: #fca5a5;
+            background: rgba(239,68,68,0.1);
+            border-radius: 12px;
+            display: none;
+            margin-bottom: 16px;
+        }
+        .error-msg.visible { display: block; }
+
+        .quick-tokens {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .quick-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.5);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .quick-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1><span>&#128225;</span> Token Radar</h1>
+        </div>
+        <span class="header-sub">Base Network</span>
+    </div>
+
+    <div class="main">
+        <div class="search-bar">
+            <input type="text" id="addrInput" placeholder="Paste a token address (0x...)" />
+            <button class="btn" id="lookupBtn" onclick="lookup()">Scan</button>
+        </div>
+
+        <div class="quick-tokens">
+            <button class="quick-btn" onclick="quickLookup('0x4200000000000000000000000000000000000006')">WETH</button>
+            <button class="quick-btn" onclick="quickLookup('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913')">USDC</button>
+            <button class="quick-btn" onclick="quickLookup('0xB0b6e0E9da530f68D713cC03a813B506205aC808')">INCLAWNCH</button>
+            <button class="quick-btn" onclick="quickLookup('0x7ca47B141639B893C6782823C0b219f872056379')">CLAWS</button>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="loading" id="loading">Scanning token...</div>
+
+        <div class="token-card" id="tokenCard">
+            <div class="token-header">
+                <div class="token-icon" id="tokenIcon">?</div>
+                <div>
+                    <div class="token-name" id="tokenName">-</div>
+                    <div class="token-symbol" id="tokenSymbol">-</div>
+                    <div class="token-addr" id="tokenAddr">-</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Price (USD)</div>
+                    <div class="stat-value" id="statPrice">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">24h Change</div>
+                    <div class="stat-value" id="statChange">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Market Cap</div>
+                    <div class="stat-value" id="statMcap">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Liquidity</div>
+                    <div class="stat-value" id="statLiq">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">24h Volume</div>
+                    <div class="stat-value" id="statVol">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Total Supply</div>
+                    <div class="stat-value" id="statSupply">-</div>
+                </div>
+            </div>
+
+            <div class="links" id="tokenLinks"></div>
+        </div>
+    </div>
+
+<script>
+    const DEXSCREENER = 'https://api.dexscreener.com/latest/dex/tokens/';
+
+    function formatUsd(n) {
+        if (!n || isNaN(n)) return '-';
+        n = parseFloat(n);
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(2) + 'K';
+        if (n >= 1) return '$' + n.toFixed(2);
+        if (n >= 0.01) return '$' + n.toFixed(4);
+        return '$' + n.toPrecision(4);
+    }
+
+    function formatNum(n) {
+        if (!n || isNaN(n)) return '-';
+        n = parseFloat(n);
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toLocaleString();
+    }
+
+    function quickLookup(addr) {
+        document.getElementById('addrInput').value = addr;
+        lookup();
+    }
+
+    async function lookup() {
+        const addr = document.getElementById('addrInput').value.trim();
+        if (!addr || !addr.startsWith('0x') || addr.length < 40) {
+            showError('Please enter a valid token address (0x...)');
+            return;
+        }
+
+        showError('');
+        document.getElementById('tokenCard').classList.remove('visible');
+        document.getElementById('loading').classList.add('visible');
+
+        try {
+            const res = await fetch(DEXSCREENER + addr);
+            const data = await res.json();
+
+            if (!data.pairs || data.pairs.length === 0) {
+                showError('No trading pairs found for this token. It may not be listed on any DEX yet.');
+                document.getElementById('loading').classList.remove('visible');
+                return;
+            }
+
+            // Find the best pair (highest liquidity on Base, or first)
+            const basePairs = data.pairs.filter(p => p.chainId === 'base');
+            const pair = basePairs.length > 0
+                ? basePairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0]
+                : data.pairs[0];
+
+            const token = pair.baseToken.address.toLowerCase() === addr.toLowerCase()
+                ? pair.baseToken : pair.quoteToken;
+
+            // Populate card
+            document.getElementById('tokenIcon').textContent = token.symbol ? token.symbol[0] : '?';
+            document.getElementById('tokenName').textContent = token.name || '-';
+            document.getElementById('tokenSymbol').textContent = '$' + (token.symbol || '-');
+            document.getElementById('tokenAddr').textContent = addr;
+
+            document.getElementById('statPrice').textContent = formatUsd(pair.priceUsd);
+
+            const change = pair.priceChange?.h24;
+            const changeEl = document.getElementById('statChange');
+            if (change !== undefined && change !== null) {
+                changeEl.textContent = (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%';
+                changeEl.className = 'stat-value ' + (change >= 0 ? 'green' : 'red');
+            } else {
+                changeEl.textContent = '-';
+                changeEl.className = 'stat-value';
+            }
+
+            document.getElementById('statMcap').textContent = pair.marketCap ? formatUsd(pair.marketCap) : pair.fdv ? formatUsd(pair.fdv) : '-';
+            document.getElementById('statLiq').textContent = pair.liquidity?.usd ? formatUsd(pair.liquidity.usd) : '-';
+            document.getElementById('statVol').textContent = pair.volume?.h24 ? formatUsd(pair.volume.h24) : '-';
+
+            // Total supply from info if available
+            const supply = pair.baseToken.address.toLowerCase() === addr.toLowerCase()
+                ? (pair.info?.totalSupply || '-') : '-';
+            document.getElementById('statSupply').textContent = typeof supply === 'number' ? formatNum(supply) : supply;
+
+            // Links
+            const linksEl = document.getElementById('tokenLinks');
+            linksEl.innerHTML = '';
+            const chain = pair.chainId || 'base';
+
+            const addLink = (text, url) => {
+                const a = document.createElement('a');
+                a.className = 'link-btn';
+                a.textContent = text;
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                linksEl.appendChild(a);
+            };
+
+            addLink('DexScreener', pair.url || ('https://dexscreener.com/' + chain + '/' + pair.pairAddress));
+            addLink('Basescan', 'https://basescan.org/token/' + addr);
+            if (chain === 'base') {
+                addLink('Uniswap', 'https://app.uniswap.org/swap?chain=base&outputCurrency=' + addr);
+            }
+
+            document.getElementById('loading').classList.remove('visible');
+            document.getElementById('tokenCard').classList.add('visible');
+
+        } catch (err) {
+            document.getElementById('loading').classList.remove('visible');
+            showError('Failed to fetch token data. Try again.');
+            console.error(err);
+        }
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        if (msg) {
+            el.textContent = msg;
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
+    }
+
+    document.getElementById('addrInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') lookup();
+    });
+</script>
+</body>
+</html>

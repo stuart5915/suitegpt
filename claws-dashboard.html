@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLAWS Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 800; color: #fff; }
+        .header h1 span { color: #6366f1; }
+        .refresh-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .refresh-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+        .main { width: 100%; max-width: 900px; padding: 20px; }
+
+        .price-hero {
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(99,102,241,0.03));
+            border: 1px solid rgba(99,102,241,0.15);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .price-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 700;
+        }
+        .price-big {
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #fff;
+            margin: 4px 0;
+        }
+        .price-change {
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .price-change.up { background: rgba(34,197,94,0.15); color: #86efac; }
+        .price-change.down { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 18px;
+        }
+        .stat-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.3);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .stat-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        .stat-sub {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.25);
+            margin-top: 2px;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 12px;
+            margin-top: 8px;
+        }
+
+        /* Tokens section */
+        .token-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .token-row-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .token-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(99,102,241,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: #a5b4fc;
+        }
+        .token-info-name { font-weight: 700; font-size: 0.9rem; }
+        .token-info-addr {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.25);
+            font-family: monospace;
+        }
+        .token-row-right { text-align: right; }
+        .token-price { font-weight: 700; font-size: 0.9rem; }
+        .token-change { font-size: 0.78rem; }
+        .token-change.up { color: #86efac; }
+        .token-change.down { color: #fca5a5; }
+
+        .links-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .link-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .link-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+        .link-btn.primary {
+            background: #6366f1;
+            border-color: #6366f1;
+            color: #fff;
+        }
+        .link-btn.primary:hover { background: #5558e6; }
+
+        .loading-text {
+            color: rgba(255,255,255,0.2);
+            font-size: 0.85rem;
+        }
+        .last-updated {
+            text-align: center;
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.15);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>&#128142;</span> CLAWS Dashboard</h1>
+        <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+    </div>
+
+    <div class="main">
+        <!-- Price hero -->
+        <div class="price-hero">
+            <div class="price-label">$CLAWS Price</div>
+            <div class="price-big" id="clawsPrice">...</div>
+            <div class="price-change" id="clawsChange">-</div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Market Cap</div>
+                <div class="stat-value" id="mcap">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Volume</div>
+                <div class="stat-value" id="vol24">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Liquidity</div>
+                <div class="stat-value" id="liq">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Txns</div>
+                <div class="stat-value" id="txns">-</div>
+            </div>
+        </div>
+
+        <!-- All tokens -->
+        <div class="section-title">Inclawbate Ecosystem Tokens</div>
+        <div id="tokensList">
+            <div class="loading-text">Loading tokens...</div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="links-bar">
+            <a class="link-btn primary" href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x7ca47B141639B893C6782823C0b219f872056379" target="_blank">Buy $CLAWS</a>
+            <a class="link-btn" href="https://dexscreener.com/base/0x7ca47B141639B893C6782823C0b219f872056379" target="_blank">DexScreener</a>
+            <a class="link-btn" href="https://basescan.org/token/0x7ca47B141639B893C6782823C0b219f872056379" target="_blank">Basescan</a>
+            <a class="link-btn" href="https://inclawbate.com/staking" target="_blank">Staking</a>
+        </div>
+
+        <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+<script>
+    const TOKENS = [
+        { symbol: 'CLAWS', name: 'CLAWS', addr: '0x7ca47B141639B893C6782823C0b219f872056379', primary: true },
+        { symbol: 'INCLAWNCH', name: 'INCLAWNCH', addr: '0xB0b6e0E9da530f68D713cC03a813B506205aC808' },
+        { symbol: 'CLAWNCH', name: 'CLAWNCH', addr: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be' },
+    ];
+
+    const DEXSCREENER = 'https://api.dexscreener.com/latest/dex/tokens/';
+
+    function fmtUsd(n) {
+        if (!n || isNaN(n)) return '-';
+        n = parseFloat(n);
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(2) + 'K';
+        if (n >= 1) return '$' + n.toFixed(2);
+        if (n >= 0.01) return '$' + n.toFixed(4);
+        return '$' + n.toPrecision(4);
+    }
+
+    function fmtNum(n) {
+        if (!n) return '-';
+        n = parseInt(n);
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toLocaleString();
+    }
+
+    async function fetchToken(addr) {
+        try {
+            const res = await fetch(DEXSCREENER + addr);
+            const data = await res.json();
+            if (!data.pairs || data.pairs.length === 0) return null;
+            const basePairs = data.pairs.filter(p => p.chainId === 'base');
+            return basePairs.length > 0
+                ? basePairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0]
+                : data.pairs[0];
+        } catch (e) {
+            console.error('Failed to fetch', addr, e);
+            return null;
+        }
+    }
+
+    async function loadAll() {
+        // Fetch all tokens in parallel
+        const results = await Promise.all(TOKENS.map(t => fetchToken(t.addr)));
+
+        // CLAWS primary display
+        const clawsPair = results[0];
+        if (clawsPair) {
+            document.getElementById('clawsPrice').textContent = fmtUsd(clawsPair.priceUsd);
+
+            const change = clawsPair.priceChange?.h24;
+            const changeEl = document.getElementById('clawsChange');
+            if (change !== undefined && change !== null) {
+                const up = parseFloat(change) >= 0;
+                changeEl.textContent = (up ? '+' : '') + parseFloat(change).toFixed(2) + '% (24h)';
+                changeEl.className = 'price-change ' + (up ? 'up' : 'down');
+            }
+
+            document.getElementById('mcap').textContent = clawsPair.marketCap ? fmtUsd(clawsPair.marketCap) : (clawsPair.fdv ? fmtUsd(clawsPair.fdv) : '-');
+            document.getElementById('vol24').textContent = clawsPair.volume?.h24 ? fmtUsd(clawsPair.volume.h24) : '-';
+            document.getElementById('liq').textContent = clawsPair.liquidity?.usd ? fmtUsd(clawsPair.liquidity.usd) : '-';
+
+            const buys = clawsPair.txns?.h24?.buys || 0;
+            const sells = clawsPair.txns?.h24?.sells || 0;
+            document.getElementById('txns').textContent = fmtNum(buys + sells);
+        }
+
+        // Token list
+        const container = document.getElementById('tokensList');
+        container.innerHTML = '';
+
+        TOKENS.forEach((token, i) => {
+            const pair = results[i];
+            const row = document.createElement('div');
+            row.className = 'token-row';
+
+            const price = pair ? fmtUsd(pair.priceUsd) : '-';
+            const change = pair?.priceChange?.h24;
+            let changeHtml = '';
+            if (change !== undefined && change !== null) {
+                const up = parseFloat(change) >= 0;
+                changeHtml = `<div class="token-change ${up ? 'up' : 'down'}">${up ? '+' : ''}${parseFloat(change).toFixed(2)}%</div>`;
+            }
+
+            row.innerHTML = `
+                <div class="token-row-left">
+                    <div class="token-dot">${token.symbol[0]}</div>
+                    <div>
+                        <div class="token-info-name">$${token.symbol}</div>
+                        <div class="token-info-addr">${token.addr.slice(0,6)}...${token.addr.slice(-4)}</div>
+                    </div>
+                </div>
+                <div class="token-row-right">
+                    <div class="token-price">${price}</div>
+                    ${changeHtml}
+                </div>
+            `;
+            row.style.cursor = 'pointer';
+            row.onclick = () => window.open('https://dexscreener.com/base/' + token.addr, '_blank');
+            container.appendChild(row);
+        });
+
+        document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+    }
+
+    loadAll();
+    // Auto-refresh every 30s
+    setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

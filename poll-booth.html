@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poll Booth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            max-width: 700px;
+            padding: 20px 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 800; color: #fff; }
+        .header h1 span { color: #6366f1; }
+        .online-badge {
+            background: rgba(34,197,94,0.15);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #86efac;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .main { width: 100%; max-width: 700px; padding: 20px; }
+
+        /* Create poll */
+        .create-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .create-card h3 {
+            font-size: 1rem;
+            margin-bottom: 14px;
+            color: rgba(255,255,255,0.6);
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .form-input:focus { border-color: #6366f1; }
+        .form-input::placeholder { color: rgba(255,255,255,0.25); }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .option-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .option-row input { flex: 1; }
+        .remove-opt {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .remove-opt:hover { color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: #6366f1;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn:hover { background: #5558e6; }
+        .btn-outline {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn-outline:hover { border-color: #6366f1; color: #a5b4fc; }
+
+        /* Poll display */
+        .poll-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .poll-question {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .poll-meta {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.25);
+            margin-bottom: 16px;
+        }
+        .poll-option {
+            position: relative;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 8px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+        .poll-option:hover { border-color: rgba(99,102,241,0.3); }
+        .poll-option.voted { border-color: #6366f1; }
+        .poll-option.disabled { cursor: default; }
+        .poll-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(99,102,241,0.1);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .poll-option-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .poll-option-text { font-weight: 600; font-size: 0.9rem; }
+        .poll-option-pct {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #a5b4fc;
+            min-width: 45px;
+            text-align: right;
+        }
+        .poll-total {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.3);
+            margin-top: 8px;
+            text-align: right;
+        }
+        .no-polls {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>&#9993;</span> Poll Booth</h1>
+        <div class="online-badge" id="onlineCount">1 online</div>
+    </div>
+
+    <div class="main">
+        <div class="create-card">
+            <h3>Create a Poll</h3>
+            <input class="form-input" id="questionInput" placeholder="What's your question?" maxlength="200" />
+            <div class="options-list" id="optionsList">
+                <div class="option-row">
+                    <input class="form-input" placeholder="Option 1" maxlength="100" style="margin-bottom:0" />
+                </div>
+                <div class="option-row">
+                    <input class="form-input" placeholder="Option 2" maxlength="100" style="margin-bottom:0" />
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn-outline" onclick="addOption()">+ Add Option</button>
+                <button class="btn" onclick="createPoll()">Create Poll</button>
+            </div>
+        </div>
+
+        <div id="pollsContainer">
+            <div class="no-polls" id="noPolls">No polls yet. Create one above!</div>
+        </div>
+    </div>
+
+<script>
+    let polls = []; // {id, question, options: [{text, votes: [userId]}], createdBy, createdAt}
+    let myId = '';
+
+    function addOption() {
+        const list = document.getElementById('optionsList');
+        if (list.children.length >= 6) return;
+        const row = document.createElement('div');
+        row.className = 'option-row';
+        const num = list.children.length + 1;
+        row.innerHTML = `
+            <input class="form-input" placeholder="Option ${num}" maxlength="100" style="margin-bottom:0" />
+            <button class="remove-opt" onclick="this.parentElement.remove()">x</button>
+        `;
+        list.appendChild(row);
+    }
+
+    function createPoll() {
+        const question = document.getElementById('questionInput').value.trim();
+        if (!question) return;
+
+        const inputs = document.querySelectorAll('#optionsList input');
+        const options = [];
+        inputs.forEach(inp => {
+            const text = inp.value.trim();
+            if (text) options.push({ text, votes: [] });
+        });
+
+        if (options.length < 2) {
+            alert('Add at least 2 options');
+            return;
+        }
+
+        const poll = {
+            id: Date.now() + '-' + myId,
+            question,
+            options,
+            createdBy: myId,
+            createdAt: new Date().toISOString()
+        };
+
+        polls.unshift(poll);
+        renderPolls();
+
+        // Clear form
+        document.getElementById('questionInput').value = '';
+        document.querySelectorAll('#optionsList input').forEach(inp => inp.value = '');
+
+        // Broadcast
+        if (typeof Realtime !== 'undefined') {
+            Realtime.send('newPoll', poll);
+        }
+    }
+
+    function vote(pollId, optIdx) {
+        const poll = polls.find(p => p.id === pollId);
+        if (!poll) return;
+
+        // Check if already voted on this poll
+        const alreadyVoted = poll.options.some(o => o.votes.includes(myId));
+        if (alreadyVoted) return;
+
+        poll.options[optIdx].votes.push(myId);
+        renderPolls();
+
+        if (typeof Realtime !== 'undefined') {
+            Realtime.send('vote', { pollId, optIdx, voter: myId });
+        }
+    }
+
+    function renderPolls() {
+        const container = document.getElementById('pollsContainer');
+        const noPolls = document.getElementById('noPolls');
+
+        if (polls.length === 0) {
+            noPolls.style.display = 'block';
+            container.innerHTML = '';
+            container.appendChild(noPolls);
+            return;
+        }
+
+        noPolls.style.display = 'none';
+        container.innerHTML = '';
+
+        polls.forEach(poll => {
+            const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
+            const myVote = poll.options.findIndex(o => o.votes.includes(myId));
+            const hasVoted = myVote >= 0;
+
+            let optionsHtml = '';
+            poll.options.forEach((opt, i) => {
+                const pct = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
+                const isMyVote = myVote === i;
+                optionsHtml += `
+                    <div class="poll-option ${isMyVote ? 'voted' : ''} ${hasVoted ? 'disabled' : ''}"
+                         onclick="${hasVoted ? '' : `vote('${poll.id}', ${i})`}">
+                        <div class="poll-bar" style="width: ${hasVoted ? pct : 0}%"></div>
+                        <div class="poll-option-content">
+                            <span class="poll-option-text">${escapeHtml(opt.text)}</span>
+                            ${hasVoted ? `<span class="poll-option-pct">${pct}%</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'poll-card';
+            card.innerHTML = `
+                <div class="poll-question">${escapeHtml(poll.question)}</div>
+                <div class="poll-meta">${totalVotes} vote${totalVotes !== 1 ? 's' : ''}</div>
+                ${optionsHtml}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function escapeHtml(t) {
+        return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function updateOnline() {
+        if (typeof Realtime === 'undefined') return;
+        const players = Realtime.getPlayers();
+        const count = players.length + 1;
+        document.getElementById('onlineCount').textContent = count + ' online';
+    }
+
+    function init() {
+        if (typeof Realtime === 'undefined') {
+            setTimeout(init, 200);
+            return;
+        }
+
+        Realtime.connect('polls').then(() => {
+            myId = Realtime.me.id;
+            updateOnline();
+
+            // Listen for new polls
+            Realtime.on('newPoll', (data) => {
+                // Avoid duplicates
+                if (!polls.find(p => p.id === data.id)) {
+                    polls.unshift(data);
+                    renderPolls();
+                }
+            });
+
+            // Listen for votes
+            Realtime.on('vote', (data) => {
+                const poll = polls.find(p => p.id === data.pollId);
+                if (!poll) return;
+                const opt = poll.options[data.optIdx];
+                if (opt && !opt.votes.includes(data.voter)) {
+                    opt.votes.push(data.voter);
+                    renderPolls();
+                }
+            });
+
+            Realtime.onJoin(() => updateOnline());
+            Realtime.onLeave(() => updateOnline());
+        });
+    }
+
+    // Generate temp ID before Realtime connects
+    myId = 'temp-' + Math.random().toString(36).substr(2, 9);
+    renderPolls();
+    init();
+</script>
+</body>
+</html>

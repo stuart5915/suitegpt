@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia Royale</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            max-width: 700px;
+            padding: 20px 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 800; color: #fff; }
+        .header h1 span { color: #6366f1; }
+        .player-badge {
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: #a5b4fc;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .main {
+            width: 100%;
+            max-width: 700px;
+            padding: 20px;
+            flex: 1;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Lobby */
+        .lobby-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+        .lobby-card h2 { font-size: 1.3rem; margin-bottom: 8px; }
+        .lobby-card p { color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cat-btn {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03);
+            color: #e2e8f0;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .cat-btn:hover { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+        .cat-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; }
+        .btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            border: none;
+            background: #6366f1;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #5558e6; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Question */
+        .question-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 28px;
+        }
+        .q-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .q-num { font-size: 0.8rem; color: rgba(255,255,255,0.3); font-weight: 600; }
+        .q-timer {
+            background: rgba(99,102,241,0.15);
+            color: #a5b4fc;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+        }
+        .q-timer.urgent { background: rgba(239,68,68,0.2); color: #fca5a5; }
+        .q-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .answers {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .ans-btn {
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03);
+            color: #e2e8f0;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+        }
+        .ans-btn:hover { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+        .ans-btn.correct { border-color: #22c55e; background: rgba(34,197,94,0.15); color: #86efac; }
+        .ans-btn.wrong { border-color: #ef4444; background: rgba(239,68,68,0.15); color: #fca5a5; }
+        .ans-btn:disabled { cursor: default; }
+        .ans-btn:disabled:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); }
+
+        /* Score display between questions */
+        .score-flash {
+            text-align: center;
+            padding: 16px;
+            margin-top: 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: none;
+        }
+        .score-flash.show { display: block; }
+        .score-flash.correct-flash { background: rgba(34,197,94,0.1); color: #86efac; }
+        .score-flash.wrong-flash { background: rgba(239,68,68,0.1); color: #fca5a5; }
+
+        /* Results */
+        .results-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+        .results-card h2 { font-size: 1.5rem; margin-bottom: 4px; }
+        .final-score {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #6366f1;
+            margin: 12px 0;
+        }
+        .final-sub { color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+        .leaderboard {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .lb-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        .lb-row:nth-child(1) { background: rgba(99,102,241,0.1); }
+        .lb-row .lb-name { font-weight: 600; }
+        .lb-row .lb-score { color: #a5b4fc; font-weight: 700; }
+        .lb-row.me { border: 1px solid rgba(99,102,241,0.3); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>&#9889;</span> Trivia Royale</h1>
+        <div class="player-badge" id="playerCount">1 player</div>
+    </div>
+
+    <div class="main">
+        <!-- Lobby -->
+        <div class="screen active" id="lobbyScreen">
+            <div class="lobby-card">
+                <h2>Pick a Category</h2>
+                <p>10 questions, 15 seconds each. Fastest correct answer wins!</p>
+                <div class="category-grid">
+                    <button class="cat-btn selected" onclick="selectCat(this,'general')">General Knowledge</button>
+                    <button class="cat-btn" onclick="selectCat(this,'science')">Science</button>
+                    <button class="cat-btn" onclick="selectCat(this,'crypto')">Crypto & Web3</button>
+                    <button class="cat-btn" onclick="selectCat(this,'pop')">Pop Culture</button>
+                </div>
+                <button class="btn" onclick="startGame()">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Question -->
+        <div class="screen" id="questionScreen">
+            <div class="question-card">
+                <div class="q-header">
+                    <span class="q-num" id="qNum">Q1 / 10</span>
+                    <span class="q-timer" id="qTimer">15</span>
+                </div>
+                <div class="q-text" id="qText"></div>
+                <div class="answers" id="answers"></div>
+            </div>
+            <div class="score-flash" id="scoreFlash"></div>
+        </div>
+
+        <!-- Results -->
+        <div class="screen" id="resultsScreen">
+            <div class="results-card">
+                <h2>Game Over!</h2>
+                <div class="final-score" id="finalScore">0</div>
+                <div class="final-sub" id="finalSub">0 / 10 correct</div>
+                <div class="leaderboard" id="leaderboard"></div>
+                <button class="btn" onclick="backToLobby()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // Trivia questions database
+    const QUESTIONS = {
+        general: [
+            { q: "What is the largest planet in our solar system?", a: ["Jupiter","Saturn","Neptune","Earth"], c: 0 },
+            { q: "How many continents are there on Earth?", a: ["7","6","5","8"], c: 0 },
+            { q: "What year did the Titanic sink?", a: ["1912","1905","1920","1898"], c: 0 },
+            { q: "Which country has the most people?", a: ["India","China","USA","Indonesia"], c: 0 },
+            { q: "What is the hardest natural substance?", a: ["Diamond","Titanium","Quartz","Iron"], c: 0 },
+            { q: "How many bones are in the adult human body?", a: ["206","208","204","210"], c: 0 },
+            { q: "What is the speed of light in km/s (approx)?", a: ["300,000","150,000","500,000","1,000,000"], c: 0 },
+            { q: "Who painted the Mona Lisa?", a: ["Leonardo da Vinci","Michelangelo","Raphael","Donatello"], c: 0 },
+            { q: "What is the smallest country in the world?", a: ["Vatican City","Monaco","San Marino","Liechtenstein"], c: 0 },
+            { q: "What gas do plants absorb from the atmosphere?", a: ["Carbon dioxide","Oxygen","Nitrogen","Hydrogen"], c: 0 },
+            { q: "How many hearts does an octopus have?", a: ["3","2","1","4"], c: 0 },
+            { q: "What is the largest ocean on Earth?", a: ["Pacific","Atlantic","Indian","Arctic"], c: 0 },
+            { q: "In what year did World War II end?", a: ["1945","1944","1946","1943"], c: 0 },
+            { q: "What element does 'O' represent on the periodic table?", a: ["Oxygen","Osmium","Oganesson","Gold"], c: 0 },
+            { q: "How many strings does a standard guitar have?", a: ["6","4","8","5"], c: 0 },
+        ],
+        science: [
+            { q: "What is the chemical symbol for gold?", a: ["Au","Ag","Go","Gd"], c: 0 },
+            { q: "What planet is known as the Red Planet?", a: ["Mars","Venus","Jupiter","Mercury"], c: 0 },
+            { q: "What is the powerhouse of the cell?", a: ["Mitochondria","Nucleus","Ribosome","Golgi body"], c: 0 },
+            { q: "What is the boiling point of water in Celsius?", a: ["100","90","110","212"], c: 0 },
+            { q: "How many elements are in the periodic table?", a: ["118","112","120","100"], c: 0 },
+            { q: "What type of animal is a dolphin?", a: ["Mammal","Fish","Reptile","Amphibian"], c: 0 },
+            { q: "What is the closest star to Earth?", a: ["The Sun","Proxima Centauri","Alpha Centauri","Sirius"], c: 0 },
+            { q: "What does DNA stand for?", a: ["Deoxyribonucleic acid","Dinitrogen acid","Dynamic nuclear acid","None of these"], c: 0 },
+            { q: "What force keeps us on the ground?", a: ["Gravity","Magnetism","Friction","Inertia"], c: 0 },
+            { q: "What is the largest organ in the human body?", a: ["Skin","Liver","Brain","Lungs"], c: 0 },
+            { q: "What gas makes up most of Earth's atmosphere?", a: ["Nitrogen","Oxygen","Carbon dioxide","Argon"], c: 0 },
+            { q: "How long does light from the Sun take to reach Earth?", a: ["8 minutes","1 minute","30 seconds","1 hour"], c: 0 },
+            { q: "What is absolute zero in Celsius?", a: ["-273.15","-100","0","-459.67"], c: 0 },
+            { q: "What particle has a positive charge?", a: ["Proton","Electron","Neutron","Photon"], c: 0 },
+            { q: "What is the study of fungi called?", a: ["Mycology","Botany","Zoology","Virology"], c: 0 },
+        ],
+        crypto: [
+            { q: "Who created Bitcoin?", a: ["Satoshi Nakamoto","Vitalik Buterin","Charles Hoskinson","Elon Musk"], c: 0 },
+            { q: "What year was Bitcoin launched?", a: ["2009","2008","2010","2011"], c: 0 },
+            { q: "What blockchain does Base run on?", a: ["Ethereum L2","Solana","Avalanche","Polygon"], c: 0 },
+            { q: "What does DeFi stand for?", a: ["Decentralized Finance","Digital Finance","Distributed Finance","Direct Finance"], c: 0 },
+            { q: "What is the max supply of Bitcoin?", a: ["21 million","100 million","18 million","Unlimited"], c: 0 },
+            { q: "What does NFT stand for?", a: ["Non-Fungible Token","New File Type","Network Fund Transfer","None of these"], c: 0 },
+            { q: "What consensus mechanism does Ethereum use?", a: ["Proof of Stake","Proof of Work","Delegated PoS","Proof of Authority"], c: 0 },
+            { q: "What is a smart contract?", a: ["Self-executing code on blockchain","A legal document","An AI program","A digital signature"], c: 0 },
+            { q: "What is gas in Ethereum?", a: ["Transaction fee unit","A token","A consensus method","Storage space"], c: 0 },
+            { q: "What company built Base?", a: ["Coinbase","Binance","Kraken","Gemini"], c: 0 },
+            { q: "What is a DAO?", a: ["Decentralized Autonomous Org","Digital Asset Order","Distributed App Operation","None"], c: 0 },
+            { q: "What is impermanent loss?", a: ["LP value loss vs holding","Losing your keys","Token depreciation","Gas fee losses"], c: 0 },
+            { q: "What does HODL mean?", a: ["Hold On for Dear Life","Hold On Don't Lose","High Order Data Link","None"], c: 0 },
+            { q: "What is a block explorer?", a: ["Tool to view blockchain data","A game","A mining tool","A wallet type"], c: 0 },
+            { q: "What is the Ethereum merge?", a: ["Switch from PoW to PoS","Two chains merging","A hard fork","Token swap"], c: 0 },
+        ],
+        pop: [
+            { q: "What is the highest-grossing film of all time?", a: ["Avatar","Avengers: Endgame","Titanic","Star Wars"], c: 0 },
+            { q: "What band was Freddie Mercury the lead singer of?", a: ["Queen","The Beatles","Led Zeppelin","Pink Floyd"], c: 0 },
+            { q: "What year did the first iPhone release?", a: ["2007","2006","2008","2005"], c: 0 },
+            { q: "Who played Iron Man in the MCU?", a: ["Robert Downey Jr.","Chris Evans","Chris Hemsworth","Mark Ruffalo"], c: 0 },
+            { q: "What is the most-streamed song on Spotify ever?", a: ["Blinding Lights","Shape of You","Someone Like You","Bohemian Rhapsody"], c: 0 },
+            { q: "What video game features a character named Master Chief?", a: ["Halo","Call of Duty","Gears of War","Destiny"], c: 0 },
+            { q: "What social media platform uses the bird logo?", a: ["Twitter/X","Facebook","TikTok","Snapchat"], c: 0 },
+            { q: "Who wrote the Harry Potter series?", a: ["J.K. Rowling","Stephen King","J.R.R. Tolkien","George R.R. Martin"], c: 0 },
+            { q: "What streaming service made 'Stranger Things'?", a: ["Netflix","Hulu","Amazon Prime","Disney+"], c: 0 },
+            { q: "What is the best-selling video game of all time?", a: ["Minecraft","GTA V","Tetris","Wii Sports"], c: 0 },
+            { q: "Who is known as the 'King of Pop'?", a: ["Michael Jackson","Elvis Presley","Prince","Stevie Wonder"], c: 0 },
+            { q: "What app is known for disappearing messages?", a: ["Snapchat","WhatsApp","Telegram","Signal"], c: 0 },
+            { q: "What year did YouTube launch?", a: ["2005","2006","2004","2007"], c: 0 },
+            { q: "What anime features 'Dragon Balls'?", a: ["Dragon Ball Z","Naruto","One Piece","Bleach"], c: 0 },
+            { q: "Who directed Inception?", a: ["Christopher Nolan","Steven Spielberg","James Cameron","Ridley Scott"], c: 0 },
+        ]
+    };
+
+    let selectedCat = 'general';
+    let currentQuestions = [];
+    let qIndex = 0;
+    let score = 0;
+    let correctCount = 0;
+    let timer = null;
+    let timeLeft = 15;
+    let answered = false;
+    let myId = '';
+    let myName = '';
+    let scores = {}; // playerId -> {name, score, correct}
+
+    function getIdentity() {
+        let stored = localStorage.getItem('trivia-identity');
+        if (stored) return JSON.parse(stored);
+        const names = ['Player','Quizzer','Brain','Sage','Nerd','Ace','Whiz','Star'];
+        const name = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 999);
+        localStorage.setItem('trivia-identity', JSON.stringify({ name }));
+        return { name };
+    }
+
+    function selectCat(btn, cat) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedCat = cat;
+    }
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function startGame() {
+        const pool = QUESTIONS[selectedCat] || QUESTIONS.general;
+        currentQuestions = shuffle(pool).slice(0, 10);
+        qIndex = 0;
+        score = 0;
+        correctCount = 0;
+        scores[myId] = { name: myName, score: 0, correct: 0 };
+        showScreen('questionScreen');
+        showQuestion();
+
+        // Broadcast game start
+        if (typeof Realtime !== 'undefined') {
+            Realtime.send('gameStart', { category: selectedCat, questions: currentQuestions });
+        }
+    }
+
+    function showQuestion() {
+        if (qIndex >= currentQuestions.length) {
+            endGame();
+            return;
+        }
+        answered = false;
+        const q = currentQuestions[qIndex];
+        document.getElementById('qNum').textContent = 'Q' + (qIndex + 1) + ' / ' + currentQuestions.length;
+        document.getElementById('qText').textContent = q.q;
+        document.getElementById('scoreFlash').className = 'score-flash';
+
+        const container = document.getElementById('answers');
+        container.innerHTML = '';
+        q.a.forEach((ans, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'ans-btn';
+            btn.textContent = ans;
+            btn.onclick = () => selectAnswer(i, btn);
+            container.appendChild(btn);
+        });
+
+        timeLeft = 15;
+        document.getElementById('qTimer').textContent = timeLeft;
+        document.getElementById('qTimer').className = 'q-timer';
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('qTimer').textContent = timeLeft;
+            if (timeLeft <= 5) document.getElementById('qTimer').className = 'q-timer urgent';
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                if (!answered) timeUp();
+            }
+        }, 1000);
+    }
+
+    function selectAnswer(idx, btn) {
+        if (answered) return;
+        answered = true;
+        clearInterval(timer);
+
+        const q = currentQuestions[qIndex];
+        const btns = document.querySelectorAll('.ans-btn');
+        btns.forEach(b => b.disabled = true);
+
+        const isCorrect = idx === q.c;
+        if (isCorrect) {
+            btn.classList.add('correct');
+            const points = Math.max(100, 500 - ((15 - timeLeft) * 30)); // More points for faster answers
+            score += points;
+            correctCount++;
+            showFlash(true, '+' + points + ' points!');
+        } else {
+            btn.classList.add('wrong');
+            btns[q.c].classList.add('correct');
+            showFlash(false, 'Wrong! The answer was: ' + q.a[q.c]);
+        }
+
+        scores[myId] = { name: myName, score, correct: correctCount };
+        if (typeof Realtime !== 'undefined') {
+            Realtime.send('scoreUpdate', { id: myId, name: myName, score, correct: correctCount });
+        }
+
+        setTimeout(() => {
+            qIndex++;
+            showQuestion();
+        }, 2000);
+    }
+
+    function timeUp() {
+        answered = true;
+        const q = currentQuestions[qIndex];
+        const btns = document.querySelectorAll('.ans-btn');
+        btns.forEach(b => b.disabled = true);
+        btns[q.c].classList.add('correct');
+        showFlash(false, "Time's up! The answer was: " + q.a[q.c]);
+
+        setTimeout(() => {
+            qIndex++;
+            showQuestion();
+        }, 2000);
+    }
+
+    function showFlash(correct, text) {
+        const el = document.getElementById('scoreFlash');
+        el.className = 'score-flash show ' + (correct ? 'correct-flash' : 'wrong-flash');
+        el.textContent = text;
+    }
+
+    function endGame() {
+        clearInterval(timer);
+        showScreen('resultsScreen');
+        document.getElementById('finalScore').textContent = score;
+        document.getElementById('finalSub').textContent = correctCount + ' / ' + currentQuestions.length + ' correct';
+
+        // Leaderboard
+        const lb = document.getElementById('leaderboard');
+        const sorted = Object.entries(scores).sort((a, b) => b[1].score - a[1].score);
+        lb.innerHTML = '<h3 style="margin-bottom:12px;font-size:1rem;color:rgba(255,255,255,0.5)">Leaderboard</h3>';
+        sorted.forEach(([id, data], i) => {
+            const row = document.createElement('div');
+            row.className = 'lb-row' + (id === myId ? ' me' : '');
+            row.innerHTML = `
+                <span class="lb-name">${i === 0 ? '&#128081; ' : ''}${data.name}</span>
+                <span class="lb-score">${data.score} pts (${data.correct}/${currentQuestions.length})</span>
+            `;
+            lb.appendChild(row);
+        });
+    }
+
+    function backToLobby() {
+        showScreen('lobbyScreen');
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function updatePlayerCount() {
+        if (typeof Realtime === 'undefined') return;
+        const players = Realtime.getPlayers();
+        const count = players.length + 1;
+        document.getElementById('playerCount').textContent = count + (count === 1 ? ' player' : ' players');
+    }
+
+    // Init
+    const identity = getIdentity();
+    myName = identity.name;
+
+    function init() {
+        if (typeof Realtime === 'undefined') {
+            setTimeout(init, 200);
+            return;
+        }
+
+        Realtime.connect('trivia').then(() => {
+            myId = Realtime.me.id;
+            scores[myId] = { name: myName, score: 0, correct: 0 };
+            Realtime.setMyState({ name: myName });
+            updatePlayerCount();
+
+            Realtime.on('scoreUpdate', (data) => {
+                scores[data.id] = { name: data.name, score: data.score, correct: data.correct };
+            });
+
+            Realtime.onJoin(() => updatePlayerCount());
+            Realtime.onLeave(() => updatePlayerCount());
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
