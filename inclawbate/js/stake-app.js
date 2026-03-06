@@ -39,7 +39,7 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
-        category: 'ubi',
+        category: 'legacy',
         auditLink: '/audit/clawnch-rewards',
         retired: true,
         migratePool: 'claws'
@@ -60,7 +60,7 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
-        category: 'ubi',
+        category: 'legacy',
         auditLink: '/audit/clawnch-rewards'
     },
     s4h: {
@@ -558,6 +558,8 @@ function renderOverview() {
     var partnerGrid = document.getElementById('stakeGridPartner');
     var inclawbatorGrid = document.getElementById('stakeGridInclawbator');
     var inclawbatorSection = document.getElementById('stakeInclawbatorSection');
+    var legacyGrid = document.getElementById('stakeGridLegacy');
+    var legacySection = document.getElementById('stakeLegacySection');
     var totalTvl = 0;
 
     // Sort: featured first, then by TVL descending
@@ -573,6 +575,7 @@ function renderOverview() {
     var ubiHtml = '';
     var partnerHtml = '';
     var inclawbatorHtml = '';
+    var legacyHtml = '';
 
     // Populate CLAWS hero stats
     var clawsStats = poolStats['claws'] || {};
@@ -610,6 +613,8 @@ function renderOverview() {
             inclawbatorHtml += result.html;
         } else if (pool.category === 'partner') {
             partnerHtml += result.html;
+        } else if (pool.category === 'legacy') {
+            legacyHtml += result.html;
         } else {
             ubiHtml += result.html;
         }
@@ -644,13 +649,15 @@ function renderOverview() {
     partnerGrid.innerHTML = partnerHtml;
     inclawbatorGrid.innerHTML = inclawbatorHtml;
     inclawbatorSection.style.display = inclawbatorHtml ? '' : 'none';
+    legacyGrid.innerHTML = legacyHtml;
+    legacySection.style.display = legacyHtml ? '' : 'none';
 
     // Update header
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid].forEach(function(grid) {
+    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid, legacyGrid].forEach(function(grid) {
         grid.querySelectorAll('.stake-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 var href = card.getAttribute('href');

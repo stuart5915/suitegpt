@@ -1,5 +1,4 @@
-// Tokens Page — Browse all Inclawbator-launched tokens
-// Clanker + Uniswap links on each card
+// Tokens Page — CMC-style table of Inclawbator-launched tokens
 
 (function() {
 'use strict';
@@ -16,11 +15,11 @@ async function loadLiveProjects() {
         lpState.projects = (data.projects || data || []).filter(function(p) {
             return p.status === 'active' || p.status === 'launched';
         });
-        renderLiveProjects();
+        renderTable();
         fetchMarketCaps();
     } catch (e) {
-        var grid = document.getElementById('liveProjectsGrid');
-        if (grid) grid.innerHTML = '<div class="projects-empty">Could not load projects.</div>';
+        var c = document.getElementById('tokensContainer');
+        if (c) c.innerHTML = '<div class="tokens-empty">Could not load tokens.</div>';
     }
 }
 
@@ -46,7 +45,7 @@ async function fetchMarketCaps() {
             });
         } catch (e) { /* DexScreener unavailable */ }
     }
-    renderLiveProjects();
+    renderTable();
 }
 
 function getFilteredProjects() {
@@ -83,17 +82,16 @@ function formatMcap(n) {
     return '$' + n.toFixed(0);
 }
 
-function renderLiveProjects() {
-    var grid = document.getElementById('liveProjectsGrid');
-    if (!grid) return;
+function renderTable() {
+    var container = document.getElementById('tokensContainer');
+    if (!container) return;
 
     var list = getFilteredProjects();
     if (!list.length) {
-        grid.innerHTML = '<div class="projects-empty">No projects match this filter.</div>';
+        container.innerHTML = '<div class="tokens-empty">No tokens match this filter.</div>';
         return;
     }
 
-    var html = '';
     var tierMap = {
         incubated: { cls: 'lp-tier-incubated', label: 'Incubated' },
         permissionless: { cls: 'lp-tier-permissionless', label: 'Launched' },
@@ -102,49 +100,60 @@ function renderLiveProjects() {
     };
     var colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#8b5cf6','#ef4444','#06b6d4','#84cc16'];
 
+    var html = '<table class="tokens-table"><thead><tr>'
+        + '<th>#</th>'
+        + '<th class="col-name">Name</th>'
+        + '<th class="col-mcap">Market Cap</th>'
+        + '<th class="col-badges">Status</th>'
+        + '<th class="col-actions">Trade</th>'
+        + '</tr></thead><tbody>';
+
     list.forEach(function(p, i) {
         var tier = tierMap[p.tier] || tierMap.permissionless;
         var mcapVal = p.token_address ? lpState.mcaps[(p.token_address || '').toLowerCase()] : null;
-        var mcapStr = p.token_address ? formatMcap(mcapVal) : '';
+        var mcapStr = p.token_address ? formatMcap(mcapVal) : '--';
         var name = p.token_name || p.name || 'Unnamed';
         var symbol = p.token_symbol || '';
         var logoColor = colors[i % colors.length];
-        var logoHtml = p.logo_url
-            ? '<img class="project-card-logo" src="' + p.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-              + '<div class="project-card-logo-placeholder" style="display:none;background:' + logoColor + '">' + name[0].toUpperCase() + '</div>'
-            : '<div class="project-card-logo-placeholder" style="background:' + logoColor + '">' + name[0].toUpperCase() + '</div>';
-
-        var badges = '<span class="' + tier.cls + '">' + tier.label + '</span>';
-        if (p.staking_address) badges += '<span class="lp-badge-staking">Staking Live</span>';
-        if (p.agent_enabled) badges += '<span class="lp-badge-agent">AI Agent</span>';
-
         var href = '/inclawbator/' + (p.id || '');
 
-        // Clanker + Uniswap buttons
-        var actionsHtml = '';
+        var logoHtml = p.logo_url
+            ? '<img class="tok-logo" src="' + p.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+              + '<div class="tok-logo-placeholder" style="display:none;background:' + logoColor + '">' + name[0].toUpperCase() + '</div>'
+            : '<div class="tok-logo-placeholder" style="background:' + logoColor + '">' + name[0].toUpperCase() + '</div>';
+
+        var badges = '<span class="' + tier.cls + '">' + tier.label + '</span>';
+        if (p.staking_address) badges += '<span class="lp-badge-staking">Staking</span>';
+        if (p.agent_enabled) badges += '<span class="lp-badge-agent">Agent</span>';
+
+        var actions = '';
         if (p.token_address) {
-            actionsHtml = '<div class="project-card-actions">'
-                + '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker" onclick="event.stopPropagation()">Clanker</a>'
-                + '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap" onclick="event.stopPropagation()">Uniswap</a>'
-                + '</div>';
+            actions = '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>'
+                + '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
         }
 
-        html += '<a class="project-card" href="' + href + '" style="animation-delay:' + (i * 0.05) + 's">'
-            + '<div class="project-card-head">'
-            + logoHtml
-            + '<div><div class="project-card-name">' + name + '</div>'
-            + (symbol ? '<div class="project-card-symbol">$' + symbol + '</div>' : '')
-            + '</div></div>'
-            + '<div class="project-card-badges">' + badges + '</div>'
-            + (mcapStr ? '<div class="project-card-mcap">' + mcapStr + '</div>' : '')
-            + actionsHtml
-            + '</a>';
+        html += '<tr data-href="' + href + '">'
+            + '<td><span class="tok-rank">' + (i + 1) + '</span></td>'
+            + '<td><div class="tok-name-cell">' + logoHtml + '<div><span class="tok-name">' + name + '</span>' + (symbol ? '<span class="tok-symbol">$' + symbol + '</span>' : '') + '</div></div></td>'
+            + '<td><span class="tok-mcap">' + mcapStr + '</span></td>'
+            + '<td><div class="tok-badges">' + badges + '</div></td>'
+            + '<td><div class="tok-actions">' + actions + '</div></td>'
+            + '</tr>';
     });
 
-    grid.innerHTML = html;
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    // Row click → navigate to project (but not if clicking a trade button)
+    container.querySelectorAll('tr[data-href]').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.tok-actions a')) return;
+            window.location.href = row.dataset.href;
+        });
+    });
 }
 
-function initLiveProjectsUI() {
+function initUI() {
     var filtersEl = document.getElementById('lpFilters');
     if (filtersEl) {
         filtersEl.addEventListener('click', function(e) {
@@ -153,20 +162,20 @@ function initLiveProjectsUI() {
             filtersEl.querySelectorAll('.lp-filter-tab').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             lpState.filter = btn.dataset.filter || 'all';
-            renderLiveProjects();
+            renderTable();
         });
     }
     var sortEl = document.getElementById('lpSort');
     if (sortEl) {
         sortEl.addEventListener('change', function() {
             lpState.sort = sortEl.value;
-            renderLiveProjects();
+            renderTable();
         });
     }
 }
 
 function init() {
-    initLiveProjectsUI();
+    initUI();
     loadLiveProjects();
 }
 
