@@ -562,12 +562,28 @@
         var countEl = document.getElementById('airdropHolderCount');
         countEl.innerHTML = 'Enumerating Angel NFT holders...';
         try {
-            state.holders = await enumerateHolders();
+            // Use server-side API (no CORS / wallet-chain issues)
+            var res = await fetch(API_BASE + '/angel-holders');
+            var data = await res.json();
+            if (data.holders && data.holders.length > 0) {
+                state.holders = data.holders;
+            } else {
+                // Fallback to on-chain enumeration
+                state.holders = await enumerateHolders();
+            }
             countEl.innerHTML = 'Found <strong>' + state.holders.length + '</strong> unique Angel NFT holders.';
             updateSteps();
             updateSummary();
         } catch (e) {
-            countEl.textContent = 'Error enumerating holders. Please refresh.';
+            // Fallback to on-chain enumeration
+            try {
+                state.holders = await enumerateHolders();
+                countEl.innerHTML = 'Found <strong>' + state.holders.length + '</strong> unique Angel NFT holders.';
+                updateSteps();
+                updateSummary();
+            } catch (e2) {
+                countEl.textContent = 'Error enumerating holders. Please refresh.';
+            }
         }
     }
 
