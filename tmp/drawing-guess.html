@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Drawing Guess — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Nunito',sans-serif;min-height:100vh}
+.container{max-width:700px;margin:0 auto;padding:16px}
+h1{font-size:1.6rem;font-weight:900;text-align:center;margin-bottom:4px;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{text-align:center;color:#666;font-size:0.8rem;margin-bottom:16px}
+/* Category screen */
+.categories{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.cat-card{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:all 0.2s}
+.cat-card:hover{border-color:#6366f1;transform:translateY(-2px)}
+.cat-icon{font-size:2rem;margin-bottom:6px}
+.cat-name{font-weight:800;font-size:0.95rem}
+.cat-count{font-size:0.7rem;color:#666;margin-top:2px}
+/* Game screen */
+.game{display:none}
+.game-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.score-display{font-weight:800;color:#6366f1;font-size:0.9rem}
+.round-display{font-size:0.8rem;color:#888}
+.timer-wrap{display:flex;align-items:center;gap:6px}
+.timer-ring{width:36px;height:36px}
+.timer-ring circle{fill:none;stroke-width:3;transform:rotate(-90deg);transform-origin:center}
+.timer-bg{stroke:#1e1e2e}
+.timer-fg{stroke:#6366f1;transition:stroke-dashoffset 1s linear,stroke 0.3s}
+.timer-text{font-size:0.85rem;font-weight:800;min-width:28px;text-align:center}
+/* Word display */
+.word-area{text-align:center;margin-bottom:10px}
+.word-box{display:inline-block;background:#111118;border:2px solid #2a2a3a;border-radius:10px;padding:8px 24px;position:relative;cursor:pointer;user-select:none}
+.word-text{font-size:1.3rem;font-weight:900;letter-spacing:2px;transition:filter 0.3s}
+.word-text.hidden{filter:blur(14px)}
+.word-hint{font-size:0.7rem;color:#666;margin-top:4px}
+.peek-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#a78bfa;font-weight:700;pointer-events:none;opacity:1;transition:opacity 0.3s}
+.peek-label.gone{opacity:0}
+/* Canvas */
+.canvas-area{background:#111118;border:2px solid #1e1e2e;border-radius:12px;overflow:hidden;margin-bottom:10px}
+canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+/* Tools */
+.tools{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.clr{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.clr:hover{transform:scale(1.15)}
+.clr.active{border-color:#fff;box-shadow:0 0 6px rgba(255,255,255,0.3)}
+.sz-btn{background:#1a1a2e;border:2px solid #2a2a3a;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s}
+.sz-btn:hover{border-color:#6366f1}
+.sz-btn.active{background:#6366f1;border-color:#6366f1}
+.sz-dot{background:#fff;border-radius:50%}
+.tbtn{background:#1a1a2e;border:2px solid #2a2a3a;border-radius:8px;color:#a0a0b0;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:0.72rem;font-weight:700;transition:all 0.15s}
+.tbtn:hover{border-color:#6366f1;color:#e2e8f0}
+.tbtn.primary{background:#6366f1;border-color:#6366f1;color:#fff}
+.tbtn.green{background:#22c55e;border-color:#22c55e;color:#fff}
+.tbtn.danger{border-color:#ef4444;color:#ef4444}
+.actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+/* Result overlay */
+.result-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:50;align-items:center;justify-content:center}
+.result-overlay.show{display:flex}
+.result-card{background:#111118;border:2px solid #6366f1;border-radius:16px;padding:32px;text-align:center;max-width:320px;width:90%;animation:popIn 0.3s ease}
+@keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
+.result-emoji{font-size:3rem;margin-bottom:8px}
+.result-word{font-size:1.1rem;font-weight:800;color:#a78bfa;margin-bottom:4px}
+.result-score{font-size:2rem;font-weight:900;color:#6366f1}
+.result-label{font-size:0.75rem;color:#888;margin-bottom:16px}
+.result-btns{display:flex;gap:8px;justify-content:center}
+.footer{text-align:center;padding:16px;font-size:0.7rem;color:#555}
+.footer span{color:#6366f1}
+@media(max-width:480px){
+  .categories{grid-template-columns:1fr 1fr}
+  .cat-card{padding:14px 10px}
+  h1{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Drawing Guess</h1>
+  <p class="subtitle">Pick a category, draw the word, challenge your friends!</p>
+
+  <div id="catScreen">
+    <div class="categories" id="cats"></div>
+  </div>
+
+  <div class="game" id="gameScreen">
+    <div class="game-header">
+      <div><span class="score-display" id="score">Score: 0</span><br><span class="round-display" id="round">Round 1</span></div>
+      <div class="timer-wrap">
+        <svg class="timer-ring" viewBox="0 0 40 40"><circle class="timer-bg" cx="20" cy="20" r="17"/><circle class="timer-fg" id="timerRing" cx="20" cy="20" r="17" stroke-dasharray="106.8" stroke-dashoffset="0"/></svg>
+        <span class="timer-text" id="timerText">60</span>
+      </div>
+    </div>
+
+    <div class="word-area">
+      <div class="word-box" id="wordBox" onclick="togglePeek()">
+        <div class="word-text hidden" id="wordText">WORD</div>
+        <div class="peek-label" id="peekLabel">Tap to peek</div>
+      </div>
+      <div class="word-hint" id="wordHint"></div>
+    </div>
+
+    <div class="canvas-area"><canvas id="canvas" width="670" height="400"></canvas></div>
+
+    <div class="tools">
+      <div id="colorPalette" style="display:flex;gap:3px;flex-wrap:wrap"></div>
+      <div style="display:flex;gap:3px" id="sizes"></div>
+      <div class="actions">
+        <button class="tbtn danger" onclick="clearCanvas()">Clear</button>
+        <button class="tbtn" onclick="revealWord()">Reveal</button>
+        <button class="tbtn primary" onclick="newWord()">Skip</button>
+        <button class="tbtn green" onclick="doneRound()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-card">
+      <div class="result-emoji" id="resultEmoji"></div>
+      <div class="result-word" id="resultWord"></div>
+      <div class="result-score" id="resultScore"></div>
+      <div class="result-label" id="resultLabel"></div>
+      <div class="result-btns">
+        <button class="tbtn primary" onclick="newWord()">Next Word</button>
+        <button class="tbtn" onclick="backToCategories()">Categories</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer">Built on <span>Inclawbate</span></div>
+
+<script>
+var WORDS = {
+  animals: {icon:'🐾',words:['elephant','giraffe','penguin','dolphin','octopus','butterfly','kangaroo','flamingo','chameleon','hedgehog','peacock','jellyfish','rhinoceros','seahorse','koala','lobster','parrot','tortoise','crocodile','hamster','eagle','whale','panda','snake']},
+  food: {icon:'🍕',words:['pizza','sushi','hamburger','pancakes','ice cream','taco','donut','watermelon','spaghetti','cupcake','burrito','popcorn','sandwich','waffle','pretzel','avocado','pineapple','cookie','french fries','hot dog','birthday cake','bacon','grapes','chocolate']},
+  objects: {icon:'🎸',words:['guitar','telescope','umbrella','hourglass','lighthouse','scissors','headphones','bicycle','camera','backpack','trophy','anchor','compass','lantern','typewriter','microscope','mailbox','skateboard','surfboard','binoculars','candle','ladder','parachute','robot']},
+  sports: {icon:'⚽',words:['basketball','surfing','archery','bowling','skateboarding','tennis','volleyball','wrestling','skiing','boxing','golf','fencing','hockey','swimming','gymnastics','karate','baseball','football','cycling','rowing','diving','snowboarding','rugby','cricket']},
+  places: {icon:'🏔️',words:['volcano','castle','lighthouse','igloo','pyramid','waterfall','bridge','windmill','skyscraper','island','cave','temple','stadium','airport','library','museum','hospital','church','prison','forest','desert','beach','mountain','space station']}
+};
+
+var COLORS = ['#ffffff','#000000','#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#6366f1','#a855f7','#ec4899','#8b4513','#06b6d4'];
+var SIZES = [3,8,16];
+
+var state = {category:null,word:'',score:0,roundNum:0,timeLeft:60,revealed:false,peeked:false,timer:null};
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var drawing = false;
+var drawColor = '#ffffff';
+var drawSize = 3;
+
+// Build categories
+var catsEl = document.getElementById('cats');
+Object.keys(WORDS).forEach(function(key) {
+  var cat = WORDS[key];
+  var card = document.createElement('div');
+  card.className = 'cat-card';
+  card.innerHTML = '<div class="cat-icon">' + cat.icon + '</div><div class="cat-name">' + key.charAt(0).toUpperCase() + key.slice(1) + '</div><div class="cat-count">' + cat.words.length + ' words</div>';
+  card.onclick = function() { startCategory(key); };
+  catsEl.appendChild(card);
+});
+
+// Build colors
+var palEl = document.getElementById('colorPalette');
+COLORS.forEach(function(c, i) {
+  var d = document.createElement('div');
+  d.className = 'clr' + (i === 0 ? ' active' : '');
+  d.style.background = c;
+  d.onclick = function() {
+    drawColor = c;
+    palEl.querySelectorAll('.clr').forEach(function(el) { el.classList.remove('active'); });
+    d.classList.add('active');
+  };
+  palEl.appendChild(d);
+});
+
+// Build sizes
+var sizesEl = document.getElementById('sizes');
+SIZES.forEach(function(s, i) {
+  var b = document.createElement('div');
+  b.className = 'sz-btn' + (i === 0 ? ' active' : '');
+  b.innerHTML = '<div class="sz-dot" style="width:' + Math.min(s, 14) + 'px;height:' + Math.min(s, 14) + 'px"></div>';
+  b.onclick = function() {
+    drawSize = s;
+    sizesEl.querySelectorAll('.sz-btn').forEach(function(el) { el.classList.remove('active'); });
+    b.classList.add('active');
+  };
+  sizesEl.appendChild(b);
+});
+
+function startCategory(key) {
+  state.category = key;
+  state.score = 0;
+  state.roundNum = 0;
+  document.getElementById('catScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  newWord();
+}
+
+function backToCategories() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('catScreen').style.display = 'block';
+  if (state.timer) clearInterval(state.timer);
+}
+
+function newWord() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  state.roundNum++;
+  state.revealed = false;
+  state.peeked = false;
+  state.timeLeft = 60;
+  var words = WORDS[state.category].words;
+  state.word = words[Math.floor(Math.random() * words.length)];
+  document.getElementById('wordText').textContent = state.word.toUpperCase();
+  document.getElementById('wordText').classList.add('hidden');
+  document.getElementById('peekLabel').classList.remove('gone');
+  document.getElementById('wordHint').textContent = state.word.length + ' letters';
+  document.getElementById('score').textContent = 'Score: ' + state.score;
+  document.getElementById('round').textContent = 'Round ' + state.roundNum;
+  updateTimer();
+  clearCanvas();
+  if (state.timer) clearInterval(state.timer);
+  state.timer = setInterval(function() {
+    state.timeLeft--;
+    updateTimer();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timer);
+      showResult(0);
+    }
+  }, 1000);
+}
+
+function updateTimer() {
+  var pct = state.timeLeft / 60;
+  var ring = document.getElementById('timerRing');
+  ring.style.strokeDashoffset = 106.8 * (1 - pct);
+  ring.style.stroke = state.timeLeft <= 10 ? '#ef4444' : state.timeLeft <= 20 ? '#eab308' : '#6366f1';
+  document.getElementById('timerText').textContent = state.timeLeft;
+  document.getElementById('timerText').style.color = state.timeLeft <= 10 ? '#ef4444' : state.timeLeft <= 20 ? '#eab308' : '#e2e8f0';
+}
+
+function togglePeek() {
+  var wt = document.getElementById('wordText');
+  var pl = document.getElementById('peekLabel');
+  if (wt.classList.contains('hidden')) {
+    wt.classList.remove('hidden');
+    pl.classList.add('gone');
+    state.peeked = true;
+  } else {
+    wt.classList.add('hidden');
+    pl.classList.remove('gone');
+  }
+}
+
+function revealWord() {
+  state.revealed = true;
+  var wt = document.getElementById('wordText');
+  wt.classList.remove('hidden');
+  document.getElementById('peekLabel').classList.add('gone');
+}
+
+function doneRound() {
+  if (state.timer) clearInterval(state.timer);
+  var pts = 0;
+  if (!state.revealed) {
+    pts = state.timeLeft * 10 + 100;
+  } else {
+    pts = 25;
+  }
+  state.score += pts;
+  showResult(pts);
+}
+
+function showResult(pts) {
+  revealWord();
+  document.getElementById('resultEmoji').textContent = pts > 300 ? '🎨' : pts > 0 ? '👍' : '⏰';
+  document.getElementById('resultWord').textContent = state.word.toUpperCase();
+  document.getElementById('resultScore').textContent = '+' + pts + ' pts';
+  document.getElementById('resultLabel').textContent = pts > 300 ? 'Amazing!' : pts > 0 ? 'Nice work!' : 'Time\'s up!';
+  document.getElementById('score').textContent = 'Score: ' + state.score;
+  document.getElementById('resultOverlay').classList.add('show');
+}
+
+// Canvas drawing
+function resizeCanvas() {
+  var w = canvas.parentElement.clientWidth;
+  var h = Math.min(400, w * 0.6);
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.height = h + 'px';
+  ctx.fillStyle = '#111118';
+  ctx.fillRect(0, 0, w, h);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function clearCanvas() {
+  ctx.fillStyle = '#111118';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function getPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  var y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return {x: x * (canvas.width / rect.width), y: y * (canvas.height / rect.height)};
+}
+
+canvas.addEventListener('mousedown', function(e) {
+  drawing = true;
+  var p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.strokeStyle = drawColor;
+  ctx.lineWidth = drawSize;
+  ctx.lineTo(p.x + 0.1, p.y + 0.1);
+  ctx.stroke();
+});
+canvas.addEventListener('mousemove', function(e) { if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+canvas.addEventListener('mouseup', function() { drawing = false; ctx.closePath(); });
+canvas.addEventListener('mouseleave', function() { drawing = false; ctx.closePath(); });
+canvas.addEventListener('touchstart', function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.strokeStyle = drawColor; ctx.lineWidth = drawSize; }, {passive:false});
+canvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, {passive:false});
+canvas.addEventListener('touchend', function() { drawing = false; ctx.closePath(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Race — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Nunito',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.container{max-width:700px;margin:0 auto;padding:24px 16px;flex:1;width:100%}
+h1{font-size:1.8rem;font-weight:900;text-align:center;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.subtitle{text-align:center;color:#666;font-size:0.85rem;margin-bottom:24px}
+/* Stats bar */
+.stats{display:flex;justify-content:center;gap:24px;margin-bottom:20px}
+.stat{text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:#6366f1}
+.stat-label{font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+/* Progress */
+.progress-bar{height:4px;background:#1e1e2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);border-radius:2px;transition:width 0.1s;width:0%}
+/* Text display */
+.text-display{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:24px;font-family:'JetBrains Mono',monospace;font-size:1.05rem;line-height:1.8;margin-bottom:16px;min-height:120px;position:relative;user-select:none}
+.char{color:#333;transition:color 0.05s}
+.char.correct{color:#4ade80}
+.char.wrong{color:#ef4444;text-decoration:underline}
+.char.current{border-left:2px solid #6366f1;animation:blink 1s infinite}
+@keyframes blink{0%,100%{border-color:#6366f1}50%{border-color:transparent}}
+/* Input */
+.input-area{position:relative}
+.type-input{width:100%;background:#0d0d14;border:2px solid #2a2a3a;border-radius:10px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:1rem;color:#e2e8f0;outline:none;transition:border-color 0.2s}
+.type-input:focus{border-color:#6366f1}
+.type-input::placeholder{color:#444}
+.type-input:disabled{opacity:0.5}
+/* Results */
+.results{display:none;text-align:center;margin-top:24px;animation:fadeUp 0.4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.result-grade{font-size:3rem;margin-bottom:8px}
+.result-wpm{font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:700;color:#6366f1}
+.result-wpm-label{font-size:0.85rem;color:#888;margin-bottom:16px}
+.result-stats{display:flex;justify-content:center;gap:32px;margin-bottom:20px}
+.rs{text-align:center}
+.rs-val{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700;color:#e2e8f0}
+.rs-label{font-size:0.7rem;color:#888}
+.btn{background:#6366f1;color:#fff;border:none;border-radius:10px;padding:12px 32px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.15s}
+.btn:hover{background:#5558e6;transform:translateY(-1px)}
+/* Leaderboard */
+.leaderboard{margin-top:24px;background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px}
+.lb-title{font-size:0.85rem;font-weight:800;color:#a78bfa;margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:0.05em}
+.lb-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #1a1a2a;font-size:0.82rem}
+.lb-row:last-child{border:none}
+.lb-rank{font-family:'JetBrains Mono',monospace;font-weight:700;color:#6366f1;width:24px;text-align:center}
+.lb-wpm{font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:auto;color:#4ade80}
+.lb-acc{font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:#888;width:48px;text-align:right}
+.footer{text-align:center;padding:16px;font-size:0.7rem;color:#555}
+.footer span{color:#6366f1}
+@media(max-width:480px){
+  h1{font-size:1.4rem}
+  .text-display{font-size:0.9rem;padding:16px}
+  .stat-val{font-size:1.4rem}
+  .stats{gap:16px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Typing Race</h1>
+  <p class="subtitle">Type the passage as fast and accurately as you can!</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="wpm">0</div><div class="stat-label">WPM</div></div>
+    <div class="stat"><div class="stat-val" id="acc">100%</div><div class="stat-label">Accuracy</div></div>
+    <div class="stat"><div class="stat-val" id="time">0.0s</div><div class="stat-label">Time</div></div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+  <div class="text-display" id="textDisplay"></div>
+
+  <div class="input-area">
+    <input type="text" class="type-input" id="typeInput" placeholder="Start typing here..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-grade" id="grade"></div>
+    <div class="result-wpm" id="finalWpm"></div>
+    <div class="result-wpm-label">words per minute</div>
+    <div class="result-stats">
+      <div class="rs"><div class="rs-val" id="finalAcc"></div><div class="rs-label">Accuracy</div></div>
+      <div class="rs"><div class="rs-val" id="finalTime"></div><div class="rs-label">Time</div></div>
+      <div class="rs"><div class="rs-val" id="finalChars"></div><div class="rs-label">Characters</div></div>
+    </div>
+    <button class="btn" onclick="startRace()">Race Again</button>
+  </div>
+
+  <div class="leaderboard" id="leaderboard" style="display:none">
+    <div class="lb-title">Leaderboard</div>
+    <div id="lbRows"></div>
+  </div>
+</div>
+<div class="footer">Built on <span>Inclawbate</span></div>
+
+<script>
+var PASSAGES = [
+  "The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet at least once.",
+  "In the beginning, there was code. And the code was good. It compiled without errors, passed all tests, and deployed seamlessly to production.",
+  "Blockchain technology enables trustless transactions across decentralized networks, removing the need for traditional intermediaries.",
+  "The best way to predict the future is to create it. Innovation happens when people dare to think differently about old problems.",
+  "Every great developer you know got there by solving problems they were unqualified to solve until they actually did it.",
+  "Artificial intelligence is transforming how we build software. From code completion to testing, AI assists developers at every stage.",
+  "Decentralized finance removes barriers to financial services. Anyone with an internet connection can lend, borrow, and trade.",
+  "The internet was built on open protocols. Email, the web, and social media all started as open systems anyone could build on.",
+  "Code is poetry written in logic. Each function tells a story, each variable holds a secret, and each algorithm solves a puzzle.",
+  "Building in public means sharing your journey with the world. The wins, the losses, the bugs, and the breakthroughs.",
+  "Smart contracts execute automatically when conditions are met. No middlemen, no delays, no trust required.",
+  "Open source software powers most of the internet. Developers around the world collaborate to build tools everyone can use freely.",
+  "The metaverse is not just virtual reality. It is a convergence of digital experiences, economies, and communities.",
+  "Simplicity is the ultimate sophistication. The best code does exactly what it needs to do, nothing more and nothing less.",
+  "Web three represents the next evolution of the internet. Users own their data, identity, and digital assets."
+];
+
+var passage = '';
+var typed = '';
+var startTime = null;
+var finished = false;
+var timerInterval = null;
+
+function startRace() {
+  passage = PASSAGES[Math.floor(Math.random() * PASSAGES.length)];
+  typed = '';
+  startTime = null;
+  finished = false;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('typeInput').disabled = false;
+  document.getElementById('typeInput').value = '';
+  document.getElementById('typeInput').focus();
+  document.getElementById('wpm').textContent = '0';
+  document.getElementById('acc').textContent = '100%';
+  document.getElementById('time').textContent = '0.0s';
+  document.getElementById('progress').style.width = '0%';
+  if (timerInterval) clearInterval(timerInterval);
+  renderText();
+  renderLeaderboard();
+}
+
+function renderText() {
+  var html = '';
+  for (var i = 0; i < passage.length; i++) {
+    var cls = '';
+    if (i < typed.length) {
+      cls = typed[i] === passage[i] ? 'correct' : 'wrong';
+    } else if (i === typed.length) {
+      cls = 'current';
+    }
+    var ch = passage[i] === ' ' ? '&nbsp;' : escapeHtml(passage[i]);
+    html += '<span class="char ' + cls + '">' + ch + '</span>';
+  }
+  document.getElementById('textDisplay').innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function updateStats() {
+  if (!startTime) return;
+  var elapsed = (Date.now() - startTime) / 1000;
+  var words = typed.length / 5;
+  var wpm = elapsed > 0 ? Math.round(words / (elapsed / 60)) : 0;
+  var correct = 0;
+  for (var i = 0; i < typed.length; i++) {
+    if (typed[i] === passage[i]) correct++;
+  }
+  var acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+  var pct = Math.round((typed.length / passage.length) * 100);
+
+  document.getElementById('wpm').textContent = wpm;
+  document.getElementById('acc').textContent = acc + '%';
+  document.getElementById('time').textContent = elapsed.toFixed(1) + 's';
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function finishRace() {
+  finished = true;
+  if (timerInterval) clearInterval(timerInterval);
+  document.getElementById('typeInput').disabled = true;
+  var elapsed = (Date.now() - startTime) / 1000;
+  var words = passage.length / 5;
+  var wpm = Math.round(words / (elapsed / 60));
+  var correct = 0;
+  for (var i = 0; i < typed.length; i++) {
+    if (typed[i] === passage[i]) correct++;
+  }
+  var acc = Math.round((correct / typed.length) * 100);
+
+  var grade = wpm >= 80 ? '🏆' : wpm >= 60 ? '🔥' : wpm >= 40 ? '👍' : '💪';
+  document.getElementById('grade').textContent = grade;
+  document.getElementById('finalWpm').textContent = wpm;
+  document.getElementById('finalAcc').textContent = acc + '%';
+  document.getElementById('finalTime').textContent = elapsed.toFixed(1) + 's';
+  document.getElementById('finalChars').textContent = passage.length;
+  document.getElementById('results').style.display = 'block';
+
+  // Save to leaderboard
+  var lb = JSON.parse(localStorage.getItem('typingrace_lb') || '[]');
+  lb.push({wpm:wpm, acc:acc, time:elapsed.toFixed(1), date:new Date().toLocaleDateString()});
+  lb.sort(function(a, b) { return b.wpm - a.wpm; });
+  lb = lb.slice(0, 10);
+  localStorage.setItem('typingrace_lb', JSON.stringify(lb));
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  var lb = JSON.parse(localStorage.getItem('typingrace_lb') || '[]');
+  var el = document.getElementById('leaderboard');
+  var rows = document.getElementById('lbRows');
+  if (!lb.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var html = '';
+  lb.forEach(function(e, i) {
+    html += '<div class="lb-row"><span class="lb-rank">' + (i + 1) + '</span><span>' + e.date + '</span><span class="lb-wpm">' + e.wpm + ' WPM</span><span class="lb-acc">' + e.acc + '%</span></div>';
+  });
+  rows.innerHTML = html;
+}
+
+document.getElementById('typeInput').addEventListener('input', function(e) {
+  if (finished) return;
+  typed = this.value;
+  if (!startTime && typed.length > 0) {
+    startTime = Date.now();
+    timerInterval = setInterval(updateStats, 100);
+  }
+  renderText();
+  updateStats();
+  if (typed.length >= passage.length) {
+    finishRace();
+  }
+});
+
+// Prevent paste
+document.getElementById('typeInput').addEventListener('paste', function(e) { e.preventDefault(); });
+
+startRace();
+</script>
+</body>
+</html>

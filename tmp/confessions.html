@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confessions — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Nunito',sans-serif;min-height:100vh}
+.container{max-width:580px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.8rem;font-weight:900;text-align:center;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.subtitle{text-align:center;color:#666;font-size:0.85rem;margin-bottom:20px}
+/* Compose */
+.compose{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px;margin-bottom:20px}
+.compose textarea{width:100%;background:#0a0a0f;border:2px solid #2a2a3a;border-radius:8px;padding:12px;font-family:inherit;font-size:0.9rem;color:#e2e8f0;resize:vertical;min-height:80px;outline:none;transition:border-color 0.2s}
+.compose textarea:focus{border-color:#6366f1}
+.compose-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.char-count{font-size:0.72rem;color:#555;font-weight:600}
+.char-count.warn{color:#eab308}
+.char-count.max{color:#ef4444}
+.post-btn{background:#6366f1;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.15s}
+.post-btn:hover{background:#5558e6}
+.post-btn:disabled{opacity:0.4;cursor:not-allowed}
+/* Sort */
+.sort-bar{display:flex;gap:6px;margin-bottom:16px}
+.sort-btn{background:transparent;border:1px solid #2a2a3a;border-radius:20px;padding:5px 14px;font-family:inherit;font-size:0.75rem;font-weight:600;color:#888;cursor:pointer;transition:all 0.15s}
+.sort-btn:hover{color:#c0c0d0;border-color:#555}
+.sort-btn.active{background:#6366f1;border-color:#6366f1;color:#fff}
+/* Cards */
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px;border-left:4px solid;animation:slideIn 0.3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card-text{font-size:0.92rem;line-height:1.6;margin-bottom:10px;word-break:break-word}
+.card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.card-meta{display:flex;align-items:center;gap:8px}
+.anon-name{font-size:0.72rem;font-weight:700}
+.card-time{font-size:0.68rem;color:#555}
+.votes{display:flex;align-items:center;gap:2px}
+.vote-btn{background:transparent;border:1px solid #2a2a3a;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;color:#888;font-size:0.9rem}
+.vote-btn:hover{border-color:#555;color:#e2e8f0}
+.vote-btn.up-active{background:rgba(34,197,94,0.15);border-color:#22c55e;color:#22c55e}
+.vote-btn.down-active{background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444}
+.vote-count{font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:700;min-width:24px;text-align:center;color:#888}
+.empty{text-align:center;padding:40px;color:#555;font-size:0.9rem}
+/* Toast */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#111118;border:1px solid #6366f1;color:#e2e8f0;padding:8px 20px;border-radius:8px;font-size:0.8rem;font-weight:600;transition:transform 0.3s;z-index:100}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.footer{text-align:center;padding:24px;font-size:0.7rem;color:#555}
+.footer span{color:#6366f1}
+@media(max-width:480px){h1{font-size:1.4rem}.post-btn{width:100%;margin-top:4px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Confessions</h1>
+  <p class="subtitle">Share anonymously. No accounts needed.</p>
+
+  <div class="compose">
+    <textarea id="input" maxlength="500" placeholder="What's on your mind? Share anonymously..."></textarea>
+    <div class="compose-footer">
+      <span class="char-count" id="charCount">0 / 500</span>
+      <button class="post-btn" id="postBtn" disabled onclick="postConfession()">Post Confession</button>
+    </div>
+  </div>
+
+  <div class="sort-bar">
+    <button class="sort-btn active" data-sort="newest" onclick="setSort('newest',this)">Newest</button>
+    <button class="sort-btn" data-sort="hot" onclick="setSort('hot',this)">Most Upvoted</button>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</div>
+<div class="footer">Built on <span>Inclawbate</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var ANIMALS = ['Crab','Wolf','Fox','Owl','Bear','Hawk','Deer','Seal','Bat','Eel','Lynx','Ram','Yak','Dove','Moth','Toad','Newt','Swan','Crow','Mole','Hare','Wasp','Pike','Wren','Lark','Shrew','Viper','Otter','Robin','Finch','Raven','Cobra','Bison','Moose','Crane','Gecko'];
+var PASTEL = ['#818cf8','#f472b6','#fb923c','#a78bfa','#34d399','#fbbf24','#67e8f9','#f87171','#a3e635','#c084fc','#38bdf8','#e879f9'];
+var sortMode = 'newest';
+
+function getConfessions() {
+  return JSON.parse(localStorage.getItem('inclawbate_confessions') || '[]');
+}
+function saveConfessions(list) {
+  localStorage.setItem('inclawbate_confessions', JSON.stringify(list));
+}
+function getVotes() {
+  return JSON.parse(localStorage.getItem('inclawbate_conf_votes') || '{}');
+}
+function saveVotes(v) {
+  localStorage.setItem('inclawbate_conf_votes', JSON.stringify(v));
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function genAnonName() {
+  return 'Anonymous ' + ANIMALS[Math.floor(Math.random() * ANIMALS.length)] + ' #' + (Math.floor(Math.random() * 99) + 1);
+}
+function genColor() { return PASTEL[Math.floor(Math.random() * PASTEL.length)]; }
+
+function timeAgo(ts) {
+  var s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function postConfession() {
+  var input = document.getElementById('input');
+  var text = input.value.trim();
+  if (!text) return;
+  var list = getConfessions();
+  list.unshift({
+    id: genId(),
+    text: text,
+    name: genAnonName(),
+    color: genColor(),
+    ts: Date.now(),
+    up: 0,
+    down: 0
+  });
+  saveConfessions(list);
+  input.value = '';
+  updateCharCount();
+  render();
+  showToast('Confession posted anonymously');
+}
+
+function setSort(mode, btn) {
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  render();
+}
+
+function vote(id, dir) {
+  var votes = getVotes();
+  var list = getConfessions();
+  var prev = votes[id] || null;
+  var item = list.find(function(c) { return c.id === id; });
+  if (!item) return;
+
+  // Undo previous vote
+  if (prev === 'up') item.up--;
+  if (prev === 'down') item.down--;
+
+  if (prev === dir) {
+    delete votes[id]; // Toggle off
+  } else {
+    votes[id] = dir;
+    if (dir === 'up') item.up++;
+    if (dir === 'down') item.down++;
+  }
+
+  saveConfessions(list);
+  saveVotes(votes);
+  render();
+}
+
+function render() {
+  var list = getConfessions();
+  var votes = getVotes();
+  var cards = document.getElementById('cards');
+
+  if (!list.length) {
+    cards.innerHTML = '<div class="empty">No confessions yet.<br>Be the first to share something anonymously.</div>';
+    return;
+  }
+
+  var sorted = list.slice();
+  if (sortMode === 'hot') {
+    sorted.sort(function(a, b) { return (b.up - b.down) - (a.up - a.down) || b.ts - a.ts; });
+  } else {
+    sorted.sort(function(a, b) { return b.ts - a.ts; });
+  }
+
+  var html = '';
+  sorted.forEach(function(c) {
+    var myVote = votes[c.id] || null;
+    var net = c.up - c.down;
+    html += '<div class="card" style="border-left-color:' + c.color + '">'
+      + '<div class="card-text">' + escapeHtml(c.text) + '</div>'
+      + '<div class="card-footer">'
+      + '<div class="card-meta"><span class="anon-name" style="color:' + c.color + '">' + escapeHtml(c.name) + '</span><span class="card-time">' + timeAgo(c.ts) + '</span></div>'
+      + '<div class="votes">'
+      + '<button class="vote-btn' + (myVote === 'up' ? ' up-active' : '') + '" onclick="vote(\'' + c.id + '\',\'up\')">▲</button>'
+      + '<span class="vote-count">' + net + '</span>'
+      + '<button class="vote-btn' + (myVote === 'down' ? ' down-active' : '') + '" onclick="vote(\'' + c.id + '\',\'down\')">▼</button>'
+      + '</div></div></div>';
+  });
+  cards.innerHTML = html;
+}
+
+// Char count
+var input = document.getElementById('input');
+var charCount = document.getElementById('charCount');
+var postBtn = document.getElementById('postBtn');
+function updateCharCount() {
+  var len = input.value.length;
+  charCount.textContent = len + ' / 500';
+  charCount.className = 'char-count' + (len >= 425 ? (len >= 500 ? ' max' : ' warn') : '');
+  postBtn.disabled = len === 0;
+}
+input.addEventListener('input', updateCharCount);
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+// Refresh timestamps every 30s
+setInterval(render, 30000);
+render();
+</script>
+</body>
+</html>

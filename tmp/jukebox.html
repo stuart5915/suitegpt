@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jukebox — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Nunito',sans-serif;min-height:100vh}
+.container{max-width:640px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.8rem;font-weight:900;text-align:center;background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.subtitle{text-align:center;color:#666;font-size:0.85rem;margin-bottom:20px}
+/* Equalizer */
+.eq-bars{display:flex;gap:3px;justify-content:center;margin-bottom:16px;height:24px;align-items:flex-end}
+.eq-bar{width:4px;background:#6366f1;border-radius:2px;animation:eqBounce 0.8s ease infinite alternate}
+.eq-bar:nth-child(1){height:8px;animation-delay:0s}
+.eq-bar:nth-child(2){height:16px;animation-delay:0.1s}
+.eq-bar:nth-child(3){height:12px;animation-delay:0.2s}
+.eq-bar:nth-child(4){height:20px;animation-delay:0.15s}
+.eq-bar:nth-child(5){height:10px;animation-delay:0.25s}
+.eq-bar:nth-child(6){height:18px;animation-delay:0.05s}
+.eq-bar:nth-child(7){height:14px;animation-delay:0.3s}
+.eq-bar:nth-child(8){height:22px;animation-delay:0.12s}
+.eq-bars.paused .eq-bar{animation-play-state:paused}
+@keyframes eqBounce{to{height:4px}}
+/* Now playing */
+.now-playing{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center}
+.np-label{font-size:0.7rem;color:#ec4899;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.np-dot{width:8px;height:8px;border-radius:50%;background:#ec4899;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.np-title{font-size:1rem;font-weight:800;margin-bottom:12px;color:#e2e8f0}
+.np-empty{color:#555;font-size:0.85rem;padding:20px 0}
+.player-frame{width:100%;aspect-ratio:16/9;border-radius:8px;border:none;margin-bottom:10px}
+.np-controls{display:flex;gap:8px;justify-content:center}
+.ctrl-btn{background:#1a1a2e;border:2px solid #2a2a3a;border-radius:8px;color:#a0a0b0;padding:8px 20px;cursor:pointer;font-family:inherit;font-size:0.78rem;font-weight:700;transition:all 0.15s}
+.ctrl-btn:hover{border-color:#6366f1;color:#e2e8f0}
+.ctrl-btn.skip{background:#6366f1;border-color:#6366f1;color:#fff}
+/* Add form */
+.add-form{background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px;margin-bottom:16px}
+.add-form label{font-size:0.75rem;font-weight:700;color:#888;margin-bottom:4px;display:block}
+.add-row{display:flex;gap:8px;margin-bottom:8px}
+.add-input{flex:1;background:#0a0a0f;border:2px solid #2a2a3a;border-radius:8px;padding:10px 12px;font-family:inherit;font-size:0.85rem;color:#e2e8f0;outline:none;transition:border-color 0.2s}
+.add-input:focus{border-color:#6366f1}
+.add-btn{background:#6366f1;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:inherit;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.add-btn:hover{background:#5558e6}
+/* Queue */
+.queue-title{font-size:0.85rem;font-weight:800;color:#a78bfa;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em}
+.queue-empty{text-align:center;color:#555;font-size:0.85rem;padding:20px}
+.q-item{display:flex;align-items:center;gap:10px;background:#111118;border:2px solid #1e1e2e;border-radius:10px;padding:10px 12px;margin-bottom:6px;animation:slideIn 0.25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.q-thumb{width:48px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#1a1a2e}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:0.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-votes{display:flex;align-items:center;gap:2px}
+.v-btn{background:transparent;border:1px solid #2a2a3a;border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;font-size:0.75rem;transition:all 0.15s}
+.v-btn:hover{border-color:#555;color:#e2e8f0}
+.v-count{font-size:0.72rem;font-weight:700;min-width:18px;text-align:center;color:#888}
+.q-remove{background:transparent;border:none;color:#555;cursor:pointer;font-size:1rem;padding:4px;transition:color 0.15s}
+.q-remove:hover{color:#ef4444}
+.footer{text-align:center;padding:24px;font-size:0.7rem;color:#555}
+.footer span{color:#6366f1}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#111118;border:1px solid #6366f1;color:#e2e8f0;padding:8px 20px;border-radius:8px;font-size:0.8rem;font-weight:600;transition:transform 0.3s;z-index:100}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:480px){h1{font-size:1.4rem}.add-row{flex-direction:column}.add-btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Jukebox</h1>
+  <p class="subtitle">Add YouTube tracks, vote on what plays next!</p>
+
+  <div class="eq-bars paused" id="eqBars">
+    <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+    <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+  </div>
+
+  <div class="now-playing" id="nowPlaying">
+    <div class="np-empty">No track playing. Add something!</div>
+  </div>
+
+  <div class="add-form">
+    <label>Add a track</label>
+    <div class="add-row">
+      <input class="add-input" id="urlInput" placeholder="Paste YouTube URL..." type="text">
+    </div>
+    <div class="add-row">
+      <input class="add-input" id="nameInput" placeholder="Track name (optional)" type="text">
+      <button class="add-btn" onclick="addTrack()">Add</button>
+    </div>
+  </div>
+
+  <div class="queue-title">Up Next</div>
+  <div id="queue"></div>
+</div>
+<div class="footer">Built on <span>Inclawbate</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var queue = JSON.parse(localStorage.getItem('jukebox_queue') || '[]');
+var playing = JSON.parse(localStorage.getItem('jukebox_playing') || 'null');
+
+function save() {
+  localStorage.setItem('jukebox_queue', JSON.stringify(queue));
+  localStorage.setItem('jukebox_playing', JSON.stringify(playing));
+}
+
+function parseVideoId(url) {
+  if (!url) return null;
+  url = url.trim();
+  // Direct 11-char ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  var m = url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function addTrack() {
+  var urlInput = document.getElementById('urlInput');
+  var nameInput = document.getElementById('nameInput');
+  var videoId = parseVideoId(urlInput.value);
+  if (!videoId) { showToast('Invalid YouTube URL'); return; }
+  if (queue.find(function(t) { return t.videoId === videoId; }) || (playing && playing.videoId === videoId)) {
+    showToast('Track already in queue'); return;
+  }
+  var name = nameInput.value.trim() || 'YouTube — ' + videoId;
+  queue.push({ videoId: videoId, name: name, votes: 0, addedAt: Date.now() });
+  urlInput.value = '';
+  nameInput.value = '';
+  save();
+  render();
+  showToast('Track added!');
+  if (!playing) playNext();
+}
+
+function voteTrack(idx, dir) {
+  if (!queue[idx]) return;
+  queue[idx].votes += dir;
+  queue.sort(function(a, b) { return b.votes - a.votes || a.addedAt - b.addedAt; });
+  save();
+  render();
+}
+
+function removeTrack(idx) {
+  queue.splice(idx, 1);
+  save();
+  render();
+}
+
+function playNext() {
+  if (!queue.length) {
+    playing = null;
+    save();
+    render();
+    return;
+  }
+  queue.sort(function(a, b) { return b.votes - a.votes || a.addedAt - b.addedAt; });
+  playing = queue.shift();
+  save();
+  render();
+}
+
+function stopPlaying() {
+  playing = null;
+  save();
+  render();
+}
+
+function render() {
+  // Now playing
+  var np = document.getElementById('nowPlaying');
+  var eq = document.getElementById('eqBars');
+  if (playing) {
+    eq.classList.remove('paused');
+    np.innerHTML = '<div class="np-label"><span class="np-dot"></span> Now Playing</div>'
+      + '<div class="np-title">' + escapeHtml(playing.name) + '</div>'
+      + '<iframe class="player-frame" src="https://www.youtube.com/embed/' + playing.videoId + '?autoplay=1&rel=0" allow="autoplay;encrypted-media" allowfullscreen></iframe>'
+      + '<div class="np-controls">'
+      + '<button class="ctrl-btn" onclick="stopPlaying()">Stop</button>'
+      + '<button class="ctrl-btn skip" onclick="playNext()">Skip →</button>'
+      + '</div>';
+  } else {
+    eq.classList.add('paused');
+    np.innerHTML = '<div class="np-empty">No track playing. Add something!</div>';
+  }
+
+  // Queue
+  var qEl = document.getElementById('queue');
+  if (!queue.length) {
+    qEl.innerHTML = '<div class="queue-empty">Queue is empty. Add tracks above!</div>';
+    return;
+  }
+  var html = '';
+  queue.forEach(function(t, i) {
+    var thumb = 'https://img.youtube.com/vi/' + t.videoId + '/default.jpg';
+    html += '<div class="q-item">'
+      + '<img class="q-thumb" src="' + thumb + '" alt="" onerror="this.style.display=\'none\'">'
+      + '<div class="q-info"><div class="q-name">' + escapeHtml(t.name) + '</div></div>'
+      + '<div class="q-votes">'
+      + '<button class="v-btn" onclick="voteTrack(' + i + ',1)">▲</button>'
+      + '<span class="v-count">' + t.votes + '</span>'
+      + '<button class="v-btn" onclick="voteTrack(' + i + ',-1)">▼</button>'
+      + '</div>'
+      + '<button class="q-remove" onclick="removeTrack(' + i + ')">✕</button>'
+      + '</div>';
+  });
+  qEl.innerHTML = html;
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+// Enter to add
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { document.getElementById('nameInput').focus(); }
+});
+document.getElementById('nameInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addTrack();
+});
+
+render();
+</script>
+</body>
+</html>

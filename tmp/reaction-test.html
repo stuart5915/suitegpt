@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Test — Inclawbate</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Nunito',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.container{max-width:500px;margin:0 auto;padding:24px 16px;flex:1;width:100%;display:flex;flex-direction:column}
+h1{font-size:1.8rem;font-weight:900;text-align:center;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.subtitle{text-align:center;color:#666;font-size:0.85rem;margin-bottom:20px}
+/* Target area */
+.target{width:100%;aspect-ratio:1;max-height:320px;border-radius:24px;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;user-select:none;transition:background 0.15s;margin:0 auto 20px;position:relative;overflow:hidden}
+.target.waiting{background:#1a1a2e;border:3px solid #2a2a3a}
+.target.ready{background:#22c55e;border:3px solid #22c55e}
+.target.early{background:#f97316;border:3px solid #f97316}
+.target.result{background:#111118;border:3px solid #6366f1}
+.target-text{font-size:1.4rem;font-weight:800;text-align:center;padding:0 20px}
+.target-sub{font-size:0.85rem;font-weight:600;opacity:0.8;margin-top:4px}
+.ms-display{font-family:'JetBrains Mono',monospace;font-size:4rem;font-weight:700;color:#6366f1}
+.ms-label{font-size:0.85rem;color:#888;margin-top:-4px}
+/* Round indicator */
+.rounds{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+.round-dot{width:32px;height:6px;border-radius:3px;background:#1e1e2e}
+.round-dot.done{background:#6366f1}
+.round-dot.current{background:#a78bfa;animation:dotPulse 1s infinite}
+.round-dot.early-dot{background:#f97316}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+/* Stats */
+.stats{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+.stat{text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;color:#e2e8f0}
+.stat-label{font-size:0.68rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;font-weight:600}
+/* Results screen */
+.final-results{display:none;text-align:center;animation:fadeUp 0.4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.final-emoji{font-size:3rem;margin-bottom:8px}
+.final-avg{font-family:'JetBrains Mono',monospace;font-size:3.5rem;font-weight:700;color:#6366f1}
+.final-label{font-size:0.9rem;color:#888;margin-bottom:4px}
+.final-rating{font-size:1.1rem;font-weight:800;margin-bottom:16px}
+.final-times{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.ft{background:#111118;border:2px solid #1e1e2e;border-radius:8px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:600}
+.ft.penalty{color:#f97316;border-color:#f97316}
+.btn{background:#6366f1;color:#fff;border:none;border-radius:10px;padding:12px 32px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.15s}
+.btn:hover{background:#5558e6;transform:translateY(-1px)}
+/* Leaderboard */
+.leaderboard{margin-top:16px;background:#111118;border:2px solid #1e1e2e;border-radius:12px;padding:16px}
+.lb-title{font-size:0.85rem;font-weight:800;color:#a78bfa;margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:0.05em}
+.lb-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #1a1a2a;font-size:0.82rem}
+.lb-row:last-child{border:none}
+.lb-rank{font-family:'JetBrains Mono',monospace;font-weight:700;color:#6366f1;width:24px;text-align:center}
+.lb-ms{font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:auto;color:#4ade80}
+.lb-date{font-size:0.72rem;color:#555}
+.footer{text-align:center;padding:16px;font-size:0.7rem;color:#555}
+.footer span{color:#6366f1}
+@media(max-width:480px){h1{font-size:1.4rem}.target{max-height:260px}.ms-display{font-size:3rem}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Reaction Test</h1>
+  <p class="subtitle">Click when the screen turns green. Best of 5 rounds!</p>
+
+  <div class="rounds" id="rounds"></div>
+
+  <div class="stats" id="statsBar">
+    <div class="stat"><div class="stat-val" id="bestTime">—</div><div class="stat-label">Best</div></div>
+    <div class="stat"><div class="stat-val" id="avgTime">—</div><div class="stat-label">Average</div></div>
+    <div class="stat"><div class="stat-val" id="roundNum">1/5</div><div class="stat-label">Round</div></div>
+  </div>
+
+  <div class="target waiting" id="target" onclick="handleClick()">
+    <div class="target-text">Click to start!</div>
+    <div class="target-sub">Get ready...</div>
+  </div>
+
+  <div class="final-results" id="finalResults">
+    <div class="final-emoji" id="finalEmoji"></div>
+    <div class="final-avg" id="finalAvg"></div>
+    <div class="final-label">average reaction time</div>
+    <div class="final-rating" id="finalRating"></div>
+    <div class="final-times" id="finalTimes"></div>
+    <button class="btn" onclick="startGame()">Play Again</button>
+  </div>
+
+  <div class="leaderboard" id="leaderboard" style="display:none">
+    <div class="lb-title">Leaderboard</div>
+    <div id="lbRows"></div>
+  </div>
+</div>
+<div class="footer">Built on <span>Inclawbate</span></div>
+
+<script>
+var ROUNDS = 5;
+var PENALTY = 500;
+var state = 'idle'; // idle, waiting, ready, result, done
+var round = 0;
+var times = [];
+var greenTime = 0;
+var timeout = null;
+
+function startGame() {
+  round = 0;
+  times = [];
+  document.getElementById('finalResults').style.display = 'none';
+  document.getElementById('statsBar').style.display = 'flex';
+  updateStats();
+  startRound();
+}
+
+function startRound() {
+  round++;
+  state = 'waiting';
+  var target = document.getElementById('target');
+  target.className = 'target waiting';
+  target.innerHTML = '<div class="target-text">Wait for green...</div><div class="target-sub">Don\'t click yet!</div>';
+  target.style.display = 'flex';
+  updateRoundDots();
+  document.getElementById('roundNum').textContent = round + '/' + ROUNDS;
+
+  var delay = 1000 + Math.random() * 4000;
+  timeout = setTimeout(function() {
+    state = 'ready';
+    greenTime = Date.now();
+    target.className = 'target ready';
+    target.innerHTML = '<div class="target-text" style="color:#000">CLICK NOW!</div>';
+  }, delay);
+}
+
+function handleClick() {
+  if (state === 'idle') {
+    startGame();
+    return;
+  }
+
+  if (state === 'waiting') {
+    // Too early!
+    clearTimeout(timeout);
+    state = 'result';
+    times.push(PENALTY);
+    var target = document.getElementById('target');
+    target.className = 'target early';
+    target.innerHTML = '<div class="target-text" style="color:#000">Too early!</div><div class="target-sub" style="color:#000">+' + PENALTY + 'ms penalty</div>';
+    updateStats();
+    updateRoundDots();
+    setTimeout(function() {
+      if (round >= ROUNDS) { showFinal(); } else { startRound(); }
+    }, 1200);
+    return;
+  }
+
+  if (state === 'ready') {
+    var ms = Date.now() - greenTime;
+    state = 'result';
+    times.push(ms);
+    var target = document.getElementById('target');
+    target.className = 'target result';
+    target.innerHTML = '<div class="ms-display">' + ms + '</div><div class="ms-label">milliseconds</div>';
+    updateStats();
+    updateRoundDots();
+    setTimeout(function() {
+      if (round >= ROUNDS) { showFinal(); } else { startRound(); }
+    }, 1500);
+    return;
+  }
+}
+
+function updateStats() {
+  var valid = times.filter(function(t) { return t < PENALTY; });
+  document.getElementById('bestTime').textContent = valid.length ? Math.min.apply(null, valid) + 'ms' : '—';
+  if (times.length) {
+    var sum = 0;
+    times.forEach(function(t) { sum += t; });
+    document.getElementById('avgTime').textContent = Math.round(sum / times.length) + 'ms';
+  } else {
+    document.getElementById('avgTime').textContent = '—';
+  }
+}
+
+function updateRoundDots() {
+  var html = '';
+  for (var i = 1; i <= ROUNDS; i++) {
+    var cls = 'round-dot';
+    if (i < round) {
+      cls += times[i - 1] >= PENALTY ? ' early-dot' : ' done';
+    } else if (i === round) {
+      cls += ' current';
+    }
+    html += '<div class="' + cls + '"></div>';
+  }
+  document.getElementById('rounds').innerHTML = html;
+}
+
+function showFinal() {
+  state = 'done';
+  document.getElementById('target').style.display = 'none';
+  document.getElementById('statsBar').style.display = 'none';
+
+  var sum = 0;
+  times.forEach(function(t) { sum += t; });
+  var avg = Math.round(sum / times.length);
+
+  var emoji, rating, ratingColor;
+  if (avg < 200) { emoji = '⚡'; rating = 'Lightning Fast!'; ratingColor = '#4ade80'; }
+  else if (avg < 250) { emoji = '🔥'; rating = 'Super Quick!'; ratingColor = '#22d3ee'; }
+  else if (avg < 350) { emoji = '👍'; rating = 'Nice Reflexes!'; ratingColor = '#6366f1'; }
+  else if (avg < 500) { emoji = '💪'; rating = 'Keep Practicing!'; ratingColor = '#eab308'; }
+  else { emoji = '🐢'; rating = 'Slow and Steady'; ratingColor = '#f97316'; }
+
+  document.getElementById('finalEmoji').textContent = emoji;
+  document.getElementById('finalAvg').textContent = avg + 'ms';
+  document.getElementById('finalRating').textContent = rating;
+  document.getElementById('finalRating').style.color = ratingColor;
+
+  var timesHtml = '';
+  times.forEach(function(t, i) {
+    var isPenalty = t >= PENALTY;
+    timesHtml += '<div class="ft' + (isPenalty ? ' penalty' : '') + '">R' + (i + 1) + ': ' + t + 'ms' + (isPenalty ? ' ⚠️' : '') + '</div>';
+  });
+  document.getElementById('finalTimes').innerHTML = timesHtml;
+  document.getElementById('finalResults').style.display = 'block';
+
+  // Update round dots final state
+  var dotsHtml = '';
+  for (var i = 0; i < ROUNDS; i++) {
+    dotsHtml += '<div class="round-dot' + (times[i] >= PENALTY ? ' early-dot' : ' done') + '"></div>';
+  }
+  document.getElementById('rounds').innerHTML = dotsHtml;
+
+  // Save to leaderboard
+  var lb = JSON.parse(localStorage.getItem('reaction_lb') || '[]');
+  lb.push({ avg: avg, best: Math.min.apply(null, times), date: new Date().toLocaleDateString() });
+  lb.sort(function(a, b) { return a.avg - b.avg; });
+  lb = lb.slice(0, 10);
+  localStorage.setItem('reaction_lb', JSON.stringify(lb));
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  var lb = JSON.parse(localStorage.getItem('reaction_lb') || '[]');
+  var el = document.getElementById('leaderboard');
+  if (!lb.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var html = '';
+  lb.forEach(function(e, i) {
+    html += '<div class="lb-row"><span class="lb-rank">' + (i + 1) + '</span><span class="lb-date">' + e.date + '</span><span class="lb-ms">' + e.avg + 'ms avg</span></div>';
+  });
+  document.getElementById('lbRows').innerHTML = html;
+}
+
+// Init
+updateRoundDots();
+renderLeaderboard();
+</script>
+</body>
+</html>
