@@ -1269,7 +1269,14 @@
 
             if (data.success) {
                 var storeLink = isListed ? ' | <a href="/apps" target="_blank">View in App Store</a>' : '';
-                els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>' + storeLink;
+                var nudge = '';
+                if (!isLoggedIn()) {
+                    nudge = '<div class="publish-nudge">' +
+                        '<p>Want to edit this app later and save your projects?</p>' +
+                        '<button class="publish-nudge-btn" onclick="window.BuildApp.connectWalletFromNudge()">Connect Wallet to Save</button>' +
+                        '</div>';
+                }
+                els.publishResult.innerHTML = 'Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a>' + storeLink + nudge;
                 els.publishResult.className = 'publish-result';
 
                 // Track as editing app so re-publish sends update: true
@@ -1879,6 +1886,36 @@
         }
     }
 
+    async function connectWalletFromNudge() {
+        if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
+        if (!window.ethereum) {
+            alert('No wallet detected. Install MetaMask, Coinbase Wallet, or Base Wallet.');
+            return;
+        }
+        try {
+            var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            var resp = await fetch('/api/inclawbate/wallet-connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: accounts[0] })
+            });
+            var data = await resp.json();
+            if (!resp.ok || !data.success) {
+                alert(data.error || 'Wallet connection failed.');
+                return;
+            }
+            localStorage.setItem('inclawbate_token', data.token);
+            localStorage.setItem('inclawbate_profile', JSON.stringify(data.profile));
+            fetchCredits();
+            // Update the nudge area to show success
+            var nudgeEl = document.querySelector('.publish-nudge');
+            if (nudgeEl) nudgeEl.innerHTML = '<p style="color:var(--seafoam-300)">Account connected! Your projects will be saved from now on.</p>';
+        } catch (e) {
+            if (e.code === 4001) return;
+            alert('Wallet connection failed.');
+        }
+    }
+
     // ── Go Back ──
     function goBack() {
         loadProjects();
@@ -2148,6 +2185,7 @@
         usePrompt: usePrompt,
         shufflePrompts: shufflePrompts,
         connectWallet: connectWallet,
+        connectWalletFromNudge: connectWalletFromNudge,
         handleFileSelect: handleFileSelect,
         removeAttach: removeAttach,
         selectCap: selectCap,
