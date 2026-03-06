@@ -255,16 +255,15 @@
     // ── Build Disperse Calldata ──
     function buildDisperseCalldata(tokenAddr, recipients, amountPerRecipient) {
         // disperseToken(address token, address[] recipients, uint256[] values)
-        // offsets: token at 0, recipients array offset at 32, values array offset at dynamic
+        // Head: token(32) + recipientsOffset(32) + valuesOffset(32) = 96 bytes
         var data = SEL_DISPERSE_TOKEN;
         // token address
         data += pad32(tokenAddr);
-        // offset to recipients array (3 * 32 = 96 bytes from start of params)
-        var recipientsOffset = 64 + 32; // after token + 2 offsets
-        // We need: token(32) + recipOffset(32) + valuesOffset(32) + recipLen(32) + recips(N*32) + valLen(32) + vals(N*32)
-        data += pad32('0x' + (64).toString(16));  // offset to recipients = 64 bytes
-        var valuesOffset = 64 + 32 + recipients.length * 32;
-        data += pad32('0x' + valuesOffset.toString(16)); // offset to values
+        // offset to recipients array = 96 (0x60) — after 3 head words
+        data += pad32('0x' + (96).toString(16));
+        // offset to values array = 96 + 32 (array length) + N*32 (addresses)
+        var valuesOffset = 96 + 32 + recipients.length * 32;
+        data += pad32('0x' + valuesOffset.toString(16));
         // recipients array
         data += pad32('0x' + recipients.length.toString(16)); // length
         for (var i = 0; i < recipients.length; i++) {
