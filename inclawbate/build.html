@@ -2070,12 +2070,28 @@
             .mobile-gate { display: none !important; }
             .mobile-tab-bar { display: flex; }
 
+            /* Lock the page — prevent iOS Safari scroll/bounce entirely */
+            html {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            body {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            .build-view {
+                position: fixed !important;
+                top: 0; left: 0; right: 0; bottom: 0;
+                height: 100% !important;
+                box-sizing: border-box;
+            }
+
             .nav { padding: 0 var(--space-md); }
             .nav-links { display: none; }
-
-            /* Use dvh to account for Safari browser chrome */
-            body { height: 100dvh; height: -webkit-fill-available; }
-            .build-view { height: 100dvh !important; height: -webkit-fill-available !important; box-sizing: border-box; }
 
             /* Build header compact */
             .build-header { padding: var(--space-xs) var(--space-md); min-height: 36px; gap: var(--space-sm); }
@@ -2104,28 +2120,28 @@
             /* Toggle visibility */
             .mobile-hidden { display: none !important; }
 
-            /* Chat input area */
-            .chat-input-area { padding: 8px; }
+            /* Chat input area — compact, no overflow */
+            .chat-input-area { padding: 8px; flex-shrink: 0; overflow: hidden; }
 
-            /* Send button and input row */
-            .chat-input-wrap { gap: 6px; }
-            .chat-input { padding: 10px; min-height: 40px; font-size: 0.85rem; }
+            /* Send button and input row — keep everything on screen */
+            .chat-input-wrap { gap: 6px; overflow: hidden; }
+            .chat-input { padding: 10px; min-height: 40px; font-size: 0.85rem; min-width: 0; }
             .chat-send { width: 40px; height: 40px; flex-shrink: 0; }
-            .chat-attach-btn { width: 32px; padding: 0; flex-shrink: 0; }
-            .chat-attach-btn svg { width: 18px; height: 18px; }
+            .chat-attach-btn { width: 28px; padding: 0; flex-shrink: 0; }
+            .chat-attach-btn svg { width: 16px; height: 16px; }
 
-            /* Compact model selector */
-            .model-selector { flex-wrap: wrap; gap: 4px; padding-top: 6px; }
-            .model-option { padding: 4px 8px; font-size: 0.68rem; }
+            /* Compact model selector — hide on initial view, show only credits + buy */
+            .model-selector { flex-wrap: nowrap; gap: 4px; padding-top: 4px; overflow-x: auto; }
+            .model-option { padding: 3px 8px; font-size: 0.68rem; flex-shrink: 0; }
             .model-hint { display: none; }
             .model-info-btn { display: none; }
 
             /* Compact action bar */
-            .action-bar { flex-wrap: wrap; gap: 6px; padding-top: 6px; margin-top: 6px; }
-            .action-credits { padding: 4px 8px; }
+            .action-bar { flex-wrap: nowrap; gap: 6px; padding-top: 4px; margin-top: 4px; }
+            .action-credits { padding: 4px 8px; flex-shrink: 0; }
             .action-credits-count { font-size: 0.78rem; }
             .action-credits-label { display: none; }
-            .action-buy-btn { padding: 4px 10px; font-size: 0.75rem; }
+            .action-buy-btn { padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0; }
             .action-publish-btn { display: none; } /* Publish in tab bar instead */
 
             /* Chat header area — expand to fill empty space, center content */
@@ -2135,9 +2151,11 @@
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .chat-header-title { font-size: 0.9rem; }
-            .cap-pills { gap: 4px; }
+            .cap-pills { gap: 4px; flex-wrap: wrap; }
             .cap-pill { font-size: 0.68rem; padding: 4px 8px; }
             .cap-pill-info { display: none; }
 
