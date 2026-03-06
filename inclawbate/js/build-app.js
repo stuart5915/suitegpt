@@ -610,12 +610,11 @@
         try {
             var fullMessage = message + getAttachmentPrompt();
 
+            var fetchHeaders = { 'Content-Type': 'application/json' };
+            if (getToken()) fetchHeaders['Authorization'] = 'Bearer ' + getToken();
             var resp = await fetch(API_BASE, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + getToken()
-                },
+                headers: fetchHeaders,
                 body: JSON.stringify(Object.assign({
                     session_id: state.sessionId,
                     message: fullMessage,
@@ -638,7 +637,7 @@
                 clearInterval(thinkingInterval);
                 if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
                 var data = await resp.json();
-                if (resp.status === 401) { logout(); return; }
+                if (resp.status === 401) { if (isLoggedIn()) { logout(); } else { appendMessage('assistant', data.error || 'Anonymous building is currently disabled. Please log in.'); } state.sending = false; els.chatSend.disabled = false; return; }
                 appendMessage('assistant', data.error || 'Something went wrong.');
                 if (resp.status === 402) openBuyCredits();
                 state.sending = false;
@@ -1982,7 +1981,8 @@
         initErrorListener();
 
         if (!isLoggedIn()) {
-            showView('auth');
+            // Skip auth gate — go straight to builder for anonymous use
+            newProject();
             return;
         }
 

@@ -337,8 +337,23 @@ export default async function handler(req, res) {
 
     // ── Auth ──
     const profileId = await authenticate(req);
+
+    // Allow anonymous POST (building) if platform setting permits
     if (!profileId) {
-        return res.status(401).json({ error: 'Authentication required.' });
+        if (req.method === 'POST') {
+            // Check platform setting
+            const { data: setting } = await supabase
+                .from('platform_settings')
+                .select('value')
+                .eq('key', 'allow_anonymous_publish')
+                .maybeSingle();
+            if (setting && setting.value === 'false') {
+                return res.status(401).json({ error: 'Anonymous building is currently disabled. Please log in.' });
+            }
+            // Fall through to POST handler with profileId = null
+        } else {
+            return res.status(401).json({ error: 'Authentication required.' });
+        }
     }
 
     // ── GET: estimate or list sessions or load one ──
@@ -422,15 +437,16 @@ export default async function handler(req, res) {
     // ── POST: chat + generate code ──
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const profile = await getProfile(profileId);
+    const profile = profileId ? await getProfile(profileId) : null;
     const admin = isAdmin(profile);
+    const anonymous = !profileId;
 
     // Resolve model tier
     const tierKey = req.body?.model || 'fast';
     const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
 
-    // Credit check
-    if (!admin && (!profile || profile.credits < tier.credits)) {
+    // Credit check (skip for anonymous — they get free fast tier)
+    if (!anonymous && !admin && (!profile || profile.credits < tier.credits)) {
         return res.status(402).json({
             error: 'Not enough credits. ' + tier.label + ' requires ' + tier.credits + ' credits.',
             credits: profile?.credits || 0
@@ -444,7 +460,7 @@ export default async function handler(req, res) {
 
     // Deduct credits BEFORE calling Claude so users can't skip payment
     let creditsRemaining = profile?.credits || 0;
-    if (!admin) {
+    if (!anonymous && !admin) {
         const { data: updated, error: creditErr } = await supabase
             .from('human_profiles')
             .update({ credits: profile.credits - tier.credits })
@@ -472,7 +488,7 @@ export default async function handler(req, res) {
 
         if (!message || !message.trim()) {
             // Refund — no work done
-            if (!admin) {
+            if (!anonymous && !admin) {
                 await supabase.from('human_profiles')
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
@@ -483,8 +499,12 @@ export default async function handler(req, res) {
         sessionId = session_id;
         let sessionTitle = '';
 
-        // Create new session if needed
-        if (!sessionId) {
+        // Skip session persistence for anonymous users
+        if (anonymous) {
+            sessionId = null;
+            sessionTitle = autoTitle(message);
+        } else if (!sessionId) {
+            // Create new session if needed
             const title = autoTitle(message);
             const { data: newSession, error: sessErr } = await supabase
                 .from('build_sessions')
@@ -710,34 +730,36 @@ export default async function handler(req, res) {
             code = injectErrorHandler(code);
         }
 
-        // Save messages to DB
-        await supabase.from('build_messages').insert({
-            session_id: sessionId,
-            role: 'user',
-            content: message,
-            tokens_used: 0,
-            credits_charged: 0
-        });
+        // Save messages to DB (skip for anonymous)
+        if (sessionId) {
+            await supabase.from('build_messages').insert({
+                session_id: sessionId,
+                role: 'user',
+                content: message,
+                tokens_used: 0,
+                credits_charged: 0
+            });
 
-        await supabase.from('build_messages').insert({
-            session_id: sessionId,
-            role: 'assistant',
-            content: assistantText,
-            code: code,
-            tokens_used: tokensUsed,
-            credits_charged: admin ? 0 : tier.credits
-        });
+            await supabase.from('build_messages').insert({
+                session_id: sessionId,
+                role: 'assistant',
+                content: assistantText,
+                code: code,
+                tokens_used: tokensUsed,
+                credits_charged: admin ? 0 : tier.credits
+            });
 
-        if (code) {
-            await supabase
-                .from('build_sessions')
-                .update({ current_code: code, updated_at: new Date().toISOString() })
-                .eq('id', sessionId);
-        } else {
-            await supabase
-                .from('build_sessions')
-                .update({ updated_at: new Date().toISOString() })
-                .eq('id', sessionId);
+            if (code) {
+                await supabase
+                    .from('build_sessions')
+                    .update({ current_code: code, updated_at: new Date().toISOString() })
+                    .eq('id', sessionId);
+            } else {
+                await supabase
+                    .from('build_sessions')
+                    .update({ updated_at: new Date().toISOString() })
+                    .eq('id', sessionId);
+            }
         }
 
         // Send final event with metadata
