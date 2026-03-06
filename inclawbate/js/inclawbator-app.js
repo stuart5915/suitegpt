@@ -12,6 +12,7 @@ var BASE_CHAIN_ID = '0x2105';
 var INCLAWNCH = '0xB0b6e0E9da530f68D713cC03a813B506205aC808';
 var CLAWS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
+var ANGEL_NFT = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var TRANSFER_SEL = '0xa9059cbb'; // transfer(address,uint256)
 var CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
@@ -145,6 +146,7 @@ var state = {
     allocationPct: 0,
     clawsBalance: 0,
     burnTxHash: null,
+    hasAngelNFT: false,
 };
 
 // ══════════════════════════════════════
@@ -196,6 +198,7 @@ async function connectWallet() {
             updateUI();
             updateComingSoonGate();
             loadClawsBalance();
+            checkAngelNFT();
         }
     } catch (e) {
         showToast('Wallet connection failed', 'error');
@@ -204,6 +207,19 @@ async function connectWallet() {
 
 function updateComingSoonGate() {
     // Gate removed — Inclawbator is now public
+}
+
+async function checkAngelNFT() {
+    if (!state.wallet) return;
+    try {
+        var balHex = await contractRead(ANGEL_NFT, SEL.balanceOf + pad32(state.wallet));
+        state.hasAngelNFT = BigInt(balHex) > 0n;
+    } catch (e) { state.hasAngelNFT = false; }
+    var badge = document.getElementById('angelFreeBanner');
+    if (badge) badge.style.display = state.hasAngelNFT ? 'flex' : 'none';
+    var freeBadge = document.getElementById('angelFreeBadge');
+    if (freeBadge) freeBadge.style.display = state.hasAngelNFT ? 'inline' : 'none';
+    updateAllocationUI();
 }
 
 // ══════════════════════════════════════
@@ -295,11 +311,13 @@ function updateAllocationUI() {
     if (lockupNote) lockupNote.style.display = 'block';
 
     var cost = ALLOCATION_TIERS[state.allocationPct] || 0;
-    if (costDisplay) costDisplay.textContent = 'Cost: ' + fmt(cost) + ' CLAWS';
-
-    var insufficient = state.clawsBalance < cost && state.wallet;
-    if (warningEl) {
-        warningEl.classList.toggle('visible', insufficient);
+    if (state.hasAngelNFT) {
+        if (costDisplay) costDisplay.textContent = 'Free — Angel NFT';
+        if (warningEl) warningEl.classList.remove('visible');
+    } else {
+        if (costDisplay) costDisplay.textContent = 'Cost: ' + fmt(cost) + ' CLAWS';
+        var insufficient = state.clawsBalance < cost && state.wallet;
+        if (warningEl) warningEl.classList.toggle('visible', insufficient);
     }
 }
 
@@ -788,8 +806,8 @@ async function handleLaunchDeploy() {
     var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
 
     try {
-        // Step 0: Burn CLAWS if allocation selected
-        if (state.allocationPct > 0 && burnAmount > 0) {
+        // Step 0: Burn CLAWS if allocation selected (skip for Angel NFT holders)
+        if (state.allocationPct > 0 && burnAmount > 0 && !state.hasAngelNFT) {
             // Check balance
             var balHex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
             var bal = Number(BigInt(balHex)) / 1e18;
