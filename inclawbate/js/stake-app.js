@@ -825,8 +825,10 @@ async function connectPoolWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
-    if (!isMobile && providers.length === 1) {
+    // Auto-connect: mobile inside wallet browser, or desktop with 1 provider / legacy
+    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (!isMobile && providers.length === 1) {
         eth = providers[0].provider;
     } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
         eth = window.ethereum || window.phantom.ethereum;
@@ -1233,8 +1235,10 @@ async function connectAdminWallet() {
     var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var providers = window._eip6963Providers || [];
 
-    // Auto-connect: desktop with exactly 1 provider or legacy window.ethereum only
-    if (!isMobile && providers.length === 1) {
+    // Auto-connect: mobile inside wallet browser, or desktop with 1 provider / legacy
+    if (isMobile && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
+        eth = window.ethereum || window.phantom.ethereum;
+    } else if (!isMobile && providers.length === 1) {
         eth = providers[0].provider;
     } else if (!isMobile && providers.length === 0 && (window.ethereum || (window.phantom && window.phantom.ethereum))) {
         eth = window.ethereum || window.phantom.ethereum;
