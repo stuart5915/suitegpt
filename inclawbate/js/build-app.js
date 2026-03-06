@@ -743,7 +743,7 @@
                     sendMessage();
                     return;
                 }
-                if (state.currentCode) {
+                if (state.currentCode && state.autoFixAttempts === 0) {
                     state.codeHistory.push(state.currentCode);
                     if (state.codeHistory.length > 20) state.codeHistory.shift();
                     updateUndoBtn();
