@@ -152,7 +152,11 @@ function renderTable() {
         var name = p.token_name || p.name || 'Unnamed';
         var symbol = p.token_symbol || '';
         var logoColor = colors[i % colors.length];
-        var href = '/inclawbator/' + (p.id || '');
+        // API projects have UUID ids → project detail page; extras → Clanker
+        var isUUID = p.id && p.id.length > 8 && p.id.indexOf('-') !== -1;
+        var href = isUUID
+            ? '/inclawbator/' + p.id
+            : (p.token_address ? 'https://www.clanker.world/clanker/' + p.token_address : '/tokens');
 
         var logoHtml = p.logo_url
             ? '<img class="tok-logo" src="' + p.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
@@ -188,7 +192,12 @@ function renderTable() {
     container.querySelectorAll('tr[data-href]').forEach(function(row) {
         row.addEventListener('click', function(e) {
             if (e.target.closest('.tok-actions a')) return;
-            window.location.href = row.dataset.href;
+            var href = row.dataset.href;
+            if (href.startsWith('http')) {
+                window.open(href, '_blank', 'noopener');
+            } else {
+                window.location.href = href;
+            }
         });
     });
 }
