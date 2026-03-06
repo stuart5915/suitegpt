@@ -277,6 +277,48 @@
             outline: none;
         }
 
+        /* ── Featured Section ── */
+        .featured-section {
+            margin-bottom: var(--space-xl);
+            display: none;
+        }
+        .featured-section.visible { display: block; }
+        .featured-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+        .featured-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .featured-badge {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.25em 0.65em;
+            border-radius: var(--radius-sm);
+            background: hsla(42, 80%, 55%, 0.12);
+            color: hsl(42, 80%, 55%);
+        }
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: var(--space-lg);
+        }
+        .featured-grid .app-card {
+            border-color: hsla(42, 80%, 55%, 0.15);
+        }
+        .featured-grid .app-card:hover {
+            border-color: hsla(42, 80%, 55%, 0.35);
+            box-shadow: 0 4px 20px hsla(42, 80%, 55%, 0.08);
+        }
+
         /* ── Grid ── */
         .apps-grid {
             display: grid;
@@ -895,6 +937,15 @@
         <div id="conciergeResponse" class="concierge-response" style="display:none;"></div>
     </div>
 
+    <!-- Featured Apps -->
+    <div id="featuredSection" class="featured-section">
+        <div class="featured-header">
+            <span class="featured-title">Featured Apps</span>
+            <span class="featured-badge">Staff Picks</span>
+        </div>
+        <div id="featuredGrid" class="featured-grid"></div>
+    </div>
+
     <!-- Controls -->
     <div class="apps-controls">
         <div class="apps-categories">
@@ -1033,6 +1084,50 @@
             if (d.error) { alert(d.error); e.target.checked = !enabled; }
         }).catch(function() { alert('Failed to update setting'); e.target.checked = !enabled; });
     });
+
+    // ── Featured Apps ──
+    async function loadFeatured() {
+        var section = document.getElementById('featuredSection');
+        var grid = document.getElementById('featuredGrid');
+        if (!section || !grid) return;
+
+        try {
+            var headers = {};
+            if (isLoggedIn()) headers['Authorization'] = 'Bearer ' + getToken();
+            var resp = await fetch(API + '?featured=true&limit=6', { headers: headers });
+            var data = await resp.json();
+            var apps = data.apps || [];
+            if (apps.length === 0) return;
+
+            section.classList.add('visible');
+            grid.innerHTML = '';
+            apps.forEach(function(app, i) {
+                var card = document.createElement('div');
+                card.className = 'app-card';
+                card.style.animationDelay = (i * 0.04) + 's';
+                var creator = creatorLabel(app);
+                var catLabel = app.category ? app.category.charAt(0).toUpperCase() + app.category.slice(1) : 'Other';
+                var emoji = catEmoji[app.category] || catEmoji.other;
+                var previewHtml = app.code
+                    ? '<div class="app-card-preview"><iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe></div>'
+                    : '<div class="app-card-preview"><div class="app-card-placeholder">' + emoji + '</div></div>';
+                card.innerHTML = previewHtml +
+                    '<div class="app-card-info">' +
+                        '<div class="app-card-name">' + escapeHtml(app.name || app.slug) + '</div>' +
+                        '<div class="app-card-desc">' + escapeHtml(app.description || '') + '</div>' +
+                        '<div class="app-card-meta">' +
+                            '<span class="app-creator">' + escapeHtml(creator) + '</span>' +
+                            '<span class="app-badge cat">' + catLabel + '</span>' +
+                            (app.claws_price > 0
+                                ? '<span class="app-badge paid">' + formatNum(app.claws_price) + ' CLAWS</span>'
+                                : '<span class="app-badge free">Free</span>') +
+                        '</div>' +
+                    '</div>';
+                card.addEventListener('click', function() { openDetail(app.id); });
+                grid.appendChild(card);
+            });
+        } catch(e) { /* silent */ }
+    }
 
     // ── Load Apps ──
     async function loadApps() {
@@ -1528,6 +1623,7 @@
 
     // ── Init — load for everyone, no auth gate ──
     checkParams();
+    loadFeatured();
     loadApps().then(function() {
         var params = new URLSearchParams(window.location.search);
         var appId = params.get('id');

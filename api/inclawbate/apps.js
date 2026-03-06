@@ -171,6 +171,11 @@ export default async function handler(req, res) {
                 }
             }
 
+            // Featured filter
+            if (req.query.featured === 'true') {
+                query = query.eq('featured', true);
+            }
+
             if (category && category !== 'all') {
                 query = query.eq('category', category);
             }
