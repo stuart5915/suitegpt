@@ -828,6 +828,10 @@ async function handleLaunchDeploy() {
     state.deploying = true;
     state.burnTxHash = null;
     var btn = document.getElementById('deployLaunchBtn');
+
+    // Re-check Angel NFT status before deploy to ensure it's fresh
+    await checkAngelNFT();
+
     var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
 
     try {
@@ -1614,6 +1618,7 @@ async function init() {
                 state.isAdmin = state.wallet === SUPER_ADMIN;
                 updateUI();
                 loadClawsBalance();
+                checkAngelNFT();
             }
         } catch (e) {}
     }
