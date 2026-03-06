@@ -2191,6 +2191,10 @@
 
     // ── Go Back ──
     function goBack() {
+        if (!isLoggedIn()) {
+            newProject();
+            return;
+        }
         loadProjects();
     }
 
