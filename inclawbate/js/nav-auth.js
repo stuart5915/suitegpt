@@ -124,7 +124,40 @@
             }
 
             if (isMobile) {
-                // ── Mobile: deep link buttons ──
+                // ── Mobile: check for injected provider (wallet browser) first ──
+                try { window.dispatchEvent(new Event('eip6963:requestProvider')); } catch(e) {}
+                var mobileProviders = window._eip6963Providers || [];
+
+                if (mobileProviders.length > 0 || window.ethereum) {
+                    var connectSec = document.createElement('div');
+                    connectSec.className = 'ws-section';
+                    connectSec.innerHTML = '<div class="ws-section-label">Detected Wallet</div>';
+
+                    if (mobileProviders.length > 0) {
+                        mobileProviders.forEach(function(p) {
+                            var info = p.info || {};
+                            var btn = document.createElement('button');
+                            btn.className = 'ws-option';
+                            var iconSrc = info.icon || '';
+                            btn.innerHTML = (iconSrc ? '<img src="' + iconSrc + '" alt="' + (info.name || 'Wallet') + '">' : '<div style="width:36px;height:36px;border-radius:8px;background:#333;flex-shrink:0"></div>') +
+                                '<div class="ws-option-info"><div class="ws-option-name">' + (info.name || 'Wallet') + '</div></div>' +
+                                '<span class="ws-option-tag ws-tag-detected">Connect</span>';
+                            btn.addEventListener('click', function() { done(p.provider); });
+                            connectSec.appendChild(btn);
+                        });
+                    } else {
+                        var btn = document.createElement('button');
+                        btn.className = 'ws-option';
+                        btn.innerHTML = '<div style="width:36px;height:36px;border-radius:8px;background:#6366f1;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0">W</div>' +
+                            '<div class="ws-option-info"><div class="ws-option-name">Browser Wallet</div></div>' +
+                            '<span class="ws-option-tag ws-tag-detected">Connect</span>';
+                        btn.addEventListener('click', function() { done(window.ethereum); });
+                        connectSec.appendChild(btn);
+                    }
+                    body.appendChild(connectSec);
+                }
+
+                // ── Deep links as fallback for users not in a wallet browser ──
                 var sec = document.createElement('div');
                 sec.className = 'ws-section';
                 sec.innerHTML = '<div class="ws-section-label">Open in Wallet App</div>';
