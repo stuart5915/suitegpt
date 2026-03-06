@@ -208,9 +208,8 @@
     }
 
     // ── Enumerate Holders ──
-    // Always uses public Base RPCs — wallet may be on a different chain
     async function enumerateHolders() {
-        var totalHex = await publicContractRead(ANGEL_NFT, SEL_TOTAL_MINTED);
+        var totalHex = await contractRead(ANGEL_NFT, SEL_TOTAL_MINTED);
         var totalMinted = Number(BigInt(totalHex));
         if (totalMinted === 0) return [];
 
@@ -223,9 +222,9 @@
             for (var id = start; id <= end; id++) {
                 calls.push({ to: ANGEL_NFT, data: SEL_OWNER_OF + pad32('0x' + id.toString(16)) });
             }
-            var results = await publicBatchRead(calls);
+            var results = await batchRead(calls);
             for (var j = 0; j < results.length; j++) {
-                if (results[j].length < 66) continue; // skip invalid results
+                if (results[j].length < 66) continue; // skip invalid/empty results
                 var owner = '0x' + results[j].slice(26);
                 if (owner !== '0x0000000000000000000000000000000000000000') {
                     holders[owner.toLowerCase()] = true;
@@ -591,15 +590,12 @@
     };
 
     // ── Init ──
-    window.initAirdropTab = function() {
+    window.initAirdropTab = async function() {
         if (state.initialized) return;
         state.initialized = true;
         setupEvents();
 
-        // Always start enumerating holders (doesn't need a wallet)
-        enumerateHoldersAsync();
-
-        // Auto-detect already connected wallet
+        // Auto-detect wallet FIRST and switch to Base before enumerating
         if (window.ethereum && window.ethereum.selectedAddress) {
             state.provider = window.ethereum;
             state.account = window.ethereum.selectedAddress;
@@ -608,8 +604,12 @@
             document.getElementById('airdropConnect').disabled = true;
             document.getElementById('airdropLoadToken').disabled = false;
             updateSteps();
+            try { await ensureBase(); } catch (e) { /* user may decline chain switch */ }
             fetchMyTokens(state.account);
         }
+
+        // Now enumerate — wallet is on Base (or absent), so reads are correct
+        enumerateHoldersAsync();
     };
 
 })();
