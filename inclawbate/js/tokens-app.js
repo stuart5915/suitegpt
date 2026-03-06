@@ -168,6 +168,9 @@ function renderTable() {
             actions = '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>'
                 + '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
         }
+        if (p.staking_address && symbol) {
+            actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
+        }
 
         html += '<tr data-href="' + href + '">'
             + '<td><span class="tok-rank">' + (i + 1) + '</span></td>'
