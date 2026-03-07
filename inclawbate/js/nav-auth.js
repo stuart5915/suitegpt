@@ -549,36 +549,18 @@
     var SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
 
     window.signAndSendSolanaTransaction = async function(txBytes) {
-        // Phantom path — uses native API, no simulation freeze
+        // Phantom path — uses native signAndSendTransaction (no manual RPC needed)
         if (window._solanaProvider === 'phantom' && window._phantomSolana) {
             var phantom = window._phantomSolana;
-            // Deserialize the transaction using solanaWeb3 if available
+            if (!window.solanaWeb3) throw new Error('solanaWeb3 not loaded.');
             var tx;
-            if (window.solanaWeb3) {
-                try {
-                    tx = window.solanaWeb3.VersionedTransaction.deserialize(txBytes);
-                } catch(e) {
-                    tx = window.solanaWeb3.Transaction.from(txBytes);
-                }
-            } else {
-                // Raw sign — create a minimal transaction wrapper
-                throw new Error('solanaWeb3 not loaded. Cannot sign Solana transactions.');
+            try {
+                tx = window.solanaWeb3.VersionedTransaction.deserialize(txBytes);
+            } catch(e) {
+                tx = window.solanaWeb3.Transaction.from(txBytes);
             }
-            var signed = await phantom.signTransaction(tx);
-            var serialized = signed.serialize();
-            var b64 = btoa(String.fromCharCode.apply(null, serialized));
-            var rpcResp = await fetch(SOLANA_RPC, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jsonrpc: '2.0', id: 1,
-                    method: 'sendTransaction',
-                    params: [b64, { encoding: 'base64', skipPreflight: true, preflightCommitment: 'confirmed' }]
-                })
-            });
-            var rpcData = await rpcResp.json();
-            if (rpcData.error) throw new Error('Solana RPC error: ' + (rpcData.error.message || JSON.stringify(rpcData.error)));
-            return { signature: rpcData.result };
+            var result = await phantom.signAndSendTransaction(tx, { skipPreflight: true });
+            return { signature: result.signature };
         }
 
         // Wallet Standard path (MetaMask etc.)
