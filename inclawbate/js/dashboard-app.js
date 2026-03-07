@@ -384,7 +384,7 @@ async function loadSavedApps() {
         const json = await res.json();
         const apps = json.apps || [];
         if (!apps.length) {
-            container.innerHTML = '<div class="overview-empty"><p>No saved apps yet. <a href="/explore">Browse apps to save</a></p></div>';
+            container.innerHTML = '<div class="overview-empty"><p>No saved apps yet. <a href="/projects">Browse apps to save</a></p></div>';
             return;
         }
         container.innerHTML = '';
