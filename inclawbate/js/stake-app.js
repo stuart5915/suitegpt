@@ -800,6 +800,20 @@ function renderPoolPage(pool, key) {
 async function connectPoolWallet() {
     if (walletAddr) return walletAddr;
 
+    // Check if WalletKit already has an address (WalletConnect session)
+    if (window.WalletKit) {
+        var wkAddr = window.WalletKit.getAddress();
+        var wkProvider = window.WalletKit.getProvider();
+        if (wkAddr && wkProvider) {
+            walletAddr = wkAddr;
+            try { localStorage.setItem('_stake_wallet', wkAddr); } catch (e) {}
+            if (currentPoolKey && POOLS[currentPoolKey]) {
+                onPoolWalletConnected(wkAddr, POOLS[currentPoolKey], currentPoolKey);
+            }
+            return wkAddr;
+        }
+    }
+
     // Wait for late-loading wallets (Base Wallet EIP-6963)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
 
@@ -816,6 +830,12 @@ async function connectPoolWallet() {
         eth = window.ethereum || window.phantom.ethereum;
     } else if (window.showWalletSelector) {
         eth = await window.showWalletSelector();
+    }
+
+    // Last resort: open WalletKit modal if no provider found
+    if (!eth && window.WalletKit) {
+        window.WalletKit.open();
+        return null;
     }
 
     if (!eth) return null;
@@ -1981,7 +2001,9 @@ async function init() {
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
     try {
         // Try WalletKit first (handles WalletConnect sessions)
-        if (window.WalletKit && window.WalletKit.isConnected()) {
+        // Check getAddress() regardless of isConnected() — Reown can report
+        // disconnected while still having a valid session and address
+        if (window.WalletKit) {
             var wkAddr = window.WalletKit.getAddress();
             if (wkAddr) {
                 walletAddr = wkAddr;
@@ -2003,6 +2025,21 @@ async function init() {
     // Fetch prices + stats in parallel, then route
     await Promise.all([fetchAllPrices(), fetchAllPoolStats()]).catch(function() {});
     routeApp();
+
+    // Delayed WalletKit check — Reown's subscribeProvider can fire after init
+    if (!walletAddr && window.WalletKit) {
+        setTimeout(function() {
+            var wkAddr = window.WalletKit.getAddress();
+            if (wkAddr && !walletAddr) {
+                walletAddr = wkAddr;
+                try { localStorage.setItem('_stake_wallet', wkAddr); } catch (e) {}
+                // If user is on a pool page, show the staking UI
+                if (currentPoolKey && POOLS[currentPoolKey]) {
+                    onPoolWalletConnected(wkAddr, POOLS[currentPoolKey], currentPoolKey);
+                }
+            }
+        }, 1500);
+    }
 
     // Refresh stats every 60s
     setInterval(function() {
