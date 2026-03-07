@@ -2130,6 +2130,13 @@ async function init() {
         window.history.replaceState({}, '', window.location.pathname);
     }
 
+    // Deep-link: ?tool=pool opens the pool factory drawer
+    var toolParam = urlParams.get('tool');
+    if (toolParam) {
+        window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(function() { openToolDrawer(toolParam); }, 300);
+    }
+
     // Load admin panel (handled by updateUI when admin)
 
     // Live Projects

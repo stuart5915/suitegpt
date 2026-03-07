@@ -476,164 +476,138 @@ function getCurrentPool() {
 // OVERVIEW RENDERING
 // ══════════════════════════════════════
 
-function buildPoolCard(key, pool) {
+function buildPoolRow(key, pool, rank) {
     var stats = poolStats[key] || {};
     var price = poolPrices[key] || 0;
     var tvl = (stats.totalStaked || 0) * price;
+    var apy = stats.apy || 0;
+    var stakers = stats.stakerCount || 0;
 
-    var apyStr = pool.retired ? '0%' : (stats.apy ? Math.round(stats.apy).toLocaleString('en-US') + '%' : '--');
-    var stakedStr = stats.totalStaked ? fmt(stats.totalStaked) : '--';
-    var stakersStr = stats.stakerCount !== undefined ? stats.stakerCount.toLocaleString('en-US') : '--';
+    var apyStr = pool.retired ? '0%' : (apy ? Math.round(apy).toLocaleString('en-US') + '%' : '--');
     var tvlStr = tvl > 0 ? fmtUsd(tvl) : '--';
+    var stakersStr = stakers > 0 ? stakers.toLocaleString('en-US') : '--';
 
-    var ctaText = pool.rewardToken
-        ? 'Stake ' + pool.ticker + ' &rarr; Earn ' + pool.rewardTicker
-        : 'Stake &rarr;';
+    var retiredBadge = pool.retired ? '<span class="stk-badge stk-badge--ended">Ended</span>' : '';
+    var btnText = pool.retired ? 'Unstake' : 'Stake';
+    var btnClass = pool.retired ? 'stk-action-btn ended' : 'stk-action-btn';
 
-    var retiredBadge = pool.retired
-        ? ' <span class="stake-card-retired-badge">Ended</span>'
-        : '';
-    var cardCta = pool.retired
-        ? '<div class="stake-card-cta">Unstake &amp; Migrate to CLAWS &rarr;</div>'
-        : '<div class="stake-card-cta">' + ctaText + '</div>';
+    var logoHtml = pool.logo
+        ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
+        : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
-    return { tvl: tvl, html: '<a href="/stake/' + key + '" class="stake-card' + (pool.featured ? ' featured' : '') + '" ' +
-        'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
-        '<div class="stake-card-identity">' +
-            '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' +
-            '<div>' +
-                '<div class="stake-card-name">' + pool.name + retiredBadge + '</div>' +
-                '<div class="stake-card-desc">' + pool.description + '</div>' +
-                (pool.website ? '<div class="stake-card-website"><span class="stake-card-website-dot"></span>' + pool.website.replace('https://', '') + '</div>' : '') +
-            '</div>' +
-        '</div>' +
-        '<div class="stake-card-stats">' +
-            '<div class="stake-card-stat">' +
-                '<span class="stake-card-stat-value apy">' + apyStr + '</span>' +
-                '<span class="stake-card-stat-label">APY</span>' +
-            '</div>' +
-            '<div class="stake-card-stat">' +
-                '<span class="stake-card-stat-value">' + tvlStr + '</span>' +
-                '<span class="stake-card-stat-label">TVL</span>' +
-            '</div>' +
-            '<div class="stake-card-stat">' +
-                '<span class="stake-card-stat-value">' + stakedStr + '</span>' +
-                '<span class="stake-card-stat-label">Tokens Staked</span>' +
-            '</div>' +
-            '<div class="stake-card-stat">' +
-                '<span class="stake-card-stat-value">' + stakersStr + '</span>' +
-                '<span class="stake-card-stat-label">Stakers</span>' +
-            '</div>' +
-        '</div>' +
-        cardCta +
-    '</a>' };
+    var rowClass = pool.featured ? ' featured-row' : '';
+
+    return { tvl: tvl, apy: apy, stakers: stakers, html:
+        '<tr class="stk-row' + rowClass + '" data-key="' + key + '" style="border-left-color:' + pool.color + '">' +
+            '<td><span class="stk-rank">' + rank + '</span></td>' +
+            '<td><div class="stk-name-cell">' + logoHtml +
+                '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' +
+            '</div></td>' +
+            '<td><span class="stk-apy' + (apy > 0 ? ' positive' : '') + '">' + apyStr + '</span></td>' +
+            '<td><span class="stk-tvl">' + tvlStr + '</span></td>' +
+            '<td><span class="stk-stakers">' + stakersStr + '</span></td>' +
+            '<td class="stk-action"><button class="' + btnClass + '">' + btnText + '</button></td>' +
+        '</tr>'
+    };
 }
 
-function buildComingSoonCard(pool) {
-    return '<div class="stake-card stake-card--coming-soon" ' +
-        'style="--pool-accent:' + pool.color + ';--pool-accent-dim:' + pool.colorDim + ';--pool-glow:' + pool.glow + '">' +
-        '<div class="stake-card-coming-badge">Coming Soon</div>' +
-        '<div class="stake-card-identity">' +
-            (pool.logo ? '<img class="stake-card-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">' :
-                '<div class="stake-card-logo stake-card-logo--placeholder" style="background:' + pool.color + ';color:#000;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:0.7rem;">' + pool.ticker + '</div>') +
-            '<div>' +
-                '<div class="stake-card-name">' + pool.name + '</div>' +
-                '<div class="stake-card-desc">' + pool.description + '</div>' +
-            '</div>' +
-        '</div>' +
-        '<div class="stake-card-stats" style="grid-template-columns:1fr;">' +
-            '<div class="stake-card-stat" style="align-items:center;">' +
-                '<span class="stake-card-stat-value" style="font-size:0.78rem;color:var(--text-secondary);">' + pool.platform + '</span>' +
-            '</div>' +
-        '</div>' +
-    '</div>';
+function buildComingSoonRow(pool, rank) {
+    var logoHtml = pool.logo
+        ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
+        : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
+
+    return '<tr class="coming-soon-row">' +
+        '<td><span class="stk-rank">' + rank + '</span></td>' +
+        '<td><div class="stk-name-cell">' + logoHtml +
+            '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' +
+            '<span class="stk-badge stk-badge--coming">Coming Soon</span></span>' +
+        '</div></td>' +
+        '<td><span class="stk-apy">--</span></td>' +
+        '<td><span class="stk-tvl">--</span></td>' +
+        '<td><span class="stk-stakers">--</span></td>' +
+        '<td class="stk-action"></td>' +
+    '</tr>';
 }
 
 function renderOverview() {
-    var rewardsGrid = document.getElementById('stakeGridRewards');
-    var rewardsSection = document.getElementById('stakeRewardsSection');
-    var ubiGrid = document.getElementById('stakeGridUbi');
-    var inclawbatorGrid = document.getElementById('stakeGridInclawbator');
-    var inclawbatorSection = document.getElementById('stakeInclawbatorSection');
-    var totalTvl = 0;
+    var container = document.getElementById('stakeTableContainer');
+    if (!container) return;
 
-    // Sort: featured first, then by TVL descending
-    var sorted = POOL_KEYS.slice().sort(function(a, b) {
+    // Read current filter + sort
+    var activeFilter = 'all';
+    var activeTab = document.querySelector('#stakeFilters .lp-filter-tab.active');
+    if (activeTab) activeFilter = activeTab.dataset.filter;
+    var sortEl = document.getElementById('stakeSort');
+    var sortBy = sortEl ? sortEl.value : 'tvl';
+
+    // Filter pools
+    var filtered = POOL_KEYS.filter(function(key) {
+        if (activeFilter === 'all') return true;
+        return POOLS[key].category === activeFilter;
+    });
+
+    // Sort: featured first, then by selected metric
+    filtered.sort(function(a, b) {
         if (POOLS[a].featured && !POOLS[b].featured) return -1;
         if (!POOLS[a].featured && POOLS[b].featured) return 1;
-        var tvlA = (poolStats[a] ? poolStats[a].totalStaked : 0) * (poolPrices[a] || 0);
-        var tvlB = (poolStats[b] ? poolStats[b].totalStaked : 0) * (poolPrices[b] || 0);
+        var sa = poolStats[a] || {}, sb = poolStats[b] || {};
+        if (sortBy === 'apy') return (sb.apy || 0) - (sa.apy || 0);
+        if (sortBy === 'stakers') return (sb.stakerCount || 0) - (sa.stakerCount || 0);
+        // default: tvl
+        var tvlA = (sa.totalStaked || 0) * (poolPrices[a] || 0);
+        var tvlB = (sb.totalStaked || 0) * (poolPrices[b] || 0);
         return tvlB - tvlA;
     });
 
-    var rewardsHtml = '';
-    var ubiHtml = '';
-    var inclawbatorHtml = '';
+    var totalTvl = 0;
+    var rowsHtml = '';
+    var rank = 1;
 
-    // Populate CLAWS hero stats
-    var clawsStats = poolStats['claws'] || {};
-    var clawsPrice = poolPrices['claws'] || 0;
-    var clawsTvl = (clawsStats.totalStaked || 0) * clawsPrice;
-    totalTvl += clawsTvl;
-    var he = document.getElementById('clawsHeroApy');
-    if (he) he.textContent = clawsStats.apy ? Math.round(clawsStats.apy).toLocaleString('en-US') + '%' : '--';
-    var ht = document.getElementById('clawsHeroTvl');
-    if (ht) ht.textContent = clawsTvl > 0 ? fmtUsd(clawsTvl) : '--';
-    var hs = document.getElementById('clawsHeroStaked');
-    if (hs) hs.textContent = clawsStats.totalStaked ? fmt(clawsStats.totalStaked) : '--';
-    var hk = document.getElementById('clawsHeroStakers');
-    if (hk) hk.textContent = clawsStats.stakerCount !== undefined ? clawsStats.stakerCount.toLocaleString('en-US') : '--';
-
-    // Wire hero Stake CLAWS link
-    var heroStakeLink = document.querySelector('.claws-hero-btn--primary');
-    if (heroStakeLink) {
-        heroStakeLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            history.pushState(null, '', '/stake/claws');
-            routeApp();
-        });
-    }
-
-    sorted.forEach(function(key) {
-        var pool = POOLS[key];
-        // Skip CLAWS — rendered in hero section
-        if (key === 'claws') return;
-        var result = buildPoolCard(key, pool);
+    filtered.forEach(function(key) {
+        var result = buildPoolRow(key, POOLS[key], rank);
         totalTvl += result.tvl;
-        if (pool.category === 'rewards') {
-            rewardsHtml += result.html;
-        } else if (pool.category === 'inclawbator') {
-            inclawbatorHtml += result.html;
-        } else {
-            ubiHtml += result.html;
-        }
+        rowsHtml += result.html;
+        rank++;
     });
 
-    // Coming soon pools in Inclawbator section
+    // Coming soon rows at bottom (only show if filter matches)
     COMING_SOON.forEach(function(pool) {
-        inclawbatorHtml += buildComingSoonCard(pool);
+        if (activeFilter !== 'all' && pool.category !== activeFilter) return;
+        rowsHtml += buildComingSoonRow(pool, rank);
+        rank++;
     });
 
-    rewardsGrid.innerHTML = rewardsHtml;
-    rewardsSection.style.display = rewardsHtml ? '' : 'none';
-    if (ubiGrid) ubiGrid.innerHTML = ubiHtml;
-    inclawbatorGrid.innerHTML = inclawbatorHtml;
-    inclawbatorSection.style.display = inclawbatorHtml ? '' : 'none';
+    container.innerHTML =
+        '<table class="stake-table">' +
+            '<thead><tr>' +
+                '<th>#</th>' +
+                '<th class="col-name">Token</th>' +
+                '<th class="col-apy">APY</th>' +
+                '<th class="col-tvl">TVL</th>' +
+                '<th class="col-stakers">Stakers</th>' +
+                '<th class="col-action">Action</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+        '</table>';
 
-    // Update header
+    // Update header stats
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
-    // Prevent default link navigation — use pushState
-    [rewardsGrid, ubiGrid, inclawbatorGrid].filter(Boolean).forEach(function(grid) {
-        grid.querySelectorAll('.stake-card').forEach(function(card) {
-            card.addEventListener('click', function(e) {
-                var href = card.getAttribute('href');
-                if (!href || href.indexOf('http') === 0) return;
+    // Wire row click handlers (pushState navigation)
+    container.querySelectorAll('.stk-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't navigate if clicking the action button
+            if (e.target.closest('.stk-action-btn')) {
                 e.preventDefault();
-                history.pushState(null, '', href);
+                var key = row.dataset.key;
+                history.pushState(null, '', '/stake/' + key);
                 routeApp();
-            });
+                return;
+            }
+            var key = row.dataset.key;
+            history.pushState(null, '', '/stake/' + key);
+            routeApp();
         });
     });
 }
@@ -1690,6 +1664,18 @@ async function init() {
     } catch (e) { /* Inclawbator API unavailable, proceed with hardcoded pools */ }
 
     wirePoolEvents();
+
+    // Filter tabs
+    document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+            renderOverview();
+        });
+    });
+    // Sort dropdown
+    var sortSelect = document.getElementById('stakeSort');
+    if (sortSelect) sortSelect.addEventListener('change', function() { renderOverview(); });
 
     // Listen for popstate
     window.addEventListener('popstate', routeApp);
