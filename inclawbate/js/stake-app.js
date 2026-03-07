@@ -579,8 +579,8 @@ function buildComingSoonRow(pool, rank) {
     return '<tr class="coming-soon-row">' +
         '<td><span class="stk-rank">' + rank + '</span></td>' +
         '<td><div class="stk-name-cell">' + logoHtml +
-            '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' +
-            '<span class="stk-badge stk-badge--coming">Coming Soon</span></span>' +
+            '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' +
+            '<span class="stk-badge stk-badge--coming">Coming Soon</span></span></div>' +
         '</div></td>' +
         '<td><span class="stk-apy">--</span></td>' +
         '<td><span class="stk-tvl">--</span></td>' +
