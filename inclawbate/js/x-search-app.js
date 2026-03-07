@@ -149,18 +149,6 @@ async function doSearch() {
     const query = searchInput.value.trim();
     if (!query) return;
 
-    if (credits <= 0) {
-        searchStatus.innerHTML = 'You need credits to search. <a href="#" id="inlineBuyLink" style="color:var(--lobster-300);">Buy credits</a> to get started.';
-        searchStatus.className = 'xs-status';
-        searchStatus.classList.remove('hidden');
-        document.getElementById('inlineBuyLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            buyModal.classList.add('open');
-            if (!clawnchPrice) fetchPrice();
-        });
-        return;
-    }
-
     const filters = getFilters();
     searchFeed.innerHTML = '';
     searchStatus.classList.add('hidden');
@@ -428,11 +416,6 @@ async function openReplyDrawer(tweetId, useAi) {
 
 // ── AI Reply ──
 async function handleAiReply(tweetId) {
-    if (credits <= 0) {
-        showToast('No credits. Buy more at /deposit', 'error');
-        return;
-    }
-
     const tweet = searchResults.find(t => t.id === tweetId);
     if (!tweet) return;
 

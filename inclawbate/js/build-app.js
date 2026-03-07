@@ -567,14 +567,7 @@
             state.autoFixAttempts = 0;
         }
 
-        // Gate: show cost confirmation for first message when editing/forking existing code (skip for admins)
-        if (!isAdmin() && !state.sessionId && state.currentCode) {
-            var estimate = await estimateEditCost();
-            if (estimate) {
-                var confirmed = await showCostConfirmation(estimate);
-                if (!confirmed) return; // user cancelled — message stays in input
-            }
-        }
+        // Credits no longer gated — free for all users
 
         state.sending = true;
         els.chatInput.value = '';

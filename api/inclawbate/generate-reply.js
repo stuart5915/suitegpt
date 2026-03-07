@@ -67,12 +67,7 @@ export default async function handler(req, res) {
     const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
 
-    if (!isAdmin && (!profile || profile.credits <= 0)) {
-        return res.status(402).json({
-            error: 'No credits remaining. Deposit $INCLAWNCH at inclawbate.com/deposit to get more.',
-            credits: 0
-        });
-    }
+    // Credits no longer gated — free for all users
 
     const { ANTHROPIC_API_KEY } = process.env;
     if (!ANTHROPIC_API_KEY) {
@@ -145,13 +140,8 @@ Write a reply:`;
 
         const reply = data.content?.[0]?.text?.trim() || '';
 
-        // Deduct 1 credit (skip for admin)
+        // Credits no longer deducted — free for all users
         let creditsRemaining = profile?.credits || 0;
-        if (!isAdmin) {
-            const { data: newBalance } = await supabase
-                .rpc('deduct_inclawbate_credit', { profile_id: profileId });
-            creditsRemaining = newBalance >= 0 ? newBalance : 0;
-        }
 
         // Increment lifetime reply counter (for leaderboard)
         await supabase.rpc('increment_inclawbator_replies', { target_profile_id: profileId });

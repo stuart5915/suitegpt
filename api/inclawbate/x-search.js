@@ -97,15 +97,8 @@ async function handleSearch(req, res, profile, isAdmin) {
         return res.status(200).json({ tweets: cached.results, credits: profile.credits, cached: true });
     }
 
-    // Deduct 1 credit (unless admin)
+    // Credits no longer gated — free for all users
     let creditsRemaining = profile.credits || 0;
-    if (!isAdmin) {
-        if (creditsRemaining <= 0) {
-            return res.status(402).json({ error: 'No credits remaining. Buy more at inclawbate.com/deposit', credits: 0 });
-        }
-        const { data: newBalance } = await supabase.rpc('deduct_inclawbate_credit', { profile_id: profile.id });
-        creditsRemaining = newBalance >= 0 ? newBalance : 0;
-    }
 
     // Time range → start_time
     const now = new Date();
