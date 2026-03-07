@@ -519,7 +519,7 @@ export default async function handler(req, res) {
         // - Long prompts (>1500 chars) — likely "build from scratch"
         // - Auto-fix messages (code has errors, patching broken code makes it worse)
         // - User is asking for something fundamental that should exist (e.g. "add the pieces", "make it work")
-        const isAutoFix = /fix these errors|runtime.*errors|blank page|renders? a blank|corrected HTML/i.test(message);
+        const isAutoFix = /fix these errors|runtime.*errors|blank page|renders? a blank|corrected HTML|output was truncated|code is incomplete|missing closing tags/i.test(message);
         const isFundamentalAsk = /add the .*(pieces|board|grid|cells|items|content|elements|layout)|make it (work|functional|playable|interactive)|it('s| is) (broken|empty|blank|not working)/i.test(message);
         const isEditMode = !!existingCode && message.length < 1500 && !isAutoFix && !isFundamentalAsk;
 

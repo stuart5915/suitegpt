@@ -717,7 +717,7 @@
             // Remove thinking indicator
             clearInterval(thinkingInterval);
             if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
-            var finalCode = doneData ? doneData.code : extractHtmlClient(streamedText);
+            var finalCode = (doneData && doneData.code) || extractHtmlClient(streamedText);
 
             // Guard: if response is just metadata (model ID, etc.) and no code, treat as error
             var stripped = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
@@ -744,6 +744,8 @@
                 // Detect truncated output — missing closing tags means code was cut off
                 var isTruncated = !finalCode.includes('</html>') || !finalCode.includes('</script>');
                 if (isTruncated && state.autoFixAttempts < state.maxAutoFix) {
+                    // Store truncated code so retry sends current_code to server
+                    state.currentCode = finalCode;
                     appendMessage('assistant', '⚠️ Code appears truncated (output was cut off). Attempting to regenerate...');
                     state.autoFixAttempts++;
                     els.chatInput.value = 'The previous output was truncated and the code is incomplete — it\'s missing closing tags. Please regenerate the COMPLETE app from scratch, making sure to include ALL functions and closing tags. Output the full HTML file.';
