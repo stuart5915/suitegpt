@@ -366,34 +366,6 @@ function stakeToast(msg, type) {
     }, 4000);
 }
 
-window.stakeSlippageTip = function(e) {
-    if (e) e.preventDefault();
-    var href = e && e.currentTarget ? e.currentTarget.href : null;
-    var existing = document.getElementById('slippageTip');
-    if (existing) existing.remove();
-    var overlay = document.createElement('div');
-    overlay.id = 'slippageTip';
-    overlay.style.cssText = 'position:fixed;inset:0;background:hsla(0,0%,0%,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity 0.25s';
-    overlay.innerHTML =
-        '<div style="background:#1a1a2e;border:1px solid rgba(251,191,36,0.25);border-radius:16px;padding:28px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.5)">' +
-        '<strong style="display:block;font-size:1.05rem;color:#fbbf24;margin-bottom:10px">Low Liquidity Token</strong>' +
-        '<p style="color:#cbd5e1;font-size:0.88rem;line-height:1.6;margin:0 0 18px">Set slippage to <span style="color:#fbbf24;font-weight:700">5\u201310%</span> in Uniswap settings (gear icon) or your swap may fail.</p>' +
-        '<button id="slippageTipGo" style="background:linear-gradient(135deg,#f472b6,#ec4899);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:0.88rem;font-weight:700;cursor:pointer">Open Uniswap \u2192</button>' +
-        '</div>';
-    document.body.appendChild(overlay);
-    requestAnimationFrame(function() { overlay.style.opacity = '1'; });
-    document.getElementById('slippageTipGo').addEventListener('click', function() {
-        if (href) window.open(href, '_blank', 'noopener');
-        overlay.style.opacity = '0';
-        setTimeout(function() { overlay.remove(); }, 300);
-    });
-    overlay.addEventListener('click', function(ev) {
-        if (ev.target === overlay) {
-            overlay.style.opacity = '0';
-            setTimeout(function() { overlay.remove(); }, 300);
-        }
-    });
-};
 
 // ══════════════════════════════════════
 // PRICE FETCHING
@@ -841,9 +813,7 @@ function renderPoolPage(pool, key) {
         linksHtml += '<a href="' + pool.website + '" target="_blank" rel="noopener" class="pool-link pool-link--website">&#127760; Website</a>';
     }
     if (pool.buyLink) {
-        var tvl = (stats.totalStaked || 0) * price;
-        var lowLiq = tvl < 10000;
-        linksHtml += '<a href="' + pool.buyLink + '" target="_blank" rel="noopener" class="pool-link"' + (lowLiq ? ' onclick="stakeSlippageTip(event)"' : '') + '>Buy ' + pool.ticker + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
+        linksHtml += '<a href="' + pool.buyLink + '" target="_blank" rel="noopener" class="pool-link">Buy ' + pool.ticker + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     }
     if (pool.chartLink) {
         linksHtml += '<a href="' + pool.chartLink + '" target="_blank" rel="noopener" class="pool-link">Chart <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
