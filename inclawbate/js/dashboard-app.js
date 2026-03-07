@@ -1320,22 +1320,22 @@ async function openFundModal(poolAddr, poolName, projectId) {
                 <span class="fund-modal-input-suffix">CLAWS</span>
             </div>
             <div class="fund-modal-usd" id="fundUsd">&nbsp;</div>
-            <input type="range" class="fund-modal-slider" id="fundSlider" min="0" max="${Math.floor(clawsBalance)}" value="0" step="1">
+            <input type="range" class="fund-modal-slider" id="fundSlider" min="0" max="${Math.floor(clawsBalance)}" value="0" step="${Math.max(1, Math.floor(clawsBalance / 1000))}">
             <div class="fund-modal-pct-row">
-                <button class="fund-modal-pct" data-pct="25">25%</button>
-                <button class="fund-modal-pct" data-pct="50">50%</button>
-                <button class="fund-modal-pct" data-pct="75">75%</button>
-                <button class="fund-modal-pct" data-pct="100">MAX</button>
+                <button type="button" class="fund-modal-pct" data-pct="25">25%</button>
+                <button type="button" class="fund-modal-pct" data-pct="50">50%</button>
+                <button type="button" class="fund-modal-pct" data-pct="75">75%</button>
+                <button type="button" class="fund-modal-pct" data-pct="100">MAX</button>
             </div>
         </div>
         <div class="fund-modal-field">
             <label class="fund-modal-label">Duration</label>
             <div class="fund-modal-dur-row">
-                <button class="fund-modal-dur" data-days="7">7d</button>
-                <button class="fund-modal-dur" data-days="14">14d</button>
-                <button class="fund-modal-dur active" data-days="30">30d</button>
-                <button class="fund-modal-dur" data-days="60">60d</button>
-                <button class="fund-modal-dur" data-days="90">90d</button>
+                <button type="button" class="fund-modal-dur" data-days="7">7d</button>
+                <button type="button" class="fund-modal-dur" data-days="14">14d</button>
+                <button type="button" class="fund-modal-dur active" data-days="30">30d</button>
+                <button type="button" class="fund-modal-dur" data-days="60">60d</button>
+                <button type="button" class="fund-modal-dur" data-days="90">90d</button>
             </div>
             <input type="hidden" id="fundDuration" value="30">
         </div>
@@ -1397,12 +1397,16 @@ async function openFundModal(poolAddr, poolName, projectId) {
     amountInput.addEventListener('input', () => {
         const raw = amountInput.value.replace(/[^0-9]/g, '');
         if (raw) {
-            const pos = amountInput.selectionStart;
-            const oldLen = amountInput.value.length;
             const num = parseInt(raw);
-            amountInput.value = num.toLocaleString('en-US');
-            const newLen = amountInput.value.length;
-            amountInput.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
+            try {
+                const pos = amountInput.selectionStart;
+                const oldLen = amountInput.value.length;
+                amountInput.value = num.toLocaleString('en-US');
+                const newLen = amountInput.value.length;
+                amountInput.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
+            } catch (e) {
+                amountInput.value = num.toLocaleString('en-US');
+            }
             slider.value = Math.min(num, maxBal);
         } else {
             slider.value = 0;
