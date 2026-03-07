@@ -2206,8 +2206,11 @@ async function init() {
     // Refresh stats every 60s
     setInterval(function() {
         fetchAllPoolStats().then(function() {
-            // If on overview, re-render
-            if (getCurrentPool() === null) renderOverview();
+            // If on overview, re-render and re-inject earning badges
+            if (getCurrentPool() === null) {
+                renderOverview();
+                fetchAndShowUserRates();
+            }
         });
     }, 60000);
 
