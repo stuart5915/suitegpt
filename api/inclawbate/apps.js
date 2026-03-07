@@ -469,7 +469,25 @@ export default async function handler(req, res) {
                     return res.json({ deleted: true, action: 'deleted' });
                 }
 
-                return res.status(400).json({ error: 'Unknown moderate_action. Use: hide, unhide, delete' });
+                if (moderate_action === 'feature') {
+                    const { error: featErr } = await supabase
+                        .from('user_apps')
+                        .update({ featured: true })
+                        .eq('id', app_id);
+                    if (featErr) throw featErr;
+                    return res.json({ featured: true, action: 'featured' });
+                }
+
+                if (moderate_action === 'unfeature') {
+                    const { error: featErr } = await supabase
+                        .from('user_apps')
+                        .update({ featured: false })
+                        .eq('id', app_id);
+                    if (featErr) throw featErr;
+                    return res.json({ featured: false, action: 'unfeatured' });
+                }
+
+                return res.status(400).json({ error: 'Unknown moderate_action. Use: hide, unhide, delete, feature, unfeature' });
             }
 
             // ── Toggle anonymous publishing (SUPER_ADMIN only) ──
