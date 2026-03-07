@@ -11,6 +11,10 @@ function getStoredAuth() {
 
 const API_BASE = '/api/inclawbate';
 
+// Cached data for project modal dropdowns
+let _cachedUserApps = [];
+let _cachedTokens = [];
+
 function authHeaders() {
     const token = localStorage.getItem('inclawbate_token');
     return {
@@ -83,7 +87,8 @@ async function loadOverview() {
     const profileCreditsEl = document.getElementById('profileCredits');
     if (profileCreditsEl) profileCreditsEl.textContent = creditCount.toLocaleString();
 
-    renderAppCards(appsData?.apps || []);
+    _cachedUserApps = appsData?.apps || [];
+    renderAppCards(_cachedUserApps);
 
 }
 
@@ -327,6 +332,7 @@ async function loadProjects() {
         // Split: pending/rejected incubation applications vs active projects & tokens
         const applications = all.filter(p => p.tier === 'incubated' && !p.token_address && p.status !== 'active');
         const tokens = all.filter(p => p.token_address);
+        _cachedTokens = tokens;
 
         // Sort each: active first, then pending, then rejected; within group by date desc
         const statusOrder = { active: 0, pending: 1, rejected: 2 };
