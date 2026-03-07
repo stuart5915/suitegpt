@@ -641,70 +641,78 @@ function renderOverview() {
     document.getElementById('overviewTvl').textContent = totalTvl > 0 ? fmtUsd(totalTvl) : '--';
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
-    // Wire row click handlers (pushState navigation)
+    // Wire row click handlers (inline expand)
     container.querySelectorAll('.stk-row').forEach(function(row) {
         row.addEventListener('click', function(e) {
-            // Don't navigate if clicking the action button
-            if (e.target.closest('.stk-action-btn')) {
-                e.preventDefault();
-                var key = row.dataset.key;
-                history.pushState(null, '', '/stake/' + key);
-                routeApp();
-                return;
-            }
+            if (e.target.closest('.stk-action-btn')) e.preventDefault();
             var key = row.dataset.key;
-            history.pushState(null, '', '/stake/' + key);
-            routeApp();
+            if (row.classList.contains('expanded')) {
+                collapseAnyRow();
+                history.pushState(null, '', '/stake');
+                document.title = 'Stake \u2014 Inclawbate';
+            } else {
+                history.pushState(null, '', '/stake/' + key);
+                expandRow(key);
+                document.title = POOLS[key].name + ' Staking \u2014 Inclawbate';
+            }
         });
     });
 }
 
 // ══════════════════════════════════════
-// USER EARNING RATES (injected into pool table)
+// INLINE EXPAND / COLLAPSE
 // ══════════════════════════════════════
 
-async function fetchAndShowUserRates() {
-    if (!walletAddr) return;
-    var addrPadded = pad32(walletAddr);
-    var keys = POOL_KEYS;
+function expandRow(key) {
+    var pool = POOLS[key];
+    if (!pool) return;
+    var row = document.querySelector('.stk-row[data-key="' + key + '"]');
+    if (!row) return;
 
-    // Batch-fetch balanceOf for all pools
-    var calls = [];
-    keys.forEach(function(key) {
-        calls.push({ to: POOLS[key].staking, data: SEL.balanceOf + addrPadded });
-    });
-    var results = await contractReadBatch(calls);
+    collapseAnyRow(); // close any other expansion
 
-    var now = Math.floor(Date.now() / 1000);
-    keys.forEach(function(key, i) {
-        var staked = fromWei(results[i]);
-        if (staked <= 0) return;
-        var stats = poolStats[key] || {};
-        if (!stats.totalStaked || stats.totalStaked <= 0) return;
-        var active = stats.periodEnd > now;
-        if (!active) return;
+    // Create expansion row after the clicked row
+    var expRow = document.createElement('tr');
+    expRow.className = 'stk-expand-row';
+    expRow.innerHTML = '<td colspan="6"><div class="stk-expand-cell"></div></td>';
+    row.after(expRow);
+    row.classList.add('expanded');
 
-        var dailyReward = (stats.rewardRate * 86400) * (staked / stats.totalStaked);
-        if (dailyReward <= 0) return;
+    // Move #stakePool into the expansion cell
+    var poolEl = document.getElementById('stakePool');
+    expRow.querySelector('.stk-expand-cell').appendChild(poolEl);
+    poolEl.classList.add('visible');
 
-        // Show in USD if we have a reward price, otherwise skip (raw token amounts are confusing)
-        var rewardPrice = POOLS[key].rewardToken
-            ? (poolPrices[key + '_reward'] || 0)
-            : (poolPrices[key] || 0);
-        if (rewardPrice <= 0) return;
-        var dailyUsd = dailyReward * rewardPrice;
-        var dailyStr = dailyUsd >= 1 ? '$' + Math.round(dailyUsd).toLocaleString('en-US') : '$' + dailyUsd.toFixed(2);
+    // Hide back link and powered footer (not needed inline)
+    document.getElementById('poolBack').style.display = 'none';
+    var powered = document.querySelector('.pool-powered');
+    if (powered) powered.style.display = 'none';
 
-        // Inject into the name wrap
-        var row = document.querySelector('.stk-row[data-key="' + key + '"]');
-        if (!row) return;
-        var wrapEl = row.querySelector('.stk-name-wrap');
-        if (!wrapEl || wrapEl.querySelector('.stk-earning')) return;
-        var badge = document.createElement('div');
-        badge.className = 'stk-earning';
-        badge.textContent = 'Earning ' + dailyStr + '/day';
-        wrapEl.appendChild(badge);
-    });
+    // Render pool content using existing function
+    renderPoolPage(pool, key);
+
+    // Scroll into view
+    expRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function collapseAnyRow() {
+    var expRow = document.querySelector('.stk-expand-row');
+    if (!expRow) return;
+
+    var poolEl = document.getElementById('stakePool');
+    poolEl.classList.remove('visible');
+    // Move back to original parent
+    document.querySelector('.stake-page').appendChild(poolEl);
+
+    // Restore hidden elements
+    document.getElementById('poolBack').style.display = '';
+    var powered = document.querySelector('.pool-powered');
+    if (powered) powered.style.display = '';
+
+    var expandedRow = document.querySelector('.stk-row.expanded');
+    if (expandedRow) expandedRow.classList.remove('expanded');
+    expRow.remove();
+    currentPoolKey = null;
 }
 
 // ══════════════════════════════════════
@@ -1670,8 +1678,9 @@ function wirePoolEvents() {
     // Back link
     document.getElementById('poolBack').addEventListener('click', function(e) {
         e.preventDefault();
+        collapseAnyRow();
         history.pushState(null, '', '/stake');
-        routeApp();
+        document.title = 'Stake \u2014 Inclawbate';
     });
 
     // MAX button
@@ -1786,8 +1795,6 @@ function routeApp() {
     var notFoundEl = document.getElementById('stakeNotFound');
     var adminEl = document.getElementById('stakeAdmin');
 
-    overviewEl.style.display = 'none';
-    poolEl.classList.remove('visible');
     notFoundEl.style.display = 'none';
     adminEl.classList.remove('visible');
 
@@ -1796,23 +1803,32 @@ function routeApp() {
     if (pool === null) {
         // Overview
         overviewEl.style.display = '';
+        poolEl.classList.remove('visible');
+        collapseAnyRow();
         renderOverview();
-        fetchAndShowUserRates();
         document.title = 'Stake \u2014 Inclawbate';
     } else if (pool === 'not_found') {
+        overviewEl.style.display = 'none';
+        poolEl.classList.remove('visible');
+        collapseAnyRow();
         notFoundEl.style.display = '';
         document.title = 'Pool Not Found \u2014 Inclawbate';
     } else if (typeof pool === 'string' && pool.indexOf('admin:') === 0) {
-        // Admin panel
+        // Admin panel — full page
+        overviewEl.style.display = 'none';
+        poolEl.classList.remove('visible');
+        collapseAnyRow();
         var key = pool.split(':')[1];
         adminEl.classList.add('visible');
         renderAdminPage(POOLS[key], key);
         document.title = POOLS[key].name + ' Admin \u2014 Inclawbate';
     } else {
-        // Individual pool
+        // Individual pool — inline expand
         var key = window.location.pathname.split('/')[2].toLowerCase();
-        poolEl.classList.add('visible');
-        renderPoolPage(pool, key);
+        overviewEl.style.display = '';
+        poolEl.classList.remove('visible');
+        renderOverview();
+        expandRow(key);
         document.title = pool.name + ' Staking \u2014 Inclawbate';
     }
 }
@@ -2121,13 +2137,13 @@ async function init() {
         tab.addEventListener('click', function() {
             document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(t) { t.classList.remove('active'); });
             tab.classList.add('active');
+            collapseAnyRow();
             renderOverview();
-            fetchAndShowUserRates();
         });
     });
     // Sort dropdown
     var sortSelect = document.getElementById('stakeSort');
-    if (sortSelect) sortSelect.addEventListener('change', function() { renderOverview(); fetchAndShowUserRates(); });
+    if (sortSelect) sortSelect.addEventListener('change', function() { collapseAnyRow(); renderOverview(); });
 
     // Pool creation modal
     var poolModalBtn = document.getElementById('openPoolModalBtn');
@@ -2206,10 +2222,15 @@ async function init() {
     // Refresh stats every 60s
     setInterval(function() {
         fetchAllPoolStats().then(function() {
-            // If on overview, re-render and re-inject earning badges
-            if (getCurrentPool() === null) {
-                renderOverview();
-                fetchAndShowUserRates();
+            // If no pool expanded, safe to re-render overview
+            if (!document.querySelector('.stk-expand-row')) {
+                if (getCurrentPool() === null) {
+                    renderOverview();
+                }
+            }
+            // If a pool is expanded inline, refresh its stats
+            if (currentPoolKey && POOLS[currentPoolKey] && document.querySelector('.stk-expand-row')) {
+                refreshPoolStats(currentPoolKey);
             }
         });
     }, 60000);
