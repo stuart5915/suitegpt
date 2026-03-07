@@ -1110,6 +1110,16 @@
                 var previewHtml = app.has_code
                     ? '<div class="app-card-preview"><iframe src="/s/' + encodeURIComponent(app.slug) + '" sandbox="allow-scripts" loading="lazy" tabindex="-1"></iframe></div>'
                     : '<div class="app-card-preview"><div class="app-card-placeholder">' + emoji + '</div></div>';
+                var tokenBadge = '';
+                if (app.staking_address && app.token_symbol) {
+                    tokenBadge = '<a class="app-badge stake" href="/stake/' + encodeURIComponent(app.token_symbol) + '" onclick="event.stopPropagation()">' +
+                        '$' + escapeHtml(app.token_symbol) +
+                        ' <span class="app-badge-apy" data-pool="' + escapeHtml(app.staking_address) + '"></span>' +
+                    '</a>';
+                } else if (app.token_symbol) {
+                    tokenBadge = '<span class="app-badge token">$' + escapeHtml(app.token_symbol) + '</span>';
+                }
+
                 card.innerHTML = previewHtml +
                     '<div class="app-card-info">' +
                         '<div class="app-card-name">' + escapeHtml(app.name || app.slug) + '</div>' +
@@ -1120,6 +1130,7 @@
                             (app.claws_price > 0
                                 ? '<span class="app-badge paid">' + formatNum(app.claws_price) + ' CLAWS</span>'
                                 : '<span class="app-badge free">Free</span>') +
+                            tokenBadge +
                         '</div>' +
                     '</div>';
                 card.addEventListener('click', function() { openDetail(app.id); });
