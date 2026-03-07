@@ -21,6 +21,36 @@ var DEFAULT_SUPPLY = 100000000000; // 100B tokens
 var SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
+// Decode Solana transaction data — handles base64, base58, and byte arrays
+function decodeTxData(data) {
+    if (!data) throw new Error('No transaction data');
+    // Already a Uint8Array or array of numbers
+    if (data instanceof Uint8Array) return data;
+    if (Array.isArray(data)) return new Uint8Array(data);
+    if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
+    // Try base64 first (contains +, /, = which base58 doesn't use)
+    if (/[+\/=]/.test(data) || /^[A-Za-z0-9+\/]+=*$/.test(data)) {
+        try { return Uint8Array.from(atob(data), function(c) { return c.charCodeAt(0); }); } catch(e) {}
+    }
+    // Base58 decode (Solana standard)
+    var BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    var result = [0];
+    for (var i = 0; i < data.length; i++) {
+        var idx = BASE58.indexOf(data[i]);
+        if (idx < 0) throw new Error('Invalid base58 character: ' + data[i]);
+        var carry = idx;
+        for (var j = 0; j < result.length; j++) {
+            carry += result[j] * 58;
+            result[j] = carry & 0xff;
+            carry >>= 8;
+        }
+        while (carry > 0) { result.push(carry & 0xff); carry >>= 8; }
+    }
+    // Handle leading '1's (zero bytes in base58)
+    for (var k = 0; k < data.length && data[k] === '1'; k++) result.push(0);
+    return new Uint8Array(result.reverse());
+}
+
 // Staking factory v2 (deployed on Base — fee to inclawbate.base.eth)
 var STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
 
@@ -1449,7 +1479,7 @@ async function handleSolanaLaunch() {
         if (feeTxs.length > 0) {
             setBtnState(btn, 'Signing fee config txs...', true);
             for (var fi = 0; fi < feeTxs.length; fi++) {
-                var txBytes = Uint8Array.from(atob(feeTxs[fi]), function(c) { return c.charCodeAt(0); });
+                var txBytes = decodeTxData(feeTxs[fi]);
                 await window.signAndSendSolanaTransaction(txBytes);
             }
         }
@@ -1473,7 +1503,7 @@ async function handleSolanaLaunch() {
         // Step 8: Sign + send launch transaction
         setBtnState(btn, 'Sign in wallet to launch...', true);
         var launchData = launchResult.response || launchResult;
-        var launchTxBytes = Uint8Array.from(atob(launchData.transaction || launchResult.transaction), function(c) { return c.charCodeAt(0); });
+        var launchTxBytes = decodeTxData(launchData.transaction || launchResult.transaction);
         var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
 
