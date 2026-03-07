@@ -49,19 +49,38 @@ var EXTRA_TOKENS = [
 
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
-function showSlippageTip() {
+function showSlippageTip(e) {
+    // Prevent immediate navigation — show tip first, then open link
+    if (e) e.preventDefault();
+    var href = e && e.currentTarget ? e.currentTarget.href : null;
+
     var existing = document.getElementById('slippageTip');
     if (existing) existing.remove();
-    var tip = document.createElement('div');
-    tip.id = 'slippageTip';
-    tip.className = 'slippage-tip';
-    tip.innerHTML = '<strong>Tip:</strong> This token has low liquidity. Set slippage to 5–10% in Uniswap settings (gear icon) for your swap to go through.';
-    document.body.appendChild(tip);
-    requestAnimationFrame(function() { tip.classList.add('visible'); });
-    setTimeout(function() {
-        tip.classList.remove('visible');
-        setTimeout(function() { tip.remove(); }, 400);
-    }, 6000);
+    var overlay = document.createElement('div');
+    overlay.id = 'slippageTip';
+    overlay.className = 'slippage-tip-overlay';
+    overlay.innerHTML =
+        '<div class="slippage-tip-card">' +
+        '<strong>Low Liquidity Token</strong>' +
+        '<p>Set slippage to <span style="color:#fbbf24;font-weight:700">5–10%</span> in Uniswap settings (gear icon) or your swap may fail.</p>' +
+        '<button class="slippage-tip-go" id="slippageTipGo">Open Uniswap &rarr;</button>' +
+        '</div>';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function() { overlay.classList.add('visible'); });
+
+    // Click "Open Uniswap" → open link + dismiss
+    document.getElementById('slippageTipGo').addEventListener('click', function() {
+        if (href) window.open(href, '_blank', 'noopener');
+        overlay.classList.remove('visible');
+        setTimeout(function() { overlay.remove(); }, 300);
+    });
+    // Click backdrop → dismiss without navigating
+    overlay.addEventListener('click', function(ev) {
+        if (ev.target === overlay) {
+            overlay.classList.remove('visible');
+            setTimeout(function() { overlay.remove(); }, 300);
+        }
+    });
 }
 
 async function loadLiveProjects() {
@@ -226,7 +245,7 @@ function renderTable() {
 
     // Slippage tip for low-liquidity tokens
     container.querySelectorAll('.btn-uniswap.low-liq').forEach(function(link) {
-        link.addEventListener('click', function() { showSlippageTip(); });
+        link.addEventListener('click', function(e) { showSlippageTip(e); });
     });
 
     // Row click → navigate to project (but not if clicking a trade button)
