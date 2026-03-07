@@ -27,6 +27,16 @@ var STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
 // inclawbate.base.eth — receives 20% of LP reward fees
 var INCLAWBATE_TREASURY = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
 
+// Disperse
+var DISPERSE_CONTRACT = '0xd152f549545093347a162dce210e7293f1452150';
+var ALLOWANCE_HOLDER = '0x0000000000001fF3684f28c67538d4D072C22734';
+var USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+var ZEROX_ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+var KNOWN_DECIMALS = {};
+KNOWN_DECIMALS[USDC_BASE.toLowerCase()] = 6;
+KNOWN_DECIMALS[CLAWS.toLowerCase()] = 18;
+KNOWN_DECIMALS[INCLAWNCH.toLowerCase()] = 18;
+
 // ══════════════════════════════════════
 // SELECTORS
 // ══════════════════════════════════════
@@ -42,6 +52,8 @@ var SEL = {
     // ERC20 view
     name:             '0x06fdde03', // name() → string
     symbol:           '0x95d89b41', // symbol() → string
+    decimals:         '0x313ce567', // decimals() → uint8
+    allowance:        '0xdd62ed3e', // allowance(owner,spender)
     // View
     balanceOf:        '0x70a08231',
     totalStaked:      '0x817b1cd2',
@@ -98,7 +110,7 @@ async function contractRead(to, data) {
     return (json && json.result) || '0x0';
 }
 
-async function sendTxAndWait(provider, from, to, data, gasLimit) {
+async function sendTxAndWait(provider, from, to, data, gasLimit, value) {
     try {
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
     } catch (switchErr) {
@@ -111,6 +123,7 @@ async function sendTxAndWait(provider, from, to, data, gasLimit) {
     }
     var txParams = { from: from, to: to, data: data };
     if (gasLimit) txParams.gas = gasLimit;
+    if (value) txParams.value = value;
     var txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [txParams]
@@ -147,6 +160,9 @@ var state = {
     clawsBalance: 0,
     burnTxHash: null,
     hasAngelNFT: false,
+    // Disperse
+    disperseQuote: null,
+    disperseRunning: false,
 };
 
 // ══════════════════════════════════════
@@ -605,7 +621,7 @@ function openToolDrawer(tool) {
     }
 
     // Show correct content
-    var drawers = { launch: 'drawerLaunch', pool: 'drawerPool', incubate: 'drawerIncubate', agent: 'drawerAgent' };
+    var drawers = { launch: 'drawerLaunch', pool: 'drawerPool', incubate: 'drawerIncubate', agent: 'drawerAgent', disperse: 'drawerDisperse' };
     Object.keys(drawers).forEach(function(key) {
         var el = document.getElementById(drawers[key]);
         if (el) el.classList.toggle('active', key === tool);
@@ -616,6 +632,9 @@ function openToolDrawer(tool) {
 
     // Load user's tokens when pool drawer opens
     if (tool === 'pool') loadPoolTokens();
+
+    // Init disperse drawer
+    if (tool === 'disperse') initDisperseDrawer();
 
     // Scroll drawer into view
     if (drawer) {
@@ -1559,6 +1578,445 @@ function initLiveProjectsUI() {
 }
 
 // ══════════════════════════════════════
+// DISPERSE
+// ══════════════════════════════════════
+
+var decimalsCache = {};
+
+async function readTokenDecimals(address) {
+    var key = address.toLowerCase();
+    if (KNOWN_DECIMALS[key] !== undefined) return KNOWN_DECIMALS[key];
+    if (decimalsCache[key] !== undefined) return decimalsCache[key];
+    var hex = await contractRead(address, SEL.decimals);
+    var d = Number(BigInt(hex));
+    decimalsCache[key] = d;
+    return d;
+}
+
+function getDisperseInputToken() {
+    var sel = document.getElementById('disperseInputSelect');
+    if (!sel) return null;
+    if (sel.value === 'custom') {
+        var addr = (document.getElementById('disperseInputAddr') || {}).value || '';
+        return addr.trim() || null;
+    }
+    return sel.value;
+}
+
+function getDisperseOutputToken() {
+    var sel = document.getElementById('disperseOutputSelect');
+    if (!sel) return null;
+    if (sel.value === 'custom') {
+        var addr = (document.getElementById('disperseOutputAddr') || {}).value || '';
+        return addr.trim() || null;
+    }
+    return sel.value;
+}
+
+function isETH(token) { return token === 'ETH'; }
+
+async function updateDisperseInputInfo() {
+    var token = getDisperseInputToken();
+    var badge = document.getElementById('disperseAmountBadge');
+    var balEl = document.getElementById('disperseBalance');
+    if (!token) {
+        if (badge) badge.textContent = '???';
+        if (balEl) balEl.textContent = '';
+        return;
+    }
+    if (isETH(token)) {
+        if (badge) badge.textContent = 'ETH';
+        if (state.wallet && balEl) {
+            var balHex = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [state.wallet, 'latest'] });
+            var bal = balHex && balHex.result ? Number(BigInt(balHex.result)) / 1e18 : 0;
+            balEl.textContent = 'Balance: ' + bal.toFixed(6) + ' ETH';
+        }
+    } else {
+        // ERC-20
+        try {
+            var info = await readTokenInfo(token);
+            if (badge) badge.textContent = info.symbol || shortAddr(token);
+            if (state.wallet && balEl) {
+                var dec = await readTokenDecimals(token);
+                var bHex = await contractRead(token, SEL.balanceOf + pad32(state.wallet));
+                var b = Number(BigInt(bHex)) / Math.pow(10, dec);
+                balEl.textContent = 'Balance: ' + b.toFixed(6) + ' ' + (info.symbol || '');
+            }
+        } catch (e) {
+            if (badge) badge.textContent = shortAddr(token);
+            if (balEl) balEl.textContent = '';
+        }
+    }
+}
+
+function initDisperseDrawer() {
+    state.disperseQuote = null;
+    state.disperseRunning = false;
+    var preview = document.getElementById('dispersePreview');
+    if (preview) preview.classList.remove('visible');
+    var steps = document.getElementById('disperseSteps');
+    if (steps) { steps.classList.remove('visible'); steps.innerHTML = ''; }
+    var execBtn = document.getElementById('disperseExecBtn');
+    if (execBtn) execBtn.style.display = 'none';
+    var quoteBtn = document.getElementById('disperseQuoteBtn');
+    if (quoteBtn) { quoteBtn.disabled = false; quoteBtn.textContent = 'Get Quote'; }
+
+    // Ensure at least 2 recipient rows
+    var list = document.getElementById('disperseRecipientList');
+    if (list && list.children.length === 0) {
+        addDisperseRecipientRow();
+        addDisperseRecipientRow();
+    }
+
+    updateDisperseInputInfo();
+}
+
+function addDisperseRecipientRow() {
+    var list = document.getElementById('disperseRecipientList');
+    if (!list) return;
+    var row = document.createElement('div');
+    row.className = 'disperse-recipient-row';
+    row.innerHTML =
+        '<input class="form-input disperse-addr-input" type="text" placeholder="0x... wallet address">' +
+        '<input class="disperse-pct-input" type="number" placeholder="%" step="any" min="0" max="100">' +
+        '<button type="button" class="disperse-remove-btn">&times;</button>';
+    list.appendChild(row);
+    row.querySelector('.disperse-remove-btn').addEventListener('click', function() {
+        if (list.children.length > 1) row.remove();
+        recalcEvenSplit();
+    });
+    recalcEvenSplit();
+}
+
+function recalcEvenSplit() {
+    var cb = document.getElementById('disperseEvenSplit');
+    if (!cb || !cb.checked) return;
+    var list = document.getElementById('disperseRecipientList');
+    if (!list) return;
+    var rows = list.querySelectorAll('.disperse-recipient-row');
+    var pct = Math.floor(10000 / rows.length) / 100;
+    var remainder = 100 - pct * rows.length;
+    rows.forEach(function(row, i) {
+        var inp = row.querySelector('.disperse-pct-input');
+        if (inp) {
+            inp.value = i === 0 ? (pct + Math.round(remainder * 100) / 100).toFixed(2) : pct.toFixed(2);
+            inp.disabled = true;
+        }
+    });
+}
+
+function toggleEvenSplit() {
+    var cb = document.getElementById('disperseEvenSplit');
+    var list = document.getElementById('disperseRecipientList');
+    if (!list) return;
+    if (cb && cb.checked) {
+        recalcEvenSplit();
+    } else {
+        list.querySelectorAll('.disperse-pct-input').forEach(function(inp) {
+            inp.disabled = false;
+        });
+    }
+}
+
+function getDisperseRecipients() {
+    var list = document.getElementById('disperseRecipientList');
+    if (!list) return [];
+    var result = [];
+    list.querySelectorAll('.disperse-recipient-row').forEach(function(row) {
+        var addr = (row.querySelector('.disperse-addr-input') || {}).value || '';
+        var pct = parseFloat((row.querySelector('.disperse-pct-input') || {}).value) || 0;
+        if (addr.trim().match(/^0x[a-fA-F0-9]{40}$/)) {
+            result.push({ address: addr.trim(), pct: pct });
+        }
+    });
+    return result;
+}
+
+async function handleDisperseQuote() {
+    if (state.disperseRunning) return;
+    var inputToken = getDisperseInputToken();
+    var outputToken = getDisperseOutputToken();
+    var amountStr = (document.getElementById('disperseAmount') || {}).value;
+    var recipients = getDisperseRecipients();
+
+    if (!inputToken) { showToast('Select an input token', 'error'); return; }
+    if (!outputToken) { showToast('Select an output token', 'error'); return; }
+    if (!amountStr || parseFloat(amountStr) <= 0) { showToast('Enter an amount', 'error'); return; }
+    if (recipients.length === 0) { showToast('Add at least one valid recipient address', 'error'); return; }
+
+    var totalPct = recipients.reduce(function(s, r) { return s + r.pct; }, 0);
+    if (Math.abs(totalPct - 100) > 0.1) { showToast('Percentages must add up to 100% (currently ' + totalPct.toFixed(2) + '%)', 'error'); return; }
+
+    var quoteBtn = document.getElementById('disperseQuoteBtn');
+    if (quoteBtn) { quoteBtn.disabled = true; quoteBtn.textContent = 'Loading...'; }
+
+    var sameToken = inputToken === outputToken;
+
+    try {
+        var inputDec = isETH(inputToken) ? 18 : await readTokenDecimals(inputToken);
+        var rawAmount = BigInt(Math.floor(parseFloat(amountStr) * Math.pow(10, inputDec)));
+
+        if (sameToken) {
+            // No swap needed
+            var outputDec = inputDec;
+            var outputSymbol = isETH(outputToken) ? 'ETH' : (await readTokenInfo(outputToken)).symbol || shortAddr(outputToken);
+            state.disperseQuote = {
+                sameToken: true,
+                inputToken: inputToken,
+                outputToken: outputToken,
+                inputAmount: rawAmount.toString(),
+                outputAmount: rawAmount.toString(),
+                outputDecimals: outputDec,
+                outputSymbol: outputSymbol,
+                recipients: recipients,
+                tx: null
+            };
+            renderDispersePreview();
+        } else {
+            // Need 0x swap
+            var sellToken = isETH(inputToken) ? ZEROX_ETH : inputToken;
+            var buyToken = isETH(outputToken) ? ZEROX_ETH : outputToken;
+            var params = 'sellToken=' + encodeURIComponent(sellToken) +
+                '&buyToken=' + encodeURIComponent(buyToken) +
+                '&sellAmount=' + rawAmount.toString() +
+                '&taker=' + state.wallet +
+                '&chainId=8453';
+            var resp = await fetch('/api/inclawbate/swap-quote?' + params);
+            var data = await resp.json();
+            if (!resp.ok || data.error) {
+                showToast(data.error || 'Quote failed', 'error');
+                if (quoteBtn) { quoteBtn.disabled = false; quoteBtn.textContent = 'Get Quote'; }
+                return;
+            }
+
+            var outDec = isETH(outputToken) ? 18 : await readTokenDecimals(outputToken);
+            var outSymbol = isETH(outputToken) ? 'ETH' : (await readTokenInfo(outputToken)).symbol || shortAddr(outputToken);
+
+            state.disperseQuote = {
+                sameToken: false,
+                inputToken: inputToken,
+                outputToken: outputToken,
+                inputAmount: rawAmount.toString(),
+                outputAmount: data.buyAmount,
+                outputDecimals: outDec,
+                outputSymbol: outSymbol,
+                recipients: recipients,
+                tx: data.transaction,
+                allowanceTarget: data.allowanceTarget
+            };
+            renderDispersePreview();
+        }
+    } catch (e) {
+        showToast('Quote error: ' + e.message, 'error');
+    }
+
+    if (quoteBtn) { quoteBtn.disabled = false; quoteBtn.textContent = 'Get Quote'; }
+}
+
+function renderDispersePreview() {
+    var q = state.disperseQuote;
+    if (!q) return;
+
+    var preview = document.getElementById('dispersePreview');
+    var rateEl = document.getElementById('disperseRate');
+    var breakdownEl = document.getElementById('disperseBreakdown');
+    if (!preview || !rateEl || !breakdownEl) return;
+
+    var outHuman = Number(BigInt(q.outputAmount)) / Math.pow(10, q.outputDecimals);
+
+    if (q.sameToken) {
+        rateEl.textContent = 'Direct distribution (no swap)';
+    } else {
+        var inDec = isETH(q.inputToken) ? 18 : (KNOWN_DECIMALS[q.inputToken.toLowerCase()] || 18);
+        var inHuman = Number(BigInt(q.inputAmount)) / Math.pow(10, inDec);
+        rateEl.textContent = inHuman.toFixed(6) + ' → ' + outHuman.toFixed(6) + ' ' + q.outputSymbol;
+    }
+
+    var html = '';
+    q.recipients.forEach(function(r) {
+        var amt = outHuman * r.pct / 100;
+        html += '<div class="disperse-preview-row">' +
+            '<span class="disperse-preview-addr">' + shortAddr(r.address) + ' (' + r.pct + '%)</span>' +
+            '<span class="disperse-preview-amt">' + amt.toFixed(6) + ' ' + q.outputSymbol + '</span>' +
+            '</div>';
+    });
+    breakdownEl.innerHTML = html;
+    preview.classList.add('visible');
+
+    var execBtn = document.getElementById('disperseExecBtn');
+    if (execBtn) execBtn.style.display = '';
+}
+
+function renderDisperseSteps(stepNames) {
+    var container = document.getElementById('disperseSteps');
+    if (!container) return;
+    var html = '';
+    stepNames.forEach(function(name, i) {
+        html += '<div class="disperse-step-item" id="disperseStep' + i + '">' +
+            '<span class="disperse-step-icon"></span>' +
+            '<span>' + name + '</span>' +
+            '</div>';
+    });
+    container.innerHTML = html;
+    container.classList.add('visible');
+}
+
+function markStep(index, status) {
+    var el = document.getElementById('disperseStep' + index);
+    if (!el) return;
+    el.classList.remove('active', 'done', 'error');
+    el.classList.add(status);
+    var icon = el.querySelector('.disperse-step-icon');
+    if (icon) {
+        if (status === 'done') icon.textContent = '\u2713';
+        else if (status === 'error') icon.textContent = '\u2717';
+        else if (status === 'active') icon.textContent = '';
+    }
+}
+
+function encodeDisperseToken(token, addresses, amounts) {
+    // disperseToken(address,address[],uint256[])
+    // selector: 0xc73a2d60
+    var data = '0xc73a2d60';
+    // token address
+    data += pad32(token);
+    // offset to addresses array (3 * 32 = 96 = 0x60)
+    data += pad32('0x60');
+    // offset to amounts array
+    var amountsOffset = 96 + 32 + addresses.length * 32; // skip header + count + addresses
+    data += pad32('0x' + amountsOffset.toString(16));
+    // addresses array
+    data += pad32('0x' + addresses.length.toString(16));
+    addresses.forEach(function(a) { data += pad32(a); });
+    // amounts array
+    data += pad32('0x' + amounts.length.toString(16));
+    amounts.forEach(function(a) { data += pad32(toHex(a)); });
+    return data;
+}
+
+function encodeDisperseEther(addresses, amounts) {
+    // disperseEther(address[],uint256[])
+    // selector: 0xe63d38ed
+    var data = '0xe63d38ed';
+    // offset to addresses array (2 * 32 = 64 = 0x40)
+    data += pad32('0x40');
+    // offset to amounts array
+    var amountsOffset = 64 + 32 + addresses.length * 32;
+    data += pad32('0x' + amountsOffset.toString(16));
+    // addresses array
+    data += pad32('0x' + addresses.length.toString(16));
+    addresses.forEach(function(a) { data += pad32(a); });
+    // amounts array
+    data += pad32('0x' + amounts.length.toString(16));
+    amounts.forEach(function(a) { data += pad32(toHex(a)); });
+    return data;
+}
+
+async function handleDisperseExecute() {
+    if (state.disperseRunning) return;
+    var q = state.disperseQuote;
+    if (!q) { showToast('Get a quote first', 'error'); return; }
+
+    state.disperseRunning = true;
+    var execBtn = document.getElementById('disperseExecBtn');
+    if (execBtn) { execBtn.disabled = true; execBtn.textContent = 'Processing...'; }
+
+    var outputIsETH = isETH(q.outputToken);
+    var inputIsETH = isETH(q.inputToken);
+    var needsSwap = !q.sameToken;
+
+    // Build step names
+    var steps = [];
+    if (needsSwap && !inputIsETH) steps.push('Approve input token for swap');
+    if (needsSwap) steps.push('Swap tokens via 0x');
+    if (!outputIsETH) steps.push('Approve output token for Disperse');
+    steps.push(outputIsETH ? 'Disperse ETH to recipients' : 'Disperse tokens to recipients');
+    renderDisperseSteps(steps);
+
+    var stepIdx = 0;
+    try {
+        // Step: Approve input token for 0x swap
+        if (needsSwap && !inputIsETH) {
+            markStep(stepIdx, 'active');
+            var target = q.allowanceTarget || (q.tx && q.tx.to);
+            var approveData = SEL.approve + pad32(target) + pad32(MAX_UINT256);
+            await sendTxAndWait(state.provider, state.wallet, q.inputToken, approveData);
+            markStep(stepIdx, 'done');
+            stepIdx++;
+        }
+
+        // Step: Execute swap
+        var outputTotal;
+        if (needsSwap) {
+            markStep(stepIdx, 'active');
+            var swapValue = inputIsETH ? q.tx.value : undefined;
+            await sendTxAndWait(state.provider, state.wallet, q.tx.to, q.tx.data, q.tx.gas, swapValue);
+            markStep(stepIdx, 'done');
+            stepIdx++;
+            // Read actual output balance after swap
+            if (outputIsETH) {
+                outputTotal = BigInt(q.outputAmount);
+            } else {
+                var balHex = await contractRead(q.outputToken, SEL.balanceOf + pad32(state.wallet));
+                outputTotal = BigInt(balHex);
+                // Use quoted amount as fallback if balance read seems wrong
+                if (outputTotal === 0n) outputTotal = BigInt(q.outputAmount);
+            }
+        } else {
+            outputTotal = BigInt(q.outputAmount);
+        }
+
+        // Calculate per-recipient amounts
+        var addresses = [];
+        var amounts = [];
+        var sumPct = q.recipients.reduce(function(s, r) { return s + r.pct; }, 0);
+        var sumAmounts = 0n;
+        q.recipients.forEach(function(r, i) {
+            addresses.push(r.address);
+            var amt;
+            if (i === q.recipients.length - 1) {
+                // Last recipient gets remainder to avoid rounding dust
+                amt = outputTotal - sumAmounts;
+            } else {
+                amt = outputTotal * BigInt(Math.floor(r.pct * 10000)) / BigInt(Math.floor(sumPct * 10000));
+                sumAmounts += amt;
+            }
+            amounts.push(amt);
+        });
+
+        // Step: Approve output token for Disperse contract
+        if (!outputIsETH) {
+            markStep(stepIdx, 'active');
+            var disperseApprove = SEL.approve + pad32(DISPERSE_CONTRACT) + pad32(MAX_UINT256);
+            await sendTxAndWait(state.provider, state.wallet, q.outputToken, disperseApprove);
+            markStep(stepIdx, 'done');
+            stepIdx++;
+        }
+
+        // Step: Disperse
+        markStep(stepIdx, 'active');
+        if (outputIsETH) {
+            var disperseData = encodeDisperseEther(addresses, amounts);
+            var totalValue = amounts.reduce(function(s, a) { return s + a; }, 0n);
+            await sendTxAndWait(state.provider, state.wallet, DISPERSE_CONTRACT, disperseData, null, toHex(totalValue));
+        } else {
+            var disperseData = encodeDisperseToken(q.outputToken, addresses, amounts);
+            await sendTxAndWait(state.provider, state.wallet, DISPERSE_CONTRACT, disperseData);
+        }
+        markStep(stepIdx, 'done');
+
+        showToast('Disperse complete! Tokens sent to ' + addresses.length + ' recipients.', 'success');
+
+    } catch (e) {
+        markStep(stepIdx, 'error');
+        showToast('Disperse failed: ' + e.message, 'error');
+    }
+
+    state.disperseRunning = false;
+    if (execBtn) { execBtn.disabled = false; execBtn.textContent = 'Execute Disperse'; }
+}
+
+// ══════════════════════════════════════
 // ACCORDION
 // ══════════════════════════════════════
 
@@ -1624,6 +2082,37 @@ async function init() {
     }
 
     // Deploy fee removed — staking pool deploy is free (gas only)
+
+    // Disperse bindings
+    var disperseQuoteBtn = document.getElementById('disperseQuoteBtn');
+    if (disperseQuoteBtn) disperseQuoteBtn.addEventListener('click', handleDisperseQuote);
+    var disperseExecBtn = document.getElementById('disperseExecBtn');
+    if (disperseExecBtn) disperseExecBtn.addEventListener('click', handleDisperseExecute);
+    var disperseAddRow = document.getElementById('disperseAddRow');
+    if (disperseAddRow) disperseAddRow.addEventListener('click', addDisperseRecipientRow);
+    var disperseEvenSplit = document.getElementById('disperseEvenSplit');
+    if (disperseEvenSplit) disperseEvenSplit.addEventListener('change', toggleEvenSplit);
+    var disperseInputSelect = document.getElementById('disperseInputSelect');
+    if (disperseInputSelect) {
+        disperseInputSelect.addEventListener('change', function() {
+            var custom = document.getElementById('disperseInputCustom');
+            if (custom) custom.classList.toggle('visible', disperseInputSelect.value === 'custom');
+            updateDisperseInputInfo();
+        });
+    }
+    var disperseOutputSelect = document.getElementById('disperseOutputSelect');
+    if (disperseOutputSelect) {
+        disperseOutputSelect.addEventListener('change', function() {
+            var custom = document.getElementById('disperseOutputCustom');
+            if (custom) custom.classList.toggle('visible', disperseOutputSelect.value === 'custom');
+        });
+    }
+    var disperseInputAddr = document.getElementById('disperseInputAddr');
+    if (disperseInputAddr) disperseInputAddr.addEventListener('blur', updateDisperseInputInfo);
+    var disperseOutputAddr = document.getElementById('disperseOutputAddr');
+    if (disperseOutputAddr) disperseOutputAddr.addEventListener('blur', function() {
+        // Resolve custom output token name (visual only)
+    });
 
     // Accordion toggle
     var accordionToggle = document.getElementById('learnAccordionToggle');
