@@ -14,6 +14,8 @@ const ALLOWED_ORIGINS = [
     'https://www.getsuite.app',
     'https://suitegpt.app',
     'https://www.suitegpt.app',
+    'https://inclawbate.com',
+    'https://www.inclawbate.com',
     'http://localhost:3000',
     'http://localhost:5500'
 ];

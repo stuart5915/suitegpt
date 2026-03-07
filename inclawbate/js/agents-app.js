@@ -9,12 +9,6 @@ var state = {
     sort: 'newest'
 };
 
-// ── Auth helpers ──
-function getToken() { return localStorage.getItem('inclawbate_token'); }
-function getProfile() {
-    try { return JSON.parse(localStorage.getItem('inclawbate_profile')); } catch(e) { return null; }
-}
-
 // ── Data loading ──
 async function loadAgents() {
     try {
@@ -105,80 +99,6 @@ function render() {
     container.innerHTML = html;
 }
 
-// ── Registration ──
-function openModal() {
-    document.getElementById('register-modal').classList.add('open');
-    document.getElementById('reg-error').textContent = '';
-    document.getElementById('reg-success').style.display = 'none';
-    document.getElementById('register-form').style.display = 'block';
-}
-
-function closeModal() {
-    document.getElementById('register-modal').classList.remove('open');
-}
-
-async function handleRegister(e) {
-    e.preventDefault();
-    var errEl = document.getElementById('reg-error');
-    var submitBtn = document.getElementById('reg-submit');
-    errEl.textContent = '';
-
-    var profile = getProfile();
-    var token = getToken();
-    if (!profile || !token) {
-        errEl.textContent = 'Please connect your wallet first.';
-        return;
-    }
-
-    var name = document.getElementById('reg-name').value.trim();
-    var role = document.getElementById('reg-role').value;
-    var objective = document.getElementById('reg-objective').value.trim();
-    var agentType = document.querySelector('input[name="agent_type"]:checked').value;
-
-    if (!name || !role || !objective) {
-        errEl.textContent = 'All fields are required.';
-        return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Registering...';
-
-    try {
-        var res = await fetch(API_BASE + '/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({
-                name: name,
-                owner_wallet: profile.wallet_address,
-                objective: objective,
-                agent_type: agentType,
-                agent_role: role
-            })
-        });
-
-        var data = await res.json();
-        if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Registration failed');
-        }
-
-        document.getElementById('register-form').style.display = 'none';
-        var successEl = document.getElementById('reg-success');
-        successEl.style.display = 'block';
-        successEl.innerHTML = '&#10003; Agent <strong>' + esc(name) + '</strong> registered!<br>' +
-            '<span style="font-size:0.75rem;color:var(--text-dim);">API Key: <code>' + esc(data.api_key) + '</code></span>';
-
-        loadAgents();
-    } catch(err) {
-        errEl.textContent = err.message;
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Register Agent';
-    }
-}
-
 // ── Helpers ──
 function esc(str) {
     if (!str) return '';
@@ -221,19 +141,6 @@ function initUI() {
         render();
     });
 
-    // Launch CTA
-    document.getElementById('launch-cta').addEventListener('click', openModal);
-
-    // Modal close
-    document.getElementById('register-modal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
-    });
-
-    // Registration form
-    document.getElementById('register-form').addEventListener('submit', handleRegister);
 }
 
 function init() {
