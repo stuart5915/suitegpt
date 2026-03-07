@@ -527,6 +527,16 @@ function buildPoolRow(key, pool, rank) {
         ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
         : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
+    // Pool daily emission rate
+    var rateHtml = '';
+    var now = Math.floor(Date.now() / 1000);
+    if (!pool.retired && stats.rewardRate > 0 && stats.periodEnd > now) {
+        var dailyTotal = stats.rewardRate * 86400;
+        var rewardTicker = pool.rewardTicker || pool.ticker;
+        var dailyStr = dailyTotal >= 1 ? fmt(Math.round(dailyTotal)) : dailyTotal.toFixed(2);
+        rateHtml = '<span class="stk-pool-rate">' + dailyStr + ' ' + rewardTicker + '/day</span>';
+    }
+
     var rowClass = pool.featured ? ' featured-row' : '';
 
     return { tvl: tvl, apy: apy, stakers: stakers, html:
