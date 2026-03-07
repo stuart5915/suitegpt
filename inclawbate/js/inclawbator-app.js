@@ -249,6 +249,10 @@ async function connectWallet() {
         eth = window.ethereum || window.phantom.ethereum;
     } else if (!isMobile && providers.length === 1) {
         eth = providers[0].provider;
+    } else if (!isMobile && providers.length > 1) {
+        // Prefer MetaMask when multiple EVM providers detected (e.g. MetaMask + Phantom)
+        var mm = providers.find(function(p) { return p.info && p.info.name === 'MetaMask'; });
+        eth = mm ? mm.provider : (window.showWalletSelector ? await window.showWalletSelector() : providers[0].provider);
     } else if (!isMobile && providers.length === 0 && window.ethereum) {
         eth = window.ethereum;
     } else if (window.showWalletSelector) {
