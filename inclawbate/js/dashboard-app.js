@@ -387,7 +387,7 @@ function renderProjectCard(p) {
     // Price row placeholder (filled async)
     const priceRowHtml = addr ? `<div class="project-card-price" id="price-${esc(addr)}" style="display:none"></div>` : '';
 
-    // Fee estimate row (filled async by fetchSingleTokenPrice)
+    // Fee estimate row (filled async by fetchSingleTokenPrice) + per-card claim button
     const splitBps = p.fee_split_bps || 10000;
     const feeRowHtml = addr ? `<div class="project-card-fee-estimate" id="fee-${esc(addr)}" data-split-bps="${splitBps}" style="display:none"></div>` : '';
 
@@ -399,6 +399,7 @@ function renderProjectCard(p) {
     // Build action buttons
     let actionsHtml = '';
     if (addr) {
+        actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
         actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
         actionsHtml += `<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=${esc(addr)}&chain=base" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
         actionsHtml += `<a href="https://www.clanker.world/clanker/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Clanker</a>`;
@@ -527,6 +528,14 @@ function renderProjectCard(p) {
     card.querySelector('.allocation-claim-btn')?.addEventListener('click', (e) => {
         const btn = e.currentTarget;
         claimAllocation(btn.dataset.token, btn.dataset.project, parseInt(btn.dataset.alloc), btn);
+    });
+
+    // Wire per-card claim fees button
+    card.querySelector('.claim-single-btn')?.addEventListener('click', (e) => {
+        const auth = getStoredAuth();
+        if (auth && auth.profile.wallet_address) {
+            claimLPFees(auth.profile.wallet_address, e.currentTarget);
+        }
     });
 
     return card;
@@ -660,6 +669,11 @@ async function fetchLPFees(tokens, wallet) {
             subtitleEl.style.display = '';
         }
         banner.style.display = '';
+
+        // Show per-card claim buttons
+        document.querySelectorAll('.claim-single-btn').forEach(btn => {
+            btn.style.display = '';
+        });
 
         // Wire claim button (remove old listener first)
         const newBtn = claimBtn.cloneNode(true);
