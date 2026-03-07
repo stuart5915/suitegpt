@@ -795,6 +795,26 @@ async function loadMyStakingPositions() {
         return;
     }
 
+    // Merge dynamic Inclawbator pools into MY_STAKING_POOLS
+    try {
+        const resp = await fetch('/api/inclawbate/inclawbator');
+        if (resp.ok) {
+            const data = await resp.json();
+            (data.projects || []).forEach(p => {
+                if (!p.staking_address || !p.token_address) return;
+                const key = p.token_symbol.toLowerCase();
+                if (MY_STAKING_POOLS[key]) return;
+                MY_STAKING_POOLS[key] = {
+                    name: p.token_name,
+                    ticker: p.token_symbol,
+                    staking: p.staking_address,
+                    rewardTicker: 'CLAWS',
+                    logo: p.logo_url || '',
+                };
+            });
+        }
+    } catch (e) {}
+
     const wallet = auth.profile.wallet_address;
     const addrPadded = pad32(wallet);
     const keys = Object.keys(MY_STAKING_POOLS);
