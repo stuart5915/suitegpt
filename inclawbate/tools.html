@@ -234,66 +234,9 @@
             color: var(--lobster-400);
         }
 
-        /* ── Tool Modal ── */
-        .tool-modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(4px);
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-lg);
-        }
-        .tool-modal-overlay.open { display: flex; }
-        .tool-modal {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            height: 85vh;
-            background: var(--bg-deepest);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .tool-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--space-md) var(--space-lg);
-            border-bottom: 1px solid var(--border-subtle);
-            background: var(--bg-elevated);
-        }
-        .tool-modal-title {
-            font-family: var(--font-display);
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-        .tool-modal-close {
-            font-size: 1.2rem;
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: color 0.15s, background 0.15s;
-        }
-        .tool-modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
-        .tool-modal iframe {
-            flex: 1;
-            width: 100%;
-            border: none;
-        }
-
         @media (max-width: 600px) {
             .tools-grid { grid-template-columns: 1fr; }
             .tools-hero h1 { font-size: 1.6rem; }
-            .tool-modal { height: 90vh; }
         }
     </style>
 </head>
@@ -336,7 +279,7 @@
     <!-- ═══ Creator Tools (from Inclawbator) ═══ -->
     <h2 class="tools-section-header">Creator Tools</h2>
     <div class="tool-grid-v2">
-        <div class="tool-card-v2" data-accent="lobster" data-tool-url="/inclawbator#launch" data-tool-title="Launch Token">
+        <a href="/inclawbator#launch" class="tool-card-v2" data-accent="lobster">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128640;</div>
                 <div class="tool-card-body">
@@ -345,7 +288,7 @@
                 </div>
                 <span class="tool-card-cta-v2">Launch Token</span>
             </div>
-        </div>
+        </a>
         <a href="/build" class="tool-card-v2" data-accent="seafoam">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128296;</div>
@@ -356,7 +299,7 @@
                 <span class="tool-card-cta-v2">Start Building</span>
             </div>
         </a>
-        <div class="tool-card-v2" data-accent="sand" data-tool-url="/inclawbator#pool" data-tool-title="Create Stake Pool">
+        <a href="/inclawbator#pool" class="tool-card-v2" data-accent="sand">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#x1F4B8;</div>
                 <div class="tool-card-body">
@@ -365,8 +308,8 @@
                 </div>
                 <span class="tool-card-cta-v2">Create Pool</span>
             </div>
-        </div>
-        <div class="tool-card-v2" data-accent="blue" data-tool-url="/inclawbator#incubate" data-tool-title="Request Incubation">
+        </a>
+        <a href="/inclawbator#incubate" class="tool-card-v2" data-accent="blue">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#129438;</div>
                 <div class="tool-card-body">
@@ -375,8 +318,8 @@
                 </div>
                 <span class="tool-card-cta-v2">Apply Now</span>
             </div>
-        </div>
-        <div class="tool-card-v2" data-accent="cyan" data-tool-url="/inclawbator#disperse" data-tool-title="Disperse">
+        </a>
+        <a href="/inclawbator#disperse" class="tool-card-v2" data-accent="cyan">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128184;</div>
                 <div class="tool-card-body">
@@ -385,7 +328,7 @@
                 </div>
                 <span class="tool-card-cta-v2">Open Disperse</span>
             </div>
-        </div>
+        </a>
         <div class="tool-card-v2" data-accent="purple">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128227;</div>
@@ -462,50 +405,8 @@
     </div>
 </footer>
 
-<!-- Tool Modal -->
-<div class="tool-modal-overlay" id="toolModal">
-    <div class="tool-modal">
-        <div class="tool-modal-header">
-            <span class="tool-modal-title" id="toolModalTitle"></span>
-            <button class="tool-modal-close" id="toolModalClose">&times;</button>
-        </div>
-        <iframe id="toolModalIframe" loading="lazy"></iframe>
-    </div>
-</div>
-
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
-<script>
-(function() {
-    var overlay = document.getElementById('toolModal');
-    var iframe = document.getElementById('toolModalIframe');
-    var title = document.getElementById('toolModalTitle');
-    var closeBtn = document.getElementById('toolModalClose');
-
-    document.querySelectorAll('[data-tool-url]').forEach(function(card) {
-        card.addEventListener('click', function() {
-            title.textContent = card.getAttribute('data-tool-title') || 'Tool';
-            iframe.src = card.getAttribute('data-tool-url');
-            overlay.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        });
-    });
-
-    closeBtn.addEventListener('click', close);
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) close();
-    });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && overlay.classList.contains('open')) close();
-    });
-
-    function close() {
-        overlay.classList.remove('open');
-        iframe.src = '';
-        document.body.style.overflow = '';
-    }
-})();
-</script>
 
 </body>
 </html>
