@@ -2570,6 +2570,8 @@
             chatPanel.classList.add('mobile-hidden');
             previewPanel.classList.remove('mobile-hidden');
             tabs[1].classList.add('active');
+            // Sync iframe visibility with current code state
+            switchTab('preview');
             // Clear badge
             var badge = document.getElementById('previewBadge');
             if (badge) badge.classList.remove('visible');
