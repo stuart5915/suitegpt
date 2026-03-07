@@ -5,6 +5,22 @@
 
 var API_BASE = '/api/inclawbate/inclawbator';
 
+window.addTokenToWallet = async function(address, symbol, decimals, image) {
+    var provider = window.ethereum || (window.phantom && window.phantom.ethereum) || (window.WalletKit && window.WalletKit.getProvider());
+    if (!provider) { alert('No wallet detected. Please install MetaMask or another wallet.'); return; }
+    try {
+        await provider.request({
+            method: 'wallet_watchAsset',
+            params: { type: 'ERC20', options: {
+                address: address,
+                symbol: symbol,
+                decimals: decimals || 18,
+                image: image || ''
+            }}
+        });
+    } catch (e) { console.log('User rejected or error:', e); }
+};
+
 // Featured tokens not in the inclawbator API
 var EXTRA_TOKENS = [
     {
@@ -175,6 +191,10 @@ function renderTable() {
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
         }
+        if (p.token_address && symbol) {
+            var logoAbsolute = p.logo_url ? (p.logo_url.startsWith('http') ? p.logo_url : 'https://inclawbate.com' + p.logo_url) : '';
+            actions += '<button class="btn-wallet" onclick="event.stopPropagation();addTokenToWallet(\'' + p.token_address + '\',\'' + symbol + '\',18,\'' + logoAbsolute + '\')" title="Add $' + symbol + ' to wallet">+ Wallet</button>';
+        }
 
         html += '<tr data-href="' + href + '">'
             + '<td><span class="tok-rank">' + (i + 1) + '</span></td>'
@@ -191,7 +211,7 @@ function renderTable() {
     // Row click → navigate to project (but not if clicking a trade button)
     container.querySelectorAll('tr[data-href]').forEach(function(row) {
         row.addEventListener('click', function(e) {
-            if (e.target.closest('.tok-actions a')) return;
+            if (e.target.closest('.tok-actions a') || e.target.closest('.tok-actions button')) return;
             var href = row.dataset.href;
             if (href.startsWith('http')) {
                 window.open(href, '_blank', 'noopener');

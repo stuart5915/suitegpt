@@ -651,20 +651,25 @@ var currentPoolKey = null;
 var walletAddr = null;
 var walletBalance = 0;
 
-window.addClawsToWallet = async function() {
+window.addTokenToWallet = async function(address, symbol, decimals, image) {
     var provider = window.ethereum || (window.phantom && window.phantom.ethereum) || (window.WalletKit && window.WalletKit.getProvider());
     if (!provider) { alert('No wallet detected. Please install MetaMask or another wallet.'); return; }
     try {
         await provider.request({
             method: 'wallet_watchAsset',
             params: { type: 'ERC20', options: {
-                address: '0x7ca47B141639B893C6782823C0b219f872056379',
-                symbol: 'CLAWS',
-                decimals: 18,
-                image: 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg'
+                address: address,
+                symbol: symbol,
+                decimals: decimals || 18,
+                image: image || ''
             }}
         });
     } catch (e) { console.log('User rejected or error:', e); }
+};
+
+// Legacy alias
+window.addClawsToWallet = function() {
+    window.addTokenToWallet('0x7ca47B141639B893C6782823C0b219f872056379', 'CLAWS', 18, 'https://inclawbate.com/inclawbate/assets/clawslogo.jpg');
 };
 
 function getProvider() {
@@ -772,6 +777,11 @@ function renderPoolPage(pool, key) {
     }
     if (key === 'claws') {
         linksHtml += '<a href="/angel" class="pool-link pool-link--nft">&#128140; Angel NFT</a>';
+    }
+    // Add token to wallet button
+    if (pool.token) {
+        var logoUrl = pool.logo ? (pool.logo.startsWith('http') ? pool.logo : 'https://inclawbate.com' + pool.logo) : '';
+        linksHtml += '<button onclick="addTokenToWallet(\'' + pool.token + '\',\'' + pool.ticker + '\',18,\'' + logoUrl + '\')" class="pool-link pool-link--wallet">&#128176; Add $' + pool.ticker + ' to Wallet</button>';
     }
     document.getElementById('poolLinks').innerHTML = linksHtml;
 
