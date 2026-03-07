@@ -871,35 +871,26 @@ function renderMyStakingCard(pos) {
     const retiredBadge = pos.retired
         ? ' <span class="my-staking-retired">Retired</span>'
         : '';
-    let rateHtml = '';
+    let rateStr = '';
     if (pos.dailyReward > 0) {
         const dailyStr = pos.dailyReward >= 1 ? fmt(Math.round(pos.dailyReward)) : pos.dailyReward.toFixed(2);
-        rateHtml = `<div class="my-staking-rate">${dailyStr} ${esc(pos.rewardTicker)}/day</div>`;
+        rateStr = `<span class="mys-rate">${dailyStr}/day</span>`;
     } else if (!pos.active && !pos.retired) {
-        rateHtml = `<div class="my-staking-rate ended">Reward period ended</div>`;
+        rateStr = `<span class="mys-rate ended">Ended</span>`;
     }
     return `
-        <div class="my-staking-card">
-            <div class="my-staking-header">
-                <img src="${pos.logo}" alt="${esc(pos.name)}" class="my-staking-logo" onerror="this.style.display='none'">
-                <div class="my-staking-title">
-                    <div class="my-staking-name">${esc(pos.name)}${retiredBadge}</div>
-                    <div class="my-staking-ticker">${esc(pos.ticker)}</div>
+        <a href="/stake/${pos.key}" class="mys-row">
+            <div class="mys-token">
+                <img src="${pos.logo}" alt="${esc(pos.name)}" class="mys-logo" onerror="this.style.display='none'">
+                <div class="mys-token-info">
+                    <span class="mys-name">${esc(pos.name)}${retiredBadge}</span>
+                    <span class="mys-ticker">${esc(pos.ticker)}</span>
                 </div>
             </div>
-            ${rateHtml}
-            <div class="my-staking-stats">
-                <div class="my-staking-stat">
-                    <div class="my-staking-stat-val">${fmt(pos.staked)}</div>
-                    <div class="my-staking-stat-label">Staked</div>
-                </div>
-                <div class="my-staking-stat">
-                    <div class="my-staking-stat-val">${fmt(pos.earned)}</div>
-                    <div class="my-staking-stat-label">${esc(pos.rewardTicker)} Earned</div>
-                </div>
-            </div>
-            <a href="/stake/${pos.key}" class="my-staking-manage">Manage Position</a>
-        </div>`;
+            <div class="mys-col"><span class="mys-val">${fmt(pos.staked)}</span><span class="mys-label">Staked</span></div>
+            <div class="mys-col"><span class="mys-val">${fmt(pos.earned)}</span><span class="mys-label">${esc(pos.rewardTicker)} Earned</span></div>
+            <div class="mys-col mys-col-rate">${rateStr}</div>
+        </a>`;
 }
 
 const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
