@@ -819,22 +819,37 @@ async function loadMyStakingPositions() {
     const addrPadded = pad32(wallet);
     const keys = Object.keys(MY_STAKING_POOLS);
 
-    // Build batch: 2 calls per pool (balanceOf + earned)
+    // Build batch: 5 calls per pool (balanceOf, earned, rewardRate, totalStaked, periodEnd)
+    const CALLS_PER_POOL = 5;
     const calls = [];
     keys.forEach(key => {
         const pool = MY_STAKING_POOLS[key];
         calls.push({ to: pool.staking, data: STAKING_USER_SEL.balanceOf + addrPadded });
         calls.push({ to: pool.staking, data: STAKING_USER_SEL.earned + addrPadded });
+        calls.push({ to: pool.staking, data: STAKING_SEL.rewardRate });
+        calls.push({ to: pool.staking, data: STAKING_SEL.totalStaked });
+        calls.push({ to: pool.staking, data: STAKING_SEL.periodEnd });
     });
 
     const results = await rpcBatchCall(calls);
 
+    const now = Math.floor(Date.now() / 1000);
     const positions = [];
     keys.forEach((key, i) => {
-        const staked = fromWei(results[i * 2]);
-        const earned = fromWei(results[i * 2 + 1]);
+        const base = i * CALLS_PER_POOL;
+        const staked = fromWei(results[base]);
+        const earned = fromWei(results[base + 1]);
         if (staked > 0 || earned > 0) {
-            positions.push({ key, ...MY_STAKING_POOLS[key], staked, earned });
+            const rewardRate = fromWei(results[base + 2]);
+            const totalStaked = fromWei(results[base + 3]);
+            const periodEnd = Number(BigInt(results[base + 4] || '0x0'));
+            const active = periodEnd > now;
+            // User's share of daily rewards
+            let dailyReward = 0;
+            if (active && totalStaked > 0 && staked > 0) {
+                dailyReward = (rewardRate * 86400) * (staked / totalStaked);
+            }
+            positions.push({ key, ...MY_STAKING_POOLS[key], staked, earned, dailyReward, active });
         }
     });
 
@@ -850,6 +865,13 @@ function renderMyStakingCard(pos) {
     const retiredBadge = pos.retired
         ? ' <span class="my-staking-retired">Retired</span>'
         : '';
+    let rateHtml = '';
+    if (pos.dailyReward > 0) {
+        const dailyStr = pos.dailyReward >= 1 ? fmt(Math.round(pos.dailyReward)) : pos.dailyReward.toFixed(2);
+        rateHtml = `<div class="my-staking-rate">${dailyStr} ${esc(pos.rewardTicker)}/day</div>`;
+    } else if (!pos.active && !pos.retired) {
+        rateHtml = `<div class="my-staking-rate ended">Reward period ended</div>`;
+    }
     return `
         <div class="my-staking-card">
             <div class="my-staking-header">
@@ -859,6 +881,7 @@ function renderMyStakingCard(pos) {
                     <div class="my-staking-ticker">${esc(pos.ticker)}</div>
                 </div>
             </div>
+            ${rateHtml}
             <div class="my-staking-stats">
                 <div class="my-staking-stat">
                     <div class="my-staking-stat-val">${fmt(pos.staked)}</div>
