@@ -452,14 +452,79 @@
 })();
 
 // ══════════════════════════════════════
-// SOLANA WALLET (Phantom)
+// SOLANA WALLET (Wallet Standard — MetaMask, Phantom, etc.)
 // ══════════════════════════════════════
-window.connectSolanaWallet = async function() {
-    var solana = (window.phantom && window.phantom.solana) || window.solana;
-    if (!solana || !solana.isPhantom) {
-        window.open('https://phantom.app/download', '_blank');
-        return null;
-    }
-    var resp = await solana.connect();
-    return resp.publicKey.toString();
-};
+(function() {
+    // Discover wallets via Wallet Standard protocol
+    var _registeredWallets = [];
+    var _api = {
+        register: function() {
+            for (var i = 0; i < arguments.length; i++) _registeredWallets.push(arguments[i]);
+        },
+        get: function() { return _registeredWallets.slice(); },
+        on: function() { return function(){}; }
+    };
+    window.addEventListener('wallet-standard:register-wallet', function(event) {
+        if (event.detail && typeof event.detail === 'function') event.detail(_api);
+    });
+    try {
+        window.dispatchEvent(new CustomEvent('wallet-standard:app-ready', { detail: _api }));
+    } catch(e) {}
+
+    // Stored wallet + account for signing later
+    window._solanaWalletStd = null;
+    window._solanaAccount = null;
+
+    window.connectSolanaWallet = async function() {
+        // Find a wallet that supports Solana
+        var wallets = _registeredWallets.filter(function(w) {
+            return w.chains && w.chains.some(function(c) { return c.startsWith('solana:'); });
+        });
+
+        if (wallets.length === 0) {
+            alert('No Solana wallet detected. Install MetaMask or Phantom.');
+            return null;
+        }
+
+        // Prefer MetaMask, fall back to first Solana wallet
+        var wallet = wallets.find(function(w) { return w.name === 'MetaMask'; }) || wallets[0];
+        var connectFeature = wallet.features && wallet.features['standard:connect'];
+        if (!connectFeature) {
+            alert('Wallet does not support connect. Try MetaMask or Phantom.');
+            return null;
+        }
+
+        var result = await connectFeature.connect();
+        var accounts = result.accounts || [];
+        // Find Solana mainnet account
+        var account = accounts.find(function(a) {
+            return a.chains && a.chains.some(function(c) { return c === 'solana:mainnet'; });
+        }) || accounts[0];
+
+        if (!account) {
+            alert('No Solana account found. Make sure Solana is enabled in your wallet.');
+            return null;
+        }
+
+        window._solanaWalletStd = wallet;
+        window._solanaAccount = account;
+        return account.address;
+    };
+
+    // Sign and send a Solana transaction (Uint8Array)
+    window.signAndSendSolanaTransaction = async function(txBytes) {
+        var wallet = window._solanaWalletStd;
+        var account = window._solanaAccount;
+        if (!wallet || !account) throw new Error('Solana wallet not connected');
+
+        var feature = wallet.features['solana:signAndSendTransaction'];
+        if (!feature) throw new Error('Wallet does not support signAndSendTransaction');
+
+        var result = await feature.signAndSendTransaction({
+            account: account,
+            transaction: txBytes,
+            chain: 'solana:mainnet'
+        });
+        return result;
+    };
+})();

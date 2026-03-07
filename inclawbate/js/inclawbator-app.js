@@ -1434,13 +1434,11 @@ async function handleSolanaLaunch() {
         var configKey = feeResult.configKey || feeResult.meteoraConfigKey || null;
 
         // Step 6: Sign fee config transactions if provided
-        var solana = (window.phantom && window.phantom.solana) || window.solana;
         if (feeResult.transactions && feeResult.transactions.length > 0) {
             setBtnState(btn, 'Signing fee config txs...', true);
             for (var fi = 0; fi < feeResult.transactions.length; fi++) {
                 var txBytes = Uint8Array.from(atob(feeResult.transactions[fi]), function(c) { return c.charCodeAt(0); });
-                var feeTx = solanaWeb3.Transaction.from(txBytes);
-                await solana.signAndSendTransaction(feeTx);
+                await window.signAndSendSolanaTransaction(txBytes);
             }
         }
 
@@ -1461,10 +1459,9 @@ async function handleSolanaLaunch() {
         if (launchResult.error) throw new Error('Launch tx failed: ' + launchResult.error);
 
         // Step 8: Sign + send launch transaction
-        setBtnState(btn, 'Sign in Phantom to launch...', true);
+        setBtnState(btn, 'Sign in wallet to launch...', true);
         var launchTxBytes = Uint8Array.from(atob(launchResult.transaction), function(c) { return c.charCodeAt(0); });
-        var launchTx = solanaWeb3.Transaction.from(launchTxBytes);
-        var sendResult = await solana.signAndSendTransaction(launchTx);
+        var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
 
         state.deployedToken = tokenMint;
@@ -1483,9 +1480,6 @@ async function handleSolanaLaunch() {
             fee_split_bps: 2000,
             tier: 'permissionless',
             creator_wallet: state.wallet,
-            burn_tx_hash: state.burnTxHash || null,
-            allocation_pct: state.allocationPct,
-            burn_amount: burnAmount,
             chain: 'solana',
             solana_wallet: solPubkey,
             solana_token_mint: tokenMint
