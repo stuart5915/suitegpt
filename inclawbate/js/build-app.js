@@ -34,7 +34,7 @@
         codeHistory: [],
         credits: null,
         sending: false,
-        title: 'New Project',
+        title: 'New App',
         forkedFrom: null,  // { app_id, name } if forked
         editingApp: null,  // { id, slug, name } if editing existing app
         selectedModel: 'fast',
@@ -361,7 +361,10 @@
             if (!data.sessions || data.sessions.length === 0) {
                 els.projectsList.innerHTML =
                     '<div class="projects-empty">' +
-                    '<p>No projects yet. Start building something!</p>' +
+                    '<div class="empty-state-icon">&#129438;</div>' +
+                    '<div class="empty-state-headline">Your first app is waiting</div>' +
+                    '<div class="empty-state-sub">Describe it in words. Watch AI build it live. Publish it to the world.</div>' +
+                    '<button class="empty-state-cta" onclick="window.BuildApp.newProject()">&#10024; Start Building</button>' +
                     '</div>';
                 return;
             }
@@ -371,7 +374,7 @@
                 var card = document.createElement('div');
                 card.className = 'project-card';
                 var date = new Date(s.updated_at || s.created_at).toLocaleDateString();
-                var pub = s.published_at ? '<span class="published"> &middot; Published</span>' : '';
+                var pub = s.published_at ? '<span class="published"> &middot; Published</span>' : '<span class="draft-badge"> &middot; Draft</span>';
 
                 card.innerHTML =
                     '<div class="project-card-preview"></div>' +
@@ -379,7 +382,7 @@
                         '<div class="project-card-title">' + escapeHtml(s.title) + '</div>' +
                         '<div class="project-card-meta">' + date + pub + '</div>' +
                     '</div>' +
-                    '<button type="button" class="project-card-delete" title="Delete project">&times;</button>';
+                    '<button type="button" class="project-card-delete" title="Delete app">&times;</button>';
 
                 // Build preview via DOM to avoid srcdoc escaping issues
                 var previewEl = card.querySelector('.project-card-preview');
@@ -403,7 +406,7 @@
                 els.projectsList.appendChild(card);
             });
         } catch (e) {
-            els.projectsList.innerHTML = '<div class="projects-empty"><p>Failed to load projects.</p></div>';
+            els.projectsList.innerHTML = '<div class="projects-empty"><p>Failed to load apps.</p></div>';
         }
     }
 
@@ -483,13 +486,13 @@
         }
     }
 
-    // ── New Project ──
+    // ── New App ──
     function newProject() {
         state.sessionId = null;
         state.currentCode = null;
         state.codeHistory = [];
         updateUndoBtn();
-        state.title = 'New Project';
+        state.title = 'New App';
         // Remove chat messages but re-show welcome
         var msgs = els.chatMessages.querySelectorAll('.chat-msg');
         msgs.forEach(function (m) { m.remove(); });
@@ -497,7 +500,7 @@
         if (els.chatHeaderArea) els.chatHeaderArea.style.display = '';
         var cp = document.querySelector('.chat-panel');
         if (cp) cp.classList.remove('has-messages');
-        els.buildTitle.textContent = 'New Project';
+        els.buildTitle.textContent = 'New App';
         resetPreview();
         showView('build');
         renderWelcomePrompts();
@@ -676,7 +679,7 @@
                         var evt = JSON.parse(line.slice(6));
                         if (evt.type === 'session') {
                             if (evt.session_id) state.sessionId = evt.session_id;
-                            if (evt.title && state.title === 'New Project') {
+                            if (evt.title && state.title === 'New App') {
                                 state.title = evt.title;
                                 els.buildTitle.textContent = state.title;
                             }
@@ -1346,7 +1349,7 @@
         // Pre-fill fields
         var nameEl = document.getElementById('publishName');
         var descEl = document.getElementById('publishDesc');
-        if (nameEl) nameEl.value = state.title !== 'New Project' ? state.title : '';
+        if (nameEl) nameEl.value = state.title !== 'New App' ? state.title : '';
         if (descEl) descEl.value = '';
 
         els.publishSlug.value = '';
@@ -1383,7 +1386,7 @@
         }
 
         // Auto-generate slug from title
-        if (state.title && state.title !== 'New Project') {
+        if (state.title && state.title !== 'New App') {
             var autoSlug = state.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 63);
             els.publishSlug.value = autoSlug;
             onSlugInput();
@@ -2448,7 +2451,7 @@
 
         // Pre-fill project name from session title
         var nameInput = document.getElementById('incReqName');
-        if (nameInput && state.title && state.title !== 'New Project') {
+        if (nameInput && state.title && state.title !== 'New App') {
             nameInput.value = state.title;
         }
 
