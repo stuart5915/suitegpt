@@ -246,6 +246,7 @@ function renderAppCards(apps) {
                 <button type="button" class="overview-item-action app-actions-toggle">Manage</button>
                 <div class="app-actions-menu">
                     <a href="/s/${esc(a.slug || a.id)}" target="_blank">View App</a>
+                    <button type="button" class="app-actions-rename">Rename</button>
                     <button type="button" class="app-actions-edit">Edit</button>
                     <button type="button" class="app-actions-delete" data-id="${esc(a.id)}" data-name="${esc(a.name || 'Untitled App')}">Delete</button>
                 </div>
@@ -258,6 +259,30 @@ function renderAppCards(apps) {
             const wasOpen = menu.classList.contains('open');
             closeAllAppMenus();
             if (!wasOpen) menu.classList.add('open');
+        });
+
+        el.querySelector('.app-actions-rename').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            closeAllAppMenus();
+            const newName = prompt('Rename app:', a.name || 'Untitled App');
+            if (!newName || newName.trim() === (a.name || '')) return;
+            try {
+                const token = localStorage.getItem('inclawbate_token');
+                const resp = await fetch('/api/inclawbate/apps', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ action: 'rename', app_id: a.id, new_name: newName.trim() })
+                });
+                const data = await resp.json();
+                if (data.renamed) {
+                    a.name = data.name;
+                    el.querySelector('.overview-item-title').textContent = data.name;
+                } else {
+                    alert(data.error || 'Rename failed');
+                }
+            } catch (err) {
+                alert('Rename failed: ' + err.message);
+            }
         });
 
         el.querySelector('.app-actions-edit').addEventListener('click', (e) => {

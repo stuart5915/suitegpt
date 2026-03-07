@@ -581,7 +581,33 @@ export default async function handler(req, res) {
                 return res.json({ claimed: true, count: claimed ? claimed.length : 0 });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved' });
+            // ── Rename app (owner only) ──
+            if (action === 'rename') {
+                const { new_name } = req.body;
+                if (!app_id) return res.status(400).json({ error: 'app_id required' });
+                if (!new_name || !new_name.trim()) return res.status(400).json({ error: 'new_name required' });
+                const trimmed = new_name.trim().slice(0, 100);
+
+                // Verify ownership
+                const { data: app } = await supabase
+                    .from('user_apps')
+                    .select('id, user_id')
+                    .eq('id', app_id)
+                    .single();
+                if (!app) return res.status(404).json({ error: 'App not found' });
+                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                    return res.status(403).json({ error: 'You can only rename your own apps' });
+                }
+
+                const { error: renameErr } = await supabase
+                    .from('user_apps')
+                    .update({ name: trimmed, updated_at: new Date().toISOString() })
+                    .eq('id', app_id);
+                if (renameErr) throw renameErr;
+                return res.json({ renamed: true, name: trimmed });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved, rename' });
 
         } catch (err) {
             console.error('apps POST error:', err);

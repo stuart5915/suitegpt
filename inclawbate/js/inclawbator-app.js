@@ -1441,13 +1441,15 @@ async function handleSolanaLaunch() {
         });
         if (feeResult.error) throw new Error('Fee config failed: ' + feeResult.error);
 
-        var configKey = feeResult.configKey || feeResult.meteoraConfigKey || null;
+        var feeData = feeResult.response || feeResult;
+        var configKey = feeData.configKey || feeData.meteoraConfigKey || feeResult.configKey || null;
 
         // Step 6: Sign fee config transactions if provided
-        if (feeResult.transactions && feeResult.transactions.length > 0) {
+        var feeTxs = feeData.transactions || feeResult.transactions || [];
+        if (feeTxs.length > 0) {
             setBtnState(btn, 'Signing fee config txs...', true);
-            for (var fi = 0; fi < feeResult.transactions.length; fi++) {
-                var txBytes = Uint8Array.from(atob(feeResult.transactions[fi]), function(c) { return c.charCodeAt(0); });
+            for (var fi = 0; fi < feeTxs.length; fi++) {
+                var txBytes = Uint8Array.from(atob(feeTxs[fi]), function(c) { return c.charCodeAt(0); });
                 await window.signAndSendSolanaTransaction(txBytes);
             }
         }
@@ -1470,7 +1472,8 @@ async function handleSolanaLaunch() {
 
         // Step 8: Sign + send launch transaction
         setBtnState(btn, 'Sign in wallet to launch...', true);
-        var launchTxBytes = Uint8Array.from(atob(launchResult.transaction), function(c) { return c.charCodeAt(0); });
+        var launchData = launchResult.response || launchResult;
+        var launchTxBytes = Uint8Array.from(atob(launchData.transaction || launchResult.transaction), function(c) { return c.charCodeAt(0); });
         var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
 

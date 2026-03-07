@@ -1011,11 +1011,11 @@ export default async function handler(req, res) {
             try {
                 const body = {
                     tokenMint: token_mint,
-                    launchWallet: creator_solana_wallet,
+                    wallet: creator_solana_wallet,
                     initialBuyLamports: initial_buy_lamports || 0
                 };
                 if (config_key) body.configKey = config_key;
-                if (metadata_url) body.metadataUrl = metadata_url;
+                if (metadata_url) body.ipfs = metadata_url;
 
                 const resp = await fetch(BAGS_API + '/token-launch/create-launch-transaction', {
                     method: 'POST',
