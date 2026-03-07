@@ -2365,9 +2365,9 @@ async function init() {
         window.history.replaceState({}, '', window.location.pathname);
     }
 
-    // Deep-link: ?tool=pool opens the pool factory drawer
-    var toolParam = urlParams.get('tool');
-    if (toolParam) {
+    // Deep-link: ?tool=pool or #launch opens a drawer
+    var toolParam = urlParams.get('tool') || window.location.hash.replace('#', '');
+    if (toolParam && ['launch','pool','incubate','agent','disperse','marketing'].indexOf(toolParam) !== -1) {
         window.history.replaceState({}, '', window.location.pathname);
         setTimeout(function() { openToolDrawer(toolParam); }, 300);
     }
