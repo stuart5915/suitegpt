@@ -387,6 +387,10 @@ function renderProjectCard(p) {
     // Price row placeholder (filled async)
     const priceRowHtml = addr ? `<div class="project-card-price" id="price-${esc(addr)}" style="display:none"></div>` : '';
 
+    // Fee estimate row (filled async by fetchSingleTokenPrice)
+    const splitBps = p.fee_split_bps || 10000;
+    const feeRowHtml = addr ? `<div class="project-card-fee-estimate" id="fee-${esc(addr)}" data-split-bps="${splitBps}" style="display:none"></div>` : '';
+
     // Chart embed (hidden by default)
     const chartHtml = addr ? `<div class="project-card-chart" id="chart-${esc(addr)}" style="display:none">
         <iframe src="https://dexscreener.com/base/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
@@ -473,6 +477,7 @@ function renderProjectCard(p) {
             ${created ? `<span>${created}</span>` : ''}
         </div>
         ${priceRowHtml}
+        ${feeRowHtml}
         ${actionsHtml ? `<div class="project-card-actions">${actionsHtml}</div>` : ''}
         ${allocationHtml}
         ${chartHtml}
@@ -528,6 +533,8 @@ function renderProjectCard(p) {
 }
 
 // ── Token Price Fetch ──
+window._tokenVolumes = {}; // addr.toLowerCase() → { volume24h, ethPrice }
+
 async function fetchTokenPrices(tokens) {
     const addrs = tokens.filter(p => p.token_address).map(p => p.token_address);
     if (!addrs.length) return;
@@ -560,6 +567,31 @@ async function fetchSingleTokenPrice(addr) {
         const price = parseFloat(best.priceUsd);
         const change24h = parseFloat(best.priceChange?.h24) || 0;
         const liq = parseFloat(best.liquidity?.usd) || 0;
+        const volume24h = parseFloat(best.volume?.h24) || 0;
+
+        // Store volume for per-token fee estimates
+        // Find WETH/ETH price from the pair's quote token
+        let ethPrice = 0;
+        if (best.quoteToken && best.quoteToken.symbol === 'WETH' && best.priceNative) {
+            ethPrice = price / parseFloat(best.priceNative);
+        }
+        window._tokenVolumes[addr.toLowerCase()] = { volume24h, ethPrice };
+
+        // Update fee row if it exists
+        const feeEl = document.getElementById('fee-' + addr) || document.getElementById('fee-' + best.baseToken.address);
+        if (feeEl) {
+            const splitBps = parseInt(feeEl.dataset.splitBps) || 10000;
+            if (volume24h > 0 && ethPrice > 0) {
+                const feeUsd = volume24h * 0.01 * (splitBps / 10000);
+                const feeEth = feeUsd / ethPrice;
+                const volStr = volume24h >= 1000 ? '$' + (volume24h / 1000).toFixed(1) + 'K' : '$' + Math.round(volume24h);
+                feeEl.innerHTML = `<span class="fee-estimate-value">~${feeEth.toFixed(4)} ETH earned (24h)</span><span class="fee-estimate-vol">Vol: ${volStr}</span>`;
+                feeEl.style.display = '';
+            } else if (volume24h === 0) {
+                feeEl.innerHTML = '<span class="fee-estimate-value fee-none">No trading activity (24h)</span>';
+                feeEl.style.display = '';
+            }
+        }
 
         // Update DOM
         const el = document.getElementById('price-' + addr) || document.getElementById('price-' + best.baseToken.address);
@@ -613,6 +645,13 @@ async function fetchLPFees(tokens, wallet) {
         if (!banner) return;
 
         wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
+        // Show token count subtitle
+        const tokenCount = tokens.filter(t => t.token_address).length;
+        const subtitleEl = document.getElementById('lpFeesSubtitle');
+        if (subtitleEl && tokenCount > 0) {
+            subtitleEl.textContent = 'from ' + tokenCount + ' token' + (tokenCount !== 1 ? 's' : '');
+            subtitleEl.style.display = '';
+        }
         banner.style.display = '';
 
         // Wire claim button (remove old listener first)
