@@ -307,16 +307,20 @@ async function checkBalance(contract, wallet) {
 }
 
 // ── API verification ──
+function extractItems(json) {
+    if (Array.isArray(json)) return json;
+    // Try common response keys
+    return json.projects || json.apps || json.data || [];
+}
+
 async function checkApi(quest) {
     try {
         const res = await fetch(quest.endpoint + userWallet);
         const json = await res.json();
+        const items = extractItems(json);
         if (quest.field) {
-            // Check if any result has the field populated
-            const items = Array.isArray(json) ? json : (json.data || []);
             return items.some(item => item[quest.field] && item[quest.field] !== '');
         }
-        const items = Array.isArray(json) ? json : (json.data || []);
         return items.length > 0;
     } catch { return false; }
 }
