@@ -269,7 +269,7 @@ export default async function handler(req, res) {
         const sdkAttrs = `data-creator-wallet="${data.creator_wallet || ''}" data-app-id="${data.id}"`;
         const sdkTag = `<script src="https://inclawbate.com/js/claws-sdk.js" ${sdkAttrs}></script>`;
         const appdbTag = `<script src="https://inclawbate.com/js/appdb-sdk.js" data-app-id="${data.id}"></script>`;
-        const realtimeTag = `<script src="https://inclawbate.com/js/realtime-sdk.js" data-app-id="${data.id}"></script>`;
+        const realtimeTag = `<script src="https://inclawbate.com/js/realtime-sdk.js?v=2" data-app-id="${data.id}"></script>`;
         if (html.includes('</body>')) {
             html = html.replace('</body>', sdkTag + '\n' + appdbTag + '\n' + realtimeTag + '\n</body>');
         } else {
