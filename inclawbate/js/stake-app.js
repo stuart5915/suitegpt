@@ -48,14 +48,14 @@ var POOLS = {
         ticker: 'S4H',
         token: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
         rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-        rewardTicker: 'CLAWS',
+        rewardTicker: 'INCLAWNCH',
         staking: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
         decimals: 18,
         logo: '/salvation4humanity/assets/s4hlogo.png',
         color: 'hsl(35, 38%, 38%)',
         colorDim: 'hsla(35, 38%, 38%, 0.12)',
         glow: 'hsla(35, 38%, 38%, 0.18)',
-        description: 'AI-powered online church community. Stake S4H, earn CLAWS rewards.',
+        description: 'AI-powered online church community. Stake S4H, earn INCLAWNCH rewards.',
         website: 'https://salvation4humanity.com',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
         chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
@@ -419,6 +419,21 @@ async function fetchAllPrices() {
         addrPrices[tokenAddrs[i].toLowerCase()] = bestPrice(results[i], tokenAddrs[i]);
     }
 
+    // GeckoTerminal fallback for tokens DexScreener missed
+    var missing = tokenAddrs.filter(function(a) { return !addrPrices[a.toLowerCase()]; });
+    for (var j = 0; j < missing.length; j++) {
+        try {
+            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/' + missing[j]);
+            if (gRes.ok) {
+                var gData = await gRes.json();
+                var attrs = gData.data && gData.data.attributes;
+                if (attrs && attrs.price_usd) {
+                    addrPrices[missing[j].toLowerCase()] = parseFloat(attrs.price_usd);
+                }
+            }
+        } catch (e) { /* GeckoTerminal unavailable */ }
+    }
+
     // Apply to pools
     POOL_KEYS.forEach(function(key) {
         poolPrices[key] = addrPrices[POOLS[key].token.toLowerCase()] || 0;
@@ -527,23 +542,13 @@ function buildPoolRow(key, pool, rank) {
         ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
         : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
-    // Pool daily emission rate
-    var rateHtml = '';
-    var now = Math.floor(Date.now() / 1000);
-    if (!pool.retired && stats.rewardRate > 0 && stats.periodEnd > now) {
-        var dailyTotal = stats.rewardRate * 86400;
-        var rewardTicker = pool.rewardTicker || pool.ticker;
-        var dailyStr = dailyTotal >= 1 ? fmt(Math.round(dailyTotal)) : dailyTotal.toFixed(2);
-        rateHtml = '<span class="stk-pool-rate">' + dailyStr + ' ' + rewardTicker + '/day</span>';
-    }
-
     var rowClass = pool.featured ? ' featured-row' : '';
 
     return { tvl: tvl, apy: apy, stakers: stakers, html:
         '<tr class="stk-row' + rowClass + '" data-key="' + key + '" style="border-left-color:' + pool.color + '">' +
             '<td><span class="stk-rank">' + rank + '</span></td>' +
             '<td><div class="stk-name-cell">' + logoHtml +
-                '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' + rateHtml + '</div>' +
+                '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span></div>' +
             '</div></td>' +
             '<td><span class="stk-apy' + (apy > 0 ? ' positive' : '') + '">' + apyStr + '</span></td>' +
             '<td><span class="stk-tvl">' + tvlStr + '</span></td>' +
