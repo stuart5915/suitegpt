@@ -366,6 +366,10 @@ function stakeToast(msg, type) {
     }, 4000);
 }
 
+window.stakeSlippageTip = function() {
+    stakeToast('Tip: This token has low liquidity. Set slippage to 5\u201310% in Uniswap (gear icon).', 'info');
+};
+
 // ══════════════════════════════════════
 // PRICE FETCHING
 // ══════════════════════════════════════
@@ -769,7 +773,9 @@ function renderPoolPage(pool, key) {
         linksHtml += '<a href="' + pool.website + '" target="_blank" rel="noopener" class="pool-link pool-link--website">&#127760; Website</a>';
     }
     if (pool.buyLink) {
-        linksHtml += '<a href="' + pool.buyLink + '" target="_blank" rel="noopener" class="pool-link">Buy ' + pool.ticker + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
+        var tvl = (stats.totalStaked || 0) * price;
+        var lowLiq = tvl < 10000;
+        linksHtml += '<a href="' + pool.buyLink + '" target="_blank" rel="noopener" class="pool-link"' + (lowLiq ? ' onclick="stakeSlippageTip()"' : '') + '>Buy ' + pool.ticker + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
     }
     if (pool.chartLink) {
         linksHtml += '<a href="' + pool.chartLink + '" target="_blank" rel="noopener" class="pool-link">Chart <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg></a>';

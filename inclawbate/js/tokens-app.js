@@ -49,6 +49,21 @@ var EXTRA_TOKENS = [
 
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
+function showSlippageTip() {
+    var existing = document.getElementById('slippageTip');
+    if (existing) existing.remove();
+    var tip = document.createElement('div');
+    tip.id = 'slippageTip';
+    tip.className = 'slippage-tip';
+    tip.innerHTML = '<strong>Tip:</strong> This token has low liquidity. Set slippage to 5–10% in Uniswap settings (gear icon) for your swap to go through.';
+    document.body.appendChild(tip);
+    requestAnimationFrame(function() { tip.classList.add('visible'); });
+    setTimeout(function() {
+        tip.classList.remove('visible');
+        setTimeout(function() { tip.remove(); }, 400);
+    }, 6000);
+}
+
 async function loadLiveProjects() {
     try {
         var res = await fetch(API_BASE);
@@ -186,7 +201,8 @@ function renderTable() {
             if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
                 actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
             }
-            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
+            var uniClass = 'btn-uniswap' + ((!mcapVal || mcapVal < 100000) ? ' low-liq' : '');
+            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="' + uniClass + '">Uniswap</a>';
         }
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
@@ -207,6 +223,11 @@ function renderTable() {
 
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    // Slippage tip for low-liquidity tokens
+    container.querySelectorAll('.btn-uniswap.low-liq').forEach(function(link) {
+        link.addEventListener('click', function() { showSlippageTip(); });
+    });
 
     // Row click → navigate to project (but not if clicking a trade button)
     container.querySelectorAll('tr[data-href]').forEach(function(row) {

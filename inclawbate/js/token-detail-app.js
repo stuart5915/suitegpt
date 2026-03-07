@@ -6,6 +6,21 @@
 
 var API_BASE = '/api/inclawbate/inclawbator';
 
+window.showSlippageTip = function() {
+    var existing = document.getElementById('slippageTip');
+    if (existing) existing.remove();
+    var tip = document.createElement('div');
+    tip.id = 'slippageTip';
+    tip.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:12px 20px;font-size:0.82rem;line-height:1.5;max-width:440px;z-index:10000;opacity:0;transition:opacity 0.3s,transform 0.3s;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+    tip.innerHTML = '<strong style="color:#fbbf24">Tip:</strong> This token has low liquidity. Set slippage to 5\u201310% in Uniswap settings (gear icon) for your swap to go through.';
+    document.body.appendChild(tip);
+    requestAnimationFrame(function() { tip.style.opacity = '1'; tip.style.transform = 'translateX(-50%) translateY(0)'; });
+    setTimeout(function() {
+        tip.style.opacity = '0'; tip.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(function() { tip.remove(); }, 400);
+    }, 6000);
+};
+
 var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var S4H_ADDRESS = '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07';
 
@@ -241,7 +256,8 @@ function render() {
         html += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-clanker">Clanker</a>';
     }
     if (p.token_address) {
-        html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap">Uniswap</a>';
+        var lowLiq = (!m || !m.marketCap || m.marketCap < 100000);
+        html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap' + (lowLiq ? ' low-liq' : '') + '"' + (lowLiq ? ' onclick="showSlippageTip()"' : '') + '>Uniswap</a>';
         html += '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
     }
     if (p.staking_address && p.token_symbol) {
