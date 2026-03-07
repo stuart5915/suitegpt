@@ -976,14 +976,19 @@ export default async function handler(req, res) {
             if (!token_mint || !creator_solana_wallet) return res.status(400).json({ error: 'token_mint and creator_solana_wallet required' });
 
             try {
+                // If creator wallet === treasury, send 100% to one address (no duplicates)
+                const sameWallet = creator_solana_wallet === INCLAWBATE_SOL_TREASURY;
+                const claimers = sameWallet ? [creator_solana_wallet] : [creator_solana_wallet, INCLAWBATE_SOL_TREASURY];
+                const bps = sameWallet ? [10000] : [8000, 2000];
+
                 const resp = await fetch(BAGS_API + '/fee-share/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
                     body: JSON.stringify({
                         payer: creator_solana_wallet,
                         baseMint: token_mint,
-                        claimersArray: [creator_solana_wallet, INCLAWBATE_SOL_TREASURY],
-                        basisPointsArray: [8000, 2000]
+                        claimersArray: claimers,
+                        basisPointsArray: bps
                     })
                 });
                 const data = await resp.json();
