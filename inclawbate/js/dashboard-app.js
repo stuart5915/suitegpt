@@ -746,6 +746,113 @@ const STAKING_SEL = {
     unpause:        '0x3f4ba83a',
     paused:         '0x5c975abb',
 };
+// ── My Staking Positions (user's personal stakes across all pools) ──
+const MY_STAKING_POOLS = {
+    claws:     { name: 'CLAWS',               ticker: 'CLAWS',     staking: '0x551d9dCd8B49893b9D0E1CA41a128ec202845F40', rewardTicker: 'CLAWS',     logo: '/inclawbate/assets/clawslogo.jpg' },
+    inclawnch: { name: 'inCLAWNCH',           ticker: 'INCLAWNCH', staking: '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6', rewardTicker: 'INCLAWNCH', logo: '/inclawbate/assets/logo-circle.jpg', retired: true },
+    s4h:       { name: 'Salvation 4 Humanity', ticker: 'S4H',      staking: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D', rewardTicker: 'CLAWS',     logo: '/salvation4humanity/assets/s4hlogo.png' },
+    clawnch:   { name: 'CLAWNCH',             ticker: 'CLAWNCH',   staking: '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9', rewardTicker: 'INCLAWNCH', logo: '/inclawbate/assets/clawnchlogo.jpg' },
+    clawnstr:  { name: 'ClawnStrategy',       ticker: 'CLAWNSTR',  staking: '0x9f7cD1C3e4526937736629a400acBdcA50836848', rewardTicker: 'CLAWNSTR',  logo: '/inclawbate/assets/clawnstr-logo.jpg' },
+    bv7x:      { name: 'BitVault Signal',     ticker: 'BV7X',      staking: '0x65Aec0C9fd455822F1cC0e3De7965B106d182017', rewardTicker: 'BV7X',      logo: '/inclawbate/assets/bv7x-logo.jpg' },
+};
+const STAKING_USER_SEL = {
+    balanceOf: '0x70a08231',
+    earned:    '0x008cc262',
+};
+
+async function rpcBatchCall(calls) {
+    const body = calls.map((c, i) => ({
+        jsonrpc: '2.0', id: i + 1, method: 'eth_call',
+        params: [{ to: c.to, data: c.data }, 'latest']
+    }));
+    for (const url of BASE_RPCS) {
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                signal: ctrl.signal
+            });
+            clearTimeout(timer);
+            const json = await res.json();
+            if (!Array.isArray(json)) continue;
+            json.sort((a, b) => a.id - b.id);
+            return json.map(r => safeHex(r && r.result));
+        } catch (e) { continue; }
+    }
+    return calls.map(() => '0x0');
+}
+
+async function loadMyStakingPositions() {
+    const container = document.getElementById('myStakingPositionsList');
+    if (!container) return;
+
+    const auth = getStoredAuth();
+    if (!auth || !auth.profile?.wallet_address) {
+        container.innerHTML = '<div class="overview-empty"><p>Connect your wallet to see staking positions</p></div>';
+        return;
+    }
+
+    const wallet = auth.profile.wallet_address;
+    const addrPadded = pad32(wallet);
+    const keys = Object.keys(MY_STAKING_POOLS);
+
+    // Build batch: 2 calls per pool (balanceOf + earned)
+    const calls = [];
+    keys.forEach(key => {
+        const pool = MY_STAKING_POOLS[key];
+        calls.push({ to: pool.staking, data: STAKING_USER_SEL.balanceOf + addrPadded });
+        calls.push({ to: pool.staking, data: STAKING_USER_SEL.earned + addrPadded });
+    });
+
+    const results = await rpcBatchCall(calls);
+
+    const positions = [];
+    keys.forEach((key, i) => {
+        const staked = fromWei(results[i * 2]);
+        const earned = fromWei(results[i * 2 + 1]);
+        if (staked > 0 || earned > 0) {
+            positions.push({ key, ...MY_STAKING_POOLS[key], staked, earned });
+        }
+    });
+
+    if (positions.length === 0) {
+        container.innerHTML = '<div class="overview-empty"><p>No staking positions. <a href="/stake">Explore pools</a></p></div>';
+        return;
+    }
+
+    container.innerHTML = positions.map(renderMyStakingCard).join('');
+}
+
+function renderMyStakingCard(pos) {
+    const retiredBadge = pos.retired
+        ? ' <span class="my-staking-retired">Retired</span>'
+        : '';
+    return `
+        <div class="my-staking-card">
+            <div class="my-staking-header">
+                <img src="${pos.logo}" alt="${esc(pos.name)}" class="my-staking-logo" onerror="this.style.display='none'">
+                <div class="my-staking-title">
+                    <div class="my-staking-name">${esc(pos.name)}${retiredBadge}</div>
+                    <div class="my-staking-ticker">${esc(pos.ticker)}</div>
+                </div>
+            </div>
+            <div class="my-staking-stats">
+                <div class="my-staking-stat">
+                    <div class="my-staking-stat-val">${fmt(pos.staked)}</div>
+                    <div class="my-staking-stat-label">Staked</div>
+                </div>
+                <div class="my-staking-stat">
+                    <div class="my-staking-stat-val">${fmt(pos.earned)}</div>
+                    <div class="my-staking-stat-label">${esc(pos.rewardTicker)} Earned</div>
+                </div>
+            </div>
+            <a href="/stake/${pos.key}" class="my-staking-manage">Manage Position</a>
+        </div>`;
+}
+
 const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
 const DEFAULT_SUPPLY = 100000000000n;
 const CLAIM_SEL = '0x2e7ba6ef'; // claim(address,address,uint256,bytes32[])
@@ -1147,9 +1254,27 @@ function renderPoolAnalytics(card, distributions) {
     el.style.display = '';
 }
 
-function openFundModal(poolAddr, poolName, projectId) {
+async function openFundModal(poolAddr, poolName, projectId) {
     const auth = getStoredAuth();
     if (!auth) { alert('Connect your wallet first.'); return; }
+    const wallet = auth.profile.wallet_address;
+    if (!wallet) { alert('No wallet connected.'); return; }
+
+    // Fetch CLAWS balance + price in parallel
+    let clawsBalance = 0;
+    let clawsPrice = buyState.clawsPrice || 0;
+    try {
+        const balHex = await rpcCall(CLAWS_ADDRESS, STAKING_USER_SEL.balanceOf + pad32(wallet));
+        clawsBalance = fromWei(balHex);
+        if (!clawsPrice) {
+            const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_ADDRESS);
+            const data = await resp.json();
+            if (data.pairs && data.pairs.length > 0) {
+                clawsPrice = parseFloat(data.pairs[0].priceUsd) || 0;
+                buyState.clawsPrice = clawsPrice;
+            }
+        }
+    } catch (e) { /* proceed with 0 */ }
 
     const overlay = document.createElement('div');
     overlay.className = 'fund-modal-overlay';
@@ -1160,11 +1285,40 @@ function openFundModal(poolAddr, poolName, projectId) {
     const modal = document.createElement('div');
     modal.className = 'fund-modal';
     modal.innerHTML = `
-        <div class="fund-modal-title">Fund Rewards — ${esc(poolName)}</div>
-        <label class="fund-modal-label">CLAWS Amount</label>
-        <input class="fund-modal-input" type="number" placeholder="e.g. 100000" id="fundAmount" min="1">
-        <label class="fund-modal-label">Duration (days)</label>
-        <input class="fund-modal-input" type="number" placeholder="e.g. 30" id="fundDuration" min="1" max="365" value="30">
+        <div class="fund-modal-header">
+            <div class="fund-modal-title">Fund Rewards</div>
+            <div class="fund-modal-pool">${esc(poolName)}</div>
+        </div>
+        <div class="fund-modal-balance-row">
+            <span class="fund-modal-balance-label">Your CLAWS Balance</span>
+            <span class="fund-modal-balance-val">${fmt(Math.floor(clawsBalance))}</span>
+        </div>
+        <div class="fund-modal-field">
+            <label class="fund-modal-label">Amount</label>
+            <div class="fund-modal-input-wrap">
+                <input class="fund-modal-input" type="text" inputmode="numeric" placeholder="0" id="fundAmount" autocomplete="off">
+                <span class="fund-modal-input-suffix">CLAWS</span>
+            </div>
+            <div class="fund-modal-usd" id="fundUsd">&nbsp;</div>
+            <div class="fund-modal-pct-row">
+                <button class="fund-modal-pct" data-pct="25">25%</button>
+                <button class="fund-modal-pct" data-pct="50">50%</button>
+                <button class="fund-modal-pct" data-pct="75">75%</button>
+                <button class="fund-modal-pct" data-pct="100">MAX</button>
+            </div>
+        </div>
+        <div class="fund-modal-field">
+            <label class="fund-modal-label">Duration</label>
+            <div class="fund-modal-dur-row">
+                <button class="fund-modal-dur" data-days="7">7d</button>
+                <button class="fund-modal-dur" data-days="14">14d</button>
+                <button class="fund-modal-dur active" data-days="30">30d</button>
+                <button class="fund-modal-dur" data-days="60">60d</button>
+                <button class="fund-modal-dur" data-days="90">90d</button>
+            </div>
+            <input type="hidden" id="fundDuration" value="30">
+        </div>
+        <div class="fund-modal-summary" id="fundSummary"></div>
         <div class="fund-modal-hint">CLAWS will be dripped to stakers over this period. You can top up anytime — leftover rewards roll into the new period.</div>
         <div class="fund-modal-actions">
             <button class="fund-modal-submit" id="fundSubmitBtn">Approve & Fund</button>
@@ -1176,19 +1330,75 @@ function openFundModal(poolAddr, poolName, projectId) {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
+    const amountInput = modal.querySelector('#fundAmount');
+    const usdEl = modal.querySelector('#fundUsd');
+    const summaryEl = modal.querySelector('#fundSummary');
+    const durationInput = modal.querySelector('#fundDuration');
+
+    function updateUsd() {
+        const raw = parseInt((amountInput.value || '0').replace(/[^0-9]/g, '')) || 0;
+        if (raw > 0 && clawsPrice > 0) {
+            const usd = raw * clawsPrice;
+            usdEl.textContent = '~$' + (usd >= 1000 ? fmt(Math.round(usd)) : usd.toFixed(2)) + ' USD';
+        } else {
+            usdEl.textContent = '\u00a0';
+        }
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const raw = parseInt((amountInput.value || '0').replace(/[^0-9]/g, '')) || 0;
+        const days = parseInt(durationInput.value) || 30;
+        if (raw > 0 && days > 0) {
+            const perDay = Math.floor(raw / days);
+            summaryEl.textContent = fmt(perDay) + ' CLAWS/day for ' + days + ' days';
+        } else {
+            summaryEl.textContent = '';
+        }
+    }
+
+    amountInput.addEventListener('input', () => {
+        const raw = amountInput.value.replace(/[^0-9]/g, '');
+        if (raw) {
+            const pos = amountInput.selectionStart;
+            const oldLen = amountInput.value.length;
+            amountInput.value = parseInt(raw).toLocaleString('en-US');
+            const newLen = amountInput.value.length;
+            amountInput.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
+        }
+        updateUsd();
+    });
+
+    // Percentage buttons
+    modal.querySelectorAll('.fund-modal-pct').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pct = parseInt(btn.dataset.pct);
+            const val = Math.floor(clawsBalance * pct / 100);
+            amountInput.value = val > 0 ? val.toLocaleString('en-US') : '';
+            updateUsd();
+        });
+    });
+
+    // Duration buttons
+    modal.querySelectorAll('.fund-modal-dur').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.querySelectorAll('.fund-modal-dur').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            durationInput.value = btn.dataset.days;
+            updateSummary();
+        });
+    });
+
     modal.querySelector('#fundCancelBtn').addEventListener('click', () => overlay.remove());
 
     modal.querySelector('#fundSubmitBtn').addEventListener('click', async () => {
-        const amountRaw = parseFloat(document.getElementById('fundAmount').value);
-        const durationDays = parseInt(document.getElementById('fundDuration').value);
-        const resultEl = document.getElementById('fundResult');
-        const btn = document.getElementById('fundSubmitBtn');
+        const amountRaw = parseInt((amountInput.value || '0').replace(/[^0-9]/g, '')) || 0;
+        const durationDays = parseInt(durationInput.value);
+        const resultEl = modal.querySelector('#fundResult');
+        const btn = modal.querySelector('#fundSubmitBtn');
 
         if (!amountRaw || amountRaw <= 0) { resultEl.textContent = 'Enter a valid amount'; resultEl.className = 'fund-modal-result error'; return; }
         if (!durationDays || durationDays <= 0) { resultEl.textContent = 'Enter a valid duration'; resultEl.className = 'fund-modal-result error'; return; }
-
-        const wallet = auth.profile.wallet_address;
-        if (!wallet) { resultEl.textContent = 'No wallet connected'; resultEl.className = 'fund-modal-result error'; return; }
 
         // Ensure on Base
         try {
@@ -1214,6 +1424,15 @@ function openFundModal(poolAddr, poolName, projectId) {
             // Step 1: Approve CLAWS to pool
             const approveData = STAKING_SEL.approve + pad32(poolAddr) + amountWei;
             await sendTx(wallet, CLAWS, approveData);
+
+            // Wait for allowance propagation
+            btn.textContent = 'Approval confirmed. Funding...';
+            const ALLOWANCE_SEL = '0xdd62ed3e';
+            for (let retries = 0; retries < 10; retries++) {
+                await new Promise(r => setTimeout(r, 2000));
+                const allowance = BigInt(await rpcCall(CLAWS_ADDRESS, ALLOWANCE_SEL + pad32(wallet) + pad32(poolAddr)));
+                if (allowance >= BigInt(amountRaw) * 10n ** 18n) break;
+            }
 
             // Step 2: depositRewards(amount, duration)
             btn.textContent = 'Funding pool...';
@@ -1242,7 +1461,6 @@ function openFundModal(poolAddr, poolName, projectId) {
             resultEl.className = 'fund-modal-result success';
             btn.textContent = 'Done!';
 
-            // Refresh pool stats
             setTimeout(() => {
                 loadStakingPools();
                 overlay.remove();
@@ -1258,6 +1476,8 @@ function openFundModal(poolAddr, poolName, projectId) {
     // Escape to close
     const escHandler = (e) => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
     document.addEventListener('keydown', escHandler);
+
+    setTimeout(() => amountInput.focus(), 100);
 }
 
 // ── Edit / Delete Application ──
@@ -2203,6 +2423,7 @@ function init() {
     if (!auth) {
         document.getElementById('connectBanner')?.classList.remove('hidden');
         document.getElementById('overviewProfileCard')?.classList.add('hidden');
+        loadMyStakingPositions();
         initBuyCredits();
         return;
     }
@@ -2224,6 +2445,7 @@ function init() {
     loadOverview();
     loadProjects();
     loadStakingPools();
+    loadMyStakingPositions();
     setInterval(updateAllocationCountdowns, 60000);
 }
 
