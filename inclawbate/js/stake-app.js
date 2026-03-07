@@ -643,8 +643,12 @@ window.addClawsToWallet = async function() {
 };
 
 function getProvider() {
-    if (window.WalletKit && window.WalletKit.isConnected()) {
-        return window.WalletKit.getProvider();
+    // Try WalletKit first — check isConnected(), but also try getProvider() as fallback
+    // since Reown's isConnected() can be stale while the provider still works
+    if (window.WalletKit) {
+        if (window.WalletKit.isConnected()) return window.WalletKit.getProvider();
+        var wkProvider = window.WalletKit.getProvider();
+        if (wkProvider) return wkProvider;
     }
     return window.ethereum || (window.phantom && window.phantom.ethereum) || null;
 }
@@ -1962,12 +1966,12 @@ async function init() {
 
     // Listen for WalletKit connect
     if (window.WalletKit) {
-        window.WalletKit.on('connect', function(info) {
-            if (info && info.address) {
-                walletAddr = info.address;
-                try { localStorage.setItem('_stake_wallet', info.address); } catch (e) {}
+        window.WalletKit.onConnect(function(address) {
+            if (address) {
+                walletAddr = address;
+                try { localStorage.setItem('_stake_wallet', address); } catch (e) {}
                 if (currentPoolKey && POOLS[currentPoolKey]) {
-                    onPoolWalletConnected(info.address, POOLS[currentPoolKey], currentPoolKey);
+                    onPoolWalletConnected(address, POOLS[currentPoolKey], currentPoolKey);
                 }
             }
         });
@@ -1976,11 +1980,22 @@ async function init() {
     // Auto-reconnect saved wallet (wait for late-loading wallets)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
     try {
-        var saved = localStorage.getItem('_stake_wallet');
-        if (saved && window.ethereum) {
-            var accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === saved.toLowerCase()) {
-                walletAddr = accounts[0];
+        // Try WalletKit first (handles WalletConnect sessions)
+        if (window.WalletKit && window.WalletKit.isConnected()) {
+            var wkAddr = window.WalletKit.getAddress();
+            if (wkAddr) {
+                walletAddr = wkAddr;
+                try { localStorage.setItem('_stake_wallet', wkAddr); } catch (e) {}
+            }
+        }
+        // Then try browser extension
+        if (!walletAddr) {
+            var saved = localStorage.getItem('_stake_wallet');
+            if (saved && window.ethereum) {
+                var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === saved.toLowerCase()) {
+                    walletAddr = accounts[0];
+                }
             }
         }
     } catch (e) {}
