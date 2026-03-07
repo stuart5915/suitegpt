@@ -714,10 +714,47 @@
                 }
             }
 
+            // Flush decoder and process any remaining data in buffer
+            // (the 'done' event can arrive in the final chunk and stay in sseBuffer)
+            sseBuffer += decoder.decode();
+            if (sseBuffer) {
+                var remainingLines = sseBuffer.split('\n');
+                for (var ri = 0; ri < remainingLines.length; ri++) {
+                    var rline = remainingLines[ri];
+                    if (!rline.startsWith('data: ')) continue;
+                    try {
+                        var revt = JSON.parse(rline.slice(6));
+                        if (revt.type === 'delta') streamedText += revt.text;
+                        else if (revt.type === 'done') doneData = revt;
+                        else if (revt.type === 'session') {
+                            if (revt.session_id) state.sessionId = revt.session_id;
+                        }
+                    } catch (e) {}
+                }
+            }
+
             // Remove thinking indicator
             clearInterval(thinkingInterval);
             if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             var finalCode = (doneData && doneData.code) || extractHtmlClient(streamedText);
+
+            // Fallback: if done event was lost but backend saved code, recover it
+            if (!finalCode && state.sessionId && streamedText.length > 20) {
+                try {
+                    var recoverResp = await fetch(API_BASE + '?session_id=' + state.sessionId, {
+                        headers: getToken() ? { 'Authorization': 'Bearer ' + getToken() } : {}
+                    });
+                    if (recoverResp.ok) {
+                        var recoverData = await recoverResp.json();
+                        if (recoverData.session && recoverData.session.current_code) {
+                            finalCode = recoverData.session.current_code;
+                            console.warn('Recovered code from session (done event was lost)');
+                        }
+                    }
+                } catch (recoverErr) {
+                    console.warn('Code recovery failed:', recoverErr);
+                }
+            }
 
             // Guard: if response is just metadata (model ID, etc.) and no code, treat as error
             var stripped = streamedText.replace(/```html[\s\S]*?```/g, '').trim();
