@@ -376,6 +376,8 @@
             font-weight: 700;
             text-decoration: none;
             white-space: nowrap;
+            border: none;
+            cursor: pointer;
             transition: opacity 0.2s, transform 0.15s;
         }
         .stake-create-cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -1171,6 +1173,66 @@
         }
         .stake-modal-btn--confirm:hover { opacity: 0.9; }
 
+        /* ── Pool Creation Modal ── */
+        .pool-modal-overlay {
+            position: fixed; inset: 0; background: hsla(0,0%,0%,0.7);
+            backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .pool-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .pool-modal {
+            background: var(--bg-elevated); border: 1px solid var(--border-default);
+            border-radius: var(--radius-2xl); padding: var(--space-xl); max-width: 480px;
+            width: 90%; max-height: 85vh; overflow-y: auto; position: relative;
+        }
+        .pool-modal-close {
+            position: absolute; top: 16px; right: 16px; background: none;
+            border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; line-height: 1;
+        }
+        .pool-modal-close:hover { color: var(--text-primary); }
+        .pool-modal-title {
+            font-family: var(--font-display); font-size: 1.2rem; font-weight: 800;
+            color: var(--text-primary); margin-bottom: var(--space-lg);
+        }
+        .pool-modal-group { margin-bottom: var(--space-md); }
+        .pool-modal-group label {
+            display: block; font-size: 0.82rem; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 6px;
+        }
+        .pool-modal-group .form-input {
+            width: 100%; padding: 12px 16px; font-size: 0.9rem;
+            color: var(--text-primary); background: var(--bg-card);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            outline: none; box-sizing: border-box;
+        }
+        .pool-modal-group select.form-input { cursor: pointer; }
+        .pool-modal-group textarea.form-input { resize: vertical; min-height: 70px; }
+        .pool-modal-preview {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: var(--space-md); padding: 12px;
+            background: var(--bg-card); border-radius: var(--radius-md);
+        }
+        .pool-modal-token-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--seafoam-dim); display: flex; align-items: center;
+            justify-content: center; font-weight: 800; font-size: 1.1rem;
+            color: var(--seafoam-400);
+        }
+        .pool-modal-fee {
+            text-align: center; font-size: 0.75rem; color: var(--seafoam-300);
+            margin-bottom: var(--space-md);
+        }
+        .pool-modal .pool-stake-btn {
+            width: 100%; padding: 14px; border: none; border-radius: var(--radius-full);
+            background: var(--seafoam-400); color: #000; font-family: var(--font-display);
+            font-size: 0.9rem; font-weight: 800; cursor: pointer; transition: opacity 0.2s;
+        }
+        .pool-modal .pool-stake-btn:hover { opacity: 0.9; }
+        .pool-modal .pool-stake-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pool-modal .pool-status {
+            text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-top: var(--space-sm);
+        }
+
         .stake-toast-container {
             position: fixed;
             top: calc(var(--nav-height) + 12px);
@@ -1478,7 +1540,7 @@
                     <span class="stake-create-cta-title">Don't see a pool for your token?</span>
                     <span class="stake-create-cta-desc">Deploy your own staking pool in 1 click. No code needed.</span>
                 </div>
-                <a href="/inclawbator?tool=pool" class="stake-create-cta-btn">Create Pool &rarr;</a>
+                <button class="stake-create-cta-btn" id="openPoolModalBtn">Create Pool &rarr;</button>
             </div>
         </div>
 
@@ -1699,6 +1761,36 @@
     </div>
 </div>
 <div class="stake-toast-container" id="stakeToastContainer"></div>
+
+<!-- Pool Creation Modal -->
+<div class="pool-modal-overlay" id="poolModalOverlay">
+  <div class="pool-modal">
+    <button class="pool-modal-close" id="poolModalClose">&times;</button>
+    <h3 class="pool-modal-title">Create Staking Pool</h3>
+    <div id="poolModalLoading" style="text-align:center;color:var(--text-dim);padding:var(--space-lg) 0;">Loading your tokens...</div>
+    <div id="poolModalNoTokens" class="hidden" style="text-align:center;padding:var(--space-lg) 0;">
+      <p style="color:var(--text-secondary);margin-bottom:var(--space-md);">You haven't launched a token yet.</p>
+      <a href="/inclawbator" class="pool-stake-btn" style="display:inline-flex;width:auto;padding:10px 22px;text-decoration:none;">Launch on Inclawbator</a>
+    </div>
+    <div id="poolModalForm" class="hidden">
+      <div class="pool-modal-group">
+        <label for="poolModalSelect">Select Your Token</label>
+        <select id="poolModalSelect" class="form-input"><option value="">Choose a token...</option></select>
+      </div>
+      <div id="poolModalPreview" class="pool-modal-preview hidden">
+        <div class="pool-modal-token-icon" id="poolModalIcon">?</div>
+        <div><div id="poolModalTokenName" style="font-weight:700;color:var(--text-primary);">--</div><div id="poolModalTokenSymbol" style="font-size:0.8rem;color:var(--text-dim);">--</div></div>
+      </div>
+      <div class="pool-modal-group">
+        <label for="poolModalDesc">Description (optional)</label>
+        <textarea id="poolModalDesc" class="form-input" placeholder="About this pool..." maxlength="280"></textarea>
+      </div>
+      <div class="pool-modal-fee">Free &mdash; just pay gas</div>
+      <button id="poolModalDeployBtn" class="pool-stake-btn">Deploy Pool</button>
+      <div id="poolModalStatus" class="pool-status"></div>
+    </div>
+  </div>
+</div>
 
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>

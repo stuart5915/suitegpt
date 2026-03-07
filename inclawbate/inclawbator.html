@@ -472,19 +472,36 @@
            ══════════════════════════════════════ */
 
         .tool-drawer {
-            display: none;
+            position: fixed;
+            inset: 0;
+            background: hsla(0,0%,0%,0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .tool-drawer.open { opacity: 1; pointer-events: auto; }
+        .tool-drawer-inner {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
             padding: var(--space-2xl);
-            margin-bottom: var(--space-xl);
-            animation: drawerSlideIn 0.25s ease-out;
+            max-width: 520px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
         }
-        .tool-drawer.open { display: block; }
-        @keyframes drawerSlideIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+        .drawer-close-btn {
+            position: absolute; top: 16px; right: 16px;
+            background: none; border: none; color: var(--text-dim);
+            font-size: 1.5rem; cursor: pointer; line-height: 1;
         }
+        .drawer-close-btn:hover { color: var(--text-primary); }
         .drawer-content { display: none; }
         .drawer-content.active { display: block; }
         .drawer-title {
@@ -1908,6 +1925,8 @@
 
     <!-- ═══ Tool Drawer ═══ -->
     <div id="toolDrawer" class="tool-drawer">
+      <div class="tool-drawer-inner">
+        <button class="drawer-close-btn" id="drawerCloseBtn">&times;</button>
 
         <!-- ── Launch Token ── -->
         <div id="drawerLaunch" class="drawer-content">
@@ -2169,6 +2188,7 @@
                 <button id="disperseExecBtn" class="deploy-btn" style="display:none">Execute Disperse</button>
             </div>
         </div>
+      </div>
     </div>
 
     <!-- ═══ Success States ═══ -->

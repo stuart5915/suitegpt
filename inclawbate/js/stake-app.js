@@ -169,6 +169,11 @@ var BALANCE_SELECTOR = '0x70a08231';
 var BASE_CHAIN_ID = '0x2105';
 var MAX_UINT256 = '0x' + 'f'.repeat(64);
 
+// Pool creation modal constants
+var STAKING_FACTORY = '0x7AE0768D9F36088fB967e530A8F4A3936b40B621';
+var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
+var DEPLOY_PAID_SEL = '0x82123c96'; // deployPaid(address,address)
+
 // ══════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════
@@ -1630,6 +1635,265 @@ function routeApp() {
 }
 
 // ══════════════════════════════════════
+// POOL CREATION MODAL
+// ══════════════════════════════════════
+
+var poolModalTokensCache = null;
+var poolModalDeploying = false;
+
+function openPoolModal() {
+    var overlay = document.getElementById('poolModalOverlay');
+    if (!overlay) return;
+    overlay.classList.add('visible');
+    // Reset state
+    document.getElementById('poolModalLoading').classList.remove('hidden');
+    document.getElementById('poolModalNoTokens').classList.add('hidden');
+    document.getElementById('poolModalForm').classList.add('hidden');
+    document.getElementById('poolModalStatus').textContent = '';
+    poolModalTokensCache = null;
+    loadPoolModalTokens();
+}
+
+function closePoolModal() {
+    var overlay = document.getElementById('poolModalOverlay');
+    if (overlay) overlay.classList.remove('visible');
+}
+
+async function loadPoolModalTokens() {
+    var loading = document.getElementById('poolModalLoading');
+    var noTokens = document.getElementById('poolModalNoTokens');
+    var form = document.getElementById('poolModalForm');
+    var select = document.getElementById('poolModalSelect');
+
+    // Connect wallet if needed
+    var provider = getProvider();
+    if (!provider || !walletAddr) {
+        try {
+            var accounts = await (provider || window.ethereum).request({ method: 'eth_requestAccounts' });
+            if (accounts && accounts.length > 0) {
+                walletAddr = accounts[0];
+                provider = getProvider();
+            }
+        } catch (e) {}
+    }
+    if (!walletAddr) {
+        loading.classList.add('hidden');
+        noTokens.classList.remove('hidden');
+        noTokens.querySelector('p').textContent = 'Connect your wallet first.';
+        return;
+    }
+
+    loading.classList.remove('hidden');
+    noTokens.classList.add('hidden');
+    form.classList.add('hidden');
+
+    try {
+        var res = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(walletAddr.toLowerCase()));
+        var data = await res.json();
+        var projects = (data.projects || []).filter(function(p) {
+            return p.token_address && p.status === 'active' && !p.staking_address;
+        });
+        poolModalTokensCache = projects;
+
+        loading.classList.add('hidden');
+
+        if (projects.length === 0) {
+            noTokens.classList.remove('hidden');
+            noTokens.querySelector('p').textContent = "You don't have any tokens without a staking pool.";
+            return;
+        }
+
+        form.classList.remove('hidden');
+        select.innerHTML = '<option value="">Choose a token...</option>';
+        projects.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.token_address;
+            opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')';
+            opt.dataset.name = p.token_name || '';
+            opt.dataset.symbol = p.token_symbol || '';
+            select.appendChild(opt);
+        });
+
+        select.onchange = function() {
+            var preview = document.getElementById('poolModalPreview');
+            var sel = select.options[select.selectedIndex];
+            if (select.value && sel.dataset.name) {
+                document.getElementById('poolModalTokenName').textContent = sel.dataset.name;
+                document.getElementById('poolModalTokenSymbol').textContent = '$' + sel.dataset.symbol;
+                document.getElementById('poolModalIcon').textContent = (sel.dataset.symbol || '?')[0];
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+            }
+        };
+    } catch (e) {
+        loading.textContent = 'Failed to load tokens.';
+    }
+}
+
+function parsePoolDeployed(receipt) {
+    if (!receipt || !receipt.logs) return null;
+    for (var i = 0; i < receipt.logs.length; i++) {
+        var log = receipt.logs[i];
+        if (log.address && STAKING_FACTORY &&
+            log.address.toLowerCase() === STAKING_FACTORY.toLowerCase() &&
+            log.topics && log.topics.length >= 2) {
+            return '0x' + log.topics[1].slice(26);
+        }
+    }
+    return null;
+}
+
+async function handlePoolModalDeploy() {
+    if (poolModalDeploying) return;
+
+    var select = document.getElementById('poolModalSelect');
+    var tokenAddress = select ? select.value : '';
+    var desc = document.getElementById('poolModalDesc').value.trim();
+    var tokenName = document.getElementById('poolModalTokenName').textContent;
+    var tokenSymbol = document.getElementById('poolModalTokenSymbol').textContent.replace('$', '');
+
+    if (!tokenAddress || tokenAddress.length !== 42) { stakeToast('Select a token first', 'error'); return; }
+    if (!tokenName || tokenName === '--') { stakeToast('Select a token first', 'error'); return; }
+
+    var provider = getProvider();
+    if (!provider || !walletAddr) { stakeToast('Connect wallet first', 'error'); return; }
+
+    poolModalDeploying = true;
+    var btn = document.getElementById('poolModalDeployBtn');
+    var status = document.getElementById('poolModalStatus');
+    btn.disabled = true;
+    btn.textContent = 'Deploying staking pool...';
+    status.textContent = 'Confirm in wallet...';
+
+    try {
+        // Switch to Base
+        try {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        } catch (switchErr) {
+            if (switchErr.code === 4902) {
+                await provider.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
+                });
+            }
+        }
+
+        // Deploy
+        var deployData = DEPLOY_PAID_SEL + pad32(tokenAddress) + pad32(CLAWS_ADDR);
+        var txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: walletAddr, to: STAKING_FACTORY, data: deployData }]
+        });
+
+        status.textContent = 'Confirming transaction...';
+
+        // Wait for receipt
+        var receipt = null;
+        for (var i = 0; i < 90; i++) {
+            await new Promise(function(r) { setTimeout(r, 2000); });
+            receipt = await provider.request({
+                method: 'eth_getTransactionReceipt', params: [txHash]
+            });
+            if (receipt) {
+                if (receipt.status !== '0x1') throw new Error('Transaction reverted');
+                break;
+            }
+        }
+        if (!receipt) throw new Error('Transaction timed out');
+
+        var stakingPool = parsePoolDeployed(receipt);
+        if (!stakingPool) throw new Error('Could not find staking pool address in receipt');
+
+        status.textContent = 'Linking staking pool...';
+
+        // Register via API
+        var existingProject = poolModalTokensCache ? poolModalTokensCache.find(function(p) { return p.token_address === tokenAddress; }) : null;
+        if (existingProject && existingProject.id) {
+            await fetch('/api/inclawbate/inclawbator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update-staking',
+                    project_id: existingProject.id,
+                    staking_address: stakingPool,
+                    staking_deploy_tx: txHash
+                })
+            });
+        } else {
+            var regResp = await fetch('/api/inclawbate/inclawbator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'register',
+                    token_address: tokenAddress,
+                    token_name: tokenName,
+                    token_symbol: tokenSymbol,
+                    description: desc,
+                    fee_split_bps: 10000,
+                    tier: 'partner',
+                    creator_wallet: walletAddr
+                })
+            });
+            var regData = await regResp.json();
+            if (regData.project) {
+                await fetch('/api/inclawbate/inclawbator', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update-staking',
+                        project_id: regData.project.id,
+                        staking_address: stakingPool,
+                        staking_deploy_tx: txHash
+                    })
+                });
+            }
+        }
+
+        poolModalDeploying = false;
+        closePoolModal();
+        stakeToast('Staking pool deployed!', 'success');
+
+        // Refresh pools data
+        try {
+            var resp = await fetch('/api/inclawbate/inclawbator');
+            if (resp.ok) {
+                var freshData = await resp.json();
+                (freshData.projects || []).forEach(function(p) {
+                    if (!p.staking_address || !p.token_address) return;
+                    var key = p.token_symbol.toLowerCase();
+                    if (POOLS[key]) return;
+                    POOLS[key] = {
+                        name: p.token_name, ticker: p.token_symbol, token: p.token_address,
+                        rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808', rewardTicker: 'CLAWS',
+                        staking: p.staking_address, decimals: 18, logo: p.logo_url || '',
+                        color: p.color || 'hsl(172, 32%, 48%)', colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
+                        glow: p.glow || 'hsla(172, 32%, 48%, 0.18)', description: p.description || '',
+                        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
+                        chartLink: 'https://dexscreener.com/base/' + p.token_address,
+                        featured: false, category: 'inclawbator', dynamic: true
+                    };
+                });
+                POOL_KEYS = Object.keys(POOLS);
+            }
+        } catch (e) {}
+
+        await fetchAllPoolStats().catch(function() {});
+        renderOverview();
+
+    } catch (e) {
+        poolModalDeploying = false;
+        btn.disabled = false;
+        btn.textContent = 'Deploy Pool';
+        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
+            status.textContent = 'Transaction rejected';
+        } else {
+            status.textContent = 'Deploy failed: ' + (e.message || 'Unknown error');
+        }
+    }
+}
+
+// ══════════════════════════════════════
 // INIT
 // ══════════════════════════════════════
 
@@ -1680,6 +1944,18 @@ async function init() {
     // Sort dropdown
     var sortSelect = document.getElementById('stakeSort');
     if (sortSelect) sortSelect.addEventListener('change', function() { renderOverview(); });
+
+    // Pool creation modal
+    var poolModalBtn = document.getElementById('openPoolModalBtn');
+    if (poolModalBtn) poolModalBtn.addEventListener('click', openPoolModal);
+    var poolModalCloseBtn = document.getElementById('poolModalClose');
+    if (poolModalCloseBtn) poolModalCloseBtn.addEventListener('click', closePoolModal);
+    var poolModalOverlay = document.getElementById('poolModalOverlay');
+    if (poolModalOverlay) poolModalOverlay.addEventListener('click', function(e) {
+        if (e.target === poolModalOverlay) closePoolModal();
+    });
+    var poolModalDeployBtn = document.getElementById('poolModalDeployBtn');
+    if (poolModalDeployBtn) poolModalDeployBtn.addEventListener('click', handlePoolModalDeploy);
 
     // Listen for popstate
     window.addEventListener('popstate', routeApp);

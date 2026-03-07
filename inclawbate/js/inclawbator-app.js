@@ -594,10 +594,6 @@ function openToolDrawer(tool) {
     var drawer = document.getElementById('toolDrawer');
     if (drawer) {
         drawer.classList.add('open');
-        // Reset animation
-        drawer.style.animation = 'none';
-        drawer.offsetHeight; // force reflow
-        drawer.style.animation = '';
     }
 
     // Show correct content
@@ -616,10 +612,6 @@ function openToolDrawer(tool) {
     // Init disperse drawer
     if (tool === 'disperse') initDisperseDrawer();
 
-    // Scroll drawer into view
-    if (drawer) {
-        setTimeout(function() { drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
-    }
 }
 
 function closeToolDrawer() {
@@ -2025,6 +2017,14 @@ async function init() {
             openToolDrawer(tool);
         });
     });
+
+    // Close modal on backdrop click or close button
+    var drawerEl = document.getElementById('toolDrawer');
+    if (drawerEl) drawerEl.addEventListener('click', function(e) {
+        if (e.target === drawerEl) closeToolDrawer();
+    });
+    var closeBtn = document.getElementById('drawerCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', closeToolDrawer);
 
     // Bind deploy buttons
     var deployLaunchBtn = document.getElementById('deployLaunchBtn');
