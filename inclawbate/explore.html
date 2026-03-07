@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explore Projects — Inclawbate</title>
-    <meta name="description" content="Discover projects on Inclawbate. Apps, tokens, staking pools — all bundled into one.">
+    <title>Explore — Inclawbate</title>
+    <meta name="description" content="Discover tokens, staking pools, and apps on Inclawbate — all in one place.">
     <meta property="og:title" content="Explore Projects — Inclawbate">
     <meta property="og:description" content="Discover projects on Inclawbate. Apps, tokens, staking pools — all bundled into one.">
     <meta property="og:type" content="website">
@@ -211,11 +211,161 @@
             grid-column: 1 / -1;
         }
 
+        /* ── Explore Sections ── */
+        .explore-section {
+            display: none;
+            margin-top: var(--space-2xl);
+            animation: fadeUp 0.4s ease both;
+        }
+        .explore-section.visible { display: block; }
+        .explore-section-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+        .explore-section-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .explore-section-viewall {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--lobster-400);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .explore-section-viewall:hover { color: var(--lobster-300); }
+        .explore-mini-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-md);
+        }
+
+        /* ── Mini Card (shared) ── */
+        .mini-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            transition: border-color var(--transition-base), transform var(--transition-base);
+        }
+        .mini-card:hover {
+            border-color: var(--border-default);
+            transform: translateY(-2px);
+        }
+        .mini-card-top {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        .mini-card-logo {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .mini-card-logo-placeholder {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 0.9rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .mini-card-info { flex: 1; min-width: 0; }
+        .mini-card-name {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mini-card-sub {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+        .mini-card-desc {
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .mini-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: var(--space-xs);
+        }
+        .mini-card-stat {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--seafoam-300);
+        }
+        .mini-card-badge {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            color: var(--text-dim);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+        }
+        .mini-card-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 14px;
+            font-family: var(--font-body);
+            font-size: 0.72rem;
+            font-weight: 700;
+            border-radius: var(--radius-full);
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.15s;
+        }
+        .mini-card-btn:hover { opacity: 0.85; }
+        .mini-card-btn--trade {
+            background: var(--accent-gradient);
+            color: var(--text-on-accent);
+        }
+        .mini-card-btn--stake {
+            background: var(--green-dim);
+            color: var(--seafoam-300);
+            border: 1px solid hsla(172,30%,56%,0.2);
+        }
+        .mini-card-btn--use {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
         /* ── Responsive ── */
         @media (max-width: 600px) {
             .explore-grid { grid-template-columns: 1fr; }
             .explore-toolbar { flex-direction: column; }
             .explore-search { width: 100%; }
+            .explore-mini-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -257,6 +407,33 @@
     <div class="explore-grid" id="exploreGrid">
         <div class="explore-loading"><div class="spinner spinner-lg"></div></div>
     </div>
+
+    <!-- Tokens Section -->
+    <section class="explore-section" id="exploreTokens">
+        <div class="explore-section-header">
+            <h2 class="explore-section-title">Tokens</h2>
+            <a href="/tokens" class="explore-section-viewall">View All &rarr;</a>
+        </div>
+        <div class="explore-mini-grid" id="exploreTokensGrid"></div>
+    </section>
+
+    <!-- Staking Pools Section -->
+    <section class="explore-section" id="explorePools">
+        <div class="explore-section-header">
+            <h2 class="explore-section-title">Staking Pools</h2>
+            <a href="/stake" class="explore-section-viewall">View All &rarr;</a>
+        </div>
+        <div class="explore-mini-grid" id="explorePoolsGrid"></div>
+    </section>
+
+    <!-- Apps Section -->
+    <section class="explore-section" id="exploreApps">
+        <div class="explore-section-header">
+            <h2 class="explore-section-title">Apps</h2>
+            <a href="/apps" class="explore-section-viewall">View All &rarr;</a>
+        </div>
+        <div class="explore-mini-grid" id="exploreAppsGrid"></div>
+    </section>
 
 </div>
 

@@ -103,5 +103,180 @@
         });
     });
 
+    // ── Format market cap ──
+    function formatMcap(n) {
+        if (!n || n <= 0) return '—';
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+        return '$' + n.toFixed(0);
+    }
+
+    // ── Hardcoded core tokens ──
+    var CORE_TOKENS = [
+        {
+            token_name: 'CLAWS',
+            token_symbol: 'CLAWS',
+            token_address: '0x7ca47B141639B893C6782823C0b219f872056379',
+            logo_url: '/inclawbate/assets/clawslogo.jpg',
+            tier: 'incubated'
+        },
+        {
+            token_name: 'Salvation 4 Humanity',
+            token_symbol: 'S4H',
+            token_address: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
+            logo_url: null,
+            tier: 'incubated'
+        }
+    ];
+
+    // ── Load Tokens ──
+    async function loadTokens() {
+        var section = document.getElementById('exploreTokens');
+        var grid = document.getElementById('exploreTokensGrid');
+        try {
+            var res = await fetch('/api/inclawbate/inclawbator');
+            var json = await res.json();
+            var projects = (json.projects || []).filter(function (p) { return p.token_address; });
+
+            // Merge core tokens if missing
+            CORE_TOKENS.forEach(function (ct) {
+                var exists = projects.some(function (p) {
+                    return p.token_address && p.token_address.toLowerCase() === ct.token_address.toLowerCase();
+                });
+                if (!exists) projects.unshift(ct);
+            });
+
+            // Fetch mcaps from DexScreener
+            var addresses = projects.map(function (p) { return p.token_address; }).filter(Boolean);
+            var mcaps = {};
+            if (addresses.length) {
+                try {
+                    var dexRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addresses.slice(0, 30).join(','));
+                    var dexJson = await dexRes.json();
+                    (dexJson.pairs || []).forEach(function (pair) {
+                        var addr = (pair.baseToken && pair.baseToken.address) ? pair.baseToken.address.toLowerCase() : '';
+                        if (addr && pair.marketCap && (!mcaps[addr] || pair.marketCap > mcaps[addr])) {
+                            mcaps[addr] = pair.marketCap;
+                        }
+                    });
+                } catch (e) { /* DexScreener unavailable */ }
+            }
+
+            // Attach mcap + sort by mcap desc
+            projects.forEach(function (p) {
+                p._mcap = mcaps[(p.token_address || '').toLowerCase()] || 0;
+            });
+            projects.sort(function (a, b) { return b._mcap - a._mcap; });
+
+            var top = projects.slice(0, 6);
+            if (!top.length) return;
+
+            grid.innerHTML = top.map(function (p) {
+                var logo = p.logo_url
+                    ? '<img class="mini-card-logo" src="' + p.logo_url + '" alt="">'
+                    : '<div class="mini-card-logo-placeholder" style="background:' + hashColor(p.token_name || p.token_symbol) + '">' + (p.token_symbol || '?').charAt(0) + '</div>';
+                var uniswap = 'https://app.uniswap.org/swap?outputCurrency=' + p.token_address + '&chain=base';
+                return '<div class="mini-card">' +
+                    '<div class="mini-card-top">' + logo +
+                        '<div class="mini-card-info">' +
+                            '<div class="mini-card-name">' + escapeHtml(p.token_name || p.token_symbol) + '</div>' +
+                            '<div class="mini-card-sub">$' + escapeHtml(p.token_symbol) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mini-card-footer">' +
+                        '<span class="mini-card-stat">' + formatMcap(p._mcap) + '</span>' +
+                        '<a href="' + uniswap + '" target="_blank" rel="noopener" class="mini-card-btn mini-card-btn--trade">Trade</a>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            section.classList.add('visible');
+        } catch (e) { /* silent */ }
+    }
+
+    // ── Hardcoded staking pools ──
+    var POOLS = [
+        {
+            name: 'CLAWS',
+            ticker: 'CLAWS',
+            logo: '/inclawbate/assets/clawslogo.jpg',
+            description: 'Stake CLAWS, earn CLAWS. No lock. No tiers.',
+            color: 'hsl(172, 50%, 42%)'
+        },
+        {
+            name: 'Salvation 4 Humanity',
+            ticker: 'S4H',
+            logo: null,
+            description: 'Stake S4H, earn INCLAWNCH. Powered by Inclawbate.',
+            color: 'hsl(45, 60%, 50%)'
+        },
+        {
+            name: 'CLAWNCH',
+            ticker: 'CLAWNCH',
+            logo: null,
+            description: 'Legacy CLAWNCH staking pool.',
+            color: 'hsl(260, 50%, 50%)'
+        }
+    ];
+
+    // ── Load Pools ──
+    function loadPools() {
+        var section = document.getElementById('explorePools');
+        var grid = document.getElementById('explorePoolsGrid');
+        grid.innerHTML = POOLS.map(function (pool) {
+            var logo = pool.logo
+                ? '<img class="mini-card-logo" src="' + pool.logo + '" alt="">'
+                : '<div class="mini-card-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
+            return '<div class="mini-card">' +
+                '<div class="mini-card-top">' + logo +
+                    '<div class="mini-card-info">' +
+                        '<div class="mini-card-name">' + escapeHtml(pool.name) + '</div>' +
+                        '<div class="mini-card-sub">$' + escapeHtml(pool.ticker) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="mini-card-desc">' + escapeHtml(pool.description) + '</div>' +
+                '<div class="mini-card-footer">' +
+                    '<span></span>' +
+                    '<a href="/stake" class="mini-card-btn mini-card-btn--stake">Stake</a>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        section.classList.add('visible');
+    }
+
+    // ── Load Apps ──
+    async function loadApps() {
+        var section = document.getElementById('exploreApps');
+        var grid = document.getElementById('exploreAppsGrid');
+        try {
+            var res = await fetch('/api/inclawbate/apps?sort=trending&limit=6');
+            var json = await res.json();
+            var apps = json.apps || [];
+            if (!apps.length) return;
+
+            grid.innerHTML = apps.map(function (app) {
+                var initial = (app.name || '?').charAt(0);
+                var logo = '<div class="mini-card-logo-placeholder" style="background:' + hashColor(app.name || app.slug) + '">' + initial + '</div>';
+                return '<a href="/s/' + app.slug + '" class="mini-card" style="text-decoration:none">' +
+                    '<div class="mini-card-top">' + logo +
+                        '<div class="mini-card-info">' +
+                            '<div class="mini-card-name">' + escapeHtml(app.name) + '</div>' +
+                            (app.category ? '<div class="mini-card-sub">' + escapeHtml(app.category) + '</div>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    (app.description ? '<div class="mini-card-desc">' + escapeHtml(app.description) + '</div>' : '') +
+                    '<div class="mini-card-footer">' +
+                        '<span></span>' +
+                        '<span class="mini-card-btn mini-card-btn--use">Use</span>' +
+                    '</div>' +
+                '</a>';
+            }).join('');
+            section.classList.add('visible');
+        } catch (e) { /* silent */ }
+    }
+
     load();
+    loadPools();
+    loadTokens();
+    loadApps();
 })();
