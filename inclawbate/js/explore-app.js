@@ -210,28 +210,196 @@
         } catch (e) {}
     }
 
-    // ── Hardcoded staking pools ──
-    var POOLS = [
-        { name: 'CLAWS', ticker: 'CLAWS', logo: '/inclawbate/assets/clawslogo.jpg', description: 'Stake CLAWS, earn CLAWS. No lock. No tiers.', color: 'hsl(172, 50%, 42%)' },
-        { name: 'Salvation 4 Humanity', ticker: 'S4H', logo: null, description: 'Stake S4H, earn INCLAWNCH. Powered by Inclawbate.', color: 'hsl(45, 60%, 50%)' },
-        { name: 'CLAWNCH', ticker: 'CLAWNCH', logo: null, description: 'Legacy CLAWNCH staking pool.', color: 'hsl(260, 50%, 50%)' }
+    // ── Staking Pools (hardcoded core + dynamic from API) ──
+    var STAKING_POOLS = {
+        claws:    { name:'CLAWS',              ticker:'CLAWS',    token:'0x7ca47B141639B893C6782823C0b219f872056379', staking:'0x551d9dCd8B49893b9D0E1CA41a128ec202845F40', logo:'/inclawbate/assets/clawslogo.jpg',    color:'hsl(172,50%,42%)', rewardTicker:'CLAWS', retired:false },
+        bv7x:    { name:'BitVault Signal',     ticker:'BV7X',     token:'0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC', staking:'0x65Aec0C9fd455822F1cC0e3De7965B106d182017', logo:'/inclawbate/assets/bv7x-logo.jpg',    color:'hsl(220,70%,50%)', rewardTicker:'BV7X', retired:false },
+        clawnch:  { name:'CLAWNCH',            ticker:'CLAWNCH',  token:'0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be', staking:'0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9', logo:'/inclawbate/assets/clawnchlogo.jpg',  color:'hsl(32,50%,50%)',  rewardTicker:'INCLAWNCH', rewardToken:'0xB0b6e0E9da530f68D713cC03a813B506205aC808', retired:false },
+        clawnstr: { name:'ClawnStrategy',      ticker:'CLAWNSTR', token:'0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1', staking:'0x9f7cD1C3e4526937736629a400acBdcA50836848', logo:'/inclawbate/assets/clawnstr-logo.jpg', color:'hsl(0,68%,42%)',   rewardTicker:'CLAWNSTR', retired:false },
+        s4h:      { name:'Salvation 4 Humanity',ticker:'S4H',     token:'0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07', staking:'0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D', logo:'/salvation4humanity/assets/s4hlogo.png', color:'hsl(35,38%,38%)', rewardTicker:'INCLAWNCH', rewardToken:'0xB0b6e0E9da530f68D713cC03a813B506205aC808', retired:false },
+        inclawnch:{ name:'inCLAWNCH',          ticker:'INCLAWNCH',token:'0xB0b6e0E9da530f68D713cC03a813B506205aC808', staking:'0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6', logo:'/inclawbate/assets/logo-circle.jpg',   color:'hsl(172,32%,48%)', rewardTicker:'INCLAWNCH', retired:true }
+    };
+    var COMING_SOON_POOLS = [
+        { name:'MirrorMind', ticker:'MIRROR', logo:null, color:'hsl(280,60%,55%)' }
     ];
 
-    // ── Load Pools (table rows) ──
-    function loadPools() {
-        var section = document.getElementById('explorePools');
+    var BASE_RPCS = [
+        'https://mainnet.base.org',
+        'https://1rpc.io/base',
+        'https://base-mainnet.public.blastapi.io'
+    ];
+    var SEL_totalStaked  = '0x817b1cd2';
+    var SEL_stakerCount  = '0xdff69787';
+    var SEL_rewardRate   = '0x7b0a47ee';
+
+    async function rpcBatch(calls) {
+        var batch = calls.map(function(c,i){
+            return { jsonrpc:'2.0', id:i+1, method:'eth_call', params:[{to:c.to,data:c.data},'latest'] };
+        });
+        for (var r=0; r<BASE_RPCS.length; r++) {
+            try {
+                var res = await fetch(BASE_RPCS[r], { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(batch) });
+                var json = await res.json();
+                if (Array.isArray(json)) {
+                    json.sort(function(a,b){ return a.id-b.id; });
+                    return json.map(function(x){ return (x.result && x.result !== '0x') ? x.result : '0x0'; });
+                }
+            } catch(e){}
+        }
+        return calls.map(function(){ return '0x0'; });
+    }
+
+    function fromWei(hex) {
+        if (!hex || hex==='0x' || hex==='0x0') return 0;
+        try { return Number(BigInt(hex))/1e18; } catch(e){ return 0; }
+    }
+    function safeNum(hex) {
+        if (!hex || hex==='0x' || hex==='0x0') return 0;
+        try { return Number(BigInt(hex)); } catch(e){ return 0; }
+    }
+    function fmtUsd(n) {
+        if (n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+        if (n>=1e4) return '$'+(n/1e3).toFixed(0)+'K';
+        if (n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+        if (n>=0.01) return '$'+n.toFixed(2);
+        return '$0';
+    }
+
+    var _allPools = [];
+
+    function poolRowHtml(p, i) {
+        var apyStr = p.retired ? '0%' : (p.apy > 0 ? Math.round(p.apy).toLocaleString('en-US')+'%' : '--');
+        var tvlStr = p.tvl > 0 ? fmtUsd(p.tvl) : '--';
+        var stakersStr = p.stakers > 0 ? p.stakers.toLocaleString('en-US') : '--';
+        var btnText = p.retired ? 'Unstake' : 'Stake';
+        var earnTag = p.retired ? '' : '<span class="exp-sub" style="margin-left:0;display:block;">Earn $' + escapeHtml(p.rewardTicker) + '</span>';
+        return '<tr onclick="window.location.href=\'/stake/' + escapeHtml(p.ticker.toLowerCase()) + '\'">' +
+            '<td><span class="exp-rank">' + (i+1) + '</span></td>' +
+            '<td><div class="exp-name-cell">' + logoHtml(p.logo, p.name, p.color) +
+                '<div><span class="exp-name">' + escapeHtml(p.name) + '</span><span class="exp-sub">$' + escapeHtml(p.ticker) + '</span>' + earnTag + '</div>' +
+            '</div></td>' +
+            '<td><span class="exp-stat' + (p.apy > 0 && !p.retired ? ' style="color:var(--seafoam-300)"' : '') + '">' + apyStr + '</span></td>' +
+            '<td><span class="exp-stat">' + tvlStr + '</span></td>' +
+            '<td><span class="exp-stat">' + stakersStr + '</span></td>' +
+            '<td><div class="exp-actions"><a href="/stake/' + escapeHtml(p.ticker.toLowerCase()) + '" class="exp-btn exp-btn--stake" onclick="event.stopPropagation()">' + btnText + '</a></div></td>' +
+        '</tr>';
+    }
+
+    function renderPoolRows(count) {
         var tbody = document.getElementById('explorePoolsBody');
-        tbody.innerHTML = POOLS.map(function (pool, i) {
-            return '<tr onclick="window.location.href=\'/stake\'">' +
-                '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
-                '<td><div class="exp-name-cell">' + logoHtml(pool.logo, pool.name, pool.color) +
-                    '<div><span class="exp-name">' + escapeHtml(pool.name) + '</span><span class="exp-sub">$' + escapeHtml(pool.ticker) + '</span></div>' +
-                '</div></td>' +
-                '<td><span class="exp-desc">' + escapeHtml(pool.description) + '</span></td>' +
-                '<td><div class="exp-actions"><a href="/stake" class="exp-btn exp-btn--stake" onclick="event.stopPropagation()">Stake</a></div></td>' +
-            '</tr>';
-        }).join('');
-        section.classList.add('visible');
+        var btn = document.getElementById('poolsShowMore');
+        var items = _allPools.slice(0, count);
+        var html = items.map(poolRowHtml).join('');
+        // Coming soon at end
+        if (count >= _allPools.length) {
+            COMING_SOON_POOLS.forEach(function(cs, ci) {
+                var rank = items.length + ci + 1;
+                html += '<tr style="opacity:0.5">' +
+                    '<td><span class="exp-rank">' + rank + '</span></td>' +
+                    '<td><div class="exp-name-cell">' + logoHtml(cs.logo, cs.name, cs.color) +
+                        '<div><span class="exp-name">' + escapeHtml(cs.name) + '</span><span class="exp-sub">$' + escapeHtml(cs.ticker) + '</span><span class="exp-sub" style="margin-left:0;display:block;color:var(--text-dim)">Coming Soon</span></div>' +
+                    '</div></td>' +
+                    '<td><span class="exp-stat">--</span></td><td><span class="exp-stat">--</span></td><td><span class="exp-stat">--</span></td><td></td></tr>';
+            });
+        }
+        tbody.innerHTML = html;
+        if (btn) btn.style.display = count >= _allPools.length ? 'none' : '';
+    }
+
+    async function loadPools() {
+        var section = document.getElementById('explorePools');
+        try {
+            // Load dynamic pools from inclawbator API (same as stake page)
+            try {
+                var apiRes = await fetch('/api/inclawbate/inclawbator');
+                if (apiRes.ok) {
+                    var apiData = await apiRes.json();
+                    (apiData.projects || []).forEach(function(p) {
+                        if (!p.staking_address || !p.token_address) return;
+                        var key = p.token_symbol.toLowerCase();
+                        if (STAKING_POOLS[key]) return;
+                        STAKING_POOLS[key] = {
+                            name: p.token_name, ticker: p.token_symbol, token: p.token_address,
+                            rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808', rewardTicker: 'CLAWS',
+                            staking: p.staking_address, logo: p.logo_url || null,
+                            color: p.color || 'hsl(172,32%,48%)', retired: false
+                        };
+                    });
+                }
+            } catch(e){}
+
+            var STAKING_KEYS = Object.keys(STAKING_POOLS);
+
+            // Fetch on-chain stats
+            var calls = [];
+            STAKING_KEYS.forEach(function(key) {
+                var s = STAKING_POOLS[key].staking;
+                calls.push({ to:s, data:SEL_totalStaked });
+                calls.push({ to:s, data:SEL_stakerCount });
+                calls.push({ to:s, data:SEL_rewardRate });
+            });
+            var results = await rpcBatch(calls);
+
+            // Fetch prices
+            var tokenAddrs = [];
+            var seen = {};
+            STAKING_KEYS.forEach(function(key) {
+                var a = STAKING_POOLS[key].token.toLowerCase();
+                if (!seen[a]) { seen[a]=true; tokenAddrs.push(STAKING_POOLS[key].token); }
+                if (STAKING_POOLS[key].rewardToken) {
+                    var ra = STAKING_POOLS[key].rewardToken.toLowerCase();
+                    if (!seen[ra]) { seen[ra]=true; tokenAddrs.push(STAKING_POOLS[key].rewardToken); }
+                }
+            });
+            var addrPrices = {};
+            try {
+                var dexRes = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + tokenAddrs.join(','));
+                var dexJson = await dexRes.json();
+                (dexJson.pairs || []).forEach(function(pair) {
+                    var ba = pair.baseToken && pair.baseToken.address ? pair.baseToken.address.toLowerCase() : '';
+                    var price = parseFloat(pair.priceUsd) || 0;
+                    if (ba && price > 0 && (!addrPrices[ba] || price > addrPrices[ba])) {
+                        addrPrices[ba] = price;
+                    }
+                });
+            } catch(e){}
+
+            // Build pool data
+            _allPools = [];
+            STAKING_KEYS.forEach(function(key, i) {
+                var pool = STAKING_POOLS[key];
+                var base = i*3;
+                var totalStaked = fromWei(results[base]);
+                var stakers = safeNum(results[base+1]);
+                var rewardRate = fromWei(results[base+2]);
+                var price = addrPrices[pool.token.toLowerCase()] || 0;
+                var tvl = totalStaked * price;
+                var apy = 0;
+                if (totalStaked > 0 && rewardRate > 0) {
+                    var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
+                    if (pool.rewardToken) {
+                        var rp = addrPrices[pool.rewardToken.toLowerCase()] || 0;
+                        if (price > 0 && rp > 0) apy = rawApy * (rp / price);
+                        else apy = rawApy;
+                    } else {
+                        apy = rawApy;
+                    }
+                }
+                _allPools.push({
+                    name: pool.name, ticker: pool.ticker, logo: pool.logo, color: pool.color,
+                    rewardTicker: pool.rewardTicker, retired: pool.retired,
+                    tvl: tvl, apy: apy, stakers: stakers
+                });
+            });
+
+            // Sort by TVL desc
+            _allPools.sort(function(a,b){ return b.tvl - a.tvl; });
+
+            renderPoolRows(INITIAL_SHOW);
+            section.classList.add('visible');
+        } catch(e) {
+            section.classList.add('visible');
+        }
     }
 
     // ── Load saved slugs ──
@@ -319,6 +487,9 @@
     // ── Show more handlers ──
     document.getElementById('tokensShowMore').addEventListener('click', function () {
         renderTokenRows(_allTokens.length);
+    });
+    document.getElementById('poolsShowMore').addEventListener('click', function () {
+        renderPoolRows(_allPools.length);
     });
     document.getElementById('appsShowMore').addEventListener('click', function () {
         renderAppRows(_allApps.length);
