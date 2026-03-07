@@ -753,11 +753,36 @@
         } catch (e) {
             clearInterval(thinkingInterval);
             if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
-            var errMsg = 'Network error. Please try again.';
-            if (e && e.message && e.message.includes('504')) {
-                errMsg = 'Request timed out — the app may be too complex. Try a simpler change or start fresh.';
+
+            // If we already received partial streamed data, try to use it
+            if (streamedText && streamedText.length > 100) {
+                var partialCode = extractHtmlClient(streamedText);
+                appendMessage('assistant', streamedText + '\n\n⚠️ Connection interrupted — showing partial result.', partialCode);
+                if (partialCode) {
+                    // Check if it looks complete enough to use
+                    var looksComplete = partialCode.includes('</html>') && partialCode.includes('</script>');
+                    if (looksComplete) {
+                        if (state.currentCode) {
+                            state.codeHistory.push(state.currentCode);
+                            if (state.codeHistory.length > 20) state.codeHistory.shift();
+                            updateUndoBtn();
+                        }
+                        state.currentCode = partialCode;
+                        updatePreview(partialCode);
+                        showPreviewBadge();
+                    } else {
+                        appendMessage('assistant', '⚠️ Code was incomplete. Try sending your request again.');
+                    }
+                }
+            } else {
+                var errMsg = 'Network error. Please try again.';
+                if (e && e.message && e.message.includes('504')) {
+                    errMsg = 'Request timed out — the app may be too complex. Try a simpler change or start fresh.';
+                } else if (e && e.message && e.message.includes('timed out')) {
+                    errMsg = 'Stream timed out. Try a simpler request or start fresh.';
+                }
+                appendMessage('assistant', errMsg);
             }
-            appendMessage('assistant', errMsg);
         }
 
         // Clear attachments after send

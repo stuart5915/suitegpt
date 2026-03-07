@@ -641,6 +641,11 @@ export default async function handler(req, res) {
         const decoder = new TextDecoder();
         let buffer = '';
 
+        // Keep-alive: send SSE comment every 15s to prevent proxy/CDN timeouts
+        const keepAlive = setInterval(() => {
+            try { res.write(': keepalive\n\n'); } catch (e) {}
+        }, 15000);
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -669,6 +674,8 @@ export default async function handler(req, res) {
                 } catch (e) { /* skip unparseable lines */ }
             }
         }
+
+        clearInterval(keepAlive);
 
         let code = null;
         if (isEditMode) {
@@ -754,6 +761,7 @@ export default async function handler(req, res) {
         return res.end();
 
     } catch (error) {
+        if (typeof keepAlive !== 'undefined') clearInterval(keepAlive);
         console.error('Build studio error:', error);
 
         // Attempt to save partial work if we have a session and any streamed text
