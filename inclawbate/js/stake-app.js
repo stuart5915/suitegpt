@@ -600,9 +600,6 @@ function renderOverview() {
         if (key === 'claws') return;
         var result = buildPoolCard(key, pool);
         totalTvl += result.tvl;
-        // Partner & legacy pools live on /partners now — skip on overview
-        if (pool.category === 'partner' || pool.category === 'legacy') return;
-
         if (pool.category === 'rewards') {
             rewardsHtml += result.html;
         } else if (pool.category === 'inclawbator') {
@@ -628,7 +625,7 @@ function renderOverview() {
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid, legacyGrid].filter(Boolean).forEach(function(grid) {
+    [rewardsGrid, ubiGrid, inclawbatorGrid].filter(Boolean).forEach(function(grid) {
         grid.querySelectorAll('.stake-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 var href = card.getAttribute('href');
