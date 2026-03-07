@@ -449,37 +449,12 @@ export default async function handler(req, res) {
     const tierKey = req.body?.model || 'fast';
     const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
 
-    // Credit check (skip for anonymous — they get free fast tier)
-    if (!anonymous && !admin && (!profile || profile.credits < tier.credits)) {
-        return res.status(402).json({
-            error: 'Not enough credits. ' + tier.label + ' requires ' + tier.credits + ' credits.',
-            credits: profile?.credits || 0
-        });
-    }
+    // Credits no longer gated — free for all users
+    let creditsRemaining = profile?.credits || 0;
 
     const { ANTHROPIC_API_KEY } = process.env;
     if (!ANTHROPIC_API_KEY) {
         return res.status(500).json({ error: 'AI service not configured.' });
-    }
-
-    // Deduct credits BEFORE calling Claude so users can't skip payment
-    let creditsRemaining = profile?.credits || 0;
-    if (!anonymous && !admin) {
-        const { data: updated, error: creditErr } = await supabase
-            .from('human_profiles')
-            .update({ credits: profile.credits - tier.credits })
-            .eq('id', profileId)
-            .gte('credits', tier.credits)
-            .select('credits')
-            .single();
-
-        if (creditErr || !updated) {
-            return res.status(402).json({
-                error: 'Failed to deduct credits.',
-                credits: profile?.credits || 0
-            });
-        }
-        creditsRemaining = updated.credits;
     }
 
     // Hoisted for access in catch block (partial save on error)
