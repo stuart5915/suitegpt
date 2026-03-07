@@ -246,8 +246,8 @@ function renderAppCards(apps) {
                 <button type="button" class="overview-item-action app-actions-toggle">Manage</button>
                 <div class="app-actions-menu">
                     <a href="/s/${esc(a.slug || a.id)}" target="_blank">View App</a>
-                    <button type="button" class="app-actions-rename">Rename</button>
-                    <button type="button" class="app-actions-edit">Edit</button>
+                    <button type="button" class="app-actions-details">Edit Details</button>
+                    <button type="button" class="app-actions-edit">Keep Building</button>
                     <button type="button" class="app-actions-delete" data-id="${esc(a.id)}" data-name="${esc(a.name || 'Untitled App')}">Delete</button>
                 </div>
             </div>
@@ -261,28 +261,10 @@ function renderAppCards(apps) {
             if (!wasOpen) menu.classList.add('open');
         });
 
-        el.querySelector('.app-actions-rename').addEventListener('click', async (e) => {
+        el.querySelector('.app-actions-details').addEventListener('click', (e) => {
             e.stopPropagation();
             closeAllAppMenus();
-            const newName = prompt('Rename app:', a.name || 'Untitled App');
-            if (!newName || newName.trim() === (a.name || '')) return;
-            try {
-                const token = localStorage.getItem('inclawbate_token');
-                const resp = await fetch('/api/inclawbate/apps', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ action: 'rename', app_id: a.id, new_name: newName.trim() })
-                });
-                const data = await resp.json();
-                if (data.renamed) {
-                    a.name = data.name;
-                    el.querySelector('.overview-item-title').textContent = data.name;
-                } else {
-                    alert(data.error || 'Rename failed');
-                }
-            } catch (err) {
-                alert('Rename failed: ' + err.message);
-            }
+            openEditDetailsModal(a, el);
         });
 
         el.querySelector('.app-actions-edit').addEventListener('click', (e) => {
@@ -316,6 +298,81 @@ function closeAllAppMenus() {
 }
 
 document.addEventListener('click', () => closeAllAppMenus());
+
+// ── Edit Details Modal ──
+function openEditDetailsModal(app, cardEl) {
+    // Remove any existing modal
+    document.querySelector('.edit-details-overlay')?.remove();
+
+    const cats = ['games','defi','social','tools','creative','other'];
+    const catOpts = cats.map(c => `<option value="${c}"${c === (app.category || 'other') ? ' selected' : ''}>${c[0].toUpperCase() + c.slice(1)}</option>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'edit-details-overlay';
+    overlay.innerHTML = `
+        <div class="edit-details-modal">
+            <div class="edit-details-header">Edit Details</div>
+            <label class="edit-details-label">Name
+                <input type="text" class="edit-details-input" id="edName" value="${esc(app.name || '')}" maxlength="100">
+            </label>
+            <label class="edit-details-label">Description
+                <textarea class="edit-details-input edit-details-textarea" id="edDesc" maxlength="500" placeholder="What does this app do?">${esc(app.description || '')}</textarea>
+            </label>
+            <label class="edit-details-label">Category
+                <select class="edit-details-input" id="edCat">${catOpts}</select>
+            </label>
+            <label class="edit-details-label">Tags
+                <input type="text" class="edit-details-input" id="edTags" value="${esc(app.tags || '')}" placeholder="comma, separated, tags" maxlength="200">
+            </label>
+            <div class="edit-details-actions">
+                <button type="button" class="edit-details-cancel">Cancel</button>
+                <button type="button" class="edit-details-save">Save</button>
+            </div>
+        </div>
+    `;
+
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('.edit-details-cancel').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('.edit-details-save').addEventListener('click', async () => {
+        const saveBtn = overlay.querySelector('.edit-details-save');
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+        try {
+            const token = localStorage.getItem('inclawbate_token');
+            const resp = await fetch('/api/inclawbate/apps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({
+                    action: 'update-details',
+                    app_id: app.id,
+                    new_name: document.getElementById('edName').value,
+                    description: document.getElementById('edDesc').value,
+                    category: document.getElementById('edCat').value,
+                    tags: document.getElementById('edTags').value
+                })
+            });
+            const data = await resp.json();
+            if (data.updated) {
+                if (data.name !== undefined) { app.name = data.name; cardEl.querySelector('.overview-item-title').textContent = data.name; }
+                if (data.description !== undefined) app.description = data.description;
+                if (data.category !== undefined) { app.category = data.category; cardEl.querySelector('.overview-item-sub').textContent = `${app.upvote_count || 0} upvotes \u00b7 ${data.category}`; }
+                if (data.tags !== undefined) app.tags = data.tags;
+                overlay.remove();
+            } else {
+                alert(data.error || 'Save failed');
+                saveBtn.textContent = 'Save';
+                saveBtn.disabled = false;
+            }
+        } catch (err) {
+            alert('Save failed: ' + err.message);
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+        }
+    });
+
+    document.body.appendChild(overlay);
+    document.getElementById('edName').focus();
+}
 
 // ── Saved Apps ──
 async function loadSavedApps() {

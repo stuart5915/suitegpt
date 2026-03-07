@@ -607,7 +607,39 @@ export default async function handler(req, res) {
                 return res.json({ renamed: true, name: trimmed });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved, rename' });
+            // ── Update app details (owner only) ──
+            if (action === 'update-details') {
+                if (!app_id) return res.status(400).json({ error: 'app_id required' });
+
+                const { data: app } = await supabase
+                    .from('user_apps')
+                    .select('id, user_id')
+                    .eq('id', app_id)
+                    .single();
+                if (!app) return res.status(404).json({ error: 'App not found' });
+                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                    return res.status(403).json({ error: 'You can only edit your own apps' });
+                }
+
+                const updates = { updated_at: new Date().toISOString() };
+                const { new_name, description, category, tags } = req.body;
+                if (new_name !== undefined) updates.name = (new_name || '').trim().slice(0, 100) || 'Untitled App';
+                if (description !== undefined) updates.description = (description || '').trim().slice(0, 500);
+                if (category !== undefined) {
+                    const allowed = ['games', 'defi', 'social', 'tools', 'creative', 'other'];
+                    updates.category = allowed.includes(category) ? category : 'other';
+                }
+                if (tags !== undefined) updates.tags = (tags || '').trim().slice(0, 200);
+
+                const { error: updErr } = await supabase
+                    .from('user_apps')
+                    .update(updates)
+                    .eq('id', app_id);
+                if (updErr) throw updErr;
+                return res.json({ updated: true, ...updates });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved, rename, update-details' });
 
         } catch (err) {
             console.error('apps POST error:', err);
