@@ -632,6 +632,42 @@
             transform: none;
         }
 
+        /* ── Chain Selector ── */
+        .chain-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: var(--space-md);
+        }
+        .chain-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md, 10px);
+            border: 2px solid var(--border-default);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, color 0.2s;
+        }
+        .chain-btn:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .chain-btn.selected {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+        }
+        .chain-btn svg {
+            flex-shrink: 0;
+        }
+
         /* ── Allocation Tiers ── */
         .allocation-section {
             margin-top: var(--space-md);
@@ -1817,6 +1853,7 @@
         <a href="/apps" class="nav-link">Apps</a>
         <a href="/inclawbator" class="nav-link active">Inclawbator</a>
         <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/explore" class="nav-link">Explore</a>
         <a href="/blog" class="nav-link">Blog</a>
     </div>
 </nav>
@@ -1932,6 +1969,16 @@
         <!-- ── Launch Token ── -->
         <div id="drawerLaunch" class="drawer-content">
             <h3 class="drawer-title">&#128640; Launch Token</h3>
+            <div class="chain-selector" id="chainSelector">
+                <button class="chain-btn selected" data-chain="base" onclick="window.selectChain('base')">
+                    <svg width="18" height="18" viewBox="0 0 111 111" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M54.921 110.034C85.359 110.034 110.034 85.402 110.034 55.017C110.034 24.6319 85.359 0 54.921 0C26.0432 0 2.35281 22.1714 0 50.3923H72.8467V59.6416H0C2.35281 87.8625 26.0432 110.034 54.921 110.034Z" fill="currentColor"/></svg>
+                    Base
+                </button>
+                <button class="chain-btn" data-chain="solana" onclick="window.selectChain('solana')">
+                    <svg width="18" height="18" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.9 93.4c.7-.7 1.6-1.1 2.6-1.1h97.7c1.6 0 2.5 2 1.3 3.1L106.1 113c-.7.7-1.6 1.1-2.6 1.1H5.8c-1.6 0-2.5-2-1.3-3.1L21.9 93.4z" fill="currentColor"/><path d="M21.9 15c.7-.7 1.6-1.1 2.6-1.1h97.7c1.6 0 2.5 2 1.3 3.1L106.1 34.6c-.7.7-1.6 1.1-2.6 1.1H5.8c-1.6 0-2.5-2-1.3-3.1L21.9 15z" fill="currentColor"/><path d="M106.1 54c-.7-.7-1.6-1.1-2.6-1.1H5.8c-1.6 0-2.5 2-1.3 3.1L21.9 73.6c.7.7 1.6 1.1 2.6 1.1h97.7c1.6 0 2.5-2 1.3-3.1L106.1 54z" fill="currentColor"/></svg>
+                    Solana
+                </button>
+            </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="tokenName">Token Name</label>
@@ -1950,8 +1997,8 @@
                 <label class="form-label" for="launchWebsite">Website URL (optional)</label>
                 <input id="launchWebsite" class="form-input" type="url" placeholder="https://yourproject.com">
             </div>
-            <div class="allocation-section">
-                <label class="form-label">Dev Allocation (burn CLAWS for token supply)</label>
+            <div class="allocation-section" id="allocationSection">
+                <label class="form-label" id="allocationLabel">Dev Allocation (burn CLAWS for token supply)</label>
                 <div class="allocation-tiers" id="allocationTiers">
                     <div class="allocation-tier selected" data-pct="0" onclick="window.selectAllocationTier(0)">
                         <div class="allocation-tier-pct">None</div>
@@ -1980,6 +2027,11 @@
                 </div>
                 <div class="allocation-warning" id="allocationWarning">Insufficient CLAWS balance. You need more CLAWS to select this tier.</div>
                 <div class="allocation-lockup-note" id="allocationLockupNote" style="display:none">&#128274; Allocated tokens are locked for <strong>7 days</strong> after launch, then claimable from your dashboard.</div>
+            </div>
+            <div class="form-group" id="devBuyGroup">
+                <label class="form-label" for="devBuyAmount">Dev Buy <span id="devBuyUnit">(ETH)</span></label>
+                <input id="devBuyAmount" class="form-input" type="number" step="0.01" min="0" placeholder="0.00" style="font-family:var(--font-mono)">
+                <div style="font-size:0.8rem;color:var(--text-dim);margin-top:4px" id="devBuyHint">Buy your own token at launch with ETH. Leave blank to skip.</div>
             </div>
             <div class="drawer-info" style="margin-top:var(--space-md)">
                 <strong>Fee Structure</strong><br>
@@ -2198,7 +2250,7 @@
     <div id="successStep" class="success-card">
         <div class="success-icon">&#129438;</div>
         <h3 class="success-title">Token Deployed!</h3>
-        <p class="success-subtitle">Your token is live on Base. Here are the details:</p>
+        <p class="success-subtitle" id="successSubtitle">Your token is live on Base. Here are the details:</p>
         <div class="success-detail">
             <div class="success-detail-label">Token Address</div>
             <div class="success-detail-value deployed-address">&mdash;</div>
@@ -2526,6 +2578,7 @@
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="/js/inclawbator-app.js"></script>
 
 </body>

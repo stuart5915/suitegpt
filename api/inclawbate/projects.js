@@ -52,6 +52,31 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(204).end();
 
+    // GET — public: single project by slug
+    if (req.method === 'GET' && req.query.slug) {
+        const slug = req.query.slug.toLowerCase().trim();
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('slug', slug)
+            .single();
+
+        if (error || !data) return res.status(404).json({ error: 'Project not found' });
+        return res.status(200).json({ project: data });
+    }
+
+    // GET — public: list all projects
+    if (req.method === 'GET' && req.query.public === '1') {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ projects: data || [] });
+    }
+
     // GET — list projects by wallet
     if (req.method === 'GET') {
         const wallet = (req.query.wallet || '').toLowerCase().trim();
