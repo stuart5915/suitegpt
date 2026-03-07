@@ -543,12 +543,14 @@ function buildPoolRow(key, pool, rank) {
         : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
     var rowClass = pool.featured ? ' featured-row' : '';
+    var earnTicker = pool.rewardTicker || pool.ticker;
+    var earnTag = pool.retired ? '' : '<span class="stk-earn-tag">Earn $' + earnTicker + '</span>';
 
     return { tvl: tvl, apy: apy, stakers: stakers, html:
         '<tr class="stk-row' + rowClass + '" data-key="' + key + '" style="border-left-color:' + pool.color + '">' +
             '<td><span class="stk-rank">' + rank + '</span></td>' +
             '<td><div class="stk-name-cell">' + logoHtml +
-                '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span></div>' +
+                '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' + earnTag + '</div>' +
             '</div></td>' +
             '<td><span class="stk-apy' + (apy > 0 ? ' positive' : '') + '">' + apyStr + '</span></td>' +
             '<td><span class="stk-tvl">' + tvlStr + '</span></td>' +
