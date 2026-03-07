@@ -652,8 +652,9 @@ function openToolDrawer(tool) {
         return;
     }
 
-    // Connect wallet if not connected
-    if (!state.wallet) {
+    // Connect wallet if not connected (skip in embed mode — show form first)
+    var isEmbed = new URLSearchParams(window.location.search).get('embed') === '1';
+    if (!state.wallet && !isEmbed) {
         connectWallet().then(function() {
             if (state.wallet) openToolDrawer(tool);
         });
