@@ -107,6 +107,25 @@ export default async function handler(req, res) {
     // ── GET — list apps ──
     if (req.method === 'GET') {
         try {
+            // Saved apps for authenticated user
+            if (req.query.saved === 'true') {
+                const user = getUser(req);
+                if (!user) return res.status(401).json({ error: 'Login required' });
+                const { data: saved, error: savedErr } = await supabase
+                    .from('user_saved_apps')
+                    .select('app_slug')
+                    .eq('user_id', user.sub);
+                if (savedErr) throw savedErr;
+                if (!saved || !saved.length) return res.json({ apps: [] });
+                const slugs = saved.map(s => s.app_slug);
+                const { data: apps, error: appsErr } = await supabase
+                    .from('user_apps')
+                    .select('id, name, slug, description, category, app_url, created_at')
+                    .in('slug', slugs);
+                if (appsErr) throw appsErr;
+                return res.json({ apps: apps || [] });
+            }
+
             // Platform settings (public)
             if (req.query.get_settings) {
                 const { data: settings } = await supabase
@@ -314,7 +333,39 @@ export default async function handler(req, res) {
         if (!user) return res.status(401).json({ error: 'Login required' });
 
         try {
-            const { action, app_id, tx_hash, amount: tipAmount } = req.body;
+            const { action, app_id, app_slug, tx_hash, amount: tipAmount } = req.body;
+
+            // ── Save app ──
+            if (action === 'save') {
+                if (!app_slug) return res.status(400).json({ error: 'app_slug required' });
+                const { error: upsErr } = await supabase
+                    .from('user_saved_apps')
+                    .upsert({ user_id: user.sub, app_slug }, { onConflict: 'user_id,app_slug' });
+                if (upsErr) throw upsErr;
+                return res.json({ saved: true });
+            }
+
+            // ── Unsave app ──
+            if (action === 'unsave') {
+                if (!app_slug) return res.status(400).json({ error: 'app_slug required' });
+                await supabase
+                    .from('user_saved_apps')
+                    .delete()
+                    .eq('user_id', user.sub)
+                    .eq('app_slug', app_slug);
+                return res.json({ unsaved: true });
+            }
+
+            // ── Get saved slugs ──
+            if (action === 'get_saved') {
+                const { data: saved, error: gsErr } = await supabase
+                    .from('user_saved_apps')
+                    .select('app_slug')
+                    .eq('user_id', user.sub);
+                if (gsErr) throw gsErr;
+                return res.json({ slugs: (saved || []).map(s => s.app_slug) });
+            }
+
             if (!app_id) return res.status(400).json({ error: 'app_id required' });
 
             // ── Upvote ──
@@ -530,7 +581,7 @@ export default async function handler(req, res) {
                 return res.json({ claimed: true, count: claimed ? claimed.length : 0 });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous' });
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved' });
 
         } catch (err) {
             console.error('apps POST error:', err);

@@ -10,6 +10,7 @@
     let activeFilter = 'all';
     let searchQuery = '';
     let debounceTimer = null;
+    let savedSlugs = new Set();
 
     // ── Color from string ──
     function hashColor(str) {
@@ -19,7 +20,35 @@
         return 'hsl(' + hue + ', 55%, 35%)';
     }
 
-    // ── Render a single card ──
+    function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function formatMcap(n) {
+        if (!n || n <= 0) return '—';
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+        return '$' + n.toFixed(0);
+    }
+
+    function logoHtml(url, name, fallbackColor) {
+        if (url) return '<img class="exp-logo" src="' + url + '" alt="">';
+        var bg = fallbackColor || hashColor(name || '?');
+        return '<div class="exp-logo-ph" style="background:' + bg + '">' + (name || '?').charAt(0).toUpperCase() + '</div>';
+    }
+
+    function getAuth() {
+        try {
+            var token = localStorage.getItem('inclawbate_token');
+            if (token) return token;
+        } catch (e) {}
+        return null;
+    }
+
+    // ── Render a single project card (top grid) ──
     function cardHTML(p) {
         const logo = p.logo_url
             ? '<img class="project-card-logo" src="' + p.logo_url + '" alt="">'
@@ -43,21 +72,13 @@
         '</a>';
     }
 
-    function escapeHtml(s) {
-        var d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
-
-    // ── Filter + render ──
+    // ── Filter + render projects grid ──
     function render() {
         var q = searchQuery.toLowerCase();
         var filtered = allProjects.filter(function (p) {
-            // category filter
             if (activeFilter === 'app' && !p.app_slug) return false;
             if (activeFilter === 'token' && !p.token_address) return false;
             if (activeFilter === 'stake' && !p.staking_address) return false;
-            // search filter
             if (q) {
                 var hay = ((p.name || '') + ' ' + (p.description || '') + ' ' + (p.slug || '')).toLowerCase();
                 if (hay.indexOf(q) === -1) return false;
@@ -69,11 +90,10 @@
             grid.innerHTML = '<div class="explore-empty">No projects found.</div>';
             return;
         }
-
         grid.innerHTML = filtered.map(cardHTML).join('');
     }
 
-    // ── Load ──
+    // ── Load projects ──
     async function load() {
         try {
             var res = await fetch(API);
@@ -103,15 +123,6 @@
         });
     });
 
-    // ── Format market cap ──
-    function formatMcap(n) {
-        if (!n || n <= 0) return '—';
-        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
-        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-        if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-        return '$' + n.toFixed(0);
-    }
-
     // ── Hardcoded core tokens ──
     var CORE_TOKENS = [
         {
@@ -130,16 +141,15 @@
         }
     ];
 
-    // ── Load Tokens ──
+    // ── Load Tokens (table rows) ──
     async function loadTokens() {
         var section = document.getElementById('exploreTokens');
-        var grid = document.getElementById('exploreTokensGrid');
+        var tbody = document.getElementById('exploreTokensBody');
         try {
             var res = await fetch('/api/inclawbate/inclawbator');
             var json = await res.json();
             var projects = (json.projects || []).filter(function (p) { return p.token_address; });
 
-            // Merge core tokens if missing
             CORE_TOKENS.forEach(function (ct) {
                 var exists = projects.some(function (p) {
                     return p.token_address && p.token_address.toLowerCase() === ct.token_address.toLowerCase();
@@ -147,7 +157,6 @@
                 if (!exists) projects.unshift(ct);
             });
 
-            // Fetch mcaps from DexScreener
             var addresses = projects.map(function (p) { return p.token_address; }).filter(Boolean);
             var mcaps = {};
             if (addresses.length) {
@@ -160,10 +169,9 @@
                             mcaps[addr] = pair.marketCap;
                         }
                     });
-                } catch (e) { /* DexScreener unavailable */ }
+                } catch (e) {}
             }
 
-            // Attach mcap + sort by mcap desc
             projects.forEach(function (p) {
                 p._mcap = mcaps[(p.token_address || '').toLowerCase()] || 0;
             });
@@ -172,111 +180,122 @@
             var top = projects.slice(0, 6);
             if (!top.length) return;
 
-            grid.innerHTML = top.map(function (p) {
-                var logo = p.logo_url
-                    ? '<img class="mini-card-logo" src="' + p.logo_url + '" alt="">'
-                    : '<div class="mini-card-logo-placeholder" style="background:' + hashColor(p.token_name || p.token_symbol) + '">' + (p.token_symbol || '?').charAt(0) + '</div>';
+            tbody.innerHTML = top.map(function (p, i) {
+                var name = p.token_name || p.token_symbol;
                 var uniswap = 'https://app.uniswap.org/swap?outputCurrency=' + p.token_address + '&chain=base';
-                return '<div class="mini-card">' +
-                    '<div class="mini-card-top">' + logo +
-                        '<div class="mini-card-info">' +
-                            '<div class="mini-card-name">' + escapeHtml(p.token_name || p.token_symbol) + '</div>' +
-                            '<div class="mini-card-sub">$' + escapeHtml(p.token_symbol) + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="mini-card-footer">' +
-                        '<span class="mini-card-stat">' + formatMcap(p._mcap) + '</span>' +
-                        '<a href="' + uniswap + '" target="_blank" rel="noopener" class="mini-card-btn mini-card-btn--trade">Trade</a>' +
-                    '</div>' +
-                '</div>';
+                return '<tr onclick="window.open(\'' + uniswap + '\',\'_blank\')">' +
+                    '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
+                    '<td><div class="exp-name-cell">' + logoHtml(p.logo_url, name) +
+                        '<div><span class="exp-name">' + escapeHtml(name) + '</span><span class="exp-sub">$' + escapeHtml(p.token_symbol) + '</span></div>' +
+                    '</div></td>' +
+                    '<td><span class="exp-stat">' + formatMcap(p._mcap) + '</span></td>' +
+                    '<td><div class="exp-actions"><a href="' + uniswap + '" target="_blank" rel="noopener" class="exp-btn exp-btn--trade" onclick="event.stopPropagation()">Trade</a></div></td>' +
+                '</tr>';
             }).join('');
             section.classList.add('visible');
-        } catch (e) { /* silent */ }
+        } catch (e) {}
     }
 
     // ── Hardcoded staking pools ──
     var POOLS = [
-        {
-            name: 'CLAWS',
-            ticker: 'CLAWS',
-            logo: '/inclawbate/assets/clawslogo.jpg',
-            description: 'Stake CLAWS, earn CLAWS. No lock. No tiers.',
-            color: 'hsl(172, 50%, 42%)'
-        },
-        {
-            name: 'Salvation 4 Humanity',
-            ticker: 'S4H',
-            logo: null,
-            description: 'Stake S4H, earn INCLAWNCH. Powered by Inclawbate.',
-            color: 'hsl(45, 60%, 50%)'
-        },
-        {
-            name: 'CLAWNCH',
-            ticker: 'CLAWNCH',
-            logo: null,
-            description: 'Legacy CLAWNCH staking pool.',
-            color: 'hsl(260, 50%, 50%)'
-        }
+        { name: 'CLAWS', ticker: 'CLAWS', logo: '/inclawbate/assets/clawslogo.jpg', description: 'Stake CLAWS, earn CLAWS. No lock. No tiers.', color: 'hsl(172, 50%, 42%)' },
+        { name: 'Salvation 4 Humanity', ticker: 'S4H', logo: null, description: 'Stake S4H, earn INCLAWNCH. Powered by Inclawbate.', color: 'hsl(45, 60%, 50%)' },
+        { name: 'CLAWNCH', ticker: 'CLAWNCH', logo: null, description: 'Legacy CLAWNCH staking pool.', color: 'hsl(260, 50%, 50%)' }
     ];
 
-    // ── Load Pools ──
+    // ── Load Pools (table rows) ──
     function loadPools() {
         var section = document.getElementById('explorePools');
-        var grid = document.getElementById('explorePoolsGrid');
-        grid.innerHTML = POOLS.map(function (pool) {
-            var logo = pool.logo
-                ? '<img class="mini-card-logo" src="' + pool.logo + '" alt="">'
-                : '<div class="mini-card-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
-            return '<div class="mini-card">' +
-                '<div class="mini-card-top">' + logo +
-                    '<div class="mini-card-info">' +
-                        '<div class="mini-card-name">' + escapeHtml(pool.name) + '</div>' +
-                        '<div class="mini-card-sub">$' + escapeHtml(pool.ticker) + '</div>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="mini-card-desc">' + escapeHtml(pool.description) + '</div>' +
-                '<div class="mini-card-footer">' +
-                    '<span></span>' +
-                    '<a href="/stake" class="mini-card-btn mini-card-btn--stake">Stake</a>' +
-                '</div>' +
-            '</div>';
+        var tbody = document.getElementById('explorePoolsBody');
+        tbody.innerHTML = POOLS.map(function (pool, i) {
+            return '<tr onclick="window.location.href=\'/stake\'">' +
+                '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
+                '<td><div class="exp-name-cell">' + logoHtml(pool.logo, pool.name, pool.color) +
+                    '<div><span class="exp-name">' + escapeHtml(pool.name) + '</span><span class="exp-sub">$' + escapeHtml(pool.ticker) + '</span></div>' +
+                '</div></td>' +
+                '<td><span class="exp-desc">' + escapeHtml(pool.description) + '</span></td>' +
+                '<td><div class="exp-actions"><a href="/stake" class="exp-btn exp-btn--stake" onclick="event.stopPropagation()">Stake</a></div></td>' +
+            '</tr>';
         }).join('');
         section.classList.add('visible');
     }
 
-    // ── Load Apps ──
+    // ── Load saved slugs ──
+    async function loadSavedSlugs() {
+        var token = getAuth();
+        if (!token) return;
+        try {
+            var res = await fetch('/api/inclawbate/apps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ action: 'get_saved' })
+            });
+            var json = await res.json();
+            (json.slugs || []).forEach(function (s) { savedSlugs.add(s); });
+        } catch (e) {}
+    }
+
+    // ── Save / Unsave app ──
+    window.toggleSaveApp = async function (slug, btn) {
+        var token = getAuth();
+        if (!token) return;
+        var isSaved = savedSlugs.has(slug);
+        var action = isSaved ? 'unsave' : 'save';
+        try {
+            var res = await fetch('/api/inclawbate/apps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ action: action, app_slug: slug })
+            });
+            if (res.ok) {
+                if (isSaved) {
+                    savedSlugs.delete(slug);
+                    btn.classList.remove('saved');
+                    btn.textContent = 'Save';
+                } else {
+                    savedSlugs.add(slug);
+                    btn.classList.add('saved');
+                    btn.textContent = 'Saved';
+                }
+            }
+        } catch (e) {}
+    };
+
+    // ── Load Apps (table rows) ──
     async function loadApps() {
         var section = document.getElementById('exploreApps');
-        var grid = document.getElementById('exploreAppsGrid');
+        var tbody = document.getElementById('exploreAppsBody');
         try {
             var res = await fetch('/api/inclawbate/apps?sort=trending&limit=6');
             var json = await res.json();
             var apps = json.apps || [];
             if (!apps.length) return;
 
-            grid.innerHTML = apps.map(function (app) {
-                var initial = (app.name || '?').charAt(0);
-                var logo = '<div class="mini-card-logo-placeholder" style="background:' + hashColor(app.name || app.slug) + '">' + initial + '</div>';
-                return '<a href="/s/' + app.slug + '" class="mini-card" style="text-decoration:none">' +
-                    '<div class="mini-card-top">' + logo +
-                        '<div class="mini-card-info">' +
-                            '<div class="mini-card-name">' + escapeHtml(app.name) + '</div>' +
-                            (app.category ? '<div class="mini-card-sub">' + escapeHtml(app.category) + '</div>' : '') +
-                        '</div>' +
-                    '</div>' +
-                    (app.description ? '<div class="mini-card-desc">' + escapeHtml(app.description) + '</div>' : '') +
-                    '<div class="mini-card-footer">' +
-                        '<span></span>' +
-                        '<span class="mini-card-btn mini-card-btn--use">Use</span>' +
-                    '</div>' +
-                '</a>';
+            var hasAuth = !!getAuth();
+
+            tbody.innerHTML = apps.map(function (app, i) {
+                var saveBtn = hasAuth
+                    ? '<button class="exp-btn exp-btn--save' + (savedSlugs.has(app.slug) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSaveApp(\'' + escapeHtml(app.slug) + '\',this)">' + (savedSlugs.has(app.slug) ? 'Saved' : 'Save') + '</button>'
+                    : '';
+                return '<tr onclick="window.location.href=\'/s/' + escapeHtml(app.slug) + '\'">' +
+                    '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
+                    '<td><div class="exp-name-cell">' + logoHtml(null, app.name || app.slug) +
+                        '<div><span class="exp-name">' + escapeHtml(app.name) + '</span>' +
+                        (app.category ? '<span class="exp-sub">' + escapeHtml(app.category) + '</span>' : '') +
+                        '</div></div></td>' +
+                    '<td><span class="exp-desc">' + escapeHtml(app.description || '') + '</span></td>' +
+                    '<td><div class="exp-actions">' + saveBtn +
+                        '<a href="/s/' + escapeHtml(app.slug) + '" class="exp-btn exp-btn--use" onclick="event.stopPropagation()">Use</a>' +
+                    '</div></td>' +
+                '</tr>';
             }).join('');
             section.classList.add('visible');
-        } catch (e) { /* silent */ }
+        } catch (e) {}
     }
 
+    // ── Init ──
     load();
     loadPools();
     loadTokens();
-    loadApps();
+    loadSavedSlugs().then(loadApps);
 })();

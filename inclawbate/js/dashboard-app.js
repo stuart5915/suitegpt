@@ -90,6 +90,7 @@ async function loadOverview() {
     _cachedUserApps = appsData?.apps || [];
     renderAppCards(_cachedUserApps);
 
+    loadSavedApps();
 }
 
 async function refreshCredits() {
@@ -290,6 +291,49 @@ function closeAllAppMenus() {
 }
 
 document.addEventListener('click', () => closeAllAppMenus());
+
+// ── Saved Apps ──
+async function loadSavedApps() {
+    const container = document.getElementById('savedAppsList');
+    if (!container) return;
+    try {
+        const res = await fetch(`${API_BASE}/apps?saved=true`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const json = await res.json();
+        const apps = json.apps || [];
+        if (!apps.length) {
+            container.innerHTML = '<div class="overview-empty"><p>No saved apps yet. <a href="/explore">Browse apps to save</a></p></div>';
+            return;
+        }
+        container.innerHTML = '';
+        apps.forEach(a => {
+            const el = document.createElement('div');
+            el.className = 'overview-item';
+            el.innerHTML = `
+                <div class="overview-item-info">
+                    <div class="overview-item-title">${esc(a.name || 'Untitled')}</div>
+                    <div class="overview-item-sub">${esc(a.category || 'App')}</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <a href="/s/${esc(a.slug)}" class="overview-item-action" style="text-decoration:none;">Open</a>
+                    <button type="button" class="overview-item-action" style="color:#f87171;border-color:hsla(0,60%,50%,0.3);background:none;cursor:pointer;" data-slug="${esc(a.slug)}">Remove</button>
+                </div>
+            `;
+            el.querySelector('button[data-slug]').addEventListener('click', async function () {
+                const slug = this.dataset.slug;
+                try {
+                    await fetch(`${API_BASE}/apps`, {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: JSON.stringify({ action: 'unsave', app_slug: slug })
+                    });
+                    loadSavedApps();
+                } catch (e) {}
+            });
+            container.appendChild(el);
+        });
+    } catch (e) {}
+}
 
 async function deleteApp(appId, appName) {
     if (!confirm(`Delete "${appName}"? This cannot be undone.`)) return;
