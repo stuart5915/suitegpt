@@ -1300,6 +1300,7 @@ async function openFundModal(poolAddr, poolName, projectId) {
                 <span class="fund-modal-input-suffix">CLAWS</span>
             </div>
             <div class="fund-modal-usd" id="fundUsd">&nbsp;</div>
+            <input type="range" class="fund-modal-slider" id="fundSlider" min="0" max="${Math.floor(clawsBalance)}" value="0" step="1">
             <div class="fund-modal-pct-row">
                 <button class="fund-modal-pct" data-pct="25">25%</button>
                 <button class="fund-modal-pct" data-pct="50">50%</button>
@@ -1331,9 +1332,16 @@ async function openFundModal(poolAddr, poolName, projectId) {
     document.body.appendChild(overlay);
 
     const amountInput = modal.querySelector('#fundAmount');
+    const slider = modal.querySelector('#fundSlider');
     const usdEl = modal.querySelector('#fundUsd');
     const summaryEl = modal.querySelector('#fundSummary');
     const durationInput = modal.querySelector('#fundDuration');
+    const maxBal = Math.floor(clawsBalance);
+
+    function updateSliderFill() {
+        const pct = maxBal > 0 ? (parseInt(slider.value) / maxBal) * 100 : 0;
+        slider.style.setProperty('--fill', pct + '%');
+    }
 
     function updateUsd() {
         const raw = parseInt((amountInput.value || '0').replace(/[^0-9]/g, '')) || 0;
@@ -1357,15 +1365,29 @@ async function openFundModal(poolAddr, poolName, projectId) {
         }
     }
 
+    // Slider → input
+    slider.addEventListener('input', () => {
+        const val = parseInt(slider.value) || 0;
+        amountInput.value = val > 0 ? val.toLocaleString('en-US') : '';
+        updateSliderFill();
+        updateUsd();
+    });
+
+    // Input → slider
     amountInput.addEventListener('input', () => {
         const raw = amountInput.value.replace(/[^0-9]/g, '');
         if (raw) {
             const pos = amountInput.selectionStart;
             const oldLen = amountInput.value.length;
-            amountInput.value = parseInt(raw).toLocaleString('en-US');
+            const num = parseInt(raw);
+            amountInput.value = num.toLocaleString('en-US');
             const newLen = amountInput.value.length;
             amountInput.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
+            slider.value = Math.min(num, maxBal);
+        } else {
+            slider.value = 0;
         }
+        updateSliderFill();
         updateUsd();
     });
 
@@ -1375,6 +1397,8 @@ async function openFundModal(poolAddr, poolName, projectId) {
             const pct = parseInt(btn.dataset.pct);
             const val = Math.floor(clawsBalance * pct / 100);
             amountInput.value = val > 0 ? val.toLocaleString('en-US') : '';
+            slider.value = val;
+            updateSliderFill();
             updateUsd();
         });
     });
