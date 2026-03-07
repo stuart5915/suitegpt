@@ -1340,17 +1340,20 @@ function selectChain(chain) {
     var devBuyHint = document.getElementById('devBuyHint');
     var feeBase = document.getElementById('feeStructureBase');
     var feeSolana = document.getElementById('feeStructureSolana');
+    var imageGroup = document.getElementById('imageUrlGroup');
 
     if (chain === 'solana') {
         if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'none';
         if (feeSolana) feeSolana.style.display = 'inline';
+        if (imageGroup) imageGroup.style.display = 'block';
     } else {
         if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'inline';
         if (feeSolana) feeSolana.style.display = 'none';
+        if (imageGroup) imageGroup.style.display = 'none';
     }
 }
 window.selectChain = selectChain;
@@ -1420,7 +1423,7 @@ async function handleSolanaLaunch() {
             name: name,
             symbol: symbol,
             description: desc,
-            image_url: ''
+            image_url: (document.getElementById('launchImageUrl') || {}).value || 'https://www.inclawbate.com/inclawbate/assets/inclawbate-logo.png'
         });
         if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
 
