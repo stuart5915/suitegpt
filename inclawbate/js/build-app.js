@@ -565,8 +565,9 @@
         var message = els.chatInput.value.trim();
         if (!message) return;
 
-        // Reset auto-fix counter for user-initiated messages
-        if (message.indexOf('The generated code has runtime') !== 0) {
+        // Reset auto-fix counter for user-initiated messages (not auto-retries)
+        if (message.indexOf('The generated code has runtime') !== 0 &&
+            message.indexOf('The previous output was truncated') !== 0) {
             state.autoFixAttempts = 0;
         }
 
