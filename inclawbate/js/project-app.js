@@ -145,8 +145,7 @@ function renderProject() {
     if (p.website_url) linksHtml += '<a href="' + escapeHtml(p.website_url) + '" target="_blank" rel="noopener" class="project-link">Website</a>';
     if (p.x_handle) linksHtml += '<a href="https://x.com/' + escapeHtml(p.x_handle) + '" target="_blank" rel="noopener" class="project-link">@' + escapeHtml(p.x_handle) + '</a>';
     if (p.telegram_url) linksHtml += '<a href="' + escapeHtml(p.telegram_url) + '" target="_blank" rel="noopener" class="project-link">Telegram</a>';
-    if (p.token_address) linksHtml += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="project-link">Clanker</a>';
-    if (p.token_address) linksHtml += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="project-link">Uniswap</a>';
+    if (p.token_address) linksHtml += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="project-link">Buy on Clanker</a>';
     if (p.staking_address) linksHtml += '<a href="/stake" class="project-link">Stake</a>';
     document.getElementById('projectLinks').innerHTML = linksHtml;
 
