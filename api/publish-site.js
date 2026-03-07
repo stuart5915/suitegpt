@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
     try {
         const { name, slug, code, email, description, source, update,
-                category, claws_price, creator_wallet, creator_x_handle, tags, is_listed,
+                category, claws_price, creator_wallet, creator_x_handle, tags, is_listed, featured,
                 forked_from_user_app, revenue_split, user_id } = req.body;
 
         // Validate required fields
@@ -150,6 +150,7 @@ export default async function handler(req, res) {
             if (creator_x_handle) updatePayload.creator_x_handle = creator_x_handle;
             if (tags) updatePayload.tags = tags;
             if (is_listed !== undefined) updatePayload.is_listed = is_listed;
+            if (featured !== undefined) updatePayload.featured = featured;
             if (user_id) updatePayload.user_id = user_id;
 
             let { error: updateErr } = await supabase
