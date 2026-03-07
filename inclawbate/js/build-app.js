@@ -633,9 +633,16 @@
             var contentType = resp.headers.get('content-type') || '';
             if (!contentType.includes('text/event-stream')) {
                 clearInterval(thinkingInterval);
-                if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
-                var data = await resp.json();
-                if (resp.status === 401) { if (isLoggedIn()) { logout(); } else { appendMessage('assistant', data.error || 'Anonymous building is currently disabled. Please log in.'); } state.sending = false; els.chatSend.disabled = false; return; }
+                if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+                var data;
+                try { data = await resp.json(); } catch (jsonErr) { data = { error: 'Server error (' + resp.status + '). Please try again.' }; }
+                if (resp.status === 401) {
+                    appendMessage('assistant', data.error || 'Session expired. Please log in to continue.');
+                    if (isLoggedIn()) logout();
+                    state.sending = false;
+                    els.chatSend.disabled = false;
+                    return;
+                }
                 appendMessage('assistant', data.error || 'Something went wrong.');
                 if (resp.status === 402) openBuyCredits();
                 state.sending = false;
@@ -709,7 +716,7 @@
 
             // Remove thinking indicator
             clearInterval(thinkingInterval);
-            if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+            if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             var finalCode = doneData ? doneData.code : extractHtmlClient(streamedText);
 
             // Guard: if response is just metadata (model ID, etc.) and no code, treat as error
@@ -718,7 +725,11 @@
                 streamedText = 'Something went wrong — the AI returned an empty response. Please try again.';
             }
 
-            appendMessage('assistant', streamedText, finalCode);
+            if (!streamedText.trim() && !finalCode) {
+                appendMessage('assistant', 'No response from AI. Please try again.');
+            } else {
+                appendMessage('assistant', streamedText, finalCode);
+            }
 
             if (doneData) {
                 if (doneData.credits_remaining !== undefined) {
@@ -752,7 +763,7 @@
 
         } catch (e) {
             clearInterval(thinkingInterval);
-            if (thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
+            if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
 
             // If we already received partial streamed data, try to use it
             if (streamedText && streamedText.length > 100) {
