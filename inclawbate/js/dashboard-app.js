@@ -2702,7 +2702,7 @@ function openCreateProjectModal(existingProject) {
                 const res = await fetch('/api/inclawbate/upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ file: reader.result, filename: file.name }),
+                    body: JSON.stringify({ file_data: reader.result, file_name: file.name, file_type: file.type }),
                 });
                 const data = await res.json();
                 if (data.url) {
