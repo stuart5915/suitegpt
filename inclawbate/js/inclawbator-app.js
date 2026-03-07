@@ -1338,13 +1338,19 @@ function selectChain(chain) {
 
     var devBuyUnit = document.getElementById('devBuyUnit');
     var devBuyHint = document.getElementById('devBuyHint');
+    var feeBase = document.getElementById('feeStructureBase');
+    var feeSolana = document.getElementById('feeStructureSolana');
 
     if (chain === 'solana') {
         if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
+        if (feeBase) feeBase.style.display = 'none';
+        if (feeSolana) feeSolana.style.display = 'inline';
     } else {
         if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
+        if (feeBase) feeBase.style.display = 'inline';
+        if (feeSolana) feeSolana.style.display = 'none';
     }
 }
 window.selectChain = selectChain;
