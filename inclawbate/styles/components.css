@@ -41,6 +41,66 @@
     border-radius: 1px;
 }
 
+/* ── Nav Link Dropdowns ── */
+.nav-group {
+    position: relative;
+}
+.nav-group > .nav-link {
+    cursor: default;
+}
+.nav-group > .nav-link::before {
+    content: '';
+    display: inline-block;
+    width: 0; height: 0;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 4px solid currentColor;
+    margin-left: 5px;
+    vertical-align: 1px;
+    opacity: 0.5;
+    transition: transform 0.2s;
+}
+.nav-group:hover > .nav-link::before { transform: rotate(180deg); }
+.nav-group-menu {
+    position: absolute;
+    top: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    min-width: 150px;
+    background: hsla(240, 10%, 8%, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 200;
+}
+.nav-group:hover .nav-group-menu {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+.nav-group-menu a {
+    display: block;
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.nav-group-menu a:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+.nav-group-menu a.active {
+    color: var(--lobster-400);
+}
+
 /* ── Buttons ── */
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: var(--space-sm);
@@ -409,6 +469,22 @@
     .nav-link:last-of-type { border-bottom: none; }
 
     .nav-link.active::after { display: none; }
+
+    .nav-group > .nav-link { display: none; }
+    .nav-group-menu {
+        position: static;
+        opacity: 1; pointer-events: auto;
+        transform: none;
+        background: none; border: none; backdrop-filter: none;
+        padding: 0; min-width: 0;
+        display: flex; flex-direction: column;
+    }
+    .nav-group-menu a {
+        padding: var(--space-md) 0;
+        border-bottom: 1px solid hsla(240, 4%, 16%, 0.4);
+        border-radius: 0;
+        font-size: 0.82rem;
+    }
 
     .nav-links .btn-x.btn-sm {
         margin-top: var(--space-sm);
