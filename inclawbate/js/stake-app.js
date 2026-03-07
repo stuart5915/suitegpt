@@ -182,9 +182,13 @@ function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
 function pad32(hex) { return hex.replace('0x', '').padStart(64, '0'); }
 function toHex(n) { return '0x' + BigInt(n).toString(16); }
 function toWei(amount) { return BigInt(Math.floor(amount)) * BigInt('1000000000000000000'); }
+function safeBigInt(hex) {
+    if (!hex || hex === '0x' || hex === '0x0') return 0n;
+    try { return BigInt(hex); } catch (e) { return 0n; }
+}
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 var fmt = function(n) { return Math.round(Number(n) || 0).toLocaleString('en-US'); };
 function fmtUsd(n) {
@@ -430,9 +434,9 @@ async function fetchAllPoolStats() {
         if (allFailed && poolStats[POOL_KEYS[i]]) continue;
 
         var totalStaked = fromWei(results[base]);
-        var stakerCount = Number(BigInt(results[base + 1] || '0x0'));
+        var stakerCount = Number(safeBigInt(results[base + 1]));
         var rewardRate = fromWei(results[base + 2]);
-        var periodEnd = Number(BigInt(results[base + 3] || '0x0'));
+        var periodEnd = Number(safeBigInt(results[base + 3]));
         var rewardPool = fromWei(results[base + 4]);
         var apy = 0;
         if (totalStaked > 0 && rewardRate > 0) {
@@ -940,7 +944,7 @@ async function refreshPoolStats(key) {
     if (allFailed && poolStats[key]) return;
 
     var totalStaked = fromWei(results[0]);
-    var stakerCount = Number(BigInt(results[1] || '0x0'));
+    var stakerCount = Number(safeBigInt(results[1]));
     var rewardRate = fromWei(results[2]);
     var rewardPool = fromWei(results[4]);
     var rawApy = totalStaked > 0 && rewardRate > 0 ? (rewardRate * 86400 * 365 / totalStaked) * 100 : 0;
@@ -949,7 +953,7 @@ async function refreshPoolStats(key) {
         apy = rawApy * (poolPrices[key + '_reward'] / poolPrices[key]);
     }
 
-    poolStats[key] = { totalStaked: totalStaked, stakerCount: stakerCount, rewardRate: rewardRate, periodEnd: Number(BigInt(results[3] || '0x0')), rewardPool: rewardPool, apy: apy };
+    poolStats[key] = { totalStaked: totalStaked, stakerCount: stakerCount, rewardRate: rewardRate, periodEnd: Number(safeBigInt(results[3])), rewardPool: rewardPool, apy: apy };
 
     document.getElementById('poolApy').textContent = POOLS[key].retired ? '0%' : (apy > 0 ? Math.round(apy).toLocaleString('en-US') + '%' : '--');
     document.getElementById('poolTotalStaked').textContent = totalStaked > 0 ? fmt(totalStaked) : '--';
@@ -1029,7 +1033,7 @@ async function doPoolStake() {
             method: 'eth_call',
             params: [{ to: pool.token, data: allowanceData }, 'latest']
         });
-        var currentAllowance = BigInt(allowanceRes || '0x0');
+        var currentAllowance = safeBigInt(allowanceRes);
 
         // Approve if needed
         if (currentAllowance < amountWei) {
@@ -1125,7 +1129,7 @@ async function doPoolUnstake() {
     var stakedAmount = fromWei(balRes);
     var earnedAmount = fromWei(earnedRes);
 
-    if (BigInt(balRes || '0x0') === 0n) {
+    if (safeBigInt(balRes) === 0n) {
         stakeToast('Nothing staked', 'error');
         return;
     }
@@ -1287,11 +1291,11 @@ async function fetchAdminStats(pool, key) {
     ]);
 
     var rewardRate = fromWei(results[0]);
-    var periodEnd = Number(BigInt(results[1] || '0x0'));
+    var periodEnd = Number(safeBigInt(results[1]));
     var rewardsLeft = fromWei(results[2]);
     var totalDeposited = fromWei(results[3]);
     var totalClaimed = fromWei(results[4]);
-    var isPaused = BigInt(results[5] || '0x0') !== 0n;
+    var isPaused = safeBigInt(results[5]) !== 0n;
 
     // Reward rate as tokens/day
     var tokensPerDay = rewardRate * 86400;
@@ -1418,7 +1422,7 @@ async function doDepositRewards() {
             method: 'eth_call',
             params: [{ to: depositTokenAddr, data: allowanceData }, 'latest']
         });
-        var currentAllowance = BigInt(allowanceRes || '0x0');
+        var currentAllowance = safeBigInt(allowanceRes);
 
         if (currentAllowance < amountWei) {
             status.textContent = 'Requesting token approval...';
