@@ -199,17 +199,25 @@ function renderTable() {
               + '<div class="tok-logo-placeholder" style="display:none;background:' + logoColor + '">' + name[0].toUpperCase() + '</div>'
             : '<div class="tok-logo-placeholder" style="background:' + logoColor + '">' + name[0].toUpperCase() + '</div>';
 
-        var badges = '<span class="' + tier.cls + '">' + tier.label + '</span>';
+        var isSolana = p.chain === 'solana';
+        var chainBadge = isSolana
+            ? '<span class="lp-badge-chain lp-chain-solana">Solana</span>'
+            : '<span class="lp-badge-chain lp-chain-base">Base</span>';
+        var badges = chainBadge + '<span class="' + tier.cls + '">' + tier.label + '</span>';
         if (p.staking_address) badges += '<span class="lp-badge-staking">Staking</span>';
         if (p.agent_enabled) badges += '<span class="lp-badge-agent">Agent</span>';
 
         var actions = '';
         var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
         if (p.token_address) {
-            if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
-                actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
+            if (isSolana) {
+                actions += '<a href="https://jup.ag/swap/SOL-' + p.token_address + '" target="_blank" rel="noopener" class="btn-uniswap" style="background:linear-gradient(135deg,#00d18c,#08b4c9)">Jupiter</a>';
+            } else {
+                if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
+                    actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
+                }
+                actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
             }
-            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
         }
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';

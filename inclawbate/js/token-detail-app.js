@@ -202,6 +202,7 @@ function render() {
         + '<span class="td-name">' + escapeHtml(p.token_name) + '</span>'
         + '<span class="td-symbol">$' + escapeHtml(p.token_symbol) + '</span>'
         + '<span class="td-tier ' + tierCls + '">' + tierLabel + '</span>'
+        + '<span class="td-tier" style="background:' + (p.chain === 'solana' ? 'rgba(0,209,140,0.12);color:#00d18c' : 'rgba(56,133,255,0.15);color:#3885ff') + '">' + (p.chain === 'solana' ? 'Solana' : 'Base') + '</span>'
         + '</div>'
         + (p.description ? '<p class="td-desc">' + escapeHtml(p.description) + '</p>' : '')
         + '</div></div>';
@@ -237,12 +238,18 @@ function render() {
         var tgHref = p.telegram_url.startsWith('http') ? p.telegram_url : 'https://' + p.telegram_url;
         html += '<a href="' + escapeHtml(tgHref) + '" target="_blank" rel="noopener" class="td-link td-link-telegram">Telegram</a>';
     }
-    if (p.is_clanker !== false && p.token_address) {
-        html += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-clanker">Clanker</a>';
-    }
-    if (p.token_address) {
-        html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap">Uniswap</a>';
-        html += '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
+    var isSolana = p.chain === 'solana';
+    if (isSolana && p.token_address) {
+        html += '<a href="https://jup.ag/swap/SOL-' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-uniswap">Jupiter</a>';
+        html += '<a href="https://dexscreener.com/solana/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
+    } else {
+        if (p.is_clanker !== false && p.token_address) {
+            html += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-clanker">Clanker</a>';
+        }
+        if (p.token_address) {
+            html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap">Uniswap</a>';
+            html += '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
+        }
     }
     if (p.staking_address && p.token_symbol) {
         html += '<a href="/stake/' + p.token_symbol.toLowerCase() + '" class="td-link td-link-stake">Stake</a>';
@@ -254,8 +261,9 @@ function render() {
 
     // ── DexScreener Chart Embed ──
     if (p.token_address) {
+        var dsNetwork = isSolana ? 'solana' : 'base';
         html += '<div class="td-chart">'
-            + '<iframe src="https://dexscreener.com/base/' + p.token_address + '?embed=1&theme=dark&info=0" allowfullscreen></iframe>'
+            + '<iframe src="https://dexscreener.com/' + dsNetwork + '/' + p.token_address + '?embed=1&theme=dark&info=0" allowfullscreen></iframe>'
             + '</div>';
     }
 
