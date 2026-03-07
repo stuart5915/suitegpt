@@ -43,11 +43,11 @@ function decodeTxData(data) {
         throw new Error('Unknown tx object format. Keys: ' + keys.slice(0, 5).join(','));
     }
     if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
-    // Try base64 first (contains +, /, = which base58 doesn't use)
-    if (/[+\/=]/.test(data) || /^[A-Za-z0-9+\/]+=*$/.test(data)) {
+    // Only try base64 if string contains +, /, or = (characters base58 never uses)
+    if (/[+\/=]/.test(data)) {
         try { return Uint8Array.from(atob(data), function(c) { return c.charCodeAt(0); }); } catch(e) {}
     }
-    // Base58 decode (Solana standard)
+    // Base58 decode (Solana standard — all Bags API transactions use this)
     var BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     var result = [0];
     for (var i = 0; i < data.length; i++) {
