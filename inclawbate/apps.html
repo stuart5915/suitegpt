@@ -1651,13 +1651,35 @@
         if (appId) openDetail(appId);
     });
 
-    // Prevent iframe focus from moving the scroll position
+    // Prevent iframes from stealing scroll position on load or focus
+    var _savedScrollY = 0;
+    var _scrollLocked = false;
+    function lockScroll() {
+        _savedScrollY = window.scrollY;
+        _scrollLocked = true;
+        requestAnimationFrame(function() {
+            if (_scrollLocked) {
+                window.scrollTo(0, _savedScrollY);
+                _scrollLocked = false;
+            }
+        });
+    }
     window.addEventListener('blur', function() {
-        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-            var y = window.scrollY;
-            requestAnimationFrame(function() { window.scrollTo(0, y); });
-        }
+        if (document.activeElement && document.activeElement.tagName === 'IFRAME') lockScroll();
     });
+    // Observe new iframes added to the DOM and lock scroll on load
+    var _iframeObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if (node.nodeType !== 1) return;
+                var iframes = node.tagName === 'IFRAME' ? [node] : node.querySelectorAll ? node.querySelectorAll('iframe') : [];
+                for (var i = 0; i < iframes.length; i++) {
+                    iframes[i].addEventListener('load', lockScroll);
+                }
+            });
+        });
+    });
+    _iframeObserver.observe(document.body, { childList: true, subtree: true });
 
     // ── Moderate (SUPER_ADMIN only) ──
     async function moderate(appId, moderateAction) {
