@@ -725,10 +725,12 @@
                 streamedText = 'Something went wrong — the AI returned an empty response. Please try again.';
             }
 
+            var responseShown = false;
             if (!streamedText.trim() && !finalCode) {
                 appendMessage('assistant', 'No response from AI. Please try again.');
             } else {
                 appendMessage('assistant', streamedText, finalCode);
+                responseShown = true;
             }
 
             if (doneData) {
@@ -756,8 +758,12 @@
                     updateUndoBtn();
                 }
                 state.currentCode = finalCode;
-                updatePreview(finalCode);
-                showPreviewBadge();
+                try {
+                    updatePreview(finalCode);
+                    showPreviewBadge();
+                } catch (previewErr) {
+                    console.warn('Preview update failed:', previewErr);
+                }
                 setTimeout(showSuggestionChips, 400);
             }
 
@@ -765,8 +771,11 @@
             clearInterval(thinkingInterval);
             if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
 
+            // If response was already displayed, don't show confusing "Network error"
+            if (responseShown) {
+                console.warn('Post-stream error (response already shown):', e);
             // If we already received partial streamed data, try to use it
-            if (streamedText && streamedText.length > 100) {
+            } else if (streamedText && streamedText.length > 100) {
                 var partialCode = extractHtmlClient(streamedText);
                 appendMessage('assistant', streamedText + '\n\n⚠️ Connection interrupted — showing partial result.', partialCode);
                 if (partialCode) {
@@ -779,8 +788,10 @@
                             updateUndoBtn();
                         }
                         state.currentCode = partialCode;
-                        updatePreview(partialCode);
-                        showPreviewBadge();
+                        try {
+                            updatePreview(partialCode);
+                            showPreviewBadge();
+                        } catch (pe) { console.warn('Preview failed:', pe); }
                     } else {
                         appendMessage('assistant', '⚠️ Code was incomplete. Try sending your request again.');
                     }
