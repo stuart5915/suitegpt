@@ -35,14 +35,12 @@ var POOLS = {
         color: 'hsl(172, 32%, 48%)',
         colorDim: 'hsla(172, 32%, 48%, 0.12)',
         glow: 'hsla(172, 32%, 48%, 0.18)',
-        description: 'Rewards have ended. Staking has migrated to CLAWS.',
+        description: 'Stake INCLAWNCH, earn rewards.',
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
-        category: 'legacy',
-        auditLink: '/audit/clawnch-rewards',
-        retired: true,
-        migratePool: 'claws'
+        category: 'inclawbator',
+        auditLink: '/audit/clawnch-rewards'
     },
     clawnch: {
         name: 'CLAWNCH',
@@ -60,7 +58,7 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
-        category: 'legacy',
+        category: 'inclawbator',
         auditLink: '/audit/clawnch-rewards'
     },
     s4h: {
@@ -80,7 +78,7 @@ var POOLS = {
         buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
         chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
         featured: false,
-        category: 'ubi',
+        category: 'inclawbator',
         auditLink: '/audit/clawnch-rewards'
     },
     clawnstr: {
@@ -130,7 +128,7 @@ var COMING_SOON = [
         glow: 'hsla(280, 60%, 55%, 0.18)',
         description: 'Wellness brand powering mindful living. Trading fees buy CLAWS and flow back to stakers.',
         platform: 'mirrormind.life',
-        category: 'ubi'
+        category: 'inclawbator'
     }
 ];
 
@@ -614,14 +612,14 @@ function renderOverview() {
         }
     });
 
-    // Coming soon pools in UBI section
+    // Coming soon pools in Inclawbator section
     COMING_SOON.forEach(function(pool) {
-        ubiHtml += buildComingSoonCard(pool);
+        inclawbatorHtml += buildComingSoonCard(pool);
     });
 
     rewardsGrid.innerHTML = rewardsHtml;
     rewardsSection.style.display = rewardsHtml ? '' : 'none';
-    ubiGrid.innerHTML = ubiHtml;
+    if (ubiGrid) ubiGrid.innerHTML = ubiHtml;
     inclawbatorGrid.innerHTML = inclawbatorHtml;
     inclawbatorSection.style.display = inclawbatorHtml ? '' : 'none';
 
@@ -630,7 +628,7 @@ function renderOverview() {
     document.getElementById('overviewPoolCount').textContent = POOL_KEYS.length + ' pool' + (POOL_KEYS.length !== 1 ? 's' : '');
 
     // Prevent default link navigation — use pushState
-    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid, legacyGrid].forEach(function(grid) {
+    [rewardsGrid, ubiGrid, partnerGrid, inclawbatorGrid, legacyGrid].filter(Boolean).forEach(function(grid) {
         grid.querySelectorAll('.stake-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 var href = card.getAttribute('href');
