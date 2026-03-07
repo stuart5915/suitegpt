@@ -708,6 +708,9 @@ function renderPoolPage(pool, key) {
     if (pool.auditLink) {
         linksHtml += '<a href="' + pool.auditLink + '" target="_blank" rel="noopener" class="pool-link pool-link--audit">&#128737; Audit Report</a>';
     }
+    if (key === 'claws') {
+        linksHtml += '<a href="/angel" class="pool-link pool-link--nft">&#128140; Angel NFT</a>';
+    }
     document.getElementById('poolLinks').innerHTML = linksHtml;
 
     // Coming soon — disable staking
