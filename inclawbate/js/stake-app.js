@@ -40,7 +40,8 @@ var POOLS = {
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
         category: 'inclawbator',
-        auditLink: '/audit/clawnch-rewards'
+        auditLink: '/audit/clawnch-rewards',
+        retired: true
     },
     s4h: {
         name: 'Salvation 4 Humanity',
