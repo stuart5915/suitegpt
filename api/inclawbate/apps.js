@@ -629,7 +629,7 @@ export default async function handler(req, res) {
                     const allowed = ['games', 'defi', 'social', 'tools', 'creative', 'other'];
                     updates.category = allowed.includes(category) ? category : 'other';
                 }
-                if (tags !== undefined) updates.tags = (tags || '').trim().slice(0, 200);
+                if (tags !== undefined) updates.tags = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
                 const { error: updErr } = await supabase
                     .from('user_apps')
