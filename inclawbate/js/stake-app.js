@@ -687,8 +687,13 @@ async function fetchAndShowUserRates() {
         var dailyReward = (stats.rewardRate * 86400) * (staked / stats.totalStaked);
         if (dailyReward <= 0) return;
 
-        var rewardTicker = POOLS[key].rewardTicker || POOLS[key].ticker;
-        var dailyStr = dailyReward >= 1 ? fmt(Math.round(dailyReward)) : dailyReward.toFixed(2);
+        // Show in USD if we have a reward price, otherwise skip (raw token amounts are confusing)
+        var rewardPrice = POOLS[key].rewardToken
+            ? (poolPrices[key + '_reward'] || 0)
+            : (poolPrices[key] || 0);
+        if (rewardPrice <= 0) return;
+        var dailyUsd = dailyReward * rewardPrice;
+        var dailyStr = dailyUsd >= 1 ? '$' + Math.round(dailyUsd).toLocaleString('en-US') : '$' + dailyUsd.toFixed(2);
 
         // Inject into the name wrap
         var row = document.querySelector('.stk-row[data-key="' + key + '"]');
@@ -697,7 +702,7 @@ async function fetchAndShowUserRates() {
         if (!wrapEl || wrapEl.querySelector('.stk-earning')) return;
         var badge = document.createElement('div');
         badge.className = 'stk-earning';
-        badge.textContent = 'You: ' + dailyStr + ' ' + rewardTicker + '/day';
+        badge.textContent = 'Earning ' + dailyStr + '/day';
         wrapEl.appendChild(badge);
     });
 }
