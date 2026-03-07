@@ -36,7 +36,7 @@ var POOLS = {
         colorDim: 'hsla(172, 32%, 48%, 0.12)',
         glow: 'hsla(172, 32%, 48%, 0.18)',
         description: 'Stake INCLAWNCH, earn rewards.',
-        buyLink: 'https://www.clanker.world/clanker/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xB0b6e0E9da530f68D713cC03a813B506205aC808&chain=base',
         chartLink: 'https://dexscreener.com/base/0xB0b6e0E9da530f68D713cC03a813B506205aC808',
         featured: false,
         category: 'inclawbator',
@@ -57,7 +57,7 @@ var POOLS = {
         glow: 'hsla(35, 38%, 38%, 0.18)',
         description: 'AI-powered online church community. Stake S4H, earn CLAWS rewards.',
         website: 'https://salvation4humanity.com',
-        buyLink: 'https://www.clanker.world/clanker/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07&chain=base',
         chartLink: 'https://dexscreener.com/base/0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07',
         featured: false,
         category: 'inclawbator',
@@ -76,7 +76,7 @@ var POOLS = {
         colorDim: 'hsla(32, 50%, 50%, 0.12)',
         glow: 'hsla(32, 50%, 50%, 0.18)',
         description: 'Stake CLAWNCH, earn INCLAWNCH rewards.',
-        buyLink: 'https://www.clanker.world/clanker/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be&chain=base',
         chartLink: 'https://dexscreener.com/base/0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
         featured: false,
         category: 'inclawbator',
@@ -93,7 +93,7 @@ var POOLS = {
         colorDim: 'hsla(0, 68%, 42%, 0.12)',
         glow: 'hsla(0, 68%, 42%, 0.18)',
         description: 'Web4 AI strategic treasury company.',
-        buyLink: 'https://www.clanker.world/clanker/0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1&chain=base',
         chartLink: 'https://dexscreener.com/base/0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
         featured: false,
         category: 'inclawbator'
@@ -110,7 +110,7 @@ var POOLS = {
         glow: 'hsla(220, 70%, 50%, 0.18)',
         description: 'Autonomous AI agent delivering Bitcoin and macro analysis with skin in the game. Stake BV7X, earn BV7X.',
         website: 'https://bv7x.ai',
-        buyLink: 'https://www.clanker.world/clanker/0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC',
+        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC&chain=base',
         chartLink: 'https://dexscreener.com/base/0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC',
         featured: false,
         category: 'inclawbator',
@@ -555,23 +555,13 @@ function buildPoolRow(key, pool, rank) {
         ? '<img class="stk-logo" src="' + pool.logo + '" alt="' + pool.name + '" onerror="this.style.display=\'none\'">'
         : '<div class="stk-logo-placeholder" style="background:' + pool.color + '">' + pool.ticker.charAt(0) + '</div>';
 
-    // Pool daily emission rate
-    var rateHtml = '';
-    var now = Math.floor(Date.now() / 1000);
-    if (!pool.retired && stats.rewardRate > 0 && stats.periodEnd > now) {
-        var dailyTotal = stats.rewardRate * 86400;
-        var rewardTicker = pool.rewardTicker || pool.ticker;
-        var dailyStr = dailyTotal >= 1 ? fmt(Math.round(dailyTotal)) : dailyTotal.toFixed(2);
-        rateHtml = '<span class="stk-pool-rate">' + dailyStr + ' ' + rewardTicker + '/day</span>';
-    }
-
     var rowClass = pool.featured ? ' featured-row' : '';
 
     return { tvl: tvl, apy: apy, stakers: stakers, html:
         '<tr class="stk-row' + rowClass + '" data-key="' + key + '" style="border-left-color:' + pool.color + '">' +
             '<td><span class="stk-rank">' + rank + '</span></td>' +
             '<td><div class="stk-name-cell">' + logoHtml +
-                '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + rateHtml + '</span>' +
+                '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' +
             '</div></td>' +
             '<td><span class="stk-apy' + (apy > 0 ? ' positive' : '') + '">' + apyStr + '</span></td>' +
             '<td><span class="stk-tvl">' + tvlStr + '</span></td>' +
@@ -720,7 +710,7 @@ async function fetchAndShowUserRates() {
         if (!nameEl || nameEl.querySelector('.stk-earning')) return;
         var badge = document.createElement('span');
         badge.className = 'stk-earning';
-        badge.textContent = 'You: ' + dailyStr + ' ' + rewardTicker + '/day';
+        badge.textContent = dailyStr + ' ' + rewardTicker + '/day';
         nameEl.appendChild(badge);
     });
 }
@@ -2072,7 +2062,7 @@ async function handlePoolModalDeploy() {
                         staking: p.staking_address, decimals: 18, logo: p.logo_url || '',
                         color: p.color || 'hsl(172, 32%, 48%)', colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
                         glow: p.glow || 'hsla(172, 32%, 48%, 0.18)', description: p.description || '',
-                        buyLink: 'https://www.clanker.world/clanker/' + p.token_address,
+                        buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
                         chartLink: 'https://dexscreener.com/base/' + p.token_address,
                         featured: false, category: 'inclawbator', dynamic: true
                     };
@@ -2123,7 +2113,7 @@ async function init() {
                     colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
                     glow: p.glow || 'hsla(172, 32%, 48%, 0.18)',
                     description: p.description || '',
-                    buyLink: 'https://www.clanker.world/clanker/' + p.token_address,
+                    buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
                     chartLink: 'https://dexscreener.com/base/' + p.token_address,
                     featured: false,
                     category: 'inclawbator',

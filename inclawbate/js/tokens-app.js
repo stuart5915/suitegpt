@@ -218,12 +218,10 @@ function renderTable() {
         var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
         if (p.token_address) {
             if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
-                // Clanker-launched tokens: Clanker is the primary buy link (V4 hooks)
-                actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Buy</a>';
-            } else {
-                // CLAWS: Uniswap is the buy link (not on Clanker)
-                actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Buy</a>';
+                actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
             }
+            var uniClass = 'btn-uniswap' + ((!mcapVal || mcapVal < 100000) ? ' low-liq' : '');
+            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="' + uniClass + '">Uniswap</a>';
         }
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
@@ -244,6 +242,11 @@ function renderTable() {
 
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    // Slippage tip for low-liquidity tokens
+    container.querySelectorAll('.btn-uniswap.low-liq').forEach(function(link) {
+        link.addEventListener('click', function(e) { showSlippageTip(e); });
+    });
 
     // Row click → navigate to project (but not if clicking a trade button)
     container.querySelectorAll('tr[data-href]').forEach(function(row) {

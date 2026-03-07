@@ -266,14 +266,12 @@ function render() {
         var tgHref = p.telegram_url.startsWith('http') ? p.telegram_url : 'https://' + p.telegram_url;
         html += '<a href="' + escapeHtml(tgHref) + '" target="_blank" rel="noopener" class="td-link td-link-telegram">Telegram</a>';
     }
+    if (p.is_clanker !== false && p.token_address) {
+        html += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-clanker">Clanker</a>';
+    }
     if (p.token_address) {
-        if (p.is_clanker !== false) {
-            // Clanker-launched: buy via Clanker (V4 hooks make Uniswap unreliable)
-            html += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-clanker">Buy on Clanker</a>';
-        } else {
-            // Non-Clanker token (e.g. CLAWS): buy via Uniswap
-            html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap">Buy on Uniswap</a>';
-        }
+        var lowLiq = (!m || !m.marketCap || m.marketCap < 100000);
+        html += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="td-link td-link-uniswap' + (lowLiq ? ' low-liq' : '') + '"' + (lowLiq ? ' onclick="showSlippageTip(event)"' : '') + '>Uniswap</a>';
         html += '<a href="https://dexscreener.com/base/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
     }
     if (p.staking_address && p.token_symbol) {
