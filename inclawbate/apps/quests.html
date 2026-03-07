@@ -270,9 +270,19 @@ async function connectWallet() {
     } catch (e) { console.error(e); }
 }
 
+// ── Wait for SDK (injected after this script by serve-site) ──
+function waitForAppDB() {
+    if (window.AppDB) return Promise.resolve();
+    return new Promise(resolve => {
+        const t = setInterval(() => { if (window.AppDB) { clearInterval(t); resolve(); } }, 50);
+        setTimeout(() => { clearInterval(t); resolve(); }, 5000);
+    });
+}
+
 // ── Storage ──
 async function loadStatus() {
     try {
+        await waitForAppDB();
         const data = await window.AppDB.get('quest_status');
         questStatus = data || {};
     } catch { questStatus = {}; }
@@ -280,6 +290,7 @@ async function loadStatus() {
 
 async function saveStatus() {
     try {
+        await waitForAppDB();
         await window.AppDB.set('quest_status', questStatus);
         // Also save globally for admin
         await window.AppDB.setGlobal('quest_completions_' + userWallet.toLowerCase(), {
@@ -431,6 +442,7 @@ async function loadAdmin() {
     panel.innerHTML = '<div class="loading">Loading submissions...</div>';
 
     try {
+        await waitForAppDB();
         const allGlobal = await window.AppDB.listGlobal();
         const completions = allGlobal.filter(item => item.key.startsWith('quest_completions_'));
         const airdrops = {};
