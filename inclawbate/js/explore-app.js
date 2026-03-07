@@ -11,6 +11,11 @@
     let searchQuery = '';
     let debounceTimer = null;
     let savedSlugs = new Set();
+    var INITIAL_SHOW = 6;
+
+    // cached full lists for "show more"
+    var _allTokens = [];
+    var _allApps = [];
 
     // ── Color from string ──
     function hashColor(str) {
@@ -141,10 +146,30 @@
         }
     ];
 
+    function tokenRowHtml(p, i) {
+        var name = p.token_name || p.token_symbol;
+        var uniswap = 'https://app.uniswap.org/swap?outputCurrency=' + p.token_address + '&chain=base';
+        return '<tr onclick="window.open(\'' + uniswap + '\',\'_blank\')">' +
+            '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
+            '<td><div class="exp-name-cell">' + logoHtml(p.logo_url, name) +
+                '<div><span class="exp-name">' + escapeHtml(name) + '</span><span class="exp-sub">$' + escapeHtml(p.token_symbol) + '</span></div>' +
+            '</div></td>' +
+            '<td><span class="exp-stat">' + formatMcap(p._mcap) + '</span></td>' +
+            '<td><div class="exp-actions"><a href="' + uniswap + '" target="_blank" rel="noopener" class="exp-btn exp-btn--trade" onclick="event.stopPropagation()">Trade</a></div></td>' +
+        '</tr>';
+    }
+
+    function renderTokenRows(count) {
+        var tbody = document.getElementById('exploreTokensBody');
+        var btn = document.getElementById('tokensShowMore');
+        var items = _allTokens.slice(0, count);
+        tbody.innerHTML = items.map(tokenRowHtml).join('');
+        if (btn) btn.style.display = count >= _allTokens.length ? 'none' : '';
+    }
+
     // ── Load Tokens (table rows) ──
     async function loadTokens() {
         var section = document.getElementById('exploreTokens');
-        var tbody = document.getElementById('exploreTokensBody');
         try {
             var res = await fetch('/api/inclawbate/inclawbator');
             var json = await res.json();
@@ -177,21 +202,10 @@
             });
             projects.sort(function (a, b) { return b._mcap - a._mcap; });
 
-            var top = projects.slice(0, 6);
-            if (!top.length) return;
+            _allTokens = projects;
+            if (!projects.length) return;
 
-            tbody.innerHTML = top.map(function (p, i) {
-                var name = p.token_name || p.token_symbol;
-                var uniswap = 'https://app.uniswap.org/swap?outputCurrency=' + p.token_address + '&chain=base';
-                return '<tr onclick="window.open(\'' + uniswap + '\',\'_blank\')">' +
-                    '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
-                    '<td><div class="exp-name-cell">' + logoHtml(p.logo_url, name) +
-                        '<div><span class="exp-name">' + escapeHtml(name) + '</span><span class="exp-sub">$' + escapeHtml(p.token_symbol) + '</span></div>' +
-                    '</div></td>' +
-                    '<td><span class="exp-stat">' + formatMcap(p._mcap) + '</span></td>' +
-                    '<td><div class="exp-actions"><a href="' + uniswap + '" target="_blank" rel="noopener" class="exp-btn exp-btn--trade" onclick="event.stopPropagation()">Trade</a></div></td>' +
-                '</tr>';
-            }).join('');
+            renderTokenRows(INITIAL_SHOW);
             section.classList.add('visible');
         } catch (e) {}
     }
@@ -261,37 +275,54 @@
         } catch (e) {}
     };
 
+    function appRowHtml(app, i) {
+        var hasAuth = !!getAuth();
+        var saveBtn = hasAuth
+            ? '<button class="exp-btn exp-btn--save' + (savedSlugs.has(app.slug) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSaveApp(\'' + escapeHtml(app.slug) + '\',this)">' + (savedSlugs.has(app.slug) ? 'Saved' : 'Save') + '</button>'
+            : '';
+        return '<tr onclick="window.location.href=\'/s/' + escapeHtml(app.slug) + '\'">' +
+            '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
+            '<td><div class="exp-name-cell">' + logoHtml(null, app.name || app.slug) +
+                '<div><span class="exp-name">' + escapeHtml(app.name) + '</span>' +
+                (app.category ? '<span class="exp-sub">' + escapeHtml(app.category) + '</span>' : '') +
+                '</div></div></td>' +
+            '<td><span class="exp-desc">' + escapeHtml(app.description || '') + '</span></td>' +
+            '<td><div class="exp-actions">' + saveBtn +
+                '<a href="/s/' + escapeHtml(app.slug) + '" class="exp-btn exp-btn--use" onclick="event.stopPropagation()">Use</a>' +
+            '</div></td>' +
+        '</tr>';
+    }
+
+    function renderAppRows(count) {
+        var tbody = document.getElementById('exploreAppsBody');
+        var btn = document.getElementById('appsShowMore');
+        var items = _allApps.slice(0, count);
+        tbody.innerHTML = items.map(appRowHtml).join('');
+        if (btn) btn.style.display = count >= _allApps.length ? 'none' : '';
+    }
+
     // ── Load Apps (table rows) ──
     async function loadApps() {
         var section = document.getElementById('exploreApps');
-        var tbody = document.getElementById('exploreAppsBody');
         try {
-            var res = await fetch('/api/inclawbate/apps?sort=trending&limit=6');
+            var res = await fetch('/api/inclawbate/apps?sort=trending&limit=50');
             var json = await res.json();
             var apps = json.apps || [];
             if (!apps.length) return;
 
-            var hasAuth = !!getAuth();
-
-            tbody.innerHTML = apps.map(function (app, i) {
-                var saveBtn = hasAuth
-                    ? '<button class="exp-btn exp-btn--save' + (savedSlugs.has(app.slug) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSaveApp(\'' + escapeHtml(app.slug) + '\',this)">' + (savedSlugs.has(app.slug) ? 'Saved' : 'Save') + '</button>'
-                    : '';
-                return '<tr onclick="window.location.href=\'/s/' + escapeHtml(app.slug) + '\'">' +
-                    '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
-                    '<td><div class="exp-name-cell">' + logoHtml(null, app.name || app.slug) +
-                        '<div><span class="exp-name">' + escapeHtml(app.name) + '</span>' +
-                        (app.category ? '<span class="exp-sub">' + escapeHtml(app.category) + '</span>' : '') +
-                        '</div></div></td>' +
-                    '<td><span class="exp-desc">' + escapeHtml(app.description || '') + '</span></td>' +
-                    '<td><div class="exp-actions">' + saveBtn +
-                        '<a href="/s/' + escapeHtml(app.slug) + '" class="exp-btn exp-btn--use" onclick="event.stopPropagation()">Use</a>' +
-                    '</div></td>' +
-                '</tr>';
-            }).join('');
+            _allApps = apps;
+            renderAppRows(INITIAL_SHOW);
             section.classList.add('visible');
         } catch (e) {}
     }
+
+    // ── Show more handlers ──
+    document.getElementById('tokensShowMore').addEventListener('click', function () {
+        renderTokenRows(_allTokens.length);
+    });
+    document.getElementById('appsShowMore').addEventListener('click', function () {
+        renderAppRows(_allApps.length);
+    });
 
     // ── Init ──
     load();
