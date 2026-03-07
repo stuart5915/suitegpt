@@ -49,40 +49,6 @@ var EXTRA_TOKENS = [
 
 var lpState = { projects: [], mcaps: {}, filter: 'all', sort: 'mcap' };
 
-function showSlippageTip(e) {
-    // Prevent immediate navigation — show tip first, then open link
-    if (e) e.preventDefault();
-    var href = e && e.currentTarget ? e.currentTarget.href : null;
-
-    var existing = document.getElementById('slippageTip');
-    if (existing) existing.remove();
-    var overlay = document.createElement('div');
-    overlay.id = 'slippageTip';
-    overlay.className = 'slippage-tip-overlay';
-    overlay.innerHTML =
-        '<div class="slippage-tip-card">' +
-        '<strong>Low Liquidity Token</strong>' +
-        '<p>Set slippage to <span style="color:#fbbf24;font-weight:700">5–10%</span> in Uniswap settings (gear icon) or your swap may fail.</p>' +
-        '<button class="slippage-tip-go" id="slippageTipGo">Open Uniswap &rarr;</button>' +
-        '</div>';
-    document.body.appendChild(overlay);
-    requestAnimationFrame(function() { overlay.classList.add('visible'); });
-
-    // Click "Open Uniswap" → open link + dismiss
-    document.getElementById('slippageTipGo').addEventListener('click', function() {
-        if (href) window.open(href, '_blank', 'noopener');
-        overlay.classList.remove('visible');
-        setTimeout(function() { overlay.remove(); }, 300);
-    });
-    // Click backdrop → dismiss without navigating
-    overlay.addEventListener('click', function(ev) {
-        if (ev.target === overlay) {
-            overlay.classList.remove('visible');
-            setTimeout(function() { overlay.remove(); }, 300);
-        }
-    });
-}
-
 async function loadLiveProjects() {
     try {
         var res = await fetch(API_BASE);
@@ -116,6 +82,7 @@ async function fetchMarketCaps() {
         .map(function(p) { return p.token_address; });
     if (!addresses.length) return;
 
+    // DexScreener (primary)
     for (var i = 0; i < addresses.length; i += 25) {
         var batch = addresses.slice(i, i + 25).join(',');
         try {
@@ -133,6 +100,28 @@ async function fetchMarketCaps() {
         } catch (e) { /* DexScreener unavailable */ }
     }
     renderTable();
+
+    // GeckoTerminal fallback for tokens DexScreener missed
+    var missing = addresses.filter(function(a) { return !lpState.mcaps[a.toLowerCase()]; });
+    if (!missing.length) return;
+    var changed = false;
+    for (var j = 0; j < missing.length; j++) {
+        try {
+            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/' + missing[j]);
+            if (!gRes.ok) continue;
+            var gData = await gRes.json();
+            var attrs = gData.data && gData.data.attributes;
+            if (!attrs) continue;
+            var fdv = attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : 0;
+            var mc = attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : 0;
+            var val = mc || fdv;
+            if (val > 0) {
+                lpState.mcaps[missing[j].toLowerCase()] = val;
+                changed = true;
+            }
+        } catch (e) { /* GeckoTerminal unavailable */ }
+    }
+    if (changed) renderTable();
 }
 
 function getFilteredProjects() {
@@ -220,8 +209,7 @@ function renderTable() {
             if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {
                 actions += '<a href="https://www.clanker.world/clanker/' + p.token_address + '" target="_blank" rel="noopener" class="btn-clanker">Clanker</a>';
             }
-            var uniClass = 'btn-uniswap' + ((!mcapVal || mcapVal < 100000) ? ' low-liq' : '');
-            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="' + uniClass + '">Uniswap</a>';
+            actions += '<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base" target="_blank" rel="noopener" class="btn-uniswap">Uniswap</a>';
         }
         if (p.staking_address && symbol) {
             actions += '<a href="/stake/' + symbol.toLowerCase() + '" class="btn-stake">Stake</a>';
@@ -242,11 +230,6 @@ function renderTable() {
 
     html += '</tbody></table>';
     container.innerHTML = html;
-
-    // Slippage tip for low-liquidity tokens
-    container.querySelectorAll('.btn-uniswap.low-liq').forEach(function(link) {
-        link.addEventListener('click', function(e) { showSlippageTip(e); });
-    });
 
     // Row click → navigate to project (but not if clicking a trade button)
     container.querySelectorAll('tr[data-href]').forEach(function(row) {
