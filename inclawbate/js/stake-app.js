@@ -683,13 +683,21 @@ function getProvider() {
     return window.ethereum || (window.phantom && window.phantom.ethereum) || null;
 }
 
-// Validate provider can actually sign transactions (WalletConnect sessions can go stale)
+// Validate provider can actually sign transactions
 async function ensureProvider() {
     var provider = getProvider();
     if (!provider) {
         stakeToast('No wallet connected. Please connect your wallet.', 'error');
         return null;
     }
+    // WalletConnect providers don't reliably respond to eth_accounts —
+    // they can return empty even on a valid session. If WalletKit has
+    // an address, trust it and let transaction-level timeouts catch
+    // truly broken sessions.
+    if (window.WalletKit && window.WalletKit.getAddress()) {
+        return provider;
+    }
+    // For browser extensions, validate with eth_accounts
     try {
         var accounts = await Promise.race([
             provider.request({ method: 'eth_accounts' }),
@@ -698,13 +706,11 @@ async function ensureProvider() {
             })
         ]);
         if (!accounts || accounts.length === 0) {
-            stakeToast('Wallet session expired. Please disconnect and reconnect.', 'error');
-            disconnectPoolWallet();
+            stakeToast('No wallet connected. Please connect your wallet.', 'error');
             return null;
         }
     } catch (e) {
-        stakeToast('Wallet session expired. Please disconnect and reconnect.', 'error');
-        disconnectPoolWallet();
+        stakeToast('Wallet connection error. Please reconnect.', 'error');
         return null;
     }
     return provider;

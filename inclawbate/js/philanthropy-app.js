@@ -80,8 +80,10 @@
     }
 
     function getProvider() {
-        if (window.WalletKit && window.WalletKit.isConnected()) {
-            return window.WalletKit.getProvider();
+        if (window.WalletKit) {
+            if (window.WalletKit.isConnected()) return window.WalletKit.getProvider();
+            var wkProvider = window.WalletKit.getProvider();
+            if (wkProvider) return wkProvider;
         }
         return window.ethereum || null;
     }
@@ -579,7 +581,7 @@
         typeConfig.ubi.hasOpen = false;
         typeConfig.gcm.expandedId = null;
         typeConfig.ubi.expandedId = null;
-        if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
+        if (window.WalletKit) { try { window.WalletKit.disconnect(); } catch (e) {} }
 
         // Reset kingdom connect
         var kingdomBtn = document.getElementById('kingdomConnectBtn');
@@ -1204,8 +1206,10 @@
         window.WalletKit.onDisconnect(function() {
             disconnectWallet();
         });
-        if (window.WalletKit.isConnected()) {
-            onWalletConnected(window.WalletKit.getAddress());
+        // isConnected() can be stale — check getAddress() directly
+        var wkAddr = window.WalletKit.getAddress();
+        if (wkAddr) {
+            onWalletConnected(wkAddr);
         }
     }
 

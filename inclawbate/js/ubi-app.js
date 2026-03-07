@@ -319,8 +319,11 @@ function daysSince(dateStr) {
 (async function() {
     // Provider helper — uses WalletKit (AppKit) when available, falls back to injected wallet
     function getProvider() {
-        if (window.WalletKit && window.WalletKit.isConnected()) {
-            return window.WalletKit.getProvider();
+        if (window.WalletKit) {
+            if (window.WalletKit.isConnected()) return window.WalletKit.getProvider();
+            // isConnected() can be stale — try getProvider() anyway
+            var wkProvider = window.WalletKit.getProvider();
+            if (wkProvider) return wkProvider;
         }
         return window.ethereum || null;
     }
@@ -1882,7 +1885,7 @@ function daysSince(dateStr) {
         stakeWallet = null;
         walletBalances = { clawnch: 0, inclawnch: 0 };
         try { localStorage.removeItem('_ubi_wallet'); } catch (e) {}
-        if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
+        if (window.WalletKit) { try { window.WalletKit.disconnect(); } catch (e) {} }
 
         // Step flow: undo Step 1 done
         var step1 = document.getElementById('ubiStep1');
@@ -1980,6 +1983,15 @@ function daysSince(dateStr) {
 
     // ── Auto-reconnect from previous session ──
     (async function() {
+        // Try WalletKit first (handles WalletConnect sessions)
+        if (window.WalletKit) {
+            window.WalletKit.onConnect(function(address) {
+                if (address) onWalletConnected(address);
+            });
+            var wkAddr = window.WalletKit.getAddress();
+            if (wkAddr) { onWalletConnected(wkAddr); return; }
+        }
+        // Then try browser extension
         var saved = null;
         try { saved = localStorage.getItem('_ubi_wallet'); } catch (e) {}
         if (saved && window.ethereum) {
@@ -1991,6 +2003,13 @@ function daysSince(dateStr) {
             } catch (e) {
                 localStorage.removeItem('_ubi_wallet');
             }
+        }
+        // Delayed WalletKit check — Reown's subscribeProvider can fire late
+        if (!stakeWallet && window.WalletKit) {
+            setTimeout(function() {
+                var wkAddr = window.WalletKit.getAddress();
+                if (wkAddr && !stakeWallet) onWalletConnected(wkAddr);
+            }, 1500);
         }
     })();
 
