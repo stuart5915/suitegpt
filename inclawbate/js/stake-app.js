@@ -648,6 +648,49 @@ function renderOverview() {
 }
 
 // ══════════════════════════════════════
+// USER EARNING RATES (injected into pool table)
+// ══════════════════════════════════════
+
+async function fetchAndShowUserRates() {
+    if (!walletAddr) return;
+    var addrPadded = pad32(walletAddr);
+    var keys = POOL_KEYS;
+
+    // Batch-fetch balanceOf for all pools
+    var calls = [];
+    keys.forEach(function(key) {
+        calls.push({ to: POOLS[key].staking, data: SEL.balanceOf + addrPadded });
+    });
+    var results = await contractReadBatch(calls);
+
+    var now = Math.floor(Date.now() / 1000);
+    keys.forEach(function(key, i) {
+        var staked = fromWei(results[i]);
+        if (staked <= 0) return;
+        var stats = poolStats[key] || {};
+        if (!stats.totalStaked || stats.totalStaked <= 0) return;
+        var active = stats.periodEnd > now;
+        if (!active) return;
+
+        var dailyReward = (stats.rewardRate * 86400) * (staked / stats.totalStaked);
+        if (dailyReward <= 0) return;
+
+        var rewardTicker = POOLS[key].rewardTicker || POOLS[key].ticker;
+        var dailyStr = dailyReward >= 1 ? fmt(Math.round(dailyReward)) : dailyReward.toFixed(2);
+
+        // Inject into the name cell
+        var row = document.querySelector('.stk-row[data-key="' + key + '"]');
+        if (!row) return;
+        var nameEl = row.querySelector('.stk-name');
+        if (!nameEl || nameEl.querySelector('.stk-earning')) return;
+        var badge = document.createElement('span');
+        badge.className = 'stk-earning';
+        badge.textContent = dailyStr + ' ' + rewardTicker + '/day';
+        nameEl.appendChild(badge);
+    });
+}
+
+// ══════════════════════════════════════
 // POOL PAGE RENDERING
 // ══════════════════════════════════════
 
@@ -1739,6 +1782,7 @@ function routeApp() {
         // Overview
         overviewEl.style.display = '';
         renderOverview();
+        fetchAndShowUserRates();
         document.title = 'Stake \u2014 Inclawbate';
     } else if (pool === 'not_found') {
         notFoundEl.style.display = '';
@@ -2063,11 +2107,12 @@ async function init() {
             document.querySelectorAll('#stakeFilters .lp-filter-tab').forEach(function(t) { t.classList.remove('active'); });
             tab.classList.add('active');
             renderOverview();
+            fetchAndShowUserRates();
         });
     });
     // Sort dropdown
     var sortSelect = document.getElementById('stakeSort');
-    if (sortSelect) sortSelect.addEventListener('change', function() { renderOverview(); });
+    if (sortSelect) sortSelect.addEventListener('change', function() { renderOverview(); fetchAndShowUserRates(); });
 
     // Pool creation modal
     var poolModalBtn = document.getElementById('openPoolModalBtn');
