@@ -247,6 +247,9 @@ function render() {
     if (p.staking_address && p.token_symbol) {
         html += '<a href="/stake/' + p.token_symbol.toLowerCase() + '" class="td-link td-link-stake">Stake</a>';
     }
+    if (p.token_address) {
+        html += '<button class="td-link td-link-copy" data-ca="' + p.token_address + '">Copy CA</button>';
+    }
     html += '</div>';
 
     // ── DexScreener Chart Embed ──
@@ -266,6 +269,16 @@ function render() {
     // Bind edit panel if rendered
     var saveBtn = document.getElementById('tdEditSave');
     if (saveBtn) saveBtn.addEventListener('click', saveProject);
+
+    // Copy CA button
+    var copyBtn = el.querySelector('.td-link-copy');
+    if (copyBtn) copyBtn.addEventListener('click', function() {
+        var ca = this.getAttribute('data-ca');
+        navigator.clipboard.writeText(ca).then(function() {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function() { copyBtn.textContent = 'Copy CA'; }, 1500);
+        });
+    });
 }
 
 function renderEditPanel(p) {

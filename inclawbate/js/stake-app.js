@@ -858,12 +858,26 @@ function renderPoolPage(pool, key) {
     if (key === 'claws') {
         linksHtml += '<a href="/angel" class="pool-link pool-link--nft">&#128140; Angel NFT</a>';
     }
+    // Copy CA button
+    if (pool.token) {
+        linksHtml += '<button class="pool-link pool-link--copy" data-ca="' + pool.token + '">Copy CA</button>';
+    }
     // Add token to wallet button
     if (pool.token) {
         var logoUrl = pool.logo ? (pool.logo.startsWith('http') ? pool.logo : 'https://inclawbate.com' + pool.logo) : '';
         linksHtml += '<button onclick="addTokenToWallet(\'' + pool.token + '\',\'' + pool.ticker + '\',18,\'' + logoUrl + '\')" class="pool-link pool-link--wallet">&#128176; Add $' + pool.ticker + ' to Wallet</button>';
     }
     document.getElementById('poolLinks').innerHTML = linksHtml;
+
+    // Copy CA click handler
+    var copyBtn = document.querySelector('.pool-link--copy');
+    if (copyBtn) copyBtn.addEventListener('click', function() {
+        var ca = this.getAttribute('data-ca');
+        navigator.clipboard.writeText(ca).then(function() {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function() { copyBtn.textContent = 'Copy CA'; }, 1500);
+        });
+    });
 
     // Coming soon — disable staking
     if (pool.comingSoon) {
