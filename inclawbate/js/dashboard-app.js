@@ -2456,6 +2456,206 @@ async function reactivateSubscription() {
     }
 }
 
+// ── User Projects ──
+async function loadUserProjects() {
+    const auth = getStoredAuth();
+    if (!auth) return;
+    const wallet = auth.profile.wallet_address;
+    if (!wallet) return;
+
+    const container = document.getElementById('projectsList');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/projects?wallet=${encodeURIComponent(wallet.toLowerCase())}`);
+        const data = await res.json();
+        const projects = data.projects || [];
+
+        if (!projects.length) {
+            container.innerHTML = '<div class="overview-empty"><p>No projects yet. Bundle your app, token, and socials into one project.</p></div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        projects.forEach(p => container.appendChild(renderUserProjectCard(p)));
+    } catch (e) {
+        // silent
+    }
+}
+
+function renderUserProjectCard(p) {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+
+    const addrShort = p.token_address ? p.token_address.slice(0, 6) + '…' + p.token_address.slice(-4) : '';
+    const initial = (p.name || 'P')[0].toUpperCase();
+
+    let chipsHtml = '';
+    if (p.app_slug) chipsHtml += `<span class="user-project-chip">App: ${esc(p.app_slug)}</span>`;
+    if (addrShort) chipsHtml += `<span class="user-project-chip">${esc(addrShort)}</span>`;
+    if (p.staking_address) chipsHtml += `<span class="user-project-chip">Pool</span>`;
+    if (p.x_handle) chipsHtml += `<span class="user-project-chip">@${esc(p.x_handle)}</span>`;
+
+    let actionsHtml = `<button type="button" class="project-card-action" data-edit-user-project="1">Edit</button>`;
+    if (p.app_slug) actionsHtml += `<a href="/s/${esc(p.app_slug)}" target="_blank" class="project-card-action">Open App</a>`;
+    if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+    if (p.website_url) actionsHtml += `<a href="${esc(p.website_url)}" target="_blank" rel="noopener" class="project-card-action">Website</a>`;
+
+    card.innerHTML = `
+        <div class="project-card-header">
+            <div class="project-card-icon">${initial}</div>
+            <div class="project-card-title">
+                <div class="project-card-name">${esc(p.name)}</div>
+                ${p.description ? `<div class="project-card-desc" style="font-size:0.8rem;color:var(--text-dim);margin-top:2px;">${esc(p.description).slice(0, 120)}</div>` : ''}
+            </div>
+        </div>
+        ${chipsHtml ? `<div class="user-project-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">${chipsHtml}</div>` : ''}
+        <div class="project-card-actions">${actionsHtml}</div>
+    `;
+
+    card.querySelector('[data-edit-user-project]')?.addEventListener('click', () => {
+        openCreateProjectModal(p);
+    });
+
+    return card;
+}
+
+function openCreateProjectModal(existingProject) {
+    const auth = getStoredAuth();
+    if (!auth) { alert('Connect your wallet first.'); return; }
+
+    const isEdit = !!existingProject;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fund-modal-overlay';
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    // Build app dropdown options
+    let appOptionsHtml = '<option value="">-- None --</option>';
+    _cachedUserApps.forEach(a => {
+        const sel = existingProject && existingProject.app_id === a.id ? 'selected' : '';
+        appOptionsHtml += `<option value="${esc(a.id)}" data-slug="${esc(a.slug || '')}" ${sel}>${esc(a.name || a.slug || 'Untitled')}</option>`;
+    });
+
+    // Build token suggestions
+    let tokenSuggestionsHtml = '';
+    if (_cachedTokens.length) {
+        tokenSuggestionsHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">';
+        _cachedTokens.forEach(t => {
+            if (t.token_address) {
+                const label = t.token_symbol || t.token_address.slice(0, 8) + '…';
+                const staking = t.staking_address || '';
+                tokenSuggestionsHtml += `<button type="button" class="token-suggest-btn" data-addr="${esc(t.token_address)}" data-staking="${esc(staking)}" style="background:rgba(255,255,255,0.06);border:1px solid var(--border-subtle);color:var(--text-secondary);padding:2px 8px;border-radius:6px;font-size:0.75rem;cursor:pointer;">$${esc(label)}</button>`;
+            }
+        });
+        tokenSuggestionsHtml += '</div>';
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'fund-modal';
+    modal.innerHTML = `
+        <div class="fund-modal-title">${isEdit ? 'Edit Project' : 'Create Project'}</div>
+        <label class="fund-modal-label">Project Name *</label>
+        <input class="fund-modal-input" type="text" id="projName" maxlength="100" value="${esc(existingProject?.name || '')}">
+        <label class="fund-modal-label">Description</label>
+        <textarea class="fund-modal-input" id="projDesc" rows="2" style="resize:vertical" maxlength="500">${esc(existingProject?.description || '')}</textarea>
+        <label class="fund-modal-label">Link an App</label>
+        <select class="fund-modal-input" id="projApp" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-subtle);padding:10px 12px;border-radius:8px;font-size:0.9rem;width:100%;">
+            ${appOptionsHtml}
+        </select>
+        <label class="fund-modal-label">Token Address</label>
+        <input class="fund-modal-input" type="text" id="projToken" placeholder="0x..." value="${esc(existingProject?.token_address || '')}">
+        ${tokenSuggestionsHtml}
+        <label class="fund-modal-label" style="margin-top:4px;">Staking Pool Address</label>
+        <input class="fund-modal-input" type="text" id="projStaking" placeholder="Auto-detected or paste address" value="${esc(existingProject?.staking_address || '')}">
+        <label class="fund-modal-label">X Handle</label>
+        <input class="fund-modal-input" type="text" id="projX" placeholder="@handle" maxlength="50" value="${esc(existingProject?.x_handle || '')}">
+        <label class="fund-modal-label">Website</label>
+        <input class="fund-modal-input" type="text" id="projWebsite" placeholder="https://..." maxlength="200" value="${esc(existingProject?.website_url || '')}">
+        <div class="fund-modal-actions">
+            <button class="fund-modal-submit" id="projSave">${isEdit ? 'Save Changes' : 'Create Project'}</button>
+            <button class="fund-modal-cancel" id="projCancel">Cancel</button>
+        </div>
+        <div class="fund-modal-result" id="projResult"></div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Wire token suggestion clicks
+    modal.querySelectorAll('.token-suggest-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.querySelector('#projToken').value = btn.dataset.addr;
+            if (btn.dataset.staking) {
+                modal.querySelector('#projStaking').value = btn.dataset.staking;
+            }
+        });
+    });
+
+    modal.querySelector('#projCancel').addEventListener('click', () => overlay.remove());
+
+    modal.querySelector('#projSave').addEventListener('click', async () => {
+        const btn = modal.querySelector('#projSave');
+        const resultEl = modal.querySelector('#projResult');
+        const name = modal.querySelector('#projName').value.trim();
+
+        if (!name) {
+            resultEl.textContent = 'Project name is required';
+            resultEl.className = 'fund-modal-result error';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        resultEl.textContent = '';
+        resultEl.className = 'fund-modal-result';
+
+        const appSelect = modal.querySelector('#projApp');
+        const selectedOption = appSelect.options[appSelect.selectedIndex];
+        const appId = appSelect.value || null;
+        const appSlug = selectedOption?.dataset?.slug || null;
+
+        const body = {
+            name,
+            description: modal.querySelector('#projDesc').value.trim() || null,
+            app_id: appId,
+            app_slug: appSlug,
+            token_address: modal.querySelector('#projToken').value.trim() || null,
+            staking_address: modal.querySelector('#projStaking').value.trim() || null,
+            x_handle: modal.querySelector('#projX').value.trim().replace(/^@/, '') || null,
+            website_url: modal.querySelector('#projWebsite').value.trim() || null,
+        };
+
+        if (isEdit) body.id = existingProject.id;
+
+        try {
+            const resp = await fetch(`${API_BASE}/projects`, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify(body),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Save failed');
+
+            resultEl.textContent = isEdit ? 'Project updated!' : 'Project created!';
+            resultEl.className = 'fund-modal-result success';
+            btn.textContent = 'Saved!';
+
+            setTimeout(() => {
+                overlay.remove();
+                loadUserProjects();
+            }, 800);
+        } catch (err) {
+            resultEl.textContent = err.message;
+            resultEl.className = 'fund-modal-result error';
+            btn.disabled = false;
+            btn.textContent = isEdit ? 'Save Changes' : 'Create Project';
+        }
+    });
+}
+
 // ── Init ──
 function init() {
     // Handle Stripe payment return
@@ -2515,9 +2715,17 @@ function init() {
 
     loadOverview();
     loadProjects();
+    loadUserProjects();
     loadStakingPools();
     loadMyStakingPositions();
     setInterval(updateAllocationCountdowns, 60000);
+
+    // Wire create project button
+    document.getElementById('createProjectBtn')?.addEventListener('click', () => {
+        const auth = getStoredAuth();
+        if (!auth) { alert('Connect your wallet first.'); return; }
+        openCreateProjectModal(null);
+    });
 }
 
 // Boot

@@ -122,6 +122,12 @@ export class InventorySystem {
                 return { success: false, message: `You need ${def.levelReq.strength} Strength to equip that.` };
             if (def.levelReq.defence && player.defence < def.levelReq.defence)
                 return { success: false, message: `You need ${def.levelReq.defence} Defence to equip that.` };
+            if (def.levelReq.woodcutting && ((player as any).woodcutting || 1) < def.levelReq.woodcutting)
+                return { success: false, message: `You need ${def.levelReq.woodcutting} Woodcutting to equip that.` };
+            if (def.levelReq.mining && ((player as any).mining || 1) < def.levelReq.mining)
+                return { success: false, message: `You need ${def.levelReq.mining} Mining to equip that.` };
+            if (def.levelReq.fishing && ((player as any).fishing || 1) < def.levelReq.fishing)
+                return { success: false, message: `You need ${def.levelReq.fishing} Fishing to equip that.` };
         }
 
         if (equipSlot.id) {

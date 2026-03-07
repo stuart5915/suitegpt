@@ -29,6 +29,36 @@ Quick reference for SUITE's implemented systems. Data stored in `systems.json`.
 
 ---
 
+## /ceo Command
+
+Inclawbate CEO co-pilot. Reads context files, assesses current state, and guides what to work on next.
+
+### When user types `/ceo`:
+1. Read `CEO.md` (vision, decision framework, current state)
+2. Read `CEO_TASKS.md` (full prioritized backlog)
+3. Assess current state:
+   - What was recently completed?
+   - What's in-progress?
+   - Any deadlines approaching?
+   - Any blocked tasks that got unblocked?
+4. Recommend the **top 1-3 things to work on right now**, with reasoning based on the decision framework (revenue > user issues > growth > stickiness > marketing > partnerships > nice-to-haves)
+5. Ask: "Want to dive into one of these, or is something else on your mind?"
+
+### When user says "idk what to do" or similar:
+- Run the `/ceo` flow above
+- Be decisive — pick THE one thing and explain why
+- If multiple things are equal priority, pick whichever can ship fastest
+
+### When a task is completed:
+- Update `CEO_TASKS.md` — move to "Recently Completed" with date
+- Suggest what's next
+
+### When user adds a new task:
+- Add it to `CEO_TASKS.md` with appropriate priority tier
+- Explain where it fits relative to other priorities
+
+---
+
 ## /publish-article Command
 
 When you receive a `/publish-article` prompt (from the publish daemon or manually), follow these steps:

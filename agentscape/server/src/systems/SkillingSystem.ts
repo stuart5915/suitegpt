@@ -54,13 +54,14 @@ import { InventorySystem } from './InventorySystem';
 // ============================================================
 
 export interface SkillingEvent {
-    type: string; // harvest_complete | train_complete | gather_complete | started | cooldown | level_req | node_depleted | node_not_found | too_far
+    type: string; // harvest_complete | train_complete | gather_complete | started | cooldown | level_req | node_depleted | node_not_found | too_far | no_tool
     playerId: string;
     message: string;
     skill?: string;
     xpGains?: { skill: string; amount: number }[];
     itemGained?: { id: string; qty: number };
     levelUp?: { skill: string; newLevel: number };
+    maxTime?: number;
 }
 
 // ============================================================
@@ -395,6 +396,8 @@ export class SkillingSystem {
         const oldLevel = levelFromXP(data[xpKey]);
         (data as any)[xpKey] += amount;
         const newLevel = levelFromXP(data[xpKey]);
+        // Sync level to PlayerSchema so equip checks can read it
+        (player as any)[skill] = newLevel;
         player.dirty = true;
         return { leveledUp: newLevel > oldLevel, newLevel };
     }
@@ -408,11 +411,16 @@ export class SkillingSystem {
         try {
             const data = JSON.parse(json);
             const key = this.getPlayerKey(player);
-            this.skillData.set(key, {
+            const entry = {
                 woodcuttingXP: data.woodcuttingXP || 0,
                 miningXP: data.miningXP || 0,
                 fishingXP: data.fishingXP || 0,
-            });
+            };
+            this.skillData.set(key, entry);
+            // Sync levels to PlayerSchema so equip checks can read them
+            (player as any).woodcutting = levelFromXP(entry.woodcuttingXP);
+            (player as any).mining = levelFromXP(entry.miningXP);
+            (player as any).fishing = levelFromXP(entry.fishingXP);
         } catch { /* malformed data, start fresh */ }
     }
 
@@ -423,6 +431,14 @@ export class SkillingSystem {
     // ============================================================
     // Resource Gathering — Woodcutting, Mining, Fishing
     // ============================================================
+
+    private getEquippedTool(player: PlayerSchema, skill: string): { multiplier: number; name: string } | null {
+        const weaponId = player.equippedWeapon.id;
+        if (!weaponId) return null;
+        const itemDef = ITEMS[weaponId];
+        if (!itemDef || itemDef.toolFor !== skill) return null;
+        return { multiplier: itemDef.gatherSpeedMultiplier ?? 1.0, name: itemDef.name };
+    }
 
     startGathering(player: PlayerSchema, nodeId: string): SkillingEvent | null {
         if (player.isDead) return null;
@@ -464,16 +480,32 @@ export class SkillingSystem {
             };
         }
 
+        // Tool check — must have the right tool equipped
+        const tool = this.getEquippedTool(player, def.skill);
+        if (!tool) {
+            const toolNames: Record<string, string> = { woodcutting: 'an axe', mining: 'a pickaxe', fishing: 'a fishing rod' };
+            return {
+                type: 'no_tool',
+                playerId: player.sessionId,
+                message: `You need ${toolNames[def.skill] || 'a tool'} equipped to do that.`,
+                skill: def.skill,
+            };
+        }
+
+        // Compute adjusted gather time based on tool quality
+        const adjustedActionTime = def.actionTime * tool.multiplier;
+
         // Start the gathering action
-        player.skillingAction = { type: def.skill, timer: 0, maxTime: def.actionTime };
+        player.skillingAction = { type: def.skill, timer: 0, maxTime: adjustedActionTime };
         player.state = 'skilling';
         this.activeNodes.set(player.sessionId, nodeId);
 
         return {
             type: 'started',
             playerId: player.sessionId,
-            message: `You start ${this.getActionVerb(def.skill)}...`,
+            message: `You start ${this.getActionVerb(def.skill)} with ${tool.name}...`,
             skill: def.skill,
+            maxTime: adjustedActionTime,
         };
     }
 
@@ -677,6 +709,7 @@ export class SkillingSystem {
         } else {
             // Auto-repeat: reset timer for next gather cycle
             player.skillingAction!.timer = 0;
+            event.maxTime = player.skillingAction!.maxTime;
         }
 
         return event;

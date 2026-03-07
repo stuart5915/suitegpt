@@ -561,7 +561,7 @@ function buildPoolRow(key, pool, rank) {
         '<tr class="stk-row' + rowClass + '" data-key="' + key + '" style="border-left-color:' + pool.color + '">' +
             '<td><span class="stk-rank">' + rank + '</span></td>' +
             '<td><div class="stk-name-cell">' + logoHtml +
-                '<span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' +
+                '<div class="stk-name-wrap"><span class="stk-name">' + pool.name + '<span class="stk-symbol">$' + pool.ticker + '</span>' + retiredBadge + '</span>' + rateHtml + '</div>' +
             '</div></td>' +
             '<td><span class="stk-apy' + (apy > 0 ? ' positive' : '') + '">' + apyStr + '</span></td>' +
             '<td><span class="stk-tvl">' + tvlStr + '</span></td>' +
@@ -703,15 +703,15 @@ async function fetchAndShowUserRates() {
         var rewardTicker = POOLS[key].rewardTicker || POOLS[key].ticker;
         var dailyStr = dailyReward >= 1 ? fmt(Math.round(dailyReward)) : dailyReward.toFixed(2);
 
-        // Inject into the name cell
+        // Inject into the name wrap
         var row = document.querySelector('.stk-row[data-key="' + key + '"]');
         if (!row) return;
-        var nameEl = row.querySelector('.stk-name');
-        if (!nameEl || nameEl.querySelector('.stk-earning')) return;
-        var badge = document.createElement('span');
+        var wrapEl = row.querySelector('.stk-name-wrap');
+        if (!wrapEl || wrapEl.querySelector('.stk-earning')) return;
+        var badge = document.createElement('div');
         badge.className = 'stk-earning';
-        badge.textContent = dailyStr + ' ' + rewardTicker + '/day';
-        nameEl.appendChild(badge);
+        badge.textContent = 'You: ' + dailyStr + ' ' + rewardTicker + '/day';
+        wrapEl.appendChild(badge);
     });
 }
 
