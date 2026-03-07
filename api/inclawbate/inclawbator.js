@@ -260,7 +260,8 @@ export default async function handler(req, res) {
                 description, website_url, x_handle, telegram_url, logo_url,
                 fee_split_bps, tier, creator_wallet, color, color_dim, glow,
                 agent_enabled, agent_persona, agent_posts_per_day,
-                burn_tx_hash, allocation_pct, burn_amount
+                burn_tx_hash, allocation_pct, burn_amount,
+                chain, solana_wallet, solana_token_mint
             } = req.body;
 
             if (!token_name || !creator_wallet) {
@@ -336,7 +337,10 @@ export default async function handler(req, res) {
                     agent_status: wantsAgent ? 'active' : 'dormant',
                     burn_tx_hash: burn_tx_hash || null,
                     allocation_pct: allocPct,
-                    burn_amount: verifiedBurnAmount || 0
+                    burn_amount: verifiedBurnAmount || 0,
+                    chain: (chain === 'solana') ? 'solana' : 'base',
+                    solana_wallet: (chain === 'solana' && solana_wallet) ? solana_wallet : null,
+                    solana_token_mint: (chain === 'solana' && solana_token_mint) ? solana_token_mint : null
                 })
                 .select()
                 .single();
@@ -923,6 +927,95 @@ export default async function handler(req, res) {
 
             if (error) return res.status(500).json({ error: error.message });
             return res.status(200).json({ ok: true, project: data });
+        }
+
+        // ══════════════════════════════════════
+        // BAGS API PROXY (Solana token launches)
+        // ══════════════════════════════════════
+
+        const BAGS_API = 'https://public-api-v2.bags.fm/api/v1';
+        const BAGS_KEY = process.env.BAGS_API_KEY;
+        const INCLAWBATE_SOL_TREASURY = process.env.INCLAWBATE_SOL_TREASURY;
+
+        // ── Create token info on Bags ──
+        if (action === 'bags-create-token') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+            if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
+
+            const { name, symbol, description: desc, image_url } = req.body;
+            if (!name || !symbol) return res.status(400).json({ error: 'name and symbol required' });
+
+            try {
+                const resp = await fetch(BAGS_API + '/token-launch/create-token-info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
+                    body: JSON.stringify({ name, symbol, description: desc || '', imageUrl: image_url || '' })
+                });
+                const data = await resp.json();
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags API error' });
+                return res.status(200).json(data);
+            } catch (e) {
+                return res.status(500).json({ error: 'Bags API request failed: ' + e.message });
+            }
+        }
+
+        // ── Configure fee sharing on Bags ──
+        if (action === 'bags-fee-config') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+            if (!BAGS_KEY || !INCLAWBATE_SOL_TREASURY) return res.status(500).json({ error: 'Bags API not configured' });
+
+            const { token_mint, creator_solana_wallet } = req.body;
+            if (!token_mint || !creator_solana_wallet) return res.status(400).json({ error: 'token_mint and creator_solana_wallet required' });
+
+            try {
+                const resp = await fetch(BAGS_API + '/fee-share/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
+                    body: JSON.stringify({
+                        tokenMint: token_mint,
+                        feeRecipients: [
+                            { wallet: creator_solana_wallet, bps: 8000 },
+                            { wallet: INCLAWBATE_SOL_TREASURY, bps: 2000 }
+                        ]
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags fee config error' });
+                return res.status(200).json(data);
+            } catch (e) {
+                return res.status(500).json({ error: 'Bags fee config failed: ' + e.message });
+            }
+        }
+
+        // ── Create launch transaction on Bags ──
+        if (action === 'bags-create-launch-tx') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+            if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
+
+            const { token_mint, creator_solana_wallet, initial_buy_lamports, config_key, ipfs_url } = req.body;
+            if (!token_mint || !creator_solana_wallet) return res.status(400).json({ error: 'token_mint and creator_solana_wallet required' });
+
+            try {
+                const resp = await fetch(BAGS_API + '/token-launch/create-launch-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
+                    body: JSON.stringify({
+                        tokenMint: token_mint,
+                        wallet: creator_solana_wallet,
+                        initialBuyLamports: initial_buy_lamports || 0,
+                        meteoraConfigKey: config_key || undefined,
+                        ipfsUrl: ipfs_url || undefined
+                    })
+                });
+                const data = await resp.json();
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags launch tx error' });
+                return res.status(200).json(data);
+            } catch (e) {
+                return res.status(500).json({ error: 'Bags launch tx failed: ' + e.message });
+            }
         }
 
         return res.status(400).json({ error: 'Unknown action' });

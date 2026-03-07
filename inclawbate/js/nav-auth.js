@@ -450,3 +450,16 @@
         renderWallet();
     } catch(e) {}
 })();
+
+// ══════════════════════════════════════
+// SOLANA WALLET (Phantom)
+// ══════════════════════════════════════
+window.connectSolanaWallet = async function() {
+    var solana = (window.phantom && window.phantom.solana) || window.solana;
+    if (!solana || !solana.isPhantom) {
+        window.open('https://phantom.app/download', '_blank');
+        return null;
+    }
+    var resp = await solana.connect();
+    return resp.publicKey.toString();
+};

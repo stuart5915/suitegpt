@@ -15,6 +15,7 @@ var CLANKER_V4 = '0xE85A59c628F7d27878ACeB4bf3b35733630083a9';
 var DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 var TRANSFER_SEL = '0xa9059cbb'; // transfer(address,uint256)
 var CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
+var CLANKER_DEV_BUY = '0x1331f0788F9c08C8F38D52c7a1152250A9dE00be';
 var ALLOCATION_TIERS = { 0: 0, 1: 1000000, 2: 2000000, 5: 5000000, 10: 10000000 };
 var DEFAULT_SUPPLY = 100000000000; // 100B tokens
 var SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
@@ -176,6 +177,9 @@ var state = {
     allocationPct: 0,
     clawsBalance: 0,
     burnTxHash: null,
+    // Chain
+    chain: 'base',        // 'base' | 'solana'
+    solanaWallet: null,    // Solana pubkey string
     // Disperse
     disperseQuote: null,
     disperseRunning: false,
@@ -433,7 +437,7 @@ var DEPLOY_TOKEN_ABI = [{
     outputs: [{ name: 'tokenAddress', type: 'address' }]
 }];
 
-function encodeClankerDeploy(name, symbol) {
+function encodeClankerDeploy(name, symbol, devBuyWei) {
     var iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
     var saltBytes = new Uint8Array(32);
     crypto.getRandomValues(saltBytes);
@@ -501,6 +505,16 @@ function encodeClankerDeploy(name, symbol) {
             extensionBps: extensionBps,
             extensionData: extensionData
         }];
+    }
+
+    // Dev buy extension — sends ETH to buy tokens at launch
+    if (devBuyWei && BigInt(devBuyWei) > 0n) {
+        deploymentConfig.extensionConfigs.push({
+            extension: CLANKER_DEV_BUY,
+            msgValue: BigInt(devBuyWei),
+            extensionBps: 0,
+            extensionData: '0x'
+        });
     }
 
     return iface.encodeFunctionData('deployToken', [deploymentConfig]);
@@ -821,6 +835,9 @@ async function handleAgentLaunch() {
 async function handleLaunchDeploy() {
     if (state.deploying) return;
 
+    // Dispatch to Solana flow if chain is solana
+    if (state.chain === 'solana') return handleSolanaLaunch();
+
     var name = document.getElementById('tokenName').value.trim();
     var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
     var desc = document.getElementById('launchDesc').value.trim();
@@ -837,6 +854,11 @@ async function handleLaunchDeploy() {
     state.deploying = true;
     state.burnTxHash = null;
     var btn = document.getElementById('deployLaunchBtn');
+
+    // Dev buy amount
+    var devBuyInput = document.getElementById('devBuyAmount');
+    var devBuyEth = devBuyInput ? parseFloat(devBuyInput.value) || 0 : 0;
+    var devBuyWei = devBuyEth > 0 ? BigInt(Math.round(devBuyEth * 1e18)) : 0n;
 
     var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
 
@@ -863,8 +885,9 @@ async function handleLaunchDeploy() {
         setBtnState(btn, 'Deploying token...', true);
 
         // Step 1: Deploy token via Clanker v4
-        var calldata = encodeClankerDeploy(name, symbol);
-        var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200');
+        var calldata = encodeClankerDeploy(name, symbol, devBuyWei);
+        var txValue = devBuyWei > 0n ? '0x' + devBuyWei.toString(16) : undefined;
+        var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200', txValue);
 
         var tokenAddress = parseDeployedToken(result.receipt);
 
@@ -1275,6 +1298,8 @@ function resetForm() {
     state.deployTxHash = null;
     state.allocationPct = 0;
     state.burnTxHash = null;
+    state.chain = 'base';
+    state.solanaWallet = null;
 
     // Clear all form inputs
     ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
@@ -1300,8 +1325,15 @@ function resetForm() {
     if (poolSelect) poolSelect.value = '';
     poolTokensCache = null;
 
+    // Reset dev buy input
+    var devBuyInput = document.getElementById('devBuyAmount');
+    if (devBuyInput) devBuyInput.value = '';
+
     // Reset allocation tier UI
     selectAllocationTier(0);
+
+    // Reset chain selector
+    selectChain('base');
 
     // Hide success states
     ['successStep', 'incubatedSuccessStep', 'partnerSuccessStep'].forEach(function(id) {
@@ -1313,6 +1345,216 @@ function resetForm() {
     closeToolDrawer();
 
     updateUI();
+}
+
+// ══════════════════════════════════════
+// CHAIN SELECTOR
+// ══════════════════════════════════════
+
+function selectChain(chain) {
+    state.chain = chain;
+    var btns = document.querySelectorAll('.chain-btn');
+    btns.forEach(function(b) { b.classList.toggle('selected', b.dataset.chain === chain); });
+
+    var allocSection = document.getElementById('allocationSection');
+    var allocLabel = document.getElementById('allocationLabel');
+    var devBuyUnit = document.getElementById('devBuyUnit');
+    var devBuyHint = document.getElementById('devBuyHint');
+    var feeInfo = document.querySelector('#drawerLaunch .drawer-info');
+
+    if (chain === 'solana') {
+        if (allocLabel) allocLabel.textContent = 'Launch Tier (burn CLAWS as launch gate)';
+        if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
+        if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
+    } else {
+        if (allocLabel) allocLabel.textContent = 'Dev Allocation (burn CLAWS for token supply)';
+        if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
+        if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
+    }
+}
+window.selectChain = selectChain;
+
+// ══════════════════════════════════════
+// SOLANA LAUNCH FLOW (via Bags API)
+// ══════════════════════════════════════
+
+async function handleSolanaLaunch() {
+    if (state.deploying) return;
+
+    var name = document.getElementById('tokenName').value.trim();
+    var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var website = document.getElementById('launchWebsite').value.trim();
+
+    if (!name) return showToast('Token name is required', 'error');
+    if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
+
+    var btn = document.getElementById('deployLaunchBtn');
+
+    try {
+        // Step 1: Connect Solana wallet (Phantom)
+        setBtnState(btn, 'Connecting Solana wallet...', true);
+        state.deploying = true;
+        state.burnTxHash = null;
+
+        var solPubkey = await window.connectSolanaWallet();
+        if (!solPubkey) {
+            state.deploying = false;
+            setBtnState(btn, 'Deploy Token', false);
+            return;
+        }
+        state.solanaWallet = solPubkey;
+
+        // Step 2: Ensure EVM wallet connected (for JWT auth + CLAWS burn)
+        if (!state.wallet) {
+            setBtnState(btn, 'Connect EVM wallet for CLAWS...', true);
+            await connectWallet();
+            if (!state.wallet) {
+                state.deploying = false;
+                setBtnState(btn, 'Deploy Token', false);
+                return;
+            }
+        }
+
+        // Step 3: CLAWS burn (same gate as Base)
+        var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
+        if (state.allocationPct > 0 && burnAmount > 0) {
+            var balHex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
+            var bal = Number(BigInt(balHex)) / 1e18;
+            if (bal < burnAmount) {
+                state.deploying = false;
+                setBtnState(btn, 'Deploy Token', false);
+                return showToast('Insufficient CLAWS balance. Need ' + fmt(burnAmount) + ' CLAWS.', 'error');
+            }
+
+            setBtnState(btn, 'Burning ' + fmt(burnAmount) + ' CLAWS...', true);
+            var burnAmountWei = BigInt(burnAmount) * BigInt('1000000000000000000');
+            var burnData = TRANSFER_SEL + pad32(DEAD_ADDRESS) + pad32(toHex(burnAmountWei));
+            var burnResult = await sendTxAndWait(state.provider, state.wallet, CLAWS, burnData);
+            state.burnTxHash = burnResult.txHash;
+        }
+
+        // Ensure we have a JWT before calling backend
+        if (!localStorage.getItem('inclawbate_token') && state.wallet) {
+            try {
+                var authResp = await fetch('/api/inclawbate/wallet-connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: state.wallet })
+                });
+                var authData = await authResp.json();
+                if (authResp.ok && authData.success && authData.token) {
+                    localStorage.setItem('inclawbate_token', authData.token);
+                    if (authData.profile) localStorage.setItem('inclawbate_profile', JSON.stringify(authData.profile));
+                }
+            } catch (e) { /* will fail gracefully */ }
+        }
+
+        // Step 4: Create token info on Bags
+        setBtnState(btn, 'Creating token on Solana...', true);
+        var createResult = await apiPost({
+            action: 'bags-create-token',
+            name: name,
+            symbol: symbol,
+            description: desc,
+            image_url: ''
+        });
+        if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
+
+        var tokenMint = createResult.tokenMint;
+        var ipfsUrl = createResult.ipfsUrl || createResult.tokenMetadata || '';
+        if (!tokenMint) throw new Error('No tokenMint returned from Bags');
+
+        // Step 5: Configure fee sharing (80/20 split)
+        setBtnState(btn, 'Configuring fee split...', true);
+        var feeResult = await apiPost({
+            action: 'bags-fee-config',
+            token_mint: tokenMint,
+            creator_solana_wallet: solPubkey
+        });
+        if (feeResult.error) throw new Error('Fee config failed: ' + feeResult.error);
+
+        var configKey = feeResult.meteoraConfigKey || feeResult.configKey || null;
+
+        // Step 6: Sign fee config transactions if provided
+        var solana = (window.phantom && window.phantom.solana) || window.solana;
+        if (feeResult.transactions && feeResult.transactions.length > 0) {
+            setBtnState(btn, 'Signing fee config txs...', true);
+            for (var fi = 0; fi < feeResult.transactions.length; fi++) {
+                var txBytes = Uint8Array.from(atob(feeResult.transactions[fi]), function(c) { return c.charCodeAt(0); });
+                var feeTx = solanaWeb3.Transaction.from(txBytes);
+                await solana.signAndSendTransaction(feeTx);
+            }
+        }
+
+        // Step 7: Create launch transaction
+        var devBuyInput = document.getElementById('devBuyAmount');
+        var devBuySol = devBuyInput ? parseFloat(devBuyInput.value) || 0 : 0;
+        var devBuyLamports = devBuySol > 0 ? Math.round(devBuySol * 1e9) : 0;
+
+        setBtnState(btn, 'Creating launch transaction...', true);
+        var launchResult = await apiPost({
+            action: 'bags-create-launch-tx',
+            token_mint: tokenMint,
+            creator_solana_wallet: solPubkey,
+            initial_buy_lamports: devBuyLamports,
+            config_key: configKey,
+            ipfs_url: ipfsUrl
+        });
+        if (launchResult.error) throw new Error('Launch tx failed: ' + launchResult.error);
+
+        // Step 8: Sign + send launch transaction
+        setBtnState(btn, 'Sign in Phantom to launch...', true);
+        var launchTxBytes = Uint8Array.from(atob(launchResult.transaction), function(c) { return c.charCodeAt(0); });
+        var launchTx = solanaWeb3.Transaction.from(launchTxBytes);
+        var sendResult = await solana.signAndSendTransaction(launchTx);
+        var solanaTxSig = sendResult.signature || sendResult;
+
+        state.deployedToken = tokenMint;
+        state.deployTxHash = typeof solanaTxSig === 'string' ? solanaTxSig : '';
+
+        // Step 9: Register with backend
+        setBtnState(btn, 'Registering project...', true);
+        var regResult = await apiPost({
+            action: 'register',
+            token_address: tokenMint,
+            token_name: name,
+            token_symbol: symbol,
+            deploy_tx_hash: state.deployTxHash,
+            description: desc,
+            website_url: website,
+            fee_split_bps: 2000,
+            tier: 'permissionless',
+            creator_wallet: state.wallet,
+            burn_tx_hash: state.burnTxHash || null,
+            allocation_pct: state.allocationPct,
+            burn_amount: burnAmount,
+            chain: 'solana',
+            solana_wallet: solPubkey,
+            solana_token_mint: tokenMint
+        });
+
+        if (regResult.error) {
+            showToast('Token launched on Solana but registration failed: ' + regResult.error, 'error', 10000);
+        } else {
+            state.project = regResult.project;
+            showToast('Token launched on Solana!', 'success');
+        }
+
+        state.step = 4;
+        state.deploying = false;
+        closeToolDrawer();
+        updateUI();
+
+    } catch (e) {
+        state.deploying = false;
+        setBtnState(btn, 'Deploy Token', false);
+        if (e.code === 4001 || (e.message && e.message.includes('rejected'))) {
+            showToast('Transaction rejected by user', 'error');
+        } else {
+            showToast('Solana launch failed: ' + (e.message || 'Unknown error'), 'error');
+        }
+    }
 }
 
 // ── Tier Selection for Incubation ──
@@ -1368,10 +1610,21 @@ function updateUI() {
 
     if (state.step === 4 && successStep) {
         successStep.style.display = 'block';
+        var isSolana = state.chain === 'solana';
         var addrEl = successStep.querySelector('.deployed-address');
         if (addrEl && state.deployedToken) addrEl.textContent = state.deployedToken;
         var txLink = successStep.querySelector('.deploy-tx-link');
-        if (txLink && state.deployTxHash) txLink.href = 'https://basescan.org/tx/' + state.deployTxHash;
+        if (txLink && state.deployTxHash) {
+            if (isSolana) {
+                txLink.href = 'https://solscan.io/tx/' + state.deployTxHash;
+                txLink.textContent = 'View on Solscan';
+            } else {
+                txLink.href = 'https://basescan.org/tx/' + state.deployTxHash;
+                txLink.textContent = 'View on BaseScan';
+            }
+        }
+        var successSubtitle = document.getElementById('successSubtitle');
+        if (successSubtitle) successSubtitle.textContent = isSolana ? 'Your token is live on Solana. Here are the details:' : 'Your token is live on Base. Here are the details:';
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
         var agentNote = document.getElementById('agentSuccessNote');
@@ -1381,7 +1634,7 @@ function updateUI() {
         if (burnNote && state.allocationPct > 0 && state.burnTxHash) {
             burnNote.style.display = 'block';
             var burnText = document.getElementById('burnSuccessText');
-            if (burnText) burnText.textContent = 'Burned ' + fmt(ALLOCATION_TIERS[state.allocationPct]) + ' CLAWS for ' + state.allocationPct + '% allocation';
+            if (burnText) burnText.textContent = 'Burned ' + fmt(ALLOCATION_TIERS[state.allocationPct]) + ' CLAWS for ' + state.allocationPct + '% ' + (isSolana ? 'launch tier' : 'allocation');
             var burnLink = document.getElementById('burnTxLink');
             if (burnLink) burnLink.href = 'https://basescan.org/tx/' + state.burnTxHash;
         }
