@@ -1427,8 +1427,9 @@ async function handleSolanaLaunch() {
         });
         if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
 
-        var tokenMint = createResult.tokenMint || createResult.mint;
-        var metadataUrl = createResult.metadataUrl || createResult.ipfsUrl || createResult.uri || '';
+        var bagsData = createResult.response || createResult;
+        var tokenMint = bagsData.tokenMint || createResult.tokenMint;
+        var metadataUrl = bagsData.tokenMetadata || createResult.metadataUrl || '';
         if (!tokenMint) throw new Error('No tokenMint returned from Bags. Response: ' + JSON.stringify(createResult));
 
         // Step 5: Configure fee sharing (80/20 split)
