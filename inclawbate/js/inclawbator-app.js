@@ -27,6 +27,19 @@ function decodeTxData(data) {
     // Already a Uint8Array or array of numbers
     if (data instanceof Uint8Array) return data;
     if (Array.isArray(data)) return new Uint8Array(data);
+    // Object with data/type pattern (Buffer-like), or object with numeric keys
+    if (typeof data === 'object' && data !== null) {
+        if (data.data && Array.isArray(data.data)) return new Uint8Array(data.data);
+        if (data.type === 'Buffer' && data.data) return new Uint8Array(data.data);
+        // Object with numeric keys like {0: 1, 1: 2, ...}
+        var keys = Object.keys(data);
+        if (keys.length > 0 && !isNaN(keys[0])) {
+            var arr = new Uint8Array(keys.length);
+            for (var oi = 0; oi < keys.length; oi++) arr[oi] = data[keys[oi]];
+            return arr;
+        }
+        throw new Error('Unknown tx object format. Keys: ' + keys.slice(0, 5).join(','));
+    }
     if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
     // Try base64 first (contains +, /, = which base58 doesn't use)
     if (/[+\/=]/.test(data) || /^[A-Za-z0-9+\/]+=*$/.test(data)) {
@@ -1476,9 +1489,11 @@ async function handleSolanaLaunch() {
 
         // Step 6: Sign fee config transactions if provided
         var feeTxs = feeData.transactions || feeResult.transactions || [];
+        console.log('[Solana] Fee config response:', JSON.stringify(feeData).slice(0, 500));
         if (feeTxs.length > 0) {
             setBtnState(btn, 'Signing fee config txs...', true);
             for (var fi = 0; fi < feeTxs.length; fi++) {
+                console.log('[Solana] Fee tx ' + fi + ' type:', typeof feeTxs[fi], Array.isArray(feeTxs[fi]) ? 'array(' + feeTxs[fi].length + ')' : '');
                 var txBytes = decodeTxData(feeTxs[fi]);
                 await window.signAndSendSolanaTransaction(txBytes);
             }
@@ -1503,7 +1518,9 @@ async function handleSolanaLaunch() {
         // Step 8: Sign + send launch transaction
         setBtnState(btn, 'Sign in wallet to launch...', true);
         var launchData = launchResult.response || launchResult;
-        var launchTxBytes = decodeTxData(launchData.transaction || launchResult.transaction);
+        console.log('[Solana] Launch tx response:', JSON.stringify(launchData).slice(0, 500));
+        var rawLaunchTx = launchData.transaction || launchData.serializedTransaction || launchResult.transaction;
+        var launchTxBytes = decodeTxData(rawLaunchTx);
         var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
 
