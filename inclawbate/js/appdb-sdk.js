@@ -5,7 +5,7 @@
 
     var scriptTag = document.currentScript || document.querySelector('script[data-app-id]');
     var appId = scriptTag ? scriptTag.getAttribute('data-app-id') : null;
-    var API = 'https://inclawbate.com/api/appdb';
+    var API = '/api/appdb';
 
     // User scope: wallet address if available, else anonymous localStorage ID
     function getUserScope() {
