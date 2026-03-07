@@ -943,17 +943,23 @@ export default async function handler(req, res) {
             if (!user) return res.status(401).json({ error: 'Authentication required' });
             if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
 
-            const { name, symbol, description: desc, image_url } = req.body;
+            const { name, symbol, description: desc, image_url, website_url, twitter, telegram } = req.body;
             if (!name || !symbol) return res.status(400).json({ error: 'name and symbol required' });
 
             try {
+                const body = { name, symbol, description: desc || '' };
+                if (image_url) body.imageUrl = image_url;
+                if (website_url) body.website = website_url;
+                if (twitter) body.twitter = twitter;
+                if (telegram) body.telegram = telegram;
+
                 const resp = await fetch(BAGS_API + '/token-launch/create-token-info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
-                    body: JSON.stringify({ name, symbol, description: desc || '', imageUrl: image_url || '' })
+                    body: JSON.stringify(body)
                 });
                 const data = await resp.json();
-                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags API error' });
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
                 return res.status(200).json(data);
             } catch (e) {
                 return res.status(500).json({ error: 'Bags API request failed: ' + e.message });
@@ -974,15 +980,14 @@ export default async function handler(req, res) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
                     body: JSON.stringify({
-                        tokenMint: token_mint,
-                        feeRecipients: [
-                            { wallet: creator_solana_wallet, bps: 8000 },
-                            { wallet: INCLAWBATE_SOL_TREASURY, bps: 2000 }
-                        ]
+                        payer: creator_solana_wallet,
+                        baseMint: token_mint,
+                        claimersArray: [creator_solana_wallet, INCLAWBATE_SOL_TREASURY],
+                        basisPointsArray: [8000, 2000]
                     })
                 });
                 const data = await resp.json();
-                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags fee config error' });
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
                 return res.status(200).json(data);
             } catch (e) {
                 return res.status(500).json({ error: 'Bags fee config failed: ' + e.message });
@@ -995,23 +1000,25 @@ export default async function handler(req, res) {
             if (!user) return res.status(401).json({ error: 'Authentication required' });
             if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
 
-            const { token_mint, creator_solana_wallet, initial_buy_lamports, config_key, ipfs_url } = req.body;
+            const { token_mint, creator_solana_wallet, initial_buy_lamports, config_key, metadata_url } = req.body;
             if (!token_mint || !creator_solana_wallet) return res.status(400).json({ error: 'token_mint and creator_solana_wallet required' });
 
             try {
+                const body = {
+                    tokenMint: token_mint,
+                    launchWallet: creator_solana_wallet,
+                    initialBuyLamports: initial_buy_lamports || 0
+                };
+                if (config_key) body.configKey = config_key;
+                if (metadata_url) body.metadataUrl = metadata_url;
+
                 const resp = await fetch(BAGS_API + '/token-launch/create-launch-transaction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
-                    body: JSON.stringify({
-                        tokenMint: token_mint,
-                        wallet: creator_solana_wallet,
-                        initialBuyLamports: initial_buy_lamports || 0,
-                        meteoraConfigKey: config_key || undefined,
-                        ipfsUrl: ipfs_url || undefined
-                    })
+                    body: JSON.stringify(body)
                 });
                 const data = await resp.json();
-                if (!resp.ok) return res.status(resp.status).json({ error: data.message || 'Bags launch tx error' });
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
                 return res.status(200).json(data);
             } catch (e) {
                 return res.status(500).json({ error: 'Bags launch tx failed: ' + e.message });

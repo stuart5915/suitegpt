@@ -1418,9 +1418,9 @@ async function handleSolanaLaunch() {
         });
         if (createResult.error) throw new Error('Bags create failed: ' + createResult.error);
 
-        var tokenMint = createResult.tokenMint;
-        var ipfsUrl = createResult.ipfsUrl || createResult.tokenMetadata || '';
-        if (!tokenMint) throw new Error('No tokenMint returned from Bags');
+        var tokenMint = createResult.tokenMint || createResult.mint;
+        var metadataUrl = createResult.metadataUrl || createResult.ipfsUrl || createResult.uri || '';
+        if (!tokenMint) throw new Error('No tokenMint returned from Bags. Response: ' + JSON.stringify(createResult));
 
         // Step 5: Configure fee sharing (80/20 split)
         setBtnState(btn, 'Configuring fee split...', true);
@@ -1431,7 +1431,7 @@ async function handleSolanaLaunch() {
         });
         if (feeResult.error) throw new Error('Fee config failed: ' + feeResult.error);
 
-        var configKey = feeResult.meteoraConfigKey || feeResult.configKey || null;
+        var configKey = feeResult.configKey || feeResult.meteoraConfigKey || null;
 
         // Step 6: Sign fee config transactions if provided
         var solana = (window.phantom && window.phantom.solana) || window.solana;
@@ -1456,7 +1456,7 @@ async function handleSolanaLaunch() {
             creator_solana_wallet: solPubkey,
             initial_buy_lamports: devBuyLamports,
             config_key: configKey,
-            ipfs_url: ipfsUrl
+            metadata_url: metadataUrl
         });
         if (launchResult.error) throw new Error('Launch tx failed: ' + launchResult.error);
 
