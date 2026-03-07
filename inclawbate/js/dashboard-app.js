@@ -539,10 +539,17 @@ async function fetchTokenPrices(tokens) {
     const addrs = tokens.filter(p => p.token_address).map(p => p.token_address);
     if (!addrs.length) return;
 
-    // Dedupe and fetch each
+    // Dedupe and fetch each, wait for all to settle
     const unique = [...new Set(addrs.map(a => a.toLowerCase()))];
-    for (const addr of unique) {
-        fetchSingleTokenPrice(addr);
+    await Promise.allSettled(unique.map(addr => fetchSingleTokenPrice(addr)));
+
+    // Fallback: any fee rows still hidden → show "No trading activity"
+    for (const addr of addrs) {
+        const feeEl = document.getElementById('fee-' + addr);
+        if (feeEl && feeEl.style.display === 'none') {
+            feeEl.innerHTML = '<span class="fee-estimate-value fee-none">No trading activity (24h)</span>';
+            feeEl.style.display = '';
+        }
     }
 }
 
