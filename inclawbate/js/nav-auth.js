@@ -42,7 +42,7 @@
         {
             name: 'Coinbase Wallet',
             rdns: 'com.coinbase.wallet',
-            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMCIgZmlsbD0iIzAwNTJGRiIvPjxwYXRoIGQ9Ik0yNCAxMGMtNy43MzIgMC0xNCCA2LjI2OC0xNCAxNHM2LjI2OCAxNCAxNCAxNCAxNC02LjI2OCAxNC0xNC02LjI2OC0xNC0xNC0xNHptLTUgMTFhMiAyIDAgMDEyLTJoNmEyIDIgMCAwMTIgMnY2YTIgMiAwIDAxLTIgMmgtNmEyIDIgMCAwMS0yLTJ2LTZ6IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
+            icon: "data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='48' rx='10' fill='%230052FF'/%3E%3Cpath d='M24 10c-7.732 0-14 6.268-14 14s6.268 14 14 14 14-6.268 14-14-6.268-14-14-14zm-5 11a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2v-6z' fill='%23fff'/%3E%3C/svg%3E",
             deepLink: function(url) { return 'https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(url); },
             installUrl: 'https://www.coinbase.com/wallet/downloads'
         },
@@ -201,12 +201,21 @@
                 var providers = window._eip6963Providers || [];
                 var detectedRdns = {};
 
-                if (providers.length > 0) {
+                // Deduplicate providers by rdns or name
+                var seenNames = {};
+                var uniqueProviders = providers.filter(function(p) {
+                    var key = ((p.info && p.info.rdns) || (p.info && p.info.name) || '').toLowerCase();
+                    if (!key || seenNames[key]) return false;
+                    seenNames[key] = true;
+                    return true;
+                });
+
+                if (uniqueProviders.length > 0) {
                     var detSec = document.createElement('div');
                     detSec.className = 'ws-section';
                     detSec.innerHTML = '<div class="ws-section-label">Detected Wallets</div>';
 
-                    providers.forEach(function(p) {
+                    uniqueProviders.forEach(function(p) {
                         var info = p.info || {};
                         var rdns = (info.rdns || '').toLowerCase();
                         detectedRdns[rdns] = true;
