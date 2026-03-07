@@ -694,7 +694,7 @@ async function ensureProvider() {
     // they can return empty even on a valid session. If WalletKit has
     // an address, trust it and let transaction-level timeouts catch
     // truly broken sessions.
-    if (window.WalletKit && window.WalletKit.getAddress()) {
+    if (window.WalletKit && window.WalletKit.isConnected()) {
         return provider;
     }
     // For browser extensions, validate with eth_accounts
@@ -2094,10 +2094,10 @@ async function init() {
     // Auto-reconnect saved wallet (wait for late-loading wallets)
     if (!window.ethereum && window._awaitProvider) await window._awaitProvider();
     try {
-        // Try WalletKit first (handles WalletConnect sessions)
-        // Check getAddress() regardless of isConnected() — Reown can report
-        // disconnected while still having a valid session and address
-        if (window.WalletKit) {
+        // Try WalletKit first — only if isConnected() confirms a live session.
+        // Don't use getAddress() alone — it returns a cached address even after
+        // the WalletConnect relay session has expired (e.g. after PC restart).
+        if (window.WalletKit && window.WalletKit.isConnected()) {
             var wkAddr = window.WalletKit.getAddress();
             if (wkAddr) {
                 walletAddr = wkAddr;
@@ -2121,8 +2121,10 @@ async function init() {
     routeApp();
 
     // Delayed WalletKit check — Reown's subscribeProvider can fire after init
+    // Gate on isConnected() to avoid using cached addresses from dead sessions
     if (!walletAddr && window.WalletKit) {
         setTimeout(function() {
+            if (!window.WalletKit.isConnected()) return;
             var wkAddr = window.WalletKit.getAddress();
             if (wkAddr && !walletAddr) {
                 walletAddr = wkAddr;

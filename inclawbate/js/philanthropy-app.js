@@ -1206,10 +1206,12 @@
         window.WalletKit.onDisconnect(function() {
             disconnectWallet();
         });
-        // isConnected() can be stale — check getAddress() directly
-        var wkAddr = window.WalletKit.getAddress();
-        if (wkAddr) {
-            onWalletConnected(wkAddr);
+        // Only auto-reconnect if isConnected() confirms a live session
+        if (window.WalletKit.isConnected()) {
+            var wkAddr = window.WalletKit.getAddress();
+            if (wkAddr) {
+                onWalletConnected(wkAddr);
+            }
         }
     }
 

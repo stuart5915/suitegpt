@@ -1988,8 +1988,12 @@ function daysSince(dateStr) {
             window.WalletKit.onConnect(function(address) {
                 if (address) onWalletConnected(address);
             });
-            var wkAddr = window.WalletKit.getAddress();
-            if (wkAddr) { onWalletConnected(wkAddr); return; }
+            // Only auto-reconnect if isConnected() confirms a live session.
+            // getAddress() alone returns cached addresses after PC restart.
+            if (window.WalletKit.isConnected()) {
+                var wkAddr = window.WalletKit.getAddress();
+                if (wkAddr) { onWalletConnected(wkAddr); return; }
+            }
         }
         // Then try browser extension
         var saved = null;
@@ -2007,6 +2011,7 @@ function daysSince(dateStr) {
         // Delayed WalletKit check — Reown's subscribeProvider can fire late
         if (!stakeWallet && window.WalletKit) {
             setTimeout(function() {
+                if (!window.WalletKit.isConnected()) return;
                 var wkAddr = window.WalletKit.getAddress();
                 if (wkAddr && !stakeWallet) onWalletConnected(wkAddr);
             }, 1500);
