@@ -1629,6 +1629,13 @@
         if (appId) openDetail(appId);
     });
 
+    // Prevent iframe focus from auto-scrolling the page
+    window.addEventListener('blur', function() {
+        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+            window.scrollTo({ top: 0 });
+        }
+    });
+
     // ── Moderate (SUPER_ADMIN only) ──
     async function moderate(appId, moderateAction) {
         if (!isSuperAdmin()) return;
