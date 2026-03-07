@@ -1835,6 +1835,14 @@ function daysSince(dateStr) {
                 status.textContent = 'Requesting token approval...';
                 var approveData = SEL.approve + pad32(STAKING_PROXY) + pad32(MAX_UINT256);
                 await sendTxAndWait(provider, stakeWallet, INCLAWNCH_ADDRESS, approveData, status, 'Approving contract...');
+
+                // Wait for RPC nodes to propagate the new allowance before staking
+                status.textContent = 'Approval confirmed. Preparing stake...';
+                for (var retries = 0; retries < 10; retries++) {
+                    await new Promise(function(r) { setTimeout(r, 2000); });
+                    var newAllowance = BigInt(await contractRead(INCLAWNCH_ADDRESS, SEL.allowance + pad32(stakeWallet) + pad32(STAKING_PROXY)));
+                    if (newAllowance >= amountWei) break;
+                }
             }
 
             // Step 3: Stake

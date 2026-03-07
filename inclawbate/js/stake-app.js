@@ -1096,6 +1096,14 @@ async function doPoolStake() {
             status.textContent = 'Requesting token approval...';
             var approveData = SEL.approve + pad32(pool.staking) + pad32(MAX_UINT256);
             await sendTxAndWait(provider, walletAddr, pool.token, approveData, status, 'Approving contract...');
+
+            // Wait for RPC nodes to propagate the new allowance before staking
+            status.textContent = 'Approval confirmed. Preparing stake...';
+            for (var retries = 0; retries < 10; retries++) {
+                await new Promise(function(r) { setTimeout(r, 2000); });
+                var newAllowance = safeBigInt(await contractRead(pool.token, SEL.allowance + pad32(walletAddr) + pad32(pool.staking)));
+                if (newAllowance >= amountWei) break;
+            }
         }
 
         // Stake
@@ -1486,6 +1494,14 @@ async function doDepositRewards() {
             status.textContent = 'Requesting token approval...';
             var approveData = SEL.approve + pad32(pool.staking) + pad32(MAX_UINT256);
             await sendTxAndWait(provider, walletAddr, depositTokenAddr, approveData, status, 'Approving contract...');
+
+            // Wait for RPC nodes to propagate the new allowance
+            status.textContent = 'Approval confirmed. Preparing deposit...';
+            for (var retries = 0; retries < 10; retries++) {
+                await new Promise(function(r) { setTimeout(r, 2000); });
+                var newAllowance = safeBigInt(await contractRead(depositTokenAddr, SEL.allowance + pad32(walletAddr) + pad32(pool.staking)));
+                if (newAllowance >= amountWei) break;
+            }
         }
 
         // depositRewards(uint256 amount, uint256 duration)
