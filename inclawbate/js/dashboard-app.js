@@ -765,6 +765,11 @@ const STAKING_USER_SEL = {
     balanceOf: '0x70a08231',
     earned:    '0x008cc262',
 };
+const STAKING_ACTION_SEL = {
+    claim:           '0x4e71d92d', // claim()
+    claimAndRestake: '0xf755d8c3', // claimAndRestake()
+};
+let _myPositions = []; // cached for claim-all
 
 async function rpcBatchCall(calls) {
     const body = calls.map((c, i) => ({
@@ -861,10 +866,19 @@ async function loadMyStakingPositions() {
 
     if (positions.length === 0) {
         container.innerHTML = '<div class="overview-empty"><p>No staking positions. <a href="/stake">Explore pools</a></p></div>';
+        _myPositions = [];
+        const actionsEl = document.getElementById('mysActions');
+        if (actionsEl) actionsEl.style.display = 'none';
         return;
     }
 
+    _myPositions = positions;
     container.innerHTML = positions.map(renderMyStakingCard).join('');
+
+    // Show claim/compound buttons if any position has earned > 0
+    const hasEarnings = positions.some(p => p.earned > 0);
+    const actionsEl = document.getElementById('mysActions');
+    if (actionsEl) actionsEl.style.display = hasEarnings ? 'flex' : 'none';
 }
 
 function renderMyStakingCard(pos) {
@@ -891,6 +905,70 @@ function renderMyStakingCard(pos) {
             <div class="mys-col"><span class="mys-val">${fmt(pos.earned)}</span><span class="mys-label">${esc(pos.rewardTicker)} Earned</span></div>
             <div class="mys-col mys-col-rate">${rateStr}</div>
         </a>`;
+}
+
+async function claimAllPositions(compound) {
+    const provider = window.ethereum;
+    if (!provider) { alert('Please connect your wallet first.'); return; }
+
+    const claimable = _myPositions.filter(p => {
+        if (p.earned <= 0) return false;
+        // Compound only works for same-token pools (stake token = reward token)
+        if (compound && p.rewardTicker !== p.ticker) return false;
+        return true;
+    });
+    if (claimable.length === 0) {
+        alert(compound ? 'No compoundable positions (only same-token pools can compound).' : 'No rewards to claim.');
+        return;
+    }
+
+    const action = compound ? 'Compound' : 'Claim';
+    const poolNames = claimable.map(p => p.ticker).join(', ');
+    if (!confirm(action + ' rewards from ' + claimable.length + ' pool' + (claimable.length > 1 ? 's' : '') + '?\n(' + poolNames + ')\n\nYou\'ll confirm each transaction in your wallet.')) return;
+
+    const btn = document.getElementById(compound ? 'mysCompoundAll' : 'mysClaimAll');
+    const otherBtn = document.getElementById(compound ? 'mysClaimAll' : 'mysCompoundAll');
+    if (btn) { btn.disabled = true; btn.textContent = action + 'ing...'; }
+    if (otherBtn) otherBtn.disabled = true;
+
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    const wallet = accounts[0];
+
+    // Ensure Base chain
+    try {
+        const chainId = await provider.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+        }
+    } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = action + ' All'; }
+        if (otherBtn) otherBtn.disabled = false;
+        return;
+    }
+
+    const selector = compound ? STAKING_ACTION_SEL.claimAndRestake : STAKING_ACTION_SEL.claim;
+    let success = 0, failed = 0;
+
+    for (let i = 0; i < claimable.length; i++) {
+        const pos = claimable[i];
+        if (btn) btn.textContent = action + 'ing ' + (i + 1) + '/' + claimable.length + '...';
+        try {
+            await sendTx(wallet, pos.staking, selector);
+            success++;
+        } catch (e) {
+            console.warn(action + ' failed for ' + pos.ticker + ':', e);
+            failed++;
+        }
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = action + ' All'; }
+    if (otherBtn) otherBtn.disabled = false;
+
+    const msg = success + ' of ' + claimable.length + ' ' + action.toLowerCase() + (success !== 1 ? 's' : '') + ' successful.';
+    alert(msg + (failed > 0 ? ' (' + failed + ' failed)' : ''));
+
+    // Refresh positions
+    loadMyStakingPositions();
 }
 
 const CLANKER_AIRDROP_V2 = '0xf652B3610D75D81871bf96DB50825d9af28391E0';
@@ -2723,6 +2801,10 @@ function init() {
         if (!auth) { alert('Connect your wallet first.'); return; }
         openCreateProjectModal(null);
     });
+
+    // Wire claim/compound all buttons
+    document.getElementById('mysClaimAll')?.addEventListener('click', () => claimAllPositions(false));
+    document.getElementById('mysCompoundAll')?.addEventListener('click', () => claimAllPositions(true));
 }
 
 // Boot
