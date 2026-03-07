@@ -860,27 +860,7 @@ async function handleLaunchDeploy() {
     var devBuyEth = devBuyInput ? parseFloat(devBuyInput.value) || 0 : 0;
     var devBuyWei = devBuyEth > 0 ? BigInt(Math.round(devBuyEth * 1e18)) : 0n;
 
-    var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
-
     try {
-        // Step 0: Burn CLAWS if allocation selected
-        if (state.allocationPct > 0 && burnAmount > 0) {
-            // Check balance
-            var balHex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
-            var bal = Number(BigInt(balHex)) / 1e18;
-            if (bal < burnAmount) {
-                state.deploying = false;
-                return showToast('Insufficient CLAWS balance. Need ' + fmt(burnAmount) + ' CLAWS.', 'error');
-            }
-
-            setBtnState(btn, 'Burning ' + fmt(burnAmount) + ' CLAWS...', true);
-
-            // Transfer CLAWS to dead address (burn)
-            var burnAmountWei = BigInt(burnAmount) * BigInt('1000000000000000000');
-            var burnData = TRANSFER_SEL + pad32(DEAD_ADDRESS) + pad32(toHex(burnAmountWei));
-            var burnResult = await sendTxAndWait(state.provider, state.wallet, CLAWS, burnData);
-            state.burnTxHash = burnResult.txHash;
-        }
 
         setBtnState(btn, 'Deploying token...', true);
 
@@ -1356,18 +1336,13 @@ function selectChain(chain) {
     var btns = document.querySelectorAll('.chain-btn');
     btns.forEach(function(b) { b.classList.toggle('selected', b.dataset.chain === chain); });
 
-    var allocSection = document.getElementById('allocationSection');
-    var allocLabel = document.getElementById('allocationLabel');
     var devBuyUnit = document.getElementById('devBuyUnit');
     var devBuyHint = document.getElementById('devBuyHint');
-    var feeInfo = document.querySelector('#drawerLaunch .drawer-info');
 
     if (chain === 'solana') {
-        if (allocLabel) allocLabel.textContent = 'Launch Tier (burn CLAWS as launch gate)';
         if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
     } else {
-        if (allocLabel) allocLabel.textContent = 'Dev Allocation (burn CLAWS for token supply)';
         if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
     }
@@ -1405,33 +1380,15 @@ async function handleSolanaLaunch() {
         }
         state.solanaWallet = solPubkey;
 
-        // Step 2: Ensure EVM wallet connected (for JWT auth + CLAWS burn)
+        // Step 2: Ensure EVM wallet connected (for JWT auth)
         if (!state.wallet) {
-            setBtnState(btn, 'Connect EVM wallet for CLAWS...', true);
+            setBtnState(btn, 'Connect EVM wallet...', true);
             await connectWallet();
             if (!state.wallet) {
                 state.deploying = false;
                 setBtnState(btn, 'Deploy Token', false);
                 return;
             }
-        }
-
-        // Step 3: CLAWS burn (same gate as Base)
-        var burnAmount = ALLOCATION_TIERS[state.allocationPct] || 0;
-        if (state.allocationPct > 0 && burnAmount > 0) {
-            var balHex = await contractRead(CLAWS, SEL.balanceOf + pad32(state.wallet));
-            var bal = Number(BigInt(balHex)) / 1e18;
-            if (bal < burnAmount) {
-                state.deploying = false;
-                setBtnState(btn, 'Deploy Token', false);
-                return showToast('Insufficient CLAWS balance. Need ' + fmt(burnAmount) + ' CLAWS.', 'error');
-            }
-
-            setBtnState(btn, 'Burning ' + fmt(burnAmount) + ' CLAWS...', true);
-            var burnAmountWei = BigInt(burnAmount) * BigInt('1000000000000000000');
-            var burnData = TRANSFER_SEL + pad32(DEAD_ADDRESS) + pad32(toHex(burnAmountWei));
-            var burnResult = await sendTxAndWait(state.provider, state.wallet, CLAWS, burnData);
-            state.burnTxHash = burnResult.txHash;
         }
 
         // Ensure we have a JWT before calling backend
