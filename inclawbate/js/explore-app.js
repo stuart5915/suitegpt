@@ -448,9 +448,10 @@
         var saveBtn = hasAuth
             ? '<button class="exp-btn exp-btn--save' + (savedSlugs.has(app.slug) ? ' saved' : '') + '" onclick="event.stopPropagation();toggleSaveApp(\'' + escapeHtml(app.slug) + '\',this)">' + (savedSlugs.has(app.slug) ? 'Saved' : 'Save') + '</button>'
             : '';
+        var preview = '<div class="exp-app-preview"><iframe src="/s/' + escapeHtml(app.slug) + '" loading="lazy" sandbox="allow-scripts" tabindex="-1"></iframe></div>';
         return '<tr onclick="window.location.href=\'/s/' + escapeHtml(app.slug) + '\'">' +
             '<td><span class="exp-rank">' + (i + 1) + '</span></td>' +
-            '<td><div class="exp-name-cell">' + logoHtml(null, app.name || app.slug) +
+            '<td><div class="exp-name-cell">' + preview +
                 '<div><span class="exp-name">' + escapeHtml(app.name) + '</span>' +
                 (app.category ? '<span class="exp-sub">' + escapeHtml(app.category) + '</span>' : '') +
                 '</div></div></td>' +
