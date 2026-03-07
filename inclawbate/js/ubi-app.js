@@ -138,9 +138,11 @@ function toWei(amount) {
     return BigInt(Math.floor(amount)) * BigInt('1000000000000000000');
 }
 
+function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
+
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 
 // Read from contract via public RPC (no wallet needed)
@@ -183,7 +185,7 @@ async function rpcFetch(body) {
 async function contractRead(to, data) {
     var json = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_call',
         params: [{ to: to, data: data }, 'latest'] });
-    return (json && json.result) || '0x0';
+    return safeHex(json && json.result);
 }
 
 // Batch multiple eth_call reads into a single HTTP request
@@ -198,7 +200,7 @@ async function contractReadBatch(calls) {
     }
     // Sort by id to match input order
     json.sort(function(a, b) { return a.id - b.id; });
-    return json.map(function(r) { return r.result || '0x0'; });
+    return json.map(function(r) { return safeHex(r.result); });
 }
 
 // Send tx via connected wallet and wait for receipt

@@ -25,9 +25,10 @@ function pad32(hex) {
 function toHex(n) {
     return '0x' + BigInt(n).toString(16);
 }
+function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 function fmtNum(n) {
     return Math.round(Number(n) || 0).toLocaleString();
@@ -41,7 +42,7 @@ async function contractRead(to, data) {
             params: [{ to, data }, 'latest'] })
     });
     var json = await res.json();
-    return json.result || '0x0';
+    return safeHex(json.result);
 }
 
 async function contractReadBatch(calls) {
@@ -56,7 +57,7 @@ async function contractReadBatch(calls) {
     });
     var results = await res.json();
     results.sort(function(a, b) { return a.id - b.id; });
-    return results.map(function(r) { return r.result || '0x0'; });
+    return results.map(function(r) { return safeHex(r.result); });
 }
 
 async function ensureBase(p) {

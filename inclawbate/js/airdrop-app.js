@@ -68,9 +68,10 @@ function shortAddr(a) {
 function fmtNum(n) {
     return Math.round(Number(n) || 0).toLocaleString();
 }
+function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 var BASE_RPC = 'https://mainnet.base.org';
 async function contractRead(to, data) {
@@ -81,7 +82,7 @@ async function contractRead(to, data) {
             params: [{ to: to, data: data }, 'latest'] })
     });
     var json = await res.json();
-    return json.result || '0x0';
+    return safeHex(json.result);
 }
 
 // Batch multiple eth_call reads into a single HTTP request
@@ -108,12 +109,12 @@ async function contractReadBatch(calls) {
                     params: [{ to: calls[i].to, data: calls[i].data }, 'latest'] })
             });
             var j = await r.json();
-            out.push(j.result || '0x0');
+            out.push(safeHex(j.result));
         }
         return out;
     }
     results.sort(function(a, b) { return a.id - b.id; });
-    return results.map(function(r) { return r.result || '0x0'; });
+    return results.map(function(r) { return safeHex(r.result); });
 }
 
 function timeSinceStr(dateStr) {

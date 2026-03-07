@@ -69,9 +69,10 @@ var SEL = {
 
 function pad32(hex) { return hex.replace('0x', '').padStart(64, '0'); }
 function toHex(n) { return '0x' + BigInt(n).toString(16); }
+function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
 function fmt(n) { return Math.round(Number(n) || 0).toLocaleString('en-US'); }
@@ -106,7 +107,7 @@ async function rpcFetch(body) {
 async function contractRead(to, data) {
     var json = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_call',
         params: [{ to: to, data: data }, 'latest'] });
-    return (json && json.result) || '0x0';
+    return safeHex(json && json.result);
 }
 
 async function sendTxAndWait(provider, from, to, data, gasLimit, value) {

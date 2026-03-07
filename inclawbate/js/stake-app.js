@@ -237,10 +237,12 @@ async function rpcFetch(body) {
     return null;
 }
 
+function safeHex(val) { return (!val || val === '0x') ? '0x0' : val; }
+
 async function contractRead(to, data) {
     var json = await rpcFetch({ jsonrpc: '2.0', id: 1, method: 'eth_call',
         params: [{ to: to, data: data }, 'latest'] });
-    return (json && json.result) || '0x0';
+    return safeHex(json && json.result);
 }
 
 async function contractReadBatch(calls) {
@@ -253,7 +255,7 @@ async function contractReadBatch(calls) {
         return calls.map(function() { return '0x0'; });
     }
     json.sort(function(a, b) { return a.id - b.id; });
-    return json.map(function(r) { return r.result || '0x0'; });
+    return json.map(function(r) { return safeHex(r.result); });
 }
 
 async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {

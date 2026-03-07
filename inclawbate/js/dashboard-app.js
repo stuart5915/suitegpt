@@ -757,9 +757,10 @@ const FEE_SEL = {
 };
 
 function pad32(hex) { return hex.replace('0x', '').padStart(64, '0'); }
+function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
 function fromWei(hex) {
     if (!hex || hex === '0x' || hex === '0x0') return 0;
-    return Number(BigInt(hex)) / 1e18;
+    try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
 }
 function fmt(n) { return Math.round(Number(n) || 0).toLocaleString('en-US'); }
 
@@ -776,7 +777,7 @@ async function rpcCall(to, data) {
             });
             clearTimeout(timer);
             const json = await res.json();
-            return (json && json.result) || '0x0';
+            return safeHex(json && json.result);
         } catch (e) { continue; }
     }
     return '0x0';

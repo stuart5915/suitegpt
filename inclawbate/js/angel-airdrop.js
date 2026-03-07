@@ -47,6 +47,8 @@
         return hex.replace('0x', '').padStart(64, '0');
     }
 
+    function safeHex(v) { return (!v || v === '0x') ? '0x0' : v; }
+
     function decodeString(hex) {
         if (!hex || hex === '0x' || hex.length < 130) return '';
         try {
@@ -130,7 +132,7 @@
                 var json = await rpcFetch(RPC_URLS[i], batch);
                 if (Array.isArray(json)) {
                     json.sort(function(a, b) { return a.id - b.id; });
-                    return json.map(function(r) { return r.result || '0x0'; });
+                    return json.map(function(r) { return safeHex(r.result); });
                 }
             } catch (e) { /* try next */ }
         }
@@ -195,7 +197,7 @@
                 var json = await rpcFetch(RPC_URLS[i], batch);
                 if (Array.isArray(json)) {
                     json.sort(function(a, b) { return a.id - b.id; });
-                    return json.map(function(r) { return r.result || '0x0'; });
+                    return json.map(function(r) { return safeHex(r.result); });
                 }
             } catch (e) { /* try next */ }
         }
