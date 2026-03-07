@@ -207,23 +207,40 @@ async function contractReadBatch(calls) {
 async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
     // Ensure wallet is on Base before every transaction
     try {
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        await Promise.race([
+            provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }),
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('switch_timeout')); }, 10000);
+            })
+        ]);
     } catch (switchErr) {
         if (switchErr.code === 4902) {
             await provider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
             });
+        } else if (switchErr.message === 'switch_timeout') {
+            throw new Error('Wallet not responding. Please disconnect and reconnect.');
         }
     }
     if (statusEl && statusMsg) {
         statusEl.textContent = statusMsg;
         statusEl.className = 'ubi-stake-status stake-status';
     }
-    var txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{ from: from, to: to, data: data }]
-    });
+    var txHash;
+    try {
+        txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: from, to: to, data: data }]
+        });
+    } catch (txErr) {
+        var errMsg = (txErr.message || '').toLowerCase();
+        if (errMsg.indexOf('session') !== -1 || errMsg.indexOf('disconnect') !== -1 ||
+            errMsg.indexOf('no matching key') !== -1 || errMsg.indexOf('expired') !== -1) {
+            throw new Error('Wallet session expired. Please disconnect and reconnect.');
+        }
+        throw txErr;
+    }
     if (statusEl) {
         statusEl.textContent = 'Confirming transaction...';
     }

@@ -260,23 +260,42 @@ async function contractReadBatch(calls) {
 
 async function sendTxAndWait(provider, from, to, data, statusEl, statusMsg) {
     try {
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+        await Promise.race([
+            provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] }),
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('switch_timeout')); }, 10000);
+            })
+        ]);
     } catch (switchErr) {
         if (switchErr.code === 4902) {
             await provider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{ chainId: BASE_CHAIN_ID, chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }]
             });
+        } else if (switchErr.message === 'switch_timeout') {
+            throw new Error('Wallet not responding. Please disconnect and reconnect.');
         }
+        // Ignore other switch errors — wallet may not support it or is already on Base
     }
     if (statusEl && statusMsg) {
         statusEl.textContent = statusMsg;
         statusEl.className = 'pool-status';
     }
-    var txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{ from: from, to: to, data: data }]
-    });
+    var txHash;
+    try {
+        txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: from, to: to, data: data }]
+        });
+    } catch (txErr) {
+        // Detect stale WalletConnect session errors
+        var errMsg = (txErr.message || '').toLowerCase();
+        if (errMsg.indexOf('session') !== -1 || errMsg.indexOf('disconnect') !== -1 ||
+            errMsg.indexOf('no matching key') !== -1 || errMsg.indexOf('expired') !== -1) {
+            throw new Error('Wallet session expired. Please disconnect and reconnect.');
+        }
+        throw txErr;
+    }
     if (statusEl) statusEl.textContent = 'Confirming transaction...';
     for (var i = 0; i < 90; i++) {
         await new Promise(function(r) { setTimeout(r, 2000); });
@@ -659,6 +678,33 @@ function getProvider() {
     return window.ethereum || (window.phantom && window.phantom.ethereum) || null;
 }
 
+// Validate provider can actually sign transactions (WalletConnect sessions can go stale)
+async function ensureProvider() {
+    var provider = getProvider();
+    if (!provider) {
+        stakeToast('No wallet connected. Please connect your wallet.', 'error');
+        return null;
+    }
+    try {
+        var accounts = await Promise.race([
+            provider.request({ method: 'eth_accounts' }),
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('timeout')); }, 5000);
+            })
+        ]);
+        if (!accounts || accounts.length === 0) {
+            stakeToast('Wallet session expired. Please disconnect and reconnect.', 'error');
+            disconnectPoolWallet();
+            return null;
+        }
+    } catch (e) {
+        stakeToast('Wallet session expired. Please disconnect and reconnect.', 'error');
+        disconnectPoolWallet();
+        return null;
+    }
+    return provider;
+}
+
 function renderPoolPage(pool, key) {
     currentPoolKey = key;
 
@@ -879,13 +925,20 @@ function disconnectPoolWallet() {
     walletAddr = null;
     walletBalance = 0;
     try { localStorage.removeItem('_stake_wallet'); } catch (e) {}
-    if (window.WalletKit && window.WalletKit.isConnected()) window.WalletKit.disconnect();
+    // Always try to disconnect WalletKit — isConnected() can be stale
+    if (window.WalletKit) {
+        try { window.WalletKit.disconnect(); } catch (e) {}
+    }
 
     var btn = document.getElementById('poolConnectBtn');
-    btn.textContent = 'Connect Wallet';
-    btn.classList.remove('connected');
-    document.getElementById('poolStakeSection').classList.remove('visible');
-    document.getElementById('poolPositionSection').classList.remove('visible');
+    if (btn) {
+        btn.textContent = 'Connect Wallet';
+        btn.classList.remove('connected');
+    }
+    var stakeSection = document.getElementById('poolStakeSection');
+    var posSection = document.getElementById('poolPositionSection');
+    if (stakeSection) stakeSection.classList.remove('visible');
+    if (posSection) posSection.classList.remove('visible');
 }
 
 async function onPoolWalletConnected(addr, pool, key) {
@@ -993,7 +1046,8 @@ function startRewardsTick(key) {
 // ══════════════════════════════════════
 
 async function doPoolStake() {
-    if (!walletAddr || !currentPoolKey) return;
+    if (!currentPoolKey) return;
+    if (!walletAddr) { stakeToast('Please connect your wallet first.', 'error'); return; }
     var pool = POOLS[currentPoolKey];
     var input = document.getElementById('poolStakeInput');
     var amount = parseInt(input.value.replace(/[.,]/g, '')) || 0;
@@ -1014,9 +1068,9 @@ async function doPoolStake() {
     btn.disabled = true;
     btn.textContent = 'Staking...';
 
-    var provider = getProvider();
+    var provider = await ensureProvider();
     if (!provider) {
-        status.textContent = 'No wallet connected';
+        status.textContent = 'Wallet session expired. Please reconnect.';
         status.className = 'pool-status error';
         btn.disabled = false;
         btn.textContent = 'Stake';
@@ -1070,9 +1124,10 @@ async function doPoolStake() {
 }
 
 async function doPoolClaim(compound) {
-    if (!walletAddr || !currentPoolKey) return;
+    if (!currentPoolKey) return;
+    if (!walletAddr) { stakeToast('Please connect your wallet first.', 'error'); return; }
     var pool = POOLS[currentPoolKey];
-    var provider = getProvider();
+    var provider = await ensureProvider();
     if (!provider) return;
 
     // No compound for dual-token pools
@@ -1118,9 +1173,10 @@ async function doPoolClaim(compound) {
 }
 
 async function doPoolUnstake() {
-    if (!walletAddr || !currentPoolKey) return;
+    if (!currentPoolKey) return;
+    if (!walletAddr) { stakeToast('Please connect your wallet first.', 'error'); return; }
     var pool = POOLS[currentPoolKey];
-    var provider = getProvider();
+    var provider = await ensureProvider();
     if (!provider) return;
 
     var addrPadded = pad32(walletAddr);
