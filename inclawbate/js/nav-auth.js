@@ -503,7 +503,6 @@
         });
 
         if (wallets.length === 0) {
-            // No wallet found — prompt to install Phantom
             if (confirm('No Solana wallet detected. Install Phantom (recommended for Solana)?')) {
                 window.open('https://phantom.app/download', '_blank');
             }
@@ -511,6 +510,9 @@
         }
 
         var wallet = wallets[0];
+        // Log available features for debugging
+        console.log('[Solana] Wallet:', wallet.name, 'Features:', Object.keys(wallet.features || {}));
+
         var connectFeature = wallet.features && wallet.features['standard:connect'];
         if (!connectFeature) {
             alert('Wallet does not support Solana connect. Please install Phantom.');
@@ -570,13 +572,42 @@
             return { signature: rpcData.result };
         }
 
-        // Wallet Standard path (MetaMask fallback)
+        // Wallet Standard path (MetaMask etc.)
         var wallet = window._solanaWalletStd;
         var account = window._solanaAccount;
         if (!wallet || !account) throw new Error('Solana wallet not connected');
 
+        // Try signTransaction first — may bypass MetaMask's simulation freeze
+        var signFeature = wallet.features['solana:signTransaction'];
+        if (signFeature) {
+            console.log('[Solana] Using signTransaction (no simulation)');
+            var signResult = await signFeature.signTransaction({
+                account: account,
+                transaction: txBytes,
+                chain: 'solana:mainnet'
+            });
+            var signedBytes = signResult.signedTransaction || signResult;
+            if (signedBytes instanceof Uint8Array) {
+                var b64ws = btoa(String.fromCharCode.apply(null, signedBytes));
+                var rpcResp2 = await fetch(SOLANA_RPC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0', id: 1,
+                        method: 'sendTransaction',
+                        params: [b64ws, { encoding: 'base64', skipPreflight: true, preflightCommitment: 'confirmed' }]
+                    })
+                });
+                var rpcData2 = await rpcResp2.json();
+                if (rpcData2.error) throw new Error('Solana RPC error: ' + (rpcData2.error.message || JSON.stringify(rpcData2.error)));
+                return { signature: rpcData2.result };
+            }
+        }
+
+        // Last resort: signAndSendTransaction (may freeze on MetaMask)
         var sendFeature = wallet.features['solana:signAndSendTransaction'];
-        if (!sendFeature) throw new Error('Wallet does not support Solana transaction signing. Please install Phantom.');
+        if (!sendFeature) throw new Error('Wallet does not support Solana signing. Please install Phantom.');
+        console.log('[Solana] Using signAndSendTransaction (may require simulation)');
         var result = await sendFeature.signAndSendTransaction({
             account: account,
             transaction: txBytes,
