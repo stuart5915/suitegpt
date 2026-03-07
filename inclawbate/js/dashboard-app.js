@@ -601,8 +601,12 @@ async function fetchSingleTokenPrice(addr) {
                 const feeUsd = volume24h * 0.01 * (splitBps / 10000);
                 const feeEth = feeUsd / ethPrice;
                 const volStr = volume24h >= 1000 ? '$' + (volume24h / 1000).toFixed(1) + 'K' : '$' + Math.round(volume24h);
-                feeEl.innerHTML = `<span class="fee-estimate-value">~${feeEth.toFixed(4)} ETH earned (24h)</span><span class="fee-estimate-vol">Vol: ${volStr}</span>`;
+                feeEl.innerHTML = `<span class="fee-estimate-value">~${feeEth.toFixed(6)} ETH earned (24h)</span><span class="fee-estimate-vol">Vol: ${volStr}</span>`;
                 feeEl.style.display = '';
+                // Update per-card claim button with estimate
+                const resolvedAddr = best.baseToken.address || addr;
+                const claimBtn = document.querySelector(`.claim-single-btn[data-token-addr="${addr}"]`) || document.querySelector(`.claim-single-btn[data-token-addr="${resolvedAddr}"]`);
+                if (claimBtn) claimBtn.textContent = 'Claim ~' + feeEth.toFixed(6) + ' ETH';
             } else if (volume24h === 0) {
                 feeEl.innerHTML = '<span class="fee-estimate-value fee-none">No trading activity (24h)</span>';
                 feeEl.style.display = '';
