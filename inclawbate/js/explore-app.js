@@ -278,7 +278,7 @@
             '<td><div class="exp-name-cell">' + logoHtml(p.logo, p.name, p.color) +
                 '<div><span class="exp-name">' + escapeHtml(p.name) + '</span><span class="exp-sub">$' + escapeHtml(p.ticker) + '</span>' + earnTag + '</div>' +
             '</div></td>' +
-            '<td><span class="exp-stat' + (p.apy > 0 && !p.retired ? ' style="color:var(--seafoam-300)"' : '') + '">' + apyStr + '</span></td>' +
+            '<td><span class="exp-stat"' + (p.apy > 0 && !p.retired ? ' style="color:var(--seafoam-300)"' : '') + '>' + apyStr + '</span></td>' +
             '<td><span class="exp-stat">' + tvlStr + '</span></td>' +
             '<td><span class="exp-stat">' + stakersStr + '</span></td>' +
             '<td><div class="exp-actions"><a href="/stake/' + escapeHtml(p.ticker.toLowerCase()) + '" class="exp-btn exp-btn--stake" onclick="event.stopPropagation()">' + btnText + '</a></div></td>' +
