@@ -27,11 +27,13 @@ function decodeTxData(data) {
     // Already a Uint8Array or array of numbers
     if (data instanceof Uint8Array) return data;
     if (Array.isArray(data)) return new Uint8Array(data);
-    // Object with data/type pattern (Buffer-like), or object with numeric keys
+    // Object — unwrap known shapes
     if (typeof data === 'object' && data !== null) {
+        // {transaction: "base58...", blockhash: "..."} from Bags API
+        if (typeof data.transaction === 'string') return decodeTxData(data.transaction);
+        if (typeof data.serializedTransaction === 'string') return decodeTxData(data.serializedTransaction);
         if (data.data && Array.isArray(data.data)) return new Uint8Array(data.data);
         if (data.type === 'Buffer' && data.data) return new Uint8Array(data.data);
-        // Object with numeric keys like {0: 1, 1: 2, ...}
         var keys = Object.keys(data);
         if (keys.length > 0 && !isNaN(keys[0])) {
             var arr = new Uint8Array(keys.length);
@@ -2412,10 +2414,16 @@ async function init() {
         window.history.replaceState({}, '', window.location.pathname);
     }
 
+    // Embed mode: ?embed=1 hides everything except the tool drawer
+    var isEmbed = urlParams.get('embed') === '1';
+    if (isEmbed) {
+        document.body.classList.add('embed-mode');
+    }
+
     // Deep-link: ?tool=pool or #launch opens a drawer
     var toolParam = urlParams.get('tool') || window.location.hash.replace('#', '');
     if (toolParam && ['launch','pool','incubate','agent','disperse','marketing'].indexOf(toolParam) !== -1) {
-        window.history.replaceState({}, '', window.location.pathname);
+        if (!isEmbed) window.history.replaceState({}, '', window.location.pathname);
         setTimeout(function() { openToolDrawer(toolParam); }, 300);
     }
 

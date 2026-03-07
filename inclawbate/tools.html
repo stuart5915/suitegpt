@@ -234,9 +234,56 @@
             color: var(--lobster-400);
         }
 
+        /* ── Tool Modal ── */
+        .tool-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-xl);
+        }
+        .tool-modal-overlay.open { display: flex; }
+        .tool-modal {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            max-height: 88vh;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .tool-modal-close {
+            position: absolute;
+            top: 12px; right: 14px;
+            z-index: 10;
+            font-size: 1.4rem;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .tool-modal-close:hover { color: var(--text-primary); }
+        .tool-modal iframe {
+            flex: 1;
+            width: 100%;
+            min-height: 500px;
+            border: none;
+            background: var(--bg-card);
+        }
+
         @media (max-width: 600px) {
             .tools-grid { grid-template-columns: 1fr; }
             .tools-hero h1 { font-size: 1.6rem; }
+            .tool-modal { max-height: 92vh; }
+            .tool-modal-overlay { padding: var(--space-sm); }
         }
     </style>
 </head>
@@ -279,7 +326,7 @@
     <!-- ═══ Creator Tools (from Inclawbator) ═══ -->
     <h2 class="tools-section-header">Creator Tools</h2>
     <div class="tool-grid-v2">
-        <a href="/inclawbator#launch" class="tool-card-v2" data-accent="lobster">
+        <div class="tool-card-v2" data-accent="lobster" data-tool="launch">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128640;</div>
                 <div class="tool-card-body">
@@ -288,7 +335,7 @@
                 </div>
                 <span class="tool-card-cta-v2">Launch Token</span>
             </div>
-        </a>
+        </div>
         <a href="/build" class="tool-card-v2" data-accent="seafoam">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128296;</div>
@@ -299,7 +346,7 @@
                 <span class="tool-card-cta-v2">Start Building</span>
             </div>
         </a>
-        <a href="/inclawbator#pool" class="tool-card-v2" data-accent="sand">
+        <div class="tool-card-v2" data-accent="sand" data-tool="pool">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#x1F4B8;</div>
                 <div class="tool-card-body">
@@ -308,8 +355,8 @@
                 </div>
                 <span class="tool-card-cta-v2">Create Pool</span>
             </div>
-        </a>
-        <a href="/inclawbator#incubate" class="tool-card-v2" data-accent="blue">
+        </div>
+        <div class="tool-card-v2" data-accent="blue" data-tool="incubate">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#129438;</div>
                 <div class="tool-card-body">
@@ -318,8 +365,8 @@
                 </div>
                 <span class="tool-card-cta-v2">Apply Now</span>
             </div>
-        </a>
-        <a href="/inclawbator#disperse" class="tool-card-v2" data-accent="cyan">
+        </div>
+        <div class="tool-card-v2" data-accent="cyan" data-tool="disperse">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128184;</div>
                 <div class="tool-card-body">
@@ -328,7 +375,7 @@
                 </div>
                 <span class="tool-card-cta-v2">Open Disperse</span>
             </div>
-        </a>
+        </div>
         <div class="tool-card-v2" data-accent="purple">
             <div class="tool-card-inner">
                 <div class="tool-card-icon">&#128227;</div>
@@ -405,8 +452,41 @@
     </div>
 </footer>
 
+<!-- Tool Modal -->
+<div class="tool-modal-overlay" id="toolModal">
+    <div class="tool-modal">
+        <button class="tool-modal-close" id="toolModalClose">&times;</button>
+        <iframe id="toolModalIframe"></iframe>
+    </div>
+</div>
+
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
+<script>
+(function() {
+    var overlay = document.getElementById('toolModal');
+    var iframe = document.getElementById('toolModalIframe');
+    var closeBtn = document.getElementById('toolModalClose');
+
+    document.querySelectorAll('[data-tool]').forEach(function(card) {
+        card.addEventListener('click', function() {
+            var tool = card.getAttribute('data-tool');
+            iframe.src = '/inclawbator?embed=1#' + tool;
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function close() {
+        overlay.classList.remove('open');
+        iframe.src = '';
+        document.body.style.overflow = '';
+    }
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+})();
+</script>
 
 </body>
 </html>
