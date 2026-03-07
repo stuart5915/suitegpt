@@ -207,10 +207,75 @@
         disconnect();
     });
 
+    // --- Presence pill UI ---
+    var pillEl = null;
+
+    function injectPresencePill() {
+        if (pillEl) return;
+        pillEl = document.createElement('div');
+        pillEl.id = '_rt_presence_pill';
+        pillEl.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(0,0,0,0.7);color:#fff;' +
+            'font-family:Inter,system-ui,sans-serif;font-size:13px;padding:6px 12px;border-radius:20px;' +
+            'display:none;align-items:center;gap:6px;z-index:99999;pointer-events:none;' +
+            'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+        pillEl.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>' +
+            '<span id="_rt_pill_count">1 online</span>';
+        document.body.appendChild(pillEl);
+    }
+
+    function updatePill() {
+        if (!pillEl) return;
+        var count = getPlayers().length;
+        var countEl = document.getElementById('_rt_pill_count');
+        if (count >= 1) {
+            pillEl.style.display = 'flex';
+            if (countEl) countEl.textContent = count + ' online';
+        } else {
+            pillEl.style.display = 'none';
+        }
+    }
+
+    // Hook presence events to update pill
+    var origSyncPresence = syncPresence;
+    syncPresence = function() {
+        origSyncPresence();
+        updatePill();
+    };
+
+    // --- Auto-connect for top-level pages ---
+    var autoConnectTimer = null;
+    var manualConnectCalled = false;
+
+    var originalConnect = connect;
+
+    // Wrapped connect that cancels auto-connect
+    async function wrappedConnect(room) {
+        manualConnectCalled = true;
+        if (autoConnectTimer) {
+            clearTimeout(autoConnectTimer);
+            autoConnectTimer = null;
+        }
+        await originalConnect(room);
+        injectPresencePill();
+        updatePill();
+    }
+
+    // Schedule auto-connect if top-level page
+    if (window === window.top) {
+        autoConnectTimer = setTimeout(function() {
+            if (!manualConnectCalled && !connected) {
+                originalConnect('lobby').then(function() {
+                    injectPresencePill();
+                    updatePill();
+                });
+            }
+        }, 500);
+    }
+
     // Expose
     window.Realtime = {
         me: { id: playerId },
-        connect: connect,
+        connect: wrappedConnect,
         send: send,
         on: on,
         onJoin: onJoin,
