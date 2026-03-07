@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quests | Inclawbate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #06060b;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        a { color: #f97066; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+        /* Header */
+        .header { text-align: center; margin-bottom: 1.5rem; }
+        .header h1 { font-size: 1.8rem; font-weight: 900; color: #fff; margin-bottom: 0.25rem; }
+        .header p { color: #999; font-size: 0.9rem; }
+
+        /* Progress */
+        .progress-wrap { margin-bottom: 1.5rem; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; color: #aaa; margin-bottom: 0.4rem; }
+        .progress-bar { background: #1a1a2e; border-radius: 8px; height: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #f97066, #fb923c); border-radius: 8px; transition: width 0.4s ease; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #1a1a2e; }
+        .tab { padding: 0.6rem 1.2rem; font-weight: 700; font-size: 0.9rem; color: #777; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab:hover { color: #ccc; }
+        .tab.active { color: #f97066; border-bottom-color: #f97066; }
+
+        /* Connect */
+        .connect-banner {
+            background: linear-gradient(135deg, #1a1a2e, #16162a);
+            border: 1px solid #2a2a4a;
+            border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;
+        }
+        .connect-banner p { margin-bottom: 0.8rem; color: #aaa; }
+        .btn {
+            display: inline-block; padding: 0.6rem 1.4rem; border-radius: 8px; border: none;
+            font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: #f97066; color: #fff; }
+        .btn-primary:hover { background: #fb923c; transform: translateY(-1px); }
+        .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+        .btn-outline { background: transparent; border: 1px solid #f97066; color: #f97066; }
+        .btn-outline:hover { background: #f97066; color: #fff; }
+        .btn-green { background: #22c55e; color: #fff; }
+        .btn-green:hover { background: #16a34a; }
+        .btn-gray { background: #333; color: #aaa; }
+
+        /* Category */
+        .category { margin-bottom: 1.5rem; }
+        .category-title {
+            font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+            color: #f97066; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .category-title span { font-size: 1rem; }
+
+        /* Quest Card */
+        .quest-card {
+            background: #0f0f1a;
+            border: 1px solid #1a1a2e;
+            border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;
+            display: flex; align-items: center; gap: 1rem;
+            transition: border-color 0.2s;
+        }
+        .quest-card:hover { border-color: #2a2a4a; }
+        .quest-card.completed { border-color: #22c55e33; background: #0f0f1a; }
+        .quest-icon { font-size: 1.5rem; flex-shrink: 0; width: 40px; text-align: center; }
+        .quest-info { flex: 1; min-width: 0; }
+        .quest-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
+        .quest-desc { font-size: 0.8rem; color: #888; margin-top: 0.15rem; }
+        .quest-action { flex-shrink: 0; }
+
+        .badge {
+            display: inline-block; padding: 0.25rem 0.6rem; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700;
+        }
+        .badge-done { background: #22c55e22; color: #22c55e; }
+        .badge-pending { background: #f9706622; color: #f97066; }
+
+        /* Proof input */
+        .proof-input {
+            margin-top: 0.5rem; display: flex; gap: 0.5rem;
+        }
+        .proof-input input {
+            flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
+            padding: 0.4rem 0.6rem; color: #e0e0e0; font-family: 'Nunito', sans-serif; font-size: 0.8rem;
+        }
+        .proof-input input::placeholder { color: #555; }
+
+        /* Admin */
+        .admin-panel { display: none; }
+        .admin-filter { margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+        .admin-filter label { font-size: 0.85rem; color: #aaa; }
+        .admin-filter input[type="checkbox"] { accent-color: #f97066; }
+        .admin-count { font-size: 0.85rem; color: #777; }
+
+        .user-row {
+            background: #0f0f1a; border: 1px solid #1a1a2e; border-radius: 10px;
+            padding: 1rem; margin-bottom: 0.6rem;
+        }
+        .user-header {
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; gap: 0.5rem; flex-wrap: wrap;
+        }
+        .user-wallet { font-family: monospace; font-size: 0.85rem; color: #f97066; }
+        .user-stats { font-size: 0.8rem; color: #888; }
+        .user-details { display: none; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid #1a1a2e; }
+        .user-details.open { display: block; }
+        .detail-row { display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.8rem; }
+        .detail-row .label { color: #aaa; }
+        .detail-row .val { color: #e0e0e0; }
+        .detail-row .val.done { color: #22c55e; }
+        .detail-row .val.not-done { color: #555; }
+        .airdrop-status { font-size: 0.8rem; }
+        .airdrop-status.yes { color: #22c55e; }
+        .airdrop-status.no { color: #f97066; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .quest-card { flex-wrap: wrap; gap: 0.6rem; }
+            .quest-action { width: 100%; text-align: right; }
+            .user-header { flex-direction: column; align-items: flex-start; }
+        }
+
+        .loading { text-align: center; padding: 2rem; color: #555; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Inclawbate Quests</h1>
+        <p>Complete quests. Earn CLAWS airdrops.</p>
+    </div>
+
+    <div id="connectBanner" class="connect-banner">
+        <p>Connect your wallet to start earning</p>
+        <button class="btn btn-primary" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+
+    <div id="mainContent" class="hidden">
+        <div class="progress-wrap">
+            <div class="progress-label">
+                <span>Progress</span>
+                <span id="progressText">0 / 11</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('quests')">Quests</div>
+            <div class="tab hidden" id="adminTab" onclick="switchTab('admin')">Admin</div>
+        </div>
+
+        <div id="questsPanel"></div>
+        <div id="adminPanel" class="admin-panel"></div>
+    </div>
+</div>
+
+<script>
+const CREATOR_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+const CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
+const STAKING_CONTRACT = '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6';
+const BASE_RPC = 'https://mainnet.base.org';
+const BALANCE_OF_SIG = '0x70a08231';
+
+let userWallet = null;
+let questStatus = {};
+
+const QUESTS = [
+    {
+        id: 'follow_artstu', category: 'social', icon: '𝕏',
+        title: 'Follow @artstu on X',
+        desc: 'Follow the founder on X',
+        type: 'honor', link: 'https://x.com/artstu'
+    },
+    {
+        id: 'follow_inclawbate', category: 'social', icon: '𝕏',
+        title: 'Follow @inclawbate on X',
+        desc: 'Follow the official Inclawbate account',
+        type: 'honor', link: 'https://x.com/inclawbate'
+    },
+    {
+        id: 'follow_inclawbator', category: 'social', icon: '𝕏',
+        title: 'Follow @inclawbator on X',
+        desc: 'Follow the Inclawbator account',
+        type: 'honor', link: 'https://x.com/inclawbator'
+    },
+    {
+        id: 'buy_claws', category: 'onchain', icon: '🪙',
+        title: 'Buy CLAWS tokens',
+        desc: 'Hold any amount of CLAWS on Base',
+        type: 'auto_balance', contract: CLAWS_TOKEN
+    },
+    {
+        id: 'stake_claws', category: 'onchain', icon: '🔒',
+        title: 'Stake CLAWS',
+        desc: 'Stake CLAWS in the staking contract',
+        type: 'auto_staking', contract: STAKING_CONTRACT
+    },
+    {
+        id: 'buy_ecosystem', category: 'onchain', icon: '🛒',
+        title: 'Buy an ecosystem project token',
+        desc: 'Buy any token from an Inclawbate project',
+        type: 'manual_verify'
+    },
+    {
+        id: 'stake_ecosystem', category: 'onchain', icon: '📦',
+        title: 'Stake an ecosystem token',
+        desc: 'Stake tokens in any ecosystem staking pool',
+        type: 'manual_verify'
+    },
+    {
+        id: 'create_app', category: 'builder', icon: '🔨',
+        title: 'Create an app',
+        desc: 'Build and publish an app on Inclawbate',
+        type: 'api_verify', endpoint: '/api/inclawbate/apps?creator_wallet='
+    },
+    {
+        id: 'create_token', category: 'builder', icon: '🪙',
+        title: 'Create a token',
+        desc: 'Launch a token via the Inclawbator',
+        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'token_address'
+    },
+    {
+        id: 'create_pool', category: 'builder', icon: '🏊',
+        title: 'Create a staking pool',
+        desc: 'Deploy a staking pool for your token',
+        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'staking_address'
+    },
+    {
+        id: 'create_project', category: 'builder', icon: '🚀',
+        title: 'Create a project',
+        desc: 'Register a project on Inclawbate',
+        type: 'api_verify', endpoint: '/api/inclawbate/projects?wallet='
+    }
+];
+
+const CATEGORIES = [
+    { key: 'social', label: 'Social Quests', icon: '📣' },
+    { key: 'onchain', label: 'On-Chain Quests', icon: '⛓️' },
+    { key: 'builder', label: 'Builder Quests', icon: '🏗️' }
+];
+
+// ── Wallet ──
+async function connectWallet() {
+    if (!window.ethereum) { alert('Please install a Web3 wallet (e.g. MetaMask)'); return; }
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userWallet = accounts[0];
+        document.getElementById('connectBanner').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
+            document.getElementById('adminTab').classList.remove('hidden');
+        }
+        await loadStatus();
+        renderQuests();
+    } catch (e) { console.error(e); }
+}
+
+// ── Storage ──
+async function loadStatus() {
+    try {
+        const data = await window.AppDB.get('quest_status');
+        questStatus = data || {};
+    } catch { questStatus = {}; }
+}
+
+async function saveStatus() {
+    try {
+        await window.AppDB.set('quest_status', questStatus);
+        // Also save globally for admin
+        await window.AppDB.setGlobal('quest_completions_' + userWallet.toLowerCase(), {
+            wallet: userWallet,
+            status: questStatus,
+            updated: Date.now()
+        });
+    } catch (e) { console.error('Save error', e); }
+}
+
+// ── On-chain verification ──
+async function checkBalance(contract, wallet) {
+    const paddedAddr = '0x' + wallet.slice(2).toLowerCase().padStart(64, '0');
+    const data = BALANCE_OF_SIG + paddedAddr.slice(2);
+    try {
+        const res = await fetch(BASE_RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: contract, data }, 'latest'] })
+        });
+        const json = await res.json();
+        const bal = BigInt(json.result || '0x0');
+        return bal > 0n;
+    } catch { return false; }
+}
+
+// ── API verification ──
+async function checkApi(quest) {
+    try {
+        const res = await fetch(quest.endpoint + userWallet);
+        const json = await res.json();
+        if (quest.field) {
+            // Check if any result has the field populated
+            const items = Array.isArray(json) ? json : (json.data || []);
+            return items.some(item => item[quest.field] && item[quest.field] !== '');
+        }
+        const items = Array.isArray(json) ? json : (json.data || []);
+        return items.length > 0;
+    } catch { return false; }
+}
+
+// ── Quest Actions ──
+async function verifyQuest(questId) {
+    const quest = QUESTS.find(q => q.id === questId);
+    if (!quest) return;
+
+    const btn = document.querySelector(`[data-quest="${questId}"] .btn`);
+    if (btn) { btn.textContent = 'Checking...'; btn.disabled = true; }
+
+    let passed = false;
+
+    if (quest.type === 'auto_balance' || quest.type === 'auto_staking') {
+        passed = await checkBalance(quest.contract, userWallet);
+        if (!passed) { alert('No balance detected. Make sure you\'re on Base network.'); }
+    } else if (quest.type === 'api_verify') {
+        passed = await checkApi(quest);
+        if (!passed) { alert('Nothing found for your wallet. Try again after creating one.'); }
+    }
+
+    if (passed) {
+        questStatus[questId] = { completed: true, verified: true, timestamp: Date.now() };
+        await saveStatus();
+    }
+    renderQuests();
+}
+
+async function honorComplete(questId, link) {
+    window.open(link, '_blank');
+    // Show confirm after a beat
+    setTimeout(async () => {
+        questStatus[questId] = { completed: true, verified: false, timestamp: Date.now() };
+        await saveStatus();
+        renderQuests();
+    }, 500);
+}
+
+async function submitProof(questId) {
+    const input = document.querySelector(`[data-quest="${questId}"] .proof-input input`);
+    const proof = input?.value?.trim();
+    if (!proof) { alert('Please paste a tx hash or address as proof.'); return; }
+    questStatus[questId] = { completed: true, verified: false, timestamp: Date.now(), proof };
+    await saveStatus();
+    renderQuests();
+}
+
+// ── Render Quests ──
+function renderQuests() {
+    const completed = QUESTS.filter(q => questStatus[q.id]?.completed).length;
+    document.getElementById('progressText').textContent = `${completed} / ${QUESTS.length}`;
+    document.getElementById('progressFill').style.width = `${(completed / QUESTS.length) * 100}%`;
+
+    let html = '';
+    for (const cat of CATEGORIES) {
+        const quests = QUESTS.filter(q => q.category === cat.key);
+        html += `<div class="category">
+            <div class="category-title"><span>${cat.icon}</span> ${cat.label}</div>`;
+        for (const q of quests) {
+            const status = questStatus[q.id];
+            const done = status?.completed;
+            html += `<div class="quest-card ${done ? 'completed' : ''}" data-quest="${q.id}">
+                <div class="quest-icon">${q.icon}</div>
+                <div class="quest-info">
+                    <div class="quest-title">${q.title}</div>
+                    <div class="quest-desc">${q.desc}</div>
+                    ${q.type === 'manual_verify' && !done ? `
+                        <div class="proof-input">
+                            <input type="text" placeholder="Paste tx hash or address..." />
+                            <button class="btn btn-sm btn-primary" onclick="submitProof('${q.id}')">Submit</button>
+                        </div>` : ''}
+                </div>
+                <div class="quest-action">
+                    ${done
+                        ? '<span class="badge badge-done">Done</span>'
+                        : q.type === 'honor'
+                            ? `<button class="btn btn-sm btn-primary" onclick="honorComplete('${q.id}','${q.link}')">Go &rarr;</button>`
+                            : q.type === 'manual_verify'
+                                ? ''
+                                : `<button class="btn btn-sm btn-outline" onclick="verifyQuest('${q.id}')">Verify</button>`
+                    }
+                </div>
+            </div>`;
+        }
+        html += '</div>';
+    }
+    document.getElementById('questsPanel').innerHTML = html;
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+    if (tab === 'quests') {
+        document.getElementById('questsPanel').style.display = '';
+        document.getElementById('adminPanel').style.display = 'none';
+    } else {
+        document.getElementById('questsPanel').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        loadAdmin();
+    }
+}
+
+// ── Admin ──
+async function loadAdmin() {
+    const panel = document.getElementById('adminPanel');
+    panel.innerHTML = '<div class="loading">Loading submissions...</div>';
+
+    try {
+        const allGlobal = await window.AppDB.listGlobal();
+        const completions = allGlobal.filter(item => item.key.startsWith('quest_completions_'));
+        const airdrops = {};
+        for (const item of allGlobal.filter(i => i.key.startsWith('airdrop_'))) {
+            airdrops[i.key.replace('airdrop_', '')] = item.value;
+        }
+
+        if (completions.length === 0) {
+            panel.innerHTML = '<p style="color:#555;text-align:center;padding:2rem;">No submissions yet.</p>';
+            return;
+        }
+
+        let html = `
+            <div class="admin-filter">
+                <label><input type="checkbox" id="filterUnairdropped" onchange="loadAdmin()"> Show only un-airdropped</label>
+                <span class="admin-count">${completions.length} user(s)</span>
+            </div>`;
+
+        const filterUnairdropped = document.getElementById('filterUnairdropped')?.checked || false;
+
+        for (const item of completions) {
+            const data = item.value;
+            const wallet = data.wallet || item.key.replace('quest_completions_', '');
+            const walletLower = wallet.toLowerCase();
+            const airdropped = airdrops[walletLower]?.airdropped || false;
+
+            if (filterUnairdropped && airdropped) continue;
+
+            const userStatus = data.status || {};
+            const doneCount = QUESTS.filter(q => userStatus[q.id]?.completed).length;
+            const shortWallet = wallet.slice(0, 6) + '...' + wallet.slice(-4);
+
+            html += `<div class="user-row">
+                <div class="user-header" onclick="this.nextElementSibling.classList.toggle('open')">
+                    <div>
+                        <span class="user-wallet">${shortWallet}</span>
+                        <span class="user-stats">${doneCount}/${QUESTS.length} completed</span>
+                    </div>
+                    <div>
+                        ${airdropped
+                            ? '<span class="airdrop-status yes">Airdropped</span>'
+                            : `<button class="btn btn-sm btn-green" onclick="event.stopPropagation();markAirdropped('${walletLower}')">Mark Airdropped</button>`
+                        }
+                    </div>
+                </div>
+                <div class="user-details">`;
+
+            for (const q of QUESTS) {
+                const s = userStatus[q.id];
+                const isDone = s?.completed;
+                html += `<div class="detail-row">
+                    <span class="label">${q.icon} ${q.title}</span>
+                    <span class="val ${isDone ? 'done' : 'not-done'}">${isDone ? (s.proof ? 'Proof: ' + s.proof.slice(0, 20) + '...' : 'Done') : '—'}</span>
+                </div>`;
+            }
+            html += '</div></div>';
+        }
+        panel.innerHTML = html;
+    } catch (e) {
+        panel.innerHTML = `<p style="color:#f97066;text-align:center;padding:2rem;">Error loading admin data: ${e.message}</p>`;
+    }
+}
+
+async function markAirdropped(wallet) {
+    try {
+        await window.AppDB.setGlobal('airdrop_' + wallet, { airdropped: true, timestamp: Date.now() });
+        loadAdmin();
+    } catch (e) { alert('Error: ' + e.message); }
+}
+
+// ── Init ──
+(async function init() {
+    // Check if wallet already connected
+    if (window.ethereum) {
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+                userWallet = accounts[0];
+                document.getElementById('connectBanner').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
+                    document.getElementById('adminTab').classList.remove('hidden');
+                }
+                await loadStatus();
+                renderQuests();
+            }
+        } catch {}
+    }
+})();
+</script>
+</body>
+</html>
