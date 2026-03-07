@@ -2419,6 +2419,17 @@ async function init() {
     var isEmbed = urlParams.get('embed') === '1';
     if (isEmbed) {
         document.body.classList.add('embed-mode');
+        // Report content height to parent for auto-sizing modal
+        function reportHeight() {
+            var h = document.body.scrollHeight;
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'embed-height', height: h }, '*');
+            }
+        }
+        if (window.ResizeObserver) {
+            new ResizeObserver(reportHeight).observe(document.body);
+        }
+        setInterval(reportHeight, 500);
     }
 
     // Deep-link: ?tool=pool or #launch opens a drawer

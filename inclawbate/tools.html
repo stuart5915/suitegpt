@@ -251,7 +251,7 @@
             position: relative;
             width: 100%;
             max-width: 560px;
-            height: 90vh;
+            max-height: 90vh;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xl);
@@ -272,10 +272,11 @@
         }
         .tool-modal-close:hover { color: var(--text-primary); }
         .tool-modal iframe {
-            flex: 1;
             width: 100%;
             border: none;
             background: var(--bg-card);
+            height: 200px;
+            transition: height 0.15s ease;
         }
 
         @media (max-width: 600px) {
@@ -484,6 +485,12 @@
     closeBtn.addEventListener('click', close);
     overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'embed-height' && typeof e.data.height === 'number') {
+            iframe.style.height = Math.min(e.data.height, window.innerHeight * 0.85) + 'px';
+        }
+    });
 })();
 </script>
 
