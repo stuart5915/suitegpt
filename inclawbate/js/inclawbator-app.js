@@ -2421,15 +2421,21 @@ async function init() {
         document.body.classList.add('embed-mode');
         // Report content height to parent for auto-sizing modal
         function reportHeight() {
-            var h = document.body.scrollHeight;
-            if (window.parent !== window) {
+            var drawer = document.querySelector('.tool-drawer-inner');
+            var h = drawer ? drawer.scrollHeight + 40 : document.body.scrollHeight;
+            if (h > 200 && window.parent !== window) {
                 window.parent.postMessage({ type: 'embed-height', height: h }, '*');
             }
         }
-        if (window.ResizeObserver) {
-            new ResizeObserver(reportHeight).observe(document.body);
-        }
-        setInterval(reportHeight, 500);
+        // Wait for drawer to open (300ms delay + render), then start reporting
+        setTimeout(function() {
+            reportHeight();
+            if (window.ResizeObserver) {
+                var target = document.querySelector('.tool-drawer-inner') || document.body;
+                new ResizeObserver(reportHeight).observe(target);
+            }
+            setInterval(reportHeight, 1000);
+        }, 500);
     }
 
     // Deep-link: ?tool=pool or #launch opens a drawer
