@@ -217,7 +217,16 @@
         if (p.app_slug) {
             var embedSection = document.getElementById('pdEmbedSection');
             embedSection.classList.remove('hidden');
-            document.getElementById('pdEmbedIframe').src = '/s/' + p.app_slug;
+            var embedIframe = document.getElementById('pdEmbedIframe');
+            embedIframe.src = '/s/' + p.app_slug;
+
+            var fsBtn = document.getElementById('pdFullscreen');
+            if (fsBtn) {
+                fsBtn.addEventListener('click', function() {
+                    if (embedIframe.requestFullscreen) embedIframe.requestFullscreen();
+                    else if (embedIframe.webkitRequestFullscreen) embedIframe.webkitRequestFullscreen();
+                });
+            }
         }
 
         showState('loaded');
