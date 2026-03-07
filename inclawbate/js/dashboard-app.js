@@ -2628,14 +2628,27 @@ function openCreateProjectModal(existingProject) {
         tokenSuggestionsHtml += '</div>';
     }
 
+    let pendingLogoUrl = existingProject?.logo_url || null;
+
     const modal = document.createElement('div');
     modal.className = 'fund-modal';
     modal.innerHTML = `
         <div class="fund-modal-title">${isEdit ? 'Edit Project' : 'Create Project'}</div>
+        <label class="fund-modal-label">Project Icon</label>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div id="projLogoPreview" style="width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;">
+                ${pendingLogoUrl ? `<img src="${esc(pendingLogoUrl)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : `<span style="color:var(--text-dim);font-size:1.2rem;">${existingProject ? existingProject.name.charAt(0).toUpperCase() : '?'}</span>`}
+            </div>
+            <input type="file" id="projLogoFile" accept="image/*" style="display:none;">
+            <button type="button" id="projLogoBtn" class="fund-modal-submit" style="padding:6px 14px;font-size:0.78rem;">Upload Icon</button>
+            <span id="projLogoStatus" style="font-size:0.75rem;color:var(--text-dim);"></span>
+        </div>
         <label class="fund-modal-label">Project Name *</label>
         <input class="fund-modal-input" type="text" id="projName" maxlength="100" value="${esc(existingProject?.name || '')}">
-        <label class="fund-modal-label">Description</label>
+        <label class="fund-modal-label">Short Description</label>
         <textarea class="fund-modal-input" id="projDesc" rows="2" style="resize:vertical" maxlength="500">${esc(existingProject?.description || '')}</textarea>
+        <label class="fund-modal-label">Long Description (pitch, utility, roadmap)</label>
+        <textarea class="fund-modal-input" id="projLongDesc" rows="6" style="resize:vertical" maxlength="5000" placeholder="Tell people what your project is about...">${esc(existingProject?.long_description || '')}</textarea>
         <label class="fund-modal-label">Link an App</label>
         <select class="fund-modal-input" id="projApp" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-subtle);padding:10px 12px;border-radius:8px;font-size:0.9rem;width:100%;">
             ${appOptionsHtml}
@@ -2667,6 +2680,44 @@ function openCreateProjectModal(existingProject) {
                 modal.querySelector('#projStaking').value = btn.dataset.staking;
             }
         });
+    });
+
+    // Wire logo upload
+    modal.querySelector('#projLogoBtn').addEventListener('click', () => {
+        modal.querySelector('#projLogoFile').click();
+    });
+    modal.querySelector('#projLogoFile').addEventListener('change', async () => {
+        const file = modal.querySelector('#projLogoFile').files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            modal.querySelector('#projLogoStatus').textContent = 'Max 2MB';
+            return;
+        }
+        modal.querySelector('#projLogoStatus').textContent = 'Uploading...';
+        modal.querySelector('#projLogoBtn').disabled = true;
+        const reader = new FileReader();
+        reader.onload = async () => {
+            try {
+                const token = localStorage.getItem('inclawbate_token');
+                const res = await fetch('/api/inclawbate/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ file: reader.result, filename: file.name }),
+                });
+                const data = await res.json();
+                if (data.url) {
+                    pendingLogoUrl = data.url;
+                    modal.querySelector('#projLogoPreview').innerHTML = `<img src="${data.url}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+                    modal.querySelector('#projLogoStatus').textContent = 'Uploaded!';
+                } else {
+                    modal.querySelector('#projLogoStatus').textContent = data.error || 'Upload failed';
+                }
+            } catch (e) {
+                modal.querySelector('#projLogoStatus').textContent = 'Upload error';
+            }
+            modal.querySelector('#projLogoBtn').disabled = false;
+        };
+        reader.readAsDataURL(file);
     });
 
     modal.querySelector('#projCancel').addEventListener('click', () => overlay.remove());
@@ -2701,6 +2752,8 @@ function openCreateProjectModal(existingProject) {
             staking_address: modal.querySelector('#projStaking').value.trim() || null,
             x_handle: modal.querySelector('#projX').value.trim().replace(/^@/, '') || null,
             website_url: modal.querySelector('#projWebsite').value.trim() || null,
+            long_description: modal.querySelector('#projLongDesc').value.trim() || null,
+            logo_url: pendingLogoUrl || null,
         };
 
         if (isEdit) body.id = existingProject.id;

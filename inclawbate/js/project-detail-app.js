@@ -99,6 +99,23 @@
         }
         document.getElementById('pdInfoGrid').innerHTML = cards.join('');
 
+        // Long description
+        if (p.long_description && p.long_description.trim()) {
+            var aboutSection = document.getElementById('pdAboutSection');
+            aboutSection.classList.remove('hidden');
+            var paragraphs = p.long_description.trim().split(/\n\s*\n|\n/).filter(function(s) { return s.trim(); });
+            document.getElementById('pdAboutContent').innerHTML = paragraphs.map(function(para) {
+                return '<p>' + escapeHtml(para.trim()) + '</p>';
+            }).join('');
+        }
+
+        // App embed
+        if (p.app_slug) {
+            var embedSection = document.getElementById('pdEmbedSection');
+            embedSection.classList.remove('hidden');
+            document.getElementById('pdEmbedIframe').src = '/s/' + p.app_slug;
+        }
+
         // DexScreener chart
         if (p.token_address) {
             var chartSection = document.getElementById('pdChartSection');

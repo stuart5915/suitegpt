@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { name, description, app_id, app_slug, token_address, staking_address, x_handle, telegram_url, website_url } = req.body || {};
+        const { name, description, long_description, app_id, app_slug, token_address, staking_address, x_handle, telegram_url, website_url, logo_url } = req.body || {};
         if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -122,6 +122,8 @@ export default async function handler(req, res) {
                 x_handle: x_handle || null,
                 telegram_url: telegram_url || null,
                 website_url: website_url || null,
+                long_description: long_description || null,
+                logo_url: logo_url || null,
             })
             .select()
             .single();
@@ -152,7 +154,7 @@ export default async function handler(req, res) {
         }
 
         // Only allow updating safe fields
-        const allowed = ['name', 'description', 'app_id', 'app_slug', 'token_address', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url'];
+        const allowed = ['name', 'description', 'long_description', 'app_id', 'app_slug', 'token_address', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url'];
         const patch = { updated_at: new Date().toISOString() };
         for (const key of allowed) {
             if (key in updates) patch[key] = updates[key] || null;
