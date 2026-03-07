@@ -512,15 +512,45 @@
     };
 
     // Sign and send a Solana transaction (Uint8Array)
+    // Uses signTransaction + manual RPC send to avoid MetaMask fee estimation freeze
+    var SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+
     window.signAndSendSolanaTransaction = async function(txBytes) {
         var wallet = window._solanaWalletStd;
         var account = window._solanaAccount;
         if (!wallet || !account) throw new Error('Solana wallet not connected');
 
-        var feature = wallet.features['solana:signAndSendTransaction'];
-        if (!feature) throw new Error('Wallet does not support signAndSendTransaction');
+        // Try signTransaction first (avoids MetaMask simulation), fall back to signAndSendTransaction
+        var signFeature = wallet.features['solana:signTransaction'];
+        if (signFeature) {
+            var signed = await signFeature.signTransaction({
+                account: account,
+                transaction: txBytes,
+                chain: 'solana:mainnet'
+            });
+            var signedBytes = signed.signedTransaction || signed;
+            if (signedBytes instanceof Uint8Array) {
+                // Send via RPC ourselves
+                var b64 = btoa(String.fromCharCode.apply(null, signedBytes));
+                var rpcResp = await fetch(SOLANA_RPC, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0', id: 1,
+                        method: 'sendTransaction',
+                        params: [b64, { encoding: 'base64', skipPreflight: true, preflightCommitment: 'confirmed' }]
+                    })
+                });
+                var rpcData = await rpcResp.json();
+                if (rpcData.error) throw new Error('Solana RPC error: ' + (rpcData.error.message || JSON.stringify(rpcData.error)));
+                return { signature: rpcData.result };
+            }
+        }
 
-        var result = await feature.signAndSendTransaction({
+        // Fallback: signAndSendTransaction
+        var sendFeature = wallet.features['solana:signAndSendTransaction'];
+        if (!sendFeature) throw new Error('Wallet does not support Solana transaction signing');
+        var result = await sendFeature.signAndSendTransaction({
             account: account,
             transaction: txBytes,
             chain: 'solana:mainnet'
