@@ -1030,12 +1030,16 @@ export default async function handler(req, res) {
             if (!solana_wallet || !token_mint) return res.status(400).json({ error: 'solana_wallet and token_mint required' });
 
             try {
-                const resp = await fetch(BAGS_API + '/token-launch/get-claim-transactions-v3', {
+                const resp = await fetch(BAGS_API + '/token-launch/claim-txs/v3', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
                     body: JSON.stringify({ feeClaimer: solana_wallet, tokenMint: token_mint })
                 });
-                const data = await resp.json();
+                const text = await resp.text();
+                let data;
+                try { data = JSON.parse(text); } catch (e) {
+                    return res.status(502).json({ error: 'Bags API returned invalid response: ' + text.slice(0, 200) });
+                }
                 if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
                 return res.status(200).json(data);
             } catch (e) {
