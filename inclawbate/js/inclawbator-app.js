@@ -1006,6 +1006,8 @@ async function handleLaunchDeploy() {
         state.deploying = false;
         closeToolDrawer();
         updateUI();
+        var successEl = document.getElementById('successStep');
+        if (successEl) successEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     } catch (e) {
         state.deploying = false;
@@ -1566,6 +1568,8 @@ async function handleSolanaLaunch() {
         state.deploying = false;
         closeToolDrawer();
         updateUI();
+        var successEl = document.getElementById('successStep');
+        if (successEl) successEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     } catch (e) {
         state.deploying = false;
