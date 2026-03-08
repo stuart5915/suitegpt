@@ -738,9 +738,6 @@
             clearInterval(thinkingInterval);
             if (thinkingEl && thinkingEl.parentNode) thinkingEl.parentNode.removeChild(thinkingEl);
             var finalCode = (doneData && doneData.code) || extractHtmlClient(streamedText);
-            console.log('[build] doneData.code:', !!(doneData && doneData.code), 'extractClient:', !!extractHtmlClient(streamedText), 'finalCode:', !!finalCode, 'streamLen:', streamedText.length);
-            if (finalCode) console.log('[build] finalCode preview:', finalCode.slice(0, 200));
-            if (!finalCode) console.log('[build] streamedText preview:', streamedText.slice(0, 500));
 
             // Fallback: if done event was lost but backend saved code, recover it
             if (!finalCode && state.sessionId && streamedText.length > 20) {
@@ -786,12 +783,10 @@
                 // Only check </script> if the code actually has a <script> tag
                 var hasScript = finalCode.includes('<script');
                 var isTruncated = !finalCode.includes('</html>') || (hasScript && !finalCode.includes('</script>'));
-                console.log('[build] hasScript:', hasScript, 'isTruncated:', isTruncated, 'autoFix:', state.autoFixAttempts);
                 if (isTruncated && state.autoFixAttempts < state.maxAutoFix) {
-                    console.log('[build] TRUNCATED — auto-fixing');
                     // Show partial preview even though it's truncated
                     state.currentCode = finalCode;
-                    try { updatePreview(finalCode); } catch (e) { console.error('[build] preview in truncate failed:', e); }
+                    try { updatePreview(finalCode); } catch (e) { /* ignore */ }
                     appendMessage('assistant', '⚠️ Code appears truncated (output was cut off). Attempting to regenerate...');
                     state.autoFixAttempts++;
                     els.chatInput.value = 'The previous output was truncated and the code is incomplete — it\'s missing closing tags. Please regenerate the COMPLETE app from scratch, making sure to include ALL functions and closing tags. Output the full HTML file.';
@@ -807,12 +802,10 @@
                 }
                 state.currentCode = finalCode;
                 try {
-                    console.log('[build] calling updatePreview, code length:', finalCode.length);
                     updatePreview(finalCode);
                     showPreviewBadge();
-                    console.log('[build] preview updated OK');
                 } catch (previewErr) {
-                    console.error('[build] Preview update failed:', previewErr);
+                    console.error('Preview update failed:', previewErr);
                 }
                 setTimeout(showSuggestionChips, 400);
             }
@@ -1126,7 +1119,7 @@
 
     // ── Credits display ──
     function updateCredits() {
-        if (state.credits === null) return;
+        if (state.credits === null || !els.creditsCount) return;
         if (isAdmin()) {
             els.creditsCount.textContent = '∞';
             els.creditsCount.className = 'action-credits-count';
