@@ -891,10 +891,12 @@ let _solClaimablePositions = []; // cached positions from fetchSolanaFees
 
 async function fetchSolanaFees(solTokens) {
     // Determine Solana wallet: Phantom connected or stored in project data
-    const solWallet = (window._phantomSolana && window._phantomSolana.publicKey)
-        ? window._phantomSolana.publicKey.toString()
-        : (solTokens.find(t => t.solana_wallet) || {}).solana_wallet;
-    if (!solWallet) return;
+    const phantomKey = window._phantomSolana && window._phantomSolana.publicKey
+        ? window._phantomSolana.publicKey.toString() : null;
+    const dbWallet = (solTokens.find(t => t.solana_wallet) || {}).solana_wallet || null;
+    const solWallet = phantomKey || dbWallet;
+    console.log('[SolFees] Phantom:', phantomKey, 'DB wallet:', dbWallet, 'Using:', solWallet);
+    if (!solWallet) { console.log('[SolFees] No Solana wallet found, skipping'); return; }
 
     try {
         const token = localStorage.getItem('inclawbate_token');
@@ -904,10 +906,12 @@ async function fetchSolanaFees(solTokens) {
             body: JSON.stringify({ action: 'bags-claimable-fees', solana_wallet: solWallet })
         });
         const data = await resp.json();
+        console.log('[SolFees] API response:', resp.status, data);
         if (!resp.ok || data.error) return;
 
         // data may be an array or { positions: [...] }
         const positions = Array.isArray(data) ? data : (data.positions || data.data || []);
+        console.log('[SolFees] Positions:', positions.length, 'Our mints:', solTokens.map(t => t.token_address));
         if (!positions.length) return;
 
         // Build set of our token mints for filtering
@@ -915,6 +919,7 @@ async function fetchSolanaFees(solTokens) {
 
         // Filter to only our tokens, sum claimable SOL
         const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseFloat(p.claimableDisplayAmount || 0) > 0);
+        console.log('[SolFees] Claimable positions:', claimable.length, claimable.map(p => ({ mint: p.baseMint, amt: p.claimableDisplayAmount })));
         if (!claimable.length) return;
 
         _solClaimablePositions = claimable;
