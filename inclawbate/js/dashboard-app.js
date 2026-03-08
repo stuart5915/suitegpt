@@ -11,6 +11,35 @@ function getStoredAuth() {
 
 const API_BASE = '/api/inclawbate';
 
+async function addTokenToWallet(addr, symbol, name, image, chain) {
+    try {
+        if (chain === 'solana') {
+            if (window.solana && window.solana.isPhantom) {
+                await window.solana.connect();
+                alert('Token address copied! In Phantom, tap the search icon and paste: ' + addr);
+                navigator.clipboard.writeText(addr);
+            } else {
+                navigator.clipboard.writeText(addr);
+                alert('Token address copied! Paste it in your Solana wallet to add the token.');
+            }
+        } else {
+            if (window.ethereum) {
+                await window.ethereum.request({
+                    method: 'wallet_watchAsset',
+                    params: { type: 'ERC20', options: { address: addr, symbol: (symbol || 'TOKEN').slice(0, 11), decimals: 18, image: image || '' } }
+                });
+            } else {
+                navigator.clipboard.writeText(addr);
+                alert('No wallet detected. Token address copied to clipboard.');
+            }
+        }
+    } catch (e) {
+        console.error('Add to wallet failed:', e);
+        navigator.clipboard.writeText(addr);
+        alert('Token address copied to clipboard.');
+    }
+}
+
 // Cached data for project modal dropdowns
 let _cachedUserApps = [];
 let _cachedTokens = [];
@@ -542,12 +571,14 @@ function renderProjectCard(p) {
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
             actionsHtml += `<a href="https://bags.fm/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
             actionsHtml += `<a href="https://solscan.io/token/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+            actionsHtml += `<button type="button" class="project-card-action add-to-wallet-btn" data-wallet-addr="${esc(addr)}" data-wallet-symbol="${esc(symbol)}" data-wallet-name="${esc(name)}" data-wallet-img="${esc(p.logo_url || '')}" data-wallet-chain="solana">+ Wallet</button>`;
         } else {
             actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
             actionsHtml += `<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=${esc(addr)}&chain=base" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
             actionsHtml += `<a href="https://www.clanker.world/clanker/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Clanker</a>`;
             actionsHtml += `<a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+            actionsHtml += `<button type="button" class="project-card-action add-to-wallet-btn" data-wallet-addr="${esc(addr)}" data-wallet-symbol="${esc(symbol)}" data-wallet-name="${esc(name)}" data-wallet-img="${esc(p.logo_url || '')}" data-wallet-chain="base">+ Wallet</button>`;
         }
     }
     if (!isSolana && !p.staking_address && status === 'active' && addr) {
@@ -646,6 +677,12 @@ function renderProjectCard(p) {
             chartDiv.style.display = isOpen ? 'none' : 'block';
             e.currentTarget.textContent = isOpen ? 'Chart' : 'Hide Chart';
         }
+    });
+
+    // Wire add-to-wallet button
+    card.querySelector('.add-to-wallet-btn')?.addEventListener('click', (e) => {
+        const d = e.currentTarget.dataset;
+        addTokenToWallet(d.walletAddr, d.walletSymbol, d.walletName, d.walletImg, d.walletChain);
     });
 
     // Wire fund button

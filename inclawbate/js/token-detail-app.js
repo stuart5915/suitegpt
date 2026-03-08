@@ -9,6 +9,35 @@ var API_BASE = '/api/inclawbate/inclawbator';
 var CLAWS_ADDRESS = '0x7ca47B141639B893C6782823C0b219f872056379';
 var S4H_ADDRESS = '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07';
 
+async function addTokenToWallet(addr, symbol, name, image, chain) {
+    try {
+        if (chain === 'solana') {
+            if (window.solana && window.solana.isPhantom) {
+                await window.solana.connect();
+                alert('Token address copied! In Phantom, tap the search icon and paste: ' + addr);
+                navigator.clipboard.writeText(addr);
+            } else {
+                navigator.clipboard.writeText(addr);
+                alert('Token address copied! Paste it in your Solana wallet to add the token.');
+            }
+        } else {
+            if (window.ethereum) {
+                await window.ethereum.request({
+                    method: 'wallet_watchAsset',
+                    params: { type: 'ERC20', options: { address: addr, symbol: (symbol || 'TOKEN').slice(0, 11), decimals: 18, image: image || '' } }
+                });
+            } else {
+                navigator.clipboard.writeText(addr);
+                alert('No wallet detected. Token address copied to clipboard.');
+            }
+        }
+    } catch (e) {
+        console.error('Add to wallet failed:', e);
+        navigator.clipboard.writeText(addr);
+        alert('Token address copied to clipboard.');
+    }
+}
+
 // Hardcoded metadata for tokens not in the inclawbator DB
 var EXTRA_TOKENS = {};
 EXTRA_TOKENS[CLAWS_ADDRESS.toLowerCase()] = {
@@ -240,7 +269,7 @@ function render() {
     }
     var isSolana = p.chain === 'solana';
     if (isSolana && p.token_address) {
-        html += '<a href="https://jup.ag/swap/SOL-' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-uniswap">Jupiter</a>';
+        html += '<a href="https://bags.fm/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-uniswap">Buy</a>';
         html += '<a href="https://dexscreener.com/solana/' + p.token_address + '" target="_blank" rel="noopener" class="td-link td-link-dexscreener">DexScreener</a>';
     } else {
         if (p.is_clanker !== false && p.token_address) {
@@ -256,6 +285,7 @@ function render() {
     }
     if (p.token_address) {
         html += '<button class="td-link td-link-copy" data-ca="' + p.token_address + '">Copy CA</button>';
+        html += '<button class="td-link td-link-wallet" data-wallet-addr="' + escapeHtml(p.token_address) + '" data-wallet-symbol="' + escapeHtml(p.token_symbol || '') + '" data-wallet-name="' + escapeHtml(p.token_name || '') + '" data-wallet-img="' + escapeHtml(p.logo_url || '') + '" data-wallet-chain="' + (isSolana ? 'solana' : 'base') + '">Add to Wallet</button>';
     }
     html += '</div>';
 
@@ -286,6 +316,12 @@ function render() {
             copyBtn.textContent = 'Copied!';
             setTimeout(function() { copyBtn.textContent = 'Copy CA'; }, 1500);
         });
+    });
+
+    // Add to Wallet button
+    var walletBtn = el.querySelector('.td-link-wallet');
+    if (walletBtn) walletBtn.addEventListener('click', function() {
+        addTokenToWallet(this.dataset.walletAddr, this.dataset.walletSymbol, this.dataset.walletName, this.dataset.walletImg, this.dataset.walletChain);
     });
 }
 
