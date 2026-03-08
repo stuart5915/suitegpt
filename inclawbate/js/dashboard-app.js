@@ -1,5 +1,7 @@
 // Inclawbate — Dashboard Controller (Single Overview Page)
 
+const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+
 function getStoredAuth() {
     try {
         const token = localStorage.getItem('inclawbate_token');
@@ -454,6 +456,8 @@ async function loadProjects() {
     const profile = auth.profile;
     const wallet = profile.wallet_address;
     if (!wallet) return;
+
+    if (wallet.toLowerCase() === SUPER_ADMIN) loadAdminPending(wallet);
 
     try {
         const res = await fetch(`${API_BASE}/inclawbator?wallet=${encodeURIComponent(wallet.toLowerCase())}`);
@@ -3240,6 +3244,109 @@ function init() {
     document.getElementById('mysClaimAll')?.addEventListener('click', () => claimAllPositions(false));
     document.getElementById('mysCompoundAll')?.addEventListener('click', () => claimAllPositions(true));
 
+}
+
+// ══════════════════════════════════════
+// ADMIN: PENDING APPLICATIONS
+// ══════════════════════════════════════
+
+function shortAddr(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
+
+async function loadAdminPending(wallet) {
+    const section = document.getElementById('adminPendingSection');
+    if (!section) return;
+    section.style.display = '';
+
+    try {
+        const res = await fetch(`${API_BASE}/inclawbator?pending=true`, {
+            headers: { 'x-wallet': wallet }
+        });
+        const data = await res.json();
+        renderAdminPending(data.projects || []);
+    } catch (e) {
+        const list = document.getElementById('adminPendingList');
+        if (list) list.innerHTML = '<p class="overview-empty">Failed to load</p>';
+    }
+}
+
+function renderAdminPending(apps) {
+    const list = document.getElementById('adminPendingList');
+    if (!list) return;
+
+    if (apps.length === 0) {
+        list.innerHTML = '<p class="overview-empty">No pending applications</p>';
+        return;
+    }
+
+    list.innerHTML = apps.map(p => {
+        const borderColor = p.color || 'var(--border-subtle)';
+        const meta = [];
+        if (p.creator_wallet) meta.push('Wallet: ' + shortAddr(p.creator_wallet));
+        if (p.x_handle) meta.push('X: @' + esc(p.x_handle).replace('@', ''));
+        if (p.telegram_url) meta.push('TG: ' + esc(p.telegram_url));
+        if (p.token_address) meta.push('Token: ' + shortAddr(p.token_address));
+
+        return '<div class="admin-pending-card" style="border-color:' + borderColor + '">' +
+            '<div class="pending-header">' +
+                '<span class="pending-name">' + esc(p.token_name) + (p.token_symbol ? ' ($' + esc(p.token_symbol) + ')' : '') + '</span>' +
+                '<span class="pending-tier">' + esc(p.tier || 'incubated') + '</span>' +
+            '</div>' +
+            '<div class="pending-meta">' + meta.join(' &middot; ') + '</div>' +
+            (p.description ? '<div class="pending-desc">' + esc(p.description) + '</div>' : '') +
+            '<div class="admin-pending-actions">' +
+                '<button class="btn-approve" onclick="approveProject(\'' + p.id + '\')">Approve</button>' +
+                '<button class="btn-reject" onclick="rejectProject(\'' + p.id + '\')">Reject</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+async function approveProject(id) {
+    const secret = prompt('Admin secret:');
+    if (!secret) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/inclawbator`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'approve', project_id: id, admin_secret: secret })
+        });
+        const result = await res.json();
+        if (result.error) {
+            alert('Approve failed: ' + result.error);
+        } else {
+            alert('Project approved!');
+            const auth = getStoredAuth();
+            if (auth) loadAdminPending(auth.profile.wallet_address);
+        }
+    } catch (e) {
+        alert('Approve failed: ' + (e.message || 'Unknown error'));
+    }
+}
+
+async function rejectProject(id) {
+    const reason = prompt('Rejection reason:');
+    if (reason === null) return;
+    const secret = prompt('Admin secret:');
+    if (!secret) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/inclawbator`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'reject', project_id: id, admin_secret: secret, rejection_reason: reason })
+        });
+        const result = await res.json();
+        if (result.error) {
+            alert('Reject failed: ' + result.error);
+        } else {
+            alert('Project rejected');
+            const auth = getStoredAuth();
+            if (auth) loadAdminPending(auth.profile.wallet_address);
+        }
+    } catch (e) {
+        alert('Reject failed: ' + (e.message || 'Unknown error'));
+    }
 }
 
 // Boot

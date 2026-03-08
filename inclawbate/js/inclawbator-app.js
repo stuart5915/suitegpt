@@ -1239,92 +1239,6 @@ function escapeHtml(str) {
 // ADMIN: BATCH DISTRIBUTION
 // ══════════════════════════════════════
 
-async function loadAdminPanel() {
-    if (!state.isAdmin) return;
-
-    var panel = document.getElementById('adminPanel');
-    if (!panel) return;
-    panel.style.display = 'block';
-
-    try {
-        var pendingData = await fetch(API_BASE + '?pending=true', {
-            headers: { 'x-wallet': state.wallet }
-        }).then(function(r) { return r.json(); });
-        renderPendingApps(pendingData.projects || []);
-    } catch (e) {
-        var pendingList = document.getElementById('adminPendingList');
-        if (pendingList) pendingList.innerHTML = '<p style="color:var(--text-dim);text-align:center">Failed to load</p>';
-    }
-
-}
-
-function renderPendingApps(apps) {
-    var list = document.getElementById('adminPendingList');
-    if (!list) return;
-
-    if (apps.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-dim);text-align:center">No pending applications</p>';
-        return;
-    }
-
-    list.innerHTML = apps.map(function(p) {
-        var borderColor = p.color || 'var(--border-subtle)';
-        var meta = [];
-        if (p.creator_wallet) meta.push('Wallet: ' + shortAddr(p.creator_wallet));
-        if (p.x_handle) meta.push('X: @' + escapeHtml(p.x_handle).replace('@', ''));
-        if (p.telegram_url) meta.push('TG: ' + escapeHtml(p.telegram_url));
-        if (p.token_address) meta.push('Token: ' + shortAddr(p.token_address));
-
-        return '<div class="admin-pending-card" style="border-color:' + borderColor + '">' +
-            '<div class="pending-header">' +
-                '<span class="pending-name">' + escapeHtml(p.token_name) + (p.token_symbol ? ' ($' + escapeHtml(p.token_symbol) + ')' : '') + '</span>' +
-                '<span class="pending-tier">' + escapeHtml(p.tier || 'incubated') + '</span>' +
-            '</div>' +
-            '<div class="pending-meta">' + meta.join(' &middot; ') + '</div>' +
-            (p.description ? '<div class="pending-desc">' + escapeHtml(p.description) + '</div>' : '') +
-            '<div class="admin-pending-actions">' +
-                '<button class="btn-approve" onclick="approveProject(\'' + p.id + '\')">Approve</button>' +
-                '<button class="btn-reject" onclick="rejectProject(\'' + p.id + '\')">Reject</button>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-}
-
-async function approveProject(id) {
-    var secret = prompt('Admin secret:');
-    if (!secret) return;
-
-    try {
-        var result = await apiPost({ action: 'approve', project_id: id, admin_secret: secret });
-        if (result.error) {
-            showToast('Approve failed: ' + result.error, 'error');
-        } else {
-            showToast('Project approved!', 'success');
-            loadAdminPanel();
-        }
-    } catch (e) {
-        showToast('Approve failed: ' + (e.message || 'Unknown error'), 'error');
-    }
-}
-
-async function rejectProject(id) {
-    var reason = prompt('Rejection reason:');
-    if (reason === null) return;
-    var secret = prompt('Admin secret:');
-    if (!secret) return;
-
-    try {
-        var result = await apiPost({ action: 'reject', project_id: id, admin_secret: secret, rejection_reason: reason });
-        if (result.error) {
-            showToast('Reject failed: ' + result.error, 'error');
-        } else {
-            showToast('Project rejected', 'success');
-            loadAdminPanel();
-        }
-    } catch (e) {
-        showToast('Reject failed: ' + (e.message || 'Unknown error'), 'error');
-    }
-}
 
 
 // ══════════════════════════════════════
@@ -1690,10 +1604,6 @@ function updateUI() {
         if (partnerAgentNote && state.project && state.project.agent_enabled) partnerAgentNote.style.display = 'block';
     }
 
-    // Admin panel
-    if (state.isAdmin) {
-        loadAdminPanel();
-    }
 }
 
 // ══════════════════════════════════════
