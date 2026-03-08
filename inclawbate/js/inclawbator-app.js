@@ -1320,29 +1320,6 @@ async function rejectProject(id) {
 // FORM RESET
 // ══════════════════════════════════════
 
-async function addTokenToWalletFromSuccess() {
-    var addr = state.deployedToken;
-    var symbol = state.tokenSymbol || state.tokenName || 'TOKEN';
-    var isSolana = state.chain === 'solana';
-    try {
-        if (isSolana) {
-            navigator.clipboard.writeText(addr);
-            alert('Token address copied! In Phantom, tap the search icon and paste: ' + addr);
-        } else if (window.ethereum) {
-            await window.ethereum.request({
-                method: 'wallet_watchAsset',
-                params: { type: 'ERC20', options: { address: addr, symbol: symbol.slice(0, 11), decimals: 18, image: '' } }
-            });
-        } else {
-            navigator.clipboard.writeText(addr);
-            alert('Token address copied to clipboard.');
-        }
-    } catch (e) {
-        navigator.clipboard.writeText(addr);
-        alert('Token address copied to clipboard.');
-    }
-}
-
 function resetForm() {
     state.step = 0;
     state.deploying = false;
@@ -1673,8 +1650,6 @@ function updateUI() {
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
         var stakingNote = document.getElementById('stakingSuccessNote');
         if (stakingNote) stakingNote.style.display = isSolana ? 'none' : '';
-        var walletBtn = document.getElementById('addToWalletBtn');
-        if (walletBtn && state.deployedToken) walletBtn.style.display = '';
         var agentNote = document.getElementById('agentSuccessNote');
         if (agentNote && state.project && state.project.agent_enabled) agentNote.style.display = 'block';
         // Burn/allocation info
