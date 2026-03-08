@@ -229,7 +229,7 @@
   /* Round stats */
   .round-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     gap: 8px;
     margin-bottom: 12px;
   }
@@ -927,6 +927,59 @@
   }
   .btn-close-win:hover { background: var(--bg-elevated); }
 
+  /* Contract Pool */
+  .stat-value.pool { color: var(--accent-cyan); }
+
+  .pool-panel {
+    background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(59,130,246,0.06));
+    border: 1px solid rgba(6,182,212,0.25);
+  }
+
+  .pool-stat-mini {
+    background: var(--bg-dark);
+    padding: 6px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .pool-stat-mini .mini-label {
+    font-size: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .pool-stat-mini .mini-val {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .pool-flow-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+  }
+  .pool-flow-item.cashout {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: var(--accent-green);
+  }
+  .pool-flow-item.buyin {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: var(--accent-red);
+  }
+  .pool-flow-item .flow-emoji { font-size: 14px; }
+  .pool-flow-item .flow-name { font-weight: 600; color: var(--text-primary); }
+  .pool-flow-item .flow-amount { font-family: 'Rajdhani', sans-serif; font-weight: 700; margin-left: auto; }
+
+  .log-entry .pool-event { color: var(--accent-cyan); font-weight: 600; }
+  .log-entry .pool-in { color: var(--accent-green); }
+  .log-entry .pool-out { color: var(--accent-red); }
+
   /* Responsive */
   @media (max-width: 900px) {
     .arena-layout { grid-template-columns: 1fr; }
@@ -934,7 +987,7 @@
     .sidebar .panel { flex: 1 1 300px; }
     .nav-tabs { display: none; }
     .header { padding: 0 16px; }
-    .round-stats { grid-template-columns: 1fr 1fr; }
+    .round-stats { grid-template-columns: 1fr 1fr 1fr; }
   }
 
   @media (max-width: 600px) {
@@ -1003,6 +1056,10 @@
             <div class="stat-box">
               <div class="stat-label">Total Hands</div>
               <div class="stat-value green" id="handsPlayed">0</div>
+            </div>
+            <div class="stat-box" style="border-color:rgba(6,182,212,0.3)">
+              <div class="stat-label">🏦 Contract Pool</div>
+              <div class="stat-value pool" id="poolDisplay">20,000</div>
             </div>
           </div>
 
@@ -1078,6 +1135,30 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
             <span style="font-size:12px;color:var(--text-muted)">Total P&L:</span>
             <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)" id="totalPnl">+0</span>
+          </div>
+        </div>
+        <div class="panel pool-panel">
+          <div class="panel-title"><span class="icon">🏦</span> Contract Pool</div>
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
+            The vault holds $POKERAI for agent rebuys and cashouts. Agents cash out excess chips when winning big and buy back in when bust.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+            <div class="pool-stat-mini">
+              <div class="mini-label">Pool Balance</div>
+              <div class="mini-val" style="color:var(--accent-cyan)" id="poolBalance">20,000</div>
+            </div>
+            <div class="pool-stat-mini">
+              <div class="mini-label">Total Cashouts</div>
+              <div class="mini-val" style="color:var(--accent-green)" id="poolCashouts">0</div>
+            </div>
+            <div class="pool-stat-mini">
+              <div class="mini-label">Total Buyins</div>
+              <div class="mini-val" style="color:var(--accent-red)" id="poolBuyins">0</div>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Recent Activity</div>
+          <div id="poolFlowLog" style="max-height:160px;overflow-y:auto">
+            <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>
           </div>
         </div>
       </div>
@@ -1249,7 +1330,12 @@ let gameState = {
   lastWinner: null,
   // Funding positions: { agentId, deposited, currentValue, startStack }
   fundPositions: [],
-  totalPnl: 0
+  totalPnl: 0,
+  // Contract pool (casino cage) — holds tokens for rebuys/cashouts
+  contractPool: 20000, // 2% of supply as rebuy reserve
+  totalCashouts: 0,    // total tokens returned to pool by agents
+  totalBuyins: 0,      // total tokens taken from pool by agents
+  poolFlows: []        // recent pool events: { type, agentName, agentEmoji, amount, poolAfter, hand }
 };
 
 function getSpeed() {
@@ -1528,9 +1614,22 @@ function startHand() {
 
   clearCommunityCards();
 
-  // Reset agents
+  // Reset agents — bust agents rebuy from contract pool
   gameState.agents.forEach(a => {
-    if (a.chips <= 0) a.chips = 5000; // rebuy
+    if (a.chips <= 0) {
+      const rebuyAmount = Math.min(5000, gameState.contractPool);
+      if (rebuyAmount > 0) {
+        gameState.contractPool -= rebuyAmount;
+        gameState.totalBuyins += rebuyAmount;
+        a.chips = rebuyAmount;
+        addPoolFlow('buyin', a.name, a.emoji, rebuyAmount, gameState.round);
+        addLog(`<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">buys in ${rebuyAmount.toLocaleString()} from pool</span>`);
+      } else {
+        a.chips = 0; // pool empty, agent can't rebuy
+        addLog(`<span class="pool-event">🏦 Pool empty!</span> ${a.name} can't rebuy`);
+      }
+      updatePoolDisplay();
+    }
     a.folded = false;
     a.currentBet = 0;
     a.allIn = false;
@@ -1758,6 +1857,9 @@ function resolveHand(activePlayers) {
   const handName = winner._handName || 'Best Hand';
   addLog(`<span class="win">🏆 ${winner.name} wins ${potWon} with ${handName}!</span>`);
 
+  // Check for agent cashouts — agents cash out excess when stack > 2x base
+  checkAgentCashouts();
+
   renderTableSeats();
   updatePotDisplay();
 
@@ -1800,6 +1902,56 @@ function updateFundPositions() {
 
   renderFundPositions();
   renderTableSeats(); // refresh PnL badges on table
+}
+
+// ============================================================
+// CONTRACT POOL — CASHOUT / BUYIN
+// ============================================================
+const CASHOUT_THRESHOLD = 2.0; // Cash out when stack > 2x base
+
+function checkAgentCashouts() {
+  gameState.agents.forEach(agent => {
+    const threshold = agent.baseChips * CASHOUT_THRESHOLD;
+    if (agent.chips > threshold) {
+      const excess = agent.chips - agent.baseChips; // cash out back to base level
+      agent.chips = agent.baseChips;
+      gameState.contractPool += excess;
+      gameState.totalCashouts += excess;
+      addPoolFlow('cashout', agent.name, agent.emoji, excess, gameState.round);
+      addLog(`<span class="pool-event">🏦 ${agent.name}</span> <span class="pool-in">cashes out ${excess.toLocaleString()} to pool</span>`);
+      updatePoolDisplay();
+    }
+  });
+}
+
+function addPoolFlow(type, agentName, agentEmoji, amount, hand) {
+  gameState.poolFlows.unshift({ type, agentName, agentEmoji, amount, poolAfter: gameState.contractPool, hand });
+  if (gameState.poolFlows.length > 20) gameState.poolFlows.pop(); // keep last 20
+  renderPoolFlows();
+}
+
+function updatePoolDisplay() {
+  document.getElementById('poolDisplay').textContent = gameState.contractPool.toLocaleString();
+  document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
+  document.getElementById('poolCashouts').textContent = gameState.totalCashouts.toLocaleString();
+  document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
+}
+
+function renderPoolFlows() {
+  const container = document.getElementById('poolFlowLog');
+  if (gameState.poolFlows.length === 0) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>';
+    return;
+  }
+  container.innerHTML = gameState.poolFlows.map(flow => {
+    const isCashout = flow.type === 'cashout';
+    return `<div class="pool-flow-item ${flow.type}">
+      <span class="flow-emoji">${flow.agentEmoji}</span>
+      <span class="flow-name">${flow.agentName}</span>
+      <span style="font-size:10px">${isCashout ? '→ pool' : '← pool'}</span>
+      <span class="flow-amount">${isCashout ? '+' : '-'}${flow.amount.toLocaleString()}</span>
+    </div>`;
+  }).join('');
 }
 
 function updatePotDisplay() {
@@ -1959,12 +2111,6 @@ function renderAgentsSidebar() {
       </div>
     </div>
   `).join('');
-}
-
-function renderFundSelect() {
-  const sel = document.getElementById('betAgentSelect');
-  sel.innerHTML = '<option value="">Select an Agent to back...</option>' +
-    gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name}</option>`).join('');
 }
 
 function renderAgentsGrid() {
