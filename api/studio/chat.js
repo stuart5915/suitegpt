@@ -460,10 +460,13 @@ export default async function handler(req, res) {
 
     let creditsRemaining = profile?.credits || 0;
 
-    // Credit gating — only Opus costs credits
-    if (tier.credits > 0 && !admin && !anonymous) {
+    // Credit gating — paid models require credits (anonymous must use free models)
+    if (tier.credits > 0 && !admin) {
+        if (anonymous) {
+            return res.status(401).json({ error: 'Log in to use ' + tier.label + '. Or try a free model like Gemini Flash.' });
+        }
         if (creditsRemaining < tier.credits) {
-            return res.status(402).json({ error: 'Not enough credits for Opus. Use a free model or buy credits.', credits_remaining: creditsRemaining });
+            return res.status(402).json({ error: 'Not enough credits for ' + tier.label + '. You need ' + tier.credits + ' credits.', credits_remaining: creditsRemaining });
         }
         await supabase.from('human_profiles')
             .update({ credits: creditsRemaining - tier.credits })

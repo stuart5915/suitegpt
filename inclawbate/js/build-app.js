@@ -1416,6 +1416,14 @@
     };
 
     function setModel(tier) {
+        var info = MODEL_INFO[tier] || MODEL_INFO.gemini;
+        // Require login for paid models
+        if (!info.free && !isLoggedIn()) {
+            appendMessage('assistant', 'Log in to use ' + info.label + '. Or try a free model like Gemini Flash.');
+            var selector = document.getElementById('modelSelector');
+            if (selector) selector.classList.remove('open');
+            return;
+        }
         state.selectedModel = tier;
         // Update dropup items
         var items = document.querySelectorAll('.model-dropup-item');
