@@ -1016,9 +1016,12 @@
   </nav>
 
   <div class="header-right">
-    <div class="live-indicator">
-      <div class="live-dot"></div>
-      LIVE
+    <div class="live-indicator" id="connectionIndicator">
+      <div class="live-dot" id="connectionDot"></div>
+      <span id="connectionText">CONNECTING</span>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px">
+      <span id="viewerCount">0</span> watching
     </div>
     <div class="powered-by">powered by <a href="https://inclawbate.com" target="_blank">Inclawbate</a></div>
   </div>
@@ -1083,15 +1086,7 @@
           </div>
 
           <div class="game-controls" style="justify-content:flex-end">
-            <div class="speed-control">
-              Viewing Speed:
-              <select id="speedSelect">
-                <option value="2000">Slow</option>
-                <option value="1000" selected>Normal</option>
-                <option value="400">Fast</option>
-                <option value="100">Ultra</option>
-              </select>
-            </div>
+            <div style="font-size:11px;color:var(--text-muted)">Server-synced live game</div>
           </div>
         </div>
       </div>
@@ -1213,241 +1208,230 @@
 
 <script>
 // ============================================================
-// 8 AGENTS — each starts with 10,000 (1% of hypothetical supply)
+// WEBSOCKET CLIENT — connects to PokerAI live game server
 // ============================================================
-const AGENTS = [
-  {
-    id: 'blaze',
-    name: 'Blaze Alpha',
-    emoji: '🔥',
-    style: 'aggressive',
-    description: 'Goes all-in frequently. Intimidates opponents with massive bets. High risk, high reward.',
-    raisePct: 60, bluffPct: 40, foldPct: 10,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 90, bluffing: 70, patience: 15, adaptability: 40 }
-  },
-  {
-    id: 'oracle',
-    name: 'Oracle-7',
-    emoji: '🔮',
-    style: 'mathematical',
-    description: 'Calculates exact pot odds and EV for every decision. Ice-cold, never tilts.',
-    raisePct: 35, bluffPct: 15, foldPct: 35,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 40, bluffing: 20, patience: 85, adaptability: 75 }
-  },
-  {
-    id: 'phantom',
-    name: 'Phantom X',
-    emoji: '👻',
-    style: 'bluffer',
-    description: 'Master of deception. Represents hands it doesn\'t have. Keeps everyone guessing.',
-    raisePct: 45, bluffPct: 70, foldPct: 15,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 65, bluffing: 95, patience: 35, adaptability: 80 }
-  },
-  {
-    id: 'fortress',
-    name: 'Fortress',
-    emoji: '🏰',
-    style: 'conservative',
-    description: 'Only plays premium hands. Folds often but when it bets, it means business.',
-    raisePct: 20, bluffPct: 8, foldPct: 60,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 15, bluffing: 10, patience: 95, adaptability: 30 }
-  },
-  {
-    id: 'nexus',
-    name: 'Nexus-9',
-    emoji: '⚡',
-    style: 'balanced',
-    description: 'Adapts its strategy based on table dynamics. Unpredictable and well-rounded.',
-    raisePct: 40, bluffPct: 30, foldPct: 25,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 55, bluffing: 45, patience: 60, adaptability: 95 }
-  },
-  {
-    id: 'shadow',
-    name: 'Shadow-Bot',
-    emoji: '🌑',
-    style: 'balanced',
-    description: 'Plays in the shadows, picking spots carefully. Uses position and timing to strike.',
-    raisePct: 38, bluffPct: 28, foldPct: 30,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 50, bluffing: 40, patience: 70, adaptability: 85 }
-  },
-  {
-    id: 'viper',
-    name: 'Viper',
-    emoji: '🐍',
-    style: 'aggressive',
-    description: 'Coils and waits, then strikes hard. Plays tight preflop but bets massive post-flop.',
-    raisePct: 55, bluffPct: 35, foldPct: 20,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 80, bluffing: 50, patience: 45, adaptability: 55 }
-  },
-  {
-    id: 'chaos',
-    name: 'Chaos Engine',
-    emoji: '🎲',
-    style: 'chaotic',
-    description: 'Pure randomness with a twist. Even Chaos doesn\'t know what it will do next. Terrifying.',
-    raisePct: 50, bluffPct: 50, foldPct: 20,
-    chips: 10000, baseChips: 10000,
-    handsWon: 0, handsPlayed: 0, biggestPot: 0,
-    traits: { aggression: 70, bluffing: 60, patience: 25, adaptability: 50 }
-  }
-];
+const WS_URL = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'ws://localhost:3000'
+  : 'wss://poker.inclawbate.com';
 
-const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-const SUITS = ['♠','♥','♦','♣'];
-const RANK_VALUES = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
+let ws = null;
+let sessionId = null;
+let reconnectTimer = null;
+let pingInterval = null;
 
 // ============================================================
-// GAME STATE
+// GAME STATE (populated from server)
 // ============================================================
 let gameState = {
   running: false,
   round: 0,
   handsPlayed: 0,
   pot: 0,
-  phase: 'preflop',
+  phase: 'waiting',
   communityCards: [],
-  deck: [],
   agents: [],
   currentTurnIndex: 0,
   dealerIndex: 0,
-  phaseTimer: null,
   lastWinner: null,
-  // Funding positions: { agentId, deposited, currentValue, startStack }
   fundPositions: [],
   totalPnl: 0,
-  // Contract pool (casino cage) — holds tokens for rebuys/cashouts
-  contractPool: 20000, // 2% of supply as rebuy reserve
-  totalCashouts: 0,    // total tokens returned to pool by agents
-  totalBuyins: 0,      // total tokens taken from pool by agents
-  poolFlows: []        // recent pool events: { type, agentName, agentEmoji, amount, poolAfter, hand }
+  contractPool: 20000,
+  totalCashouts: 0,
+  totalBuyins: 0,
+  poolFlows: []
 };
 
-function getSpeed() {
-  return parseInt(document.getElementById('speedSelect').value);
-}
-
-// Which agents has the user funded?
 function isFunded(agentId) {
   return gameState.fundPositions.some(p => p.agentId === agentId);
 }
 
 // ============================================================
-// INIT
+// WEBSOCKET CONNECTION
 // ============================================================
-function initGame() {
-  gameState.agents = AGENTS.map(a => ({...a, traits: {...a.traits}, handsWon: 0, handsPlayed: 0, biggestPot: 0, chips: 10000, baseChips: 10000, hand: [], folded: false, currentBet: 0, allIn: false}));
-  renderAgentsSidebar();
-  renderFundSelect();
-  renderAgentsGrid();
-  renderLeaderboard();
-  renderFundPositions();
+function connect() {
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+  setConnectionStatus('connecting');
+
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setConnectionStatus('live');
+    showToast('Connected to live game!', 'success');
+    // Ping every 30s to keep alive
+    if (pingInterval) clearInterval(pingInterval);
+    pingInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+    }, 30000);
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      handleMessage(msg);
+    } catch (e) { console.error('Bad message:', e); }
+  };
+
+  ws.onclose = () => {
+    setConnectionStatus('offline');
+    if (pingInterval) clearInterval(pingInterval);
+    // Auto-reconnect after 2s
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connect, 2000);
+  };
+
+  ws.onerror = () => {
+    setConnectionStatus('offline');
+  };
+}
+
+function setConnectionStatus(status) {
+  const indicator = document.getElementById('connectionIndicator');
+  const dot = document.getElementById('connectionDot');
+  const text = document.getElementById('connectionText');
+  if (status === 'live') {
+    indicator.style.background = 'rgba(34,197,94,0.12)';
+    indicator.style.borderColor = 'rgba(34,197,94,0.3)';
+    indicator.style.color = 'var(--accent-green)';
+    dot.style.background = 'var(--accent-green)';
+    text.textContent = 'LIVE';
+  } else if (status === 'connecting') {
+    indicator.style.background = 'rgba(245,197,66,0.12)';
+    indicator.style.borderColor = 'rgba(245,197,66,0.3)';
+    indicator.style.color = 'var(--accent-gold)';
+    dot.style.background = 'var(--accent-gold)';
+    text.textContent = 'CONNECTING';
+  } else {
+    indicator.style.background = 'rgba(239,68,68,0.12)';
+    indicator.style.borderColor = 'rgba(239,68,68,0.3)';
+    indicator.style.color = 'var(--accent-red)';
+    dot.style.background = 'var(--accent-red)';
+    text.textContent = 'OFFLINE';
+  }
+}
+
+// ============================================================
+// MESSAGE HANDLER
+// ============================================================
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'welcome':
+      sessionId = msg.data.sessionId;
+      document.getElementById('viewerCount').textContent = msg.data.viewerCount;
+      break;
+
+    case 'gameState':
+      applyServerState(msg.data);
+      break;
+
+    case 'action':
+      showActionBubble(msg.data.agentId, { type: msg.data.action, label: msg.data.label });
+      break;
+
+    case 'log':
+      addLog(msg.data.html);
+      break;
+
+    case 'handResult':
+      // handled via gameState update
+      break;
+
+    case 'poolEvent':
+      // handled via gameState update
+      break;
+
+    case 'viewerCount':
+      document.getElementById('viewerCount').textContent = msg.data.count;
+      break;
+
+    case 'fundResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`Funded ${msg.data.agentName}! You can now see their cards.`, 'gold');
+      }
+      break;
+
+    case 'withdrawResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else if (msg.data.pnl >= 0) {
+        showToast(`Withdrew ${msg.data.amount} from ${msg.data.agentName} (+${msg.data.pnl} profit!)`, 'success');
+      } else {
+        showToast(`Withdrew ${msg.data.amount} from ${msg.data.agentName} (${msg.data.pnl} loss)`, 'error');
+      }
+      break;
+
+    case 'pong':
+      break;
+  }
+}
+
+function applyServerState(data) {
+  gameState.agents = data.agents;
+  gameState.round = data.round;
+  gameState.handsPlayed = data.handsPlayed;
+  gameState.pot = data.pot;
+  gameState.phase = data.phase;
+  gameState.communityCards = data.communityCards;
+  gameState.dealerIndex = data.dealerIndex;
+  gameState.currentTurnIndex = data.currentTurnIndex;
+  gameState.lastWinner = data.lastWinner;
+  gameState.contractPool = data.contractPool;
+  gameState.totalCashouts = data.totalCashouts;
+  gameState.totalBuyins = data.totalBuyins;
+  gameState.poolFlows = data.poolFlows;
+  gameState.running = data.running;
+  gameState.fundPositions = data.positions || [];
+  gameState.totalPnl = data.totalPnl || 0;
+
+  renderFullState();
+}
+
+function renderFullState() {
+  // Round stats
+  document.getElementById('roundNum').textContent = gameState.round;
+  document.getElementById('handsPlayed').textContent = gameState.handsPlayed;
+  document.getElementById('phaseDisplay').textContent = capitalize(gameState.phase);
+  document.getElementById('potDisplay').textContent = gameState.pot.toLocaleString();
+  document.getElementById('potChips').textContent = `POT: ${gameState.pot.toLocaleString()}`;
+
+  // Community cards
+  for (let i = 0; i < 5; i++) {
+    const card = gameState.communityCards[i] || null;
+    renderCommunityCard(i, card);
+  }
+
+  // Pool
+  document.getElementById('poolDisplay').textContent = gameState.contractPool.toLocaleString();
+  document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
+  document.getElementById('poolCashouts').textContent = gameState.totalCashouts.toLocaleString();
+  document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
+
+  // PnL
+  const pnlEl = document.getElementById('totalPnl');
+  pnlEl.textContent = (gameState.totalPnl >= 0 ? '+' : '') + gameState.totalPnl.toLocaleString();
+  pnlEl.style.color = gameState.totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
   renderTableSeats();
-}
-
-// ============================================================
-// DECK
-// ============================================================
-function createDeck() {
-  const deck = [];
-  for (const suit of SUITS) {
-    for (const rank of RANKS) {
-      deck.push({ rank, suit, red: suit === '♥' || suit === '♦' });
-    }
-  }
-  return shuffle(deck);
-}
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// ============================================================
-// HAND EVALUATION
-// ============================================================
-function evaluateHand(cards) {
-  const vals = cards.map(c => RANK_VALUES[c.rank]).sort((a, b) => b - a);
-  const suits = cards.map(c => c.suit);
-
-  const counts = {};
-  vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
-  const countVals = Object.values(counts).sort((a, b) => b - a);
-
-  const isFlush = suits.every(s => s === suits[0]);
-  const isStraight = checkStraight(vals);
-
-  if (isFlush && isStraight) return { rank: 8, name: 'Straight Flush' };
-  if (countVals[0] === 4) return { rank: 7, name: 'Four of a Kind' };
-  if (countVals[0] === 3 && countVals[1] === 2) return { rank: 6, name: 'Full House' };
-  if (isFlush) return { rank: 5, name: 'Flush' };
-  if (isStraight) return { rank: 4, name: 'Straight' };
-  if (countVals[0] === 3) return { rank: 3, name: 'Three of a Kind' };
-  if (countVals[0] === 2 && countVals[1] === 2) return { rank: 2, name: 'Two Pair' };
-  if (countVals[0] === 2) return { rank: 1, name: 'One Pair' };
-  return { rank: 0, name: 'High Card' };
-}
-
-function checkStraight(vals) {
-  const unique = [...new Set(vals)].sort((a, b) => b - a);
-  if (unique.length < 5) return false;
-  for (let i = 0; i <= unique.length - 5; i++) {
-    if (unique[i] - unique[i + 4] === 4) return true;
-  }
-  if (unique[0] === 14 && unique.slice(-4).join(',') === '5,4,3,2') return true;
-  return false;
-}
-
-function getBestHand(holeCards, communityCards) {
-  const all = [...holeCards, ...communityCards];
-  if (all.length < 5) return { rank: -1, name: 'Unknown' };
-  let best = { rank: -1, name: '' };
-  const combos = getCombinations(all, 5);
-  for (const combo of combos) {
-    const h = evaluateHand(combo);
-    if (h.rank > best.rank) best = h;
-  }
-  return best;
-}
-
-function getCombinations(arr, k) {
-  if (k === 0) return [[]];
-  if (arr.length < k) return [];
-  const [first, ...rest] = arr;
-  const withFirst = getCombinations(rest, k - 1).map(c => [first, ...c]);
-  const withoutFirst = getCombinations(rest, k);
-  return [...withFirst, ...withoutFirst];
+  renderAgentsSidebar();
+  renderFundPositions();
+  renderFundSelect();
+  renderPoolFlows();
+  renderLeaderboard();
 }
 
 // ============================================================
 // SEAT POSITIONS (8 seats)
 // ============================================================
 const SEAT_POSITIONS = [
-  { top: '88%', left: '35%' },   // bottom-left (0)
-  { top: '88%', left: '65%' },   // bottom-right (1)
-  { top: '55%', left: '92%' },   // right-mid (2)
-  { top: '15%', left: '80%' },   // top-right (3)
-  { top: '15%', left: '20%' },   // top-left (4)
-  { top: '55%', left: '8%' },    // left-mid (5)
-  { top: '12%', left: '50%' },   // top-center (6)
-  { top: '88%', left: '50%' },   // bottom-center (7)
+  { top: '88%', left: '35%' },
+  { top: '88%', left: '65%' },
+  { top: '55%', left: '92%' },
+  { top: '15%', left: '80%' },
+  { top: '15%', left: '20%' },
+  { top: '55%', left: '8%' },
+  { top: '12%', left: '50%' },
+  { top: '88%', left: '50%' },
 ];
 
 function renderTableSeats() {
@@ -1467,27 +1451,23 @@ function renderTableSeats() {
     const folded = agent.folded;
     const isWinner = gameState.lastWinner === agent.id;
 
-    // Show pocket cards for funded agents, face-down for others
     let pocketHTML = '';
     if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded) {
-      if (isFunded(agent.id)) {
-        const c1 = agent.hand[0], c2 = agent.hand[1];
-        pocketHTML = `<div class="seat-pocket">
-          <div class="card${c1.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c1.rank}</div><div class="card-suit" style="font-size:9px">${c1.suit}</div></div>
-          <div class="card${c2.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c2.rank}</div><div class="card-suit" style="font-size:9px">${c2.suit}</div></div>
-        </div>`;
-      } else {
-        pocketHTML = `<div class="seat-pocket">
-          <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
-          <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
-        </div>`;
-      }
+      const c1 = agent.hand[0], c2 = agent.hand[1];
+      pocketHTML = `<div class="seat-pocket">
+        <div class="card${c1.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c1.rank}</div><div class="card-suit" style="font-size:9px">${c1.suit}</div></div>
+        <div class="card${c2.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c2.rank}</div><div class="card-suit" style="font-size:9px">${c2.suit}</div></div>
+      </div>`;
+    } else if (agent.hasCards && gameState.running && !agent.folded) {
+      pocketHTML = `<div class="seat-pocket">
+        <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
+        <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
+      </div>`;
     }
 
     const funded = isFunded(agent.id);
     const fundedBadge = funded ? '<div style="position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;background:var(--accent-gold);border-radius:50%;border:2px solid var(--bg-dark);font-size:6px;display:flex;align-items:center;justify-content:center">$</div>' : '';
 
-    // Show live PnL on funded agents
     let pnlBadge = '';
     if (funded) {
       const position = gameState.fundPositions.find(p => p.agentId === agent.id);
@@ -1525,18 +1505,6 @@ function renderTableSeats() {
   });
 }
 
-function updateSeat(agent, action) {
-  const seat = document.getElementById(`seat-${agent.id}`);
-  if (!seat) return;
-  const avatar = seat.querySelector('.seat-avatar');
-  avatar.className = 'seat-avatar';
-  if (gameState.agents.indexOf(agent) === gameState.currentTurnIndex) avatar.classList.add('active');
-  if (agent.folded) avatar.classList.add('folded');
-  if (gameState.lastWinner === agent.id) avatar.classList.add('winner');
-  seat.querySelector('.seat-chips').textContent = formatChips(agent.chips);
-  if (action) showActionBubble(agent.id, action);
-}
-
 function showActionBubble(agentId, action) {
   const bubble = document.getElementById(`bubble-${agentId}`);
   if (!bubble) return;
@@ -1562,380 +1530,8 @@ function renderCommunityCard(index, card) {
   el.innerHTML = `<div class="card-rank">${card.rank}</div><div class="card-suit">${card.suit}</div>`;
 }
 
-function clearCommunityCards() {
-  for (let i = 0; i < 5; i++) renderCommunityCard(i, null);
-  gameState.communityCards = [];
-}
-
 // ============================================================
-// GAME FLOW
-// ============================================================
-const BB = 50; // big blind
-
-function startHand() {
-  if (!gameState.running) return;
-  gameState.round++;
-  gameState.handsPlayed++;
-  gameState.pot = 0;
-  gameState.phase = 'preflop';
-  gameState.lastWinner = null;
-  gameState.deck = createDeck();
-  gameState.communityCards = [];
-
-  document.getElementById('roundNum').textContent = gameState.round;
-  document.getElementById('handsPlayed').textContent = gameState.handsPlayed;
-  document.getElementById('phaseDisplay').textContent = 'Pre-Flop';
-  document.getElementById('potDisplay').textContent = '0';
-
-  clearCommunityCards();
-
-  // Reset agents — bust agents rebuy from contract pool
-  gameState.agents.forEach(a => {
-    if (a.chips <= 0) {
-      const rebuyAmount = Math.min(5000, gameState.contractPool);
-      if (rebuyAmount > 0) {
-        gameState.contractPool -= rebuyAmount;
-        gameState.totalBuyins += rebuyAmount;
-        a.chips = rebuyAmount;
-        addPoolFlow('buyin', a.name, a.emoji, rebuyAmount, gameState.round);
-        addLog(`<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">buys in ${rebuyAmount.toLocaleString()} from pool</span>`);
-      } else {
-        a.chips = 0; // pool empty, agent can't rebuy
-        addLog(`<span class="pool-event">🏦 Pool empty!</span> ${a.name} can't rebuy`);
-      }
-      updatePoolDisplay();
-    }
-    a.folded = false;
-    a.currentBet = 0;
-    a.allIn = false;
-    a.hand = [gameState.deck.pop(), gameState.deck.pop()];
-    a.handsPlayed++;
-  });
-
-  // Rotate dealer
-  gameState.dealerIndex = (gameState.dealerIndex + 1) % gameState.agents.length;
-
-  // Post blinds
-  const sbIdx = (gameState.dealerIndex + 1) % gameState.agents.length;
-  const bbIdx = (gameState.dealerIndex + 2) % gameState.agents.length;
-  const sb = gameState.agents[sbIdx];
-  const bb = gameState.agents[bbIdx];
-
-  const sbAmt = Math.min(Math.floor(BB / 2), sb.chips);
-  const bbAmt = Math.min(BB, bb.chips);
-  sb.chips -= sbAmt;
-  bb.chips -= bbAmt;
-  gameState.pot += sbAmt + bbAmt;
-
-  addLog(`<span class="system">--- Hand #${gameState.handsPlayed} ---</span>`);
-  addLog(`<span class="agent">${sb.name}</span> posts SB <span class="amount">${sbAmt}</span>`);
-  addLog(`<span class="agent">${bb.name}</span> posts BB <span class="amount">${bbAmt}</span>`);
-
-  gameState.currentTurnIndex = (bbIdx + 1) % gameState.agents.length;
-
-  renderTableSeats();
-  updatePotDisplay();
-
-  gameState.phaseTimer = setTimeout(() => runBettingRound(0), getSpeed());
-}
-
-function runBettingRound(actionIndex) {
-  if (!gameState.running) return;
-
-  const activePlayers = gameState.agents.filter(a => !a.folded && a.chips > 0);
-  if (activePlayers.length <= 1) {
-    resolveHand(activePlayers);
-    return;
-  }
-
-  const numAgents = gameState.agents.length;
-  if (actionIndex >= numAgents) {
-    advancePhase();
-    return;
-  }
-
-  let idx = (gameState.currentTurnIndex + actionIndex) % numAgents;
-  const agent = gameState.agents[idx];
-
-  if (agent.folded || agent.chips <= 0) {
-    gameState.phaseTimer = setTimeout(() => runBettingRound(actionIndex + 1), 50);
-    return;
-  }
-
-  const action = agentDecide(agent);
-  applyAction(agent, action);
-  updateSeat(agent, action);
-  updatePotDisplay();
-
-  gameState.phaseTimer = setTimeout(() => runBettingRound(actionIndex + 1), getSpeed());
-}
-
-function agentDecide(agent) {
-  let strength = 0.3 + Math.random() * 0.5;
-
-  if (gameState.communityCards.length > 0) {
-    const handEval = getBestHand(agent.hand, gameState.communityCards);
-    strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
-  }
-
-  const r = Math.random() * 100;
-  const maxBet = Math.min(Math.floor(agent.chips * 0.4), 500);
-  const betAmt = Math.max(BB, Math.floor(Math.random() * maxBet));
-
-  if (agent.style === 'aggressive') {
-    if (r < agent.raisePct) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (r < agent.raisePct + 30) return { type: 'call', label: 'Call', amount: BB };
-    return { type: 'fold', label: 'Fold', amount: 0 };
-  }
-
-  if (agent.style === 'conservative') {
-    if (strength > 0.7 && r < 40) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (strength > 0.5 || r < 25) return { type: 'call', label: 'Call', amount: BB };
-    return { type: 'fold', label: 'Fold', amount: 0 };
-  }
-
-  if (agent.style === 'bluffer') {
-    if (r < agent.bluffPct * 0.8) return { type: 'raise', label: `Bluff ${betAmt}`, amount: betAmt };
-    if (r < 70) return { type: 'call', label: 'Call', amount: BB };
-    return { type: 'fold', label: 'Fold', amount: 0 };
-  }
-
-  if (agent.style === 'mathematical') {
-    const potOdds = gameState.pot > 0 ? BB / gameState.pot : 1;
-    if (strength > potOdds + 0.2 && r < 45) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (strength > potOdds || r < 20) return { type: 'check', label: 'Check', amount: 0 };
-    if (strength > 0.3) return { type: 'call', label: 'Call', amount: BB };
-    return { type: 'fold', label: 'Fold', amount: 0 };
-  }
-
-  if (agent.style === 'chaotic') {
-    const chaos = Math.random();
-    if (chaos < 0.3) return { type: 'raise', label: `YOLO ${betAmt}`, amount: betAmt };
-    if (chaos < 0.5) return { type: 'call', label: 'Call', amount: BB };
-    if (chaos < 0.65) return { type: 'check', label: 'Check', amount: 0 };
-    if (chaos < 0.85 && agent.chips > 200) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
-    return { type: 'fold', label: 'Fold', amount: 0 };
-  }
-
-  // balanced / default
-  if (strength > 0.7 && r < 50) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-  if (strength > 0.4 || r < 40) return { type: 'call', label: 'Call', amount: Math.min(BB, agent.chips) };
-  if (r < 20) return { type: 'check', label: 'Check', amount: 0 };
-  return { type: 'fold', label: 'Fold', amount: 0 };
-}
-
-function applyAction(agent, action) {
-  let logMsg = `<span class="agent">${agent.name}</span> `;
-
-  switch (action.type) {
-    case 'raise':
-      const raiseAmt = Math.min(action.amount, agent.chips);
-      agent.chips -= raiseAmt;
-      gameState.pot += raiseAmt;
-      agent.currentBet += raiseAmt;
-      logMsg += `<span class="action-raise">raises</span> <span class="amount">${raiseAmt}</span>`;
-      break;
-    case 'call':
-      const callAmt = Math.min(action.amount, agent.chips);
-      agent.chips -= callAmt;
-      gameState.pot += callAmt;
-      logMsg += `<span class="action-call">calls</span> <span class="amount">${callAmt}</span>`;
-      break;
-    case 'fold':
-      agent.folded = true;
-      logMsg += `<span class="action-fold">folds</span>`;
-      break;
-    case 'check':
-      logMsg += `<span class="action-check">checks</span>`;
-      break;
-    case 'allin':
-      gameState.pot += agent.chips;
-      logMsg += `<span class="action-raise">goes ALL IN ${agent.chips}!</span>`;
-      agent.chips = 0;
-      agent.allIn = true;
-      break;
-  }
-  addLog(logMsg);
-  updateSeat(agent, action);
-}
-
-function advancePhase() {
-  if (!gameState.running) return;
-
-  const phases = ['preflop', 'flop', 'turn', 'river', 'showdown'];
-  const idx = phases.indexOf(gameState.phase);
-
-  if (idx >= phases.length - 2) {
-    gameState.phase = 'showdown';
-    document.getElementById('phaseDisplay').textContent = 'Showdown';
-    addLog('<span class="system">--- Showdown! ---</span>');
-    const activePlayers = gameState.agents.filter(a => !a.folded);
-    resolveHand(activePlayers);
-    return;
-  }
-
-  gameState.phase = phases[idx + 1];
-
-  if (gameState.phase === 'flop') {
-    const flop = [gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop()];
-    gameState.communityCards = flop;
-    flop.forEach((c, i) => renderCommunityCard(i, c));
-    document.getElementById('phaseDisplay').textContent = 'Flop';
-    addLog(`<span class="system">--- Flop: ${flop.map(c => c.rank + c.suit).join(' ')} ---</span>`);
-  } else if (gameState.phase === 'turn') {
-    const card = gameState.deck.pop();
-    gameState.communityCards.push(card);
-    renderCommunityCard(3, card);
-    document.getElementById('phaseDisplay').textContent = 'Turn';
-    addLog(`<span class="system">--- Turn: ${card.rank + card.suit} ---</span>`);
-  } else if (gameState.phase === 'river') {
-    const card = gameState.deck.pop();
-    gameState.communityCards.push(card);
-    renderCommunityCard(4, card);
-    document.getElementById('phaseDisplay').textContent = 'River';
-    addLog(`<span class="system">--- River: ${card.rank + card.suit} ---</span>`);
-  }
-
-  gameState.agents.forEach(a => a.currentBet = 0);
-  gameState.currentTurnIndex = (gameState.dealerIndex + 1) % gameState.agents.length;
-
-  gameState.phaseTimer = setTimeout(() => runBettingRound(0), getSpeed());
-}
-
-function resolveHand(activePlayers) {
-  if (!activePlayers || activePlayers.length === 0) {
-    activePlayers = [gameState.agents[0]];
-  }
-
-  let winner;
-  if (activePlayers.length === 1) {
-    winner = activePlayers[0];
-  } else {
-    let bestScore = -1;
-    activePlayers.forEach(agent => {
-      const h = getBestHand(agent.hand, gameState.communityCards);
-      agent._handScore = h.rank + Math.random() * 0.01;
-      agent._handName = h.name;
-      if (agent._handScore > bestScore) {
-        bestScore = agent._handScore;
-        winner = agent;
-      }
-    });
-  }
-
-  const potWon = gameState.pot;
-  winner.chips += potWon;
-  winner.handsWon++;
-  winner.biggestPot = Math.max(winner.biggestPot, potWon);
-  gameState.lastWinner = winner.id;
-
-  const handName = winner._handName || 'Best Hand';
-  addLog(`<span class="win">🏆 ${winner.name} wins ${potWon} with ${handName}!</span>`);
-
-  // Check for agent cashouts — agents cash out excess when stack > 2x base
-  checkAgentCashouts();
-
-  renderTableSeats();
-  updatePotDisplay();
-
-  updateFundPositions();
-
-  renderAgentsSidebar();
-  renderLeaderboard();
-
-  if (gameState.running) {
-    gameState.phaseTimer = setTimeout(() => {
-      gameState.pot = 0;
-      startHand();
-    }, getSpeed() * 2);
-  }
-}
-
-// Update funding positions after each hand based on agent stack changes
-function updateFundPositions() {
-  if (gameState.fundPositions.length === 0) return;
-
-  let totalPnl = 0;
-  gameState.fundPositions.forEach(pos => {
-    const agent = gameState.agents.find(a => a.id === pos.agentId);
-    if (!agent) return;
-    // Your share = your deposit / agent's total stack at time of deposit
-    // Current value = your share proportion * current stack
-    const proportion = pos.deposited / pos.startStack;
-    const currentVal = Math.floor(agent.chips * proportion);
-    const profit = currentVal - pos.deposited;
-    // 95% of profits go to human, 5% stays with agent
-    pos.currentValue = profit > 0 ? pos.deposited + Math.floor(profit * 0.95) : currentVal;
-    pos.pnl = pos.currentValue - pos.deposited;
-    totalPnl += pos.pnl;
-  });
-
-  gameState.totalPnl = totalPnl;
-  const pnlEl = document.getElementById('totalPnl');
-  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
-  pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-
-  renderFundPositions();
-  renderTableSeats(); // refresh PnL badges on table
-}
-
-// ============================================================
-// CONTRACT POOL — CASHOUT / BUYIN
-// ============================================================
-const CASHOUT_THRESHOLD = 2.0; // Cash out when stack > 2x base
-
-function checkAgentCashouts() {
-  gameState.agents.forEach(agent => {
-    const threshold = agent.baseChips * CASHOUT_THRESHOLD;
-    if (agent.chips > threshold) {
-      const excess = agent.chips - agent.baseChips; // cash out back to base level
-      agent.chips = agent.baseChips;
-      gameState.contractPool += excess;
-      gameState.totalCashouts += excess;
-      addPoolFlow('cashout', agent.name, agent.emoji, excess, gameState.round);
-      addLog(`<span class="pool-event">🏦 ${agent.name}</span> <span class="pool-in">cashes out ${excess.toLocaleString()} to pool</span>`);
-      updatePoolDisplay();
-    }
-  });
-}
-
-function addPoolFlow(type, agentName, agentEmoji, amount, hand) {
-  gameState.poolFlows.unshift({ type, agentName, agentEmoji, amount, poolAfter: gameState.contractPool, hand });
-  if (gameState.poolFlows.length > 20) gameState.poolFlows.pop(); // keep last 20
-  renderPoolFlows();
-}
-
-function updatePoolDisplay() {
-  document.getElementById('poolDisplay').textContent = gameState.contractPool.toLocaleString();
-  document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
-  document.getElementById('poolCashouts').textContent = gameState.totalCashouts.toLocaleString();
-  document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
-}
-
-function renderPoolFlows() {
-  const container = document.getElementById('poolFlowLog');
-  if (gameState.poolFlows.length === 0) {
-    container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>';
-    return;
-  }
-  container.innerHTML = gameState.poolFlows.map(flow => {
-    const isCashout = flow.type === 'cashout';
-    return `<div class="pool-flow-item ${flow.type}">
-      <span class="flow-emoji">${flow.agentEmoji}</span>
-      <span class="flow-name">${flow.agentName}</span>
-      <span style="font-size:10px">${isCashout ? '→ pool' : '← pool'}</span>
-      <span class="flow-amount">${isCashout ? '+' : '-'}${flow.amount.toLocaleString()}</span>
-    </div>`;
-  }).join('');
-}
-
-function updatePotDisplay() {
-  document.getElementById('potDisplay').textContent = gameState.pot.toLocaleString();
-  document.getElementById('potChips').textContent = `POT: ${gameState.pot.toLocaleString()}`;
-}
-
-// ============================================================
-// FUNDING
+// FUNDING — sends to server via WebSocket
 // ============================================================
 function selectPreset(amount, el) {
   document.getElementById('fundAmount').value = amount;
@@ -1949,60 +1545,14 @@ function fundAgent() {
 
   if (!agentId) { showToast('Select an agent to fund!', 'error'); return; }
   if (!amount || amount < 100) { showToast('Minimum deposit is 100!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  const agent = gameState.agents.find(a => a.id === agentId);
-  if (!agent) return;
-
-  // Check if already funding this agent
-  const existing = gameState.fundPositions.find(p => p.agentId === agentId);
-  if (existing) {
-    // Add to existing position
-    existing.deposited += amount;
-    existing.startStack = agent.chips + amount;
-    agent.chips += amount;
-    showToast(`Added ${amount} to ${agent.name}'s stack!`, 'gold');
-  } else {
-    // New position
-    agent.chips += amount;
-    gameState.fundPositions.push({
-      agentId,
-      agentName: agent.name,
-      agentEmoji: agent.emoji,
-      deposited: amount,
-      currentValue: amount,
-      startStack: agent.chips,
-      pnl: 0
-    });
-    showToast(`Funded ${agent.name} with ${amount}! You can now see their cards.`, 'gold');
-  }
-
-  renderFundPositions();
-  renderAgentsSidebar();
-  renderTableSeats();
+  ws.send(JSON.stringify({ type: 'fund', agentId, amount }));
 }
 
 function withdrawFromAgent(agentId) {
-  const pos = gameState.fundPositions.find(p => p.agentId === agentId);
-  if (!pos) return;
-
-  const agent = gameState.agents.find(a => a.id === agentId);
-  const withdrawAmount = pos.currentValue;
-
-  // Remove funds from agent's stack
-  agent.chips = Math.max(agent.baseChips, agent.chips - withdrawAmount);
-
-  const pnl = pos.pnl;
-  gameState.fundPositions = gameState.fundPositions.filter(p => p.agentId !== agentId);
-
-  if (pnl >= 0) {
-    showToast(`Withdrew ${withdrawAmount} from ${agent.name} (+${pnl} profit!)`, 'success');
-  } else {
-    showToast(`Withdrew ${withdrawAmount} from ${agent.name} (${pnl} loss)`, 'error');
-  }
-
-  renderFundPositions();
-  renderAgentsSidebar();
-  renderTableSeats();
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+  ws.send(JSON.stringify({ type: 'withdraw', agentId }));
 }
 
 function renderFundPositions() {
@@ -2018,7 +1568,6 @@ function renderFundPositions() {
     const pnlColor = pos.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const pnlSign = pos.pnl >= 0 ? '+' : '';
     const sharePct = agent ? Math.round((pos.deposited / pos.startStack) * 100) : 0;
-    const profitOnly = pos.pnl > 0 ? Math.floor(pos.pnl * 0.95) : pos.pnl;
     return `
     <div style="background:var(--bg-surface);border:1px solid ${pos.pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2059,11 +1608,9 @@ function renderFundSelect() {
     gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name} — ${formatChips(a.chips)} stack</option>`).join('');
 }
 
-// Click agent on table → pre-select them in fund panel (3-click flow)
 function quickFund(agentId) {
   const sel = document.getElementById('fundAgentSelect');
   sel.value = agentId;
-  // Scroll sidebar into view on mobile
   const panel = sel.closest('.panel');
   if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -2136,6 +1683,23 @@ function renderStrategyBar(label, value, color) {
   `;
 }
 
+function renderPoolFlows() {
+  const container = document.getElementById('poolFlowLog');
+  if (gameState.poolFlows.length === 0) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>';
+    return;
+  }
+  container.innerHTML = gameState.poolFlows.map(flow => {
+    const isCashout = flow.type === 'cashout';
+    return `<div class="pool-flow-item ${flow.type}">
+      <span class="flow-emoji">${flow.agentEmoji}</span>
+      <span class="flow-name">${flow.agentName}</span>
+      <span style="font-size:10px">${isCashout ? '→ pool' : '← pool'}</span>
+      <span class="flow-amount">${isCashout ? '+' : '-'}${flow.amount.toLocaleString()}</span>
+    </div>`;
+  }).join('');
+}
+
 // ============================================================
 // LEADERBOARD
 // ============================================================
@@ -2206,15 +1770,6 @@ function showToast(message, type) {
   }, 3000);
 }
 
-function showWinOverlay(amount, subtitle) {
-  document.getElementById('winAmount').textContent = amount;
-  document.getElementById('winSubtitle').textContent = subtitle;
-  document.getElementById('winTitle').textContent = 'You Won!';
-  document.getElementById('winOverlay').classList.add('show');
-  // Auto-close after 3s
-  setTimeout(closeWinOverlay, 3000);
-}
-
 function closeWinOverlay() {
   document.getElementById('winOverlay').classList.remove('show');
 }
@@ -2229,14 +1784,9 @@ function capitalize(s) {
 }
 
 // ============================================================
-// INIT
+// INIT — connect to server
 // ============================================================
-initGame();
-
-// Always running — no start/stop, game is live 24/7
-gameState.running = true;
-startHand();
-showToast('PokerAI is LIVE 🔴 Fund an agent to earn profits!', 'gold');
+connect();
 </script>
 </body>
 </html>
