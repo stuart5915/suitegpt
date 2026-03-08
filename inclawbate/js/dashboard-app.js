@@ -828,11 +828,10 @@ async function fetchLPFees(tokens, wallet) {
         if (!banner) return;
 
         wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
-        // Show token count subtitle
-        const tokenCount = tokens.filter(t => t.token_address && t.token_address.startsWith('0x')).length;
+        // Subtitle — fees are aggregated across all Clanker tokens for this wallet
         const subtitleEl = document.getElementById('lpFeesSubtitle');
-        if (subtitleEl && tokenCount > 0) {
-            subtitleEl.textContent = 'from ' + tokenCount + ' token' + (tokenCount !== 1 ? 's' : '');
+        if (subtitleEl) {
+            subtitleEl.textContent = 'across all your Clanker tokens';
             subtitleEl.style.display = '';
         }
         banner.style.display = '';
@@ -3112,6 +3111,25 @@ async function discoverClankerTokens(wallet, knownAddrs) {
             const addr = (t.address_hash || t.address || '').toLowerCase();
             if (from === '0x0000000000000000000000000000000000000000' && addr && !knownSet.has(addr)) {
                 mintTokens[addr] = { name: t.name || 'Unknown', symbol: t.symbol || '???' };
+            }
+        }
+
+        // Also check known Inclawbate ecosystem tokens that may have been launched via agents
+        // (agent-launched tokens don't mint to the user's wallet, so Blockscout mints won't find them)
+        const ECOSYSTEM_TOKENS = [
+            { addr: '0xb0b6e0e9da530f68d713cc03a813b506205ac808', name: 'inCLAWNCH', symbol: 'INCLAWNCH' },
+            { addr: '0xa1f72459dfa10bad200ac160ecd78c6b77a747be', name: 'CLAWNCH', symbol: 'CLAWNCH' }
+        ];
+        for (const eco of ECOSYSTEM_TOKENS) {
+            if (!knownSet.has(eco.addr) && !mintTokens[eco.addr]) {
+                // Check if user has claimable WETH fees — if so, they're likely a creator
+                try {
+                    const feeData = FEE_SEL.feesToClaim + pad32(wallet) + pad32(WETH_BASE);
+                    const feeHex = await rpcCall(CLANKER_FEE_LOCKER, feeData);
+                    if (fromWei(feeHex) > 0) {
+                        mintTokens[eco.addr] = { name: eco.name, symbol: eco.symbol };
+                    }
+                } catch (e) {}
             }
         }
 
