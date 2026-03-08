@@ -1526,12 +1526,10 @@ async function handleSolanaLaunch() {
         // Step 8: Sign + send launch transaction
         setBtnState(btn, 'Sign in wallet to launch...', true);
         var launchData = launchResult.response || launchResult;
-        console.log('[Solana] Launch tx response keys:', Object.keys(launchData), JSON.stringify(launchData).slice(0, 800));
-        // Try multiple possible key names for the transaction
+        // Bags may return raw bytes (numeric keys), a wrapped object, or a string
         var rawLaunchTx = launchData.transaction || launchData.serializedTransaction
             || (launchData.transactions && launchData.transactions[0])
-            || launchResult.transaction || launchResult.serializedTransaction;
-        if (!rawLaunchTx) throw new Error('No transaction in launch response. Keys: ' + Object.keys(launchData).join(','));
+            || launchResult.transaction || launchData;
         var launchTxBytes = decodeTxData(rawLaunchTx);
         var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
