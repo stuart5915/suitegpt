@@ -540,8 +540,7 @@ function renderProjectCard(p) {
     if (addr) {
         if (isSolana) {
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
-            actionsHtml += `<a href="https://jup.ag/swap/SOL-${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
-            actionsHtml += `<a href="https://bags.fm/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Bags</a>`;
+            actionsHtml += `<a href="https://bags.fm/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
             actionsHtml += `<a href="https://solscan.io/token/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
         } else {
             actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
