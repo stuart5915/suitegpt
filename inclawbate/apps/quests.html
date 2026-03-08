@@ -78,6 +78,7 @@
         .quest-info { flex: 1; min-width: 0; }
         .quest-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
         .quest-desc { font-size: 0.8rem; color: #888; margin-top: 0.15rem; }
+        .quest-reward { font-size: 0.75rem; color: #fb923c; margin-top: 0.2rem; font-weight: 700; }
         .quest-action { flex-shrink: 0; }
 
         .badge {
@@ -141,6 +142,7 @@
     <div class="header">
         <h1>Inclawbate Quests</h1>
         <p>Complete quests. Earn CLAWS airdrops.</p>
+        <p style="color:#fb923c;font-weight:800;font-size:1rem;margin-top:0.4rem;">Earn up to 100,000 CLAWS per person</p>
     </div>
 
     <div id="connectBanner" class="connect-banner">
@@ -184,67 +186,78 @@ const QUESTS = [
         id: 'follow_artstu', category: 'social', icon: '𝕏',
         title: 'Follow @artstu on X',
         desc: 'Follow the founder on X',
-        type: 'honor', link: 'https://x.com/artstu'
+        type: 'honor', link: 'https://x.com/artstu',
+        reward: 5000
     },
     {
         id: 'follow_inclawbate', category: 'social', icon: '𝕏',
         title: 'Follow @inclawbate on X',
         desc: 'Follow the official Inclawbate account',
-        type: 'honor', link: 'https://x.com/inclawbate'
+        type: 'honor', link: 'https://x.com/inclawbate',
+        reward: 5000
     },
     {
         id: 'follow_inclawbator', category: 'social', icon: '𝕏',
         title: 'Follow @inclawbator on X',
         desc: 'Follow the Inclawbator account',
-        type: 'honor', link: 'https://x.com/inclawbator'
+        type: 'honor', link: 'https://x.com/inclawbator',
+        reward: 5000
     },
     {
         id: 'buy_claws', category: 'onchain', icon: '<img src="/inclawbate/assets/clawslogo.jpg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">',
         title: 'Buy CLAWS tokens',
         desc: 'Hold any amount of CLAWS on Base',
-        type: 'auto_balance', contract: CLAWS_TOKEN
+        type: 'auto_balance', contract: CLAWS_TOKEN,
+        reward: 10000
     },
     {
         id: 'stake_claws', category: 'onchain', icon: '🔒',
         title: 'Stake CLAWS',
         desc: 'Stake CLAWS in the staking contract',
-        type: 'auto_staking', contract: STAKING_CONTRACT
+        type: 'auto_staking', contract: STAKING_CONTRACT,
+        reward: 10000
     },
     {
         id: 'buy_ecosystem', category: 'onchain', icon: '🛒',
         title: 'Buy an ecosystem project token',
         desc: 'Buy any token from an Inclawbate project',
-        type: 'manual_verify'
+        type: 'manual_verify',
+        reward: 10000
     },
     {
         id: 'stake_ecosystem', category: 'onchain', icon: '📦',
         title: 'Stake an ecosystem token',
         desc: 'Stake tokens in any ecosystem staking pool',
-        type: 'manual_verify'
+        type: 'manual_verify',
+        reward: 10000
     },
     {
         id: 'create_app', category: 'builder', icon: '🔨',
         title: 'Create an app',
         desc: 'Build and publish an app on Inclawbate',
-        type: 'api_verify', endpoint: '/api/inclawbate/apps?creator_wallet='
+        type: 'api_verify', endpoint: '/api/inclawbate/apps?creator_wallet=',
+        reward: 11250
     },
     {
         id: 'create_token', category: 'builder', icon: '🪙',
         title: 'Create a token',
         desc: 'Launch a token via the Inclawbator',
-        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'token_address'
+        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'token_address',
+        reward: 11250
     },
     {
         id: 'create_pool', category: 'builder', icon: '🏊',
         title: 'Create a staking pool',
         desc: 'Deploy a staking pool for your token',
-        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'staking_address'
+        type: 'api_verify', endpoint: '/api/inclawbate/inclawbator?wallet=', field: 'staking_address',
+        reward: 11250
     },
     {
         id: 'create_project', category: 'builder', icon: '🚀',
         title: 'Create a project',
         desc: 'Register a project on Inclawbate',
-        type: 'api_verify', endpoint: '/api/inclawbate/projects?wallet='
+        type: 'api_verify', endpoint: '/api/inclawbate/projects?wallet=',
+        reward: 11250
     }
 ];
 
@@ -399,6 +412,7 @@ function renderQuests() {
                 <div class="quest-info">
                     <div class="quest-title">${q.title}</div>
                     <div class="quest-desc">${q.desc}</div>
+                    <div class="quest-reward">${q.reward.toLocaleString()} CLAWS</div>
                     ${q.type === 'manual_verify' && !done ? `
                         <div class="proof-input">
                             <input type="text" placeholder="Paste tx hash or address..." />
