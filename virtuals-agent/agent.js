@@ -1,10 +1,10 @@
 import {
-  GameAgent,
-  GameWorker,
+  ChatAgent,
   GameFunction,
   ExecutableGameFunctionResponse,
   ExecutableGameFunctionStatus,
 } from "@virtuals-protocol/game";
+import { createServer } from "http";
 
 const API = process.env.INCLAWBATE_API || "https://inclawbate.com/api/inclawbate";
 
@@ -509,62 +509,24 @@ const getSkillSpec = new GameFunction({
 // WORKERS
 // ══════════════════════════════════════
 
-const analyticsWorker = new GameWorker({
-  id: "analytics_worker",
-  name: "Analytics & Data",
-  description:
-    "Handles questions about CLAWS token, platform metrics, ecosystem activity, and swap quotes on Base",
-  functions: [getAnalytics, getSwapQuote],
-});
+// ══════════════════════════════════════
+// ALL FUNCTIONS (flat list for ChatAgent)
+// ══════════════════════════════════════
 
-const appsWorker = new GameWorker({
-  id: "apps_worker",
-  name: "App Store",
-  description:
-    "Handles browsing, searching, and getting details about Inclawbate community-built apps and mini-applications in the marketplace",
-  functions: [searchApps, getAppDetails],
-});
-
-const projectsWorker = new GameWorker({
-  id: "projects_worker",
-  name: "Inclawbator Projects",
-  description:
-    "Handles information about tokens launched through the Inclawbator — project listings, token details, staking contracts, and ecosystem tokens",
-  functions: [listProjects, checkApplicationStatus],
-});
-
-const incubationWorker = new GameWorker({
-  id: "incubation_worker",
-  name: "Agent Incubation",
-  description:
-    "Handles incubation requests from AI agents and projects that want Inclawbate to build their human-facing presence — token launch, staking, branding, marketing, and community. Also provides info about what incubation includes.",
-  functions: [requestIncubation, getIncubationInfo],
-});
-
-const humansWorker = new GameWorker({
-  id: "humans_worker",
-  name: "Skills Marketplace",
-  description:
-    "Handles searching for humans available for hire, browsing skills, getting profiles, and leaderboard rankings in the Inclawbate talent marketplace",
-  functions: [searchHumans, getHumanProfile, getLeaderboard],
-});
-
-const toolsWorker = new GameWorker({
-  id: "tools_worker",
-  name: "Developer Tools",
-  description:
-    "Handles code audit lookups, ecosystem information, Angel NFT holder data, platform skill specifications, and general Inclawbate knowledge",
-  functions: [getAuditCertificate, getEcosystemInfo, getAngelHolders, getSkillSpec],
-});
+const allFunctions = [
+  getAnalytics, getSwapQuote,
+  searchApps, getAppDetails,
+  listProjects, checkApplicationStatus,
+  requestIncubation, getIncubationInfo,
+  searchHumans, getHumanProfile, getLeaderboard,
+  getAuditCertificate, getEcosystemInfo, getAngelHolders, getSkillSpec,
+];
 
 // ══════════════════════════════════════
 // AGENT
 // ══════════════════════════════════════
 
-const agent = new GameAgent(process.env.GAME_API_KEY, {
-  name: "Inclawbate",
-  goal: "Be the gateway to the Inclawbate ecosystem. Help AI agents get incubated (token launch, staking, branding, marketing). Help users discover apps, hire humans, check analytics, and explore projects.",
-  description: `You are the official Inclawbate AI agent — the gateway to a Web3 ecosystem where Anyone Can Build and Everyone Gets Paid.
+const SYSTEM_PROMPT = `You are the official Inclawbate AI agent — the gateway to a Web3 ecosystem where Anyone Can Build and Everyone Gets Paid.
 
 Your personality is helpful, knowledgeable, and direct. You speak with confidence about the Inclawbate ecosystem because you have real-time access to all its data.
 
@@ -583,22 +545,78 @@ When asked about apps or projects — search the real database.
 When asked about humans or skills — query the directory.
 When an agent asks about getting a token, staking, or human presence — pitch incubation.
 
-Be concise, helpful, and always provide links when relevant. If someone wants to build on Inclawbate, point them to inclawbate.com/build.`,
-  workers: [analyticsWorker, appsWorker, projectsWorker, incubationWorker, humansWorker, toolsWorker],
+Be concise, helpful, and always provide links when relevant. If someone wants to build on Inclawbate, point them to inclawbate.com/build.`;
+
+const chatAgent = new ChatAgent(process.env.GAME_API_KEY, SYSTEM_PROMPT);
+
+// In-memory chat sessions (chat_id -> Chat instance)
+const sessions = new Map();
+
+// ── HTTP Server ──
+
+const PORT = process.env.PORT || 3000;
+
+const server = createServer(async (req, res) => {
+  // CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+  // Health check
+  if (req.method === "GET" && req.url === "/") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", agent: "Inclawbate", functions: allFunctions.map(f => f.name) }));
+    return;
+  }
+
+  // Chat endpoint
+  if (req.method === "POST" && req.url === "/chat") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    try {
+      const { message, session_id } = JSON.parse(body);
+      if (!message) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "message is required" }));
+        return;
+      }
+
+      // Get or create chat session
+      let chat = sessions.get(session_id);
+      if (!chat) {
+        chat = await chatAgent.createChat({
+          partnerId: session_id || "default",
+          partnerName: "User",
+          actionSpace: allFunctions,
+        });
+        const sid = session_id || "s_" + Date.now();
+        sessions.set(sid, chat);
+      }
+
+      // Send message and get response (SDK handles function calls internally)
+      const response = await chat.next(message);
+
+      const sid = session_id || [...sessions.keys()].pop();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        reply: response.message || "",
+        session_id: sid,
+        function_called: response.functionCall ? response.functionCall.fn_name : null,
+      }));
+    } catch (e) {
+      console.error("Chat error:", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "Not found" }));
 });
 
-// ── Boot ──
-
-async function main() {
-  console.log("Starting Inclawbate Virtuals Agent...");
-  await agent.init();
-  console.log("Agent initialized and running.");
-
-  // Keep alive
-  setInterval(() => {}, 60000);
-}
-
-main().catch((err) => {
-  console.error("Agent failed to start:", err);
-  process.exit(1);
+server.listen(PORT, () => {
+  console.log(`Inclawbate Virtuals Agent running on port ${PORT}`);
+  console.log(`Functions: ${allFunctions.map(f => f.name).join(", ")}`);
 });
