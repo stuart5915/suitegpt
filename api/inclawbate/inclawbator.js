@@ -156,7 +156,7 @@ export default async function handler(req, res) {
             const { data: project, error: projErr } = await supabase
                 .from('inclawbator_projects')
                 .select('*')
-                .eq('token_address', tokenAddr.toLowerCase())
+                .eq('token_address', tokenAddr.startsWith('0x') ? tokenAddr.toLowerCase() : tokenAddr)
                 .single();
 
             if (projErr || !project) return res.status(404).json({ error: 'Project not found' });
@@ -313,9 +313,9 @@ export default async function handler(req, res) {
             const { data, error } = await supabase
                 .from('inclawbator_projects')
                 .insert({
-                    creator_wallet: creator_wallet.toLowerCase(),
+                    creator_wallet: creator_wallet.startsWith('0x') ? creator_wallet.toLowerCase() : creator_wallet,
                     creator_profile_id: user.sub || null,
-                    token_address: token_address ? token_address.toLowerCase() : null,
+                    token_address: token_address ? (token_address.startsWith('0x') ? token_address.toLowerCase() : token_address) : null,
                     token_name,
                     token_symbol: token_symbol ? token_symbol.toUpperCase() : token_name.slice(0, 10).toUpperCase(),
                     deploy_tx_hash: deploy_tx_hash || null,
