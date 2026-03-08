@@ -912,6 +912,8 @@ async function fetchSolanaFees(solTokens) {
         // data may be an array or wrapped in { response: [...] }, { positions: [...] }, etc.
         const positions = Array.isArray(data) ? data : (data.response || data.positions || data.data || []);
         console.log('[SolFees] Positions:', positions.length, 'Our mints:', solTokens.map(t => t.token_address));
+        console.log('[SolFees] Position keys:', positions.length > 0 ? Object.keys(positions[0]) : 'none');
+        console.log('[SolFees] First position:', positions[0]);
         if (!positions.length) return;
 
         // Build set of our token mints for filtering
