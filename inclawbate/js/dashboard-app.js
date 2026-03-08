@@ -529,20 +529,29 @@ function renderProjectCard(p) {
     const feeRowHtml = addr ? `<div class="project-card-fee-estimate" id="fee-${esc(addr)}" data-split-bps="${splitBps}" style="display:none"></div>` : '';
 
     // Chart embed (hidden by default)
+    const chartChain = p.chain === 'solana' ? 'solana' : 'base';
     const chartHtml = addr ? `<div class="project-card-chart" id="chart-${esc(addr)}" style="display:none">
-        <iframe src="https://dexscreener.com/base/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
+        <iframe src="https://dexscreener.com/${chartChain}/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
     </div>` : '';
 
     // Build action buttons
     let actionsHtml = '';
+    const isSolana = p.chain === 'solana';
     if (addr) {
-        actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
-        actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
-        actionsHtml += `<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=${esc(addr)}&chain=base" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
-        actionsHtml += `<a href="https://www.clanker.world/clanker/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Clanker</a>`;
-        actionsHtml += `<a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+        if (isSolana) {
+            actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
+            actionsHtml += `<a href="https://jup.ag/swap/SOL-${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
+            actionsHtml += `<a href="https://birdeye.so/token/${esc(addr)}?chain=solana" target="_blank" rel="noopener" class="project-card-action">Birdeye</a>`;
+            actionsHtml += `<a href="https://solscan.io/account/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+        } else {
+            actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
+            actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
+            actionsHtml += `<a href="https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=${esc(addr)}&chain=base" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
+            actionsHtml += `<a href="https://www.clanker.world/clanker/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Clanker</a>`;
+            actionsHtml += `<a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+        }
     }
-    if (!p.staking_address && status === 'active' && addr) {
+    if (!isSolana && !p.staking_address && status === 'active' && addr) {
         actionsHtml += `<a href="/inclawbator#pool" class="project-card-action primary">Create Pool</a>`;
     }
     if (p.staking_address) {
@@ -2704,7 +2713,8 @@ function renderUserProjectCard(p) {
 
     let actionsHtml = `<button type="button" class="project-card-action" data-edit-user-project="1">Edit</button>`;
     if (p.app_slug) actionsHtml += `<a href="/s/${esc(p.app_slug)}" target="_blank" class="project-card-action">Open App</a>`;
-    if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
+    if (p.token_address && p.chain === 'solana') actionsHtml += `<a href="https://solscan.io/account/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+    else if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
     if (p.website_url) actionsHtml += `<a href="${esc(p.website_url)}" target="_blank" rel="noopener" class="project-card-action">Website</a>`;
 
     card.innerHTML = `
