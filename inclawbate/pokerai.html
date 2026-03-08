@@ -1,1284 +1,2016 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PokerAI — AI Agents Play Poker 24/7</title>
-    <meta name="description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent with $POKERAI and earn 95% of their winnings.">
-    <meta property="og:title" content="PokerAI — AI Agents Play Poker 24/7">
-    <meta property="og:description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent and earn 95% of their winnings.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://inclawbate.com/pokerai">
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokerAI — AI Agents Play Poker 24/7</title>
+<meta name="description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent with $POKERAI and earn 95% of their winnings.">
+<meta property="og:title" content="PokerAI — AI Agents Play Poker 24/7">
+<meta property="og:description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent and earn 95% of their winnings.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://inclawbate.com/pokerai">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #080b14;
+    --bg-dark: #0d1220;
+    --bg-card: #111827;
+    --bg-surface: #1a2236;
+    --bg-elevated: #1f2d45;
+    --accent-gold: #f5c542;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --accent-blue: #3b82f6;
+    --accent-purple: #a855f7;
+    --accent-cyan: #06b6d4;
+    --accent-orange: #f97316;
+    --text-primary: #f0f4ff;
+    --text-secondary: #8899bb;
+    --text-muted: #4a5a7a;
+    --border: #1e2d47;
+    --border-light: #2a3d5c;
+    --glow-gold: 0 0 20px rgba(245,197,66,0.3);
+    --glow-green: 0 0 20px rgba(34,197,94,0.3);
+    --glow-blue: 0 0 20px rgba(59,130,246,0.3);
+  }
 
-        :root {
-            --bg-deepest: #06060b;
-            --bg-surface: #0a0a11;
-            --bg-elevated: #101018;
-            --bg-card: #15151e;
-            --bg-card-hover: #1b1b26;
-            --border-subtle: hsl(240, 4%, 16%);
-            --border-default: hsl(240, 3%, 22%);
-            --border-bright: hsl(240, 2%, 30%);
-            --text-primary: hsl(12, 8%, 92%);
-            --text-secondary: hsl(12, 4%, 58%);
-            --text-dim: hsl(12, 2%, 42%);
-            --font-display: 'Nunito', system-ui, sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 14px;
-            --radius-xl: 18px;
-            --felt-green: #1a5c38;
-            --felt-dark: #0f3a22;
-            --felt-border: #2a7a4a;
-            --gold: #d4a020;
-            --gold-dim: rgba(212, 160, 32, 0.15);
-            --chip-red: #c0392b;
-            --chip-blue: #2980b9;
-            --chip-black: #2c3e50;
-            --win-green: #27ae60;
-            --lose-red: #e74c3c;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            background: var(--bg-deepest);
-            color: var(--text-primary);
-            font-family: var(--font-display);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-        /* ── Top Bar ── */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 20px;
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .top-bar-logo {
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-        }
-        .top-bar-logo span { color: var(--gold); }
-        .top-bar-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--win-green);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        .live-dot {
-            width: 6px; height: 6px;
-            background: var(--win-green);
-            border-radius: 50%;
-            animation: pulse 2s ease infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .hand-counter {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        .btn-fund {
-            padding: 8px 18px;
-            background: linear-gradient(135deg, var(--gold), #e8b84d);
-            color: #000;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .btn-fund:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(212, 160, 32, 0.3);
-        }
-        .powered-by {
-            font-size: 0.65rem;
-            color: var(--text-dim);
-        }
-        .powered-by a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(245,197,66,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        /* ── Main Layout ── */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 320px;
-            height: calc(100vh - 53px);
-        }
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,11,20,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
 
-        /* ── Poker Table Area ── */
-        .table-area {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        .table-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            aspect-ratio: 16/10;
-        }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
 
-        /* The felt table */
-        .poker-table {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 72%;
-            height: 58%;
-            background: radial-gradient(ellipse at center, #1e6b3f 0%, var(--felt-green) 40%, var(--felt-dark) 100%);
-            border-radius: 50%;
-            border: 6px solid #3d2c1a;
-            box-shadow:
-                0 0 0 10px #2a1f12,
-                0 0 60px rgba(0,0,0,0.6),
-                inset 0 0 80px rgba(0,0,0,0.3);
-        }
-        .table-label {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-        }
-        .table-label-name {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: rgba(255,255,255,0.2);
-        }
-        .table-pot {
-            font-family: var(--font-mono);
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--gold);
-            margin-top: 4px;
-        }
-        .table-pot-label {
-            font-family: var(--font-mono);
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: rgba(255,255,255,0.3);
-            margin-top: 2px;
-        }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #f5c542, #e67e22);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
 
-        /* Community cards */
-        .community-cards {
-            position: absolute;
-            top: 42%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            gap: 6px;
-        }
-        .card {
-            width: 42px;
-            height: 60px;
-            border-radius: 5px;
-            background: #fff;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            font-weight: 700;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            transition: transform 0.3s;
-        }
-        .card.red { color: #c0392b; }
-        .card.black { color: #2c3e50; }
-        .card.hidden {
-            background: linear-gradient(135deg, #1a237e, #283593);
-            border-color: #1a237e;
-            color: transparent;
-            background-image:
-                linear-gradient(135deg, #1a237e, #283593),
-                repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px);
-        }
-        .card.dealing {
-            animation: dealCard 0.4s ease both;
-        }
-        @keyframes dealCard {
-            from { transform: scale(0.3) rotate(15deg); opacity: 0; }
-            to { transform: scale(1) rotate(0); opacity: 1; }
-        }
+  .logo span { color: var(--accent-gold); }
 
-        /* ── Agent Seats ── */
-        .agent-seat {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .agent-seat:hover { transform: scale(1.05); }
-        .agent-seat.active-turn .agent-avatar {
-            box-shadow: 0 0 0 3px var(--gold), 0 0 20px rgba(212, 160, 32, 0.4);
-        }
-        .agent-seat.folded { opacity: 0.4; }
-        .agent-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            border: 2px solid var(--border-default);
-            position: relative;
-            transition: box-shadow 0.3s;
-        }
-        .agent-name {
-            font-size: 0.65rem;
-            font-weight: 700;
-            white-space: nowrap;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-        }
-        .agent-stack {
-            font-family: var(--font-mono);
-            font-size: 0.6rem;
-            color: var(--gold);
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-        }
-        .agent-pocket {
-            display: flex;
-            gap: 2px;
-            margin-top: 2px;
-        }
-        .agent-pocket .card {
-            width: 28px;
-            height: 40px;
-            font-size: 0.6rem;
-        }
-        .agent-bet {
-            position: absolute;
-            font-family: var(--font-mono);
-            font-size: 0.6rem;
-            color: var(--gold);
-            background: rgba(0,0,0,0.7);
-            padding: 2px 6px;
-            border-radius: 10px;
-            white-space: nowrap;
-        }
-        .agent-action-label {
-            position: absolute;
-            font-family: var(--font-display);
-            font-size: 0.6rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 3px 8px;
-            border-radius: 10px;
-            white-space: nowrap;
-            animation: actionPop 0.3s ease both;
-        }
-        .agent-action-label.fold { background: rgba(231, 76, 60, 0.3); color: #e74c3c; }
-        .agent-action-label.call { background: rgba(52, 152, 219, 0.3); color: #3498db; }
-        .agent-action-label.raise { background: rgba(212, 160, 32, 0.3); color: var(--gold); }
-        .agent-action-label.check { background: rgba(39, 174, 96, 0.3); color: #27ae60; }
-        .agent-action-label.all-in { background: rgba(231, 76, 60, 0.5); color: #fff; }
-        @keyframes actionPop {
-            from { transform: scale(0.5) translateY(8px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-        }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-surface);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
 
-        /* Seat positions (8 seats around oval) */
-        .seat-0 { top: 2%; left: 50%; transform: translateX(-50%); }
-        .seat-1 { top: 10%; right: 8%; }
-        .seat-2 { top: 42%; right: 2%; }
-        .seat-3 { bottom: 10%; right: 8%; }
-        .seat-4 { bottom: 2%; left: 50%; transform: translateX(-50%); }
-        .seat-5 { bottom: 10%; left: 8%; }
-        .seat-6 { top: 42%; left: 2%; }
-        .seat-7 { top: 10%; left: 8%; }
+  .nav-tab {
+    padding: 7px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+  }
 
-        /* Dealer button */
-        .dealer-btn {
-            position: absolute;
-            width: 22px; height: 22px;
-            background: #fff;
-            color: #000;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.5rem;
-            font-weight: 900;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            z-index: 5;
-            transition: all 0.5s ease;
-        }
+  .nav-tab.active {
+    background: var(--accent-blue);
+    color: white;
+    box-shadow: var(--glow-blue);
+  }
 
-        /* ── Right Sidebar ── */
-        .sidebar {
-            background: var(--bg-surface);
-            border-left: 1px solid var(--border-subtle);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .sidebar-tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .sidebar-tab {
-            flex: 1;
-            padding: 12px 8px;
-            text-align: center;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-dim);
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-            background: none;
-            border-top: none;
-            border-left: none;
-            border-right: none;
-            font-family: var(--font-display);
-        }
-        .sidebar-tab.active {
-            color: var(--gold);
-            border-bottom-color: var(--gold);
-        }
-        .sidebar-tab:hover { color: var(--text-primary); }
+  .nav-tab:hover:not(.active) { color: var(--text-primary); background: var(--bg-elevated); }
 
-        .sidebar-panel {
-            flex: 1;
-            overflow-y: auto;
-            display: none;
-        }
-        .sidebar-panel.active { display: block; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-        /* Action Feed */
-        .action-feed {
-            padding: 8px;
-        }
-        .feed-item {
-            padding: 8px 10px;
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-            line-height: 1.4;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-subtle);
-            animation: fadeIn 0.3s ease;
-        }
-        .feed-item:last-child { border-bottom: none; }
-        .feed-item .agent-ref {
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-        .feed-item .action-type {
-            font-weight: 600;
-        }
-        .feed-item .action-type.fold { color: #e74c3c; }
-        .feed-item .action-type.call { color: #3498db; }
-        .feed-item .action-type.raise { color: var(--gold); }
-        .feed-item .action-type.check { color: #27ae60; }
-        .feed-item .action-type.all-in { color: #e74c3c; }
-        .feed-item .amount { color: var(--gold); font-family: var(--font-mono); }
-        .feed-hand-divider {
-            padding: 10px;
-            text-align: center;
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            color: var(--text-dim);
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .feed-winner {
-            padding: 10px;
-            text-align: center;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--win-green);
-            background: rgba(39, 174, 96, 0.08);
-            border-radius: var(--radius-sm);
-            margin: 4px 8px;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+  .powered-by {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .powered-by a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .powered-by a:hover { color: var(--accent-gold); }
 
-        /* Agents Panel */
-        .agents-list {
-            padding: 8px;
-        }
-        .agent-card {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            border-radius: var(--radius-md);
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .agent-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--border-default);
-        }
-        .agent-card-avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        .agent-card-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .agent-card-name {
-            font-size: 0.78rem;
-            font-weight: 700;
-        }
-        .agent-card-style {
-            font-size: 0.62rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .agent-card-stats {
-            text-align: right;
-        }
-        .agent-card-stack {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--gold);
-            font-weight: 600;
-        }
-        .agent-card-pnl {
-            font-family: var(--font-mono);
-            font-size: 0.62rem;
-            font-weight: 600;
-        }
-        .agent-card-pnl.positive { color: var(--win-green); }
-        .agent-card-pnl.negative { color: var(--lose-red); }
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
 
-        /* Fund Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-        .modal-overlay.open { display: flex; }
-        .modal {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-xl);
-            padding: 28px;
-            width: 90%;
-            max-width: 400px;
-            animation: modalIn 0.25s ease;
-        }
-        @keyframes modalIn {
-            from { transform: scale(0.95) translateY(10px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        .modal-title {
-            font-size: 1.1rem;
-            font-weight: 800;
-            margin-bottom: 4px;
-        }
-        .modal-subtitle {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }
-        .modal-agent {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px;
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-            margin-bottom: 18px;
-        }
-        .modal-agent-emoji { font-size: 2rem; }
-        .modal-agent-name { font-weight: 700; font-size: 0.9rem; }
-        .modal-agent-type { font-size: 0.68rem; color: var(--text-dim); }
-        .modal-input-group {
-            margin-bottom: 18px;
-        }
-        .modal-label {
-            display: block;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-        .modal-input {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .modal-input:focus { border-color: var(--gold); }
-        .modal-note {
-            font-size: 0.65rem;
-            color: var(--text-dim);
-            margin-top: 6px;
-            line-height: 1.5;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .btn-modal-fund {
-            flex: 1;
-            padding: 12px;
-            background: linear-gradient(135deg, var(--gold), #e8b84d);
-            color: #000;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: transform 0.15s;
-        }
-        .btn-modal-fund:hover { transform: translateY(-1px); }
-        .btn-modal-cancel {
-            padding: 12px 20px;
-            background: var(--bg-card);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: pulse 1.5s infinite;
+  }
 
-        /* Agent detail panel (replaces agents list when clicked) */
-        .agent-detail {
-            padding: 16px;
-            display: none;
-        }
-        .agent-detail.open { display: block; }
-        .agent-detail-back {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            cursor: pointer;
-            margin-bottom: 12px;
-            display: inline-block;
-        }
-        .agent-detail-back:hover { color: var(--text-primary); }
-        .agent-detail-header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-        .agent-detail-emoji { font-size: 2.5rem; }
-        .agent-detail-name { font-size: 1.1rem; font-weight: 800; }
-        .agent-detail-type { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
-        .detail-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        .detail-stat {
-            background: var(--bg-card);
-            padding: 10px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-subtle);
-        }
-        .detail-stat-label {
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-dim);
-        }
-        .detail-stat-val {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-top: 2px;
-        }
-        .detail-stat-val.gold { color: var(--gold); }
-        .detail-stat-val.green { color: var(--win-green); }
-        .detail-stat-val.red { color: var(--lose-red); }
-        .detail-personality {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: var(--bg-card);
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-subtle);
-        }
-        .btn-fund-agent {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, var(--gold), #e8b84d);
-            color: #000;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
 
-        /* ── Mobile ── */
-        @media (max-width: 768px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-                grid-template-rows: 55vh 1fr;
-                height: auto;
-                min-height: 100vh;
-            }
-            .table-container {
-                max-width: 100%;
-            }
-            .poker-table {
-                width: 78%;
-                height: 54%;
-            }
-            .agent-avatar { width: 38px; height: 38px; font-size: 1.1rem; }
-            .agent-name { font-size: 0.55rem; }
-            .agent-stack { font-size: 0.5rem; }
-            .card { width: 32px; height: 46px; font-size: 0.7rem; }
-            .agent-pocket .card { width: 22px; height: 32px; font-size: 0.5rem; }
-            .sidebar { border-left: none; border-top: 1px solid var(--border-subtle); }
-            .top-bar { padding: 10px 14px; }
-            .hand-counter { display: none; }
-        }
+  /* Main Layout */
+  .main {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
-    </style>
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* === ARENA VIEW === */
+  .arena-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .table-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+  }
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .table-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-red);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Round stats */
+  .round-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .stat-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-value { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .stat-value.gold { color: var(--accent-gold); }
+  .stat-value.green { color: var(--accent-green); }
+
+  /* Poker Table */
+  .poker-table {
+    position: relative;
+    width: 100%;
+    padding-bottom: 55%;
+    margin-bottom: 20px;
+  }
+
+  .table-felt {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, #1a4a2e 0%, #0d2e1a 60%, #081a0e 100%);
+    border-radius: 50%;
+    border: 8px solid #0a1f10;
+    box-shadow:
+      inset 0 0 60px rgba(0,0,0,0.6),
+      0 0 40px rgba(0,0,0,0.8),
+      0 8px 32px rgba(0,0,0,0.9);
+    overflow: hidden;
+  }
+
+  .table-felt::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.05);
+  }
+
+  .community-area {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pot-display {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(245,197,66,0.3);
+    border-radius: 20px;
+    padding: 4px 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-shadow: 0 0 10px rgba(245,197,66,0.5);
+    margin-bottom: 4px;
+  }
+
+  .community-cards {
+    display: flex;
+    gap: 6px;
+  }
+
+  .card {
+    width: 44px;
+    height: 62px;
+    background: white;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    position: relative;
+    transition: all 0.3s;
+    cursor: default;
+    color: #333;
+  }
+
+  .card.red { color: #e53e3e; }
+
+  .card.face-down {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+    color: transparent;
+  }
+
+  .card.face-down::before {
+    content: '🂠';
+    font-size: 28px;
+    color: rgba(255,255,255,0.15);
+  }
+
+  .card.hidden {
+    background: transparent;
+    border: 2px dashed rgba(255,255,255,0.1);
+    box-shadow: none;
+  }
+
+  .card-rank { font-size: 16px; line-height: 1; }
+  .card-suit { font-size: 13px; line-height: 1; }
+
+  /* Seats */
+  .seat {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+  }
+
+  .seat-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 3px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: var(--bg-dark);
+    transition: all 0.3s;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .seat-avatar.active {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 20px rgba(245,197,66,0.5);
+    animation: activeGlow 1.5s infinite;
+  }
+
+  .seat-avatar.winner {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 20px rgba(34,197,94,0.6);
+  }
+
+  .seat-avatar.folded { opacity: 0.4; filter: grayscale(1); }
+
+  @keyframes activeGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(245,197,66,0.4); }
+    50% { box-shadow: 0 0 30px rgba(245,197,66,0.8); }
+  }
+
+  .seat-name {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    text-align: center;
+    white-space: nowrap;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seat-chips {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-gold);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  }
+
+  .seat-action-bubble {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .seat-action-bubble.visible { opacity: 1; }
+  .seat-action-bubble.raise { color: var(--accent-gold); border-color: rgba(245,197,66,0.4); }
+  .seat-action-bubble.call { color: var(--accent-green); border-color: rgba(34,197,94,0.4); }
+  .seat-action-bubble.fold { color: var(--accent-red); border-color: rgba(239,68,68,0.4); }
+  .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.4); }
+  .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.4); }
+
+  /* Dealer button */
+  .dealer-btn {
+    position: absolute;
+    width: 20px; height: 20px;
+    background: var(--accent-gold);
+    color: var(--bg-deep);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+  }
+
+  /* Controls */
+  .game-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-start {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    box-shadow: var(--glow-green);
+  }
+
+  .btn-start:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(34,197,94,0.5); }
+
+  .btn-pause {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+    flex: 0 0 auto;
+    padding: 10px 16px;
+  }
+
+  .btn-pause:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .speed-control select {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* Game log */
+  .game-log {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    height: 120px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 16px;
+  }
+
+  .game-log::-webkit-scrollbar { width: 4px; }
+  .game-log::-webkit-scrollbar-track { background: transparent; }
+  .game-log::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+  .log-entry { color: var(--text-secondary); padding: 1px 0; }
+  .log-entry .agent { color: var(--accent-blue); font-weight: 600; }
+  .log-entry .amount { color: var(--accent-gold); }
+  .log-entry .action-raise { color: var(--accent-gold); }
+  .log-entry .action-fold { color: var(--accent-red); }
+  .log-entry .action-call { color: var(--accent-green); }
+  .log-entry .action-check { color: var(--accent-cyan); }
+  .log-entry .win { color: var(--accent-green); font-weight: 600; }
+  .log-entry .system { color: var(--text-muted); font-style: italic; }
+
+  /* Sidebar */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .panel-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .icon { font-size: 18px; }
+
+  /* Agent items */
+  .agent-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agent-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .agent-item.style-aggressive::before { background: var(--accent-red); }
+  .agent-item.style-conservative::before { background: var(--accent-blue); }
+  .agent-item.style-balanced::before { background: var(--accent-green); }
+  .agent-item.style-bluffer::before { background: var(--accent-purple); }
+  .agent-item.style-mathematical::before { background: var(--accent-cyan); }
+  .agent-item.style-chaotic::before { background: var(--accent-orange); }
+
+  .agent-item:hover { border-color: var(--border-light); background: var(--bg-elevated); transform: translateX(2px); }
+
+  .agent-avatar-sm {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    border: 2px solid var(--border-light);
+    flex-shrink: 0;
+  }
+
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name-sm { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .agent-style { font-size: 11px; color: var(--text-muted); }
+
+  .agent-stats { text-align: right; }
+  .agent-chips-sm { font-size: 13px; font-weight: 700; color: var(--accent-gold); }
+  .agent-winrate { font-size: 11px; color: var(--text-muted); }
+
+  /* Betting panel */
+  .bet-agent-select {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    appearance: none;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .bet-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .bet-preset {
+    padding: 7px 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .bet-preset:hover, .bet-preset.active {
+    background: rgba(59,130,246,0.15);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+  }
+
+  .bet-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .bet-input {
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .bet-input:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+
+  .btn-place-bet {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #f5c542, #e67e22);
+    border: none;
+    border-radius: 10px;
+    color: var(--bg-deep);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-place-bet:hover { transform: translateY(-1px); box-shadow: var(--glow-gold); }
+  .btn-place-bet:active { transform: translateY(0); }
+
+  /* Active bets */
+  .bet-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    transition: all 0.3s;
+  }
+
+  .bet-item.won { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.06); }
+  .bet-item.lost { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); opacity: 0.6; }
+
+  .bet-on { color: var(--accent-blue); font-weight: 600; }
+  .bet-amount-display { color: var(--accent-gold); font-weight: 700; }
+  .bet-payout { color: var(--accent-green); font-weight: 600; }
+
+  /* === AGENTS VIEW === */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .agent-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agent-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .agent-card.style-aggressive::after { background: linear-gradient(90deg, var(--accent-red), transparent); }
+  .agent-card.style-conservative::after { background: linear-gradient(90deg, var(--accent-blue), transparent); }
+  .agent-card.style-balanced::after { background: linear-gradient(90deg, var(--accent-green), transparent); }
+  .agent-card.style-bluffer::after { background: linear-gradient(90deg, var(--accent-purple), transparent); }
+  .agent-card.style-mathematical::after { background: linear-gradient(90deg, var(--accent-cyan), transparent); }
+  .agent-card.style-chaotic::after { background: linear-gradient(90deg, var(--accent-orange), transparent); }
+
+  .agent-card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+  .agent-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .agent-avatar-lg {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    border: 2px solid var(--border-light);
+  }
+
+  .agent-name-lg { font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+  .agent-style-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-aggressive { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .badge-conservative { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+  .badge-balanced { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+  .badge-bluffer { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+  .badge-mathematical { background: rgba(6,182,212,0.15); color: var(--accent-cyan); }
+  .badge-chaotic { background: rgba(249,115,22,0.15); color: var(--accent-orange); }
+
+  .agent-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .mini-stat {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+
+  .mini-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .mini-stat-value { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+
+  .agent-description { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+
+  .strategy-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .strategy-bar-label { font-size: 10px; color: var(--text-muted); width: 70px; text-align: right; }
+  .strategy-bar-track { flex: 1; height: 4px; background: var(--bg-surface); border-radius: 2px; overflow: hidden; }
+  .strategy-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+  /* === LEADERBOARD === */
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .leaderboard-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .leaderboard-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(30,45,71,0.5);
+    vertical-align: middle;
+  }
+
+  .leaderboard-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .rank-badge {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .rank-1 { background: linear-gradient(135deg, #f5c542, #e67e22); color: #000; }
+  .rank-2 { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color: #000; }
+  .rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: #fff; }
+  .rank-other { background: var(--bg-surface); color: var(--text-muted); }
+
+  .wr-bar { width: 60px; height: 6px; background: var(--bg-surface); border-radius: 3px; display: inline-block; margin-left: 6px; vertical-align: middle; overflow: hidden; }
+  .wr-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-green), #16a34a); }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .toast {
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 280px;
+    pointer-events: auto;
+  }
+
+  .toast.show { transform: translateX(0); }
+  .toast.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: var(--accent-green); }
+  .toast.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: var(--accent-red); }
+  .toast.info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); color: var(--accent-blue); }
+  .toast.gold { background: rgba(245,197,66,0.15); border: 1px solid rgba(245,197,66,0.4); color: var(--accent-gold); }
+
+  /* Win overlay */
+  .win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .win-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .win-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 32px 40px;
+    text-align: center;
+    transform: scale(0.8);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 360px;
+    width: 90%;
+  }
+
+  .win-overlay.show .win-card { transform: scale(1); }
+
+  .win-emoji { font-size: 60px; margin-bottom: 12px; }
+  .win-title { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .win-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+  .win-amount { font-family: 'Rajdhani', sans-serif; font-size: 36px; font-weight: 700; color: var(--accent-gold); margin-bottom: 20px; }
+  .btn-close-win {
+    padding: 10px 28px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-close-win:hover { background: var(--bg-elevated); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .arena-layout { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; }
+    .sidebar .panel { flex: 1 1 300px; }
+    .nav-tabs { display: none; }
+    .header { padding: 0 16px; }
+    .round-stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .main { padding: 16px 12px; }
+    .card { width: 34px; height: 50px; }
+    .card-rank { font-size: 13px; }
+    .card-suit { font-size: 10px; }
+    .seat-avatar { width: 36px; height: 36px; font-size: 14px; }
+    .seat-name { font-size: 8px; }
+    .seat-chips { font-size: 8px; }
+  }
+</style>
 </head>
 <body>
 
-<!-- Top Bar -->
-<header class="top-bar">
-    <div class="top-bar-left">
-        <div class="top-bar-logo">🃏 Poker<span>AI</span></div>
-        <div class="top-bar-status">
-            <div class="live-dot"></div>
-            LIVE
-        </div>
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">♠</div>
+    Poker<span>AI</span>
+  </div>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('arena')">🎮 Arena</button>
+    <button class="nav-tab" onclick="showView('agents')">🤖 Agents</button>
+    <button class="nav-tab" onclick="showView('leaderboard')">🏆 Leaderboard</button>
+  </nav>
+
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      LIVE
     </div>
-    <div class="top-bar-right">
-        <div class="hand-counter">Hand #<span id="handNum">1</span></div>
-        <button class="btn-fund" onclick="openFundModal()">Fund Agent</button>
-        <div class="powered-by">powered by <a href="https://inclawbate.com" target="_blank">Inclawbate</a></div>
-    </div>
+    <div class="powered-by">powered by <a href="https://inclawbate.com" target="_blank">Inclawbate</a></div>
+  </div>
 </header>
 
-<!-- Main Layout -->
-<div class="main-layout">
-    <!-- Poker Table -->
-    <div class="table-area">
-        <div class="table-container" id="tableContainer">
-            <!-- The felt table -->
-            <div class="poker-table">
-                <div class="table-label">
-                    <div class="table-label-name">PokerAI</div>
-                    <div class="table-pot" id="potDisplay">0</div>
-                    <div class="table-pot-label">pot</div>
+<main class="main">
+
+  <!-- ARENA VIEW -->
+  <div id="view-arena" class="view active">
+    <div class="arena-layout">
+
+      <div>
+        <div class="table-container">
+          <div class="table-header">
+            <div class="table-title">🃏 PokerAI — Texas Hold'em</div>
+            <div id="liveBadge" class="live-badge">
+              <div class="live-dot"></div>
+              Live
+            </div>
+          </div>
+
+          <div class="round-stats">
+            <div class="stat-box">
+              <div class="stat-label">Hand</div>
+              <div class="stat-value" id="roundNum">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Pot</div>
+              <div class="stat-value gold" id="potDisplay">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Phase</div>
+              <div class="stat-value" id="phaseDisplay" style="font-size:13px">Waiting</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Hands</div>
+              <div class="stat-value green" id="handsPlayed">0</div>
+            </div>
+          </div>
+
+          <div class="poker-table" id="pokerTable">
+            <div class="table-felt" id="tableFelt">
+              <div class="community-area" id="communityArea">
+                <div class="pot-display" id="potChips">POT: 0</div>
+                <div class="community-cards" id="communityCards">
+                  <div class="card hidden" id="cc0"></div>
+                  <div class="card hidden" id="cc1"></div>
+                  <div class="card hidden" id="cc2"></div>
+                  <div class="card hidden" id="cc3"></div>
+                  <div class="card hidden" id="cc4"></div>
                 </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Community cards -->
-            <div class="community-cards" id="communityCards"></div>
+          <div class="game-log" id="gameLog">
+            <div class="log-entry"><span class="system">Welcome to PokerAI. 8 AI agents battling 24/7. Press Start to begin!</span></div>
+          </div>
 
-            <!-- Dealer button -->
-            <div class="dealer-btn" id="dealerBtn">D</div>
-
-            <!-- Agent seats (will be populated by JS) -->
-            <div id="seats"></div>
+          <div class="game-controls">
+            <button class="ctrl-btn btn-start" id="startBtn" onclick="toggleGame()">▶ Start Game</button>
+            <button class="ctrl-btn btn-pause" onclick="nextRound()">⏭ Next Hand</button>
+            <div class="speed-control">
+              Speed:
+              <select id="speedSelect">
+                <option value="2000">Slow</option>
+                <option value="1000" selected>Normal</option>
+                <option value="400">Fast</option>
+                <option value="100">Ultra</option>
+              </select>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="panel">
+          <div class="panel-title"><span class="icon">🤖</span> Agents at Table</div>
+          <div id="agentsSidebar"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title"><span class="icon">💰</span> Fund an Agent</div>
+          <select class="bet-agent-select" id="betAgentSelect">
+            <option value="">Select an Agent to back...</option>
+          </select>
+          <div class="bet-presets">
+            <div class="bet-preset" onclick="selectPreset(50, this)">50</div>
+            <div class="bet-preset" onclick="selectPreset(100, this)">100</div>
+            <div class="bet-preset" onclick="selectPreset(250, this)">250</div>
+            <div class="bet-preset" onclick="selectPreset(500, this)">500</div>
+          </div>
+          <div class="bet-input-row">
+            <input type="number" class="bet-input" id="betAmount" placeholder="Amount" min="10" max="10000" value="100">
+          </div>
+          <button class="btn-place-bet" onclick="placeBet()">🎲 Fund Agent</button>
+          <div style="margin-top:4px;font-size:11px;color:var(--text-muted);text-align:center">
+            Earn 95% of profits when your agent wins
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title"><span class="icon">📋</span> Your Bets</div>
+          <div id="activeBets">
+            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">
+              No active bets yet
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <span style="font-size:12px;color:var(--text-muted)">Total Winnings:</span>
+            <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)" id="totalWinnings">+0</span>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-tabs">
-            <button class="sidebar-tab active" data-tab="feed" onclick="switchTab('feed')">Live Feed</button>
-            <button class="sidebar-tab" data-tab="agents" onclick="switchTab('agents')">Agents</button>
-            <button class="sidebar-tab" data-tab="my" onclick="switchTab('my')">My Funds</button>
-        </div>
-
-        <!-- Live Feed -->
-        <div class="sidebar-panel active" id="panel-feed">
-            <div class="action-feed" id="actionFeed">
-                <div class="feed-hand-divider">Waiting for first hand...</div>
-            </div>
-        </div>
-
-        <!-- Agents Panel -->
-        <div class="sidebar-panel" id="panel-agents">
-            <div class="agents-list" id="agentsList"></div>
-            <div class="agent-detail" id="agentDetail"></div>
-        </div>
-
-        <!-- My Funds Panel -->
-        <div class="sidebar-panel" id="panel-my">
-            <div style="padding: 40px 20px; text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 12px;">💰</div>
-                <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">No Active Funds</div>
-                <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
-                    Fund an agent to see their pocket cards and earn 95% of their winnings.
-                </div>
-                <button class="btn-fund" onclick="switchTab('agents')">Browse Agents</button>
-            </div>
-        </div>
+  <!-- AGENTS VIEW -->
+  <div id="view-agents" class="view">
+    <div style="margin-bottom:20px">
+      <h2 style="font-family:'Rajdhani';font-size:28px;font-weight:700;color:var(--text-primary);margin-bottom:6px">🤖 AI Agent Roster</h2>
+      <p style="color:var(--text-secondary);font-size:14px">8 agents, 8 playstyles. Study their tendencies to pick your winner.</p>
     </div>
+    <div class="agents-grid" id="agentsGrid"></div>
+  </div>
+
+  <!-- LEADERBOARD VIEW -->
+  <div id="view-leaderboard" class="view">
+    <div style="margin-bottom:20px">
+      <h2 style="font-family:'Rajdhani';font-size:28px;font-weight:700;color:var(--text-primary);margin-bottom:6px">🏆 All-Time Leaderboard</h2>
+      <p style="color:var(--text-secondary);font-size:14px">Performance stats across all played hands.</p>
+    </div>
+    <div class="panel">
+      <table class="leaderboard-table" id="leaderboardTable">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Agent</th>
+            <th>Style</th>
+            <th>Stack</th>
+            <th>Won</th>
+            <th>Win Rate</th>
+            <th>Biggest Pot</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- Win Overlay -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-emoji" id="winEmoji">🎉</div>
+    <div class="win-title" id="winTitle">You Won!</div>
+    <div class="win-subtitle" id="winSubtitle">Your bet paid off!</div>
+    <div class="win-amount" id="winAmount">+250</div>
+    <button class="btn-close-win" onclick="closeWinOverlay()">Continue</button>
+  </div>
 </div>
 
-<!-- Fund Modal -->
-<div class="modal-overlay" id="fundModal">
-    <div class="modal">
-        <div class="modal-title">Fund Agent</div>
-        <div class="modal-subtitle">Back this agent with $POKERAI and earn 95% of their winnings</div>
-        <div class="modal-agent" id="modalAgent"></div>
-        <div class="modal-input-group">
-            <label class="modal-label">Amount ($POKERAI)</label>
-            <input class="modal-input" type="number" id="fundAmount" placeholder="0.00">
-            <div class="modal-note">You'll earn 95% of profits proportional to your share of the agent's total funds. 5% stays with the agent.</div>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-modal-fund" onclick="confirmFund()">Fund Agent</button>
-            <button class="btn-modal-cancel" onclick="closeFundModal()">Cancel</button>
-        </div>
-    </div>
-</div>
+<div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ── Agent Definitions ──
-var AGENTS = [
-    { id: 0, name: 'Viper',     emoji: '🐍', style: 'Tight-Aggressive',  bg: '#1a3a2a', desc: 'Plays few hands but bets hard when in. Patient predator who waits for premium holdings.' },
-    { id: 1, name: 'Maverick',   emoji: '🔥', style: 'Loose-Aggressive',  bg: '#3a1a1a', desc: 'Plays lots of hands and puts pressure on everyone. Lives for the bluff.' },
-    { id: 2, name: 'Oracle',     emoji: '🔮', style: 'Calculated',        bg: '#2a1a3a', desc: 'Math-driven decisions. Plays GTO-optimal strategy and rarely deviates.' },
-    { id: 3, name: 'Phantom',    emoji: '👻', style: 'Deceptive',         bg: '#1a2a3a', desc: 'Master of disguise. Slow-plays monsters and bluffs with nothing.' },
-    { id: 4, name: 'Tank',       emoji: '🛡️', style: 'Tight-Passive',    bg: '#2a2a1a', desc: 'Rock solid. Only plays the nuts. Hard to lose against but hard to win big.' },
-    { id: 5, name: 'Chaos',      emoji: '🎲', style: 'Unpredictable',     bg: '#3a2a1a', desc: 'Random element. Even Chaos doesn\'t know what Chaos will do next.' },
-    { id: 6, name: 'Shark',      emoji: '🦈', style: 'Exploitative',      bg: '#1a2a2a', desc: 'Adapts to opponents. Finds weaknesses and hammers them relentlessly.' },
-    { id: 7, name: 'Zen',        emoji: '🧘', style: 'Balanced',          bg: '#1a1a2a', desc: 'Perfect equilibrium. Never tilts, never rushes. The patient grinder.' }
+// ============================================================
+// 8 AGENTS
+// ============================================================
+const AGENTS = [
+  {
+    id: 'blaze',
+    name: 'Blaze Alpha',
+    emoji: '🔥',
+    style: 'aggressive',
+    description: 'Goes all-in frequently. Intimidates opponents with massive bets. High risk, high reward.',
+    raisePct: 60, bluffPct: 40, foldPct: 10,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 90, bluffing: 70, patience: 15, adaptability: 40 }
+  },
+  {
+    id: 'oracle',
+    name: 'Oracle-7',
+    emoji: '🔮',
+    style: 'mathematical',
+    description: 'Calculates exact pot odds and EV for every decision. Ice-cold, never tilts.',
+    raisePct: 35, bluffPct: 15, foldPct: 35,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 40, bluffing: 20, patience: 85, adaptability: 75 }
+  },
+  {
+    id: 'phantom',
+    name: 'Phantom X',
+    emoji: '👻',
+    style: 'bluffer',
+    description: 'Master of deception. Represents hands it doesn\'t have. Keeps everyone guessing.',
+    raisePct: 45, bluffPct: 70, foldPct: 15,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 65, bluffing: 95, patience: 35, adaptability: 80 }
+  },
+  {
+    id: 'fortress',
+    name: 'Fortress',
+    emoji: '🏰',
+    style: 'conservative',
+    description: 'Only plays premium hands. Folds often but when it bets, it means business.',
+    raisePct: 20, bluffPct: 8, foldPct: 60,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 15, bluffing: 10, patience: 95, adaptability: 30 }
+  },
+  {
+    id: 'nexus',
+    name: 'Nexus-9',
+    emoji: '⚡',
+    style: 'balanced',
+    description: 'Adapts its strategy based on table dynamics. Unpredictable and well-rounded.',
+    raisePct: 40, bluffPct: 30, foldPct: 25,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 55, bluffing: 45, patience: 60, adaptability: 95 }
+  },
+  {
+    id: 'shadow',
+    name: 'Shadow-Bot',
+    emoji: '🌑',
+    style: 'balanced',
+    description: 'Plays in the shadows, picking spots carefully. Uses position and timing to strike.',
+    raisePct: 38, bluffPct: 28, foldPct: 30,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 50, bluffing: 40, patience: 70, adaptability: 85 }
+  },
+  {
+    id: 'viper',
+    name: 'Viper',
+    emoji: '🐍',
+    style: 'aggressive',
+    description: 'Coils and waits, then strikes hard. Plays tight preflop but bets massive post-flop.',
+    raisePct: 55, bluffPct: 35, foldPct: 20,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 80, bluffing: 50, patience: 45, adaptability: 55 }
+  },
+  {
+    id: 'chaos',
+    name: 'Chaos Engine',
+    emoji: '🎲',
+    style: 'chaotic',
+    description: 'Pure randomness with a twist. Even Chaos doesn\'t know what it will do next. Terrifying.',
+    raisePct: 50, bluffPct: 50, foldPct: 20,
+    chips: 10000,
+    handsWon: 0, handsPlayed: 0, biggestPot: 0,
+    traits: { aggression: 70, bluffing: 60, patience: 25, adaptability: 50 }
+  }
 ];
 
-// Game state
-var gameState = {
-    handNum: 0,
-    pot: 0,
-    communityCards: [],
-    dealerIdx: 0,
-    activeIdx: 0,
-    phase: 'waiting', // waiting, preflop, flop, turn, river, showdown
-    agents: AGENTS.map(function(a) {
-        return {
-            ...a,
-            stack: 10000,
-            bet: 0,
-            folded: false,
-            pocket: [],
-            pnl: 0,
-            handsWon: 0,
-            handsPlayed: 0
-        };
-    })
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const SUITS = ['♠','♥','♦','♣'];
+const RANK_VALUES = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let gameState = {
+  running: false,
+  round: 0,
+  handsPlayed: 0,
+  pot: 0,
+  phase: 'preflop',
+  communityCards: [],
+  deck: [],
+  agents: [],
+  currentTurnIndex: 0,
+  dealerIndex: 0,
+  phaseTimer: null,
+  lastWinner: null,
+  activeBets: [],
+  totalWinnings: 0,
+  userBalance: 1000
 };
 
-var selectedFundAgent = null;
+function getSpeed() {
+  return parseInt(document.getElementById('speedSelect').value);
+}
 
-// ── Card Utils ──
-var SUITS = ['♠', '♥', '♦', '♣'];
-var RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+// ============================================================
+// INIT
+// ============================================================
+function initGame() {
+  gameState.agents = AGENTS.map(a => ({...a, traits: {...a.traits}, handsWon: 0, handsPlayed: 0, biggestPot: 0, chips: 10000, hand: [], folded: false, currentBet: 0, allIn: false}));
+  renderAgentsSidebar();
+  renderBetSelect();
+  renderAgentsGrid();
+  renderLeaderboard();
+  renderActiveBets();
+  renderTableSeats();
+}
 
-function newDeck() {
-    var deck = [];
-    for (var s = 0; s < SUITS.length; s++) {
-        for (var r = 0; r < RANKS.length; r++) {
-            deck.push({ rank: RANKS[r], suit: SUITS[s] });
-        }
+// ============================================================
+// DECK
+// ============================================================
+function createDeck() {
+  const deck = [];
+  for (const suit of SUITS) {
+    for (const rank of RANKS) {
+      deck.push({ rank, suit, red: suit === '♥' || suit === '♦' });
     }
-    // Shuffle
-    for (var i = deck.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
+  }
+  return shuffle(deck);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ============================================================
+// HAND EVALUATION
+// ============================================================
+function evaluateHand(cards) {
+  const vals = cards.map(c => RANK_VALUES[c.rank]).sort((a, b) => b - a);
+  const suits = cards.map(c => c.suit);
+
+  const counts = {};
+  vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  const countVals = Object.values(counts).sort((a, b) => b - a);
+
+  const isFlush = suits.every(s => s === suits[0]);
+  const isStraight = checkStraight(vals);
+
+  if (isFlush && isStraight) return { rank: 8, name: 'Straight Flush' };
+  if (countVals[0] === 4) return { rank: 7, name: 'Four of a Kind' };
+  if (countVals[0] === 3 && countVals[1] === 2) return { rank: 6, name: 'Full House' };
+  if (isFlush) return { rank: 5, name: 'Flush' };
+  if (isStraight) return { rank: 4, name: 'Straight' };
+  if (countVals[0] === 3) return { rank: 3, name: 'Three of a Kind' };
+  if (countVals[0] === 2 && countVals[1] === 2) return { rank: 2, name: 'Two Pair' };
+  if (countVals[0] === 2) return { rank: 1, name: 'One Pair' };
+  return { rank: 0, name: 'High Card' };
+}
+
+function checkStraight(vals) {
+  const unique = [...new Set(vals)].sort((a, b) => b - a);
+  if (unique.length < 5) return false;
+  for (let i = 0; i <= unique.length - 5; i++) {
+    if (unique[i] - unique[i + 4] === 4) return true;
+  }
+  if (unique[0] === 14 && unique.slice(-4).join(',') === '5,4,3,2') return true;
+  return false;
+}
+
+function getBestHand(holeCards, communityCards) {
+  const all = [...holeCards, ...communityCards];
+  if (all.length < 5) return { rank: -1, name: 'Unknown' };
+  let best = { rank: -1, name: '' };
+  const combos = getCombinations(all, 5);
+  for (const combo of combos) {
+    const h = evaluateHand(combo);
+    if (h.rank > best.rank) best = h;
+  }
+  return best;
+}
+
+function getCombinations(arr, k) {
+  if (k === 0) return [[]];
+  if (arr.length < k) return [];
+  const [first, ...rest] = arr;
+  const withFirst = getCombinations(rest, k - 1).map(c => [first, ...c]);
+  const withoutFirst = getCombinations(rest, k);
+  return [...withFirst, ...withoutFirst];
+}
+
+// ============================================================
+// SEAT POSITIONS (8 seats)
+// ============================================================
+const SEAT_POSITIONS = [
+  { top: '88%', left: '35%' },   // bottom-left (0)
+  { top: '88%', left: '65%' },   // bottom-right (1)
+  { top: '55%', left: '92%' },   // right-mid (2)
+  { top: '15%', left: '80%' },   // top-right (3)
+  { top: '15%', left: '20%' },   // top-left (4)
+  { top: '55%', left: '8%' },    // left-mid (5)
+  { top: '12%', left: '50%' },   // top-center (6)
+  { top: '88%', left: '50%' },   // bottom-center (7)
+];
+
+function renderTableSeats() {
+  const felt = document.getElementById('tableFelt');
+  felt.querySelectorAll('.seat').forEach(s => s.remove());
+  felt.querySelectorAll('.dealer-btn').forEach(s => s.remove());
+
+  gameState.agents.forEach((agent, i) => {
+    const pos = SEAT_POSITIONS[i];
+    const seat = document.createElement('div');
+    seat.className = 'seat';
+    seat.id = `seat-${agent.id}`;
+    seat.style.top = pos.top;
+    seat.style.left = pos.left;
+
+    const isCurrent = i === gameState.currentTurnIndex && gameState.running;
+    const folded = agent.folded;
+    const isWinner = gameState.lastWinner === agent.id;
+
+    seat.innerHTML = `
+      <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
+      <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
+           title="${agent.name}">
+        ${agent.emoji}
+      </div>
+      <div class="seat-name">${agent.name.split(' ')[0]}</div>
+      <div class="seat-chips">${formatChips(agent.chips)}</div>
+    `;
+    felt.appendChild(seat);
+
+    if (i === gameState.dealerIndex && gameState.running) {
+      const db = document.createElement('div');
+      db.className = 'dealer-btn';
+      db.textContent = 'D';
+      db.style.top = `calc(${pos.top} - 28px)`;
+      db.style.left = `calc(${pos.left} + 28px)`;
+      db.style.transform = 'translate(-50%, -50%)';
+      felt.appendChild(db);
     }
-    return deck;
+  });
 }
 
-function cardHTML(card, hidden) {
-    if (hidden) return '<div class="card hidden"></div>';
-    var isRed = card.suit === '♥' || card.suit === '♦';
-    return '<div class="card ' + (isRed ? 'red' : 'black') + ' dealing">' + card.rank + card.suit + '</div>';
+function updateSeat(agent, action) {
+  const seat = document.getElementById(`seat-${agent.id}`);
+  if (!seat) return;
+  const avatar = seat.querySelector('.seat-avatar');
+  avatar.className = 'seat-avatar';
+  if (gameState.agents.indexOf(agent) === gameState.currentTurnIndex) avatar.classList.add('active');
+  if (agent.folded) avatar.classList.add('folded');
+  if (gameState.lastWinner === agent.id) avatar.classList.add('winner');
+  seat.querySelector('.seat-chips').textContent = formatChips(agent.chips);
+  if (action) showActionBubble(agent.id, action);
 }
 
-// ── Render Functions ──
-function renderSeats() {
-    var seatsEl = document.getElementById('seats');
-    seatsEl.innerHTML = '';
-    gameState.agents.forEach(function(agent, i) {
-        var seat = document.createElement('div');
-        seat.className = 'agent-seat seat-' + i + (i === gameState.activeIdx ? ' active-turn' : '') + (agent.folded ? ' folded' : '');
-        seat.onclick = function() { showAgentDetail(i); switchTab('agents'); };
-
-        var pocketHTML = '';
-        if (agent.pocket.length === 2) {
-            // In a real version, only show if funded. For demo, show all.
-            pocketHTML = '<div class="agent-pocket">' + cardHTML(agent.pocket[0]) + cardHTML(agent.pocket[1]) + '</div>';
-        }
-
-        seat.innerHTML =
-            '<div class="agent-avatar" style="background:' + agent.bg + '">' + agent.emoji + '</div>' +
-            '<div class="agent-name">' + agent.name + '</div>' +
-            '<div class="agent-stack">' + formatNum(agent.stack) + '</div>' +
-            pocketHTML;
-
-        seatsEl.appendChild(seat);
-    });
+function showActionBubble(agentId, action) {
+  const bubble = document.getElementById(`bubble-${agentId}`);
+  if (!bubble) return;
+  bubble.className = `seat-action-bubble visible ${action.type}`;
+  bubble.textContent = action.label;
+  setTimeout(() => {
+    if (bubble) bubble.classList.remove('visible');
+  }, 1800);
 }
 
-function renderCommunity() {
-    var el = document.getElementById('communityCards');
-    var html = '';
-    for (var i = 0; i < 5; i++) {
-        if (i < gameState.communityCards.length) {
-            html += cardHTML(gameState.communityCards[i]);
-        }
-    }
-    el.innerHTML = html;
-}
-
-function renderAgentsList() {
-    var el = document.getElementById('agentsList');
+// ============================================================
+// COMMUNITY CARDS
+// ============================================================
+function renderCommunityCard(index, card) {
+  const el = document.getElementById(`cc${index}`);
+  if (!el) return;
+  if (!card) {
+    el.className = 'card hidden';
     el.innerHTML = '';
-    gameState.agents.forEach(function(agent, i) {
-        var pnlClass = agent.pnl >= 0 ? 'positive' : 'negative';
-        var pnlSign = agent.pnl >= 0 ? '+' : '';
-        var card = document.createElement('div');
-        card.className = 'agent-card';
-        card.onclick = function() { showAgentDetail(i); };
-        card.innerHTML =
-            '<div class="agent-card-avatar" style="background:' + agent.bg + '">' + agent.emoji + '</div>' +
-            '<div class="agent-card-info">' +
-                '<div class="agent-card-name">' + agent.name + '</div>' +
-                '<div class="agent-card-style">' + agent.style + '</div>' +
-            '</div>' +
-            '<div class="agent-card-stats">' +
-                '<div class="agent-card-stack">' + formatNum(agent.stack) + '</div>' +
-                '<div class="agent-card-pnl ' + pnlClass + '">' + pnlSign + formatNum(agent.pnl) + '</div>' +
-            '</div>';
-        el.appendChild(card);
+    return;
+  }
+  el.className = `card${card.red ? ' red' : ''}`;
+  el.innerHTML = `<div class="card-rank">${card.rank}</div><div class="card-suit">${card.suit}</div>`;
+}
+
+function clearCommunityCards() {
+  for (let i = 0; i < 5; i++) renderCommunityCard(i, null);
+  gameState.communityCards = [];
+}
+
+// ============================================================
+// GAME FLOW
+// ============================================================
+function toggleGame() {
+  if (gameState.running) {
+    gameState.running = false;
+    if (gameState.phaseTimer) clearTimeout(gameState.phaseTimer);
+    document.getElementById('startBtn').textContent = '▶ Start Game';
+    addLog('<span class="system">Game paused.</span>');
+  } else {
+    gameState.running = true;
+    document.getElementById('startBtn').textContent = '⏹ Stop Game';
+    addLog('<span class="system">Game started! Let the AI battle begin...</span>');
+    startHand();
+  }
+}
+
+function nextRound() {
+  if (!gameState.running) {
+    gameState.running = true;
+    document.getElementById('startBtn').textContent = '⏹ Stop Game';
+  }
+  if (gameState.phaseTimer) clearTimeout(gameState.phaseTimer);
+  startHand();
+}
+
+const BB = 50; // big blind
+
+function startHand() {
+  if (!gameState.running) return;
+  gameState.round++;
+  gameState.handsPlayed++;
+  gameState.pot = 0;
+  gameState.phase = 'preflop';
+  gameState.lastWinner = null;
+  gameState.deck = createDeck();
+  gameState.communityCards = [];
+
+  document.getElementById('roundNum').textContent = gameState.round;
+  document.getElementById('handsPlayed').textContent = gameState.handsPlayed;
+  document.getElementById('phaseDisplay').textContent = 'Pre-Flop';
+  document.getElementById('potDisplay').textContent = '0';
+
+  clearCommunityCards();
+
+  // Reset agents
+  gameState.agents.forEach(a => {
+    if (a.chips <= 0) a.chips = 5000; // rebuy
+    a.folded = false;
+    a.currentBet = 0;
+    a.allIn = false;
+    a.hand = [gameState.deck.pop(), gameState.deck.pop()];
+    a.handsPlayed++;
+  });
+
+  // Rotate dealer
+  gameState.dealerIndex = (gameState.dealerIndex + 1) % gameState.agents.length;
+
+  // Post blinds
+  const sbIdx = (gameState.dealerIndex + 1) % gameState.agents.length;
+  const bbIdx = (gameState.dealerIndex + 2) % gameState.agents.length;
+  const sb = gameState.agents[sbIdx];
+  const bb = gameState.agents[bbIdx];
+
+  const sbAmt = Math.min(Math.floor(BB / 2), sb.chips);
+  const bbAmt = Math.min(BB, bb.chips);
+  sb.chips -= sbAmt;
+  bb.chips -= bbAmt;
+  gameState.pot += sbAmt + bbAmt;
+
+  addLog(`<span class="system">--- Hand #${gameState.handsPlayed} ---</span>`);
+  addLog(`<span class="agent">${sb.name}</span> posts SB <span class="amount">${sbAmt}</span>`);
+  addLog(`<span class="agent">${bb.name}</span> posts BB <span class="amount">${bbAmt}</span>`);
+
+  gameState.currentTurnIndex = (bbIdx + 1) % gameState.agents.length;
+
+  renderTableSeats();
+  updatePotDisplay();
+
+  gameState.phaseTimer = setTimeout(() => runBettingRound(0), getSpeed());
+}
+
+function runBettingRound(actionIndex) {
+  if (!gameState.running) return;
+
+  const activePlayers = gameState.agents.filter(a => !a.folded && a.chips > 0);
+  if (activePlayers.length <= 1) {
+    resolveHand(activePlayers);
+    return;
+  }
+
+  const numAgents = gameState.agents.length;
+  if (actionIndex >= numAgents) {
+    advancePhase();
+    return;
+  }
+
+  let idx = (gameState.currentTurnIndex + actionIndex) % numAgents;
+  const agent = gameState.agents[idx];
+
+  if (agent.folded || agent.chips <= 0) {
+    gameState.phaseTimer = setTimeout(() => runBettingRound(actionIndex + 1), 50);
+    return;
+  }
+
+  const action = agentDecide(agent);
+  applyAction(agent, action);
+  updateSeat(agent, action);
+  updatePotDisplay();
+
+  gameState.phaseTimer = setTimeout(() => runBettingRound(actionIndex + 1), getSpeed());
+}
+
+function agentDecide(agent) {
+  let strength = 0.3 + Math.random() * 0.5;
+
+  if (gameState.communityCards.length > 0) {
+    const handEval = getBestHand(agent.hand, gameState.communityCards);
+    strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
+  }
+
+  const r = Math.random() * 100;
+  const maxBet = Math.min(Math.floor(agent.chips * 0.4), 500);
+  const betAmt = Math.max(BB, Math.floor(Math.random() * maxBet));
+
+  if (agent.style === 'aggressive') {
+    if (r < agent.raisePct) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
+    if (r < agent.raisePct + 30) return { type: 'call', label: 'Call', amount: BB };
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  if (agent.style === 'conservative') {
+    if (strength > 0.7 && r < 40) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
+    if (strength > 0.5 || r < 25) return { type: 'call', label: 'Call', amount: BB };
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  if (agent.style === 'bluffer') {
+    if (r < agent.bluffPct * 0.8) return { type: 'raise', label: `Bluff ${betAmt}`, amount: betAmt };
+    if (r < 70) return { type: 'call', label: 'Call', amount: BB };
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  if (agent.style === 'mathematical') {
+    const potOdds = gameState.pot > 0 ? BB / gameState.pot : 1;
+    if (strength > potOdds + 0.2 && r < 45) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
+    if (strength > potOdds || r < 20) return { type: 'check', label: 'Check', amount: 0 };
+    if (strength > 0.3) return { type: 'call', label: 'Call', amount: BB };
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  if (agent.style === 'chaotic') {
+    const chaos = Math.random();
+    if (chaos < 0.3) return { type: 'raise', label: `YOLO ${betAmt}`, amount: betAmt };
+    if (chaos < 0.5) return { type: 'call', label: 'Call', amount: BB };
+    if (chaos < 0.65) return { type: 'check', label: 'Check', amount: 0 };
+    if (chaos < 0.85 && agent.chips > 200) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  // balanced / default
+  if (strength > 0.7 && r < 50) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
+  if (strength > 0.4 || r < 40) return { type: 'call', label: 'Call', amount: Math.min(BB, agent.chips) };
+  if (r < 20) return { type: 'check', label: 'Check', amount: 0 };
+  return { type: 'fold', label: 'Fold', amount: 0 };
+}
+
+function applyAction(agent, action) {
+  let logMsg = `<span class="agent">${agent.name}</span> `;
+
+  switch (action.type) {
+    case 'raise':
+      const raiseAmt = Math.min(action.amount, agent.chips);
+      agent.chips -= raiseAmt;
+      gameState.pot += raiseAmt;
+      agent.currentBet += raiseAmt;
+      logMsg += `<span class="action-raise">raises</span> <span class="amount">${raiseAmt}</span>`;
+      break;
+    case 'call':
+      const callAmt = Math.min(action.amount, agent.chips);
+      agent.chips -= callAmt;
+      gameState.pot += callAmt;
+      logMsg += `<span class="action-call">calls</span> <span class="amount">${callAmt}</span>`;
+      break;
+    case 'fold':
+      agent.folded = true;
+      logMsg += `<span class="action-fold">folds</span>`;
+      break;
+    case 'check':
+      logMsg += `<span class="action-check">checks</span>`;
+      break;
+    case 'allin':
+      gameState.pot += agent.chips;
+      logMsg += `<span class="action-raise">goes ALL IN ${agent.chips}!</span>`;
+      agent.chips = 0;
+      agent.allIn = true;
+      break;
+  }
+  addLog(logMsg);
+  updateSeat(agent, action);
+}
+
+function advancePhase() {
+  if (!gameState.running) return;
+
+  const phases = ['preflop', 'flop', 'turn', 'river', 'showdown'];
+  const idx = phases.indexOf(gameState.phase);
+
+  if (idx >= phases.length - 2) {
+    gameState.phase = 'showdown';
+    document.getElementById('phaseDisplay').textContent = 'Showdown';
+    addLog('<span class="system">--- Showdown! ---</span>');
+    const activePlayers = gameState.agents.filter(a => !a.folded);
+    resolveHand(activePlayers);
+    return;
+  }
+
+  gameState.phase = phases[idx + 1];
+
+  if (gameState.phase === 'flop') {
+    const flop = [gameState.deck.pop(), gameState.deck.pop(), gameState.deck.pop()];
+    gameState.communityCards = flop;
+    flop.forEach((c, i) => renderCommunityCard(i, c));
+    document.getElementById('phaseDisplay').textContent = 'Flop';
+    addLog(`<span class="system">--- Flop: ${flop.map(c => c.rank + c.suit).join(' ')} ---</span>`);
+  } else if (gameState.phase === 'turn') {
+    const card = gameState.deck.pop();
+    gameState.communityCards.push(card);
+    renderCommunityCard(3, card);
+    document.getElementById('phaseDisplay').textContent = 'Turn';
+    addLog(`<span class="system">--- Turn: ${card.rank + card.suit} ---</span>`);
+  } else if (gameState.phase === 'river') {
+    const card = gameState.deck.pop();
+    gameState.communityCards.push(card);
+    renderCommunityCard(4, card);
+    document.getElementById('phaseDisplay').textContent = 'River';
+    addLog(`<span class="system">--- River: ${card.rank + card.suit} ---</span>`);
+  }
+
+  gameState.agents.forEach(a => a.currentBet = 0);
+  gameState.currentTurnIndex = (gameState.dealerIndex + 1) % gameState.agents.length;
+
+  gameState.phaseTimer = setTimeout(() => runBettingRound(0), getSpeed());
+}
+
+function resolveHand(activePlayers) {
+  if (!activePlayers || activePlayers.length === 0) {
+    activePlayers = [gameState.agents[0]];
+  }
+
+  let winner;
+  if (activePlayers.length === 1) {
+    winner = activePlayers[0];
+  } else {
+    let bestScore = -1;
+    activePlayers.forEach(agent => {
+      const h = getBestHand(agent.hand, gameState.communityCards);
+      agent._handScore = h.rank + Math.random() * 0.01;
+      agent._handName = h.name;
+      if (agent._handScore > bestScore) {
+        bestScore = agent._handScore;
+        winner = agent;
+      }
     });
+  }
+
+  const potWon = gameState.pot;
+  winner.chips += potWon;
+  winner.handsWon++;
+  winner.biggestPot = Math.max(winner.biggestPot, potWon);
+  gameState.lastWinner = winner.id;
+
+  const handName = winner._handName || 'Best Hand';
+  addLog(`<span class="win">🏆 ${winner.name} wins ${potWon} with ${handName}!</span>`);
+
+  renderTableSeats();
+  updatePotDisplay();
+
+  resolvePlayerBets(winner.id, potWon);
+
+  renderAgentsSidebar();
+  renderLeaderboard();
+
+  if (gameState.running) {
+    gameState.phaseTimer = setTimeout(() => {
+      gameState.pot = 0;
+      startHand();
+    }, getSpeed() * 2);
+  }
 }
 
-function showAgentDetail(idx) {
-    var agent = gameState.agents[idx];
-    var el = document.getElementById('agentDetail');
-    var list = document.getElementById('agentsList');
-    var pnlClass = agent.pnl >= 0 ? 'green' : 'red';
-    var pnlSign = agent.pnl >= 0 ? '+' : '';
-    var winRate = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+function resolvePlayerBets(winnerId, pot) {
+  let totalGained = 0;
+  let totalLost = 0;
 
-    el.innerHTML =
-        '<div class="agent-detail-back" onclick="closeAgentDetail()">← Back to agents</div>' +
-        '<div class="agent-detail-header">' +
-            '<div class="agent-detail-emoji">' + agent.emoji + '</div>' +
-            '<div><div class="agent-detail-name">' + agent.name + '</div><div class="agent-detail-type">' + agent.style + '</div></div>' +
-        '</div>' +
-        '<div class="detail-stats">' +
-            '<div class="detail-stat"><div class="detail-stat-label">Stack</div><div class="detail-stat-val gold">' + formatNum(agent.stack) + '</div></div>' +
-            '<div class="detail-stat"><div class="detail-stat-label">PnL</div><div class="detail-stat-val ' + pnlClass + '">' + pnlSign + formatNum(agent.pnl) + '</div></div>' +
-            '<div class="detail-stat"><div class="detail-stat-label">Win Rate</div><div class="detail-stat-val">' + winRate + '%</div></div>' +
-            '<div class="detail-stat"><div class="detail-stat-label">Hands</div><div class="detail-stat-val">' + agent.handsPlayed + '</div></div>' +
-        '</div>' +
-        '<div class="detail-personality">' + agent.desc + '</div>' +
-        '<button class="btn-fund-agent" onclick="openFundModal(' + idx + ')">Fund ' + agent.name + '</button>';
-
-    el.classList.add('open');
-    list.style.display = 'none';
-}
-
-function closeAgentDetail() {
-    document.getElementById('agentDetail').classList.remove('open');
-    document.getElementById('agentsList').style.display = 'block';
-}
-
-function formatNum(n) {
-    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + 'k';
-    return n.toLocaleString();
-}
-
-// ── Sidebar Tabs ──
-function switchTab(tab) {
-    document.querySelectorAll('.sidebar-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.sidebar-panel').forEach(function(p) { p.classList.remove('active'); });
-    document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
-    document.getElementById('panel-' + tab).classList.add('active');
-    if (tab === 'agents') {
-        renderAgentsList();
-        closeAgentDetail();
+  gameState.activeBets.forEach(bet => {
+    if (bet.settled) return;
+    if (bet.hand === gameState.handsPlayed) {
+      bet.settled = true;
+      if (bet.agentId === winnerId) {
+        const payout = Math.floor(bet.amount * 1.95); // 95% profit
+        gameState.userBalance += payout;
+        bet.won = true;
+        bet.payout = payout;
+        totalGained += payout;
+        gameState.totalWinnings += payout - bet.amount;
+      } else {
+        bet.won = false;
+        bet.payout = 0;
+        totalLost += bet.amount;
+        gameState.totalWinnings -= bet.amount;
+      }
     }
-}
+  });
 
-// ── Fund Modal ──
-function openFundModal(agentIdx) {
-    if (agentIdx === undefined) agentIdx = 0;
-    selectedFundAgent = gameState.agents[agentIdx];
-    var el = document.getElementById('modalAgent');
-    el.innerHTML =
-        '<div class="modal-agent-emoji">' + selectedFundAgent.emoji + '</div>' +
-        '<div><div class="modal-agent-name">' + selectedFundAgent.name + '</div><div class="modal-agent-type">' + selectedFundAgent.style + '</div></div>';
-    document.getElementById('fundModal').classList.add('open');
-}
-function closeFundModal() {
-    document.getElementById('fundModal').classList.remove('open');
-    document.getElementById('fundAmount').value = '';
-}
-function confirmFund() {
-    // In production this would interact with the smart contract
-    alert('Funding coming soon! $POKERAI token launch pending.');
-    closeFundModal();
-}
+  document.getElementById('totalWinnings').textContent = (gameState.totalWinnings >= 0 ? '+' : '') + gameState.totalWinnings;
+  document.getElementById('totalWinnings').style.color = gameState.totalWinnings >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
-// Close modal on overlay click
-document.getElementById('fundModal').addEventListener('click', function(e) {
-    if (e.target === this) closeFundModal();
-});
+  renderActiveBets();
 
-// ── Poker Game Simulation ──
-var deck = [];
-var BB = 50; // big blind
-
-function addFeedItem(html) {
-    var feed = document.getElementById('actionFeed');
-    var item = document.createElement('div');
-    item.className = 'feed-item';
-    item.innerHTML = html;
-    feed.insertBefore(item, feed.firstChild);
-    // Keep feed limited
-    while (feed.children.length > 60) feed.removeChild(feed.lastChild);
-}
-
-function addFeedDivider(text) {
-    var feed = document.getElementById('actionFeed');
-    var item = document.createElement('div');
-    item.className = 'feed-hand-divider';
-    item.textContent = text;
-    feed.insertBefore(item, feed.firstChild);
-}
-
-function addFeedWinner(text) {
-    var feed = document.getElementById('actionFeed');
-    var item = document.createElement('div');
-    item.className = 'feed-winner';
-    item.textContent = text;
-    feed.insertBefore(item, feed.firstChild);
-}
-
-// Determine agent action based on personality
-function getAgentAction(agent, currentBet, minRaise) {
-    var callAmt = currentBet - agent.bet;
-    var rand = Math.random();
-
-    switch (agent.style) {
-        case 'Tight-Aggressive':
-            if (callAmt === 0) return rand < 0.4 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.3) return { action: 'fold' };
-            if (rand < 0.7) return { action: 'call' };
-            return { action: 'raise', amount: minRaise };
-
-        case 'Loose-Aggressive':
-            if (callAmt === 0) return rand < 0.6 ? { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise) } : { action: 'check' };
-            if (rand < 0.15) return { action: 'fold' };
-            if (rand < 0.5) return { action: 'call' };
-            return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise * 2) };
-
-        case 'Calculated':
-            if (callAmt === 0) return rand < 0.35 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.35) return { action: 'fold' };
-            if (rand < 0.8) return { action: 'call' };
-            return { action: 'raise', amount: minRaise };
-
-        case 'Deceptive':
-            if (callAmt === 0) return rand < 0.3 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.2) return { action: 'fold' };
-            if (rand < 0.6) return { action: 'call' };
-            return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise) };
-
-        case 'Tight-Passive':
-            if (callAmt === 0) return rand < 0.15 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.4) return { action: 'fold' };
-            return { action: 'call' };
-
-        case 'Unpredictable':
-            var actions = ['fold', 'call', 'raise', 'check'];
-            var pick = actions[Math.floor(Math.random() * (callAmt === 0 ? 3 : 3))];
-            if (pick === 'check' && callAmt > 0) pick = 'call';
-            if (pick === 'fold' && callAmt === 0) pick = 'check';
-            if (pick === 'raise') return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise * 3) };
-            return { action: pick };
-
-        case 'Exploitative':
-            if (callAmt === 0) return rand < 0.45 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.25) return { action: 'fold' };
-            if (rand < 0.65) return { action: 'call' };
-            return { action: 'raise', amount: minRaise };
-
-        case 'Balanced':
-            if (callAmt === 0) return rand < 0.33 ? { action: 'raise', amount: minRaise } : { action: 'check' };
-            if (rand < 0.33) return { action: 'fold' };
-            if (rand < 0.66) return { action: 'call' };
-            return { action: 'raise', amount: minRaise };
-
-        default:
-            return callAmt === 0 ? { action: 'check' } : { action: 'call' };
-    }
-}
-
-// Play a full hand (simplified simulation)
-async function playHand() {
-    gameState.handNum++;
-    document.getElementById('handNum').textContent = gameState.handNum;
-
-    // Reset
-    deck = newDeck();
-    gameState.pot = 0;
-    gameState.communityCards = [];
-    gameState.agents.forEach(function(a) {
-        a.bet = 0;
-        a.folded = false;
-        a.pocket = [];
-        a.handsPlayed++;
-    });
-
-    // Move dealer
-    gameState.dealerIdx = (gameState.dealerIdx + 1) % 8;
-    var sbIdx = (gameState.dealerIdx + 1) % 8;
-    var bbIdx = (gameState.dealerIdx + 2) % 8;
-
-    addFeedDivider('— Hand #' + gameState.handNum + ' —');
-
-    // Post blinds
-    var sb = Math.floor(BB / 2);
-    gameState.agents[sbIdx].stack -= sb;
-    gameState.agents[sbIdx].bet = sb;
-    gameState.agents[bbIdx].stack -= BB;
-    gameState.agents[bbIdx].bet = BB;
-    gameState.pot = sb + BB;
-
-    addFeedItem('<span class="agent-ref">' + gameState.agents[sbIdx].name + '</span> posts SB <span class="amount">' + sb + '</span>');
-    addFeedItem('<span class="agent-ref">' + gameState.agents[bbIdx].name + '</span> posts BB <span class="amount">' + BB + '</span>');
-
-    // Deal pocket cards
-    gameState.agents.forEach(function(a) {
-        a.pocket = [deck.pop(), deck.pop()];
-    });
-    renderSeats();
-    renderCommunity();
-    updatePotDisplay();
-
-    await sleep(1500);
-
-    // Betting rounds
-    var phases = [
-        { name: 'Preflop', cards: 0 },
-        { name: 'Flop',    cards: 3 },
-        { name: 'Turn',    cards: 1 },
-        { name: 'River',   cards: 1 }
-    ];
-
-    for (var p = 0; p < phases.length; p++) {
-        // Deal community cards
-        if (phases[p].cards > 0) {
-            for (var c = 0; c < phases[p].cards; c++) {
-                gameState.communityCards.push(deck.pop());
-            }
-            renderCommunity();
-            addFeedDivider('── ' + phases[p].name + ' ──');
-            await sleep(1000);
-        }
-
-        // Check if only one player remains
-        var activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
-        if (activePlayers.length <= 1) break;
-
-        // Betting round
-        var currentBet = p === 0 ? BB : 0;
-        var startIdx = p === 0 ? (bbIdx + 1) % 8 : (gameState.dealerIdx + 1) % 8;
-        var actionsThisRound = 0;
-        var lastRaiser = -1;
-
-        // Reset bets for post-flop
-        if (p > 0) {
-            gameState.agents.forEach(function(a) { a.bet = 0; });
-        }
-
-        for (var round = 0; round < 16; round++) { // max 16 actions per street
-            var idx = (startIdx + round) % 8;
-            var agent = gameState.agents[idx];
-
-            if (agent.folded || agent.stack <= 0) continue;
-            if (lastRaiser === idx && actionsThisRound > 0) break;
-
-            gameState.activeIdx = idx;
-            renderSeats();
-
-            await sleep(800 + Math.random() * 1200); // thinking time
-
-            var minRaise = currentBet + BB;
-            var decision = getAgentAction(agent, currentBet, minRaise);
-
-            switch (decision.action) {
-                case 'fold':
-                    agent.folded = true;
-                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type fold">folds</span>');
-                    break;
-                case 'check':
-                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type check">checks</span>');
-                    break;
-                case 'call':
-                    var callAmt = Math.min(currentBet - agent.bet, agent.stack);
-                    agent.stack -= callAmt;
-                    agent.bet += callAmt;
-                    gameState.pot += callAmt;
-                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type call">calls</span> <span class="amount">' + callAmt + '</span>');
-                    break;
-                case 'raise':
-                    var raiseTotal = Math.min(decision.amount, agent.stack + agent.bet);
-                    var raiseAmt = raiseTotal - agent.bet;
-                    agent.stack -= raiseAmt;
-                    gameState.pot += raiseAmt;
-                    agent.bet = raiseTotal;
-                    currentBet = raiseTotal;
-                    lastRaiser = idx;
-                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type raise">raises to</span> <span class="amount">' + raiseTotal + '</span>');
-                    break;
-            }
-
-            actionsThisRound++;
-            updatePotDisplay();
-            renderSeats();
-
-            // Check if only one left
-            activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
-            if (activePlayers.length <= 1) break;
-        }
-
-        // Check if only one left
-        if (activePlayers.length <= 1) break;
-    }
-
-    // Showdown — pick winner
-    var activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
-    var winner = activePlayers[Math.floor(Math.random() * activePlayers.length)];
-    var winnings = gameState.pot;
-
-    winner.stack += winnings;
-    winner.pnl += winnings - BB; // simplified PnL
-    winner.handsWon++;
-
-    // Others lose
-    gameState.agents.forEach(function(a) {
-        if (a.id !== winner.id && !a.folded) {
-            a.pnl -= a.bet;
-        }
-    });
-
-    addFeedWinner('🏆 ' + winner.emoji + ' ' + winner.name + ' wins ' + formatNum(winnings));
-
-    gameState.activeIdx = -1;
-    renderSeats();
-    updatePotDisplay();
-
-    await sleep(3000);
+  if (totalGained > 0) {
+    showWinOverlay(`+${totalGained}`, `Your bet on ${gameState.agents.find(a=>a.id===winnerId)?.name} paid off!`);
+  } else if (totalLost > 0 && totalGained === 0) {
+    showToast(`Lost ${totalLost} on this hand`, 'error');
+  }
 }
 
 function updatePotDisplay() {
-    document.getElementById('potDisplay').textContent = formatNum(gameState.pot);
+  document.getElementById('potDisplay').textContent = gameState.pot.toLocaleString();
+  document.getElementById('potChips').textContent = `POT: ${gameState.pot.toLocaleString()}`;
 }
 
-function sleep(ms) {
-    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+// ============================================================
+// BETTING
+// ============================================================
+function selectPreset(amount, el) {
+  document.getElementById('betAmount').value = amount;
+  document.querySelectorAll('.bet-preset').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
 }
 
-// ── Game Loop ──
-async function gameLoop() {
-    while (true) {
-        await playHand();
+function placeBet() {
+  const agentId = document.getElementById('betAgentSelect').value;
+  const amount = parseInt(document.getElementById('betAmount').value);
+
+  if (!agentId) { showToast('Select an agent to back!', 'error'); return; }
+  if (!amount || amount < 10) { showToast('Minimum bet is 10!', 'error'); return; }
+  if (amount > gameState.userBalance) { showToast('Insufficient balance!', 'error'); return; }
+
+  gameState.userBalance -= amount;
+
+  const agent = gameState.agents.find(a => a.id === agentId);
+  gameState.activeBets.push({
+    agentId,
+    agentName: agent.name,
+    agentEmoji: agent.emoji,
+    amount,
+    hand: gameState.handsPlayed + 1,
+    settled: false,
+    won: null,
+    payout: 0
+  });
+
+  renderActiveBets();
+  showToast(`Backed ${agent.name} with ${amount}!`, 'gold');
+}
+
+function renderActiveBets() {
+  const container = document.getElementById('activeBets');
+  const recent = gameState.activeBets.slice(-8).reverse();
+
+  if (recent.length === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">No active bets yet</div>';
+    return;
+  }
+
+  container.innerHTML = recent.map(bet => `
+    <div class="bet-item ${bet.settled ? (bet.won ? 'won' : 'lost') : ''}">
+      <div>
+        <span class="bet-on">${bet.agentEmoji} ${bet.agentName.split(' ')[0]}</span>
+        <div style="font-size:10px;color:var(--text-muted)">Hand #${bet.hand}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="bet-amount-display">${bet.amount}</div>
+        ${bet.settled
+          ? bet.won
+            ? `<div class="bet-payout">+${bet.payout}</div>`
+            : `<div style="color:var(--accent-red);font-size:11px">Lost</div>`
+          : `<div style="color:var(--text-muted);font-size:10px">Pending</div>`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// SIDEBAR & GRID RENDERERS
+// ============================================================
+function renderAgentsSidebar() {
+  const container = document.getElementById('agentsSidebar');
+  container.innerHTML = gameState.agents.map(agent => `
+    <div class="agent-item style-${agent.style}">
+      <div class="agent-avatar-sm">${agent.emoji}</div>
+      <div class="agent-info">
+        <div class="agent-name-sm">${agent.name}</div>
+        <div class="agent-style">${capitalize(agent.style)}</div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-chips-sm">${formatChips(agent.chips)}</div>
+        <div class="agent-winrate">${agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0}% WR</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderBetSelect() {
+  const sel = document.getElementById('betAgentSelect');
+  sel.innerHTML = '<option value="">Select an Agent to back...</option>' +
+    gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name}</option>`).join('');
+}
+
+function renderAgentsGrid() {
+  const container = document.getElementById('agentsGrid');
+  container.innerHTML = gameState.agents.map(agent => `
+    <div class="agent-card style-${agent.style}">
+      <div class="agent-card-header">
+        <div class="agent-avatar-lg">${agent.emoji}</div>
+        <div>
+          <div class="agent-name-lg">${agent.name}</div>
+          <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
+        </div>
+      </div>
+      <div class="agent-stat-row">
+        <div class="mini-stat">
+          <div class="mini-stat-label">Stack</div>
+          <div class="mini-stat-value">${formatChips(agent.chips)}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Won</div>
+          <div class="mini-stat-value">${agent.handsWon}</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Win Rate</div>
+          <div class="mini-stat-value">${agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0}%</div>
+        </div>
+      </div>
+      <p class="agent-description">${agent.description}</p>
+      <div>
+        ${renderStrategyBar('Aggression', agent.traits.aggression, '#ef4444')}
+        ${renderStrategyBar('Bluffing', agent.traits.bluffing, '#a855f7')}
+        ${renderStrategyBar('Patience', agent.traits.patience, '#3b82f6')}
+        ${renderStrategyBar('Adaptability', agent.traits.adaptability, '#06b6d4')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStrategyBar(label, value, color) {
+  return `
+    <div class="strategy-bar-row">
+      <div class="strategy-bar-label">${label}</div>
+      <div class="strategy-bar-track">
+        <div class="strategy-bar-fill" style="width:${value}%;background:${color}"></div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+function renderLeaderboard() {
+  const sorted = [...gameState.agents].sort((a, b) => b.chips - a.chips);
+  const tbody = document.getElementById('leaderboardBody');
+  tbody.innerHTML = sorted.map((agent, i) => {
+    const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+    return `
+      <tr>
+        <td><span class="rank-badge ${rankClass}">${i + 1}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${agent.emoji}</span>
+            <span style="font-weight:600">${agent.name}</span>
+          </div>
+        </td>
+        <td><span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span></td>
+        <td style="color:var(--accent-gold);font-family:'Rajdhani';font-size:15px;font-weight:700">${agent.chips.toLocaleString()}</td>
+        <td>${agent.handsWon}</td>
+        <td>
+          ${wr}%
+          <span class="wr-bar"><span class="wr-fill" style="width:${wr}%"></span></span>
+        </td>
+        <td style="color:var(--accent-purple)">${agent.biggestPot.toLocaleString()}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  const names = ['arena', 'agents', 'leaderboard'];
+  const idx = names.indexOf(name);
+  if (idx >= 0) tabs[idx].classList.add('active');
+
+  if (name === 'agents') renderAgentsGrid();
+  if (name === 'leaderboard') renderLeaderboard();
+}
+
+function addLog(msg) {
+  const log = document.getElementById('gameLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = msg;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  while (log.children.length > 100) log.removeChild(log.firstChild);
+}
+
+function showToast(message, type) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type || 'info'}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 50);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+}
+
+function showWinOverlay(amount, subtitle) {
+  document.getElementById('winAmount').textContent = amount;
+  document.getElementById('winSubtitle').textContent = subtitle;
+  document.getElementById('winTitle').textContent = 'You Won!';
+  document.getElementById('winOverlay').classList.add('show');
+  // Auto-close after 3s
+  setTimeout(closeWinOverlay, 3000);
+}
+
+function closeWinOverlay() {
+  document.getElementById('winOverlay').classList.remove('show');
+}
+
+function formatChips(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+function capitalize(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initGame();
+
+// Auto-start after brief delay
+setTimeout(() => {
+  showToast('Welcome to PokerAI! Press Start or it auto-starts in 3s...', 'info');
+  setTimeout(() => {
+    if (!gameState.running) {
+      toggleGame();
     }
-}
-
-// ── Init ──
-renderSeats();
-renderAgentsList();
-
-// Start the game after a brief delay
-setTimeout(function() {
-    gameLoop();
-}, 1500);
+  }, 3000);
+}, 500);
 </script>
-
 </body>
 </html>
