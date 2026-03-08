@@ -542,7 +542,7 @@ function renderProjectCard(p) {
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
             actionsHtml += `<a href="https://jup.ag/swap/SOL-${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
             actionsHtml += `<a href="https://bags.fm/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Bags</a>`;
-            actionsHtml += `<a href="https://solscan.io/account/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+            actionsHtml += `<a href="https://solscan.io/token/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
         } else {
             actionsHtml += `<button type="button" class="project-card-action claim-single-btn" data-token-addr="${esc(addr)}" style="display:none">Claim Fees</button>`;
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
@@ -620,7 +620,7 @@ function renderProjectCard(p) {
             </div>
         </div>
         <div class="project-card-meta">
-            ${addr ? `<span><a href="${isSolana ? 'https://solscan.io/account/' : 'https://basescan.org/address/'}${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
+            ${addr ? `<span><a href="${isSolana ? 'https://solscan.io/token/' : 'https://basescan.org/address/'}${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
             ${created ? `<span>${created}</span>` : ''}
         </div>
         ${priceRowHtml}
@@ -2713,7 +2713,7 @@ function renderUserProjectCard(p) {
 
     let actionsHtml = `<button type="button" class="project-card-action" data-edit-user-project="1">Edit</button>`;
     if (p.app_slug) actionsHtml += `<a href="/s/${esc(p.app_slug)}" target="_blank" class="project-card-action">Open App</a>`;
-    if (p.token_address && (p.chain === 'solana' || !p.token_address.startsWith('0x'))) actionsHtml += `<a href="https://solscan.io/account/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+    if (p.token_address && (p.chain === 'solana' || !p.token_address.startsWith('0x'))) actionsHtml += `<a href="https://solscan.io/token/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
     else if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
     if (p.website_url) actionsHtml += `<a href="${esc(p.website_url)}" target="_blank" rel="noopener" class="project-card-action">Website</a>`;
 
