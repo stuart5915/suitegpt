@@ -1648,6 +1648,8 @@ function updateUI() {
         if (successSubtitle) successSubtitle.textContent = isSolana ? 'Your token is live on Solana. Here are the details:' : 'Your token is live on Base. Here are the details:';
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
+        var stakingNote = document.getElementById('stakingSuccessNote');
+        if (stakingNote) stakingNote.style.display = isSolana ? 'none' : '';
         var agentNote = document.getElementById('agentSuccessNote');
         if (agentNote && state.project && state.project.agent_enabled) agentNote.style.display = 'block';
         // Burn/allocation info
