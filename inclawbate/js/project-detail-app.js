@@ -218,7 +218,17 @@
             var embedSection = document.getElementById('pdEmbedSection');
             embedSection.classList.remove('hidden');
             var embedIframe = document.getElementById('pdEmbedIframe');
-            embedIframe.src = '/s/' + p.app_slug;
+            var embedUrl = '/s/' + p.app_slug;
+            // Pass auth to embedded app so it doesn't need its own wallet connect
+            try {
+                var token = localStorage.getItem('inclawbate_token');
+                var prof = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+                if (token && prof && prof.wallet_address) {
+                    var sep = embedUrl.includes('?') ? '&' : '?';
+                    embedUrl += sep + 'wallet=' + encodeURIComponent(prof.wallet_address);
+                }
+            } catch(e) {}
+            embedIframe.src = embedUrl;
 
             var fsBtn = document.getElementById('pdFullscreen');
             if (fsBtn) {
