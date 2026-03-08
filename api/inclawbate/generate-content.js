@@ -18,10 +18,7 @@ const supabase = createClient(
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const FREE_CREDIT_WALLETS = [
-    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
-    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
-    '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
-    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
 ];
 const FREE_HANDLES = ['artstu'];
 
