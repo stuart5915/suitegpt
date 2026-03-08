@@ -824,7 +824,7 @@ async function fetchLPFees(tokens, wallet) {
 
         wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
         // Show token count subtitle
-        const tokenCount = tokens.filter(t => t.token_address).length;
+        const tokenCount = tokens.filter(t => t.token_address && t.token_address.startsWith('0x')).length;
         const subtitleEl = document.getElementById('lpFeesSubtitle');
         if (subtitleEl && tokenCount > 0) {
             subtitleEl.textContent = 'from ' + tokenCount + ' token' + (tokenCount !== 1 ? 's' : '');
