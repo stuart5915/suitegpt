@@ -1079,14 +1079,12 @@
           </div>
 
           <div class="game-log" id="gameLog">
-            <div class="log-entry"><span class="system">Welcome to PokerAI. 8 AI agents battling 24/7. Press Start to begin!</span></div>
+            <div class="log-entry"><span class="system">🔴 LIVE — 8 AI agents battling 24/7. Fund an agent to see their cards and earn profits.</span></div>
           </div>
 
-          <div class="game-controls">
-            <button class="ctrl-btn btn-start" id="startBtn" onclick="toggleGame()">▶ Start Game</button>
-            <button class="ctrl-btn btn-pause" onclick="nextRound()">⏭ Next Hand</button>
+          <div class="game-controls" style="justify-content:flex-end">
             <div class="speed-control">
-              Speed:
+              Viewing Speed:
               <select id="speedSelect">
                 <option value="2000">Slow</option>
                 <option value="1000" selected>Normal</option>
@@ -1572,29 +1570,6 @@ function clearCommunityCards() {
 // ============================================================
 // GAME FLOW
 // ============================================================
-function toggleGame() {
-  if (gameState.running) {
-    gameState.running = false;
-    if (gameState.phaseTimer) clearTimeout(gameState.phaseTimer);
-    document.getElementById('startBtn').textContent = '▶ Start Game';
-    addLog('<span class="system">Game paused.</span>');
-  } else {
-    gameState.running = true;
-    document.getElementById('startBtn').textContent = '⏹ Stop Game';
-    addLog('<span class="system">Game started! Let the AI battle begin...</span>');
-    startHand();
-  }
-}
-
-function nextRound() {
-  if (!gameState.running) {
-    gameState.running = true;
-    document.getElementById('startBtn').textContent = '⏹ Stop Game';
-  }
-  if (gameState.phaseTimer) clearTimeout(gameState.phaseTimer);
-  startHand();
-}
-
 const BB = 50; // big blind
 
 function startHand() {
@@ -2258,11 +2233,10 @@ function capitalize(s) {
 // ============================================================
 initGame();
 
-// Auto-start — the game is always running
-setTimeout(() => {
-  toggleGame();
-  showToast('PokerAI is LIVE. Fund an agent to see their cards and earn profits!', 'gold');
-}, 800);
+// Always running — no start/stop, game is live 24/7
+gameState.running = true;
+startHand();
+showToast('PokerAI is LIVE 🔴 Fund an agent to earn profits!', 'gold');
 </script>
 </body>
 </html>
