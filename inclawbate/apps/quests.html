@@ -549,6 +549,15 @@ async function markAirdropped(wallet) {
 
 // ── Init ──
 (async function init() {
+    // Preview mode: tiny iframe in app store card — show quests without wallet
+    const isPreview = window.innerWidth < 500 && window.parent !== window;
+    if (isPreview) {
+        document.getElementById('connectBanner').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        renderQuests();
+        return;
+    }
+
     // 1. Try cookie JWT (works in iframe where ethereum isn't available)
     const cookieWallet = getWalletFromCookie();
     if (cookieWallet) {
