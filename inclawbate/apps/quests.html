@@ -181,6 +181,19 @@ const BALANCE_OF_SIG = '0x70a08231';
 let userWallet = null;
 let questStatus = {};
 
+// Try to get wallet from inclawbate_token cookie (JWT)
+function getWalletFromCookie() {
+    try {
+        const match = document.cookie.match(/inclawbate_token=([^;]+)/);
+        if (!match) return null;
+        const token = decodeURIComponent(match[1]);
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+        return payload.wallet_address || null;
+    } catch { return null; }
+}
+
 const QUESTS = [
     {
         id: 'follow_artstu', category: 'social', icon: '𝕏',
@@ -269,18 +282,25 @@ const CATEGORIES = [
 
 // ── Wallet ──
 async function connectWallet() {
-    if (!window.ethereum) { alert('Please install a Web3 wallet (e.g. MetaMask)'); return; }
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        userWallet = accounts[0];
-        document.getElementById('connectBanner').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
-        if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
-            document.getElementById('adminTab').classList.remove('hidden');
-        }
-        await loadStatus();
-        renderQuests();
-    } catch (e) { console.error(e); }
+    const cookieWallet = getWalletFromCookie();
+    if (cookieWallet) {
+        userWallet = cookieWallet;
+    } else if (window.ethereum) {
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userWallet = accounts[0];
+        } catch (e) { console.error(e); return; }
+    } else {
+        alert('Please log in on inclawbate.com first, or install a Web3 wallet.');
+        return;
+    }
+    document.getElementById('connectBanner').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+    if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
+        document.getElementById('adminTab').classList.remove('hidden');
+    }
+    await loadStatus();
+    renderQuests();
 }
 
 // ── Wait for SDK (injected after this script by serve-site) ──
@@ -529,21 +549,27 @@ async function markAirdropped(wallet) {
 
 // ── Init ──
 (async function init() {
-    // Check if wallet already connected
-    if (window.ethereum) {
+    // 1. Try cookie JWT (works in iframe where ethereum isn't available)
+    const cookieWallet = getWalletFromCookie();
+    if (cookieWallet) {
+        userWallet = cookieWallet;
+    }
+    // 2. Fall back to window.ethereum
+    if (!userWallet && window.ethereum) {
         try {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts.length > 0) {
-                userWallet = accounts[0];
-                document.getElementById('connectBanner').classList.add('hidden');
-                document.getElementById('mainContent').classList.remove('hidden');
-                if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
-                    document.getElementById('adminTab').classList.remove('hidden');
-                }
-                await loadStatus();
-                renderQuests();
-            }
+            if (accounts.length > 0) userWallet = accounts[0];
         } catch {}
+    }
+
+    if (userWallet) {
+        document.getElementById('connectBanner').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        if (userWallet.toLowerCase() === CREATOR_WALLET.toLowerCase()) {
+            document.getElementById('adminTab').classList.remove('hidden');
+        }
+        await loadStatus();
+        renderQuests();
     }
 })();
 </script>
