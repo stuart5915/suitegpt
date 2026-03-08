@@ -33,7 +33,7 @@ const FREE_HANDLES = ['artstu'];
 const MODEL_TIERS = {
     gemini:   { provider: 'gemini',    model: 'gemini-2.5-flash',          credits: 0,   label: 'Gemini Flash', maxTokens: 65536 },
     llama:    { provider: 'groq',      model: 'llama-3.3-70b-versatile',   credits: 0,   label: 'Llama 70B',    maxTokens: 8192  },
-    deepseek: { provider: 'deepseek',  model: 'deepseek-chat',             credits: 0,   label: 'DeepSeek V3',  maxTokens: 16384 },
+    kimi:     { provider: 'moonshot',   model: 'kimi-k2',                   credits: 0,   label: 'Kimi K2',      maxTokens: 16384 },
     fast:     { provider: 'anthropic', model: 'claude-haiku-4-5-20251001', credits: 0,   label: 'Haiku',        maxTokens: 16384 },
     standard: { provider: 'anthropic', model: 'claude-sonnet-4-6',         credits: 0,   label: 'Sonnet',       maxTokens: 64000 },
     pro:      { provider: 'anthropic', model: 'claude-opus-4-6',           credits: 100, label: 'Opus',         maxTokens: 64000 }
@@ -479,8 +479,8 @@ export default async function handler(req, res) {
     }
 
     // Validate provider API keys
-    const { ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, DEEPSEEK_API_KEY } = process.env;
-    const providerKeys = { anthropic: ANTHROPIC_API_KEY, gemini: GEMINI_API_KEY, groq: GROQ_API_KEY, deepseek: DEEPSEEK_API_KEY };
+    const { ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, MOONSHOT_API_KEY } = process.env;
+    const providerKeys = { anthropic: ANTHROPIC_API_KEY, gemini: GEMINI_API_KEY, groq: GROQ_API_KEY, moonshot: MOONSHOT_API_KEY };
     if (!providerKeys[tier.provider]) {
         return res.status(500).json({ error: tier.label + ' is not configured. Try a different model.' });
     }
@@ -655,12 +655,12 @@ export default async function handler(req, res) {
                     })
                 }
             );
-        } else if (provider === 'groq' || provider === 'deepseek') {
-            // OpenAI-compatible format (Groq + DeepSeek)
+        } else if (provider === 'groq' || provider === 'moonshot') {
+            // OpenAI-compatible format (Groq + Moonshot/Kimi)
             const apiUrl = provider === 'groq'
                 ? 'https://api.groq.com/openai/v1/chat/completions'
-                : 'https://api.deepseek.com/chat/completions';
-            const apiKey = provider === 'groq' ? GROQ_API_KEY : DEEPSEEK_API_KEY;
+                : 'https://api.moonshot.ai/v1/chat/completions';
+            const apiKey = provider === 'groq' ? GROQ_API_KEY : MOONSHOT_API_KEY;
             const openaiMessages = [
                 { role: 'system', content: systemPrompt },
                 ...contextMessages.map(m => ({
