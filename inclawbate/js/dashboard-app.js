@@ -529,14 +529,14 @@ function renderProjectCard(p) {
     const feeRowHtml = addr ? `<div class="project-card-fee-estimate" id="fee-${esc(addr)}" data-split-bps="${splitBps}" style="display:none"></div>` : '';
 
     // Chart embed (hidden by default)
-    const chartChain = p.chain === 'solana' ? 'solana' : 'base';
+    const chartChain = (p.chain === 'solana' || (addr && !addr.startsWith('0x'))) ? 'solana' : 'base';
     const chartHtml = addr ? `<div class="project-card-chart" id="chart-${esc(addr)}" style="display:none">
         <iframe src="https://dexscreener.com/${chartChain}/${esc(addr)}?embed=1&theme=dark&info=0&trades=0" loading="lazy" allowfullscreen></iframe>
     </div>` : '';
 
     // Build action buttons
     let actionsHtml = '';
-    const isSolana = p.chain === 'solana';
+    const isSolana = p.chain === 'solana' || (addr && !addr.startsWith('0x'));
     if (addr) {
         if (isSolana) {
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
@@ -2713,7 +2713,7 @@ function renderUserProjectCard(p) {
 
     let actionsHtml = `<button type="button" class="project-card-action" data-edit-user-project="1">Edit</button>`;
     if (p.app_slug) actionsHtml += `<a href="/s/${esc(p.app_slug)}" target="_blank" class="project-card-action">Open App</a>`;
-    if (p.token_address && p.chain === 'solana') actionsHtml += `<a href="https://solscan.io/account/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
+    if (p.token_address && (p.chain === 'solana' || !p.token_address.startsWith('0x'))) actionsHtml += `<a href="https://solscan.io/account/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
     else if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
     if (p.website_url) actionsHtml += `<a href="${esc(p.website_url)}" target="_blank" rel="noopener" class="project-card-action">Website</a>`;
 
