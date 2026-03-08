@@ -1308,8 +1308,10 @@ async function rpcCall(to, data) {
                 signal: ctrl.signal
             });
             clearTimeout(timer);
+            if (!res.ok) continue; // 429/5xx — try next RPC
             const json = await res.json();
-            return safeHex(json && json.result);
+            if (!json || !json.result || json.error) continue; // RPC error — try next
+            return safeHex(json.result);
         } catch (e) { continue; }
     }
     return '0x0';
