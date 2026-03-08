@@ -271,11 +271,24 @@ function injectErrorHandler(html) {
 }
 
 function extractHtml(text) {
-    // Try closed code block first, then fallback for truncated responses
+    // Try ```html block first (Claude standard)
     const match = text.match(/```html\s*([\s\S]*?)```/);
     if (match) return match[1].trim();
+    // Try generic ``` block that contains HTML
+    const generic = text.match(/```\s*(<!DOCTYPE[\s\S]*?)```/i);
+    if (generic) return generic[1].trim();
+    const generic2 = text.match(/```\s*(<html[\s\S]*?)```/i);
+    if (generic2) return generic2[1].trim();
+    // Truncated ```html (no closing ```)
     const truncated = text.match(/```html\s*([\s\S]+)/);
-    return truncated ? truncated[1].trim() : null;
+    if (truncated) return truncated[1].trim();
+    // Truncated generic ``` with HTML
+    const truncGen = text.match(/```\s*(<!DOCTYPE[\s\S]+)/i);
+    if (truncGen) return truncGen[1].trim();
+    // Raw HTML without code fences (some models do this)
+    const rawHtml = text.match(/(<!DOCTYPE\s+html[\s\S]*<\/html>)/i);
+    if (rawHtml) return rawHtml[1].trim();
+    return null;
 }
 
 function hasEditBlocks(text) {

@@ -2330,9 +2330,17 @@
     function extractHtmlClient(text) {
         var match = text.match(/```html\s*([\s\S]*?)```/);
         if (match) return match[1].trim();
-        // Fallback for truncated responses (no closing ```)
+        var generic = text.match(/```\s*(<!DOCTYPE[\s\S]*?)```/i);
+        if (generic) return generic[1].trim();
+        var generic2 = text.match(/```\s*(<html[\s\S]*?)```/i);
+        if (generic2) return generic2[1].trim();
         var truncated = text.match(/```html\s*([\s\S]+)/);
-        return truncated ? truncated[1].trim() : null;
+        if (truncated) return truncated[1].trim();
+        var truncGen = text.match(/```\s*(<!DOCTYPE[\s\S]+)/i);
+        if (truncGen) return truncGen[1].trim();
+        var rawHtml = text.match(/(<!DOCTYPE\s+html[\s\S]*<\/html>)/i);
+        if (rawHtml) return rawHtml[1].trim();
+        return null;
     }
 
     // ── Escape HTML ──
