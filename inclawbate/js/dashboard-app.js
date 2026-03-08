@@ -499,7 +499,11 @@ async function loadProjects() {
             // Fetch Solana fees async (non-blocking)
             const solTokens = tokens.filter(t => t.chain === 'solana' || (t.token_address && !t.token_address.startsWith('0x')));
             if (solTokens.length > 0) fetchSolanaFees(solTokens);
-        } else {
+        }
+        // Auto-discover Clanker tokens not yet registered (non-blocking)
+        const knownAddrs = all.filter(p => p.token_address).map(p => p.token_address);
+        discoverClankerTokens(wallet, knownAddrs);
+        if (tokens.length === 0) {
             tokenContainer.innerHTML = '<div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
         }
     } catch (e) {
@@ -3087,128 +3091,60 @@ function openCreateProjectModal(existingProject) {
     });
 }
 
-// ── Import Existing Token ──
-function openImportTokenModal() {
-    const auth = getStoredAuth();
-    if (!auth) { alert('Connect your wallet first.'); return; }
+// ── Auto-discover Clanker tokens for wallet ──
+// Finds tokens where this wallet received a mint (from 0x0), meaning they're the creator.
+// Checks Blockscout token transfer history, auto-registers any not already in the DB.
+let _discoveryRan = false;
+async function discoverClankerTokens(wallet, knownAddrs) {
+    if (!wallet || _discoveryRan) return;
+    _discoveryRan = true;
+    try {
+        const knownSet = new Set(knownAddrs.map(a => a.toLowerCase()));
+        const mintTokens = {}; // addr → { name, symbol }
 
-    document.querySelector('.edit-details-overlay')?.remove();
+        // Get token transfer history — look for mint events (from = 0x0) to this wallet
+        const txResp = await fetch('https://base.blockscout.com/api/v2/addresses/' + wallet + '/token-transfers?type=ERC-20&filter=to&limit=200');
+        if (!txResp.ok) return;
+        const txData = await txResp.json();
+        for (const item of (txData.items || [])) {
+            const from = (item.from && item.from.hash || '').toLowerCase();
+            const t = item.token || {};
+            const addr = (t.address_hash || t.address || '').toLowerCase();
+            if (from === '0x0000000000000000000000000000000000000000' && addr && !knownSet.has(addr)) {
+                mintTokens[addr] = { name: t.name || 'Unknown', symbol: t.symbol || '???' };
+            }
+        }
 
-    const overlay = document.createElement('div');
-    overlay.className = 'edit-details-overlay';
-    overlay.innerHTML = `
-        <div class="edit-details-modal">
-            <div class="edit-details-header">Add Existing Token</div>
-            <p style="color:var(--text-secondary);font-size:0.8rem;margin:0 0 12px">Import a token you launched outside the dashboard (e.g. via Clanker).</p>
-            <label class="edit-details-label">Contract Address
-                <input type="text" class="edit-details-input" id="importAddr" placeholder="0x... or Solana mint address">
-            </label>
-            <div id="importPreview" style="display:none;padding:10px;border-radius:8px;background:var(--bg-card);margin:8px 0">
-                <div id="importPreviewInfo" style="font-size:0.8rem;color:var(--text-secondary)"></div>
-            </div>
-            <div id="importError" style="display:none;color:#ef4444;font-size:0.8rem;margin:4px 0"></div>
-            <div class="edit-details-actions">
-                <button type="button" class="edit-details-cancel">Cancel</button>
-                <button type="button" class="edit-details-save" id="importLookupBtn">Look Up</button>
-            </div>
-        </div>
-    `;
+        const toRegister = Object.entries(mintTokens);
+        if (!toRegister.length) return;
 
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('.edit-details-cancel').addEventListener('click', () => overlay.remove());
-
-    let _foundToken = null;
-
-    overlay.querySelector('#importLookupBtn').addEventListener('click', async () => {
-        const addr = document.getElementById('importAddr').value.trim();
-        if (!addr) return;
-
-        const btn = overlay.querySelector('#importLookupBtn');
-        const errEl = document.getElementById('importError');
-        const previewEl = document.getElementById('importPreview');
-        errEl.style.display = 'none';
-
-        // If we already looked up, this click means "Import"
-        if (_foundToken) {
-            btn.disabled = true;
-            btn.textContent = 'Importing...';
+        // Auto-register discovered tokens
+        let registered = 0;
+        for (const [addr, info] of toRegister) {
             try {
                 const resp = await fetch('/api/inclawbate/inclawbator', {
                     method: 'POST',
                     headers: authHeaders(),
                     body: JSON.stringify({
                         action: 'register',
-                        token_address: _foundToken.address,
-                        token_name: _foundToken.name,
-                        token_symbol: _foundToken.symbol,
-                        creator_wallet: auth.profile.wallet_address,
-                        logo_url: _foundToken.logo || '',
-                        chain: _foundToken.chain,
+                        token_address: addr,
+                        token_name: info.name,
+                        token_symbol: info.symbol,
+                        creator_wallet: wallet,
+                        chain: 'base',
                         tier: 'permissionless'
                     })
                 });
                 const data = await resp.json();
-                if (data.error) throw new Error(data.error);
-                overlay.remove();
-                loadProjects(); // refresh token list
-            } catch (e) {
-                errEl.textContent = e.message || 'Import failed';
-                errEl.style.display = '';
-                btn.textContent = 'Import';
-                btn.disabled = false;
-            }
-            return;
+                if (data.project) registered++;
+            } catch (e) { /* skip duplicates / errors */ }
         }
 
-        // Look up token on DexScreener
-        btn.disabled = true;
-        btn.textContent = 'Looking up...';
-        try {
-            const isBase = addr.startsWith('0x');
-            const chain = isBase ? 'base' : 'solana';
-            const dsResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + encodeURIComponent(addr));
-            const dsData = await dsResp.json();
-            const pairs = (dsData.pairs || []).filter(p => p.chainId === chain);
-            if (!pairs.length) throw new Error('Token not found on ' + (isBase ? 'Base' : 'Solana'));
-
-            const pair = pairs[0];
-            const tokenInfo = pair.baseToken.address.toLowerCase() === addr.toLowerCase() ? pair.baseToken : pair.quoteToken;
-
-            _foundToken = {
-                address: addr,
-                name: tokenInfo.name || 'Unknown',
-                symbol: tokenInfo.symbol || '???',
-                chain: chain,
-                logo: ''
-            };
-
-            // Try to get logo from DexScreener info endpoint
-            try {
-                const infoResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr);
-                const infoData = await infoResp.json();
-                if (infoData.pairs && infoData.pairs[0] && infoData.pairs[0].info && infoData.pairs[0].info.imageUrl) {
-                    _foundToken.logo = infoData.pairs[0].info.imageUrl;
-                }
-            } catch (e) {}
-
-            document.getElementById('importPreviewInfo').innerHTML =
-                `<strong>${esc(_foundToken.name)}</strong> ($${esc(_foundToken.symbol)})<br>` +
-                `Chain: ${chain === 'base' ? 'Base' : 'Solana'}<br>` +
-                `<span style="font-size:0.7rem;opacity:0.6">${addr.slice(0, 10)}...${addr.slice(-6)}</span>`;
-            previewEl.style.display = '';
-            btn.textContent = 'Import';
-            btn.disabled = false;
-        } catch (e) {
-            errEl.textContent = e.message || 'Lookup failed';
-            errEl.style.display = '';
-            btn.textContent = 'Look Up';
-            btn.disabled = false;
-            _foundToken = null;
-        }
-    });
-
-    document.body.appendChild(overlay);
-    document.getElementById('importAddr').focus();
+        // Refresh project list if we registered new tokens
+        if (registered > 0) loadProjects();
+    } catch (e) {
+        // silent — discovery is best-effort
+    }
 }
 
 // ── Init ──
@@ -3286,8 +3222,6 @@ function init() {
     document.getElementById('mysClaimAll')?.addEventListener('click', () => claimAllPositions(false));
     document.getElementById('mysCompoundAll')?.addEventListener('click', () => claimAllPositions(true));
 
-    // Wire import token button
-    document.getElementById('importTokenBtn')?.addEventListener('click', openImportTokenModal);
 }
 
 // Boot
