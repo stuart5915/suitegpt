@@ -496,6 +496,9 @@ async function loadProjects() {
             fetchTokenPrices(tokens);
             // Fetch LP fees async (non-blocking)
             fetchLPFees(tokens, wallet);
+            // Fetch Solana fees async (non-blocking)
+            const solTokens = tokens.filter(t => t.chain === 'solana' || (t.token_address && !t.token_address.startsWith('0x')));
+            if (solTokens.length > 0) fetchSolanaFees(solTokens);
         } else {
             tokenContainer.innerHTML = '<div class="overview-empty"><p>No tokens yet. <a href="/inclawbator#launch">Launch your first token</a></p></div>';
         }
@@ -539,6 +542,7 @@ function renderProjectCard(p) {
     const isSolana = p.chain === 'solana' || (addr && !addr.startsWith('0x'));
     if (addr) {
         if (isSolana) {
+            actionsHtml += `<button type="button" class="project-card-action claim-sol-btn" data-token-mint="${esc(addr)}" data-sol-wallet="${esc(p.solana_wallet || '')}" style="display:none">Claim Fees</button>`;
             actionsHtml += `<button type="button" class="project-card-action chart-toggle" data-chart-addr="${esc(addr)}">Chart</button>`;
             actionsHtml += `<a href="https://bags.fm/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action buy">Buy</a>`;
             actionsHtml += `<a href="https://solscan.io/token/${esc(addr)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
@@ -675,12 +679,21 @@ function renderProjectCard(p) {
         claimAllocation(btn.dataset.token, btn.dataset.project, parseInt(btn.dataset.alloc), btn);
     });
 
-    // Wire per-card claim fees button
+    // Wire per-card claim fees button (Base/ETH)
     card.querySelector('.claim-single-btn')?.addEventListener('click', (e) => {
         const auth = getStoredAuth();
         if (auth && auth.profile.wallet_address) {
             claimLPFees(auth.profile.wallet_address, e.currentTarget);
         }
+    });
+
+    // Wire per-card Solana claim fees button
+    card.querySelector('.claim-sol-btn')?.addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        const solWallet = btn.dataset.solWallet || (window._phantomSolana && window._phantomSolana.publicKey ? window._phantomSolana.publicKey.toString() : '');
+        const tokenMint = btn.dataset.tokenMint;
+        if (solWallet && tokenMint) claimSolanaFees(solWallet, tokenMint, btn);
+        else alert('No Solana wallet connected');
     });
 
     return card;
@@ -871,6 +884,153 @@ async function claimLPFees(wallet, btn) {
         btn.textContent = 'Claim';
         alert(e.message || 'Claim failed');
     }
+}
+
+// ── Solana Fee Claiming (via Bags API) ──
+let _solClaimablePositions = []; // cached positions from fetchSolanaFees
+
+async function fetchSolanaFees(solTokens) {
+    // Determine Solana wallet: Phantom connected or stored in project data
+    const solWallet = (window._phantomSolana && window._phantomSolana.publicKey)
+        ? window._phantomSolana.publicKey.toString()
+        : (solTokens.find(t => t.solana_wallet) || {}).solana_wallet;
+    if (!solWallet) return;
+
+    try {
+        const token = localStorage.getItem('inclawbate_token');
+        const resp = await fetch('/api/inclawbate/inclawbator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ action: 'bags-claimable-fees', solana_wallet: solWallet })
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) return;
+
+        // data may be an array or { positions: [...] }
+        const positions = Array.isArray(data) ? data : (data.positions || data.data || []);
+        if (!positions.length) return;
+
+        // Build set of our token mints for filtering
+        const ourMints = new Set(solTokens.map(t => t.token_address).filter(Boolean));
+
+        // Filter to only our tokens, sum claimable SOL
+        const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseFloat(p.claimableDisplayAmount || 0) > 0);
+        if (!claimable.length) return;
+
+        _solClaimablePositions = claimable;
+        const totalSol = claimable.reduce((sum, p) => sum + parseFloat(p.claimableDisplayAmount || 0), 0);
+
+        // Show banner
+        const banner = document.getElementById('solFeesBanner');
+        const amountEl = document.getElementById('solFeesAmount');
+        const subtitleEl = document.getElementById('solFeesSubtitle');
+        const claimBtn = document.getElementById('solFeesClaimBtn');
+        if (!banner) return;
+
+        amountEl.textContent = totalSol.toFixed(6) + ' SOL';
+        if (claimable.length > 0) {
+            subtitleEl.textContent = 'from ' + claimable.length + ' token' + (claimable.length !== 1 ? 's' : '');
+            subtitleEl.style.display = '';
+        }
+        banner.style.display = '';
+
+        // Show per-card claim buttons for tokens with claimable fees
+        const claimableMints = new Set(claimable.map(p => p.baseMint));
+        document.querySelectorAll('.claim-sol-btn').forEach(btn => {
+            if (claimableMints.has(btn.dataset.tokenMint)) {
+                if (!btn.dataset.solWallet) btn.dataset.solWallet = solWallet;
+                btn.style.display = '';
+            }
+        });
+
+        // Wire banner "Claim All" button
+        const newBtn = claimBtn.cloneNode(true);
+        claimBtn.parentNode.replaceChild(newBtn, claimBtn);
+        newBtn.addEventListener('click', async () => {
+            newBtn.disabled = true;
+            newBtn.textContent = 'Claiming...';
+            try {
+                for (const pos of claimable) {
+                    await claimSolanaFees(solWallet, pos.baseMint, null);
+                }
+                newBtn.textContent = 'Claimed!';
+                setTimeout(() => {
+                    const st = solTokens.filter(t => t.chain === 'solana' || (t.token_address && !t.token_address.startsWith('0x')));
+                    if (st.length) fetchSolanaFees(st);
+                }, 3000);
+            } catch (e) {
+                newBtn.disabled = false;
+                newBtn.textContent = 'Claim All';
+                alert(e.message || 'Claim failed');
+            }
+        });
+    } catch (e) {
+        // silent
+    }
+}
+
+async function claimSolanaFees(solWallet, tokenMint, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+
+    const token = localStorage.getItem('inclawbate_token');
+    const resp = await fetch('/api/inclawbate/inclawbator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ action: 'bags-claim-tx', solana_wallet: solWallet, token_mint: tokenMint })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || 'Failed to get claim transactions');
+
+    // data may be an array of txs or { transactions: [...] }
+    const txs = Array.isArray(data) ? data : (data.transactions || data.data || [data]);
+
+    for (const tx of txs) {
+        const txBytes = decodeSolTxData(tx);
+        await window.signAndSendSolanaTransaction(txBytes);
+    }
+
+    if (btn) { btn.textContent = 'Claimed!'; }
+}
+
+// Decode Solana transaction data (base58/base64/buffer) — mirrors decodeTxData from inclawbator-app.js
+function decodeSolTxData(data) {
+    if (!data) throw new Error('No transaction data');
+    if (data instanceof Uint8Array) return data;
+    if (Array.isArray(data)) return new Uint8Array(data);
+    if (typeof data === 'object' && data !== null) {
+        if (typeof data.transaction === 'string') return decodeSolTxData(data.transaction);
+        if (typeof data.serializedTransaction === 'string') return decodeSolTxData(data.serializedTransaction);
+        if (data.data && Array.isArray(data.data)) return new Uint8Array(data.data);
+        if (data.type === 'Buffer' && data.data) return new Uint8Array(data.data);
+        const keys = Object.keys(data);
+        if (keys.length > 0 && !isNaN(keys[0])) {
+            const arr = new Uint8Array(keys.length);
+            for (let i = 0; i < keys.length; i++) arr[i] = data[keys[i]];
+            return arr;
+        }
+        throw new Error('Unknown tx object format');
+    }
+    if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
+    // Base64 if contains +, /, or =
+    if (/[+\/=]/.test(data)) {
+        try { return Uint8Array.from(atob(data), c => c.charCodeAt(0)); } catch(e) {}
+    }
+    // Base58 decode
+    const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let result = [0];
+    for (let i = 0; i < data.length; i++) {
+        const idx = BASE58.indexOf(data[i]);
+        if (idx < 0) throw new Error('Invalid base58 character: ' + data[i]);
+        let carry = idx;
+        for (let j = 0; j < result.length; j++) {
+            carry += result[j] * 58;
+            result[j] = carry & 0xff;
+            carry >>= 8;
+        }
+        while (carry > 0) { result.push(carry & 0xff); carry >>= 8; }
+    }
+    for (let i = 0; i < data.length && data[i] === '1'; i++) result.push(0);
+    return new Uint8Array(result.reverse());
 }
 
 // ── Staking Pools ──

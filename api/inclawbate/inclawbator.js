@@ -999,6 +999,50 @@ export default async function handler(req, res) {
             }
         }
 
+        // ── Get claimable fee positions from Bags ──
+        if (action === 'bags-claimable-fees') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+            if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
+
+            const { solana_wallet } = req.body;
+            if (!solana_wallet) return res.status(400).json({ error: 'solana_wallet required' });
+
+            try {
+                const resp = await fetch(BAGS_API + '/token-launch/claimable-positions?wallet=' + encodeURIComponent(solana_wallet), {
+                    headers: { 'x-api-key': BAGS_KEY }
+                });
+                const data = await resp.json();
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
+                return res.status(200).json(data);
+            } catch (e) {
+                return res.status(500).json({ error: 'Bags claimable fees failed: ' + e.message });
+            }
+        }
+
+        // ── Get claim transaction from Bags ──
+        if (action === 'bags-claim-tx') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+            if (!BAGS_KEY) return res.status(500).json({ error: 'Bags API not configured' });
+
+            const { solana_wallet, token_mint } = req.body;
+            if (!solana_wallet || !token_mint) return res.status(400).json({ error: 'solana_wallet and token_mint required' });
+
+            try {
+                const resp = await fetch(BAGS_API + '/token-launch/get-claim-transactions-v3', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': BAGS_KEY },
+                    body: JSON.stringify({ feeClaimer: solana_wallet, tokenMint: token_mint })
+                });
+                const data = await resp.json();
+                if (!resp.ok) return res.status(resp.status).json({ error: data.message || data.error || JSON.stringify(data) });
+                return res.status(200).json(data);
+            } catch (e) {
+                return res.status(500).json({ error: 'Bags claim tx failed: ' + e.message });
+            }
+        }
+
         // ── Create launch transaction on Bags ──
         if (action === 'bags-create-launch-tx') {
             const user = authenticateRequest(req);
