@@ -583,7 +583,7 @@
         appendMessage('user', message);
 
         // Optimistic credit deduction — backend charges upfront too (skip for admins)
-        var tierCost = { gemini: 0, llama: 0, kimi: 0, fast: 5, standard: 25, pro: 100 }[state.selectedModel] || 0;
+        var tierCost = { gemini: 0, llama: 0, kimi: 0, fast: 10, standard: 50, pro: 100 }[state.selectedModel] || 0;
         if (tierCost > 0 && !isAdmin() && state.credits !== null) {
             state.credits = Math.max(0, state.credits - tierCost);
             updateCredits();
@@ -1410,8 +1410,8 @@
         gemini: { label: 'Gemini Flash', free: true, cost: 0 },
         llama: { label: 'Llama 70B', free: true, cost: 0 },
         kimi: { label: 'Kimi K2', free: true, cost: 0 },
-        fast: { label: 'Haiku', free: false, cost: 5 },
-        standard: { label: 'Sonnet', free: false, cost: 25 },
+        fast: { label: 'Haiku', free: false, cost: 10 },
+        standard: { label: 'Sonnet', free: false, cost: 50 },
         pro: { label: 'Opus', free: false, cost: 100 }
     };
 

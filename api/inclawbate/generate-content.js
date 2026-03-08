@@ -1,13 +1,31 @@
 // Generate AI tweet drafts for the content calendar
 // POST /api/inclawbate/generate-content
+// Deducts 25 credits per generation (Sonnet)
+
+import { createClient } from '@supabase/supabase-js';
+import { authenticateRequest } from './x-callback.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
     'https://www.inclawbate.com'
 ];
 
+const supabase = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const SUPER_ADMIN = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+
+const FREE_CREDIT_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd',
+    '0x612abfe54269515f0cc63b4a12fee32d48889ff2',
+    '0x1f1beee127bcb87a9d639138746e4c5a696278e5',
+    '0xc2599f1009669f4cda7ac2493de06d450fc79ef9'
+];
+const FREE_HANDLES = ['artstu'];
+
+const CREDIT_COST = 50; // Sonnet-tier
 
 const SYSTEM_PROMPTS = {
     artstu: `You are ghostwriting tweets for @artstu — a builder in AI + crypto, founder of inclawbate, based in Canada.
@@ -41,10 +59,47 @@ export default async function handler(req, res) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // Auth — JWT or API key
+    let profileId = null;
+    const user = authenticateRequest(req);
+    if (user) {
+        profileId = user.sub;
+    } else {
+        const apiKey = req.headers['x-api-key'];
+        if (apiKey) {
+            const { data } = await supabase
+                .from('human_profiles')
+                .select('id')
+                .eq('api_key', apiKey)
+                .single();
+            if (data) profileId = data.id;
+        }
+    }
+
+    if (!profileId) {
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    // Credit check
+    const { data: profile } = await supabase
+        .from('human_profiles')
+        .select('id, credits, wallet_address, x_handle')
+        .eq('id', profileId)
+        .single();
+
+    const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
+        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
+
+    if (!isAdmin) {
+        if ((profile?.credits || 0) < CREDIT_COST) {
+            return res.status(402).json({ error: 'Insufficient credits.', credits: profile?.credits || 0 });
+        }
+    }
 
     const { account, pillar, context } = req.body || {};
 
@@ -88,7 +143,17 @@ Write a tweet:`;
         }
 
         const draft = data.content?.[0]?.text || '';
-        return res.status(200).json({ draft: draft.trim() });
+
+        // Deduct credits
+        let creditsRemaining = profile?.credits || 0;
+        if (!isAdmin) {
+            creditsRemaining = creditsRemaining - CREDIT_COST;
+            await supabase.from('human_profiles')
+                .update({ credits: creditsRemaining })
+                .eq('id', profile.id);
+        }
+
+        return res.status(200).json({ draft: draft.trim(), credits: creditsRemaining });
 
     } catch (err) {
         console.error('generate-content error:', err);

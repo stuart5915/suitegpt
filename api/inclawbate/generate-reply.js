@@ -67,7 +67,12 @@ export default async function handler(req, res) {
     const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
         || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
 
-    // Credits no longer gated — free for all users
+    const CREDIT_COST = 50; // Sonnet-tier
+    if (!isAdmin) {
+        if ((profile?.credits || 0) < CREDIT_COST) {
+            return res.status(402).json({ error: 'Insufficient credits.', credits: profile?.credits || 0 });
+        }
+    }
 
     const { ANTHROPIC_API_KEY } = process.env;
     if (!ANTHROPIC_API_KEY) {
@@ -140,8 +145,14 @@ Write a reply:`;
 
         const reply = data.content?.[0]?.text?.trim() || '';
 
-        // Credits no longer deducted — free for all users
+        // Deduct credits
         let creditsRemaining = profile?.credits || 0;
+        if (!isAdmin) {
+            creditsRemaining = creditsRemaining - CREDIT_COST;
+            await supabase.from('human_profiles')
+                .update({ credits: creditsRemaining })
+                .eq('id', profileId);
+        }
 
         // Increment lifetime reply counter (for leaderboard)
         await supabase.rpc('increment_inclawbator_replies', { target_profile_id: profileId });
