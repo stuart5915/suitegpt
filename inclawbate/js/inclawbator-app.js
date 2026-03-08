@@ -2453,7 +2453,7 @@ async function init() {
 
     // Deep-link: ?tool=pool or #launch opens a drawer
     var toolParam = urlParams.get('tool') || window.location.hash.replace('#', '');
-    if (toolParam && ['launch','pool','incubate','agent','disperse','marketing'].indexOf(toolParam) !== -1) {
+    if (isEmbed && toolParam && ['launch','pool','incubate','agent','disperse','marketing'].indexOf(toolParam) !== -1) {
         if (!isEmbed) window.history.replaceState({}, '', window.location.pathname);
         setTimeout(function() { openToolDrawer(toolParam); }, 300);
     }
