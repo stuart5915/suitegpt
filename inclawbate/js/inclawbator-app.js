@@ -745,7 +745,7 @@ async function loadPoolTokens() {
         var res = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(state.wallet.toLowerCase()));
         var data = await res.json();
         var projects = (data.projects || []).filter(function(p) {
-            return p.token_address && p.status === 'active' && !p.staking_address;
+            return (p.token_address || p.solana_token_mint) && p.status === 'active' && !p.staking_address;
         });
         poolTokensCache = projects;
         showPoolTokenForm(projects, loading, noTokens, form, select);
@@ -771,10 +771,17 @@ function showPoolTokenForm(projects, loading, noTokens, form, select) {
     select.innerHTML = '<option value="">Choose a token...</option>';
     projects.forEach(function(p) {
         var opt = document.createElement('option');
-        opt.value = p.token_address;
-        opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')';
+        var chain = (p.chain === 'solana') ? 'solana' : 'base';
+        var chainLabel = chain === 'solana' ? ' [Solana]' : ' [Base]';
+        opt.value = p.token_address || p.solana_token_mint || '';
+        opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')' + chainLabel;
         opt.dataset.name = p.token_name || '';
         opt.dataset.symbol = p.token_symbol || '';
+        opt.dataset.chain = chain;
+        if (chain === 'solana') {
+            opt.disabled = true;
+            opt.textContent += ' — Coming Soon';
+        }
         select.appendChild(opt);
     });
 
@@ -783,8 +790,10 @@ function showPoolTokenForm(projects, loading, noTokens, form, select) {
         var preview = document.getElementById('partnerTokenPreview');
         var selected = select.options[select.selectedIndex];
         if (select.value && selected.dataset.name) {
+            var chain = selected.dataset.chain || 'base';
+            var chainBadge = chain === 'solana' ? ' (Solana)' : ' (Base)';
             document.getElementById('partnerTokenName').textContent = selected.dataset.name;
-            document.getElementById('partnerTokenSymbol').textContent = '$' + selected.dataset.symbol;
+            document.getElementById('partnerTokenSymbol').textContent = '$' + selected.dataset.symbol + chainBadge;
             document.getElementById('partnerTokenIcon').textContent = (selected.dataset.symbol || '?')[0];
             preview.classList.remove('hidden');
         } else {
