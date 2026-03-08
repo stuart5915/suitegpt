@@ -408,6 +408,12 @@
     text-shadow: 0 1px 4px rgba(0,0,0,0.9);
   }
 
+  .seat-pocket {
+    display: flex;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
   .seat-action-bubble {
     position: absolute;
     top: -24px;
@@ -1044,34 +1050,34 @@
 
         <div class="panel">
           <div class="panel-title"><span class="icon">💰</span> Fund an Agent</div>
-          <select class="bet-agent-select" id="betAgentSelect">
-            <option value="">Select an Agent to back...</option>
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
+            Deposit funds into an agent's stack. They play with your money. You earn 95% of their profits.
+          </p>
+          <select class="bet-agent-select" id="fundAgentSelect">
+            <option value="">Choose an agent...</option>
           </select>
           <div class="bet-presets">
-            <div class="bet-preset" onclick="selectPreset(50, this)">50</div>
-            <div class="bet-preset" onclick="selectPreset(100, this)">100</div>
-            <div class="bet-preset" onclick="selectPreset(250, this)">250</div>
             <div class="bet-preset" onclick="selectPreset(500, this)">500</div>
+            <div class="bet-preset" onclick="selectPreset(1000, this)">1,000</div>
+            <div class="bet-preset" onclick="selectPreset(2500, this)">2,500</div>
+            <div class="bet-preset" onclick="selectPreset(5000, this)">5,000</div>
           </div>
           <div class="bet-input-row">
-            <input type="number" class="bet-input" id="betAmount" placeholder="Amount" min="10" max="10000" value="100">
+            <input type="number" class="bet-input" id="fundAmount" placeholder="Amount to deposit" min="100" value="1000">
           </div>
-          <button class="btn-place-bet" onclick="placeBet()">🎲 Fund Agent</button>
-          <div style="margin-top:4px;font-size:11px;color:var(--text-muted);text-align:center">
-            Earn 95% of profits when your agent wins
-          </div>
+          <button class="btn-place-bet" onclick="fundAgent()">💰 Fund Agent</button>
         </div>
 
         <div class="panel">
-          <div class="panel-title"><span class="icon">📋</span> Your Bets</div>
-          <div id="activeBets">
-            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">
-              No active bets yet
+          <div class="panel-title"><span class="icon">📊</span> Your Positions</div>
+          <div id="fundPositions">
+            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">
+              No active positions.<br>Fund an agent to see their pocket cards and earn profits.
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-            <span style="font-size:12px;color:var(--text-muted)">Total Winnings:</span>
-            <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)" id="totalWinnings">+0</span>
+            <span style="font-size:12px;color:var(--text-muted)">Total P&L:</span>
+            <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)" id="totalPnl">+0</span>
           </div>
         </div>
       </div>
@@ -1128,7 +1134,7 @@
 
 <script>
 // ============================================================
-// 8 AGENTS
+// 8 AGENTS — each starts with 10,000 (1% of hypothetical supply)
 // ============================================================
 const AGENTS = [
   {
@@ -1138,7 +1144,7 @@ const AGENTS = [
     style: 'aggressive',
     description: 'Goes all-in frequently. Intimidates opponents with massive bets. High risk, high reward.',
     raisePct: 60, bluffPct: 40, foldPct: 10,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 90, bluffing: 70, patience: 15, adaptability: 40 }
   },
@@ -1149,7 +1155,7 @@ const AGENTS = [
     style: 'mathematical',
     description: 'Calculates exact pot odds and EV for every decision. Ice-cold, never tilts.',
     raisePct: 35, bluffPct: 15, foldPct: 35,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 40, bluffing: 20, patience: 85, adaptability: 75 }
   },
@@ -1160,7 +1166,7 @@ const AGENTS = [
     style: 'bluffer',
     description: 'Master of deception. Represents hands it doesn\'t have. Keeps everyone guessing.',
     raisePct: 45, bluffPct: 70, foldPct: 15,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 65, bluffing: 95, patience: 35, adaptability: 80 }
   },
@@ -1171,7 +1177,7 @@ const AGENTS = [
     style: 'conservative',
     description: 'Only plays premium hands. Folds often but when it bets, it means business.',
     raisePct: 20, bluffPct: 8, foldPct: 60,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 15, bluffing: 10, patience: 95, adaptability: 30 }
   },
@@ -1182,7 +1188,7 @@ const AGENTS = [
     style: 'balanced',
     description: 'Adapts its strategy based on table dynamics. Unpredictable and well-rounded.',
     raisePct: 40, bluffPct: 30, foldPct: 25,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 55, bluffing: 45, patience: 60, adaptability: 95 }
   },
@@ -1193,7 +1199,7 @@ const AGENTS = [
     style: 'balanced',
     description: 'Plays in the shadows, picking spots carefully. Uses position and timing to strike.',
     raisePct: 38, bluffPct: 28, foldPct: 30,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 50, bluffing: 40, patience: 70, adaptability: 85 }
   },
@@ -1204,7 +1210,7 @@ const AGENTS = [
     style: 'aggressive',
     description: 'Coils and waits, then strikes hard. Plays tight preflop but bets massive post-flop.',
     raisePct: 55, bluffPct: 35, foldPct: 20,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 80, bluffing: 50, patience: 45, adaptability: 55 }
   },
@@ -1215,7 +1221,7 @@ const AGENTS = [
     style: 'chaotic',
     description: 'Pure randomness with a twist. Even Chaos doesn\'t know what it will do next. Terrifying.',
     raisePct: 50, bluffPct: 50, foldPct: 20,
-    chips: 10000,
+    chips: 10000, baseChips: 10000,
     handsWon: 0, handsPlayed: 0, biggestPot: 0,
     traits: { aggression: 70, bluffing: 60, patience: 25, adaptability: 50 }
   }
@@ -1241,25 +1247,30 @@ let gameState = {
   dealerIndex: 0,
   phaseTimer: null,
   lastWinner: null,
-  activeBets: [],
-  totalWinnings: 0,
-  userBalance: 1000
+  // Funding positions: { agentId, deposited, currentValue, startStack }
+  fundPositions: [],
+  totalPnl: 0
 };
 
 function getSpeed() {
   return parseInt(document.getElementById('speedSelect').value);
 }
 
+// Which agents has the user funded?
+function isFunded(agentId) {
+  return gameState.fundPositions.some(p => p.agentId === agentId);
+}
+
 // ============================================================
 // INIT
 // ============================================================
 function initGame() {
-  gameState.agents = AGENTS.map(a => ({...a, traits: {...a.traits}, handsWon: 0, handsPlayed: 0, biggestPot: 0, chips: 10000, hand: [], folded: false, currentBet: 0, allIn: false}));
+  gameState.agents = AGENTS.map(a => ({...a, traits: {...a.traits}, handsWon: 0, handsPlayed: 0, biggestPot: 0, chips: 10000, baseChips: 10000, hand: [], folded: false, currentBet: 0, allIn: false}));
   renderAgentsSidebar();
-  renderBetSelect();
+  renderFundSelect();
   renderAgentsGrid();
   renderLeaderboard();
-  renderActiveBets();
+  renderFundPositions();
   renderTableSeats();
 }
 
@@ -1372,14 +1383,35 @@ function renderTableSeats() {
     const folded = agent.folded;
     const isWinner = gameState.lastWinner === agent.id;
 
+    // Show pocket cards for funded agents, face-down for others
+    let pocketHTML = '';
+    if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded) {
+      if (isFunded(agent.id)) {
+        const c1 = agent.hand[0], c2 = agent.hand[1];
+        pocketHTML = `<div class="seat-pocket">
+          <div class="card${c1.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c1.rank}</div><div class="card-suit" style="font-size:9px">${c1.suit}</div></div>
+          <div class="card${c2.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c2.rank}</div><div class="card-suit" style="font-size:9px">${c2.suit}</div></div>
+        </div>`;
+      } else {
+        pocketHTML = `<div class="seat-pocket">
+          <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
+          <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
+        </div>`;
+      }
+    }
+
+    const fundedBadge = isFunded(agent.id) ? '<div style="position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;background:var(--accent-gold);border-radius:50%;border:2px solid var(--bg-dark);font-size:6px;display:flex;align-items:center;justify-content:center">$</div>' : '';
+
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
-           title="${agent.name}">
+           title="${agent.name}" style="position:relative">
         ${agent.emoji}
+        ${fundedBadge}
       </div>
       <div class="seat-name">${agent.name.split(' ')[0]}</div>
       <div class="seat-chips">${formatChips(agent.chips)}</div>
+      ${pocketHTML}
     `;
     felt.appendChild(seat);
 
@@ -1715,7 +1747,7 @@ function resolveHand(activePlayers) {
   renderTableSeats();
   updatePotDisplay();
 
-  resolvePlayerBets(winner.id, potWon);
+  updateFundPositions();
 
   renderAgentsSidebar();
   renderLeaderboard();
@@ -1728,40 +1760,31 @@ function resolveHand(activePlayers) {
   }
 }
 
-function resolvePlayerBets(winnerId, pot) {
-  let totalGained = 0;
-  let totalLost = 0;
+// Update funding positions after each hand based on agent stack changes
+function updateFundPositions() {
+  if (gameState.fundPositions.length === 0) return;
 
-  gameState.activeBets.forEach(bet => {
-    if (bet.settled) return;
-    if (bet.hand === gameState.handsPlayed) {
-      bet.settled = true;
-      if (bet.agentId === winnerId) {
-        const payout = Math.floor(bet.amount * 1.95); // 95% profit
-        gameState.userBalance += payout;
-        bet.won = true;
-        bet.payout = payout;
-        totalGained += payout;
-        gameState.totalWinnings += payout - bet.amount;
-      } else {
-        bet.won = false;
-        bet.payout = 0;
-        totalLost += bet.amount;
-        gameState.totalWinnings -= bet.amount;
-      }
-    }
+  let totalPnl = 0;
+  gameState.fundPositions.forEach(pos => {
+    const agent = gameState.agents.find(a => a.id === pos.agentId);
+    if (!agent) return;
+    // Your share = your deposit / agent's total stack at time of deposit
+    // Current value = your share proportion * current stack
+    const proportion = pos.deposited / pos.startStack;
+    const currentVal = Math.floor(agent.chips * proportion);
+    const profit = currentVal - pos.deposited;
+    // 95% of profits go to human, 5% stays with agent
+    pos.currentValue = profit > 0 ? pos.deposited + Math.floor(profit * 0.95) : currentVal;
+    pos.pnl = pos.currentValue - pos.deposited;
+    totalPnl += pos.pnl;
   });
 
-  document.getElementById('totalWinnings').textContent = (gameState.totalWinnings >= 0 ? '+' : '') + gameState.totalWinnings;
-  document.getElementById('totalWinnings').style.color = gameState.totalWinnings >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  gameState.totalPnl = totalPnl;
+  const pnlEl = document.getElementById('totalPnl');
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
+  pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
-  renderActiveBets();
-
-  if (totalGained > 0) {
-    showWinOverlay(`+${totalGained}`, `Your bet on ${gameState.agents.find(a=>a.id===winnerId)?.name} paid off!`);
-  } else if (totalLost > 0 && totalGained === 0) {
-    showToast(`Lost ${totalLost} on this hand`, 'error');
-  }
+  renderFundPositions();
 }
 
 function updatePotDisplay() {
@@ -1770,66 +1793,106 @@ function updatePotDisplay() {
 }
 
 // ============================================================
-// BETTING
+// FUNDING
 // ============================================================
 function selectPreset(amount, el) {
-  document.getElementById('betAmount').value = amount;
+  document.getElementById('fundAmount').value = amount;
   document.querySelectorAll('.bet-preset').forEach(p => p.classList.remove('active'));
   if (el) el.classList.add('active');
 }
 
-function placeBet() {
-  const agentId = document.getElementById('betAgentSelect').value;
-  const amount = parseInt(document.getElementById('betAmount').value);
+function fundAgent() {
+  const agentId = document.getElementById('fundAgentSelect').value;
+  const amount = parseInt(document.getElementById('fundAmount').value);
 
-  if (!agentId) { showToast('Select an agent to back!', 'error'); return; }
-  if (!amount || amount < 10) { showToast('Minimum bet is 10!', 'error'); return; }
-  if (amount > gameState.userBalance) { showToast('Insufficient balance!', 'error'); return; }
-
-  gameState.userBalance -= amount;
+  if (!agentId) { showToast('Select an agent to fund!', 'error'); return; }
+  if (!amount || amount < 100) { showToast('Minimum deposit is 100!', 'error'); return; }
 
   const agent = gameState.agents.find(a => a.id === agentId);
-  gameState.activeBets.push({
-    agentId,
-    agentName: agent.name,
-    agentEmoji: agent.emoji,
-    amount,
-    hand: gameState.handsPlayed + 1,
-    settled: false,
-    won: null,
-    payout: 0
-  });
+  if (!agent) return;
 
-  renderActiveBets();
-  showToast(`Backed ${agent.name} with ${amount}!`, 'gold');
+  // Check if already funding this agent
+  const existing = gameState.fundPositions.find(p => p.agentId === agentId);
+  if (existing) {
+    // Add to existing position
+    existing.deposited += amount;
+    existing.startStack = agent.chips + amount;
+    agent.chips += amount;
+    showToast(`Added ${amount} to ${agent.name}'s stack!`, 'gold');
+  } else {
+    // New position
+    agent.chips += amount;
+    gameState.fundPositions.push({
+      agentId,
+      agentName: agent.name,
+      agentEmoji: agent.emoji,
+      deposited: amount,
+      currentValue: amount,
+      startStack: agent.chips,
+      pnl: 0
+    });
+    showToast(`Funded ${agent.name} with ${amount}! You can now see their cards.`, 'gold');
+  }
+
+  renderFundPositions();
+  renderAgentsSidebar();
+  renderTableSeats();
 }
 
-function renderActiveBets() {
-  const container = document.getElementById('activeBets');
-  const recent = gameState.activeBets.slice(-8).reverse();
+function withdrawFromAgent(agentId) {
+  const pos = gameState.fundPositions.find(p => p.agentId === agentId);
+  if (!pos) return;
 
-  if (recent.length === 0) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">No active bets yet</div>';
+  const agent = gameState.agents.find(a => a.id === agentId);
+  const withdrawAmount = pos.currentValue;
+
+  // Remove funds from agent's stack
+  agent.chips = Math.max(agent.baseChips, agent.chips - withdrawAmount);
+
+  const pnl = pos.pnl;
+  gameState.fundPositions = gameState.fundPositions.filter(p => p.agentId !== agentId);
+
+  if (pnl >= 0) {
+    showToast(`Withdrew ${withdrawAmount} from ${agent.name} (+${pnl} profit!)`, 'success');
+  } else {
+    showToast(`Withdrew ${withdrawAmount} from ${agent.name} (${pnl} loss)`, 'error');
+  }
+
+  renderFundPositions();
+  renderAgentsSidebar();
+  renderTableSeats();
+}
+
+function renderFundPositions() {
+  const container = document.getElementById('fundPositions');
+
+  if (gameState.fundPositions.length === 0) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">No active positions.<br>Fund an agent to see their pocket cards and earn profits.</div>';
     return;
   }
 
-  container.innerHTML = recent.map(bet => `
-    <div class="bet-item ${bet.settled ? (bet.won ? 'won' : 'lost') : ''}">
+  container.innerHTML = gameState.fundPositions.map(pos => {
+    const pnlColor = pos.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const pnlSign = pos.pnl >= 0 ? '+' : '';
+    return `
+    <div class="bet-item" style="border-color:${pos.pnl >= 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}">
       <div>
-        <span class="bet-on">${bet.agentEmoji} ${bet.agentName.split(' ')[0]}</span>
-        <div style="font-size:10px;color:var(--text-muted)">Hand #${bet.hand}</div>
+        <span class="bet-on">${pos.agentEmoji} ${pos.agentName.split(' ')[0]}</span>
+        <div style="font-size:10px;color:var(--text-muted)">Deposited: ${pos.deposited.toLocaleString()}</div>
       </div>
       <div style="text-align:right">
-        <div class="bet-amount-display">${bet.amount}</div>
-        ${bet.settled
-          ? bet.won
-            ? `<div class="bet-payout">+${bet.payout}</div>`
-            : `<div style="color:var(--accent-red);font-size:11px">Lost</div>`
-          : `<div style="color:var(--text-muted);font-size:10px">Pending</div>`
-        }
+        <div class="bet-amount-display">${pos.currentValue.toLocaleString()}</div>
+        <div style="color:${pnlColor};font-size:11px;font-weight:600">${pnlSign}${pos.pnl.toLocaleString()}</div>
+        <button onclick="withdrawFromAgent('${pos.agentId}')" style="margin-top:4px;padding:2px 8px;font-size:9px;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer">Withdraw</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function renderFundSelect() {
+  const sel = document.getElementById('fundAgentSelect');
+  sel.innerHTML = '<option value="">Choose an agent...</option>' +
+    gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name} — ${formatChips(a.chips)} stack</option>`).join('');
 }
 
 // ============================================================
@@ -1852,7 +1915,7 @@ function renderAgentsSidebar() {
   `).join('');
 }
 
-function renderBetSelect() {
+function renderFundSelect() {
   const sel = document.getElementById('betAgentSelect');
   sel.innerHTML = '<option value="">Select an Agent to back...</option>' +
     gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name}</option>`).join('');
@@ -1890,6 +1953,7 @@ function renderAgentsGrid() {
         ${renderStrategyBar('Patience', agent.traits.patience, '#3b82f6')}
         ${renderStrategyBar('Adaptability', agent.traits.adaptability, '#06b6d4')}
       </div>
+      <button onclick="document.getElementById('fundAgentSelect').value='${agent.id}';showView('arena');showToast('Selected ${agent.name} — set amount and fund!','info')" style="margin-top:12px;width:100%;padding:10px;background:linear-gradient(135deg,#f5c542,#e67e22);border:none;border-radius:10px;color:#080b14;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px">Fund ${agent.name}</button>
     </div>
   `).join('');
 }
@@ -2002,15 +2066,11 @@ function capitalize(s) {
 // ============================================================
 initGame();
 
-// Auto-start after brief delay
+// Auto-start — the game is always running
 setTimeout(() => {
-  showToast('Welcome to PokerAI! Press Start or it auto-starts in 3s...', 'info');
-  setTimeout(() => {
-    if (!gameState.running) {
-      toggleGame();
-    }
-  }, 3000);
-}, 500);
+  toggleGame();
+  showToast('PokerAI is LIVE. Fund an agent to see their cards and earn profits!', 'gold');
+}, 800);
 </script>
 </body>
 </html>
