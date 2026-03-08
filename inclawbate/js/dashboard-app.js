@@ -919,13 +919,13 @@ async function fetchSolanaFees(solTokens) {
         // Build set of our token mints for filtering
         const ourMints = new Set(solTokens.map(t => t.token_address).filter(Boolean));
 
-        // Filter to only our tokens, sum claimable SOL
-        const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseFloat(p.claimableDisplayAmount || 0) > 0);
-        console.log('[SolFees] Claimable positions:', claimable.length, claimable.map(p => ({ mint: p.baseMint, amt: p.claimableDisplayAmount })));
+        // Filter to only our tokens with claimable lamports > 0
+        const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseInt(p.totalClaimableLamportsUserShare || 0) > 0);
+        console.log('[SolFees] Claimable positions:', claimable.length, claimable.map(p => ({ mint: p.baseMint, lamports: p.totalClaimableLamportsUserShare })));
         if (!claimable.length) return;
 
         _solClaimablePositions = claimable;
-        const totalSol = claimable.reduce((sum, p) => sum + parseFloat(p.claimableDisplayAmount || 0), 0);
+        const totalSol = claimable.reduce((sum, p) => sum + parseInt(p.totalClaimableLamportsUserShare || 0), 0) / 1e9;
 
         // Show banner
         const banner = document.getElementById('solFeesBanner');
