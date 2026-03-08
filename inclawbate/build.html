@@ -389,71 +389,138 @@
         .action-publish-btn:hover { transform: translateY(-1px); }
         .action-publish-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
 
-        /* Model Selector */
+        /* Model Selector — Dropup */
         .model-selector {
+            position: relative;
+            display: inline-flex;
+            padding-top: 6px;
+        }
+        .model-trigger {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding-top: 8px;
-            flex-wrap: wrap;
+            gap: 6px;
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border-default);
+            border-radius: 999px;
+            color: var(--text-body);
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
         }
-        .model-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .model-trigger:hover {
+            border-color: var(--text-dim);
         }
-        .model-group-label {
+        .model-trigger .trigger-chevron {
+            font-size: 0.5rem;
+            opacity: 0.5;
+            transition: transform 0.2s;
+        }
+        .model-selector.open .trigger-chevron {
+            transform: rotate(180deg);
+        }
+        .model-trigger .trigger-badge {
+            font-size: 0.55rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .trigger-badge.free {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+        .trigger-badge.pro {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+        .model-dropup {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 0;
+            min-width: 200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
+            z-index: 100;
+        }
+        .model-selector.open .model-dropup {
+            display: block;
+            animation: dropupIn 0.15s ease-out;
+        }
+        @keyframes dropupIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .model-dropup-label {
             font-size: 0.6rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-dim);
-            opacity: 0.6;
-            margin-right: 2px;
+            opacity: 0.5;
+            padding: 6px 10px 3px;
         }
-        .model-option {
-            padding: 5px 10px;
-            background: transparent;
-            border: 1px solid var(--border-default);
-            border-radius: 999px;
-            color: var(--text-dim);
-            font-family: var(--font-body);
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            white-space: nowrap;
-            position: relative;
-        }
-        .model-option:hover {
-            border-color: var(--text-dim);
-        }
-        .model-option.active {
-            background: var(--accent-primary);
-            border-color: var(--accent-primary);
-            color: #fff;
-        }
-        .model-option.model-pro {
-            border-color: rgba(245, 158, 11, 0.4);
-        }
-        .model-option.model-pro:hover {
-            border-color: rgba(245, 158, 11, 0.7);
-        }
-        .model-option.model-pro.active {
-            background: linear-gradient(135deg, #d97706, #f59e0b);
-            border-color: #f59e0b;
-        }
-        .model-cost {
-            font-size: 0.6rem;
-            opacity: 0.7;
-            font-weight: 400;
-            margin-left: 3px;
-        }
-        .model-hint {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            margin-left: auto;
+        .model-dropup-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             width: 100%;
+            padding: 8px 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-body);
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-align: left;
+        }
+        .model-dropup-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .model-dropup-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+        .model-dropup-item .item-check {
+            width: 16px;
+            font-size: 0.7rem;
+            opacity: 0;
+        }
+        .model-dropup-item.active .item-check {
+            opacity: 1;
+        }
+        .model-dropup-item .item-label {
+            flex: 1;
+        }
+        .model-dropup-item .item-tag {
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .item-tag.free-tag {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+        }
+        .item-tag.pro-tag {
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+        }
+        .model-dropup-divider {
+            height: 1px;
+            background: var(--border-default);
+            margin: 4px 6px;
         }
         .model-info-btn {
             display: inline-flex;
@@ -2275,11 +2342,9 @@
             .chat-attach-btn svg { width: 15px; height: 15px; }
 
             /* Compact model selector */
-            .model-selector { flex-wrap: nowrap; gap: 4px; padding-top: 4px; overflow-x: auto; }
-            .model-group { gap: 3px; flex-shrink: 0; }
-            .model-group-label { font-size: 0.55rem; }
-            .model-option { padding: 3px 7px; font-size: 0.62rem; flex-shrink: 0; }
-            .model-hint { display: none; }
+            .model-selector { padding-top: 4px; }
+            .model-trigger { font-size: 0.7rem; padding: 4px 10px; }
+            .model-dropup { min-width: 180px; }
             .model-info-btn { display: none; }
 
             /* Compact action bar */
@@ -2511,33 +2576,47 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
                     </button>
                 </div>
-                <div class="model-selector">
-                    <div class="model-group">
-                        <span class="model-group-label">Free</span>
-                        <button class="model-option active" data-model="gemini" onclick="window.BuildApp.setModel('gemini')">
-                            <span class="model-name">Gemini</span>
+                <div class="model-selector" id="modelSelector">
+                    <button class="model-trigger" id="modelTrigger" onclick="window.BuildApp.toggleModelMenu()">
+                        <span id="modelTriggerName">Gemini Flash</span>
+                        <span class="trigger-badge free" id="modelTriggerBadge">Free</span>
+                        <span class="trigger-chevron">&#9650;</span>
+                    </button>
+                    <div class="model-dropup" id="modelDropup">
+                        <div class="model-dropup-label">Free Models</div>
+                        <button class="model-dropup-item active" data-model="gemini" onclick="window.BuildApp.setModel('gemini')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">Gemini Flash</span>
+                            <span class="item-tag free-tag">Free</span>
                         </button>
-                        <button class="model-option" data-model="llama" onclick="window.BuildApp.setModel('llama')">
-                            <span class="model-name">Llama 70B</span>
+                        <button class="model-dropup-item" data-model="llama" onclick="window.BuildApp.setModel('llama')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">Llama 70B</span>
+                            <span class="item-tag free-tag">Free</span>
                         </button>
-                        <button class="model-option" data-model="deepseek" onclick="window.BuildApp.setModel('deepseek')">
-                            <span class="model-name">DeepSeek</span>
+                        <button class="model-dropup-item" data-model="deepseek" onclick="window.BuildApp.setModel('deepseek')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">DeepSeek V3</span>
+                            <span class="item-tag free-tag">Free</span>
                         </button>
-                        <button class="model-option" data-model="fast" onclick="window.BuildApp.setModel('fast')">
-                            <span class="model-name">Haiku</span>
+                        <button class="model-dropup-item" data-model="fast" onclick="window.BuildApp.setModel('fast')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">Haiku</span>
+                            <span class="item-tag free-tag">Free</span>
                         </button>
-                        <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">
-                            <span class="model-name">Sonnet</span>
+                        <button class="model-dropup-item" data-model="standard" onclick="window.BuildApp.setModel('standard')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">Sonnet</span>
+                            <span class="item-tag free-tag">Free</span>
+                        </button>
+                        <div class="model-dropup-divider"></div>
+                        <div class="model-dropup-label">Pro</div>
+                        <button class="model-dropup-item" data-model="pro" onclick="window.BuildApp.setModel('pro')">
+                            <span class="item-check">&#10003;</span>
+                            <span class="item-label">Opus</span>
+                            <span class="item-tag pro-tag">100 cr</span>
                         </button>
                     </div>
-                    <div class="model-group">
-                        <span class="model-group-label">Pro</span>
-                        <button class="model-option model-pro" data-model="pro" onclick="window.BuildApp.setModel('pro')">
-                            <span class="model-name">Opus</span>
-                            <span class="model-cost">100 cr</span>
-                        </button>
-                    </div>
-                    <span class="model-hint" id="modelHint">Gemini Flash &mdash; fast &amp; free</span>
                 </div>
                 <div class="action-bar">
                     <div class="free-badge">&#9889; Free to build</div>

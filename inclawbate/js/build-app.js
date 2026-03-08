@@ -1401,18 +1401,48 @@
     }
 
     // ── Model Selector ──
+    var MODEL_INFO = {
+        gemini: { label: 'Gemini Flash', free: true },
+        llama: { label: 'Llama 70B', free: true },
+        deepseek: { label: 'DeepSeek V3', free: true },
+        fast: { label: 'Haiku', free: true },
+        standard: { label: 'Sonnet', free: true },
+        pro: { label: 'Opus', free: false }
+    };
+
     function setModel(tier) {
         state.selectedModel = tier;
-        var btns = document.querySelectorAll('.model-option');
-        btns.forEach(function (btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-model') === tier);
+        // Update dropup items
+        var items = document.querySelectorAll('.model-dropup-item');
+        items.forEach(function (item) {
+            item.classList.toggle('active', item.getAttribute('data-model') === tier);
         });
-        var hint = document.getElementById('modelHint');
-        if (hint) {
-            var hints = { gemini: 'Gemini Flash — fast & free', llama: 'Llama 70B — powerful & free', deepseek: 'DeepSeek V3 — strong coder, free', fast: 'Haiku — fast & free', standard: 'Sonnet — balanced, free', pro: 'Opus — maximum detail (100 credits)' };
-            hint.textContent = hints[tier] || '';
+        // Update trigger button
+        var info = MODEL_INFO[tier] || MODEL_INFO.gemini;
+        var triggerName = document.getElementById('modelTriggerName');
+        var triggerBadge = document.getElementById('modelTriggerBadge');
+        if (triggerName) triggerName.textContent = info.label;
+        if (triggerBadge) {
+            triggerBadge.textContent = info.free ? 'Free' : '100 cr';
+            triggerBadge.className = 'trigger-badge ' + (info.free ? 'free' : 'pro');
         }
+        // Close menu
+        var selector = document.getElementById('modelSelector');
+        if (selector) selector.classList.remove('open');
     }
+
+    function toggleModelMenu() {
+        var selector = document.getElementById('modelSelector');
+        if (selector) selector.classList.toggle('open');
+    }
+
+    // Close dropup when clicking outside
+    document.addEventListener('click', function (e) {
+        var selector = document.getElementById('modelSelector');
+        if (selector && !selector.contains(e.target)) {
+            selector.classList.remove('open');
+        }
+    });
 
     async function fetchCredits() {
         try {
@@ -2685,6 +2715,7 @@
         send: sendMessage,
         goBack: goBack,
         setModel: setModel,
+        toggleModelMenu: toggleModelMenu,
         switchTab: switchTab,
         undoCode: undoCode,
         openPublish: openPublish,
