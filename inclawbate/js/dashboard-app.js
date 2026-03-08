@@ -620,7 +620,7 @@ function renderProjectCard(p) {
             </div>
         </div>
         <div class="project-card-meta">
-            ${addr ? `<span><a href="https://basescan.org/address/${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
+            ${addr ? `<span><a href="${isSolana ? 'https://solscan.io/account/' : 'https://basescan.org/address/'}${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
             ${created ? `<span>${created}</span>` : ''}
         </div>
         ${priceRowHtml}
