@@ -393,17 +393,32 @@
         .model-selector {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             padding-top: 8px;
+            flex-wrap: wrap;
+        }
+        .model-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .model-group-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            opacity: 0.6;
+            margin-right: 2px;
         }
         .model-option {
-            padding: 5px 12px;
+            padding: 5px 10px;
             background: transparent;
             border: 1px solid var(--border-default);
             border-radius: 999px;
             color: var(--text-dim);
             font-family: var(--font-body);
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
@@ -418,15 +433,27 @@
             border-color: var(--accent-primary);
             color: #fff;
         }
+        .model-option.model-pro {
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+        .model-option.model-pro:hover {
+            border-color: rgba(245, 158, 11, 0.7);
+        }
+        .model-option.model-pro.active {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            border-color: #f59e0b;
+        }
         .model-cost {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             opacity: 0.7;
             font-weight: 400;
+            margin-left: 3px;
         }
         .model-hint {
             font-size: 0.7rem;
             color: var(--text-dim);
             margin-left: auto;
+            width: 100%;
         }
         .model-info-btn {
             display: inline-flex;
@@ -2249,7 +2276,9 @@
 
             /* Compact model selector */
             .model-selector { flex-wrap: nowrap; gap: 4px; padding-top: 4px; overflow-x: auto; }
-            .model-option { padding: 3px 8px; font-size: 0.68rem; flex-shrink: 0; }
+            .model-group { gap: 3px; flex-shrink: 0; }
+            .model-group-label { font-size: 0.55rem; }
+            .model-option { padding: 3px 7px; font-size: 0.62rem; flex-shrink: 0; }
             .model-hint { display: none; }
             .model-info-btn { display: none; }
 
@@ -2483,16 +2512,32 @@
                     </button>
                 </div>
                 <div class="model-selector">
-                    <button class="model-option active" data-model="fast" onclick="window.BuildApp.setModel('fast')">
-                        <span class="model-name">Haiku</span>
-                    </button>
-                    <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">
-                        <span class="model-name">Sonnet</span>
-                    </button>
-                    <button class="model-option" data-model="pro" onclick="window.BuildApp.setModel('pro')">
-                        <span class="model-name">Opus</span>
-                    </button>
-                    <span class="model-hint" id="modelHint">Fast & lightweight</span>
+                    <div class="model-group">
+                        <span class="model-group-label">Free</span>
+                        <button class="model-option active" data-model="gemini" onclick="window.BuildApp.setModel('gemini')">
+                            <span class="model-name">Gemini</span>
+                        </button>
+                        <button class="model-option" data-model="llama" onclick="window.BuildApp.setModel('llama')">
+                            <span class="model-name">Llama 70B</span>
+                        </button>
+                        <button class="model-option" data-model="deepseek" onclick="window.BuildApp.setModel('deepseek')">
+                            <span class="model-name">DeepSeek</span>
+                        </button>
+                        <button class="model-option" data-model="fast" onclick="window.BuildApp.setModel('fast')">
+                            <span class="model-name">Haiku</span>
+                        </button>
+                        <button class="model-option" data-model="standard" onclick="window.BuildApp.setModel('standard')">
+                            <span class="model-name">Sonnet</span>
+                        </button>
+                    </div>
+                    <div class="model-group">
+                        <span class="model-group-label">Pro</span>
+                        <button class="model-option model-pro" data-model="pro" onclick="window.BuildApp.setModel('pro')">
+                            <span class="model-name">Opus</span>
+                            <span class="model-cost">100 cr</span>
+                        </button>
+                    </div>
+                    <span class="model-hint" id="modelHint">Gemini Flash &mdash; fast &amp; free</span>
                 </div>
                 <div class="action-bar">
                     <div class="free-badge">&#9889; Free to build</div>

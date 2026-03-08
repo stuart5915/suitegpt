@@ -37,7 +37,7 @@
         title: 'New App',
         forkedFrom: null,  // { app_id, name } if forked
         editingApp: null,  // { id, slug, name } if editing existing app
-        selectedModel: 'fast',
+        selectedModel: 'gemini',
         previewErrors: [],
         autoFixAttempts: 0,
         maxAutoFix: 2
@@ -583,8 +583,8 @@
         appendMessage('user', message);
 
         // Optimistic credit deduction — backend charges upfront too (skip for admins)
-        var tierCost = { fast: 10, standard: 25, pro: 50 }[state.selectedModel] || 10;
-        if (!isAdmin() && state.credits !== null) {
+        var tierCost = { gemini: 0, llama: 0, deepseek: 0, fast: 0, standard: 0, pro: 100 }[state.selectedModel] || 0;
+        if (tierCost > 0 && !isAdmin() && state.credits !== null) {
             state.credits = Math.max(0, state.credits - tierCost);
             updateCredits();
         }
@@ -1409,7 +1409,7 @@
         });
         var hint = document.getElementById('modelHint');
         if (hint) {
-            var hints = { fast: 'Haiku — fast & lightweight', standard: 'Sonnet — balanced quality', pro: 'Opus — maximum detail' };
+            var hints = { gemini: 'Gemini Flash — fast & free', llama: 'Llama 70B — powerful & free', deepseek: 'DeepSeek V3 — strong coder, free', fast: 'Haiku — fast & free', standard: 'Sonnet — balanced, free', pro: 'Opus — maximum detail (100 credits)' };
             hint.textContent = hints[tier] || '';
         }
     }

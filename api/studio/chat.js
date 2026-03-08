@@ -31,9 +31,12 @@ const FREE_CREDIT_WALLETS = [
 const FREE_HANDLES = ['artstu'];
 
 const MODEL_TIERS = {
-    fast:     { model: 'claude-haiku-4-5-20251001', credits: 10,  label: 'Fast',     maxTokens: 16384  },
-    standard: { model: 'claude-sonnet-4-6',         credits: 50,  label: 'Standard', maxTokens: 64000 },
-    pro:      { model: 'claude-opus-4-6',           credits: 100, label: 'Pro',      maxTokens: 64000 }
+    gemini:   { provider: 'gemini',    model: 'gemini-2.5-flash',          credits: 0,   label: 'Gemini Flash', maxTokens: 65536 },
+    llama:    { provider: 'groq',      model: 'llama-3.3-70b-versatile',   credits: 0,   label: 'Llama 70B',    maxTokens: 8192  },
+    deepseek: { provider: 'deepseek',  model: 'deepseek-chat',             credits: 0,   label: 'DeepSeek V3',  maxTokens: 16384 },
+    fast:     { provider: 'anthropic', model: 'claude-haiku-4-5-20251001', credits: 0,   label: 'Haiku',        maxTokens: 16384 },
+    standard: { provider: 'anthropic', model: 'claude-sonnet-4-6',         credits: 0,   label: 'Sonnet',       maxTokens: 64000 },
+    pro:      { provider: 'anthropic', model: 'claude-opus-4-6',           credits: 100, label: 'Opus',         maxTokens: 64000 }
 };
 
 const USD_PER_CREDIT = 0.005;
@@ -446,15 +449,27 @@ export default async function handler(req, res) {
     const anonymous = !profileId;
 
     // Resolve model tier
-    const tierKey = req.body?.model || 'fast';
-    const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.fast;
+    const tierKey = req.body?.model || 'gemini';
+    const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.gemini;
 
-    // Credits no longer gated — free for all users
     let creditsRemaining = profile?.credits || 0;
 
-    const { ANTHROPIC_API_KEY } = process.env;
-    if (!ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'AI service not configured.' });
+    // Credit gating — only Opus costs credits
+    if (tier.credits > 0 && !admin && !anonymous) {
+        if (creditsRemaining < tier.credits) {
+            return res.status(402).json({ error: 'Not enough credits for Opus. Use a free model or buy credits.', credits_remaining: creditsRemaining });
+        }
+        await supabase.from('human_profiles')
+            .update({ credits: creditsRemaining - tier.credits })
+            .eq('id', profileId);
+        creditsRemaining = creditsRemaining - tier.credits;
+    }
+
+    // Validate provider API keys
+    const { ANTHROPIC_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, DEEPSEEK_API_KEY } = process.env;
+    const providerKeys = { anthropic: ANTHROPIC_API_KEY, gemini: GEMINI_API_KEY, groq: GROQ_API_KEY, deepseek: DEEPSEEK_API_KEY };
+    if (!providerKeys[tier.provider]) {
+        return res.status(500).json({ error: tier.label + ' is not configured. Try a different model.' });
     }
 
     // Hoisted for access in catch block (partial save on error)
@@ -521,7 +536,8 @@ export default async function handler(req, res) {
         // - User is asking for something fundamental that should exist (e.g. "add the pieces", "make it work")
         const isAutoFix = /fix these errors|runtime.*errors|blank page|renders? a blank|corrected HTML|output was truncated|code is incomplete|missing closing tags/i.test(message);
         const isFundamentalAsk = /add the .*(pieces|board|grid|cells|items|content|elements|layout)|make it (work|functional|playable|interactive)|it('s| is) (broken|empty|blank|not working)/i.test(message);
-        const isEditMode = !!existingCode && message.length < 1500 && !isAutoFix && !isFundamentalAsk;
+        const supportsEditMode = tier.provider === 'anthropic';
+        const isEditMode = supportsEditMode && !!existingCode && message.length < 1500 && !isAutoFix && !isFundamentalAsk;
 
         // Fetch last 20 messages for context
         const { data: history } = await supabase
@@ -588,40 +604,90 @@ export default async function handler(req, res) {
         const editMaxTokens = { fast: 8192, standard: 32000, pro: 32000 };
         const maxTokens = isEditMode ? (editMaxTokens[tierKey] || 4096) : tier.maxTokens;
 
-        // Call Claude with streaming to avoid Vercel 60s timeout
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: tier.model,
-                max_tokens: maxTokens,
-                stream: true,
-                system: systemPrompt,
-                messages: contextMessages
-            })
-        });
+        // ── Build provider-specific request ──
+        let response;
+        const provider = tier.provider;
+
+        if (provider === 'anthropic') {
+            response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': ANTHROPIC_API_KEY,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: tier.model,
+                    max_tokens: maxTokens,
+                    stream: true,
+                    system: systemPrompt,
+                    messages: contextMessages
+                })
+            });
+        } else if (provider === 'gemini') {
+            // Convert messages to Gemini format
+            const geminiContents = contextMessages.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }]
+            }));
+            response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${tier.model}:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: geminiContents,
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { maxOutputTokens: maxTokens }
+                    })
+                }
+            );
+        } else if (provider === 'groq' || provider === 'deepseek') {
+            // OpenAI-compatible format (Groq + DeepSeek)
+            const apiUrl = provider === 'groq'
+                ? 'https://api.groq.com/openai/v1/chat/completions'
+                : 'https://api.deepseek.com/chat/completions';
+            const apiKey = provider === 'groq' ? GROQ_API_KEY : DEEPSEEK_API_KEY;
+            const openaiMessages = [
+                { role: 'system', content: systemPrompt },
+                ...contextMessages.map(m => ({
+                    role: m.role,
+                    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+                }))
+            ];
+            response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: tier.model,
+                    messages: openaiMessages,
+                    max_tokens: maxTokens,
+                    stream: true
+                })
+            });
+        }
 
         if (!response.ok) {
             let errMsg = 'Failed to generate code.';
             try { const errData = await response.json(); errMsg = errData.error?.message || errMsg; } catch (e) {}
-            console.error('Anthropic error:', response.status, errMsg);
-            if (!admin) {
+            console.error(provider + ' error:', response.status, errMsg);
+            // Refund credits if Opus
+            if (tier.credits > 0 && !admin && !anonymous) {
                 await supabase.from('human_profiles')
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
+                creditsRemaining += tier.credits;
             }
-            // Don't leak raw Anthropic billing/capacity errors to users
             let userMsg = errMsg;
             if (response.status === 429 || /credit balance|rate limit|overloaded/i.test(errMsg)) {
                 userMsg = 'AI service is temporarily unavailable. Please try again in a moment.';
             }
             return res.status(503).json({
                 error: userMsg,
-                credits_remaining: creditsRemaining + tier.credits
+                credits_remaining: creditsRemaining
             });
         }
 
@@ -633,13 +699,14 @@ export default async function handler(req, res) {
         // Send session info immediately so client can track it
         res.write('data: ' + JSON.stringify({ type: 'session', session_id: sessionId, title: sessionTitle }) + '\n\n');
 
-        // Read the SSE stream from Anthropic
+        // Read the SSE stream from provider
         assistantText = '';
         let inputTokens = 0;
         let outputTokens = 0;
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let geminiAccumulated = ''; // Track accumulated text for Gemini (in case it returns full text instead of deltas)
 
         // Keep-alive: send SSE comment every 15s to prevent proxy/CDN timeouts
         const keepAlive = setInterval(() => {
@@ -661,15 +728,36 @@ export default async function handler(req, res) {
 
                 try {
                     const event = JSON.parse(payload);
+                    let deltaText = null;
 
-                    if (event.type === 'content_block_delta' && event.delta?.text) {
-                        assistantText += event.delta.text;
-                        // Forward text chunk to client
-                        res.write('data: ' + JSON.stringify({ type: 'delta', text: event.delta.text }) + '\n\n');
-                    } else if (event.type === 'message_delta' && event.usage) {
-                        outputTokens = event.usage.output_tokens || 0;
-                    } else if (event.type === 'message_start' && event.message?.usage) {
-                        inputTokens = event.message.usage.input_tokens || 0;
+                    if (provider === 'anthropic') {
+                        if (event.type === 'content_block_delta' && event.delta?.text) {
+                            deltaText = event.delta.text;
+                        } else if (event.type === 'message_delta' && event.usage) {
+                            outputTokens = event.usage.output_tokens || 0;
+                        } else if (event.type === 'message_start' && event.message?.usage) {
+                            inputTokens = event.message.usage.input_tokens || 0;
+                        }
+                    } else if (provider === 'gemini') {
+                        const chunkText = event.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (chunkText) {
+                            // Gemini may return accumulated or delta text — handle both
+                            if (chunkText.startsWith(geminiAccumulated) && geminiAccumulated.length > 0) {
+                                deltaText = chunkText.slice(geminiAccumulated.length);
+                            } else {
+                                deltaText = chunkText;
+                            }
+                            geminiAccumulated += deltaText;
+                        }
+                    } else {
+                        // OpenAI-compatible (Groq, DeepSeek)
+                        const chunk = event.choices?.[0]?.delta?.content;
+                        if (chunk) deltaText = chunk;
+                    }
+
+                    if (deltaText) {
+                        assistantText += deltaText;
+                        res.write('data: ' + JSON.stringify({ type: 'delta', text: deltaText }) + '\n\n');
                     }
                 } catch (e) { /* skip unparseable lines */ }
             }
