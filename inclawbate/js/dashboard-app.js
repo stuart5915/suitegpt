@@ -324,6 +324,10 @@ function openEditDetailsModal(app, cardEl) {
             <label class="edit-details-label">Tags
                 <input type="text" class="edit-details-input" id="edTags" value="${esc(app.tags || '')}" placeholder="comma, separated, tags" maxlength="200">
             </label>
+            <label class="edit-details-label" style="flex-direction:row;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" id="edForkable" ${app.forkable !== false ? 'checked' : ''} style="accent-color:#f97066;width:18px;height:18px;cursor:pointer;">
+                <span>Allow others to fork this app</span>
+            </label>
             <div class="edit-details-actions">
                 <button type="button" class="edit-details-cancel">Cancel</button>
                 <button type="button" class="edit-details-save">Save</button>
@@ -348,7 +352,8 @@ function openEditDetailsModal(app, cardEl) {
                     new_name: document.getElementById('edName').value,
                     description: document.getElementById('edDesc').value,
                     category: document.getElementById('edCat').value,
-                    tags: document.getElementById('edTags').value
+                    tags: document.getElementById('edTags').value,
+                    forkable: document.getElementById('edForkable').checked
                 })
             });
             const data = await resp.json();

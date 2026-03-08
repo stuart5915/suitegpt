@@ -143,7 +143,7 @@ export default async function handler(req, res) {
             if (id) {
                 const { data: app, error } = await supabase
                     .from('user_apps')
-                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, forked_from_user_app, app_url, created_at, updated_at, code')
+                    .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, is_public, is_listed, forkable, forked_from_user_app, app_url, created_at, updated_at, code')
                     .eq('id', id)
                     .maybeSingle();
 
@@ -173,7 +173,7 @@ export default async function handler(req, res) {
             const creatorId = req.query.creator_id;
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, created_at', { count: 'exact' });
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, forkable, created_at', { count: 'exact' });
 
             const creatorWallet = req.query.creator_wallet;
             if (creatorId && creatorWallet) {
@@ -622,7 +622,7 @@ export default async function handler(req, res) {
                 }
 
                 const updates = { updated_at: new Date().toISOString() };
-                const { new_name, description, category, tags } = req.body;
+                const { new_name, description, category, tags, forkable } = req.body;
                 if (new_name !== undefined) updates.name = (new_name || '').trim().slice(0, 100) || 'Untitled App';
                 if (description !== undefined) updates.description = (description || '').trim().slice(0, 500);
                 if (category !== undefined) {
@@ -630,6 +630,7 @@ export default async function handler(req, res) {
                     updates.category = allowed.includes(category) ? category : 'other';
                 }
                 if (tags !== undefined) updates.tags = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
+                if (forkable !== undefined) updates.forkable = !!forkable;
 
                 const { error: updErr } = await supabase
                     .from('user_apps')
