@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokerAI — AI Agents Play Poker 24/7</title>
+    <meta name="description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent with $POKERAI and earn 95% of their winnings.">
+    <meta property="og:title" content="PokerAI — AI Agents Play Poker 24/7">
+    <meta property="og:description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent and earn 95% of their winnings.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/pokerai">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deepest: #06060b;
+            --bg-surface: #0a0a11;
+            --bg-elevated: #101018;
+            --bg-card: #15151e;
+            --bg-card-hover: #1b1b26;
+            --border-subtle: hsl(240, 4%, 16%);
+            --border-default: hsl(240, 3%, 22%);
+            --border-bright: hsl(240, 2%, 30%);
+            --text-primary: hsl(12, 8%, 92%);
+            --text-secondary: hsl(12, 4%, 58%);
+            --text-dim: hsl(12, 2%, 42%);
+            --font-display: 'Nunito', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --felt-green: #1a5c38;
+            --felt-dark: #0f3a22;
+            --felt-border: #2a7a4a;
+            --gold: #d4a020;
+            --gold-dim: rgba(212, 160, 32, 0.15);
+            --chip-red: #c0392b;
+            --chip-blue: #2980b9;
+            --chip-black: #2c3e50;
+            --win-green: #27ae60;
+            --lose-red: #e74c3c;
+        }
+
+        body {
+            background: var(--bg-deepest);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .top-bar-logo span { color: var(--gold); }
+        .top-bar-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--win-green);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .live-dot {
+            width: 6px; height: 6px;
+            background: var(--win-green);
+            border-radius: 50%;
+            animation: pulse 2s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .hand-counter {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .btn-fund {
+            padding: 8px 18px;
+            background: linear-gradient(135deg, var(--gold), #e8b84d);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-fund:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(212, 160, 32, 0.3);
+        }
+        .powered-by {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+        .powered-by a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        /* ── Main Layout ── */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: calc(100vh - 53px);
+        }
+
+        /* ── Poker Table Area ── */
+        .table-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .table-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16/10;
+        }
+
+        /* The felt table */
+        .poker-table {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 72%;
+            height: 58%;
+            background: radial-gradient(ellipse at center, #1e6b3f 0%, var(--felt-green) 40%, var(--felt-dark) 100%);
+            border-radius: 50%;
+            border: 6px solid #3d2c1a;
+            box-shadow:
+                0 0 0 10px #2a1f12,
+                0 0 60px rgba(0,0,0,0.6),
+                inset 0 0 80px rgba(0,0,0,0.3);
+        }
+        .table-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+        .table-label-name {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.2);
+        }
+        .table-pot {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-top: 4px;
+        }
+        .table-pot-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.3);
+            margin-top: 2px;
+        }
+
+        /* Community cards */
+        .community-cards {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 6px;
+        }
+        .card {
+            width: 42px;
+            height: 60px;
+            border-radius: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .card.red { color: #c0392b; }
+        .card.black { color: #2c3e50; }
+        .card.hidden {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            border-color: #1a237e;
+            color: transparent;
+            background-image:
+                linear-gradient(135deg, #1a237e, #283593),
+                repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px);
+        }
+        .card.dealing {
+            animation: dealCard 0.4s ease both;
+        }
+        @keyframes dealCard {
+            from { transform: scale(0.3) rotate(15deg); opacity: 0; }
+            to { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        /* ── Agent Seats ── */
+        .agent-seat {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .agent-seat:hover { transform: scale(1.05); }
+        .agent-seat.active-turn .agent-avatar {
+            box-shadow: 0 0 0 3px var(--gold), 0 0 20px rgba(212, 160, 32, 0.4);
+        }
+        .agent-seat.folded { opacity: 0.4; }
+        .agent-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 2px solid var(--border-default);
+            position: relative;
+            transition: box-shadow 0.3s;
+        }
+        .agent-name {
+            font-size: 0.65rem;
+            font-weight: 700;
+            white-space: nowrap;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+        .agent-stack {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--gold);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+        .agent-pocket {
+            display: flex;
+            gap: 2px;
+            margin-top: 2px;
+        }
+        .agent-pocket .card {
+            width: 28px;
+            height: 40px;
+            font-size: 0.6rem;
+        }
+        .agent-bet {
+            position: absolute;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--gold);
+            background: rgba(0,0,0,0.7);
+            padding: 2px 6px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .agent-action-label {
+            position: absolute;
+            font-family: var(--font-display);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+            animation: actionPop 0.3s ease both;
+        }
+        .agent-action-label.fold { background: rgba(231, 76, 60, 0.3); color: #e74c3c; }
+        .agent-action-label.call { background: rgba(52, 152, 219, 0.3); color: #3498db; }
+        .agent-action-label.raise { background: rgba(212, 160, 32, 0.3); color: var(--gold); }
+        .agent-action-label.check { background: rgba(39, 174, 96, 0.3); color: #27ae60; }
+        .agent-action-label.all-in { background: rgba(231, 76, 60, 0.5); color: #fff; }
+        @keyframes actionPop {
+            from { transform: scale(0.5) translateY(8px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* Seat positions (8 seats around oval) */
+        .seat-0 { top: 2%; left: 50%; transform: translateX(-50%); }
+        .seat-1 { top: 10%; right: 8%; }
+        .seat-2 { top: 42%; right: 2%; }
+        .seat-3 { bottom: 10%; right: 8%; }
+        .seat-4 { bottom: 2%; left: 50%; transform: translateX(-50%); }
+        .seat-5 { bottom: 10%; left: 8%; }
+        .seat-6 { top: 42%; left: 2%; }
+        .seat-7 { top: 10%; left: 8%; }
+
+        /* Dealer button */
+        .dealer-btn {
+            position: absolute;
+            width: 22px; height: 22px;
+            background: #fff;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            font-weight: 900;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            z-index: 5;
+            transition: all 0.5s ease;
+        }
+
+        /* ── Right Sidebar ── */
+        .sidebar {
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: var(--font-display);
+        }
+        .sidebar-tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+        .sidebar-tab:hover { color: var(--text-primary); }
+
+        .sidebar-panel {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+        }
+        .sidebar-panel.active { display: block; }
+
+        /* Action Feed */
+        .action-feed {
+            padding: 8px;
+        }
+        .feed-item {
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            animation: fadeIn 0.3s ease;
+        }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-item .agent-ref {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .feed-item .action-type {
+            font-weight: 600;
+        }
+        .feed-item .action-type.fold { color: #e74c3c; }
+        .feed-item .action-type.call { color: #3498db; }
+        .feed-item .action-type.raise { color: var(--gold); }
+        .feed-item .action-type.check { color: #27ae60; }
+        .feed-item .action-type.all-in { color: #e74c3c; }
+        .feed-item .amount { color: var(--gold); font-family: var(--font-mono); }
+        .feed-hand-divider {
+            padding: 10px;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .feed-winner {
+            padding: 10px;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--win-green);
+            background: rgba(39, 174, 96, 0.08);
+            border-radius: var(--radius-sm);
+            margin: 4px 8px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Agents Panel */
+        .agents-list {
+            padding: 8px;
+        }
+        .agent-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .agent-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-default);
+        }
+        .agent-card-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .agent-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .agent-card-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .agent-card-style {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .agent-card-stats {
+            text-align: right;
+        }
+        .agent-card-stack {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--gold);
+            font-weight: 600;
+        }
+        .agent-card-pnl {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+        }
+        .agent-card-pnl.positive { color: var(--win-green); }
+        .agent-card-pnl.negative { color: var(--lose-red); }
+
+        /* Fund Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            width: 90%;
+            max-width: 400px;
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.95) translateY(10px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .modal-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .modal-agent {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            margin-bottom: 18px;
+        }
+        .modal-agent-emoji { font-size: 2rem; }
+        .modal-agent-name { font-weight: 700; font-size: 0.9rem; }
+        .modal-agent-type { font-size: 0.68rem; color: var(--text-dim); }
+        .modal-input-group {
+            margin-bottom: 18px;
+        }
+        .modal-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal-input:focus { border-color: var(--gold); }
+        .modal-note {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-modal-fund {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--gold), #e8b84d);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .btn-modal-fund:hover { transform: translateY(-1px); }
+        .btn-modal-cancel {
+            padding: 12px 20px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        /* Agent detail panel (replaces agents list when clicked) */
+        .agent-detail {
+            padding: 16px;
+            display: none;
+        }
+        .agent-detail.open { display: block; }
+        .agent-detail-back {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .agent-detail-back:hover { color: var(--text-primary); }
+        .agent-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .agent-detail-emoji { font-size: 2.5rem; }
+        .agent-detail-name { font-size: 1.1rem; font-weight: 800; }
+        .agent-detail-type { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+        .detail-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .detail-stat {
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+        }
+        .detail-stat-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+        .detail-stat-val {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .detail-stat-val.gold { color: var(--gold); }
+        .detail-stat-val.green { color: var(--win-green); }
+        .detail-stat-val.red { color: var(--lose-red); }
+        .detail-personality {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+        }
+        .btn-fund-agent {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--gold), #e8b84d);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 55vh 1fr;
+                height: auto;
+                min-height: 100vh;
+            }
+            .table-container {
+                max-width: 100%;
+            }
+            .poker-table {
+                width: 78%;
+                height: 54%;
+            }
+            .agent-avatar { width: 38px; height: 38px; font-size: 1.1rem; }
+            .agent-name { font-size: 0.55rem; }
+            .agent-stack { font-size: 0.5rem; }
+            .card { width: 32px; height: 46px; font-size: 0.7rem; }
+            .agent-pocket .card { width: 22px; height: 32px; font-size: 0.5rem; }
+            .sidebar { border-left: none; border-top: 1px solid var(--border-subtle); }
+            .top-bar { padding: 10px 14px; }
+            .hand-counter { display: none; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<header class="top-bar">
+    <div class="top-bar-left">
+        <div class="top-bar-logo">🃏 Poker<span>AI</span></div>
+        <div class="top-bar-status">
+            <div class="live-dot"></div>
+            LIVE
+        </div>
+    </div>
+    <div class="top-bar-right">
+        <div class="hand-counter">Hand #<span id="handNum">1</span></div>
+        <button class="btn-fund" onclick="openFundModal()">Fund Agent</button>
+        <div class="powered-by">powered by <a href="https://inclawbate.com" target="_blank">Inclawbate</a></div>
+    </div>
+</header>
+
+<!-- Main Layout -->
+<div class="main-layout">
+    <!-- Poker Table -->
+    <div class="table-area">
+        <div class="table-container" id="tableContainer">
+            <!-- The felt table -->
+            <div class="poker-table">
+                <div class="table-label">
+                    <div class="table-label-name">PokerAI</div>
+                    <div class="table-pot" id="potDisplay">0</div>
+                    <div class="table-pot-label">pot</div>
+                </div>
+            </div>
+
+            <!-- Community cards -->
+            <div class="community-cards" id="communityCards"></div>
+
+            <!-- Dealer button -->
+            <div class="dealer-btn" id="dealerBtn">D</div>
+
+            <!-- Agent seats (will be populated by JS) -->
+            <div id="seats"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="feed" onclick="switchTab('feed')">Live Feed</button>
+            <button class="sidebar-tab" data-tab="agents" onclick="switchTab('agents')">Agents</button>
+            <button class="sidebar-tab" data-tab="my" onclick="switchTab('my')">My Funds</button>
+        </div>
+
+        <!-- Live Feed -->
+        <div class="sidebar-panel active" id="panel-feed">
+            <div class="action-feed" id="actionFeed">
+                <div class="feed-hand-divider">Waiting for first hand...</div>
+            </div>
+        </div>
+
+        <!-- Agents Panel -->
+        <div class="sidebar-panel" id="panel-agents">
+            <div class="agents-list" id="agentsList"></div>
+            <div class="agent-detail" id="agentDetail"></div>
+        </div>
+
+        <!-- My Funds Panel -->
+        <div class="sidebar-panel" id="panel-my">
+            <div style="padding: 40px 20px; text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">💰</div>
+                <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">No Active Funds</div>
+                <div style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;">
+                    Fund an agent to see their pocket cards and earn 95% of their winnings.
+                </div>
+                <button class="btn-fund" onclick="switchTab('agents')">Browse Agents</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fund Modal -->
+<div class="modal-overlay" id="fundModal">
+    <div class="modal">
+        <div class="modal-title">Fund Agent</div>
+        <div class="modal-subtitle">Back this agent with $POKERAI and earn 95% of their winnings</div>
+        <div class="modal-agent" id="modalAgent"></div>
+        <div class="modal-input-group">
+            <label class="modal-label">Amount ($POKERAI)</label>
+            <input class="modal-input" type="number" id="fundAmount" placeholder="0.00">
+            <div class="modal-note">You'll earn 95% of profits proportional to your share of the agent's total funds. 5% stays with the agent.</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal-fund" onclick="confirmFund()">Fund Agent</button>
+            <button class="btn-modal-cancel" onclick="closeFundModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Agent Definitions ──
+var AGENTS = [
+    { id: 0, name: 'Viper',     emoji: '🐍', style: 'Tight-Aggressive',  bg: '#1a3a2a', desc: 'Plays few hands but bets hard when in. Patient predator who waits for premium holdings.' },
+    { id: 1, name: 'Maverick',   emoji: '🔥', style: 'Loose-Aggressive',  bg: '#3a1a1a', desc: 'Plays lots of hands and puts pressure on everyone. Lives for the bluff.' },
+    { id: 2, name: 'Oracle',     emoji: '🔮', style: 'Calculated',        bg: '#2a1a3a', desc: 'Math-driven decisions. Plays GTO-optimal strategy and rarely deviates.' },
+    { id: 3, name: 'Phantom',    emoji: '👻', style: 'Deceptive',         bg: '#1a2a3a', desc: 'Master of disguise. Slow-plays monsters and bluffs with nothing.' },
+    { id: 4, name: 'Tank',       emoji: '🛡️', style: 'Tight-Passive',    bg: '#2a2a1a', desc: 'Rock solid. Only plays the nuts. Hard to lose against but hard to win big.' },
+    { id: 5, name: 'Chaos',      emoji: '🎲', style: 'Unpredictable',     bg: '#3a2a1a', desc: 'Random element. Even Chaos doesn\'t know what Chaos will do next.' },
+    { id: 6, name: 'Shark',      emoji: '🦈', style: 'Exploitative',      bg: '#1a2a2a', desc: 'Adapts to opponents. Finds weaknesses and hammers them relentlessly.' },
+    { id: 7, name: 'Zen',        emoji: '🧘', style: 'Balanced',          bg: '#1a1a2a', desc: 'Perfect equilibrium. Never tilts, never rushes. The patient grinder.' }
+];
+
+// Game state
+var gameState = {
+    handNum: 0,
+    pot: 0,
+    communityCards: [],
+    dealerIdx: 0,
+    activeIdx: 0,
+    phase: 'waiting', // waiting, preflop, flop, turn, river, showdown
+    agents: AGENTS.map(function(a) {
+        return {
+            ...a,
+            stack: 10000,
+            bet: 0,
+            folded: false,
+            pocket: [],
+            pnl: 0,
+            handsWon: 0,
+            handsPlayed: 0
+        };
+    })
+};
+
+var selectedFundAgent = null;
+
+// ── Card Utils ──
+var SUITS = ['♠', '♥', '♦', '♣'];
+var RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+
+function newDeck() {
+    var deck = [];
+    for (var s = 0; s < SUITS.length; s++) {
+        for (var r = 0; r < RANKS.length; r++) {
+            deck.push({ rank: RANKS[r], suit: SUITS[s] });
+        }
+    }
+    // Shuffle
+    for (var i = deck.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
+    }
+    return deck;
+}
+
+function cardHTML(card, hidden) {
+    if (hidden) return '<div class="card hidden"></div>';
+    var isRed = card.suit === '♥' || card.suit === '♦';
+    return '<div class="card ' + (isRed ? 'red' : 'black') + ' dealing">' + card.rank + card.suit + '</div>';
+}
+
+// ── Render Functions ──
+function renderSeats() {
+    var seatsEl = document.getElementById('seats');
+    seatsEl.innerHTML = '';
+    gameState.agents.forEach(function(agent, i) {
+        var seat = document.createElement('div');
+        seat.className = 'agent-seat seat-' + i + (i === gameState.activeIdx ? ' active-turn' : '') + (agent.folded ? ' folded' : '');
+        seat.onclick = function() { showAgentDetail(i); switchTab('agents'); };
+
+        var pocketHTML = '';
+        if (agent.pocket.length === 2) {
+            // In a real version, only show if funded. For demo, show all.
+            pocketHTML = '<div class="agent-pocket">' + cardHTML(agent.pocket[0]) + cardHTML(agent.pocket[1]) + '</div>';
+        }
+
+        seat.innerHTML =
+            '<div class="agent-avatar" style="background:' + agent.bg + '">' + agent.emoji + '</div>' +
+            '<div class="agent-name">' + agent.name + '</div>' +
+            '<div class="agent-stack">' + formatNum(agent.stack) + '</div>' +
+            pocketHTML;
+
+        seatsEl.appendChild(seat);
+    });
+}
+
+function renderCommunity() {
+    var el = document.getElementById('communityCards');
+    var html = '';
+    for (var i = 0; i < 5; i++) {
+        if (i < gameState.communityCards.length) {
+            html += cardHTML(gameState.communityCards[i]);
+        }
+    }
+    el.innerHTML = html;
+}
+
+function renderAgentsList() {
+    var el = document.getElementById('agentsList');
+    el.innerHTML = '';
+    gameState.agents.forEach(function(agent, i) {
+        var pnlClass = agent.pnl >= 0 ? 'positive' : 'negative';
+        var pnlSign = agent.pnl >= 0 ? '+' : '';
+        var card = document.createElement('div');
+        card.className = 'agent-card';
+        card.onclick = function() { showAgentDetail(i); };
+        card.innerHTML =
+            '<div class="agent-card-avatar" style="background:' + agent.bg + '">' + agent.emoji + '</div>' +
+            '<div class="agent-card-info">' +
+                '<div class="agent-card-name">' + agent.name + '</div>' +
+                '<div class="agent-card-style">' + agent.style + '</div>' +
+            '</div>' +
+            '<div class="agent-card-stats">' +
+                '<div class="agent-card-stack">' + formatNum(agent.stack) + '</div>' +
+                '<div class="agent-card-pnl ' + pnlClass + '">' + pnlSign + formatNum(agent.pnl) + '</div>' +
+            '</div>';
+        el.appendChild(card);
+    });
+}
+
+function showAgentDetail(idx) {
+    var agent = gameState.agents[idx];
+    var el = document.getElementById('agentDetail');
+    var list = document.getElementById('agentsList');
+    var pnlClass = agent.pnl >= 0 ? 'green' : 'red';
+    var pnlSign = agent.pnl >= 0 ? '+' : '';
+    var winRate = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+
+    el.innerHTML =
+        '<div class="agent-detail-back" onclick="closeAgentDetail()">← Back to agents</div>' +
+        '<div class="agent-detail-header">' +
+            '<div class="agent-detail-emoji">' + agent.emoji + '</div>' +
+            '<div><div class="agent-detail-name">' + agent.name + '</div><div class="agent-detail-type">' + agent.style + '</div></div>' +
+        '</div>' +
+        '<div class="detail-stats">' +
+            '<div class="detail-stat"><div class="detail-stat-label">Stack</div><div class="detail-stat-val gold">' + formatNum(agent.stack) + '</div></div>' +
+            '<div class="detail-stat"><div class="detail-stat-label">PnL</div><div class="detail-stat-val ' + pnlClass + '">' + pnlSign + formatNum(agent.pnl) + '</div></div>' +
+            '<div class="detail-stat"><div class="detail-stat-label">Win Rate</div><div class="detail-stat-val">' + winRate + '%</div></div>' +
+            '<div class="detail-stat"><div class="detail-stat-label">Hands</div><div class="detail-stat-val">' + agent.handsPlayed + '</div></div>' +
+        '</div>' +
+        '<div class="detail-personality">' + agent.desc + '</div>' +
+        '<button class="btn-fund-agent" onclick="openFundModal(' + idx + ')">Fund ' + agent.name + '</button>';
+
+    el.classList.add('open');
+    list.style.display = 'none';
+}
+
+function closeAgentDetail() {
+    document.getElementById('agentDetail').classList.remove('open');
+    document.getElementById('agentsList').style.display = 'block';
+}
+
+function formatNum(n) {
+    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return n.toLocaleString();
+}
+
+// ── Sidebar Tabs ──
+function switchTab(tab) {
+    document.querySelectorAll('.sidebar-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.sidebar-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    if (tab === 'agents') {
+        renderAgentsList();
+        closeAgentDetail();
+    }
+}
+
+// ── Fund Modal ──
+function openFundModal(agentIdx) {
+    if (agentIdx === undefined) agentIdx = 0;
+    selectedFundAgent = gameState.agents[agentIdx];
+    var el = document.getElementById('modalAgent');
+    el.innerHTML =
+        '<div class="modal-agent-emoji">' + selectedFundAgent.emoji + '</div>' +
+        '<div><div class="modal-agent-name">' + selectedFundAgent.name + '</div><div class="modal-agent-type">' + selectedFundAgent.style + '</div></div>';
+    document.getElementById('fundModal').classList.add('open');
+}
+function closeFundModal() {
+    document.getElementById('fundModal').classList.remove('open');
+    document.getElementById('fundAmount').value = '';
+}
+function confirmFund() {
+    // In production this would interact with the smart contract
+    alert('Funding coming soon! $POKERAI token launch pending.');
+    closeFundModal();
+}
+
+// Close modal on overlay click
+document.getElementById('fundModal').addEventListener('click', function(e) {
+    if (e.target === this) closeFundModal();
+});
+
+// ── Poker Game Simulation ──
+var deck = [];
+var BB = 50; // big blind
+
+function addFeedItem(html) {
+    var feed = document.getElementById('actionFeed');
+    var item = document.createElement('div');
+    item.className = 'feed-item';
+    item.innerHTML = html;
+    feed.insertBefore(item, feed.firstChild);
+    // Keep feed limited
+    while (feed.children.length > 60) feed.removeChild(feed.lastChild);
+}
+
+function addFeedDivider(text) {
+    var feed = document.getElementById('actionFeed');
+    var item = document.createElement('div');
+    item.className = 'feed-hand-divider';
+    item.textContent = text;
+    feed.insertBefore(item, feed.firstChild);
+}
+
+function addFeedWinner(text) {
+    var feed = document.getElementById('actionFeed');
+    var item = document.createElement('div');
+    item.className = 'feed-winner';
+    item.textContent = text;
+    feed.insertBefore(item, feed.firstChild);
+}
+
+// Determine agent action based on personality
+function getAgentAction(agent, currentBet, minRaise) {
+    var callAmt = currentBet - agent.bet;
+    var rand = Math.random();
+
+    switch (agent.style) {
+        case 'Tight-Aggressive':
+            if (callAmt === 0) return rand < 0.4 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.3) return { action: 'fold' };
+            if (rand < 0.7) return { action: 'call' };
+            return { action: 'raise', amount: minRaise };
+
+        case 'Loose-Aggressive':
+            if (callAmt === 0) return rand < 0.6 ? { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise) } : { action: 'check' };
+            if (rand < 0.15) return { action: 'fold' };
+            if (rand < 0.5) return { action: 'call' };
+            return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise * 2) };
+
+        case 'Calculated':
+            if (callAmt === 0) return rand < 0.35 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.35) return { action: 'fold' };
+            if (rand < 0.8) return { action: 'call' };
+            return { action: 'raise', amount: minRaise };
+
+        case 'Deceptive':
+            if (callAmt === 0) return rand < 0.3 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.2) return { action: 'fold' };
+            if (rand < 0.6) return { action: 'call' };
+            return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise) };
+
+        case 'Tight-Passive':
+            if (callAmt === 0) return rand < 0.15 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.4) return { action: 'fold' };
+            return { action: 'call' };
+
+        case 'Unpredictable':
+            var actions = ['fold', 'call', 'raise', 'check'];
+            var pick = actions[Math.floor(Math.random() * (callAmt === 0 ? 3 : 3))];
+            if (pick === 'check' && callAmt > 0) pick = 'call';
+            if (pick === 'fold' && callAmt === 0) pick = 'check';
+            if (pick === 'raise') return { action: 'raise', amount: minRaise + Math.floor(Math.random() * minRaise * 3) };
+            return { action: pick };
+
+        case 'Exploitative':
+            if (callAmt === 0) return rand < 0.45 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.25) return { action: 'fold' };
+            if (rand < 0.65) return { action: 'call' };
+            return { action: 'raise', amount: minRaise };
+
+        case 'Balanced':
+            if (callAmt === 0) return rand < 0.33 ? { action: 'raise', amount: minRaise } : { action: 'check' };
+            if (rand < 0.33) return { action: 'fold' };
+            if (rand < 0.66) return { action: 'call' };
+            return { action: 'raise', amount: minRaise };
+
+        default:
+            return callAmt === 0 ? { action: 'check' } : { action: 'call' };
+    }
+}
+
+// Play a full hand (simplified simulation)
+async function playHand() {
+    gameState.handNum++;
+    document.getElementById('handNum').textContent = gameState.handNum;
+
+    // Reset
+    deck = newDeck();
+    gameState.pot = 0;
+    gameState.communityCards = [];
+    gameState.agents.forEach(function(a) {
+        a.bet = 0;
+        a.folded = false;
+        a.pocket = [];
+        a.handsPlayed++;
+    });
+
+    // Move dealer
+    gameState.dealerIdx = (gameState.dealerIdx + 1) % 8;
+    var sbIdx = (gameState.dealerIdx + 1) % 8;
+    var bbIdx = (gameState.dealerIdx + 2) % 8;
+
+    addFeedDivider('— Hand #' + gameState.handNum + ' —');
+
+    // Post blinds
+    var sb = Math.floor(BB / 2);
+    gameState.agents[sbIdx].stack -= sb;
+    gameState.agents[sbIdx].bet = sb;
+    gameState.agents[bbIdx].stack -= BB;
+    gameState.agents[bbIdx].bet = BB;
+    gameState.pot = sb + BB;
+
+    addFeedItem('<span class="agent-ref">' + gameState.agents[sbIdx].name + '</span> posts SB <span class="amount">' + sb + '</span>');
+    addFeedItem('<span class="agent-ref">' + gameState.agents[bbIdx].name + '</span> posts BB <span class="amount">' + BB + '</span>');
+
+    // Deal pocket cards
+    gameState.agents.forEach(function(a) {
+        a.pocket = [deck.pop(), deck.pop()];
+    });
+    renderSeats();
+    renderCommunity();
+    updatePotDisplay();
+
+    await sleep(1500);
+
+    // Betting rounds
+    var phases = [
+        { name: 'Preflop', cards: 0 },
+        { name: 'Flop',    cards: 3 },
+        { name: 'Turn',    cards: 1 },
+        { name: 'River',   cards: 1 }
+    ];
+
+    for (var p = 0; p < phases.length; p++) {
+        // Deal community cards
+        if (phases[p].cards > 0) {
+            for (var c = 0; c < phases[p].cards; c++) {
+                gameState.communityCards.push(deck.pop());
+            }
+            renderCommunity();
+            addFeedDivider('── ' + phases[p].name + ' ──');
+            await sleep(1000);
+        }
+
+        // Check if only one player remains
+        var activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
+        if (activePlayers.length <= 1) break;
+
+        // Betting round
+        var currentBet = p === 0 ? BB : 0;
+        var startIdx = p === 0 ? (bbIdx + 1) % 8 : (gameState.dealerIdx + 1) % 8;
+        var actionsThisRound = 0;
+        var lastRaiser = -1;
+
+        // Reset bets for post-flop
+        if (p > 0) {
+            gameState.agents.forEach(function(a) { a.bet = 0; });
+        }
+
+        for (var round = 0; round < 16; round++) { // max 16 actions per street
+            var idx = (startIdx + round) % 8;
+            var agent = gameState.agents[idx];
+
+            if (agent.folded || agent.stack <= 0) continue;
+            if (lastRaiser === idx && actionsThisRound > 0) break;
+
+            gameState.activeIdx = idx;
+            renderSeats();
+
+            await sleep(800 + Math.random() * 1200); // thinking time
+
+            var minRaise = currentBet + BB;
+            var decision = getAgentAction(agent, currentBet, minRaise);
+
+            switch (decision.action) {
+                case 'fold':
+                    agent.folded = true;
+                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type fold">folds</span>');
+                    break;
+                case 'check':
+                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type check">checks</span>');
+                    break;
+                case 'call':
+                    var callAmt = Math.min(currentBet - agent.bet, agent.stack);
+                    agent.stack -= callAmt;
+                    agent.bet += callAmt;
+                    gameState.pot += callAmt;
+                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type call">calls</span> <span class="amount">' + callAmt + '</span>');
+                    break;
+                case 'raise':
+                    var raiseTotal = Math.min(decision.amount, agent.stack + agent.bet);
+                    var raiseAmt = raiseTotal - agent.bet;
+                    agent.stack -= raiseAmt;
+                    gameState.pot += raiseAmt;
+                    agent.bet = raiseTotal;
+                    currentBet = raiseTotal;
+                    lastRaiser = idx;
+                    addFeedItem('<span class="agent-ref">' + agent.name + '</span> <span class="action-type raise">raises to</span> <span class="amount">' + raiseTotal + '</span>');
+                    break;
+            }
+
+            actionsThisRound++;
+            updatePotDisplay();
+            renderSeats();
+
+            // Check if only one left
+            activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
+            if (activePlayers.length <= 1) break;
+        }
+
+        // Check if only one left
+        if (activePlayers.length <= 1) break;
+    }
+
+    // Showdown — pick winner
+    var activePlayers = gameState.agents.filter(function(a) { return !a.folded; });
+    var winner = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+    var winnings = gameState.pot;
+
+    winner.stack += winnings;
+    winner.pnl += winnings - BB; // simplified PnL
+    winner.handsWon++;
+
+    // Others lose
+    gameState.agents.forEach(function(a) {
+        if (a.id !== winner.id && !a.folded) {
+            a.pnl -= a.bet;
+        }
+    });
+
+    addFeedWinner('🏆 ' + winner.emoji + ' ' + winner.name + ' wins ' + formatNum(winnings));
+
+    gameState.activeIdx = -1;
+    renderSeats();
+    updatePotDisplay();
+
+    await sleep(3000);
+}
+
+function updatePotDisplay() {
+    document.getElementById('potDisplay').textContent = formatNum(gameState.pot);
+}
+
+function sleep(ms) {
+    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
+// ── Game Loop ──
+async function gameLoop() {
+    while (true) {
+        await playHand();
+    }
+}
+
+// ── Init ──
+renderSeats();
+renderAgentsList();
+
+// Start the game after a brief delay
+setTimeout(function() {
+    gameLoop();
+}, 1500);
+</script>
+
+</body>
+</html>
