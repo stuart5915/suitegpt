@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Code Reviewer — Inclawbate</title>
+    <meta name="description" content="AI-powered code review and smart contract auditing with verifiable reports.">
+    <meta property="og:title" content="Code Reviewer — Inclawbate">
+    <meta property="og:description" content="AI-powered code review and smart contract auditing with verifiable reports.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/audit">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; background: var(--bg-deepest); }
+
+        .audit-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        /* ── Hero ── */
+        .audit-hero {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+            animation: fadeUp 0.5s ease both;
+        }
+        .audit-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: var(--space-xs);
+        }
+        .audit-hero p {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            max-width: 520px;
+            margin: 0 auto var(--space-sm);
+        }
+        .hero-badges {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .hero-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(99,102,241,0.15);
+            color: var(--lobster-300, #e07a5f);
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .hero-badge.sc { color: var(--seafoam-300, #6ec6a8); background: rgba(110,198,168,0.12); border-color: rgba(110,198,168,0.2); }
+
+        /* ── Input Section ── */
+        .input-section {
+            animation: fadeUp 0.5s ease 0.1s both;
+        }
+        .code-wrapper {
+            position: relative;
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated, var(--bg-card));
+            overflow: hidden;
+        }
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: rgba(255,255,255,0.02);
+        }
+        .lang-badge {
+            font-family: var(--font-mono, 'JetBrains Mono', monospace);
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: rgba(99,102,241,0.15);
+            color: var(--text-secondary, #aaa);
+            transition: all 0.2s;
+        }
+        .lang-badge.detected {
+            color: var(--seafoam-300, #6ec6a8);
+            background: rgba(110,198,168,0.15);
+        }
+        .lang-select {
+            font-family: var(--font-body, 'Nunito', sans-serif);
+            font-size: 0.78rem;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary, #aaa);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .lang-select:focus { outline: none; border-color: var(--lobster-400, #e07a5f); }
+
+        .code-textarea {
+            width: 100%;
+            min-height: 300px;
+            max-height: 600px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            resize: vertical;
+            tab-size: 4;
+        }
+        .code-textarea:focus { outline: none; }
+        .code-textarea::placeholder { color: var(--text-dim); }
+
+        .submit-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: var(--space-md);
+            gap: 12px;
+        }
+        .credit-note {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        .credit-note a { color: var(--lobster-400, #e07a5f); text-decoration: none; }
+        .credit-note a:hover { text-decoration: underline; }
+
+        .btn-review {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.9rem;
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--lobster-400, #e07a5f), var(--seafoam-400, #5baa8f));
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-review:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(224,122,95,0.3); }
+        .btn-review:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .login-prompt {
+            text-align: center;
+            padding: var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+        .login-prompt a { color: var(--lobster-400, #e07a5f); cursor: pointer; text-decoration: underline; }
+
+        /* ── Loading ── */
+        .loading-overlay {
+            display: none;
+            text-align: center;
+            padding: var(--space-2xl) 0;
+            animation: fadeUp 0.3s ease both;
+        }
+        .loading-overlay.visible { display: block; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--lobster-400, #e07a5f);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto var(--space-md);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-dim); font-size: 0.9rem; }
+
+        /* ── Results ── */
+        .results-section {
+            display: none;
+            animation: fadeUp 0.4s ease both;
+            margin-top: var(--space-xl);
+        }
+        .results-section.visible { display: block; }
+
+        .score-card {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            padding: var(--space-lg);
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            margin-bottom: var(--space-lg);
+        }
+        .score-circle {
+            position: relative;
+            width: 100px; height: 100px;
+            flex-shrink: 0;
+        }
+        .score-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .score-circle .track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+        .score-circle .progress { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+        .score-value {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-num { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; line-height: 1; }
+        .score-grade { font-size: 0.75rem; font-weight: 700; margin-top: 2px; }
+
+        .score-info { flex: 1; }
+        .score-info .summary { font-size: 0.88rem; color: var(--text-secondary, #bbb); line-height: 1.55; }
+        .score-info .meta-row { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+        .meta-tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-dim);
+            font-family: var(--font-mono, monospace);
+        }
+
+        /* ── Findings ── */
+        .findings-header {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: var(--space-lg) 0 var(--space-sm);
+        }
+        .finding {
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .finding-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .finding-header:hover { background: rgba(255,255,255,0.02); }
+        .sev-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+        }
+        .sev-critical { background: rgba(239,68,68,0.18); color: #f87171; }
+        .sev-high     { background: rgba(249,115,22,0.18); color: #fb923c; }
+        .sev-medium   { background: rgba(234,179,8,0.18);  color: #facc15; }
+        .sev-low      { background: rgba(96,165,250,0.18); color: #60a5fa; }
+        .sev-info     { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+        .finding-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .finding-line {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            font-family: var(--font-mono, monospace);
+        }
+        .finding-arrow {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+        .finding.open .finding-arrow { transform: rotate(90deg); }
+        .finding-body {
+            display: none;
+            padding: 0 16px 14px;
+            font-size: 0.83rem;
+            color: var(--text-secondary, #bbb);
+            line-height: 1.55;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 12px;
+            margin-top: -1px;
+        }
+        .finding.open .finding-body { display: block; }
+
+        .no-findings {
+            text-align: center;
+            padding: var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* ── Actions ── */
+        .actions-row {
+            display: flex;
+            gap: 10px;
+            margin-top: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            font-family: var(--font-body, 'Nunito', sans-serif);
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .btn-action:hover { border-color: var(--lobster-400, #e07a5f); background: rgba(224,122,95,0.08); }
+
+        /* ── Certificate ── */
+        .certificate-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(110,198,168,0.06);
+            margin-top: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .cert-icon { font-size: 1.3rem; }
+        .cert-text { font-size: 0.78rem; color: var(--text-secondary, #bbb); flex: 1; line-height: 1.4; }
+        .cert-text strong { color: var(--text-primary); }
+        .cert-hash {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            word-break: break-all;
+        }
+
+        /* ── Public Certificate View ── */
+        .cert-view {
+            display: none;
+            animation: fadeUp 0.4s ease both;
+        }
+        .cert-view.visible { display: block; }
+
+        .cert-card {
+            border-radius: 18px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            padding: var(--space-xl);
+            text-align: center;
+        }
+        .cert-card h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .cert-card .cert-subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: var(--space-lg); }
+
+        .cert-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 14px;
+            margin: var(--space-lg) 0;
+        }
+        .cert-stat {
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+        }
+        .cert-stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .cert-stat-value { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--text-primary); }
+
+        .cert-severity-counts {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: var(--space-md) 0;
+        }
+        .cert-sev-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .cert-cta {
+            display: inline-block;
+            margin-top: var(--space-xl);
+            padding: 12px 28px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--lobster-400, #e07a5f), var(--seafoam-400, #5baa8f));
+            color: #fff;
+            text-decoration: none;
+            font-weight: 800;
+            font-family: var(--font-display);
+            transition: transform 0.15s;
+        }
+        .cert-cta:hover { transform: translateY(-1px); }
+
+        /* ── External Auditors ── */
+        .ext-section {
+            margin-top: var(--space-3xl);
+            animation: fadeUp 0.5s ease 0.2s both;
+        }
+        .ext-header {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
+            position: relative;
+            display: inline-block;
+        }
+        .ext-header::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0;
+            width: 100%;
+            height: 2px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--lobster-400, #e07a5f), var(--seafoam-400, #5baa8f));
+        }
+        .ext-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        @media (max-width: 768px) { .ext-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .ext-grid { grid-template-columns: 1fr; } }
+
+        .ext-card {
+            display: flex;
+            flex-direction: column;
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+        .ext-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+        .ext-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .ext-icon { font-size: 1.4rem; }
+        .ext-name { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+        .ext-price {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+        .ext-price.free { background: rgba(110,198,168,0.15); color: var(--seafoam-300, #6ec6a8); }
+        .ext-price.paid { background: rgba(234,179,8,0.15); color: #facc15; }
+        .ext-desc { font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; flex: 1; }
+
+        /* ── Print styles ── */
+        @media print {
+            .nav, .footer, .input-section, .ext-section, .actions-row, .login-prompt, .hero-badges { display: none !important; }
+            body { background: #fff !important; color: #000 !important; }
+            .audit-page { padding: 20px !important; max-width: 100% !important; }
+            .results-section, .cert-view { display: block !important; }
+            .score-card, .finding, .certificate-bar, .cert-card, .cert-stat {
+                background: #fff !important;
+                border-color: #ddd !important;
+                color: #000 !important;
+            }
+            .score-num, .finding-title, .cert-stat-value, .cert-card h2 { color: #000 !important; }
+            .summary, .finding-body, .cert-text, .cert-subtitle { color: #333 !important; }
+            .finding-body { display: block !important; }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .audit-hero h1 { font-size: 1.6rem; }
+            .score-card { flex-direction: column; text-align: center; }
+            .submit-row { flex-direction: column; }
+            .btn-review { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <div class="nav-group">
+            <span class="nav-link">Explore</span>
+            <div class="nav-group-menu">
+                <a href="/projects">Projects</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/stake">Staking</a>
+            </div>
+        </div>
+        <div class="nav-group">
+            <a href="/inclawbator" class="nav-link">Inclawbator</a>
+            <div class="nav-group-menu">
+                <a href="/inclawbator#launch">Launch</a>
+                <a href="/tools">Tools</a>
+            </div>
+        </div>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<div class="audit-page">
+
+    <!-- Hero -->
+    <section class="audit-hero" id="heroSection">
+        <h1>Code Reviewer</h1>
+        <p>AI-powered code review &amp; smart contract auditing. Paste code, get a detailed report.</p>
+        <div class="hero-badges">
+            <span class="hero-badge sc">Smart Contracts</span>
+            <span class="hero-badge">General Code</span>
+        </div>
+    </section>
+
+    <!-- Input Section -->
+    <div class="input-section" id="inputSection">
+        <div class="code-wrapper">
+            <div class="code-header">
+                <span class="lang-badge" id="langBadge">Paste code to detect language</span>
+                <select class="lang-select" id="langSelect">
+                    <option value="auto">Auto-detect</option>
+                    <option value="solidity">Solidity</option>
+                    <option value="vyper">Vyper</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
+                    <option value="rust">Rust</option>
+                    <option value="go">Go</option>
+                </select>
+            </div>
+            <textarea class="code-textarea" id="codeInput" placeholder="// Paste your code here...&#10;// Smart contracts (Solidity, Vyper) get security-focused review&#10;// General code gets quality + bug-focused review" spellcheck="false"></textarea>
+        </div>
+        <div class="submit-row">
+            <span class="credit-note">Cost: <strong>10 credits</strong> &middot; <a href="/dashboard">Buy credits</a></span>
+            <button class="btn-review" id="reviewBtn" disabled>Review Code</button>
+        </div>
+        <div class="login-prompt" id="loginPrompt" style="display:none">
+            <a onclick="window.connectWallet && window.connectWallet()">Connect wallet</a> to review code
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingSection">
+        <div class="spinner"></div>
+        <div class="loading-text">Reviewing your code...</div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-section" id="resultsSection">
+        <div class="score-card">
+            <div class="score-circle">
+                <svg viewBox="0 0 120 120">
+                    <circle class="track" cx="60" cy="60" r="52"/>
+                    <circle class="progress" id="scoreArc" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+                </svg>
+                <div class="score-value">
+                    <span class="score-num" id="scoreNum">0</span>
+                    <span class="score-grade" id="scoreGrade">-</span>
+                </div>
+            </div>
+            <div class="score-info">
+                <div class="summary" id="summaryText"></div>
+                <div class="meta-row">
+                    <span class="meta-tag" id="metaLang"></span>
+                    <span class="meta-tag" id="metaType"></span>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="findings-header">Findings</h3>
+        <div id="findingsList"></div>
+
+        <div class="actions-row">
+            <button class="btn-action" id="shareBtn">Share Report</button>
+            <button class="btn-action" id="downloadBtn">Download PDF</button>
+            <button class="btn-action" id="resetBtn">Review Again</button>
+        </div>
+
+        <div class="certificate-bar" id="certBar">
+            <span class="cert-icon">&#9989;</span>
+            <div class="cert-text">
+                Reviewed on Inclawbate &middot; <span id="certDate"></span> &middot;
+                Score: <strong><span id="certScore"></span>/100</strong> &middot;
+                Audit ID: <strong><span id="certId"></span></strong>
+            </div>
+            <div class="cert-hash">SHA-256: <span id="certHash"></span></div>
+        </div>
+    </div>
+
+    <!-- Public Certificate View -->
+    <div class="cert-view" id="certView">
+        <div class="cert-card">
+            <h2>Inclawbate Code Review Certificate</h2>
+            <p class="cert-subtitle">Verified AI-powered code audit</p>
+
+            <div class="cert-stats">
+                <div class="cert-stat">
+                    <div class="cert-stat-label">Score</div>
+                    <div class="cert-stat-value" id="cvScore">-</div>
+                </div>
+                <div class="cert-stat">
+                    <div class="cert-stat-label">Grade</div>
+                    <div class="cert-stat-value" id="cvGrade">-</div>
+                </div>
+                <div class="cert-stat">
+                    <div class="cert-stat-label">Language</div>
+                    <div class="cert-stat-value" id="cvLang">-</div>
+                </div>
+                <div class="cert-stat">
+                    <div class="cert-stat-label">Date</div>
+                    <div class="cert-stat-value" id="cvDate">-</div>
+                </div>
+            </div>
+
+            <div class="cert-severity-counts" id="cvSevCounts"></div>
+
+            <div style="margin-top:var(--space-md)">
+                <span class="meta-tag" id="cvModel"></span>
+            </div>
+
+            <div class="cert-hash" style="margin-top:var(--space-lg)">
+                Code SHA-256: <span id="cvHash"></span>
+            </div>
+
+            <a href="/audit" class="cert-cta">Get Your Code Reviewed</a>
+        </div>
+    </div>
+
+    <!-- External Auditors -->
+    <section class="ext-section" id="extSection">
+        <h2 class="ext-header">Get a Second Opinion</h2>
+        <div class="ext-grid">
+            <a href="https://de.fi/scanner" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#128737;</span>
+                    <span class="ext-name">De.Fi Scanner</span>
+                    <span class="ext-price free">Free</span>
+                </div>
+                <div class="ext-desc">Paste a contract address for instant security analysis and risk scoring.</div>
+            </a>
+            <a href="https://app.auditbase.com" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#9889;</span>
+                    <span class="ext-name">AuditBase</span>
+                    <span class="ext-price free">Free</span>
+                </div>
+                <div class="ext-desc">AI-powered smart contract audit in 30 seconds. Supports Solidity.</div>
+            </a>
+            <a href="https://solidityscan.com" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#128270;</span>
+                    <span class="ext-name">SolidityScan</span>
+                    <span class="ext-price paid">From $30</span>
+                </div>
+                <div class="ext-desc">Automated security auditing with detailed vulnerability reports.</div>
+            </a>
+            <a href="https://github.com/crytic/slither" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#128013;</span>
+                    <span class="ext-name">Slither</span>
+                    <span class="ext-price free">Free / OSS</span>
+                </div>
+                <div class="ext-desc">Open-source static analysis framework for Solidity. Run locally.</div>
+            </a>
+            <a href="https://www.certik.com" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#128272;</span>
+                    <span class="ext-name">CertiK</span>
+                    <span class="ext-price paid">Enterprise</span>
+                </div>
+                <div class="ext-desc">Industry-leading blockchain security firm. Full manual + automated audits.</div>
+            </a>
+            <a href="https://www.cyfrin.io" target="_blank" rel="noopener" class="ext-card">
+                <div class="ext-card-top">
+                    <span class="ext-icon">&#9879;</span>
+                    <span class="ext-name">Cyfrin</span>
+                    <span class="ext-price paid">Competitive</span>
+                </div>
+                <div class="ext-desc">Competitive audit platform by Patrick Collins. Community-driven security.</div>
+            </a>
+        </div>
+    </section>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; The Agent-Human Economy</p>
+        <div class="footer-links">
+            <a href="/agents" class="footer-link">Agents</a>
+            <a href="/tokens" class="footer-link">Tokens</a>
+            <a href="/apps" class="footer-link">Apps</a>
+            <a href="/stake" class="footer-link">Stake</a>
+            <a href="/skills" class="footer-link">Skills</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="/team" class="footer-link">Team</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+<script>
+(function() {
+    const SMART_CONTRACT_LANGS = ['solidity', 'vyper', 'move', 'cairo'];
+
+    // Elements
+    const codeInput = document.getElementById('codeInput');
+    const langBadge = document.getElementById('langBadge');
+    const langSelect = document.getElementById('langSelect');
+    const reviewBtn = document.getElementById('reviewBtn');
+    const loginPrompt = document.getElementById('loginPrompt');
+    const loadingSection = document.getElementById('loadingSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const inputSection = document.getElementById('inputSection');
+    const heroSection = document.getElementById('heroSection');
+    const certView = document.getElementById('certView');
+    const extSection = document.getElementById('extSection');
+
+    let currentAuditId = null;
+    let currentResult = null;
+
+    // ── Language Detection ──
+    function detectLang(code) {
+        if (/pragma\s+solidity/i.test(code) || /contract\s+\w+\s*\{/i.test(code)) return 'solidity';
+        if (/@external|@internal/.test(code) && /def\s+\w+/.test(code) && /#\s*@version/.test(code)) return 'vyper';
+        if (/:\s*(string|number|boolean|void)\b|interface\s+\w+/m.test(code)) return 'typescript';
+        if (/^import\s+.*from\s+['"]|const\s+\w+\s*=|=>\s*\{/m.test(code)) return 'javascript';
+        if (/^(def |class |import |from )/m.test(code) && /:\s*$/m.test(code)) return 'python';
+        if (/^use\s+|fn\s+\w+|impl\s+\w+/m.test(code) && /->/.test(code)) return 'rust';
+        if (/^package\s+\w+/m.test(code) && /func\s+\w+/m.test(code)) return 'go';
+        return null;
+    }
+
+    let detectTimer;
+    codeInput.addEventListener('input', function() {
+        clearTimeout(detectTimer);
+        detectTimer = setTimeout(function() {
+            const code = codeInput.value.trim();
+            reviewBtn.disabled = code.length < 10;
+            if (langSelect.value !== 'auto') return;
+            const lang = detectLang(code);
+            if (lang) {
+                langBadge.textContent = lang.charAt(0).toUpperCase() + lang.slice(1);
+                langBadge.classList.add('detected');
+                if (SMART_CONTRACT_LANGS.includes(lang)) {
+                    langBadge.textContent += ' (Smart Contract)';
+                }
+            } else if (code.length > 0) {
+                langBadge.textContent = 'Unknown language';
+                langBadge.classList.remove('detected');
+            } else {
+                langBadge.textContent = 'Paste code to detect language';
+                langBadge.classList.remove('detected');
+            }
+        }, 300);
+    });
+
+    langSelect.addEventListener('change', function() {
+        if (langSelect.value !== 'auto') {
+            const v = langSelect.value;
+            langBadge.textContent = v.charAt(0).toUpperCase() + v.slice(1);
+            langBadge.classList.add('detected');
+            if (SMART_CONTRACT_LANGS.includes(v)) langBadge.textContent += ' (Smart Contract)';
+        } else {
+            codeInput.dispatchEvent(new Event('input'));
+        }
+    });
+
+    // ── Auth Check ──
+    function getToken() {
+        try {
+            const raw = localStorage.getItem('sb-auth-token');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                return parsed.access_token || null;
+            }
+        } catch(e) {}
+        // Try supabase session storage keys
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.includes('supabase') && key.includes('auth')) {
+                try {
+                    const val = JSON.parse(localStorage.getItem(key));
+                    if (val && val.access_token) return val.access_token;
+                } catch(e) {}
+            }
+        }
+        return null;
+    }
+
+    function checkAuth() {
+        const token = getToken();
+        if (token) {
+            reviewBtn.style.display = '';
+            loginPrompt.style.display = 'none';
+        } else {
+            reviewBtn.style.display = 'none';
+            loginPrompt.style.display = '';
+        }
+    }
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+
+    // ── Score Colors ──
+    function scoreColor(score) {
+        if (score >= 80) return 'hsl(120, 50%, 45%)';
+        if (score >= 60) return 'hsl(40, 80%, 50%)';
+        return 'hsl(0, 60%, 50%)';
+    }
+
+    // ── Render Results ──
+    function showResults(data) {
+        currentResult = data;
+        currentAuditId = data.id;
+
+        // Score circle
+        const circumference = 2 * Math.PI * 52; // ~326.73
+        const offset = circumference - (data.score / 100) * circumference;
+        const color = scoreColor(data.score);
+        const arc = document.getElementById('scoreArc');
+        arc.style.stroke = color;
+        arc.style.strokeDashoffset = offset;
+
+        document.getElementById('scoreNum').textContent = data.score;
+        document.getElementById('scoreNum').style.color = color;
+        document.getElementById('scoreGrade').textContent = data.grade;
+        document.getElementById('scoreGrade').style.color = color;
+        document.getElementById('summaryText').textContent = data.summary;
+        document.getElementById('metaLang').textContent = data.language;
+        document.getElementById('metaType').textContent = data.is_smart_contract ? 'Smart Contract Audit' : 'Code Review';
+
+        // Findings
+        const findings = data.findings || [];
+        const list = document.getElementById('findingsList');
+        list.innerHTML = '';
+
+        if (findings.length === 0) {
+            list.innerHTML = '<div class="no-findings">No issues found. Nice work!</div>';
+        } else {
+            const sevOrder = ['critical', 'high', 'medium', 'low', 'info'];
+            findings.sort(function(a, b) { return sevOrder.indexOf(a.severity) - sevOrder.indexOf(b.severity); });
+            findings.forEach(function(f) {
+                var div = document.createElement('div');
+                div.className = 'finding';
+                div.innerHTML =
+                    '<div class="finding-header">' +
+                        '<span class="sev-badge sev-' + f.severity + '">' + f.severity + '</span>' +
+                        '<span class="finding-title">' + escHtml(f.title) + '</span>' +
+                        (f.line ? '<span class="finding-line">L' + f.line + '</span>' : '') +
+                        '<span class="finding-arrow">&#9654;</span>' +
+                    '</div>' +
+                    '<div class="finding-body">' + escHtml(f.description) + '</div>';
+                div.querySelector('.finding-header').addEventListener('click', function() {
+                    div.classList.toggle('open');
+                });
+                list.appendChild(div);
+            });
+        }
+
+        // Certificate bar
+        document.getElementById('certDate').textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        document.getElementById('certScore').textContent = data.score;
+        document.getElementById('certId').textContent = data.id ? data.id.slice(0, 8) : '-';
+        document.getElementById('certHash').textContent = data.code_hash || '-';
+
+        // Show results
+        loadingSection.classList.remove('visible');
+        resultsSection.classList.add('visible');
+    }
+
+    function escHtml(str) {
+        var d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    // ── Submit Review ──
+    reviewBtn.addEventListener('click', async function() {
+        const code = codeInput.value.trim();
+        if (code.length < 10) return;
+
+        const token = getToken();
+        if (!token) { checkAuth(); return; }
+
+        reviewBtn.disabled = true;
+        resultsSection.classList.remove('visible');
+        loadingSection.classList.add('visible');
+
+        try {
+            const resp = await fetch('/api/inclawbate/audit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    code: code,
+                    language: langSelect.value
+                })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                loadingSection.classList.remove('visible');
+                reviewBtn.disabled = false;
+                alert(data.error || 'Review failed. Please try again.');
+                return;
+            }
+
+            showResults(data);
+            reviewBtn.disabled = false;
+        } catch (err) {
+            loadingSection.classList.remove('visible');
+            reviewBtn.disabled = false;
+            alert('Network error. Please try again.');
+        }
+    });
+
+    // ── Actions ──
+    document.getElementById('shareBtn').addEventListener('click', function() {
+        if (!currentAuditId) return;
+        var url = 'https://inclawbate.com/audit/' + currentAuditId;
+        navigator.clipboard.writeText(url).then(function() {
+            var btn = document.getElementById('shareBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(function() { btn.textContent = 'Share Report'; }, 2000);
+        });
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        window.print();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        resultsSection.classList.remove('visible');
+        codeInput.value = '';
+        codeInput.dispatchEvent(new Event('input'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // ── Public Certificate Mode ──
+    function checkCertificateMode() {
+        var path = window.location.pathname;
+        var match = path.match(/^\/audit\/(.+)/);
+        if (!match) return false;
+        var auditId = match[1];
+
+        // Hide input, show loading
+        inputSection.style.display = 'none';
+        heroSection.querySelector('p').textContent = 'Verified AI-powered code audit';
+        heroSection.querySelector('.hero-badges').style.display = 'none';
+
+        fetch('/api/inclawbate/audit?id=' + encodeURIComponent(auditId))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    certView.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)">Audit not found.</div>';
+                    certView.classList.add('visible');
+                    return;
+                }
+
+                document.getElementById('cvScore').textContent = data.score;
+                document.getElementById('cvScore').style.color = scoreColor(data.score);
+                document.getElementById('cvGrade').textContent = data.grade;
+                document.getElementById('cvGrade').style.color = scoreColor(data.score);
+                document.getElementById('cvLang').textContent = (data.language || '').charAt(0).toUpperCase() + (data.language || '').slice(1);
+                document.getElementById('cvDate').textContent = new Date(data.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                document.getElementById('cvHash').textContent = data.code_hash;
+                document.getElementById('cvModel').textContent = data.model_used || 'Claude Haiku';
+
+                // Severity counts
+                var counts = {};
+                (data.findings || []).forEach(function(f) {
+                    counts[f.severity] = (counts[f.severity] || 0) + 1;
+                });
+                var sevHtml = '';
+                ['critical', 'high', 'medium', 'low', 'info'].forEach(function(sev) {
+                    if (counts[sev]) {
+                        sevHtml += '<span class="cert-sev-count"><span class="sev-badge sev-' + sev + '">' + sev + '</span> ' + counts[sev] + '</span>';
+                    }
+                });
+                document.getElementById('cvSevCounts').innerHTML = sevHtml || '<span style="color:var(--text-dim);font-size:0.85rem">No findings</span>';
+
+                heroSection.querySelector('h1').textContent = 'Audit Certificate';
+                certView.classList.add('visible');
+            })
+            .catch(function() {
+                certView.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)">Failed to load audit.</div>';
+                certView.classList.add('visible');
+            });
+
+        return true;
+    }
+
+    if (checkCertificateMode()) {
+        // Certificate mode — external auditors still visible
+    }
+})();
+</script>
+
+</body>
+</html>
