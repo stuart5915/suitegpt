@@ -1500,8 +1500,9 @@ async function handleSolanaLaunch() {
         if (feeTxs.length > 0) {
             setBtnState(btn, 'Signing fee config txs...', true);
             for (var fi = 0; fi < feeTxs.length; fi++) {
-                console.log('[Solana] Fee tx ' + fi + ' type:', typeof feeTxs[fi], Array.isArray(feeTxs[fi]) ? 'array(' + feeTxs[fi].length + ')' : '');
+                console.log('[Solana] Fee tx ' + fi + ':', typeof feeTxs[fi], typeof feeTxs[fi] === 'object' ? Object.keys(feeTxs[fi]) : '');
                 var txBytes = decodeTxData(feeTxs[fi]);
+                console.log('[Solana] Fee tx ' + fi + ' decoded, ' + txBytes.length + ' bytes');
                 await window.signAndSendSolanaTransaction(txBytes);
             }
         }
@@ -1525,8 +1526,12 @@ async function handleSolanaLaunch() {
         // Step 8: Sign + send launch transaction
         setBtnState(btn, 'Sign in wallet to launch...', true);
         var launchData = launchResult.response || launchResult;
-        console.log('[Solana] Launch tx response:', JSON.stringify(launchData).slice(0, 500));
-        var rawLaunchTx = launchData.transaction || launchData.serializedTransaction || launchResult.transaction;
+        console.log('[Solana] Launch tx response keys:', Object.keys(launchData), JSON.stringify(launchData).slice(0, 800));
+        // Try multiple possible key names for the transaction
+        var rawLaunchTx = launchData.transaction || launchData.serializedTransaction
+            || (launchData.transactions && launchData.transactions[0])
+            || launchResult.transaction || launchResult.serializedTransaction;
+        if (!rawLaunchTx) throw new Error('No transaction in launch response. Keys: ' + Object.keys(launchData).join(','));
         var launchTxBytes = decodeTxData(rawLaunchTx);
         var sendResult = await window.signAndSendSolanaTransaction(launchTxBytes);
         var solanaTxSig = sendResult.signature || sendResult;
