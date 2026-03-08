@@ -583,7 +583,7 @@
         appendMessage('user', message);
 
         // Optimistic credit deduction — backend charges upfront too (skip for admins)
-        var tierCost = { gemini: 0, llama: 0, kimi: 0, fast: 0, standard: 0, pro: 100 }[state.selectedModel] || 0;
+        var tierCost = { gemini: 0, llama: 0, kimi: 0, fast: 5, standard: 25, pro: 100 }[state.selectedModel] || 0;
         if (tierCost > 0 && !isAdmin() && state.credits !== null) {
             state.credits = Math.max(0, state.credits - tierCost);
             updateCredits();
@@ -1120,6 +1120,8 @@
     // ── Credits display ──
     function updateCredits() {
         if (state.credits === null || !els.creditsCount) return;
+        var container = document.getElementById('actionCredits');
+        if (container) container.style.display = '';
         if (isAdmin()) {
             els.creditsCount.textContent = '∞';
             els.creditsCount.className = 'action-credits-count';
@@ -1405,12 +1407,12 @@
 
     // ── Model Selector ──
     var MODEL_INFO = {
-        gemini: { label: 'Gemini Flash', free: true },
-        llama: { label: 'Llama 70B', free: true },
-        kimi: { label: 'Kimi K2', free: true },
-        fast: { label: 'Haiku', free: true },
-        standard: { label: 'Sonnet', free: true },
-        pro: { label: 'Opus', free: false }
+        gemini: { label: 'Gemini Flash', free: true, cost: 0 },
+        llama: { label: 'Llama 70B', free: true, cost: 0 },
+        kimi: { label: 'Kimi K2', free: true, cost: 0 },
+        fast: { label: 'Haiku', free: false, cost: 5 },
+        standard: { label: 'Sonnet', free: false, cost: 25 },
+        pro: { label: 'Opus', free: false, cost: 100 }
     };
 
     function setModel(tier) {
@@ -1426,7 +1428,7 @@
         var triggerBadge = document.getElementById('modelTriggerBadge');
         if (triggerName) triggerName.textContent = info.label;
         if (triggerBadge) {
-            triggerBadge.textContent = info.free ? 'Free' : '100 cr';
+            triggerBadge.textContent = info.free ? 'Free' : info.cost + ' cr';
             triggerBadge.className = 'trigger-badge ' + (info.free ? 'free' : 'pro');
         }
         // Close menu
