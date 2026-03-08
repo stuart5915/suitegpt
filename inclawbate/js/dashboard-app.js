@@ -909,8 +909,8 @@ async function fetchSolanaFees(solTokens) {
         console.log('[SolFees] API response:', resp.status, data);
         if (!resp.ok || data.error) return;
 
-        // data may be an array or { positions: [...] }
-        const positions = Array.isArray(data) ? data : (data.positions || data.data || []);
+        // data may be an array or wrapped in { response: [...] }, { positions: [...] }, etc.
+        const positions = Array.isArray(data) ? data : (data.response || data.positions || data.data || []);
         console.log('[SolFees] Positions:', positions.length, 'Our mints:', solTokens.map(t => t.token_address));
         if (!positions.length) return;
 
@@ -986,8 +986,8 @@ async function claimSolanaFees(solWallet, tokenMint, btn) {
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.error || 'Failed to get claim transactions');
 
-    // data may be an array of txs or { transactions: [...] }
-    const txs = Array.isArray(data) ? data : (data.transactions || data.data || [data]);
+    // data may be an array of txs or wrapped in { response: [...] }, { transactions: [...] }, etc.
+    const txs = Array.isArray(data) ? data : (data.response || data.transactions || data.data || [data]);
 
     for (const tx of txs) {
         const txBytes = decodeSolTxData(tx);
