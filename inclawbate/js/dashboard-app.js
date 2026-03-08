@@ -896,8 +896,7 @@ async function fetchSolanaFees(solTokens) {
         ? window._phantomSolana.publicKey.toString() : null;
     const dbWallet = (solTokens.find(t => t.solana_wallet) || {}).solana_wallet || null;
     const solWallet = phantomKey || dbWallet;
-    console.log('[SolFees] Phantom:', phantomKey, 'DB wallet:', dbWallet, 'Using:', solWallet);
-    if (!solWallet) { console.log('[SolFees] No Solana wallet found, skipping'); return; }
+    if (!solWallet) return;
 
     try {
         const token = localStorage.getItem('inclawbate_token');
@@ -907,14 +906,9 @@ async function fetchSolanaFees(solTokens) {
             body: JSON.stringify({ action: 'bags-claimable-fees', solana_wallet: solWallet })
         });
         const data = await resp.json();
-        console.log('[SolFees] API response:', resp.status, data);
         if (!resp.ok || data.error) return;
 
-        // data may be an array or wrapped in { response: [...] }, { positions: [...] }, etc.
         const positions = Array.isArray(data) ? data : (data.response || data.positions || data.data || []);
-        console.log('[SolFees] Positions:', positions.length, 'Our mints:', solTokens.map(t => t.token_address));
-        console.log('[SolFees] Position keys:', positions.length > 0 ? Object.keys(positions[0]) : 'none');
-        console.log('[SolFees] First position:', positions[0]);
         if (!positions.length) return;
 
         // Build set of our token mints for filtering
@@ -922,7 +916,6 @@ async function fetchSolanaFees(solTokens) {
 
         // Filter to only our tokens with claimable lamports > 0
         const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseInt(p.totalClaimableLamportsUserShare || 0) > 0);
-        console.log('[SolFees] Claimable positions:', claimable.length, claimable.map(p => ({ mint: p.baseMint, lamports: p.totalClaimableLamportsUserShare })));
         if (!claimable.length) return;
 
         _solClaimablePositions = claimable;
@@ -3094,6 +3087,130 @@ function openCreateProjectModal(existingProject) {
     });
 }
 
+// ── Import Existing Token ──
+function openImportTokenModal() {
+    const auth = getStoredAuth();
+    if (!auth) { alert('Connect your wallet first.'); return; }
+
+    document.querySelector('.edit-details-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'edit-details-overlay';
+    overlay.innerHTML = `
+        <div class="edit-details-modal">
+            <div class="edit-details-header">Add Existing Token</div>
+            <p style="color:var(--text-secondary);font-size:0.8rem;margin:0 0 12px">Import a token you launched outside the dashboard (e.g. via Clanker).</p>
+            <label class="edit-details-label">Contract Address
+                <input type="text" class="edit-details-input" id="importAddr" placeholder="0x... or Solana mint address">
+            </label>
+            <div id="importPreview" style="display:none;padding:10px;border-radius:8px;background:var(--bg-card);margin:8px 0">
+                <div id="importPreviewInfo" style="font-size:0.8rem;color:var(--text-secondary)"></div>
+            </div>
+            <div id="importError" style="display:none;color:#ef4444;font-size:0.8rem;margin:4px 0"></div>
+            <div class="edit-details-actions">
+                <button type="button" class="edit-details-cancel">Cancel</button>
+                <button type="button" class="edit-details-save" id="importLookupBtn">Look Up</button>
+            </div>
+        </div>
+    `;
+
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('.edit-details-cancel').addEventListener('click', () => overlay.remove());
+
+    let _foundToken = null;
+
+    overlay.querySelector('#importLookupBtn').addEventListener('click', async () => {
+        const addr = document.getElementById('importAddr').value.trim();
+        if (!addr) return;
+
+        const btn = overlay.querySelector('#importLookupBtn');
+        const errEl = document.getElementById('importError');
+        const previewEl = document.getElementById('importPreview');
+        errEl.style.display = 'none';
+
+        // If we already looked up, this click means "Import"
+        if (_foundToken) {
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+            try {
+                const resp = await fetch('/api/inclawbate/inclawbator', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        action: 'register',
+                        token_address: _foundToken.address,
+                        token_name: _foundToken.name,
+                        token_symbol: _foundToken.symbol,
+                        creator_wallet: auth.profile.wallet_address,
+                        logo_url: _foundToken.logo || '',
+                        chain: _foundToken.chain,
+                        tier: 'permissionless'
+                    })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error);
+                overlay.remove();
+                loadProjects(); // refresh token list
+            } catch (e) {
+                errEl.textContent = e.message || 'Import failed';
+                errEl.style.display = '';
+                btn.textContent = 'Import';
+                btn.disabled = false;
+            }
+            return;
+        }
+
+        // Look up token on DexScreener
+        btn.disabled = true;
+        btn.textContent = 'Looking up...';
+        try {
+            const isBase = addr.startsWith('0x');
+            const chain = isBase ? 'base' : 'solana';
+            const dsResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + encodeURIComponent(addr));
+            const dsData = await dsResp.json();
+            const pairs = (dsData.pairs || []).filter(p => p.chainId === chain);
+            if (!pairs.length) throw new Error('Token not found on ' + (isBase ? 'Base' : 'Solana'));
+
+            const pair = pairs[0];
+            const tokenInfo = pair.baseToken.address.toLowerCase() === addr.toLowerCase() ? pair.baseToken : pair.quoteToken;
+
+            _foundToken = {
+                address: addr,
+                name: tokenInfo.name || 'Unknown',
+                symbol: tokenInfo.symbol || '???',
+                chain: chain,
+                logo: ''
+            };
+
+            // Try to get logo from DexScreener info endpoint
+            try {
+                const infoResp = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + addr);
+                const infoData = await infoResp.json();
+                if (infoData.pairs && infoData.pairs[0] && infoData.pairs[0].info && infoData.pairs[0].info.imageUrl) {
+                    _foundToken.logo = infoData.pairs[0].info.imageUrl;
+                }
+            } catch (e) {}
+
+            document.getElementById('importPreviewInfo').innerHTML =
+                `<strong>${esc(_foundToken.name)}</strong> ($${esc(_foundToken.symbol)})<br>` +
+                `Chain: ${chain === 'base' ? 'Base' : 'Solana'}<br>` +
+                `<span style="font-size:0.7rem;opacity:0.6">${addr.slice(0, 10)}...${addr.slice(-6)}</span>`;
+            previewEl.style.display = '';
+            btn.textContent = 'Import';
+            btn.disabled = false;
+        } catch (e) {
+            errEl.textContent = e.message || 'Lookup failed';
+            errEl.style.display = '';
+            btn.textContent = 'Look Up';
+            btn.disabled = false;
+            _foundToken = null;
+        }
+    });
+
+    document.body.appendChild(overlay);
+    document.getElementById('importAddr').focus();
+}
+
 // ── Init ──
 function init() {
     // Handle Stripe payment return
@@ -3168,6 +3285,9 @@ function init() {
     // Wire claim/compound all buttons
     document.getElementById('mysClaimAll')?.addEventListener('click', () => claimAllPositions(false));
     document.getElementById('mysCompoundAll')?.addEventListener('click', () => claimAllPositions(true));
+
+    // Wire import token button
+    document.getElementById('importTokenBtn')?.addEventListener('click', openImportTokenModal);
 }
 
 // Boot
