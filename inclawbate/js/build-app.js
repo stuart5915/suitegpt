@@ -779,11 +779,14 @@
             }
 
             if (finalCode) {
-                // Detect truncated output — missing closing tags means code was cut off
-                var isTruncated = !finalCode.includes('</html>') || !finalCode.includes('</script>');
+                // Detect truncated output — missing </html> means code was cut off
+                // Only check </script> if the code actually has a <script> tag
+                var hasScript = finalCode.includes('<script');
+                var isTruncated = !finalCode.includes('</html>') || (hasScript && !finalCode.includes('</script>'));
                 if (isTruncated && state.autoFixAttempts < state.maxAutoFix) {
-                    // Store truncated code so retry sends current_code to server
+                    // Show partial preview even though it's truncated
                     state.currentCode = finalCode;
+                    try { updatePreview(finalCode); } catch (e) {}
                     appendMessage('assistant', '⚠️ Code appears truncated (output was cut off). Attempting to regenerate...');
                     state.autoFixAttempts++;
                     els.chatInput.value = 'The previous output was truncated and the code is incomplete — it\'s missing closing tags. Please regenerate the COMPLETE app from scratch, making sure to include ALL functions and closing tags. Output the full HTML file.';
