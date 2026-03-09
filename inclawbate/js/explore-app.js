@@ -8,7 +8,7 @@
         tokens: '/api/inclawbate/inclawbator'
     };
 
-    // Extra tokens not in inclawbator API (same as tokens-app.js)
+    // Extra tokens not in inclawbator API (same as tokens-app.js + stake-app.js)
     var EXTRA_TOKENS = [
         {
             token_name: 'CLAWS',
@@ -29,6 +29,46 @@
             tier: 'partner',
             staking_address: '0x3A7F8a12fD0DAe62dd45e1E641dBb687a90F170D',
             created_at: '2025-06-01T00:00:00Z'
+        },
+        {
+            token_name: 'inCLAWNCH',
+            token_symbol: 'INCLAWNCH',
+            token_address: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
+            logo_url: '/inclawbate/assets/logo-circle.jpg',
+            status: 'active',
+            tier: 'ecosystem',
+            staking_address: '0x206C97D4Ecf053561Bd2C714335aAef0eC1105e6',
+            created_at: '2025-01-01T00:00:00Z'
+        },
+        {
+            token_name: 'CLAWNCH',
+            token_symbol: 'CLAWNCH',
+            token_address: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be',
+            logo_url: '/inclawbate/assets/clawnchlogo.jpg',
+            status: 'active',
+            tier: 'ecosystem',
+            staking_address: '0xAda0e738F0E4DEb4e2C0B83d6836DE953f2e57b9',
+            created_at: '2025-01-01T00:00:00Z'
+        },
+        {
+            token_name: 'ClawnStrategy',
+            token_symbol: 'CLAWNSTR',
+            token_address: '0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1',
+            logo_url: '/inclawbate/assets/clawnstr-logo.jpg',
+            status: 'active',
+            tier: 'incubated',
+            staking_address: '0x9f7cD1C3e4526937736629a400acBdcA50836848',
+            created_at: '2025-03-01T00:00:00Z'
+        },
+        {
+            token_name: 'BitVault Signal',
+            token_symbol: 'BV7X',
+            token_address: '0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC',
+            logo_url: '/inclawbate/assets/bv7x-logo.jpg',
+            status: 'active',
+            tier: 'incubated',
+            staking_address: '0x65Aec0C9fd455822F1cC0e3De7965B106d182017',
+            created_at: '2025-04-01T00:00:00Z'
         }
     ];
 
@@ -187,11 +227,8 @@
 
         var tokenItems = normalizeTokens(apiTokens);
 
-        // Normalize projects, dedup: skip projects whose token_address already in token set
-        var projectItems = normalizeProjects(projects).filter(function (p) {
-            if (p.token_address && tokenAddrs[p.token_address.toLowerCase()]) return false;
-            return true;
-        });
+        // Normalize projects — keep all, they link to project detail pages
+        var projectItems = normalizeProjects(projects);
 
         var appItems = normalizeApps(apps);
 
