@@ -364,7 +364,8 @@ async function startServer() {
       };
 
       chain.startListening();
-      console.log('[Server] Chain service active');
+      rooms.chainService = chain;
+      console.log('[Server] Chain service active — rake recording enabled');
     } catch (e) {
       console.error('[Server] Chain init failed:', e.message);
     }

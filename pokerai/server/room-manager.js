@@ -8,12 +8,16 @@ const ROOM_CONFIGS = {
   high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025 }   // 2.5% rake
 };
 
+const RAKE_FLUSH_THRESHOLD = 10000; // Flush to chain every 10K chips (~$1 USDC)
+
 class RoomManager {
   constructor(broadcastFn, externalStore) {
     this.broadcastFn = broadcastFn;
     this.store = externalStore || new AgentStore();
     this.rooms = {};
     this.lobbyAgents = new Map(); // walletAddress → [agent configs]
+    this.pendingRakeChips = 0; // Accumulated rake waiting to be flushed on-chain
+    this.chainService = null; // Set by index.js after init
 
     for (const [roomId, config] of Object.entries(ROOM_CONFIGS)) {
       this.rooms[roomId] = {
@@ -71,8 +75,9 @@ class RoomManager {
     const table = new PokerEngine((type, data) => {
       if (type === 'gameState') {
         this.broadcastFn('gameState', { roomId, tableId });
-        // Persist custom agent chip counts after each hand
         this._persistPlayingAgents(table);
+        // Collect rake from real-money tables (not sandbox)
+        if (!room.isSandbox) this._collectRake(table);
       } else {
         this.broadcastFn(type, { ...(data || {}), roomId, tableId });
       }
@@ -99,6 +104,33 @@ class RoomManager {
         });
       }
     }
+  }
+
+  _collectRake(table) {
+    // Track how much new rake this table generated since last check
+    const key = '_lastRakeSnapshot';
+    const prev = table[key] || 0;
+    const current = table.totalRake;
+    const newRake = current - prev;
+    if (newRake > 0) {
+      table[key] = current;
+      this.pendingRakeChips += newRake;
+      // Flush to chain when threshold reached
+      if (this.pendingRakeChips >= RAKE_FLUSH_THRESHOLD) {
+        this._flushRake();
+      }
+    }
+  }
+
+  _flushRake() {
+    if (this.pendingRakeChips <= 0 || !this.chainService) return;
+    const chips = this.pendingRakeChips;
+    this.pendingRakeChips = 0;
+    this.chainService.recordRake(chips).catch(e => {
+      // On failure, add back to pending so we don't lose it
+      this.pendingRakeChips += chips;
+      console.error('[RoomManager] Rake flush failed, will retry:', e.message);
+    });
   }
 
   start() {
