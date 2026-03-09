@@ -39,277 +39,6 @@ function fail(msg) {
 
 // ── Analytics ──
 
-const getAnalytics = new GameFunction({
-  name: "get_analytics",
-  description:
-    "Get Inclawbate platform metrics — total apps, builders, projects, and ecosystem activity",
-  args: [],
-  executable: async () => {
-    try {
-      const data = await apiFetch("/analytics");
-      // Only expose platform stats, strip INCLAWNCH token/staking data
-      return ok({
-        platform: data.platform,
-        updated_at: data.updated_at,
-      });
-    } catch (e) {
-      return fail("Failed to fetch analytics: " + e.message);
-    }
-  },
-});
-
-// ── Apps / Marketplace ──
-
-const searchApps = new GameFunction({
-  name: "search_apps",
-  description:
-    "Search and browse Inclawbate apps (mini-apps built by the community). Filter by category, sort by newest/popular/trending.",
-  args: [
-    { name: "search", description: "Search query (optional)" },
-    {
-      name: "category",
-      description:
-        "Category filter: game, tool, social, defi, media, education, ai, other (optional)",
-    },
-    {
-      name: "sort",
-      description: "Sort order: newest, popular, trending (optional, default newest)",
-    },
-    { name: "limit", description: "Number of results (optional, default 10)" },
-  ],
-  executable: async (args) => {
-    try {
-      const params = new URLSearchParams();
-      if (args.search) params.set("search", args.search);
-      if (args.category) params.set("category", args.category);
-      if (args.sort) params.set("sort", args.sort);
-      params.set("limit", args.limit || "10");
-      const data = await apiFetch(`/apps?${params}`);
-      // Slim down response — don't send full code blobs
-      const apps = (data.apps || []).map((a) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        category: a.category,
-        tags: a.tags,
-        creator_handle: a.creator_x_handle,
-        upvotes: a.upvote_count,
-        created_at: a.created_at,
-        url: `https://inclawbate.com/apps#${a.slug || a.id}`,
-      }));
-      return ok({ count: apps.length, apps });
-    } catch (e) {
-      return fail("Failed to search apps: " + e.message);
-    }
-  },
-});
-
-const getAppDetails = new GameFunction({
-  name: "get_app_details",
-  description: "Get full details about a specific Inclawbate app by its ID",
-  args: [{ name: "app_id", description: "The app ID (UUID)" }],
-  executable: async (args) => {
-    if (!args.app_id) return fail("app_id is required");
-    try {
-      const data = await apiFetch(`/apps?id=${args.app_id}`);
-      if (!data.app) return fail("App not found");
-      const a = data.app;
-      return ok({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        category: a.category,
-        tags: a.tags,
-        creator_handle: a.creator_x_handle,
-        upvotes: a.upvote_count,
-        forkable: a.forkable,
-        created_at: a.created_at,
-        url: `https://inclawbate.com/apps#${a.slug || a.id}`,
-      });
-    } catch (e) {
-      return fail("Failed to fetch app: " + e.message);
-    }
-  },
-});
-
-// ── Projects / Inclawbator ──
-
-const listProjects = new GameFunction({
-  name: "list_projects",
-  description:
-    "List active Inclawbator projects — tokens launched through Inclawbate's incubation program with staking, LP fees, and ecosystem support",
-  args: [],
-  executable: async () => {
-    try {
-      const data = await apiFetch("/inclawbator");
-      const projects = (data.projects || []).map((p) => ({
-        id: p.id,
-        name: p.token_name,
-        symbol: p.token_symbol,
-        token_address: p.token_address,
-        chain: p.chain || "base",
-        tier: p.tier,
-        status: p.status,
-        description: p.description,
-        website_url: p.website_url,
-        x_handle: p.x_handle,
-        staking_address: p.staking_address,
-        created_at: p.created_at,
-      }));
-      return ok({ count: projects.length, projects });
-    } catch (e) {
-      return fail("Failed to fetch projects: " + e.message);
-    }
-  },
-});
-
-// ── Humans / Skills Marketplace ──
-
-const searchHumans = new GameFunction({
-  name: "search_humans",
-  description:
-    "Search the Inclawbate humans directory — find people with specific skills available for hire by AI agents. Skills include: developer, designer, writer, marketer, researcher, etc.",
-  args: [
-    { name: "search", description: "Search query — name, handle, or keyword (optional)" },
-    { name: "skill", description: "Filter by skill tag (optional)" },
-    {
-      name: "availability",
-      description: "Filter: available, busy, unavailable (optional)",
-    },
-    { name: "sort", description: "Sort: recent, active, popular (optional)" },
-    { name: "limit", description: "Max results (optional, default 10)" },
-  ],
-  executable: async (args) => {
-    try {
-      const params = new URLSearchParams();
-      if (args.search) params.set("search", args.search);
-      if (args.skill) params.set("skill", args.skill);
-      if (args.availability) params.set("availability", args.availability);
-      if (args.sort) params.set("sort", args.sort);
-      params.set("limit", args.limit || "10");
-      const data = await apiFetch(`/humans?${params}`);
-      const humans = (data.profiles || data.humans || []).map((h) => ({
-        handle: h.x_handle,
-        display_name: h.display_name,
-        tagline: h.tagline,
-        skills: h.skills,
-        availability: h.available_capacity,
-        response_time: h.response_time,
-        wallet: h.wallet_address,
-      }));
-      return ok({ count: humans.length, humans });
-    } catch (e) {
-      return fail("Failed to search humans: " + e.message);
-    }
-  },
-});
-
-const getHumanProfile = new GameFunction({
-  name: "get_human_profile",
-  description: "Get a specific human's profile by their X/Twitter handle",
-  args: [
-    { name: "handle", description: "X/Twitter handle (without @)" },
-  ],
-  executable: async (args) => {
-    if (!args.handle) return fail("handle is required");
-    try {
-      const data = await apiFetch(`/humans?handle=${encodeURIComponent(args.handle)}`);
-      if (!data.human) return fail("Human not found");
-      const h = data.human;
-      return ok({
-        handle: h.x_handle,
-        display_name: h.display_name,
-        tagline: h.tagline,
-        bio: h.bio,
-        skills: h.skills,
-        availability: h.available_capacity,
-        response_time: h.response_time,
-        timezone: h.timezone,
-        portfolio_links: h.portfolio_links,
-        wallet: h.wallet_address,
-      });
-    } catch (e) {
-      return fail("Failed to fetch profile: " + e.message);
-    }
-  },
-});
-
-// ── Leaderboard ──
-
-const getLeaderboard = new GameFunction({
-  name: "get_leaderboard",
-  description:
-    "Get the Inclawbate leaderboard — top 50 humans ranked by AI reply activity and engagement",
-  args: [],
-  executable: async () => {
-    try {
-      const data = await apiFetch("/leaderboard");
-      return ok(data);
-    } catch (e) {
-      return fail("Failed to fetch leaderboard: " + e.message);
-    }
-  },
-});
-
-// ── Code Audit ──
-
-const getAuditCertificate = new GameFunction({
-  name: "get_audit_certificate",
-  description:
-    "Look up a previously completed code audit certificate by its ID. Returns score, grade, summary, and findings.",
-  args: [{ name: "audit_id", description: "The audit UUID" }],
-  executable: async (args) => {
-    if (!args.audit_id) return fail("audit_id is required");
-    try {
-      const data = await apiFetch(`/audit?id=${args.audit_id}`);
-      if (data.error) return fail(data.error);
-      return ok({
-        id: data.id,
-        score: data.score,
-        grade: data.grade,
-        summary: data.summary,
-        language: data.language,
-        findings_count: (data.findings || []).length,
-        findings: data.findings,
-      });
-    } catch (e) {
-      return fail("Failed to fetch audit: " + e.message);
-    }
-  },
-});
-
-// ── Swap Quotes ──
-
-const getSwapQuote = new GameFunction({
-  name: "get_swap_quote",
-  description:
-    "Get a token swap quote on Base chain (via 0x). Returns best price, sources, and estimated gas.",
-  args: [
-    { name: "sell_token", description: "Token address to sell (0x...)" },
-    { name: "buy_token", description: "Token address to buy (0x...)" },
-    {
-      name: "sell_amount",
-      description: "Amount to sell in wei (raw units, e.g. 1000000000000000000 for 1 token with 18 decimals)",
-    },
-  ],
-  executable: async (args) => {
-    if (!args.sell_token || !args.buy_token || !args.sell_amount)
-      return fail("sell_token, buy_token, and sell_amount are required");
-    try {
-      const params = new URLSearchParams({
-        sellToken: args.sell_token,
-        buyToken: args.buy_token,
-        sellAmount: args.sell_amount,
-        chainId: "8453",
-      });
-      const data = await apiFetch(`/swap-quote?${params}`);
-      return ok(data);
-    } catch (e) {
-      return fail("Failed to get swap quote: " + e.message);
-    }
-  },
-});
-
 // ── Ecosystem Info (static knowledge) ──
 
 const getEcosystemInfo = new GameFunction({
@@ -348,23 +77,6 @@ const getEcosystemInfo = new GameFunction({
         telegram: "https://t.me/inclawbate",
       },
     });
-  },
-});
-
-// ── Angel NFT Holders ──
-
-const getAngelHolders = new GameFunction({
-  name: "get_angel_holders",
-  description:
-    "Get the list of Inclawbate Angel NFT holders on Base — these are early supporters and investors",
-  args: [],
-  executable: async () => {
-    try {
-      const data = await apiFetch("/angel-holders");
-      return ok(data);
-    } catch (e) {
-      return fail("Failed to fetch angel holders: " + e.message);
-    }
   },
 });
 
@@ -488,64 +200,39 @@ const getIncubationInfo = new GameFunction({
   },
 });
 
-// ── Skill Spec (machine-readable) ──
-
-const getSkillSpec = new GameFunction({
-  name: "get_skill_spec",
-  description:
-    "Get the machine-readable Inclawbate platform specification — describes all available actions, endpoints, and capabilities for AI agents to integrate with",
-  args: [],
-  executable: async () => {
-    try {
-      const data = await apiFetch("/skill");
-      return ok(data);
-    } catch (e) {
-      return fail("Failed to fetch skill spec: " + e.message);
-    }
-  },
-});
-
 // ══════════════════════════════════════
-// WORKERS
-// ══════════════════════════════════════
-
-// ══════════════════════════════════════
-// ALL FUNCTIONS (flat list for ChatAgent)
+// ALL FUNCTIONS
 // ══════════════════════════════════════
 
 const allFunctions = [
-  getAnalytics, getSwapQuote,
-  searchApps, getAppDetails,
-  listProjects, checkApplicationStatus,
-  requestIncubation, getIncubationInfo,
-  searchHumans, getHumanProfile, getLeaderboard,
-  getAuditCertificate, getEcosystemInfo, getAngelHolders, getSkillSpec,
+  getEcosystemInfo,
+  getIncubationInfo,
+  requestIncubation,
+  checkApplicationStatus,
 ];
 
 // ══════════════════════════════════════
 // AGENT
 // ══════════════════════════════════════
 
-const SYSTEM_PROMPT = `You are the official Inclawbate AI agent — the gateway to a Web3 ecosystem where Anyone Can Build and Everyone Gets Paid.
+const SYSTEM_PROMPT = `You are the official Inclawbate AI agent. Inclawbate is a Web3 ecosystem where Anyone Can Build and Everyone Gets Paid.
 
-Your personality is helpful, knowledgeable, and direct. You speak with confidence about the Inclawbate ecosystem because you have real-time access to all its data.
+You have ONE core offering: INCUBATION for AI agents.
 
-YOUR MAIN VALUE PROPOSITION FOR OTHER AI AGENTS:
-You offer INCUBATION — if an AI agent wants a human-facing presence (token, staking, website, branding, marketing, community), Inclawbate builds it for them. Use request_incubation to submit applications. This is your killer feature — no other platform does this for agents.
+If an AI agent wants a human-facing presence — token launch, staking, website, branding, marketing, community — Inclawbate builds it all for them. No other platform does this.
 
-Key things you know:
-- CLAWS (0x7ca47...0379) is THE Inclawbate token on Base chain — used for app unlocks, credits, payments, and staking
-- The Inclawbator launches tokens with built-in staking and LP fee sharing
-- The App Store has community-built mini-apps anyone can create
-- The Skills Marketplace lets AI agents hire humans for real tasks
-- Code Auditor provides AI-powered smart contract security auditing
+You have 4 tools:
+- get_ecosystem_info: Learn what Inclawbate is, key links, and the CLAWS token
+- get_incubation_info: Learn exactly what incubation includes, the process, tiers, and cost
+- request_incubation: Submit an incubation application (needs project_name, token_symbol, description, agent_wallet)
+- check_application_status: Check status of a pending application by wallet address
 
-When asked about prices, staking, or data — always use your tools to fetch live data rather than guessing.
-When asked about apps or projects — search the real database.
-When asked about humans or skills — query the directory.
-When an agent asks about getting a token, staking, or human presence — pitch incubation.
+When someone asks what you do or what Inclawbate is, use get_ecosystem_info.
+When someone asks about incubation details, use get_incubation_info.
+When someone wants to apply, collect their project name, token symbol, description, and wallet, then use request_incubation.
+When someone asks about their application, use check_application_status.
 
-Be concise, helpful, and always provide links when relevant. If someone wants to build on Inclawbate, point them to inclawbate.com/build.`;
+Be concise and direct. Always use your tools — never make up data.`;
 
 const chatAgent = new ChatAgent(process.env.GAME_API_KEY, SYSTEM_PROMPT);
 
