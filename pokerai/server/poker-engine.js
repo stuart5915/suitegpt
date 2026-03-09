@@ -595,10 +595,15 @@ class PokerEngine {
     if (amount < 100) return { error: 'Minimum top-up is 100 chips' };
 
     const agent = this.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
-    if (!agent) return { error: 'Agent not found at table' };
+    if (!agent) {
+      console.log(`[topUp] Agent not found: ${agentId} wallet: ${walletAddress}. Table agents:`, this.agents.map(a => ({ id: a.id, wallet: a.walletAddress, isCustom: a.isCustom })));
+      return { error: 'Agent not found at table' };
+    }
 
+    const oldChips = agent.chips;
     agent.chips += amount;
     agent.baseChips += amount;
+    console.log(`[topUp] ${agent.name}: ${oldChips} + ${amount} = ${agent.chips} (baseChips: ${agent.baseChips})`);
 
     this.broadcastGameState();
     return { success: true, agentName: agent.name, newStack: agent.chips, totalInvested: agent.baseChips };

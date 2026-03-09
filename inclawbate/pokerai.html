@@ -3216,10 +3216,13 @@ function handleMessage(msg) {
           saveWallet(tw);
           updateWalletUI();
         }
-        showToast(msg.data.error, 'error');
+        showToast('Top-up failed: ' + msg.data.error, 'error');
+        console.error('Top-up error:', msg.data.error, 'agentId:', window._lastTopUpAgentId);
       } else {
-        showToast(`${msg.data.agentName} topped up! Stack: ${msg.data.newStack.toLocaleString()}`, 'success');
+        showToast(`${msg.data.agentName} topped up +${window._lastTopUpAmount?.toLocaleString() || '?'}! New stack: ${msg.data.newStack.toLocaleString()} (invested: ${msg.data.totalInvested.toLocaleString()})`, 'success');
       }
+      window._lastTopUpAmount = null;
+      window._lastTopUpAgentId = null;
       break;
 
     case 'leaveTableResult':
@@ -4170,8 +4173,9 @@ function topUpAgent(agentId, amount) {
   saveWallet(wallet);
   updateWalletUI();
   window._lastTopUpAmount = amount;
+  window._lastTopUpAgentId = agentId;
   ws.send(JSON.stringify({ type: 'topUp', walletAddress: wallet.address, agentId, amount }));
-  showToast(`Topping up ${amount.toLocaleString()} chips...`, 'info');
+  showToast(`Sending +${amount.toLocaleString()} to agent...`, 'info');
   _portfolioTopUpOpen = false;
   _sidebarTopUpOpen = false;
 }
