@@ -24,7 +24,7 @@ app.use(express.json());
 
 // WebSocket server
 const wss = new WebSocketServer({ server });
-const clients = new Map(); // ws → { sessionId }
+const clients = new Map(); // ws → { sessionId, walletAddress }
 
 // Game engine — broadcast sends per-client state
 const engine = new PokerEngine((type, data) => {
@@ -33,7 +33,7 @@ const engine = new PokerEngine((type, data) => {
     for (const [ws, client] of clients) {
       if (ws.readyState === 1) {
         try {
-          const state = engine.getStateForClient(client.sessionId);
+          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
         } catch (e) { /* client disconnected */ }
       }
@@ -65,7 +65,7 @@ wss.on('connection', (ws) => {
 
   // Send welcome + initial state
   ws.send(JSON.stringify({ type: 'welcome', data: { sessionId, viewerCount: clients.size } }));
-  const state = engine.getStateForClient(sessionId);
+  const state = engine.getStateForClient(sessionId, null);
   ws.send(JSON.stringify({ type: 'gameState', data: state }));
   broadcastViewerCount();
 
@@ -76,19 +76,54 @@ wss.on('connection', (ws) => {
       if (!client) return;
 
       switch (msg.type) {
+        case 'setWallet': {
+          client.walletAddress = msg.walletAddress || null;
+          break;
+        }
         case 'fund': {
           const result = engine.fundAgent(client.sessionId, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'fundResult', data: result }));
-          // Send updated state to this client
-          const state = engine.getStateForClient(client.sessionId);
+          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
           break;
         }
         case 'withdraw': {
           const result = engine.withdrawAgent(client.sessionId, msg.agentId);
           ws.send(JSON.stringify({ type: 'withdrawResult', data: result }));
-          const state = engine.getStateForClient(client.sessionId);
+          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
+          break;
+        }
+        case 'createAgent': {
+          client.walletAddress = msg.walletAddress;
+          const result = engine.addCustomAgent(msg.walletAddress, msg.config);
+          ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
+          for (const [c, cData] of clients) {
+            if (c.readyState === 1) {
+              try {
+                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
+                c.send(JSON.stringify({ type: 'gameState', data: s }));
+              } catch (e) { /* ignore */ }
+            }
+          }
+          break;
+        }
+        case 'recallAgent': {
+          const result = engine.removeCustomAgent(msg.walletAddress, msg.agentId);
+          ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
+          for (const [c, cData] of clients) {
+            if (c.readyState === 1) {
+              try {
+                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
+                c.send(JSON.stringify({ type: 'gameState', data: s }));
+              } catch (e) { /* ignore */ }
+            }
+          }
+          break;
+        }
+        case 'getMyAgents': {
+          const result = engine.getAgentsForWallet(msg.walletAddress);
+          ws.send(JSON.stringify({ type: 'myAgents', data: result }));
           break;
         }
         case 'ping':

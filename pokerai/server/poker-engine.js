@@ -161,6 +161,7 @@ class PokerEngine {
     this.totalBuyins = 0;
     this.poolFlows = [];
     this.fundPositions = new Map(); // sessionId → [{ agentId, deposited, startStack }]
+    this.replacedBots = new Map(); // agentId → original bot data
     this.running = false;
   }
 
@@ -464,6 +465,122 @@ class PokerEngine {
     }
   }
 
+  // Custom agent management
+  addCustomAgent(walletAddress, agentConfig) {
+    const { name, emoji, aggression, bluffing, patience, tiltResist, chipStack } = agentConfig;
+
+    const agentId = `custom_${walletAddress}_${Date.now()}`;
+    const raisePct = Math.round(aggression * 0.65 + 5);
+    const bluffPct = Math.round(bluffing * 0.7);
+    const foldPct = Math.max(5, Math.round(patience * 0.6));
+
+    let style;
+    if (aggression >= 70) style = 'aggressive';
+    else if (bluffing >= 60) style = 'bluffer';
+    else if (patience >= 70) style = 'conservative';
+    else style = 'balanced';
+
+    // Find the first house bot (one without isCustom) to replace
+    const houseBotIndex = this.agents.findIndex(a => !a.isCustom);
+    if (houseBotIndex === -1) {
+      return { error: 'Table full — no house bot to replace' };
+    }
+
+    const replacedBot = { ...this.agents[houseBotIndex] };
+    // Store a clean copy of the replaced bot (without hand reference issues)
+    this.replacedBots.set(agentId, {
+      id: replacedBot.id,
+      name: replacedBot.name,
+      emoji: replacedBot.emoji,
+      style: replacedBot.style,
+      description: replacedBot.description,
+      raisePct: replacedBot.raisePct,
+      bluffPct: replacedBot.bluffPct,
+      foldPct: replacedBot.foldPct,
+      traits: { ...replacedBot.traits },
+      baseChips: replacedBot.baseChips,
+      index: houseBotIndex
+    });
+
+    const customAgent = {
+      id: agentId,
+      name,
+      emoji,
+      style,
+      description: `Custom agent by ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`,
+      raisePct,
+      bluffPct,
+      foldPct,
+      traits: { aggression, bluffing, patience, tiltResist },
+      walletAddress,
+      isCustom: true,
+      chips: chipStack || BASE_CHIPS,
+      baseChips: chipStack || BASE_CHIPS,
+      handsWon: 0,
+      handsPlayed: 0,
+      biggestPot: 0,
+      hand: [],
+      folded: false,
+      currentBet: 0,
+      allIn: false
+    };
+
+    this.agents[houseBotIndex] = customAgent;
+    this.broadcastGameState();
+
+    return { success: true, agentId, replacedBot: replacedBot.name };
+  }
+
+  removeCustomAgent(walletAddress, agentId) {
+    const agentIndex = this.agents.findIndex(a => a.id === agentId && a.walletAddress === walletAddress);
+    if (agentIndex === -1) {
+      return { error: 'Agent not found or not owned by this wallet' };
+    }
+
+    const agent = this.agents[agentIndex];
+    const finalChips = agent.chips;
+    const pnl = finalChips - agent.baseChips;
+
+    // Restore the house bot it replaced
+    const originalBot = this.replacedBots.get(agentId);
+    if (originalBot) {
+      this.agents[agentIndex] = {
+        ...originalBot,
+        chips: BASE_CHIPS,
+        baseChips: BASE_CHIPS,
+        handsWon: 0,
+        handsPlayed: 0,
+        biggestPot: 0,
+        hand: [],
+        folded: false,
+        currentBet: 0,
+        allIn: false
+      };
+      this.replacedBots.delete(agentId);
+    }
+
+    this.broadcastGameState();
+    return { success: true, finalChips, pnl };
+  }
+
+  getAgentsForWallet(walletAddress) {
+    return this.agents
+      .filter(a => a.isCustom && a.walletAddress === walletAddress)
+      .map(a => ({
+        id: a.id,
+        name: a.name,
+        emoji: a.emoji,
+        style: a.style,
+        chips: a.chips,
+        baseChips: a.baseChips,
+        handsWon: a.handsWon,
+        handsPlayed: a.handsPlayed,
+        biggestPot: a.biggestPot,
+        traits: a.traits,
+        pnl: a.chips - a.baseChips
+      }));
+  }
+
   // State getters
   getPublicState() {
     return {
@@ -482,6 +599,8 @@ class PokerEngine {
         currentBet: a.currentBet,
         traits: a.traits,
         description: a.description,
+        isCustom: a.isCustom || false,
+        walletAddress: a.walletAddress || null,
         hasCards: a.hand && a.hand.length === 2
       })),
       round: this.round,
@@ -500,15 +619,17 @@ class PokerEngine {
     };
   }
 
-  getStateForClient(sessionId) {
+  getStateForClient(sessionId, walletAddress) {
     const state = this.getPublicState();
     const positions = this.fundPositions.get(sessionId) || [];
     const fundedAgentIds = new Set(positions.map(p => p.agentId));
 
-    // Add pocket cards for funded agents only
+    // Add pocket cards for funded agents AND custom agents owned by this wallet
     state.agents = state.agents.map(a => {
       const agent = this.agents.find(ag => ag.id === a.id);
-      if (fundedAgentIds.has(a.id) && agent.hand && agent.hand.length === 2 && !agent.folded) {
+      const isFunded = fundedAgentIds.has(a.id);
+      const isOwnCustom = walletAddress && a.isCustom && a.walletAddress === walletAddress;
+      if ((isFunded || isOwnCustom) && agent.hand && agent.hand.length === 2 && !agent.folded) {
         return { ...a, hand: agent.hand };
       }
       return a;
