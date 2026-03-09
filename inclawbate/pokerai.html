@@ -3024,16 +3024,17 @@ function handleMessage(msg) {
 
     case 'createAgentResult':
       if (msg.data.error) {
-        // Refund chips on failure
-        const w = getWallet();
-        if (w) {
-          const stackInput = parseInt(document.getElementById('agentStack').value) || 0;
-          w.balance += stackInput;
-          saveWallet(w);
-          updateWalletUI();
-        }
+        window._pendingDeploy = 0;
         showToast(msg.data.error, 'error');
       } else {
+        // Deduct chips now that server confirmed
+        const dw = getWallet();
+        if (dw && window._pendingDeploy) {
+          dw.balance -= window._pendingDeploy;
+          saveWallet(dw);
+          updateWalletUI();
+        }
+        window._pendingDeploy = 0;
         showToast(`${msg.data.agentName} deployed! Replacing ${msg.data.replacedBot}`, 'success');
         document.getElementById('agentName').value = '';
         refreshMyAgentsView();
@@ -3736,12 +3737,11 @@ function deployAgent() {
     chipStack
   };
 
-  // Deduct from wallet
-  wallet.balance -= chipStack;
-  saveWallet(wallet);
-  updateWalletUI();
+  // Store pending deduction — only commit on success
+  window._pendingDeploy = chipStack;
 
   ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet.address, config }));
+  showToast('Deploying agent...', 'info');
 }
 
 function recallAgent(agentId) {
