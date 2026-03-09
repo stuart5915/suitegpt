@@ -82,7 +82,7 @@ class RoomManager {
   // === Lobby management ===
 
   createLobbyAgent(walletAddress, agentConfig) {
-    const { name, emoji, aggression, bluffing, patience, tiltResist, chipStack } = agentConfig;
+    const { name, emoji, aggression, bluffing, patience, tiltResist, rules } = agentConfig;
 
     const agentId = `custom_${walletAddress}_${Date.now()}`;
     const raisePct = Math.round(aggression * 0.65 + 5);
@@ -105,6 +105,7 @@ class RoomManager {
       bluffPct,
       foldPct,
       traits: { aggression, bluffing, patience, tiltResist },
+      rules: rules || {},
       walletAddress,
       isCustom: true,
       chipStack: 0, // funded when joining a table

@@ -1303,6 +1303,74 @@
     color: var(--accent-gold);
   }
 
+  /* Strategy presets */
+  .preset-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .preset-btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 8px 6px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .preset-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+  .preset-btn.active {
+    background: rgba(99,102,241,0.12);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+  .preset-btn .preset-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+
+  /* Strategy toggles */
+  .toggle-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .toggle-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .toggle-pill:hover { border-color: var(--text-secondary); color: var(--text-secondary); }
+  .toggle-pill.active {
+    background: rgba(99,102,241,0.12);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+  .toggle-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+  .toggle-pill.active .toggle-dot { background: var(--accent-primary); }
+
   .btn-deploy {
     width: 100%;
     padding: 14px;
@@ -2666,6 +2734,17 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label">Quick Presets</label>
+            <div class="preset-row">
+              <div class="preset-btn" onclick="applyPreset('shark')"><span class="preset-icon">🦈</span>Shark</div>
+              <div class="preset-btn" onclick="applyPreset('rock')"><span class="preset-icon">🪨</span>Rock</div>
+              <div class="preset-btn" onclick="applyPreset('maniac')"><span class="preset-icon">🔥</span>Maniac</div>
+              <div class="preset-btn" onclick="applyPreset('trapper')"><span class="preset-icon">🕸️</span>Trapper</div>
+              <div class="preset-btn" onclick="applyPreset('calculator')"><span class="preset-icon">🧮</span>Math</div>
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Strategy Sliders</label>
             <div class="slider-group">
               <div class="slider-header">
@@ -2694,6 +2773,14 @@
                 <span class="slider-value" id="tiltResistVal">50</span>
               </div>
               <input type="range" class="strategy-slider slider-tiltresist" id="sliderTiltResist" min="0" max="100" value="50" oninput="updateSlider('tiltResist')">
+            </div>
+
+            <label class="form-label" style="margin-top:14px">Play Rules</label>
+            <div class="toggle-row">
+              <div class="toggle-pill" id="toggle-neverAllIn" onclick="toggleRule('neverAllIn')"><div class="toggle-dot"></div>Never All-In</div>
+              <div class="toggle-pill" id="toggle-tightPreflop" onclick="toggleRule('tightPreflop')"><div class="toggle-dot"></div>Tight Preflop</div>
+              <div class="toggle-pill" id="toggle-slowPlay" onclick="toggleRule('slowPlay')"><div class="toggle-dot"></div>Slow Play</div>
+              <div class="toggle-pill" id="toggle-bluffCatcher" onclick="toggleRule('bluffCatcher')"><div class="toggle-dot"></div>Bluff Catcher</div>
             </div>
           </div>
 
@@ -3885,6 +3972,22 @@ function renderAgentsGrid() {
   `).join('');
 }
 
+const RULE_LABELS = {
+  neverAllIn: '🛡️ No All-In',
+  tightPreflop: '🔒 Tight Preflop',
+  slowPlay: '🕸️ Slow Play',
+  bluffCatcher: '🎣 Bluff Catcher'
+};
+
+function renderRuleBadges(rules) {
+  if (!rules) return '';
+  const active = Object.entries(rules).filter(([k, v]) => v && RULE_LABELS[k]);
+  if (active.length === 0) return '';
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${active.map(([k]) =>
+    `<span style="padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;background:rgba(99,102,241,0.1);color:var(--accent-primary);border:1px solid rgba(99,102,241,0.25)">${RULE_LABELS[k]}</span>`
+  ).join('')}</div>`;
+}
+
 function renderStrategyBar(label, value, color) {
   return `
     <div class="strategy-bar-row">
@@ -4153,6 +4256,7 @@ function renderMyAgents() {
               : `<div style="font-size:11px;color:var(--text-muted)">Not funded</div>`}
           </div>
         </div>
+        ${renderRuleBadges(agent.rules)}
         <div style="display:flex;gap:8px;align-items:center">
           <div style="flex:1">
             ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
@@ -4292,6 +4396,62 @@ function selectStack(amount, el) {
 }
 
 // ============================================================
+// STRATEGY PRESETS & TOGGLES
+// ============================================================
+const STRATEGY_PRESETS = {
+  shark:      { aggression: 65, bluffing: 40, patience: 70, tiltResist: 80, toggles: { tightPreflop: true } },
+  rock:       { aggression: 15, bluffing: 5,  patience: 95, tiltResist: 90, toggles: { neverAllIn: true, tightPreflop: true } },
+  maniac:     { aggression: 95, bluffing: 70, patience: 10, tiltResist: 20, toggles: {} },
+  trapper:    { aggression: 30, bluffing: 25, patience: 75, tiltResist: 70, toggles: { slowPlay: true, tightPreflop: true } },
+  calculator: { aggression: 45, bluffing: 15, patience: 80, tiltResist: 85, toggles: { bluffCatcher: true } }
+};
+
+let _activeToggles = { neverAllIn: false, tightPreflop: false, slowPlay: false, bluffCatcher: false };
+
+function applyPreset(presetName) {
+  const p = STRATEGY_PRESETS[presetName];
+  if (!p) return;
+
+  document.getElementById('sliderAggression').value = p.aggression;
+  document.getElementById('sliderBluffing').value = p.bluffing;
+  document.getElementById('sliderPatience').value = p.patience;
+  document.getElementById('sliderTiltResist').value = p.tiltResist;
+  updateSlider('aggression');
+  updateSlider('bluffing');
+  updateSlider('patience');
+  updateSlider('tiltResist');
+
+  // Reset all toggles then apply preset's
+  _activeToggles = { neverAllIn: false, tightPreflop: false, slowPlay: false, bluffCatcher: false };
+  if (p.toggles) {
+    for (const [key, val] of Object.entries(p.toggles)) _activeToggles[key] = val;
+  }
+  refreshTogglesUI();
+
+  // Highlight active preset button
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.preset-btn[onclick="applyPreset('${presetName}')"]`);
+  if (btn) btn.classList.add('active');
+}
+
+function toggleRule(rule) {
+  _activeToggles[rule] = !_activeToggles[rule];
+  refreshTogglesUI();
+  // Clear preset highlight since user customized
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+function refreshTogglesUI() {
+  for (const [key, active] of Object.entries(_activeToggles)) {
+    const el = document.getElementById('toggle-' + key);
+    if (el) {
+      if (active) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  }
+}
+
+// ============================================================
 // DEPLOY / RECALL AGENTS
 // ============================================================
 function deployAgent() {
@@ -4309,7 +4469,8 @@ function deployAgent() {
     aggression: parseInt(document.getElementById('sliderAggression').value),
     bluffing: parseInt(document.getElementById('sliderBluffing').value),
     patience: parseInt(document.getElementById('sliderPatience').value),
-    tiltResist: parseInt(document.getElementById('sliderTiltResist').value)
+    tiltResist: parseInt(document.getElementById('sliderTiltResist').value),
+    rules: { ..._activeToggles }
   };
 
   ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet.address, config }));

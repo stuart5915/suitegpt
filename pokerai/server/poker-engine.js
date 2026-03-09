@@ -101,11 +101,25 @@ function compareHands(a, b) {
 // Agent AI decision — needs current bet to call, pot size, and agent's current round bet
 function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) {
   const toCall = currentBet - agentRoundBet;
+  const rules = agent.rules || {};
 
   let strength = 0.3 + Math.random() * 0.5;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
     strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
+  }
+
+  // === RULE: Tight Preflop — fold weak hands preflop ===
+  if (rules.tightPreflop && communityCards.length === 0) {
+    const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
+    const paired = c1 === c2;
+    const highCard = Math.max(c1, c2);
+    const suited = agent.hand[0].suit === agent.hand[1].suit;
+    // Only play: pairs, suited connectors 9+, any face card combo, A-x suited
+    const playable = paired || (highCard >= 14 && suited) || (highCard >= 11 && Math.min(c1, c2) >= 10) || (highCard >= 13 && Math.min(c1, c2) >= 9);
+    if (!playable) {
+      return { type: 'fold', label: 'Fold (tight)', amount: 0 };
+    }
   }
 
   const r = Math.random() * 100;
@@ -115,13 +129,46 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) 
 
   // If can't afford to call, either all-in or fold
   if (toCall >= agent.chips) {
-    // Decide: all-in or fold
+    if (rules.neverAllIn) return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
     if (strength > 0.4 || r < 30) {
       return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
     }
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
 
+  // Make the base decision first, then apply rule overrides
+  let decision = _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
+
+  // === RULE: Never All-In — downgrade all-in to a big raise or call ===
+  if (rules.neverAllIn && decision.type === 'allin') {
+    if (toCall > 0) {
+      decision = { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    } else {
+      decision = { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+    }
+  }
+
+  // === RULE: Slow Play — with strong hands, check/call instead of raising ===
+  if (rules.slowPlay && strength > 0.65 && (decision.type === 'raise')) {
+    if (toCall > 0) {
+      decision = { type: 'call', label: `Call ${toCall} (trap)`, amount: toCall };
+    } else {
+      decision = { type: 'check', label: 'Check (trap)', amount: 0 };
+    }
+  }
+
+  // === RULE: Bluff Catcher — less likely to fold when facing a bet ===
+  if (rules.bluffCatcher && decision.type === 'fold' && toCall > 0 && toCall < pot * 0.75) {
+    // Call instead of fold if the bet isn't too big relative to pot
+    if (Math.random() < 0.6) {
+      decision = { type: 'call', label: `Call ${toCall} (catch)`, amount: toCall };
+    }
+  }
+
+  return decision;
+}
+
+function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards) {
   // No bet to match — can check or bet
   if (toCall === 0) {
     if (agent.style === 'aggressive') {
@@ -798,6 +845,7 @@ class PokerEngine {
       bluffPct: lobbyAgent.bluffPct,
       foldPct: lobbyAgent.foldPct,
       traits: lobbyAgent.traits,
+      rules: lobbyAgent.rules || {},
       walletAddress: lobbyAgent.walletAddress,
       isCustom: true,
       chips: lobbyAgent.chipStack,
@@ -1002,6 +1050,7 @@ class PokerEngine {
         roundBet: a.roundBet,
         winPct: winProbs[a.id] || 0,
         traits: a.traits,
+        rules: a.rules || {},
         description: a.description,
         isCustom: a.isCustom || false,
         walletAddress: a.walletAddress || null,
