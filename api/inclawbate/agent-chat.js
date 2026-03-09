@@ -178,12 +178,20 @@ export default async function handler(req, res) {
   try {
     let functionCalled = null;
     let data = await callGroq(history);
+
+    // Check for Groq API error
+    if (data.error) {
+      console.error('Groq error:', data.error);
+      return res.status(200).json({ reply: 'AI is temporarily busy — try again in a moment!', session_id: sid });
+    }
+
     let choice = data.choices?.[0];
 
     // Handle tool calls
     if (choice?.finish_reason === 'tool_calls' || choice?.message?.tool_calls) {
       const toolCalls = choice.message.tool_calls || [];
-      history.push(choice.message);
+      // Push assistant message with tool_calls to history
+      history.push({ role: 'assistant', content: choice.message.content || null, tool_calls: toolCalls });
 
       for (const tc of toolCalls) {
         functionCalled = tc.function.name;
@@ -193,14 +201,29 @@ export default async function handler(req, res) {
         history.push({ role: 'tool', tool_call_id: tc.id, content: result });
       }
 
-      // Get final response
+      // Get final response after tool execution
       data = await callGroq(history);
+      if (data.error) {
+        console.error('Groq error (post-tool):', data.error);
+        // Return tool result directly as fallback
+        const lastTool = history.filter(m => m.role === 'tool').pop();
+        let fallback = 'Here are some ideas!';
+        try {
+          const toolData = JSON.parse(lastTool.content);
+          if (toolData.ideas) fallback = toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
+          else if (toolData.apps) fallback = toolData.apps.map(a => a.name + ' — ' + a.url).join('\n• ');
+          else fallback = toolData.message || JSON.stringify(toolData);
+        } catch (e) {}
+        history.push({ role: 'assistant', content: fallback });
+        return res.status(200).json({ reply: fallback, function_called: functionCalled, session_id: sid });
+      }
       choice = data.choices?.[0];
     }
 
-    let reply = choice?.message?.content || 'Sorry, something went wrong. Try again!';
+    let reply = choice?.message?.content || 'Sorry, I couldn\'t generate a response. Try again!';
     // Llama sometimes leaks raw function-call syntax in text — strip it
     reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
+    if (!reply) reply = 'Sorry, I couldn\'t generate a response. Try again!';
     history.push({ role: 'assistant', content: reply });
 
     return res.status(200).json({ reply, function_called: functionCalled, session_id: sid });
