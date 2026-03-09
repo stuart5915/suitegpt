@@ -27,25 +27,31 @@ function createDeck() {
   return shuffle(deck);
 }
 
-// Hand evaluation
+// Hand evaluation — returns { rank, name, kickers } for proper tiebreaking
 function evaluateHand(cards) {
   const vals = cards.map(c => RANK_VALUES[c.rank]).sort((a, b) => b - a);
   const suits = cards.map(c => c.suit);
   const counts = {};
   vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
-  const countVals = Object.values(counts).sort((a, b) => b - a);
   const isFlush = suits.every(s => s === suits[0]);
   const isStraight = checkStraight(vals);
 
-  if (isFlush && isStraight) return { rank: 8, name: 'Straight Flush' };
-  if (countVals[0] === 4) return { rank: 7, name: 'Four of a Kind' };
-  if (countVals[0] === 3 && countVals[1] === 2) return { rank: 6, name: 'Full House' };
-  if (isFlush) return { rank: 5, name: 'Flush' };
-  if (isStraight) return { rank: 4, name: 'Straight' };
-  if (countVals[0] === 3) return { rank: 3, name: 'Three of a Kind' };
-  if (countVals[0] === 2 && countVals[1] === 2) return { rank: 2, name: 'Two Pair' };
-  if (countVals[0] === 2) return { rank: 1, name: 'One Pair' };
-  return { rank: 0, name: 'High Card' };
+  // Sort groups by count desc, then value desc for kicker ordering
+  const groups = Object.entries(counts)
+    .map(([v, c]) => ({ val: parseInt(v), count: c }))
+    .sort((a, b) => b.count - a.count || b.val - a.val);
+
+  const kickers = groups.map(g => g.val);
+
+  if (isFlush && isStraight) return { rank: 8, name: 'Straight Flush', kickers };
+  if (groups[0].count === 4) return { rank: 7, name: 'Four of a Kind', kickers };
+  if (groups[0].count === 3 && groups.length >= 2 && groups[1].count === 2) return { rank: 6, name: 'Full House', kickers };
+  if (isFlush) return { rank: 5, name: 'Flush', kickers };
+  if (isStraight) return { rank: 4, name: 'Straight', kickers };
+  if (groups[0].count === 3) return { rank: 3, name: 'Three of a Kind', kickers };
+  if (groups[0].count === 2 && groups.length >= 2 && groups[1].count === 2) return { rank: 2, name: 'Two Pair', kickers };
+  if (groups[0].count === 2) return { rank: 1, name: 'One Pair', kickers };
+  return { rank: 0, name: 'High Card', kickers };
 }
 
 function checkStraight(vals) {
@@ -54,6 +60,7 @@ function checkStraight(vals) {
   for (let i = 0; i <= unique.length - 5; i++) {
     if (unique[i] - unique[i + 4] === 4) return true;
   }
+  // Ace-low straight (A-2-3-4-5)
   if (unique[0] === 14 && unique.slice(-4).join(',') === '5,4,3,2') return true;
   return false;
 }
@@ -69,63 +76,111 @@ function getCombinations(arr, k) {
 
 function getBestHand(holeCards, communityCards) {
   const all = [...holeCards, ...communityCards];
-  if (all.length < 5) return { rank: -1, name: 'Unknown' };
-  let best = { rank: -1, name: '' };
+  if (all.length < 5) return { rank: -1, name: 'Unknown', kickers: [] };
+  let best = { rank: -1, name: '', kickers: [] };
   const combos = getCombinations(all, 5);
   for (const combo of combos) {
     const h = evaluateHand(combo);
-    if (h.rank > best.rank) best = h;
+    if (compareHands(h, best) > 0) best = h;
   }
   return best;
 }
 
-// Agent AI decision — bb passed as parameter for stake-level scaling
-function agentDecide(agent, communityCards, pot, bb) {
-  let strength = 0.3 + Math.random() * 0.5;
+// Compare two evaluated hands. Returns >0 if a wins, <0 if b wins, 0 if tie
+function compareHands(a, b) {
+  if (a.rank !== b.rank) return a.rank - b.rank;
+  // Compare kickers
+  for (let i = 0; i < Math.min(a.kickers.length, b.kickers.length); i++) {
+    if (a.kickers[i] !== b.kickers[i]) return a.kickers[i] - b.kickers[i];
+  }
+  return 0;
+}
 
+// Agent AI decision — needs current bet to call, pot size, and agent's current round bet
+function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) {
+  const toCall = currentBet - agentRoundBet;
+
+  let strength = 0.3 + Math.random() * 0.5;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
     strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
   }
 
   const r = Math.random() * 100;
-  const maxBet = Math.min(Math.floor(agent.chips * 0.4), bb * 10);
-  const betAmt = Math.max(bb, Math.floor(Math.random() * maxBet));
+  const minRaise = Math.max(bb, currentBet * 2 - agentRoundBet);
+  const maxRaise = Math.min(agent.chips, Math.max(minRaise, Math.floor(agent.chips * 0.4)));
+  const raiseAmt = Math.max(minRaise, Math.floor(minRaise + Math.random() * (maxRaise - minRaise)));
 
+  // If can't afford to call, either all-in or fold
+  if (toCall >= agent.chips) {
+    // Decide: all-in or fold
+    if (strength > 0.4 || r < 30) {
+      return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    }
+    return { type: 'fold', label: 'Fold', amount: 0 };
+  }
+
+  // No bet to match — can check or bet
+  if (toCall === 0) {
+    if (agent.style === 'aggressive') {
+      if (r < agent.raisePct) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+    if (agent.style === 'conservative') {
+      if (strength > 0.7 && r < 40) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+    if (agent.style === 'bluffer') {
+      if (r < agent.bluffPct * 0.6) return { type: 'raise', label: `Bluff ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+    if (agent.style === 'mathematical') {
+      if (strength > 0.6 && r < 45) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+    if (agent.style === 'chaotic') {
+      const chaos = Math.random();
+      if (chaos < 0.25) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
+      if (chaos < 0.35 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+      return { type: 'check', label: 'Check', amount: 0 };
+    }
+    // balanced
+    if (strength > 0.6 && r < 40) return { type: 'raise', label: `Bet ${raiseAmt}`, amount: raiseAmt };
+    return { type: 'check', label: 'Check', amount: 0 };
+  }
+
+  // There's a bet to match — call, raise, or fold
   if (agent.style === 'aggressive') {
-    if (r < agent.raisePct) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (r < agent.raisePct + 30) return { type: 'call', label: 'Call', amount: bb };
+    if (r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (r < agent.raisePct + 30) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
-    if (strength > 0.7 && r < 40) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (strength > 0.5 || r < 25) return { type: 'call', label: 'Call', amount: bb };
+    if (strength > 0.7 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.5 || r < 20) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
-    if (r < agent.bluffPct * 0.8) return { type: 'raise', label: `Bluff ${betAmt}`, amount: betAmt };
-    if (r < 70) return { type: 'call', label: 'Call', amount: bb };
+    if (r < agent.bluffPct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Bluff Raise ${raiseAmt}`, amount: raiseAmt };
+    if (r < 65) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'mathematical') {
-    const potOdds = pot > 0 ? bb / pot : 1;
-    if (strength > potOdds + 0.2 && r < 45) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (strength > potOdds || r < 20) return { type: 'check', label: 'Check', amount: 0 };
-    if (strength > 0.3) return { type: 'call', label: 'Call', amount: bb };
+    const potOdds = pot > 0 ? toCall / (pot + toCall) : 1;
+    if (strength > potOdds + 0.2 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > potOdds) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'chaotic') {
     const chaos = Math.random();
-    if (chaos < 0.3) return { type: 'raise', label: `YOLO ${betAmt}`, amount: betAmt };
-    if (chaos < 0.5) return { type: 'call', label: 'Call', amount: bb };
-    if (chaos < 0.65) return { type: 'check', label: 'Check', amount: 0 };
-    if (chaos < 0.85 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    if (chaos < 0.2 && agent.chips > raiseAmt) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
+    if (chaos < 0.3 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    if (chaos < 0.7) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
-  // balanced / default
-  if (strength > 0.7 && r < 50) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-  if (strength > 0.4 || r < 40) return { type: 'call', label: 'Call', amount: Math.min(bb, agent.chips) };
-  if (r < 20) return { type: 'check', label: 'Check', amount: 0 };
+  // balanced
+  if (strength > 0.65 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+  if (strength > 0.35 || r < 35) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   return { type: 'fold', label: 'Fold', amount: 0 };
 }
 
@@ -136,9 +191,8 @@ class PokerEngine {
     this.roomId = config.roomId || 'micro';
     this.bb = config.bb || 50;
     this.baseChips = config.baseChips || 10000;
-    this.cashoutThreshold = config.cashoutThreshold || 2.0;
-    this.rakePct = config.rakePct || 0.05; // 5% default
-    this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1); // cap per hand
+    this.rakePct = config.rakePct || 0.05;
+    this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1);
     this.totalRake = 0;
 
     this.agents = AGENTS.map(a => ({
@@ -150,7 +204,8 @@ class PokerEngine {
       biggestPot: 0,
       hand: [],
       folded: false,
-      currentBet: 0,
+      currentBet: 0,    // total bet THIS HAND (for side pot calc)
+      roundBet: 0,       // bet this BETTING ROUND (resets each street)
       allIn: false
     }));
     this.round = 0;
@@ -160,7 +215,8 @@ class PokerEngine {
     this.communityCards = [];
     this.deck = [];
     this.dealerIndex = 0;
-    this.currentTurnIndex = 0;
+    this.currentTurnIndex = -1;
+    this.currentHighBet = 0;    // highest bet this round
     this.lastWinner = null;
     this.contractPool = this.baseChips * 2;
     this.totalCashouts = 0;
@@ -192,48 +248,65 @@ class PokerEngine {
     this.lastWinner = null;
     this.deck = createDeck();
     this.communityCards = [];
+    this.currentHighBet = 0;
 
-    // Reset agents — bust agents rebuy from pool
+    // Reset agents — bust HOUSE bots rebuy from pool, custom agents sit out
     for (const a of this.agents) {
       if (a.chips <= 0) {
-        const rebuyAmount = Math.min(Math.floor(this.baseChips / 2), this.contractPool);
-        if (rebuyAmount > 0) {
-          this.contractPool -= rebuyAmount;
-          this.totalBuyins += rebuyAmount;
-          a.chips = rebuyAmount;
-          this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
-          this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">buys in ${rebuyAmount.toLocaleString()} from pool</span>` });
-        } else {
-          a.chips = 0;
-          this.broadcast('log', { html: `<span class="pool-event">🏦 Pool empty!</span> ${a.name} can't rebuy` });
+        if (!a.isCustom) {
+          // House bot: rebuy from contract pool
+          const rebuyAmount = Math.min(Math.floor(this.baseChips / 2), this.contractPool);
+          if (rebuyAmount > 0) {
+            this.contractPool -= rebuyAmount;
+            this.totalBuyins += rebuyAmount;
+            a.chips = rebuyAmount;
+            this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
+            this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">buys in ${rebuyAmount.toLocaleString()} from pool</span>` });
+          }
         }
+        // Custom agents with 0 chips just sit out (folded = true below if chips <= 0)
       }
-      a.folded = false;
+      a.folded = a.chips <= 0; // can't play with no chips
       a.currentBet = 0;
+      a.roundBet = 0;
       a.allIn = false;
-      a.hand = [this.deck.pop(), this.deck.pop()];
-      a.handsPlayed++;
+      if (!a.folded) {
+        a.hand = [this.deck.pop(), this.deck.pop()];
+        a.handsPlayed++;
+      } else {
+        a.hand = [];
+      }
     }
 
-    // Rotate dealer
-    this.dealerIndex = (this.dealerIndex + 1) % this.agents.length;
+    const activePlayers = this.agents.filter(a => !a.folded);
+    if (activePlayers.length < 2) {
+      // Not enough players to play
+      this.currentTurnIndex = -1;
+      this.broadcastGameState();
+      return;
+    }
+
+    // Rotate dealer (skip folded/bust agents)
+    this.dealerIndex = this._nextActive(this.dealerIndex);
 
     // Post blinds
-    const sbIdx = (this.dealerIndex + 1) % this.agents.length;
-    const bbIdx = (this.dealerIndex + 2) % this.agents.length;
+    const sbIdx = this._nextActive(this.dealerIndex);
+    const bbIdx = this._nextActive(sbIdx);
     const sb = this.agents[sbIdx];
     const bbAgent = this.agents[bbIdx];
+
     const sbAmt = Math.min(Math.floor(this.bb / 2), sb.chips);
+    this._postBet(sb, sbAmt);
+
     const bbAmt = Math.min(this.bb, bbAgent.chips);
-    sb.chips -= sbAmt;
-    bbAgent.chips -= bbAmt;
-    this.pot += sbAmt + bbAmt;
+    this._postBet(bbAgent, bbAmt);
+    this.currentHighBet = bbAmt;
 
     this.broadcast('log', { html: `<span class="system">--- Hand #${this.handsPlayed} ---</span>` });
     this.broadcast('log', { html: `<span class="agent">${sb.name}</span> posts SB <span class="amount">${sbAmt}</span>` });
     this.broadcast('log', { html: `<span class="agent">${bbAgent.name}</span> posts BB <span class="amount">${bbAmt}</span>` });
 
-    this.currentTurnIndex = (bbIdx + 1) % this.agents.length;
+    this.currentTurnIndex = this._nextActive(bbIdx);
     this.broadcastGameState();
 
     // Betting rounds
@@ -252,68 +325,143 @@ class PokerEngine {
           this.communityCards.push(this.deck.pop());
         }
         const cardStr = this.communityCards.map(c => c.rank + c.suit).join(' ');
-        this.broadcast('log', { html: `<span class="system">--- ${this.capitalize(p.name)}: ${p.cards === 1 ? this.communityCards[this.communityCards.length - 1].rank + this.communityCards[this.communityCards.length - 1].suit : cardStr} ---</span>` });
+        this.broadcast('log', { html: `<span class="system">--- ${this._capitalize(p.name)}: ${p.cards === 1 ? this.communityCards[this.communityCards.length - 1].rank + this.communityCards[this.communityCards.length - 1].suit : cardStr} ---</span>` });
+
+        // Reset round bets for new street
+        this.agents.forEach(a => a.roundBet = 0);
+        this.currentHighBet = 0;
+        this.currentTurnIndex = this._nextActive(this.dealerIndex);
         this.broadcastGameState();
         await sleep(ACTION_DELAY);
       }
 
-      const handOver = await this.runBettingRound();
+      const handOver = await this.runBettingRound(pi === 0 ? bbIdx : -1);
       if (handOver) return;
-
-      this.agents.forEach(a => a.currentBet = 0);
-      this.currentTurnIndex = (this.dealerIndex + 1) % this.agents.length;
     }
 
     this.phase = 'showdown';
     this.broadcast('log', { html: '<span class="system">--- Showdown! ---</span>' });
-    const activePlayers = this.agents.filter(a => !a.folded);
-    this.resolveHand(activePlayers);
+    const remaining = this.agents.filter(a => !a.folded);
+    this.resolveHand(remaining);
   }
 
-  async runBettingRound() {
-    const numAgents = this.agents.length;
-    const startIdx = this.currentTurnIndex;
-    for (let i = 0; i < numAgents; i++) {
-      const idx = (startIdx + i) % numAgents;
-      const agent = this.agents[idx];
+  // Find next active (non-folded, has chips OR is all-in) agent index after given index
+  _nextActive(fromIdx) {
+    const n = this.agents.length;
+    for (let i = 1; i <= n; i++) {
+      const idx = (fromIdx + i) % n;
+      if (!this.agents[idx].folded) return idx;
+    }
+    return fromIdx;
+  }
 
-      if (agent.folded || agent.chips <= 0) continue;
+  // Post a bet (blinds, calls, raises)
+  _postBet(agent, amount) {
+    const amt = Math.min(amount, agent.chips);
+    agent.chips -= amt;
+    agent.currentBet += amt;
+    agent.roundBet += amt;
+    this.pot += amt;
+    if (agent.chips === 0) agent.allIn = true;
+    return amt;
+  }
 
-      const activePlayers = this.agents.filter(a => !a.folded && a.chips > 0);
-      if (activePlayers.length <= 1) {
-        this.resolveHand(activePlayers);
+  async runBettingRound(bbIdx) {
+    // Betting continues until everyone has acted and all bets are matched
+    const n = this.agents.length;
+    let startIdx = this.currentTurnIndex;
+    let lastRaiserIdx = -1;
+    let actedCount = 0;
+
+    while (true) {
+      const agent = this.agents[startIdx];
+
+      // Skip folded, all-in, or bust agents
+      if (agent.folded || agent.allIn || agent.chips <= 0) {
+        startIdx = (startIdx + 1) % n;
+        actedCount++;
+        if (actedCount >= n) break;
+        continue;
+      }
+
+      // Check if we've gone around back to the last raiser — round is over
+      if (startIdx === lastRaiserIdx) break;
+
+      // Check if only one non-folded player left
+      const nonFolded = this.agents.filter(a => !a.folded);
+      if (nonFolded.length <= 1) {
+        this.resolveHand(nonFolded);
         return true;
       }
 
-      // Update turn index so client shows "Thinking..." on the right agent
-      this.currentTurnIndex = idx;
+      // Show "Thinking..." on this agent
+      this.currentTurnIndex = startIdx;
       this.broadcastGameState();
       await sleep(ACTION_DELAY);
 
-      const action = agentDecide(agent, this.communityCards, this.pot, this.bb);
-      this.applyAction(agent, action);
+      const action = agentDecide(agent, this.communityCards, this.pot, this.bb, this.currentHighBet, agent.roundBet);
+      this._applyAction(agent, action, startIdx);
+
+      // If this was a raise/bet, reset the "last raiser" so we go around again
+      if (action.type === 'raise' || action.type === 'allin') {
+        lastRaiserIdx = startIdx;
+      }
+
+      // If no one has raised yet, set initial "last raiser" to stop after one full orbit
+      if (lastRaiserIdx === -1 && actedCount === 0) {
+        lastRaiserIdx = startIdx;
+      }
+
       this.broadcast('action', { agentId: agent.id, action: action.type, amount: action.amount, label: action.label });
       this.broadcastGameState();
+
+      startIdx = (startIdx + 1) % n;
+      actedCount++;
+      if (actedCount >= n * 3) break; // safety valve — max 3 orbits
     }
+
+    // Check if only one non-folded player left after round
+    const nonFolded = this.agents.filter(a => !a.folded);
+    if (nonFolded.length <= 1) {
+      this.resolveHand(nonFolded);
+      return true;
+    }
+
+    // If all remaining players are all-in (or only one has chips), skip to showdown
+    const canAct = nonFolded.filter(a => !a.allIn && a.chips > 0);
+    if (canAct.length <= 1) {
+      // Deal remaining community cards
+      while (this.communityCards.length < 5) {
+        this.communityCards.push(this.deck.pop());
+      }
+      this.phase = 'showdown';
+      this.broadcast('log', { html: '<span class="system">--- All-In Showdown! ---</span>' });
+      this.broadcastGameState();
+      await sleep(ACTION_DELAY * 2);
+      this.resolveHand(nonFolded);
+      return true;
+    }
+
     return false;
   }
 
-  applyAction(agent, action) {
+  _applyAction(agent, action, agentIdx) {
     let logMsg = `<span class="agent">${agent.name}</span> `;
     switch (action.type) {
       case 'raise': {
-        const raiseAmt = Math.min(action.amount, agent.chips);
-        agent.chips -= raiseAmt;
-        this.pot += raiseAmt;
-        agent.currentBet += raiseAmt;
-        logMsg += `<span class="action-raise">raises</span> <span class="amount">${raiseAmt}</span>`;
+        // Raise: put in enough to match current bet + raise amount
+        const totalNeeded = action.amount;
+        const actual = this._postBet(agent, totalNeeded);
+        if (agent.roundBet > this.currentHighBet) {
+          this.currentHighBet = agent.roundBet;
+        }
+        logMsg += `<span class="action-raise">raises to</span> <span class="amount">${agent.roundBet}</span>`;
         break;
       }
       case 'call': {
-        const callAmt = Math.min(action.amount, agent.chips);
-        agent.chips -= callAmt;
-        this.pot += callAmt;
-        logMsg += `<span class="action-call">calls</span> <span class="amount">${callAmt}</span>`;
+        const toCall = Math.min(this.currentHighBet - agent.roundBet, agent.chips);
+        const actual = this._postBet(agent, toCall);
+        logMsg += `<span class="action-call">calls</span> <span class="amount">${actual}</span>`;
         break;
       }
       case 'fold':
@@ -323,66 +471,174 @@ class PokerEngine {
       case 'check':
         logMsg += `<span class="action-check">checks</span>`;
         break;
-      case 'allin':
-        this.pot += agent.chips;
-        logMsg += `<span class="action-raise">goes ALL IN ${agent.chips}!</span>`;
-        agent.chips = 0;
-        agent.allIn = true;
+      case 'allin': {
+        const amt = agent.chips;
+        this._postBet(agent, amt);
+        if (agent.roundBet > this.currentHighBet) {
+          this.currentHighBet = agent.roundBet;
+        }
+        logMsg += `<span class="action-raise">goes ALL IN ${amt}!</span>`;
         break;
+      }
     }
     this.broadcast('log', { html: logMsg });
   }
 
+  // === SIDE POT RESOLUTION ===
+  // Proper Texas Hold'em: each player can only win from each opponent
+  // up to the amount they themselves put in.
   resolveHand(activePlayers) {
-    this.currentTurnIndex = -1; // No one is "thinking" during resolution
+    this.currentTurnIndex = -1;
     if (!activePlayers || activePlayers.length === 0) {
       activePlayers = [this.agents[0]];
     }
 
-    let winner;
+    // Single winner (everyone else folded)
     if (activePlayers.length === 1) {
-      winner = activePlayers[0];
+      const winner = activePlayers[0];
       winner._handName = 'Last Standing';
-    } else {
-      let bestScore = -1;
-      activePlayers.forEach(agent => {
-        const h = getBestHand(agent.hand, this.communityCards);
-        agent._handScore = h.rank + Math.random() * 0.01;
-        agent._handName = h.name;
-        if (agent._handScore > bestScore) {
-          bestScore = agent._handScore;
-          winner = agent;
+
+      const rake = Math.min(Math.floor(this.pot * this.rakePct), this.rakeMax);
+      const potWon = this.pot - rake;
+      if (rake > 0) { this.contractPool += rake; this.totalRake += rake; }
+
+      winner.chips += potWon;
+      winner.handsWon++;
+      winner.biggestPot = Math.max(winner.biggestPot, potWon);
+      this.lastWinner = winner.id;
+
+      const rakeNote = rake > 0 ? ` <span style="color:#888;font-size:10px">(rake: ${rake.toLocaleString()})</span>` : '';
+      this.broadcast('log', { html: `<span class="win">🏆 ${winner.name} wins ${potWon.toLocaleString()}!</span>${rakeNote}` });
+      this.broadcast('handResult', { winnerId: winner.id, winnerName: winner.name, pot: potWon, handName: 'Last Standing' });
+
+      this._postHandCleanup();
+      return;
+    }
+
+    // Multiple players at showdown — build side pots
+    // Sort active players by their total bet this hand (ascending) for side pot calc
+    const sortedByBet = [...activePlayers].sort((a, b) => a.currentBet - b.currentBet);
+
+    // Evaluate each player's best hand
+    for (const a of activePlayers) {
+      const h = getBestHand(a.hand, this.communityCards);
+      a._handScore = h;
+      a._handName = h.name;
+    }
+
+    // Build side pots
+    const sidePots = [];
+    let processedBet = 0;
+
+    for (let i = 0; i < sortedByBet.length; i++) {
+      const player = sortedByBet[i];
+      const betLevel = player.currentBet;
+      if (betLevel <= processedBet) continue;
+
+      const contribution = betLevel - processedBet;
+      let potAmount = 0;
+
+      // Each player who bet at least this level contributes
+      for (const a of this.agents) {
+        const contributed = Math.min(Math.max(a.currentBet - processedBet, 0), contribution);
+        potAmount += contributed;
+      }
+
+      // Eligible players: active (non-folded) players who bet at least this level
+      const eligible = activePlayers.filter(a => a.currentBet >= betLevel);
+
+      if (potAmount > 0) {
+        sidePots.push({ amount: potAmount, eligible });
+      }
+      processedBet = betLevel;
+    }
+
+    // Any remaining chips from folded players above the highest active bet
+    // (already included in the pot calculation above)
+
+    let totalRake = 0;
+    const winnings = new Map(); // agentId → total won
+    const potWinners = []; // for logging
+
+    for (const sidePot of sidePots) {
+      // Find winner of this side pot
+      let bestHand = null;
+      let winner = null;
+
+      for (const player of sidePot.eligible) {
+        if (!bestHand || compareHands(player._handScore, bestHand) > 0) {
+          bestHand = player._handScore;
+          winner = player;
         }
-      });
+      }
+
+      // Apply rake to this side pot
+      const rake = Math.min(Math.floor(sidePot.amount * this.rakePct), this.rakeMax);
+      totalRake += rake;
+      const netPot = sidePot.amount - rake;
+
+      const prev = winnings.get(winner.id) || 0;
+      winnings.set(winner.id, prev + netPot);
+      potWinners.push({ winner, amount: netPot, handName: winner._handName });
     }
 
-    // Rake — house cut from every pot
-    const rake = Math.min(Math.floor(this.pot * this.rakePct), this.rakeMax);
-    const potWon = this.pot - rake;
-    if (rake > 0) {
-      this.contractPool += rake;
-      this.totalRake += rake;
-      this.totalCashouts += rake;
+    // Apply rake
+    if (totalRake > 0) {
+      this.contractPool += totalRake;
+      this.totalRake += totalRake;
     }
 
-    winner.chips += potWon;
-    winner.handsWon++;
-    winner.biggestPot = Math.max(winner.biggestPot, potWon);
-    this.lastWinner = winner.id;
+    // Award chips
+    let mainWinner = null;
+    let mainWinAmount = 0;
+    for (const [agentId, amount] of winnings) {
+      const agent = this.agents.find(a => a.id === agentId);
+      agent.chips += amount;
+      agent.handsWon++;
+      agent.biggestPot = Math.max(agent.biggestPot, amount);
+      if (amount > mainWinAmount) {
+        mainWinAmount = amount;
+        mainWinner = agent;
+      }
+    }
 
-    const handName = winner._handName || 'Best Hand';
-    const rakeNote = rake > 0 ? ` (rake: ${rake.toLocaleString()})` : '';
-    this.broadcast('log', { html: `<span class="win">🏆 ${winner.name} wins ${potWon.toLocaleString()} with ${handName}!</span>${rakeNote ? `<span style="color:var(--text-muted);font-size:10px">${rakeNote}</span>` : ''}` });
-    this.broadcast('handResult', { winnerId: winner.id, winnerName: winner.name, pot: potWon, handName });
+    this.lastWinner = mainWinner ? mainWinner.id : null;
 
-    this.checkAgentCashouts();
+    // Log results
+    if (potWinners.length === 1) {
+      const pw = potWinners[0];
+      const rakeNote = totalRake > 0 ? ` <span style="color:#888;font-size:10px">(rake: ${totalRake.toLocaleString()})</span>` : '';
+      this.broadcast('log', { html: `<span class="win">🏆 ${pw.winner.name} wins ${pw.amount.toLocaleString()} with ${pw.handName}!</span>${rakeNote}` });
+    } else {
+      for (const pw of potWinners) {
+        this.broadcast('log', { html: `<span class="win">🏆 ${pw.winner.name} wins ${pw.amount.toLocaleString()} with ${pw.handName}!</span>` });
+      }
+      if (totalRake > 0) {
+        this.broadcast('log', { html: `<span style="color:#888;font-size:10px">Total rake: ${totalRake.toLocaleString()}</span>` });
+      }
+    }
+
+    this.broadcast('handResult', {
+      winnerId: mainWinner ? mainWinner.id : null,
+      winnerName: mainWinner ? mainWinner.name : '',
+      pot: mainWinAmount,
+      handName: mainWinner ? mainWinner._handName : ''
+    });
+
+    this._postHandCleanup();
+  }
+
+  _postHandCleanup() {
+    // Only auto-cashout HOUSE bots (not custom agents)
+    this._checkHouseBotCashouts();
     this.updateAllFundPositions();
     this.broadcastGameState();
   }
 
-  checkAgentCashouts() {
+  _checkHouseBotCashouts() {
     for (const agent of this.agents) {
-      const threshold = agent.baseChips * this.cashoutThreshold;
+      if (agent.isCustom) continue; // NEVER auto-cashout custom agents
+      const threshold = agent.baseChips * 2.0;
       if (agent.chips > threshold) {
         const excess = agent.chips - agent.baseChips;
         agent.chips = agent.baseChips;
@@ -390,7 +646,6 @@ class PokerEngine {
         this.totalCashouts += excess;
         this.addPoolFlow('cashout', agent.name, agent.emoji, excess);
         this.broadcast('log', { html: `<span class="pool-event">🏦 ${agent.name}</span> <span class="pool-in">cashes out ${excess.toLocaleString()} to pool</span>` });
-        this.broadcast('poolEvent', { type: 'cashout', agentName: agent.name, agentEmoji: agent.emoji, amount: excess });
       }
     }
   }
@@ -482,7 +737,7 @@ class PokerEngine {
     }
   }
 
-  // === Custom agent table operations (lobby managed by RoomManager) ===
+  // === Custom agent table operations ===
 
   seatAgent(lobbyAgent) {
     const houseBotIndex = this.agents.findIndex(a => !a.isCustom);
@@ -525,6 +780,7 @@ class PokerEngine {
       hand: [],
       folded: false,
       currentBet: 0,
+      roundBet: 0,
       allIn: false
     };
 
@@ -571,6 +827,7 @@ class PokerEngine {
         hand: [],
         folded: false,
         currentBet: 0,
+        roundBet: 0,
         allIn: false
       };
       this.replacedBots.delete(agentId);
@@ -600,6 +857,7 @@ class PokerEngine {
         hand: [],
         folded: false,
         currentBet: 0,
+        roundBet: 0,
         allIn: false
       };
       this.replacedBots.delete(agentId);
@@ -614,7 +872,7 @@ class PokerEngine {
 
     const agent = this.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
     if (!agent) {
-      console.log(`[topUp] Agent not found: ${agentId} wallet: ${walletAddress}. Table agents:`, this.agents.map(a => ({ id: a.id, wallet: a.walletAddress, isCustom: a.isCustom })));
+      console.log(`[topUp] Agent not found: ${agentId} wallet: ${walletAddress}`);
       return { error: 'Agent not found at table' };
     }
 
@@ -641,13 +899,14 @@ class PokerEngine {
 
     // If showdown (all 5 community cards), just evaluate once
     if (cardsNeeded === 0) {
-      const scores = {};
-      let bestScore = -1;
+      let bestHand = null;
       let winnerId = null;
       for (const a of active) {
         const h = getBestHand(a.hand, this.communityCards);
-        scores[a.id] = h.rank + Math.random() * 0.001;
-        if (scores[a.id] > bestScore) { bestScore = scores[a.id]; winnerId = a.id; }
+        if (!bestHand || compareHands(h, bestHand) > 0) {
+          bestHand = h;
+          winnerId = a.id;
+        }
       }
       const result = {};
       for (const a of active) result[a.id] = a.id === winnerId ? 100 : 0;
@@ -672,16 +931,17 @@ class PokerEngine {
     for (const a of active) wins[a.id] = 0;
 
     for (let s = 0; s < SIMS; s++) {
-      // Shuffle and draw needed cards
       const shuffled = shuffle(remaining);
       const simCommunity = [...this.communityCards, ...shuffled.slice(0, cardsNeeded)];
 
-      let bestScore = -1;
+      let bestHand = null;
       let winnerId = null;
       for (const a of active) {
         const h = getBestHand(a.hand, simCommunity);
-        const score = h.rank + Math.random() * 0.001;
-        if (score > bestScore) { bestScore = score; winnerId = a.id; }
+        if (!bestHand || compareHands(h, bestHand) > 0) {
+          bestHand = h;
+          winnerId = a.id;
+        }
       }
       wins[winnerId]++;
     }
@@ -710,6 +970,7 @@ class PokerEngine {
         folded: a.folded,
         allIn: a.allIn,
         currentBet: a.currentBet,
+        roundBet: a.roundBet,
         winPct: winProbs[a.id] || 0,
         traits: a.traits,
         description: a.description,
@@ -726,6 +987,7 @@ class PokerEngine {
       currentTurnIndex: this.currentTurnIndex,
       currentTurnId: this.currentTurnIndex >= 0 && this.currentTurnIndex < this.agents.length
         ? this.agents[this.currentTurnIndex].id : null,
+      currentHighBet: this.currentHighBet,
       lastWinner: this.lastWinner,
       contractPool: this.contractPool,
       totalCashouts: this.totalCashouts,
@@ -765,7 +1027,7 @@ class PokerEngine {
     this.broadcast('gameState', null);
   }
 
-  capitalize(s) {
+  _capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 }
