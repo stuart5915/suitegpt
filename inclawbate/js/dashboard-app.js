@@ -920,14 +920,23 @@ async function fetchSolanaFees(solTokens) {
         if (!resp.ok || data.error) return;
 
         const positions = Array.isArray(data) ? data : (data.response || data.positions || data.data || []);
-        if (!positions.length) return;
 
         // Build set of our token mints for filtering
         const ourMints = new Set(solTokens.map(t => t.token_address).filter(Boolean));
 
         // Filter to only our tokens with claimable lamports > 0
-        const claimable = positions.filter(p => ourMints.has(p.baseMint) && parseInt(p.totalClaimableLamportsUserShare || 0) > 0);
-        if (!claimable.length) return;
+        const claimable = positions.length
+            ? positions.filter(p => ourMints.has(p.baseMint) && parseInt(p.totalClaimableLamportsUserShare || 0) > 0)
+            : [];
+
+        // Hide banner + per-card buttons when nothing is claimable
+        if (!claimable.length) {
+            const banner = document.getElementById('solFeesBanner');
+            if (banner) banner.style.display = 'none';
+            document.querySelectorAll('.claim-sol-btn').forEach(b => b.style.display = 'none');
+            _solClaimablePositions = [];
+            return;
+        }
 
         _solClaimablePositions = claimable;
         const totalSol = claimable.reduce((sum, p) => sum + parseInt(p.totalClaimableLamportsUserShare || 0), 0) / 1e9;
