@@ -198,7 +198,9 @@ export default async function handler(req, res) {
       choice = data.choices?.[0];
     }
 
-    const reply = choice?.message?.content || 'Sorry, something went wrong. Try again!';
+    let reply = choice?.message?.content || 'Sorry, something went wrong. Try again!';
+    // Llama sometimes leaks raw function-call syntax in text — strip it
+    reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
     history.push({ role: 'assistant', content: reply });
 
     return res.status(200).json({ reply, function_called: functionCalled, session_id: sid });
