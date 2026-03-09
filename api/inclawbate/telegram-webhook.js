@@ -49,23 +49,26 @@ function isAdmin(username) {
     return username && username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
 }
 
-// ── /state — shows everything with numbers ──
+// ── /state — shows current focus + numbered todos ──
 
 async function handleState(chatId) {
+    const { data: current } = await supabase
+        .from('team_state')
+        .select('*')
+        .eq('category', 'current')
+        .limit(1);
+
     const { data: todos } = await supabase
         .from('team_state')
         .select('*')
         .eq('category', 'todo')
         .order('created_at', { ascending: true });
 
-    const { data: done } = await supabase
-        .from('team_state')
-        .select('*')
-        .eq('category', 'done')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
     let msg = '🦞 <b>INCLAWBATE</b>\n';
+
+    if (current && current.length) {
+        msg += `\n🔥 <b>CURRENT:</b> ${esc(current[0].content)}\n`;
+    }
 
     if (todos && todos.length) {
         msg += `\n<b>TODO (${todos.length}):</b>\n`;
@@ -74,12 +77,43 @@ async function handleState(chatId) {
         msg += '\n<i>List is empty. /add something</i>\n';
     }
 
-    if (done && done.length) {
-        msg += `\n<b>DONE (${done.length}):</b>\n`;
-        done.forEach(d => { msg += `✅ ${esc(d.content)}\n`; });
+    await sendMsg(chatId, msg);
+}
+
+// ── /current — set or show what you're working on (admin only) ──
+
+async function handleCurrent(chatId, username, args) {
+    if (!isAdmin(username)) return;
+
+    // No args = just show current
+    if (!args) {
+        const { data } = await supabase
+            .from('team_state')
+            .select('*')
+            .eq('category', 'current')
+            .limit(1);
+
+        if (data && data.length) {
+            await sendMsg(chatId, `🔥 <b>CURRENT:</b> ${esc(data[0].content)}`);
+        } else {
+            await sendMsg(chatId, '<i>No current task. /current 3 to set one from /state</i>');
+        }
+        return;
     }
 
-    await sendMsg(chatId, msg);
+    // Find the todo by number or text
+    const item = await findTodo(args);
+    if (!item) {
+        await sendMsg(chatId, `❌ No match for "${esc(args)}"`);
+        return;
+    }
+
+    // Clear any existing current
+    await supabase.from('team_state').delete().eq('category', 'current');
+
+    // Set new current
+    await supabase.from('team_state').insert({ category: 'current', content: item.content, author: username });
+    await sendMsg(chatId, `🔥 <b>Now working on:</b> ${esc(item.content)}`);
 }
 
 // ── /add — add to list (admin only, multi-line ok) ──
@@ -221,10 +255,13 @@ export default async function handler(req, res) {
             await handleDone(chatId, username, args);
         } else if (cmd === 'remove') {
             await handleRemove(chatId, username, args);
+        } else if (cmd === 'current') {
+            await handleCurrent(chatId, username, args);
         } else if (cmd === 'help') {
             await sendMsg(chatId,
                 '🦞 <b>Inclawbate Bot</b>\n\n' +
                 '/state — See numbered list\n' +
+                '/current 3 — Set current task\n' +
                 '/add thing — Add to list\n' +
                 '/done 1 — Check off by number\n' +
                 '/remove 2 — Delete by number'
