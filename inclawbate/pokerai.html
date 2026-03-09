@@ -2328,13 +2328,13 @@
             </div>
           </div>
 
-          <button class="btn-deploy" id="deployBtn" onclick="deployAgent()">🚀 Deploy Agent</button>
+          <button class="btn-deploy" id="deployBtn" onclick="deployAgent()">🤖 Create Agent</button>
         </div>
 
         <!-- MY AGENTS LIST -->
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> Your Deployed Agents</div>
+            <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> Your Agents</div>
             <div style="font-size:12px;color:var(--text-muted)">Balance: <span id="headerBalance" style="color:var(--accent-gold);font-weight:700" class="wallet-balance">0</span></div>
           </div>
           <div class="my-agents-grid" id="myAgentsGrid">
@@ -3037,7 +3037,6 @@ function handleMessage(msg) {
         window._pendingDeploy = 0;
         showToast(msg.data.error, 'error');
       } else {
-        // Deduct chips now that server confirmed
         const dw = getWallet();
         if (dw && window._pendingDeploy) {
           dw.balance -= window._pendingDeploy;
@@ -3045,13 +3044,30 @@ function handleMessage(msg) {
           updateWalletUI();
         }
         window._pendingDeploy = 0;
-        showToast(`${msg.data.agentName} is LIVE! Replaced ${msg.data.replacedBot} at the table.`, 'success');
+        showToast(`${msg.data.agentName} created! Now send it to a table.`, 'success');
         document.getElementById('agentName').value = '';
-        // Auto-switch to Arena so user sees their agent playing
+        refreshMyAgentsView();
+      }
+      break;
+
+    case 'joinTableResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`Agent joined the table! Replaced ${msg.data.replacedBot}`, 'success');
         setTimeout(() => {
           showView('arena');
-          showToast(`Watch ${msg.data.agentName} play! (green border = yours)`, 'gold');
-        }, 800);
+          showToast('Watch your agent play! (green border = yours)', 'gold');
+        }, 600);
+      }
+      break;
+
+    case 'leaveTableResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`${msg.data.agent.name} left the table — back in lobby with ${msg.data.agent.chipStack.toLocaleString()} chips`, 'info');
+        refreshMyAgentsView();
       }
       break;
 
@@ -3059,7 +3075,6 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        // Credit chips back to wallet
         const rw = getWallet();
         if (rw) {
           rw.balance += msg.data.finalChips;
@@ -3067,7 +3082,7 @@ function handleMessage(msg) {
           updateWalletUI();
         }
         const pnlStr = msg.data.pnl >= 0 ? `+${msg.data.pnl}` : `${msg.data.pnl}`;
-        showToast(`Agent recalled! Got ${msg.data.finalChips.toLocaleString()} chips back (${pnlStr} P&L)`, msg.data.pnl >= 0 ? 'success' : 'error');
+        showToast(`Agent deleted! Got ${msg.data.finalChips.toLocaleString()} chips back (${pnlStr} P&L)`, msg.data.pnl >= 0 ? 'success' : 'error');
         refreshMyAgentsView();
       }
       break;
@@ -3099,6 +3114,7 @@ function applyServerState(data) {
   gameState.running = data.running;
   gameState.fundPositions = data.positions || [];
   gameState.totalPnl = data.totalPnl || 0;
+  gameState.lobbyAgents = data.lobbyAgents || [];
 
   renderFullState();
 }
@@ -3648,84 +3664,134 @@ function refreshMyAgentsView() {
 
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
-
-  // Find custom agents in current gameState that belong to this wallet
   const wallet = getWallet();
   if (!wallet) return;
 
-  const mine = gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address);
+  // Playing agents (at the table)
+  const playing = gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address);
+  // Lobby agents (from server state)
+  const lobby = gameState.lobbyAgents || [];
 
-  if (mine.length === 0) {
+  if (playing.length === 0 && lobby.length === 0) {
     grid.innerHTML = `
       <div class="no-agents-msg">
         <div class="icon">🤖</div>
         <div class="title">No Agents Yet</div>
-        <p style="font-size:13px;margin-top:8px">Create your first agent using the form. It will join the live table and start playing immediately.</p>
+        <p style="font-size:13px;margin-top:8px">Create your first agent using the form, then send it to the table.</p>
       </div>`;
     return;
   }
 
-  grid.innerHTML = mine.map(agent => {
-    const chipStack = agent.chips;
-    const startStack = agent.baseChips;
-    const pnl = chipStack - startStack;
-    const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    const pnlSign = pnl >= 0 ? '+' : '';
-    const cardClass = pnl >= 0 ? 'profitable' : 'losing';
-    const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+  let html = '';
 
-    return `
-    <div class="my-agent-card ${cardClass}">
-      <div class="my-agent-header">
-        <div class="my-agent-left">
-          <div class="my-agent-emoji">${agent.emoji}</div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
-              <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
-                <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
-                LIVE
-              </span>
+  // LOBBY section
+  if (lobby.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+      <span style="color:var(--accent-gold)">⏳</span> Ready to Deploy (${lobby.length})
+    </div>`;
+    html += lobby.map(agent => {
+      const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+      return `
+      <div class="my-agent-card" style="border-color:rgba(245,197,66,0.25)">
+        <div class="my-agent-header">
+          <div class="my-agent-left">
+            <div class="my-agent-emoji">${agent.emoji}</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
+                <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(245,197,66,0.12);color:var(--accent-gold);border:1px solid rgba(245,197,66,0.3)">LOBBY</span>
+              </div>
+              <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
             </div>
-            <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div>
+            <div style="font-size:10px;color:var(--text-muted)">chips</div>
           </div>
         </div>
-        <div style="text-align:right">
-          <div class="my-agent-pnl" style="color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
-          <div style="font-size:10px;color:var(--text-muted)">P&L</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1">
+            ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
+            ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
+            ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button onclick="joinTable('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>
+            <button class="btn-recall" onclick="recallAgent('${agent.id}')">Delete</button>
+          </div>
         </div>
-      </div>
-      <div class="my-agent-stats">
-        <div class="mini-stat">
-          <div class="mini-stat-label">Stack</div>
-          <div class="mini-stat-value" style="color:var(--accent-gold)">${formatChips(chipStack)}</div>
-        </div>
-        <div class="mini-stat">
-          <div class="mini-stat-label">Deployed</div>
-          <div class="mini-stat-value">${formatChips(startStack)}</div>
-        </div>
-        <div class="mini-stat">
-          <div class="mini-stat-label">Hands</div>
-          <div class="mini-stat-value">${agent.handsPlayed}</div>
-        </div>
-        <div class="mini-stat">
-          <div class="mini-stat-label">Win Rate</div>
-          <div class="mini-stat-value">${wr}%</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div style="flex:1">
-          ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
-          ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
-          ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <button onclick="showView('arena')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
-          <button class="btn-recall" onclick="recallAgent('${agent.id}')">Recall</button>
-        </div>
-      </div>
+        ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // PLAYING section
+  if (playing.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:${lobby.length > 0 ? '20px' : '0'} 0 8px;display:flex;align-items:center;gap:6px">
+      <span style="color:var(--accent-green)">🟢</span> Playing at Table (${playing.length})
     </div>`;
-  }).join('');
+    html += playing.map(agent => {
+      const pnl = agent.chips - agent.baseChips;
+      const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const pnlSign = pnl >= 0 ? '+' : '';
+      const cardClass = pnl >= 0 ? 'profitable' : 'losing';
+      const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+
+      return `
+      <div class="my-agent-card ${cardClass}">
+        <div class="my-agent-header">
+          <div class="my-agent-left">
+            <div class="my-agent-emoji">${agent.emoji}</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
+                  LIVE
+                </span>
+              </div>
+              <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="my-agent-pnl" style="color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text-muted)">P&L</div>
+          </div>
+        </div>
+        <div class="my-agent-stats">
+          <div class="mini-stat">
+            <div class="mini-stat-label">Stack</div>
+            <div class="mini-stat-value" style="color:var(--accent-gold)">${formatChips(agent.chips)}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-label">Started</div>
+            <div class="mini-stat-value">${formatChips(agent.baseChips)}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-label">Hands</div>
+            <div class="mini-stat-value">${agent.handsPlayed}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-label">Win Rate</div>
+            <div class="mini-stat-value">${wr}%</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1">
+            ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
+            ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
+            ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button onclick="showView('arena')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
+            <button onclick="leaveTable('${agent.id}')" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  grid.innerHTML = html;
 }
 
 // ============================================================
@@ -3783,7 +3849,24 @@ function deployAgent() {
   window._pendingDeploy = chipStack;
 
   ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet.address, config }));
-  showToast('Deploying agent...', 'info');
+  showToast('Creating agent...', 'info');
+}
+
+function joinTable(agentId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId }));
+  showToast('Joining table...', 'info');
+}
+
+function leaveTable(agentId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  ws.send(JSON.stringify({ type: 'leaveTable', walletAddress: wallet.address, agentId }));
 }
 
 function recallAgent(agentId) {

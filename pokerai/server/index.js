@@ -96,8 +96,32 @@ wss.on('connection', (ws) => {
         }
         case 'createAgent': {
           client.walletAddress = msg.walletAddress;
-          const result = engine.addCustomAgent(msg.walletAddress, msg.config);
+          const result = engine.createLobbyAgent(msg.walletAddress, msg.config);
           ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
+          // Send updated state to this client (lobby agents are per-wallet)
+          const s = engine.getStateForClient(client.sessionId, client.walletAddress);
+          ws.send(JSON.stringify({ type: 'gameState', data: s }));
+          break;
+        }
+        case 'joinTable': {
+          client.walletAddress = msg.walletAddress;
+          const result = engine.joinTable(msg.walletAddress, msg.agentId);
+          ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
+          // Broadcast to all — table changed
+          for (const [c, cData] of clients) {
+            if (c.readyState === 1) {
+              try {
+                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
+                c.send(JSON.stringify({ type: 'gameState', data: s }));
+              } catch (e) { /* ignore */ }
+            }
+          }
+          break;
+        }
+        case 'leaveTable': {
+          const result = engine.leaveTable(msg.walletAddress, msg.agentId);
+          ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
+          // Broadcast to all — table changed
           for (const [c, cData] of clients) {
             if (c.readyState === 1) {
               try {
@@ -109,8 +133,9 @@ wss.on('connection', (ws) => {
           break;
         }
         case 'recallAgent': {
-          const result = engine.removeCustomAgent(msg.walletAddress, msg.agentId);
+          const result = engine.deleteAgent(msg.walletAddress, msg.agentId);
           ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
+          // Broadcast to all — table may have changed if agent was playing
           for (const [c, cData] of clients) {
             if (c.readyState === 1) {
               try {
