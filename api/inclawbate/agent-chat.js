@@ -220,10 +220,23 @@ export default async function handler(req, res) {
       choice = data.choices?.[0];
     }
 
-    let reply = choice?.message?.content || 'Sorry, I couldn\'t generate a response. Try again!';
+    let reply = choice?.message?.content || '';
     // Llama sometimes leaks raw function-call syntax in text — strip it
     reply = reply.replace(/<function=[^>]*>[^<]*<\/function>/g, '').trim();
-    if (!reply) reply = 'Sorry, I couldn\'t generate a response. Try again!';
+
+    // If reply is empty but we had tool data, build a fallback from it
+    if (!reply && functionCalled) {
+      const lastTool = history.filter(m => m.role === 'tool').pop();
+      try {
+        const toolData = JSON.parse(lastTool.content);
+        if (toolData.ideas) reply = 'Here are some ideas:\n• ' + toolData.ideas.join('\n• ') + '\n\nStart building at inclawbate.com/build — no code needed!';
+        else if (toolData.apps) reply = 'Check these out:\n' + toolData.apps.map(a => '• ' + a.name + ' — ' + a.url).join('\n');
+        else if (toolData.description) reply = toolData.description;
+        else reply = toolData.message || 'Check out our apps at inclawbate.com/apps!';
+      } catch (e) { reply = 'Check out inclawbate.com/apps to explore what we have!'; }
+    }
+    if (!reply) reply = 'Hmm, let me try that again — ask me something else!';
+
     history.push({ role: 'assistant', content: reply });
 
     return res.status(200).json({ reply, function_called: functionCalled, session_id: sid });
