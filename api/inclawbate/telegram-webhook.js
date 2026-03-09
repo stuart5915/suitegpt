@@ -192,6 +192,14 @@ export default async function handler(req, res) {
             await handleDone(chatId, username, args);
         } else if (cmd === 'remove') {
             await handleRemove(chatId, username, args);
+        } else if (cmd === 'help') {
+            await sendMsg(chatId,
+                '🦞 <b>Inclawbate Bot</b>\n\n' +
+                '/state — See the list\n' +
+                '/add thing — Add to list\n' +
+                '/done thing — Check it off\n' +
+                '/remove thing — Delete it'
+            );
         }
 
         return res.status(200).json({ ok: true });
