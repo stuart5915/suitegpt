@@ -1,9 +1,9 @@
 const { PokerEngine } = require('./poker-engine');
 
 const ROOM_CONFIGS = {
-  micro:  { name: 'Micro',       buyIn: '$1',  bb: 50,   baseChips: 10000 },
-  mid:    { name: 'Mid Stakes',  buyIn: '$5',  bb: 250,  baseChips: 50000 },
-  high:   { name: 'High Stakes', buyIn: '$25', bb: 1250, baseChips: 250000 }
+  micro:  { name: 'Micro',       buyIn: '$1',  bb: 50,   baseChips: 10000,  rakePct: 0.05 },   // 5% rake
+  mid:    { name: 'Mid Stakes',  buyIn: '$5',  bb: 250,  baseChips: 50000,  rakePct: 0.04 },   // 4% rake
+  high:   { name: 'High Stakes', buyIn: '$25', bb: 1250, baseChips: 250000, rakePct: 0.025 }   // 2.5% rake
 };
 
 class RoomManager {
@@ -37,7 +37,8 @@ class RoomManager {
       tableId,
       roomId,
       bb: room.bb,
-      baseChips: room.baseChips
+      baseChips: room.baseChips,
+      rakePct: room.rakePct
     });
 
     room.tables.push(table);

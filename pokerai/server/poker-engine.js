@@ -137,6 +137,9 @@ class PokerEngine {
     this.bb = config.bb || 50;
     this.baseChips = config.baseChips || 10000;
     this.cashoutThreshold = config.cashoutThreshold || 2.0;
+    this.rakePct = config.rakePct || 0.05; // 5% default
+    this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1); // cap per hand
+    this.totalRake = 0;
 
     this.agents = AGENTS.map(a => ({
       ...a,
@@ -269,8 +272,9 @@ class PokerEngine {
 
   async runBettingRound() {
     const numAgents = this.agents.length;
+    const startIdx = this.currentTurnIndex;
     for (let i = 0; i < numAgents; i++) {
-      const idx = (this.currentTurnIndex + i) % numAgents;
+      const idx = (startIdx + i) % numAgents;
       const agent = this.agents[idx];
 
       if (agent.folded || agent.chips <= 0) continue;
@@ -281,11 +285,15 @@ class PokerEngine {
         return true;
       }
 
+      // Update turn index so client shows "Thinking..." on the right agent
+      this.currentTurnIndex = idx;
+      this.broadcastGameState();
+      await sleep(ACTION_DELAY);
+
       const action = agentDecide(agent, this.communityCards, this.pot, this.bb);
       this.applyAction(agent, action);
       this.broadcast('action', { agentId: agent.id, action: action.type, amount: action.amount, label: action.label });
       this.broadcastGameState();
-      await sleep(ACTION_DELAY);
     }
     return false;
   }
@@ -326,6 +334,7 @@ class PokerEngine {
   }
 
   resolveHand(activePlayers) {
+    this.currentTurnIndex = -1; // No one is "thinking" during resolution
     if (!activePlayers || activePlayers.length === 0) {
       activePlayers = [this.agents[0]];
     }
@@ -347,14 +356,23 @@ class PokerEngine {
       });
     }
 
-    const potWon = this.pot;
+    // Rake — house cut from every pot
+    const rake = Math.min(Math.floor(this.pot * this.rakePct), this.rakeMax);
+    const potWon = this.pot - rake;
+    if (rake > 0) {
+      this.contractPool += rake;
+      this.totalRake += rake;
+      this.totalCashouts += rake;
+    }
+
     winner.chips += potWon;
     winner.handsWon++;
     winner.biggestPot = Math.max(winner.biggestPot, potWon);
     this.lastWinner = winner.id;
 
     const handName = winner._handName || 'Best Hand';
-    this.broadcast('log', { html: `<span class="win">🏆 ${winner.name} wins ${potWon} with ${handName}!</span>` });
+    const rakeNote = rake > 0 ? ` (rake: ${rake.toLocaleString()})` : '';
+    this.broadcast('log', { html: `<span class="win">🏆 ${winner.name} wins ${potWon.toLocaleString()} with ${handName}!</span>${rakeNote ? `<span style="color:var(--text-muted);font-size:10px">${rakeNote}</span>` : ''}` });
     this.broadcast('handResult', { winnerId: winner.id, winnerName: winner.name, pot: potWon, handName });
 
     this.checkAgentCashouts();
@@ -648,6 +666,8 @@ class PokerEngine {
       contractPool: this.contractPool,
       totalCashouts: this.totalCashouts,
       totalBuyins: this.totalBuyins,
+      totalRake: this.totalRake,
+      rakePct: this.rakePct,
       poolFlows: this.poolFlows,
       running: this.running
     };

@@ -2470,10 +2470,14 @@
               <div class="panel-title" style="margin-bottom:0"><span class="icon">🏦</span> Contract Pool</div>
               <div style="font-family:'Rajdhani';font-size:22px;font-weight:700;color:var(--accent-cyan)" id="poolBalance">20,000</div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
               <div class="pool-stat-mini">
-                <div class="mini-label">Total Cashouts</div>
-                <div class="mini-val" style="color:var(--accent-green)" id="poolCashouts">0</div>
+                <div class="mini-label">Rake Rate</div>
+                <div class="mini-val" style="color:var(--accent-gold)" id="poolRakeRate">5%</div>
+              </div>
+              <div class="pool-stat-mini">
+                <div class="mini-label">Total Rake</div>
+                <div class="mini-val" style="color:var(--accent-green)" id="poolTotalRake">0</div>
               </div>
               <div class="pool-stat-mini">
                 <div class="mini-label">Total Buyins</div>
@@ -3042,6 +3046,8 @@ let gameState = {
   contractPool: 20000,
   totalCashouts: 0,
   totalBuyins: 0,
+  totalRake: 0,
+  rakePct: 0.05,
   poolFlows: [],
   rooms: {}
 };
@@ -3275,6 +3281,8 @@ function applyServerState(data) {
   gameState.totalCashouts = data.totalCashouts;
   gameState.totalBuyins = data.totalBuyins;
   gameState.poolFlows = data.poolFlows;
+  gameState.totalRake = data.totalRake || 0;
+  gameState.rakePct = data.rakePct || 0.05;
   gameState.running = data.running;
 
 
@@ -3342,7 +3350,8 @@ function renderFullState() {
 
   // Pool
   document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
-  document.getElementById('poolCashouts').textContent = gameState.totalCashouts.toLocaleString();
+  document.getElementById('poolRakeRate').textContent = `${Math.round(gameState.rakePct * 100)}%`;
+  document.getElementById('poolTotalRake').textContent = gameState.totalRake.toLocaleString();
   document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
 
   renderTableSeats();
