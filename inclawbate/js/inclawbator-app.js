@@ -1521,8 +1521,8 @@ function selectTier(tier) {
 
 // Expose to onclick handlers
 window.resetForm = resetForm;
-window.approveProject = approveProject;
-window.rejectProject = rejectProject;
+if (typeof approveProject === 'function') window.approveProject = approveProject;
+if (typeof rejectProject === 'function') window.rejectProject = rejectProject;
 window.openToolDrawer = openToolDrawer;
 window.IncApp = { selectTier: selectTier };
 
