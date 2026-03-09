@@ -212,6 +212,39 @@
             transform: translateX(3px);
         }
 
+        /* ── Copy Link Button ── */
+        .tool-copy-link {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.15s, background 0.15s, color 0.15s;
+        }
+        .tool-row:hover .tool-copy-link { opacity: 1; }
+        .tool-copy-link:hover {
+            background: var(--bg-elevated);
+            color: var(--lobster-400);
+        }
+        .tool-copy-link.copied {
+            opacity: 1;
+            color: #4ade80;
+        }
+
+        /* Hash-targeted highlight */
+        .tool-row.hash-highlight {
+            background: rgba(232, 121, 85, 0.08);
+            border-left-color: var(--lobster-400);
+        }
+
         /* Stagger animation delays for launch steps */
         .launch-steps .tool-row:nth-child(1) { animation-delay: 0.05s; }
         .launch-steps .tool-row:nth-child(2) { animation-delay: 0.08s; }
@@ -481,6 +514,7 @@
                 justify-content: flex-start;
             }
             .tool-row-arrow { display: none; }
+            .tool-copy-link { opacity: 0.6; }
         }
     </style>
 </head>
@@ -525,7 +559,7 @@
 
     <div class="tool-list launch-steps">
 
-        <div class="tool-row" data-tool="launch">
+        <div class="tool-row" data-tool="launch" id="tool-launch">
             <span class="launch-step-num">01</span>
             <span class="tool-row-icon">&#128640;</span>
             <div class="tool-row-body">
@@ -539,7 +573,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="pool">
+        <div class="tool-row" data-tool="pool" id="tool-pool">
             <span class="launch-step-num">02</span>
             <span class="tool-row-icon">&#x1F4B8;</span>
             <div class="tool-row-body">
@@ -552,7 +586,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <a href="/build" class="tool-row">
+        <a href="/build" class="tool-row" id="tool-build">
             <span class="launch-step-num">03</span>
             <span class="tool-row-icon">&#128296;</span>
             <div class="tool-row-body">
@@ -565,7 +599,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </a>
 
-        <div class="tool-row" data-action="socials">
+        <div class="tool-row" data-action="socials" id="tool-socials">
             <span class="launch-step-num">04</span>
             <span class="tool-row-icon">&#128279;</span>
             <div class="tool-row-body">
@@ -576,7 +610,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-action="marketing">
+        <div class="tool-row" data-action="marketing" id="tool-marketing">
             <span class="launch-step-num">05</span>
             <span class="tool-row-icon">&#128200;</span>
             <div class="tool-row-body">
@@ -589,7 +623,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="incubate">
+        <div class="tool-row" data-tool="incubate" id="tool-incubate">
             <span class="launch-step-num">06</span>
             <span class="tool-row-icon">&#129438;</span>
             <div class="tool-row-body">
@@ -600,7 +634,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="agent">
+        <div class="tool-row" data-tool="agent" id="tool-agent">
             <span class="launch-step-num">07</span>
             <span class="tool-row-icon">&#129302;</span>
             <div class="tool-row-body">
@@ -613,7 +647,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="disperse">
+        <div class="tool-row" data-tool="disperse" id="tool-disperse">
             <span class="launch-step-num">08</span>
             <span class="tool-row-icon">&#128184;</span>
             <div class="tool-row-body">
@@ -635,7 +669,7 @@
 
     <div class="tool-list">
 
-        <a href="/audit" class="tool-row">
+        <a href="/audit" class="tool-row" id="tool-audit">
             <span class="tool-row-icon">&#128269;</span>
             <div class="tool-row-body">
                 <div class="tool-row-name">Code Reviewer</div>
@@ -647,7 +681,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </a>
 
-        <a href="/welcome-bv7x" class="tool-row">
+        <a href="/welcome-bv7x" class="tool-row" id="tool-bv7x">
             <span class="tool-row-icon">&#128202;</span>
             <div class="tool-row-body">
                 <div class="tool-row-name">BV7X Predictions</div>
@@ -659,7 +693,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </a>
 
-        <a href="/x-search" class="tool-row">
+        <a href="/x-search" class="tool-row" id="tool-x-search">
             <span class="tool-row-icon">&#128269;</span>
             <div class="tool-row-body">
                 <div class="tool-row-name">X Search</div>
@@ -772,12 +806,18 @@
     var iframe = document.getElementById('toolModalIframe');
     var closeBtn = document.getElementById('toolModalClose');
 
+    function openTool(tool) {
+        iframe.src = '/inclawbator?embed=1&tool=' + tool;
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        history.replaceState(null, '', '#' + tool);
+    }
+
     document.querySelectorAll('[data-tool]').forEach(function(row) {
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.tool-copy-link')) return; // don't open if copying link
             var tool = row.getAttribute('data-tool');
-            iframe.src = '/inclawbator?embed=1&tool=' + tool;
-            overlay.classList.add('open');
-            document.body.style.overflow = 'hidden';
+            openTool(tool);
         });
     });
 
@@ -799,8 +839,10 @@
 
     // ── Native modal actions ──
     document.querySelectorAll('[data-action]').forEach(function(row) {
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.tool-copy-link')) return;
             var action = row.getAttribute('data-action');
+            history.replaceState(null, '', '#' + action);
             if (action === 'socials') openSocialsModal();
             if (action === 'marketing') openMarketingModal();
         });
@@ -814,6 +856,54 @@
             closeMarketingModal();
         }
     });
+
+    // ── Copy Link Buttons ──
+    document.querySelectorAll('.tool-row[id]').forEach(function(row) {
+        var slug = row.id.replace('tool-', '');
+        var btn = document.createElement('button');
+        btn.className = 'tool-copy-link';
+        btn.title = 'Copy link';
+        btn.innerHTML = '&#128279;';
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var url = location.origin + '/tools#' + slug;
+            navigator.clipboard.writeText(url).then(function() {
+                btn.classList.add('copied');
+                btn.innerHTML = '&#10003;';
+                setTimeout(function() {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '&#128279;';
+                }, 1500);
+            });
+        });
+        // Insert before the arrow
+        var arrow = row.querySelector('.tool-row-arrow');
+        if (arrow) row.insertBefore(btn, arrow);
+        else row.appendChild(btn);
+    });
+
+    // ── Hash Routing — auto-open tool from URL ──
+    function handleHash() {
+        var hash = location.hash.replace('#', '');
+        if (!hash) return;
+        var row = document.getElementById('tool-' + hash);
+        if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('hash-highlight');
+            setTimeout(function() { row.classList.remove('hash-highlight'); }, 2000);
+            // Auto-open if it's a drawer tool
+            if (row.dataset.tool) {
+                setTimeout(function() { openTool(row.dataset.tool); }, 400);
+            } else if (row.dataset.action === 'socials') {
+                setTimeout(function() { openSocialsModal(); }, 400);
+            } else if (row.dataset.action === 'marketing') {
+                setTimeout(function() { openMarketingModal(); }, 400);
+            }
+        }
+    }
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
 })();
 
 // ── Connect Socials ──
