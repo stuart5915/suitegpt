@@ -631,8 +631,69 @@ class PokerEngine {
     return this.agents.some(a => !a.isCustom);
   }
 
+  // Win probability — Monte Carlo sim with remaining cards
+  calcWinProbabilities() {
+    const active = this.agents.filter(a => !a.folded && a.hand && a.hand.length === 2);
+    if (active.length <= 1 || this.phase === 'waiting') return {};
+
+    const communityLen = this.communityCards.length;
+    const cardsNeeded = 5 - communityLen;
+
+    // If showdown (all 5 community cards), just evaluate once
+    if (cardsNeeded === 0) {
+      const scores = {};
+      let bestScore = -1;
+      let winnerId = null;
+      for (const a of active) {
+        const h = getBestHand(a.hand, this.communityCards);
+        scores[a.id] = h.rank + Math.random() * 0.001;
+        if (scores[a.id] > bestScore) { bestScore = scores[a.id]; winnerId = a.id; }
+      }
+      const result = {};
+      for (const a of active) result[a.id] = a.id === winnerId ? 100 : 0;
+      return result;
+    }
+
+    // Build remaining deck (exclude known cards)
+    const usedCards = new Set();
+    for (const c of this.communityCards) usedCards.add(c.rank + c.suit);
+    for (const a of active) {
+      for (const c of a.hand) usedCards.add(c.rank + c.suit);
+    }
+    const remaining = [];
+    for (const suit of SUITS) {
+      for (const rank of RANKS) {
+        if (!usedCards.has(rank + suit)) remaining.push({ rank, suit, red: suit === '♥' || suit === '♦' });
+      }
+    }
+
+    const SIMS = 200;
+    const wins = {};
+    for (const a of active) wins[a.id] = 0;
+
+    for (let s = 0; s < SIMS; s++) {
+      // Shuffle and draw needed cards
+      const shuffled = shuffle(remaining);
+      const simCommunity = [...this.communityCards, ...shuffled.slice(0, cardsNeeded)];
+
+      let bestScore = -1;
+      let winnerId = null;
+      for (const a of active) {
+        const h = getBestHand(a.hand, simCommunity);
+        const score = h.rank + Math.random() * 0.001;
+        if (score > bestScore) { bestScore = score; winnerId = a.id; }
+      }
+      wins[winnerId]++;
+    }
+
+    const result = {};
+    for (const a of active) result[a.id] = Math.round((wins[a.id] / SIMS) * 100);
+    return result;
+  }
+
   // State getters
   getPublicState() {
+    const winProbs = this.calcWinProbabilities();
     return {
       tableId: this.tableId,
       roomId: this.roomId,
@@ -649,6 +710,7 @@ class PokerEngine {
         folded: a.folded,
         allIn: a.allIn,
         currentBet: a.currentBet,
+        winPct: winProbs[a.id] || 0,
         traits: a.traits,
         description: a.description,
         isCustom: a.isCustom || false,
@@ -662,6 +724,8 @@ class PokerEngine {
       communityCards: this.communityCards,
       dealerIndex: this.dealerIndex,
       currentTurnIndex: this.currentTurnIndex,
+      currentTurnId: this.currentTurnIndex >= 0 && this.currentTurnIndex < this.agents.length
+        ? this.agents[this.currentTurnIndex].id : null,
       lastWinner: this.lastWinner,
       contractPool: this.contractPool,
       totalCashouts: this.totalCashouts,
