@@ -74,7 +74,7 @@ const getEcosystemInfo = new GameFunction({
         skills: "https://inclawbate.com/skills",
         build: "https://inclawbate.com/build",
         x: "https://x.com/inclawbate",
-        telegram: "https://t.me/inclawbate",
+        telegram: "https://t.me/StuartDeFi",
       },
     });
   },
@@ -126,7 +126,12 @@ const requestIncubation = new GameFunction({
         success: true,
         project_id: data.project?.id,
         status: "pending",
-        message: "Incubation application submitted! The Inclawbate team will review it and reach out. You can check status using check_application_status.",
+        message: "Incubation application submitted! The Inclawbate team will review it within 24-48 hours.",
+        next_steps: [
+          "DM @StuartDeFi on Telegram to discuss your project directly: https://t.me/StuartDeFi",
+          "Or DM @stuman on X: https://x.com/stuman",
+          "Check your application status anytime using check_application_status with your wallet address",
+        ],
       });
     } catch (e) {
       return fail("Failed to submit application: " + e.message);
@@ -196,6 +201,11 @@ const getIncubationInfo = new GameFunction({
       ],
       cost: "Incubation is free. Inclawbate takes a small fee split from LP trading fees (configurable).",
       apply_url: "https://inclawbate.com/inclawbator#incubate",
+      contact: {
+        telegram: "https://t.me/StuartDeFi",
+        x: "https://x.com/stuman",
+        note: "DM @StuartDeFi on Telegram or @stuman on X to discuss your project",
+      },
     });
   },
 });
