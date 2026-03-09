@@ -3750,10 +3750,15 @@ function refreshMyAgentsView() {
   renderMyAgents();
 }
 
+let _roomPickerOpen = false;
+
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
   const wallet = getWallet();
   if (!wallet) return;
+
+  // Don't re-render if a room picker is open (would destroy interactive state)
+  if (_roomPickerOpen) return;
 
   // Use myAgents if available (has all rooms), fallback to gameState
   const allAgents = myAgents.length > 0 ? myAgents : [
@@ -3969,6 +3974,7 @@ function toggleRoomPicker(agentId) {
   if (el) {
     const visible = el.style.display !== 'none';
     el.style.display = visible ? 'none' : 'block';
+    _roomPickerOpen = !visible;
     // Reset inner state
     if (!visible) {
       const fundStep = document.getElementById('fundStep-' + agentId);
@@ -4029,6 +4035,7 @@ function confirmJoin(agentId) {
   updateWalletUI();
   window._pendingJoin = { agentId, amount };
 
+  _roomPickerOpen = false;
   ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId, chipStack: amount }));
   const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
   showToast(`Joining ${roomNames[roomId]} with ${amount.toLocaleString()} chips...`, 'info');
