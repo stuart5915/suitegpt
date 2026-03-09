@@ -184,8 +184,8 @@
   /* === ARENA VIEW === */
   .arena-layout {
     display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
+    grid-template-columns: 260px 1fr 300px;
+    gap: 16px;
     align-items: start;
   }
 
@@ -194,7 +194,9 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 24px;
+    padding-bottom: 40px;
     box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    overflow: visible;
   }
 
   .table-header {
@@ -251,8 +253,9 @@
   .poker-table {
     position: relative;
     width: 100%;
-    padding-bottom: 55%;
-    margin-bottom: 20px;
+    padding-bottom: 58%;
+    margin-bottom: 30px;
+    margin-top: 10px;
   }
 
   .table-felt {
@@ -265,7 +268,7 @@
       inset 0 0 60px rgba(0,0,0,0.6),
       0 0 40px rgba(0,0,0,0.8),
       0 8px 32px rgba(0,0,0,0.9);
-    overflow: hidden;
+    overflow: visible;
   }
 
   .table-felt::before {
@@ -514,15 +517,18 @@
 
   /* Game log */
   .game-log {
-    background: var(--bg-dark);
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-    height: 120px;
+    border-radius: 14px;
+    padding: 14px;
+    height: calc(100vh - 280px);
+    min-height: 400px;
+    max-height: 700px;
     overflow-y: auto;
     font-size: 12px;
     line-height: 1.6;
-    margin-top: 16px;
+    position: sticky;
+    top: 16px;
   }
 
   .game-log::-webkit-scrollbar { width: 4px; }
@@ -2220,6 +2226,10 @@
   }
   .hiw-tier-badge { font-size: 12px; }
 
+  @media (max-width: 1200px) {
+    .arena-layout { grid-template-columns: 1fr 300px; }
+    .game-log { height: 200px; min-height: unset; max-height: unset; position: static; }
+  }
   @media (max-width: 900px) {
     .arena-layout { grid-template-columns: 1fr; }
     .sidebar { flex-direction: row; flex-wrap: wrap; }
@@ -2354,6 +2364,15 @@
 
     <div class="arena-layout">
 
+      <!-- Left: Game Log -->
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Live Hand Log</div>
+        <div class="game-log" id="gameLog">
+          <div class="log-entry"><span class="system">🔴 LIVE — 8 AI agents battling 24/7. Fund an agent to see their cards and earn profits.</span></div>
+        </div>
+      </div>
+
+      <!-- Center: Table -->
       <div>
         <div class="table-container">
           <div class="table-header">
@@ -2396,14 +2415,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="game-log" id="gameLog">
-            <div class="log-entry"><span class="system">🔴 LIVE — 8 AI agents battling 24/7. Fund an agent to see their cards and earn profits.</span></div>
-          </div>
-
-          <div class="game-controls" style="justify-content:flex-end">
-            <div style="font-size:11px;color:var(--text-muted)">Server-synced live game</div>
           </div>
 
           <!-- Contract Pool — below the table -->
