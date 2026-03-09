@@ -103,10 +103,29 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) 
   const toCall = currentBet - agentRoundBet;
   const rules = agent.rules || {};
 
-  let strength = 0.3 + Math.random() * 0.5;
+  let strength = 0.3;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
     strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
+  } else {
+    // Preflop: evaluate based on actual hole cards
+    const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
+    const highCard = Math.max(c1, c2);
+    const lowCard = Math.min(c1, c2);
+    const paired = c1 === c2;
+    const suited = agent.hand[0].suit === agent.hand[1].suit;
+    const gap = highCard - lowCard;
+
+    // Base strength from card ranks (0.1 to 0.6)
+    let preflopStr = (highCard + lowCard - 4) / 24; // range: ~0.0 to ~1.0
+    if (paired) preflopStr += 0.25;
+    if (suited) preflopStr += 0.08;
+    if (gap <= 2 && !paired) preflopStr += 0.05; // connectors
+    // Premium hands: high pairs, AK, AQ
+    if (paired && highCard >= 10) preflopStr += 0.15;
+    if (highCard === 14 && lowCard >= 12) preflopStr += 0.1;
+
+    strength = Math.min(0.95, Math.max(0.05, preflopStr * 0.7 + Math.random() * 0.2));
   }
 
   // === RULE: Tight Preflop — fold weak hands preflop ===
@@ -124,13 +143,18 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) 
 
   const r = Math.random() * 100;
   const minRaise = Math.max(bb, currentBet * 2 - agentRoundBet);
-  const maxRaise = Math.min(agent.chips, Math.max(minRaise, Math.floor(agent.chips * 0.4)));
+  // Cap raises: 2-4x BB preflop, up to 2x pot post-flop (never more than 25% of stack)
+  const potBasedMax = communityCards.length === 0
+    ? Math.max(minRaise, bb * 4)
+    : Math.max(minRaise, Math.min(pot * 2, Math.floor(agent.chips * 0.25)));
+  const maxRaise = Math.min(agent.chips, potBasedMax);
   const raiseAmt = Math.max(minRaise, Math.floor(minRaise + Math.random() * (maxRaise - minRaise)));
 
   // If can't afford to call, either all-in or fold
   if (toCall >= agent.chips) {
     if (rules.neverAllIn) return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
-    if (strength > 0.4 || r < 30) {
+    // Require decent hand strength to commit entire stack
+    if (strength > 0.5 || (strength > 0.35 && r < 20)) {
       return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
     }
     return { type: 'fold', label: 'Fold', amount: 0 };
@@ -190,7 +214,8 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
     if (agent.style === 'chaotic') {
       const chaos = Math.random();
       if (chaos < 0.25) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
-      if (chaos < 0.35 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+      // Only all-in with strong hands (strength > 0.7)
+      if (chaos < 0.35 && strength > 0.7 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
       return { type: 'check', label: 'Check', amount: 0 };
     }
     // balanced
@@ -223,7 +248,8 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
   if (agent.style === 'chaotic') {
     const chaos = Math.random();
     if (chaos < 0.2 && agent.chips > raiseAmt) return { type: 'raise', label: `YOLO ${raiseAmt}`, amount: raiseAmt };
-    if (chaos < 0.3 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    // Only all-in with strong hands (strength > 0.7)
+    if (chaos < 0.3 && strength > 0.7 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
     if (chaos < 0.7) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
@@ -275,6 +301,7 @@ class PokerEngine {
     this.fundPositions = new Map();
     this.replacedBots = new Map();
     this.running = false;
+    this._lastChipTotal = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
   }
 
   start() {
@@ -432,7 +459,9 @@ class PokerEngine {
       if (agent.folded || agent.allIn || agent.chips <= 0) {
         startIdx = (startIdx + 1) % n;
         actedCount++;
-        if (actedCount >= n) break;
+        // Don't break here — let the lastRaiserIdx check handle round termination
+        // Breaking on actedCount >= n can cut off players who haven't responded to a raise
+        if (actedCount >= n * 3) break; // safety valve only
         continue;
       }
 
@@ -568,9 +597,6 @@ class PokerEngine {
     }
 
     // Multiple players at showdown — build side pots
-    // Sort active players by their total bet this hand (ascending) for side pot calc
-    const sortedByBet = [...activePlayers].sort((a, b) => a.currentBet - b.currentBet);
-
     // Evaluate each player's best hand
     for (const a of activePlayers) {
       const h = getBestHand(a.hand, this.communityCards);
@@ -578,13 +604,14 @@ class PokerEngine {
       a._handName = h.name;
     }
 
-    // Build side pots
+    // Build side pots using ALL agents' bet levels (including folded)
+    // This ensures folded players' excess bets aren't lost
+    const allBetLevels = [...new Set(this.agents.map(a => a.currentBet))].filter(b => b > 0).sort((a, b) => a - b);
+
     const sidePots = [];
     let processedBet = 0;
 
-    for (let i = 0; i < sortedByBet.length; i++) {
-      const player = sortedByBet[i];
-      const betLevel = player.currentBet;
+    for (const betLevel of allBetLevels) {
       if (betLevel <= processedBet) continue;
 
       const contribution = betLevel - processedBet;
@@ -600,13 +627,17 @@ class PokerEngine {
       const eligible = activePlayers.filter(a => a.currentBet >= betLevel);
 
       if (potAmount > 0) {
-        sidePots.push({ amount: potAmount, eligible });
+        if (eligible.length > 0) {
+          sidePots.push({ amount: potAmount, eligible });
+        } else {
+          // No eligible players at this tier (all folded) — add to last pot
+          if (sidePots.length > 0) {
+            sidePots[sidePots.length - 1].amount += potAmount;
+          }
+        }
       }
       processedBet = betLevel;
     }
-
-    // Any remaining chips from folded players above the highest active bet
-    // (already included in the pot calculation above)
 
     let totalRake = 0;
     const winnings = new Map(); // agentId → total won
@@ -698,6 +729,19 @@ class PokerEngine {
   }
 
   _postHandCleanup() {
+    // Chip conservation check — total chips should remain constant
+    const totalChips = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
+    const expectedTotal = this.agents.length * this.baseChips + this.baseChips * 2; // initial agent chips + initial pool
+    // Account for custom agent buy-ins (they bring external chips)
+    // Log a warning if chips are being created/destroyed (small rounding diffs OK)
+    if (Math.abs(totalChips - this._lastChipTotal) > 1 && this._lastChipTotal > 0) {
+      const diff = totalChips - this._lastChipTotal;
+      if (Math.abs(diff) > 10) {
+        console.warn(`[ChipCheck] Hand #${this.handsPlayed}: chip drift of ${diff} detected (total: ${totalChips}, last: ${this._lastChipTotal})`);
+      }
+    }
+    this._lastChipTotal = totalChips;
+
     // Record hand history for every agent that played this hand
     this._recordHandHistory();
     // Only auto-cashout HOUSE bots (not custom agents)
@@ -995,16 +1039,25 @@ class PokerEngine {
     // If showdown (all 5 community cards), just evaluate once
     if (cardsNeeded === 0) {
       let bestHand = null;
-      let winnerId = null;
+      let winnerIds = [];
       for (const a of active) {
         const h = getBestHand(a.hand, this.communityCards);
-        if (!bestHand || compareHands(h, bestHand) > 0) {
+        if (!bestHand) {
           bestHand = h;
-          winnerId = a.id;
+          winnerIds = [a.id];
+        } else {
+          const cmp = compareHands(h, bestHand);
+          if (cmp > 0) {
+            bestHand = h;
+            winnerIds = [a.id];
+          } else if (cmp === 0) {
+            winnerIds.push(a.id);
+          }
         }
       }
       const result = {};
-      for (const a of active) result[a.id] = a.id === winnerId ? 100 : 0;
+      const share = Math.round(100 / winnerIds.length);
+      for (const a of active) result[a.id] = winnerIds.includes(a.id) ? share : 0;
       return result;
     }
 
