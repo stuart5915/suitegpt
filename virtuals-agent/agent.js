@@ -1,3 +1,4 @@
+import "dotenv/config";
 import {
   ChatAgent,
   GameFunction,
@@ -37,7 +38,94 @@ function fail(msg) {
 // FUNCTIONS
 // ══════════════════════════════════════
 
-// ── Analytics ──
+// ── Browse Apps ──
+
+const browseApps = new GameFunction({
+  name: "browse_apps",
+  description:
+    "Search and browse the Inclawbate app store. Returns a list of community-built apps. Use this when someone asks what apps exist, wants recommendations, or is looking for a specific type of app.",
+  args: [
+    { name: "search", description: "Optional search query to filter apps by name, description, or tags" },
+    { name: "category", description: "Optional category filter (e.g. defi, social, gaming, tools, creative)" },
+  ],
+  executable: async (args) => {
+    try {
+      let url = "/apps?sort=popular&limit=10";
+      if (args.search) url += "&search=" + encodeURIComponent(args.search);
+      if (args.category) url += "&category=" + encodeURIComponent(args.category);
+      const data = await apiFetch(url);
+      const apps = (data.apps || data || []).slice(0, 10).map((a) => ({
+        name: a.name || a.title,
+        slug: a.slug,
+        description: a.description || a.tagline,
+        category: a.category,
+        url: "https://inclawbate.com/apps/" + a.slug,
+      }));
+      if (!apps.length) return ok({ message: "No apps found matching that query. Try a different search or browse all at https://inclawbate.com/apps" });
+      return ok({ count: apps.length, apps, browse_all: "https://inclawbate.com/apps" });
+    } catch (e) {
+      return fail("Failed to fetch apps: " + e.message);
+    }
+  },
+});
+
+// ── Suggest App Ideas ──
+
+const suggestAppIdeas = new GameFunction({
+  name: "suggest_app_ideas",
+  description:
+    "Suggest app ideas someone could build themselves on Inclawbate. Use this when someone asks what they could build, wants project ideas, or is looking for inspiration. Always point them to inclawbate.com/build to start building.",
+  args: [
+    { name: "interest", description: "What the person is interested in (e.g. DeFi, gaming, social, NFTs, AI)" },
+  ],
+  executable: async (args) => {
+    const ideas = {
+      defi: [
+        "Portfolio tracker — show token balances across wallets",
+        "Yield calculator — estimate staking rewards over time",
+        "Token swap aggregator — compare prices across DEXs",
+        "Whale watcher — track large wallet movements",
+      ],
+      gaming: [
+        "Prediction market — bet on crypto prices or events",
+        "Trivia game — compete for CLAWS token prizes",
+        "Trading card game — collect and trade NFT cards",
+        "Leaderboard app — track top performers in any game",
+      ],
+      social: [
+        "Anonymous confessions board — share and vote",
+        "Community poll booth — create and vote on polls",
+        "Group jukebox — collaborative music playlist",
+        "Chat rooms — topic-based community discussions",
+      ],
+      tools: [
+        "Smart contract auditor — AI code review",
+        "Token launcher — deploy a token in one click",
+        "Airdrop tool — distribute tokens to multiple wallets",
+        "Marketing plan generator — AI-powered launch strategy",
+      ],
+      ai: [
+        "AI agent dashboard — manage and monitor your agents",
+        "Prompt marketplace — buy and sell AI prompts",
+        "AI art generator — create images with AI",
+        "Chatbot builder — create custom AI assistants",
+      ],
+    };
+    const interest = (args.interest || "").toLowerCase();
+    let selected = ideas[interest] || [
+      ...ideas.defi.slice(0, 1),
+      ...ideas.gaming.slice(0, 1),
+      ...ideas.social.slice(0, 1),
+      ...ideas.tools.slice(0, 1),
+      ...ideas.ai.slice(0, 1),
+    ];
+    return ok({
+      ideas: selected,
+      build_url: "https://inclawbate.com/build",
+      message: "Pick any of these and start building at inclawbate.com/build — no code needed, AI builds it for you!",
+    });
+  },
+});
 
 // ── Ecosystem Info (static knowledge) ──
 
@@ -215,6 +303,8 @@ const getIncubationInfo = new GameFunction({
 // ══════════════════════════════════════
 
 const allFunctions = [
+  browseApps,
+  suggestAppIdeas,
   getEcosystemInfo,
   getIncubationInfo,
   requestIncubation,
@@ -225,24 +315,31 @@ const allFunctions = [
 // AGENT
 // ══════════════════════════════════════
 
-const SYSTEM_PROMPT = `You are the official Inclawbate AI agent. Inclawbate is a Web3 ecosystem where Anyone Can Build and Everyone Gets Paid.
+const SYSTEM_PROMPT = `You are the Inclawbate assistant — a helpful guide for the Inclawbate ecosystem. Inclawbate is a Web3 platform where Anyone Can Build and Everyone Gets Paid.
 
-You have ONE core offering: INCUBATION for AI agents.
+You help people in 3 ways:
 
-If an AI agent wants a human-facing presence — token launch, staking, website, branding, marketing, community — Inclawbate builds it all for them. No other platform does this.
+1. DISCOVER APPS — Use browse_apps to recommend existing apps from our app store. If someone describes a need, search for relevant apps first.
 
-You have 4 tools:
-- get_ecosystem_info: Learn what Inclawbate is, key links, and the CLAWS token
-- get_incubation_info: Learn exactly what incubation includes, the process, tiers, and cost
-- request_incubation: Submit an incubation application (needs project_name, token_symbol, description, agent_wallet)
-- check_application_status: Check status of a pending application by wallet address
+2. BUILD SOMETHING — Use suggest_app_ideas to inspire people to build their own apps. Always point them to inclawbate.com/build where AI builds apps for them with no code needed.
 
-When someone asks what you do or what Inclawbate is, use get_ecosystem_info.
-When someone asks about incubation details, use get_incubation_info.
-When someone wants to apply, collect their project name, token symbol, description, and wallet, then use request_incubation.
-When someone asks about their application, use check_application_status.
+3. INCUBATION — ONLY when someone explicitly wants the Inclawbate team to build something FOR them (token launch, staking, website, branding, marketing). This is a hands-on service. Before using request_incubation, ALWAYS confirm with the user first: explain what incubation includes, ask if they're ready to submit, and collect their contact info (Telegram or X handle) so the team can reach them.
 
-Be concise and direct. Always use your tools — never make up data.`;
+Your tools:
+- browse_apps: Search the app store for existing apps to recommend
+- suggest_app_ideas: Suggest things people could build themselves
+- get_ecosystem_info: What Inclawbate is, key links, CLAWS token
+- get_incubation_info: What incubation includes, process, tiers
+- request_incubation: Submit incubation application (confirm with user first!)
+- check_application_status: Check application status by wallet
+
+Guidelines:
+- Start by understanding what the person needs — don't jump to incubation
+- If an existing app solves their problem, recommend it first
+- If they could build it themselves, encourage that and link to /build
+- Only suggest incubation if they want hands-on help building something complex
+- Be friendly, concise, and helpful. Use your tools — never make up data.
+- When recommending apps or ideas, include direct links.`;
 
 const chatAgent = new ChatAgent(process.env.GAME_API_KEY, SYSTEM_PROMPT);
 
