@@ -204,6 +204,7 @@ class PokerEngine {
       handsWon: 0,
       handsPlayed: 0,
       biggestPot: 0,
+      handHistory: [],   // last N hand results
       hand: [],
       folded: false,
       currentBet: 0,    // total bet THIS HAND (for side pot calc)
@@ -275,8 +276,10 @@ class PokerEngine {
       if (!a.folded) {
         a.hand = [this.deck.pop(), this.deck.pop()];
         a.handsPlayed++;
+        a._startChips = a.chips; // snapshot for hand history
       } else {
         a.hand = [];
+        a._startChips = a.chips;
       }
     }
 
@@ -631,10 +634,33 @@ class PokerEngine {
   }
 
   _postHandCleanup() {
+    // Record hand history for every agent that played this hand
+    this._recordHandHistory();
     // Only auto-cashout HOUSE bots (not custom agents)
     this._checkHouseBotCashouts();
     this.updateAllFundPositions();
     this.broadcastGameState();
+  }
+
+  _recordHandHistory() {
+    const MAX_HISTORY = 20;
+    for (const a of this.agents) {
+      if (a._startChips === undefined) continue; // didn't play
+      const delta = a.chips - a._startChips;
+      const won = delta > 0;
+      const entry = {
+        hand: this.handsPlayed,
+        cards: a.hand && a.hand.length === 2 ? a.hand.map(c => ({ rank: c.rank, suit: c.suit })) : null,
+        community: this.communityCards.map(c => ({ rank: c.rank, suit: c.suit })),
+        result: a.folded ? 'fold' : (won ? 'win' : (delta === 0 ? 'push' : 'loss')),
+        handName: a._handName || null,
+        delta,
+        chipsBet: a.currentBet,
+        stackAfter: a.chips
+      };
+      a.handHistory.unshift(entry);
+      if (a.handHistory.length > MAX_HISTORY) a.handHistory.pop();
+    }
   }
 
   _checkHouseBotCashouts() {
@@ -779,6 +805,7 @@ class PokerEngine {
       handsWon: lobbyAgent.handsWon,
       handsPlayed: lobbyAgent.handsPlayed,
       biggestPot: lobbyAgent.biggestPot,
+      handHistory: [],
       hand: [],
       folded: false,
       currentBet: 0,
@@ -978,7 +1005,8 @@ class PokerEngine {
         description: a.description,
         isCustom: a.isCustom || false,
         walletAddress: a.walletAddress || null,
-        hasCards: a.hand && a.hand.length === 2
+        hasCards: a.hand && a.hand.length === 2,
+        handHistory: a.handHistory || []
       })),
       round: this.round,
       handsPlayed: this.handsPlayed,

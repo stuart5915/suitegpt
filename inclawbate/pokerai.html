@@ -460,6 +460,100 @@
     opacity: 0.7;
   }
 
+  /* Agent History Panel */
+  .agent-history-panel {
+    background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(59,130,246,0.04));
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 16px;
+  }
+  .agent-history-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .agent-history-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    border: 2px solid var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .agent-history-close {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+  }
+  .agent-history-close:hover { border-color: var(--accent-red); color: var(--accent-red); }
+  .hand-history-list {
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hand-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-dark);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .hand-entry-result {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .hand-entry-result.win { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .hand-entry-result.loss { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .hand-entry-result.fold { background: rgba(120,120,120,0.15); color: #888; }
+  .hand-entry-result.push { background: rgba(234,179,8,0.15); color: #eab308; }
+  .hand-entry-cards {
+    display: flex;
+    gap: 3px;
+  }
+  .hand-entry-card {
+    width: 20px;
+    height: 28px;
+    background: white;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1;
+    border: 1px solid #ddd;
+  }
+  .hand-entry-card.red { color: #dc2626; }
+  .hand-entry-delta {
+    margin-left: auto;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
   .seat-name {
     font-size: 10px;
     font-weight: 600;
@@ -2485,6 +2579,9 @@
             </div>
           </div>
 
+          <!-- Agent History — click an agent to see their hands -->
+          <div id="agentHistoryPanel" style="display:none"></div>
+
           <!-- Contract Pool — below the table -->
           <div class="panel pool-panel" style="margin-top:16px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -3375,6 +3472,7 @@ function renderFullState() {
 
   renderTableSeats();
   renderAgentsSidebar();
+  if (_selectedAgentId) renderAgentHistory();
   renderPoolFlows();
   renderLeaderboard();
 
@@ -3412,6 +3510,8 @@ function renderTableSeats() {
     seat.id = `seat-${agent.id}`;
     seat.style.top = pos.top;
     seat.style.left = pos.left;
+    seat.style.cursor = 'pointer';
+    seat.onclick = () => selectAgent(agent.id);
 
     const isCurrent = gameState.currentTurnId === agent.id && gameState.running;
     const folded = agent.folded;
@@ -3482,10 +3582,11 @@ function renderTableSeats() {
         </div>`;
     }
 
+    const isSelected = _selectedAgentId === agent.id;
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
-           title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${myBorder}"
+           title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${myBorder}${isSelected ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
         ${agent.emoji}
         ${cornerBadge}
@@ -3615,6 +3716,86 @@ function portfolioTopUp(agentId) {
 // ============================================================
 // SIDEBAR & GRID RENDERERS
 // ============================================================
+// === Agent Hand History ===
+let _selectedAgentId = null;
+
+function selectAgent(agentId) {
+  if (_selectedAgentId === agentId) {
+    // Toggle off
+    _selectedAgentId = null;
+    document.getElementById('agentHistoryPanel').style.display = 'none';
+    return;
+  }
+  _selectedAgentId = agentId;
+  renderAgentHistory();
+}
+
+function closeAgentHistory() {
+  _selectedAgentId = null;
+  document.getElementById('agentHistoryPanel').style.display = 'none';
+}
+
+function renderAgentHistory() {
+  const panel = document.getElementById('agentHistoryPanel');
+  if (!_selectedAgentId) { panel.style.display = 'none'; return; }
+
+  const agent = gameState.agents.find(a => a.id === _selectedAgentId);
+  if (!agent) { panel.style.display = 'none'; _selectedAgentId = null; return; }
+
+  const wallet = getWallet();
+  const isMine = agent.isCustom && wallet && agent.walletAddress === wallet.address;
+  const pnl = agent.chips - agent.baseChips;
+  const pnlColor = pnl >= 0 ? '#22c55e' : '#ef4444';
+  const pnlSign = pnl >= 0 ? '+' : '';
+  const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+
+  const history = agent.handHistory || [];
+
+  let historyHTML = '';
+  if (history.length === 0) {
+    historyHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:11px">No hands played yet</div>';
+  } else {
+    historyHTML = history.map(h => {
+      const cardsHTML = h.cards ? h.cards.map(c => {
+        const isRed = c.suit === '♥' || c.suit === '♦';
+        return `<div class="hand-entry-card${isRed ? ' red' : ''}"><span>${c.rank}</span><span>${c.suit}</span></div>`;
+      }).join('') : '<span style="color:var(--text-muted)">—</span>';
+
+      const deltaColor = h.delta > 0 ? '#22c55e' : h.delta < 0 ? '#ef4444' : '#888';
+      const deltaSign = h.delta > 0 ? '+' : '';
+
+      return `<div class="hand-entry">
+        <div class="hand-entry-result ${h.result}">${h.result}</div>
+        <div class="hand-entry-cards">${cardsHTML}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${h.handName || ''}</div>
+        <div style="font-size:9px;color:var(--text-muted)">#${h.hand}</div>
+        <div class="hand-entry-delta" style="color:${deltaColor}">${deltaSign}${h.delta.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  }
+
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="agent-history-panel">
+      <div class="agent-history-header">
+        <div class="agent-history-avatar" style="${isMine ? 'border-color:var(--accent-green)' : ''}">${agent.emoji}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${agent.name}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${capitalize(agent.style)} · ${wr}% WR · ${agent.handsPlayed} hands</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-gold)">${formatChips(agent.chips)}</div>
+          <div style="font-family:'Rajdhani';font-size:13px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
+        </div>
+        <button class="agent-history-close" onclick="closeAgentHistory()">✕</button>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Recent Hands</div>
+      <div class="hand-history-list">
+        ${historyHTML}
+      </div>
+    </div>`;
+}
+
 function renderAgentsSidebar() {
   if (_sidebarTopUpOpen) return;
   const container = document.getElementById('agentsSidebar');
@@ -3625,8 +3806,9 @@ function renderAgentsSidebar() {
     const pnlColor = pnl !== null ? (pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)') : '';
     const pnlSign = pnl !== null ? (pnl >= 0 ? '+' : '') : '';
     const borderStyle = isMine ? 'border-color:rgba(34,197,94,0.4);' : '';
+    const selected = _selectedAgentId === agent.id ? 'border-color:var(--accent-primary);background:rgba(99,102,241,0.08);' : '';
     return `
-    <div class="agent-item style-${agent.style}" style="${borderStyle}">
+    <div class="agent-item style-${agent.style}" style="${borderStyle}${selected}cursor:pointer;" onclick="selectAgent('${agent.id}')">
       <div class="agent-avatar-sm">${agent.emoji}</div>
       <div class="agent-info" style="flex:1;min-width:0">
         <div class="agent-name-sm" style="${isMine ? 'color:var(--accent-green)' : ''}">${agent.name}</div>
