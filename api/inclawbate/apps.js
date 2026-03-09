@@ -173,7 +173,7 @@ export default async function handler(req, res) {
             const creatorId = req.query.creator_id;
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, forkable, created_at', { count: 'exact' });
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, forkable, is_public, created_at', { count: 'exact' });
 
             const creatorWallet = req.query.creator_wallet;
             if (creatorId && creatorWallet) {
@@ -640,7 +640,30 @@ export default async function handler(req, res) {
                 return res.json({ updated: true, ...updates });
             }
 
-            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved, rename, update-details' });
+            // ── Toggle publish (owner only) ──
+            if (action === 'toggle-publish') {
+                if (!app_id) return res.status(400).json({ error: 'app_id required' });
+
+                const { data: app } = await supabase
+                    .from('user_apps')
+                    .select('id, user_id, is_public')
+                    .eq('id', app_id)
+                    .single();
+                if (!app) return res.status(404).json({ error: 'App not found' });
+                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                    return res.status(403).json({ error: 'You can only manage your own apps' });
+                }
+
+                const newVal = !app.is_public;
+                const { error: updErr } = await supabase
+                    .from('user_apps')
+                    .update({ is_public: newVal, updated_at: new Date().toISOString() })
+                    .eq('id', app_id);
+                if (updErr) throw updErr;
+                return res.json({ toggled: true, is_public: newVal });
+            }
+
+            return res.status(400).json({ error: 'Unknown action. Use: upvote, unlock, tip, check-unlock, moderate, toggle_anonymous_publish, claim_anonymous, save, unsave, get_saved, rename, update-details, toggle-publish' });
 
         } catch (err) {
             console.error('apps POST error:', err);

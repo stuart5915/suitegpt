@@ -237,12 +237,17 @@ function renderAppCards(apps) {
 
     container.innerHTML = '';
     apps.slice(0, 5).forEach(a => {
+        const isPublished = a.is_public !== false;
         const el = document.createElement('div');
         el.className = 'overview-item';
         el.innerHTML = `
             <div class="overview-item-info">
                 <div class="overview-item-title">${esc(a.name || 'Untitled App')}</div>
                 <div class="overview-item-sub">${a.upvote_count ? a.upvote_count + ' upvotes' : '0 upvotes'} · ${a.category || 'App'}</div>
+            </div>
+            <div class="app-publish-toggle">
+                <span class="app-publish-label ${isPublished ? 'is-published' : ''}">${isPublished ? 'Published' : 'Unpublished'}</span>
+                <div class="app-publish-switch ${isPublished ? 'on' : ''}" data-app-id="${esc(a.id)}" title="${isPublished ? 'Click to unpublish' : 'Click to publish'}"></div>
             </div>
             <div class="app-actions">
                 <button type="button" class="overview-item-action app-actions-toggle">Manage</button>
@@ -289,6 +294,34 @@ function renderAppCards(apps) {
             e.stopPropagation();
             closeAllAppMenus();
             deleteApp(a.id, a.name || 'Untitled App');
+        });
+
+        el.querySelector('.app-publish-switch').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const sw = e.currentTarget;
+            const label = el.querySelector('.app-publish-label');
+            sw.style.opacity = '0.5';
+            sw.style.pointerEvents = 'none';
+            try {
+                const res = await fetch(API_BASE + '/apps', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ action: 'toggle-publish', app_id: a.id })
+                });
+                const data = await res.json();
+                if (!res.ok) { alert(data.error || 'Failed'); return; }
+                const pub = data.is_public;
+                sw.classList.toggle('on', pub);
+                sw.title = pub ? 'Click to unpublish' : 'Click to publish';
+                label.textContent = pub ? 'Published' : 'Unpublished';
+                label.classList.toggle('is-published', pub);
+                a.is_public = pub;
+            } catch (err) {
+                alert('Failed to update');
+            } finally {
+                sw.style.opacity = '';
+                sw.style.pointerEvents = '';
+            }
         });
 
         container.appendChild(el);
