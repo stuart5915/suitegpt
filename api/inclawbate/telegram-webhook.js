@@ -56,7 +56,7 @@ async function handleState(chatId) {
         .from('team_state')
         .select('*')
         .eq('category', 'current')
-        .limit(1);
+        .order('created_at', { ascending: true });
 
     const { data: todos } = await supabase
         .from('team_state')
@@ -67,7 +67,8 @@ async function handleState(chatId) {
     let msg = '🦞 <b>INCLAWBATE</b>\n';
 
     if (current && current.length) {
-        msg += `\n🔥 <b>CURRENT:</b> ${esc(current[0].content)}\n`;
+        msg += `\n🔥 <b>CURRENT:</b>\n`;
+        current.forEach(c => { msg += `→ ${esc(c.content)}\n`; });
     }
 
     if (todos && todos.length) {
@@ -91,13 +92,22 @@ async function handleCurrent(chatId, username, args) {
             .from('team_state')
             .select('*')
             .eq('category', 'current')
-            .limit(1);
+            .order('created_at', { ascending: true });
 
         if (data && data.length) {
-            await sendMsg(chatId, `🔥 <b>CURRENT:</b> ${esc(data[0].content)}`);
+            let msg = '🔥 <b>CURRENT:</b>\n';
+            data.forEach(c => { msg += `→ ${esc(c.content)}\n`; });
+            await sendMsg(chatId, msg);
         } else {
             await sendMsg(chatId, '<i>No current task. /current 3 to set one from /state</i>');
         }
+        return;
+    }
+
+    // "clear" removes all current tasks
+    if (args.toLowerCase() === 'clear') {
+        await supabase.from('team_state').delete().eq('category', 'current');
+        await sendMsg(chatId, '🔥 Current cleared.');
         return;
     }
 
@@ -108,12 +118,9 @@ async function handleCurrent(chatId, username, args) {
         return;
     }
 
-    // Clear any existing current
-    await supabase.from('team_state').delete().eq('category', 'current');
-
-    // Set new current
+    // Add to current (don't replace)
     await supabase.from('team_state').insert({ category: 'current', content: item.content, author: username });
-    await sendMsg(chatId, `🔥 <b>Now working on:</b> ${esc(item.content)}`);
+    await sendMsg(chatId, `🔥 <b>Added to current:</b> ${esc(item.content)}`);
 }
 
 // ── /add — add to list (admin only, multi-line ok) ──
