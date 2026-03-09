@@ -1794,7 +1794,7 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
         <div class="hero-ubi-teaser">Oh, and we pay you daily just for being here.</div>
 
         <!-- Chat Widget -->
-        <div class="hero-chat" id="heroChat">
+        <div class="hero-chat" id="heroChat" style="display:none">
             <div class="chat-prompts" id="chatPrompts">
                 <div class="chat-prompts-label">Try asking&hellip;</div>
                 <div class="chat-prompts-scroll">
@@ -2558,8 +2558,12 @@ function addClawsToWallet() {
 }
 </script>
 <script>
-// ── Hero Chat Widget ──
+// ── Hero Chat Widget (admin only — ?admin=1 to show) ──
 (function() {
+    var isAdmin = new URLSearchParams(window.location.search).has('admin');
+    if (!isAdmin) return;
+    document.getElementById('heroChat').style.display = '';
+
     var AGENT_URL = '/api/inclawbate/agent-chat';
     var form = document.getElementById('chatForm');
     var input = document.getElementById('chatInput');
