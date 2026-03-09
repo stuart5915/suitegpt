@@ -1225,25 +1225,79 @@
   .no-agents-msg .icon { font-size: 48px; margin-bottom: 12px; }
   .no-agents-msg .title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
 
-  /* POSITIONS BAR — above table */
-  .positions-bar {
+  /* PORTFOLIO BAR — cross-room agent overview */
+  .portfolio-bar {
     margin-bottom: 14px;
-    padding: 12px 18px;
+    padding: 14px 18px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 14px;
   }
-  .positions-bar .position-chip {
-    display: inline-flex;
+  .portfolio-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .portfolio-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .portfolio-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .portfolio-stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .portfolio-stat-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .portfolio-agents {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .portfolio-chip {
+    display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 14px;
+    padding: 8px 12px;
     background: var(--bg-surface);
     border-radius: 10px;
     border: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: all 0.2s;
   }
-  .positions-bar .position-chip.positive { border-color: rgba(34,197,94,0.3); }
-  .positions-bar .position-chip.negative { border-color: rgba(239,68,68,0.3); }
+  .portfolio-chip:hover {
+    border-color: var(--accent-gold);
+    background: rgba(245,197,66,0.06);
+  }
+  .portfolio-chip.active {
+    border-color: var(--accent-green);
+    background: rgba(34,197,94,0.06);
+  }
+  .portfolio-chip.positive { border-color: rgba(34,197,94,0.3); }
+  .portfolio-chip.negative { border-color: rgba(239,68,68,0.3); }
+  .portfolio-chip .room-badge {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(99,102,241,0.15);
+    color: var(--accent-primary);
+  }
 
   /* Responsive */
   /* ROOM TABS */
@@ -2203,16 +2257,32 @@
 
   <!-- ARENA VIEW -->
   <div id="view-arena" class="view active">
-    <div id="myAgentBanner" style="display:none;margin-bottom:14px;padding:12px 18px;background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(6,182,212,0.08));border:1px solid rgba(34,197,94,0.3);border-radius:12px;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px" id="bannerEmoji"></span>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--accent-green)" id="bannerText">Your agent is playing!</div>
-          <div style="font-size:11px;color:var(--text-muted)">Green border = your agent. You can see their pocket cards.</div>
+    <!-- Portfolio Overview — all agents across all rooms -->
+    <div id="portfolioBar" class="portfolio-bar" style="display:none">
+      <div class="portfolio-summary">
+        <div class="portfolio-stats">
+          <div class="portfolio-stat">
+            <span class="portfolio-stat-label">Agents</span>
+            <span class="portfolio-stat-value" id="portfolioCount">0</span>
+          </div>
+          <div class="portfolio-stat">
+            <span class="portfolio-stat-label">Total Invested</span>
+            <span class="portfolio-stat-value" id="portfolioInvested">0</span>
+          </div>
+          <div class="portfolio-stat">
+            <span class="portfolio-stat-label">Current Value</span>
+            <span class="portfolio-stat-value" style="color:var(--accent-gold)" id="portfolioValue">0</span>
+          </div>
+          <div class="portfolio-stat">
+            <span class="portfolio-stat-label">Total P&L</span>
+            <span class="portfolio-stat-value" id="portfolioPnl">+0</span>
+          </div>
         </div>
+        <button onclick="showView('myagents')" style="padding:6px 14px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:8px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-green)';this.style.color='var(--accent-green)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Manage Agents</button>
       </div>
-      <button onclick="showView('myagents')" style="padding:6px 14px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:8px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-green)';this.style.color='var(--accent-green)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Manage Agents</button>
+      <div class="portfolio-agents" id="portfolioAgents"></div>
     </div>
+
     <div class="room-tabs" id="roomTabs">
       <button class="room-tab active" onclick="switchRoom('micro')" id="roomTab-micro">
         <span class="room-tab-name">Micro</span>
@@ -2229,18 +2299,6 @@
         <span class="room-tab-info">$25 buy-in · 625/1250</span>
         <span class="room-tab-players" id="roomPlayers-high"></span>
       </button>
-    </div>
-
-    <!-- Your Positions — moved above the table -->
-    <div id="positionsBar" class="positions-bar" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="positionsBarContent">
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--text-muted)">Total P&L:</span>
-          <span style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-green)" id="totalPnl">+0</span>
-        </div>
-      </div>
     </div>
 
     <div class="arena-layout">
@@ -3082,6 +3140,7 @@ function handleMessage(msg) {
 
     case 'myAgents':
       myAgents = msg.data || [];
+      renderPortfolioBar();
       renderMyAgents();
       break;
 
@@ -3110,6 +3169,12 @@ function applyServerState(data) {
   gameState.lobbyAgents = data.lobbyAgents || [];
   gameState.rooms = data.rooms || {};
   if (data.activeRoom) activeRoom = data.activeRoom;
+
+  // Refresh full agent list for portfolio bar (cross-room)
+  const _w = getWallet();
+  if (_w && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: _w.address }));
+  }
 
   updateRoomTabs();
   renderFullState();
@@ -3170,10 +3235,8 @@ function renderFullState() {
 
   renderTableSeats();
   renderAgentsSidebar();
-  renderFundPositions();
   renderPoolFlows();
   renderLeaderboard();
-  updateMyAgentBanner();
 
   // Update my agents if that view is active
   const myAgentsView = document.getElementById('view-myagents');
@@ -3182,24 +3245,6 @@ function renderFullState() {
   }
 }
 
-function updateMyAgentBanner() {
-  const banner = document.getElementById('myAgentBanner');
-  const wallet = getWallet();
-  if (!wallet) { banner.style.display = 'none'; return; }
-
-  const mine = gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address);
-  if (mine.length === 0) { banner.style.display = 'none'; return; }
-
-  banner.style.display = 'flex';
-  const emojis = mine.map(a => a.emoji).join(' ');
-  document.getElementById('bannerEmoji').textContent = emojis;
-
-  const names = mine.map(a => a.name).join(', ');
-  const totalPnl = mine.reduce((sum, a) => sum + (a.chips - a.baseChips), 0);
-  const pnlColor = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  const pnlSign = totalPnl >= 0 ? '+' : '';
-  document.getElementById('bannerText').innerHTML = `<span style="color:var(--text-primary)">${names}</span> playing — P&L: <span style="color:${pnlColor}">${pnlSign}${totalPnl.toLocaleString()}</span>`;
-}
 
 // ============================================================
 // SEAT POSITIONS (8 seats)
@@ -3321,45 +3366,55 @@ function renderCommunityCard(index, card) {
 // ============================================================
 // FUNDING — sends to server via WebSocket
 // ============================================================
-function renderFundPositions() {
-  const bar = document.getElementById('positionsBar');
-  const content = document.getElementById('positionsBarContent');
-  const pnlEl = document.getElementById('totalPnl');
+const ROOM_LABELS = { micro: 'Micro', mid: 'Mid', high: 'High' };
 
-  const wallet = getWallet();
-  const myPlayingAgents = wallet ? gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address) : [];
+function renderPortfolioBar() {
+  const bar = document.getElementById('portfolioBar');
+  const agentsEl = document.getElementById('portfolioAgents');
 
-  if (myPlayingAgents.length === 0) {
+  const playing = myAgents.filter(a => a.status === 'playing');
+  if (playing.length === 0) {
     bar.style.display = 'none';
     return;
   }
 
   bar.style.display = 'block';
 
-  let totalPnl = 0;
-  content.innerHTML = myPlayingAgents.map(agent => {
-    const pnl = agent.chips - agent.baseChips;
-    totalPnl += pnl;
+  let totalInvested = 0, totalValue = 0, totalPnl = 0;
+  playing.forEach(a => {
+    totalInvested += a.baseChips || 0;
+    totalValue += a.chips || 0;
+    totalPnl += a.pnl || 0;
+  });
+
+  document.getElementById('portfolioCount').textContent = playing.length;
+  document.getElementById('portfolioInvested').textContent = totalInvested.toLocaleString();
+  document.getElementById('portfolioValue').textContent = totalValue.toLocaleString();
+
+  const pnlEl = document.getElementById('portfolioPnl');
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
+  pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+  agentsEl.innerHTML = playing.map(agent => {
+    const pnl = agent.pnl || 0;
     const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const pnlSign = pnl >= 0 ? '+' : '';
     const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+    const isActive = agent.roomId === activeRoom;
+    const roomLabel = ROOM_LABELS[agent.roomId] || agent.roomId;
     return `
-    <div class="position-chip ${pnlClass}">
+    <div class="portfolio-chip ${pnlClass} ${isActive ? 'active' : ''}" onclick="switchRoom('${agent.roomId}')">
       <span style="font-size:18px">${agent.emoji}</span>
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--text-primary)">${agent.name}</div>
-        <div style="font-size:10px;color:var(--text-muted)">${formatChips(agent.chips)} stack</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="room-badge">${roomLabel}</span>
+          <span style="font-size:10px;color:var(--text-muted)">${formatChips(agent.chips)}</span>
+        </div>
       </div>
-      <div style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
-      <div style="display:flex;gap:4px">
-        <button onclick="toggleTopUp('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">+ Top Up</button>
-        <button onclick="leaveTable('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">Sit Out</button>
-      </div>
+      <div style="font-family:'Rajdhani';font-size:16px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
     </div>`;
   }).join('');
-
-  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
-  pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 }
 
 // ============================================================
