@@ -1,6 +1,8 @@
 // Just4Claws Supabase Init
 // Shared across all app pages
 
+window.J4C_BASE = location.hostname.includes('just4claws') ? '' : '/j4c';
+
 const J4C_SUPABASE_URL = 'https://bxpfkuqgsypjfcdnoohs.supabase.co';
 const J4C_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4cGZrdXFnc3lwamZjZG5vb2hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjcwNTE3NzQsImV4cCI6MjA0MjYyNzc3NH0.kpC0k8IeMhWz12K9Y_BPW5GXpSJBFLGBRsUfjmaS7OQ';
 
@@ -21,7 +23,7 @@ async function initAuth(opts = {}) {
 
     if (!session) {
         if (requireAuth) {
-            window.location.href = '/auth';
+            window.location.href = J4C_BASE + '/auth';
         }
         window.j4c.ready = true;
         return null;
@@ -38,12 +40,12 @@ async function initAuth(opts = {}) {
 
     if (!profile && requireAuth) {
         // No profile yet - redirect to auth to complete setup
-        window.location.href = '/auth#setup';
+        window.location.href = J4C_BASE + '/auth#setup';
         return null;
     }
 
     if (profile && !profile.is_age_verified && requireAge) {
-        window.location.href = '/auth#verify';
+        window.location.href = J4C_BASE + '/auth#verify';
         return null;
     }
 
@@ -63,7 +65,7 @@ supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
         window.j4c.user = null;
         window.j4c.profile = null;
-        window.location.href = '/';
+        window.location.href = J4C_BASE + '/';
     }
 });
 
