@@ -3394,19 +3394,12 @@ function handleMessage(msg) {
 
     case 'joinTableResult':
       if (msg.data.error) {
-        // Refund chips on failure
-        if (window._pendingJoin) {
-          const rw = getWallet();
-          if (rw) {
-            rw.balance += window._pendingJoin.amount;
-            saveWallet(rw);
-            updateWalletUI();
-          }
-          window._pendingJoin = null;
-        }
         showToast(msg.data.error, 'error');
       } else {
-        window._pendingJoin = null;
+        if (msg.data.newBalance !== undefined) {
+          walletBalance = msg.data.newBalance;
+          updateWalletUI();
+        }
         const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
         const rn = roomNames[msg.data.roomId] || msg.data.roomId;
         showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
@@ -3417,16 +3410,12 @@ function handleMessage(msg) {
 
     case 'topUpResult':
       if (msg.data.error) {
-        // Refund local wallet on failure
-        const tw = getWallet();
-        if (tw && window._lastTopUpAmount) {
-          tw.balance += window._lastTopUpAmount;
-          saveWallet(tw);
+        showToast('Top-up failed: ' + msg.data.error, 'error');
+      } else {
+        if (msg.data.newBalance !== undefined) {
+          walletBalance = msg.data.newBalance;
           updateWalletUI();
         }
-        showToast('Top-up failed: ' + msg.data.error, 'error');
-        console.error('Top-up error:', msg.data.error, 'agentId:', window._lastTopUpAgentId);
-      } else {
         showToast(`${msg.data.agentName} topped up +${window._lastTopUpAmount?.toLocaleString() || '?'}! New stack: ${msg.data.newStack.toLocaleString()} (invested: ${msg.data.totalInvested.toLocaleString()})`, 'success');
       }
       window._lastTopUpAmount = null;
@@ -3446,16 +3435,19 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        const rw = getWallet();
-        if (rw) {
-          rw.balance += msg.data.finalChips;
-          saveWallet(rw);
+        if (msg.data.newBalance !== undefined) {
+          walletBalance = msg.data.newBalance;
           updateWalletUI();
         }
         const pnlStr = msg.data.pnl >= 0 ? `+${msg.data.pnl}` : `${msg.data.pnl}`;
         showToast(`Agent deleted! Got ${msg.data.finalChips.toLocaleString()} chips back (${pnlStr} P&L)`, msg.data.pnl >= 0 ? 'success' : 'error');
         refreshMyAgentsView();
       }
+      break;
+
+    case 'walletBalance':
+      walletBalance = msg.data.balance || 0;
+      updateWalletUI();
       break;
 
     case 'myAgents':
@@ -4101,28 +4093,21 @@ function capitalize(s) {
 }
 
 // ============================================================
-// MOCK WALLET SYSTEM (localStorage)
+// REAL WALLET CONNECTION (MetaMask / Coinbase Wallet / etc)
 // ============================================================
 const WALLET_KEY = 'pokerai_wallet';
-const STARTING_BALANCE = 50000;
+let walletBalance = 0; // server-authoritative balance
 
 function getWallet() {
   try {
     const data = JSON.parse(localStorage.getItem(WALLET_KEY));
-    if (data && data.address && typeof data.balance === 'number') return data;
+    if (data && data.address) return { address: data.address, balance: walletBalance };
   } catch (e) {}
   return null;
 }
 
 function saveWallet(wallet) {
-  localStorage.setItem(WALLET_KEY, JSON.stringify(wallet));
-}
-
-function generateAddress() {
-  const hex = '0123456789abcdef';
-  let addr = '0x';
-  for (let i = 0; i < 40; i++) addr += hex[Math.floor(Math.random() * 16)];
-  return addr;
+  localStorage.setItem(WALLET_KEY, JSON.stringify({ address: wallet.address }));
 }
 
 function syncWalletToServer() {
@@ -4132,26 +4117,58 @@ function syncWalletToServer() {
   }
 }
 
-function toggleWallet() {
+async function toggleWallet() {
   const wallet = getWallet();
   if (wallet) {
+    // Disconnect
     localStorage.removeItem(WALLET_KEY);
+    walletBalance = 0;
     updateWalletUI();
     syncWalletToServer();
     showToast('Wallet disconnected', 'info');
     refreshMyAgentsView();
-  } else {
-    const newWallet = {
-      address: generateAddress(),
-      balance: STARTING_BALANCE,
-      createdAt: Date.now()
-    };
-    saveWallet(newWallet);
-    updateWalletUI();
-    syncWalletToServer();
-    showToast(`Mock wallet connected! ${STARTING_BALANCE.toLocaleString()} fake chips loaded.`, 'gold');
-    refreshMyAgentsView();
+    return;
   }
+
+  // Connect — try real wallet first
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0].toLowerCase();
+        saveWallet({ address });
+        updateWalletUI();
+        syncWalletToServer();
+        showToast('Wallet connected!', 'gold');
+        refreshMyAgentsView();
+
+        // Listen for account changes
+        window.ethereum.on('accountsChanged', (accs) => {
+          if (accs.length === 0) {
+            localStorage.removeItem(WALLET_KEY);
+            walletBalance = 0;
+            updateWalletUI();
+            syncWalletToServer();
+            refreshMyAgentsView();
+          } else {
+            const newAddr = accs[0].toLowerCase();
+            saveWallet({ address: newAddr });
+            updateWalletUI();
+            syncWalletToServer();
+            refreshMyAgentsView();
+          }
+        });
+        return;
+      }
+    } catch (e) {
+      console.error('Wallet connect failed:', e);
+      showToast('Wallet connection rejected', 'error');
+      return;
+    }
+  }
+
+  // No wallet extension — show message
+  showToast('No wallet found! Install MetaMask or Coinbase Wallet.', 'error');
 }
 
 function updateWalletUI() {
@@ -4160,7 +4177,7 @@ function updateWalletUI() {
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
-    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(wallet.balance)}</span>`;
+    btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(walletBalance)}</span>`;
   } else {
     btn.className = 'wallet-btn disconnected';
     btn.innerHTML = 'Connect Wallet';
@@ -4168,8 +4185,8 @@ function updateWalletUI() {
   // Update balance displays
   const fb = document.getElementById('formBalance');
   const hb = document.getElementById('headerBalance');
-  if (fb) fb.textContent = wallet ? wallet.balance.toLocaleString() : '0';
-  if (hb) hb.textContent = wallet ? formatChips(wallet.balance) : '0';
+  if (fb) fb.textContent = walletBalance.toLocaleString();
+  if (hb) hb.textContent = formatChips(walletBalance);
 }
 
 // ============================================================
@@ -4291,7 +4308,7 @@ function renderMyAgents() {
               <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
               <button onclick="confirmJoin('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
             </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">0</span> chips</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> chips</div>
           </div>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
@@ -4535,14 +4552,9 @@ function confirmJoin(agentId) {
   const roomId = (window._joinRoom && window._joinRoom[agentId]) || 'micro';
   const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
   if (!amount || amount < 500) { showToast('Minimum buy-in is 500 chips', 'error'); return; }
-  if (amount > wallet.balance) { showToast(`Not enough chips! You have ${wallet.balance.toLocaleString()}`, 'error'); return; }
+  if (amount > walletBalance) { showToast(`Not enough chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
 
-  // Deduct chips and join
-  wallet.balance -= amount;
-  saveWallet(wallet);
-  updateWalletUI();
-  window._pendingJoin = { agentId, amount };
-
+  // Server handles balance deduction
   _roomPickerOpen = false;
   ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId, chipStack: amount }));
   const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
@@ -4552,12 +4564,10 @@ function confirmJoin(agentId) {
 function topUpAgent(agentId, amount) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
-  if (wallet.balance < amount) { showToast('Not enough chips in wallet!', 'error'); return; }
+  if (walletBalance < amount) { showToast('Not enough chips in wallet!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  wallet.balance -= amount;
-  saveWallet(wallet);
-  updateWalletUI();
+  // Server handles balance deduction
   window._lastTopUpAmount = amount;
   window._lastTopUpAgentId = agentId;
   ws.send(JSON.stringify({ type: 'topUp', walletAddress: wallet.address, agentId, amount }));

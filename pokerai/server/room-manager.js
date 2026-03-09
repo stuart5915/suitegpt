@@ -1,4 +1,5 @@
 const { PokerEngine } = require('./poker-engine');
+const { AgentStore } = require('./agent-store');
 
 const ROOM_CONFIGS = {
   micro:  { name: 'Micro',       buyIn: '$1',  bb: 50,   baseChips: 10000,  rakePct: 0.05 },   // 5% rake
@@ -9,6 +10,7 @@ const ROOM_CONFIGS = {
 class RoomManager {
   constructor(broadcastFn) {
     this.broadcastFn = broadcastFn;
+    this.store = new AgentStore();
     this.rooms = {};
     this.lobbyAgents = new Map(); // walletAddress → [agent configs]
 
@@ -20,6 +22,44 @@ class RoomManager {
       };
       this._addTable(roomId);
     }
+
+    // Restore persisted agents to lobby
+    this._restoreAgents();
+  }
+
+  _restoreAgents() {
+    const allAgents = this.store.agents;
+    let count = 0;
+    for (const saved of allAgents) {
+      const wallet = saved.walletAddress;
+      if (!wallet) continue;
+
+      const lobbyAgent = {
+        id: saved.id,
+        name: saved.name,
+        emoji: saved.emoji,
+        style: saved.style,
+        description: saved.description || `Custom agent by ${wallet.slice(0, 6)}...${wallet.slice(-4)}`,
+        raisePct: saved.raisePct,
+        bluffPct: saved.bluffPct,
+        foldPct: saved.foldPct,
+        traits: saved.traits,
+        rules: saved.rules || {},
+        walletAddress: wallet,
+        isCustom: true,
+        chipStack: saved.chipStack || 0,
+        handsWon: saved.handsWon || 0,
+        handsPlayed: saved.handsPlayed || 0,
+        biggestPot: saved.biggestPot || 0
+      };
+
+      if (!this.lobbyAgents.has(wallet)) {
+        this.lobbyAgents.set(wallet, []);
+      }
+      this.lobbyAgents.get(wallet).push(lobbyAgent);
+      count++;
+    }
+    if (count > 0) console.log(`[RoomManager] Restored ${count} agents to lobby`);
   }
 
   _addTable(roomId) {
@@ -30,6 +70,8 @@ class RoomManager {
     const table = new PokerEngine((type, data) => {
       if (type === 'gameState') {
         this.broadcastFn('gameState', { roomId, tableId });
+        // Persist custom agent chip counts after each hand
+        this._persistPlayingAgents(table);
       } else {
         this.broadcastFn(type, { ...(data || {}), roomId, tableId });
       }
@@ -43,6 +85,19 @@ class RoomManager {
 
     room.tables.push(table);
     return table;
+  }
+
+  _persistPlayingAgents(table) {
+    for (const a of table.agents) {
+      if (a.isCustom) {
+        this.store.updateAgentStats(a.id, {
+          chipStack: a.chips,
+          handsWon: a.handsWon,
+          handsPlayed: a.handsPlayed,
+          biggestPot: a.biggestPot
+        });
+      }
+    }
   }
 
   start() {
@@ -119,6 +174,9 @@ class RoomManager {
     }
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
+    // Persist
+    this.store.saveAgent(lobbyAgent);
+
     return {
       success: true,
       agent: {
@@ -146,8 +204,12 @@ class RoomManager {
 
     if (!chipStack || chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
 
+    // Deduct from wallet balance (server-side)
+    const wallet = this.store.getWallet(walletAddress);
+    if (!wallet) return { error: 'Wallet not found' };
+    if (wallet.balance < chipStack) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
+
     const lobbyAgent = walletLobby[lobbyIdx];
-    // Set the chip stack now (funded at join time, not creation)
     lobbyAgent.chipStack = chipStack;
 
     const table = this._findAvailableTable(roomId);
@@ -156,11 +218,20 @@ class RoomManager {
     const result = table.seatAgent(lobbyAgent);
     if (result.error) return result;
 
+    // Deduct balance on success
+    this.store.deductBalance(walletAddress, chipStack);
+
     // Remove from lobby on success
     walletLobby.splice(lobbyIdx, 1);
     if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
 
-    return { success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot };
+    // Update persisted agent
+    this.store.updateAgentStats(agentId, { chipStack });
+
+    return {
+      success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot,
+      newBalance: this.store.getWallet(walletAddress).balance
+    };
   }
 
   leaveTable(walletAddress, agentId) {
@@ -176,6 +247,9 @@ class RoomManager {
       this.lobbyAgents.set(walletAddress, []);
     }
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
+
+    // Persist updated agent
+    this.store.saveAgent(lobbyAgent);
 
     return {
       success: true,
@@ -195,30 +269,61 @@ class RoomManager {
   topUpAgent(walletAddress, agentId, amount) {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
-    return table.topUpAgent(walletAddress, agentId, amount);
+
+    // Deduct from wallet
+    const wallet = this.store.getWallet(walletAddress);
+    if (!wallet) return { error: 'Wallet not found' };
+    if (wallet.balance < amount) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
+
+    const result = table.topUpAgent(walletAddress, agentId, amount);
+    if (result.error) return result;
+
+    this.store.deductBalance(walletAddress, amount);
+    result.newBalance = this.store.getWallet(walletAddress).balance;
+    return result;
   }
 
   deleteAgent(walletAddress, agentId) {
+    let finalChips = 0;
+    let pnl = 0;
+
     // Check tables first
     const table = this._findAgentTable(agentId);
     if (table) {
-      return table.removeFromTable(walletAddress, agentId);
-    }
-
-    // Check lobby
-    const walletLobby = this.lobbyAgents.get(walletAddress);
-    if (walletLobby) {
-      const lobbyIdx = walletLobby.findIndex(a => a.id === agentId);
-      if (lobbyIdx !== -1) {
-        const agent = walletLobby[lobbyIdx];
-        const finalChips = agent.chipStack;
-        walletLobby.splice(lobbyIdx, 1);
-        if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
-        return { success: true, finalChips, pnl: 0 };
+      const result = table.removeFromTable(walletAddress, agentId);
+      if (result.error) return result;
+      finalChips = result.finalChips;
+      pnl = result.pnl;
+    } else {
+      // Check lobby
+      const walletLobby = this.lobbyAgents.get(walletAddress);
+      if (walletLobby) {
+        const lobbyIdx = walletLobby.findIndex(a => a.id === agentId);
+        if (lobbyIdx !== -1) {
+          const agent = walletLobby[lobbyIdx];
+          finalChips = agent.chipStack;
+          walletLobby.splice(lobbyIdx, 1);
+          if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
+        } else {
+          return { error: 'Agent not found' };
+        }
+      } else {
+        return { error: 'Agent not found' };
       }
     }
 
-    return { error: 'Agent not found' };
+    // Return chips to wallet
+    if (finalChips > 0) {
+      this.store.addBalance(walletAddress, finalChips);
+    }
+
+    // Remove from persistent store
+    this.store.deleteAgent(agentId);
+
+    return {
+      success: true, finalChips, pnl,
+      newBalance: this.store.getWallet(walletAddress).balance
+    };
   }
 
   getAgentsForWallet(walletAddress) {
@@ -274,6 +379,13 @@ class RoomManager {
     }
 
     return results;
+  }
+
+  // === Wallet ===
+
+  getWalletBalance(walletAddress) {
+    const wallet = this.store.getOrCreateWallet(walletAddress);
+    return wallet;
   }
 
   // === State ===

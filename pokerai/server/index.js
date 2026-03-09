@@ -74,6 +74,13 @@ function broadcastStateToAll() {
   }
 }
 
+// Send balance update to a specific client
+function sendBalance(ws, walletAddress) {
+  if (!walletAddress) return;
+  const wallet = rooms.getWalletBalance(walletAddress);
+  ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
+}
+
 wss.on('connection', (ws) => {
   const sessionId = uuidv4();
   clients.set(ws, { sessionId, activeRoom: 'micro' });
@@ -92,7 +99,12 @@ wss.on('connection', (ws) => {
 
       switch (msg.type) {
         case 'setWallet': {
-          client.walletAddress = msg.walletAddress || null;
+          client.walletAddress = msg.walletAddress ? msg.walletAddress.toLowerCase() : null;
+          // Get or create wallet in store (assigns starting balance for new wallets)
+          if (client.walletAddress) {
+            const wallet = rooms.getWalletBalance(client.walletAddress);
+            ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
+          }
           // Re-send state with wallet context so lobbyAgents are included
           const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
@@ -122,45 +134,55 @@ wss.on('connection', (ws) => {
           break;
         }
         case 'createAgent': {
-          client.walletAddress = msg.walletAddress;
-          const result = rooms.createLobbyAgent(msg.walletAddress, msg.config);
+          const addr = (msg.walletAddress || '').toLowerCase();
+          client.walletAddress = addr;
+          const result = rooms.createLobbyAgent(addr, msg.config);
           ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
           const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
         case 'joinTable': {
-          client.walletAddress = msg.walletAddress;
+          const addr = (msg.walletAddress || '').toLowerCase();
+          client.walletAddress = addr;
           const roomId = msg.roomId || 'micro';
-          const result = rooms.joinRoom(msg.walletAddress, msg.agentId, roomId, msg.chipStack);
+          const result = rooms.joinRoom(addr, msg.agentId, roomId, msg.chipStack);
           ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
-          // Switch client to the room they joined
           if (result.success) {
             client.activeRoom = roomId;
+            sendBalance(ws, addr);
           }
           broadcastStateToAll();
           break;
         }
         case 'topUp': {
-          const result = rooms.topUpAgent(msg.walletAddress, msg.agentId, msg.amount);
+          const addr = (msg.walletAddress || '').toLowerCase();
+          const result = rooms.topUpAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
-          if (result.success) broadcastStateToAll();
+          if (result.success) {
+            sendBalance(ws, addr);
+            broadcastStateToAll();
+          }
           break;
         }
         case 'leaveTable': {
-          const result = rooms.leaveTable(msg.walletAddress, msg.agentId);
+          const addr = (msg.walletAddress || '').toLowerCase();
+          const result = rooms.leaveTable(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
           broadcastStateToAll();
           break;
         }
         case 'recallAgent': {
-          const result = rooms.deleteAgent(msg.walletAddress, msg.agentId);
+          const addr = (msg.walletAddress || '').toLowerCase();
+          const result = rooms.deleteAgent(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
+          if (result.success) sendBalance(ws, addr);
           broadcastStateToAll();
           break;
         }
         case 'getMyAgents': {
-          const result = rooms.getAgentsForWallet(msg.walletAddress);
+          const addr = (msg.walletAddress || '').toLowerCase();
+          const result = rooms.getAgentsForWallet(addr);
           ws.send(JSON.stringify({ type: 'myAgents', data: result }));
           break;
         }
@@ -187,7 +209,7 @@ wss.on('connection', (ws) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    version: 3,
+    version: 4,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary()
@@ -203,6 +225,6 @@ app.get('/stats', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`PokerAI server v3 running on port ${PORT} — 3 rooms (micro/mid/high)`);
+  console.log(`PokerAI server v4 running on port ${PORT} — 3 rooms, persistent agents`);
   rooms.start();
 });
