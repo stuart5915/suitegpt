@@ -653,14 +653,14 @@ class PokerEngine {
     const positions = this.fundPositions.get(sessionId) || [];
     const fundedAgentIds = new Set(positions.map(p => p.agentId));
 
+    // Show all pocket cards to all viewers (AI decisions are server-side, no advantage)
     state.agents = state.agents.map(a => {
       const agent = this.agents.find(ag => ag.id === a.id);
-      const isFunded = fundedAgentIds.has(a.id);
       const isOwnCustom = walletAddress && a.isCustom && a.walletAddress === walletAddress;
-      if ((isFunded || isOwnCustom) && agent.hand && agent.hand.length === 2 && !agent.folded) {
-        return { ...a, hand: agent.hand };
+      if (agent.hand && agent.hand.length === 2 && !agent.folded) {
+        return { ...a, hand: agent.hand, isOwnCustom };
       }
-      return a;
+      return { ...a, isOwnCustom };
     });
 
     let totalPnl = 0;
