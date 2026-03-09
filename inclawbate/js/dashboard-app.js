@@ -622,18 +622,16 @@ function renderProjectCard(p) {
         <div class="project-card-header">
             ${iconHtml}
             <div class="project-card-title">
-                <div class="project-card-name">${esc(name)}</div>
-                ${symbol ? `<div class="project-card-symbol">$${esc(symbol)}</div>` : ''}
+                <span class="project-card-name">${esc(name)}</span>
+                ${symbol ? `<span class="project-card-symbol">$${esc(symbol)}</span>` : ''}
             </div>
+            ${addr ? `<span class="project-card-addr-inline"><a href="${isSolana ? 'https://solscan.io/token/' : 'https://basescan.org/address/'}${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a><button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
+            ${created ? `<span class="project-card-time">${created}</span>` : ''}
             <div class="project-card-badges">
                 <span class="project-status-badge ${esc(status)}">${esc(status)}</span>
                 ${addr ? `<span class="project-status-badge chain-badge-${isSolana ? 'solana' : 'base'}">${isSolana ? 'Solana' : 'Base'}</span>` : ''}
-                ${p.allocation_pct > 0 ? `<span class="project-status-badge" style="background:hsla(9,52%,56%,0.15);color:#e07356;border-color:hsla(9,52%,56%,0.3)">${p.allocation_pct}% Allocated</span>` : ''}
+                ${p.allocation_pct > 0 ? `<span class="project-status-badge" style="background:hsla(9,52%,56%,0.15);color:#e07356;border-color:hsla(9,52%,56%,0.3)">${p.allocation_pct}%</span>` : ''}
             </div>
-        </div>
-        <div class="project-card-meta">
-            ${addr ? `<span><a href="${isSolana ? 'https://solscan.io/token/' : 'https://basescan.org/address/'}${esc(addr)}" target="_blank" rel="noopener" class="project-card-address">${addrShort}</a> <button type="button" class="project-card-copy" data-copy="${esc(addr)}" title="Copy address">&#128203;</button></span>` : ''}
-            ${created ? `<span>${created}</span>` : ''}
         </div>
         ${priceRowHtml}
         ${feeRowHtml}
