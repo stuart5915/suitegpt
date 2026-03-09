@@ -576,6 +576,7 @@
     transition: all 0.2s;
     position: relative;
     overflow: hidden;
+    flex-wrap: wrap;
   }
 
   .agent-item::before {
@@ -3422,19 +3423,44 @@ function renderPortfolioBar() {
 // ============================================================
 function renderAgentsSidebar() {
   const container = document.getElementById('agentsSidebar');
-  container.innerHTML = gameState.agents.map(agent => `
-    <div class="agent-item style-${agent.style}">
+  const wallet = getWallet();
+  container.innerHTML = gameState.agents.map(agent => {
+    const isMine = agent.isCustom && wallet && agent.walletAddress === wallet.address;
+    const pnl = isMine ? agent.chips - agent.baseChips : null;
+    const pnlColor = pnl !== null ? (pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)') : '';
+    const pnlSign = pnl !== null ? (pnl >= 0 ? '+' : '') : '';
+    const borderStyle = isMine ? 'border-color:rgba(34,197,94,0.4);' : '';
+    return `
+    <div class="agent-item style-${agent.style}" style="${borderStyle}">
       <div class="agent-avatar-sm">${agent.emoji}</div>
-      <div class="agent-info">
-        <div class="agent-name-sm">${agent.name}</div>
+      <div class="agent-info" style="flex:1;min-width:0">
+        <div class="agent-name-sm" style="${isMine ? 'color:var(--accent-green)' : ''}">${agent.name}</div>
         <div class="agent-style">${capitalize(agent.style)}</div>
       </div>
       <div class="agent-stats">
         <div class="agent-chips-sm">${formatChips(agent.chips)}</div>
         <div class="agent-winrate">${agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0}% WR</div>
       </div>
-    </div>
-  `).join('');
+      ${isMine ? `
+      <div style="width:100%;display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:${pnlColor}">P&L: ${pnlSign}${pnl.toLocaleString()}</div>
+        <div style="display:flex;gap:4px">
+          <button onclick="event.stopPropagation();sidebarTopUp('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.2)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">+ Top Up</button>
+          <button onclick="event.stopPropagation();leaveTable('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-muted)'">Sit Out</button>
+        </div>
+      </div>
+      <div id="sidebar-topup-${agent.id}" style="display:none;width:100%;margin-top:6px">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${[1000, 2500, 5000, 10000].map(amt => `<button onclick="event.stopPropagation();topUpAgent('${agent.id}',${amt})" style="flex:1;min-width:50px;padding:5px 4px;font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">${amt >= 1000 ? (amt/1000)+'K' : amt}</button>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function sidebarTopUp(agentId) {
+  const el = document.getElementById('sidebar-topup-' + agentId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function renderAgentsGrid() {
