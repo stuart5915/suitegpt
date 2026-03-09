@@ -5,6 +5,11 @@ const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const { RoomManager } = require('./room-manager');
+const { createChallenge, verifySignature, getChallengeMessage } = require('./wallet-auth');
+
+// Optional: chain + supabase (graceful fallback to JSON store if not configured)
+let chain = null;
+let useSupabase = false;
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -24,34 +29,12 @@ app.use(express.json());
 
 // WebSocket server
 const wss = new WebSocketServer({ server });
-const clients = new Map(); // ws → { sessionId, walletAddress, activeRoom }
+const clients = new Map(); // ws → { sessionId, walletAddress, authenticated, activeRoom }
 
-// Room manager — 3 rooms (micro/mid/high), auto-spawns tables
-const rooms = new RoomManager((type, data) => {
-  if (type === 'gameState') {
-    const sourceRoom = data ? data.roomId : null;
-    for (const [ws, client] of clients) {
-      if (ws.readyState === 1) {
-        // Only send state updates for the room the client is watching
-        if (sourceRoom && client.activeRoom !== sourceRoom) continue;
-        try {
-          const state = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
-          ws.send(JSON.stringify({ type: 'gameState', data: state }));
-        } catch (e) { /* client disconnected */ }
-      }
-    }
-  } else {
-    // Tag with room/table, let client filter
-    const msg = JSON.stringify({ type, data });
-    for (const [ws, client] of clients) {
-      if (ws.readyState === 1) {
-        // Only send log/action messages for the room the client is watching
-        if (data && data.roomId && client.activeRoom !== data.roomId) continue;
-        try { ws.send(msg); } catch (e) { /* ignore */ }
-      }
-    }
-  }
-});
+// Authenticated wallet set — wallets that have passed signature verification
+const authenticatedWallets = new Set();
+
+let rooms; // initialized in startServer()
 
 function broadcastViewerCount() {
   const count = clients.size;
@@ -74,42 +57,81 @@ function broadcastStateToAll() {
   }
 }
 
-// Send balance update to a specific client
 function sendBalance(ws, walletAddress) {
   if (!walletAddress) return;
   const wallet = rooms.getWalletBalance(walletAddress);
   ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
 }
 
+// Check if a wallet action requires authentication
+function requireAuth(client, ws) {
+  if (!client.walletAddress || !authenticatedWallets.has(client.walletAddress)) {
+    ws.send(JSON.stringify({ type: 'error', data: { message: 'Wallet not authenticated — sign the challenge first' } }));
+    return false;
+  }
+  return true;
+}
+
 wss.on('connection', (ws) => {
   const sessionId = uuidv4();
-  clients.set(ws, { sessionId, activeRoom: 'micro' });
+  clients.set(ws, { sessionId, activeRoom: 'micro', authenticated: false });
 
-  // Send welcome + initial state
+  // Send welcome + initial state (no wallet context — just spectating)
   ws.send(JSON.stringify({ type: 'welcome', data: { sessionId, viewerCount: clients.size } }));
   const state = rooms.getStateForClient(sessionId, null, 'micro');
   ws.send(JSON.stringify({ type: 'gameState', data: state }));
   broadcastViewerCount();
 
-  ws.on('message', (raw) => {
+  ws.on('message', async (raw) => {
     try {
       const msg = JSON.parse(raw);
       const client = clients.get(ws);
       if (!client) return;
 
       switch (msg.type) {
+        // === Auth flow: requestChallenge → authenticate ===
+        case 'requestChallenge': {
+          const addr = (msg.walletAddress || '').toLowerCase();
+          if (!addr) break;
+          const nonce = createChallenge(addr);
+          const message = getChallengeMessage(nonce);
+          ws.send(JSON.stringify({ type: 'challenge', data: { message, nonce } }));
+          break;
+        }
+
+        case 'authenticate': {
+          const addr = (msg.walletAddress || '').toLowerCase();
+          const result = verifySignature(addr, msg.signature);
+          if (result.valid) {
+            client.walletAddress = addr;
+            client.authenticated = true;
+            authenticatedWallets.add(addr);
+
+            // Get or create wallet (starts at 0 chips — must deposit USDC)
+            const wallet = rooms.getWalletBalance(addr);
+            ws.send(JSON.stringify({ type: 'authenticated', data: { address: addr, balance: wallet.balance } }));
+
+            // Send state with wallet context
+            const s = rooms.getStateForClient(client.sessionId, addr, client.activeRoom);
+            ws.send(JSON.stringify({ type: 'gameState', data: s }));
+          } else {
+            ws.send(JSON.stringify({ type: 'authFailed', data: { error: result.error } }));
+          }
+          break;
+        }
+
+        // === Legacy setWallet (still works for spectating, but won't allow money actions) ===
         case 'setWallet': {
           client.walletAddress = msg.walletAddress ? msg.walletAddress.toLowerCase() : null;
-          // Get or create wallet in store (assigns starting balance for new wallets)
           if (client.walletAddress) {
             const wallet = rooms.getWalletBalance(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
           }
-          // Re-send state with wallet context so lobbyAgents are included
           const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
+
         case 'subscribeRoom': {
           const roomId = msg.roomId || 'micro';
           if (['micro', 'mid', 'high'].includes(roomId)) {
@@ -119,6 +141,111 @@ wss.on('connection', (ws) => {
           }
           break;
         }
+
+        // === Money actions — require wallet auth ===
+
+        case 'createAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.createLobbyAgent(addr, msg.config);
+          ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
+          const s = rooms.getStateForClient(client.sessionId, addr, client.activeRoom);
+          ws.send(JSON.stringify({ type: 'gameState', data: s }));
+          break;
+        }
+
+        case 'joinTable': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const roomId = msg.roomId || 'micro';
+          const result = rooms.joinRoom(addr, msg.agentId, roomId, msg.chipStack);
+          ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
+          if (result.success) {
+            client.activeRoom = roomId;
+            sendBalance(ws, addr);
+          }
+          broadcastStateToAll();
+          break;
+        }
+
+        case 'topUp': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.topUpAgent(addr, msg.agentId, msg.amount);
+          ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
+          if (result.success) {
+            sendBalance(ws, addr);
+            broadcastStateToAll();
+          }
+          break;
+        }
+
+        case 'leaveTable': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.leaveTable(addr, msg.agentId);
+          ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
+          broadcastStateToAll();
+          break;
+        }
+
+        case 'recallAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.deleteAgent(addr, msg.agentId);
+          ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
+          if (result.success) sendBalance(ws, addr);
+          broadcastStateToAll();
+          break;
+        }
+
+        // === Withdraw chips to USDC ===
+        case 'withdrawUsdc': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const chips = msg.chips;
+
+          if (!chips || chips < 1000) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Minimum withdrawal: 1,000 chips ($0.10)' } }));
+            break;
+          }
+
+          // Check balance
+          const wallet = rooms.getWalletBalance(addr);
+          if (wallet.balance < chips) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: `Not enough chips. You have ${wallet.balance.toLocaleString()}` } }));
+            break;
+          }
+
+          if (!chain) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Withdrawals not yet enabled (contract not configured)' } }));
+            break;
+          }
+
+          // Deduct chips first, then send on-chain
+          rooms.store.deductBalance(addr, chips);
+
+          const txResult = await chain.processWithdraw(addr, chips);
+          if (txResult.error) {
+            // Refund on failure
+            rooms.store.addBalance(addr, chips);
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: txResult.error } }));
+          } else {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: txResult }));
+            sendBalance(ws, addr);
+          }
+          break;
+        }
+
+        case 'getMyAgents': {
+          const addr = (client.walletAddress || '').toLowerCase();
+          if (!addr) break;
+          const result = rooms.getAgentsForWallet(addr);
+          ws.send(JSON.stringify({ type: 'myAgents', data: result }));
+          break;
+        }
+
+        // === Legacy fund/withdraw (house bot funding) ===
         case 'fund': {
           const result = rooms.fundAgent(client.sessionId, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'fundResult', data: result }));
@@ -133,59 +260,7 @@ wss.on('connection', (ws) => {
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
-        case 'createAgent': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          client.walletAddress = addr;
-          const result = rooms.createLobbyAgent(addr, msg.config);
-          ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
-          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
-          ws.send(JSON.stringify({ type: 'gameState', data: s }));
-          break;
-        }
-        case 'joinTable': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          client.walletAddress = addr;
-          const roomId = msg.roomId || 'micro';
-          const result = rooms.joinRoom(addr, msg.agentId, roomId, msg.chipStack);
-          ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
-          if (result.success) {
-            client.activeRoom = roomId;
-            sendBalance(ws, addr);
-          }
-          broadcastStateToAll();
-          break;
-        }
-        case 'topUp': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          const result = rooms.topUpAgent(addr, msg.agentId, msg.amount);
-          ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
-          if (result.success) {
-            sendBalance(ws, addr);
-            broadcastStateToAll();
-          }
-          break;
-        }
-        case 'leaveTable': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          const result = rooms.leaveTable(addr, msg.agentId);
-          ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
-          broadcastStateToAll();
-          break;
-        }
-        case 'recallAgent': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          const result = rooms.deleteAgent(addr, msg.agentId);
-          ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
-          if (result.success) sendBalance(ws, addr);
-          broadcastStateToAll();
-          break;
-        }
-        case 'getMyAgents': {
-          const addr = (msg.walletAddress || '').toLowerCase();
-          const result = rooms.getAgentsForWallet(addr);
-          ws.send(JSON.stringify({ type: 'myAgents', data: result }));
-          break;
-        }
+
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong' }));
           break;
@@ -206,13 +281,17 @@ wss.on('connection', (ws) => {
 });
 
 // REST endpoints
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  const vaultStats = chain ? await chain.getVaultStats() : null;
   res.json({
     status: 'ok',
-    version: 4,
+    version: 5,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
-    rooms: rooms.getRoomsSummary()
+    rooms: rooms.getRoomsSummary(),
+    vault: vaultStats,
+    chain: !!chain,
+    supabase: useSupabase
   });
 });
 
@@ -224,7 +303,93 @@ app.get('/stats', (req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`PokerAI server v4 running on port ${PORT} — 3 rooms, persistent agents`);
-  rooms.start();
+// =========== Server startup ===========
+
+async function startServer() {
+  // Initialize store — Supabase if configured, else JSON fallback
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    try {
+      const { SupabaseStore } = require('./supabase-store');
+      const store = new SupabaseStore(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      await store.init();
+      useSupabase = true;
+      console.log('[Server] Using Supabase store');
+
+      // Pass custom store to RoomManager
+      rooms = new RoomManager((type, data) => broadcastToClients(type, data), store);
+    } catch (e) {
+      console.error('[Server] Supabase init failed, falling back to JSON:', e.message);
+      rooms = new RoomManager((type, data) => broadcastToClients(type, data));
+    }
+  } else {
+    console.log('[Server] Using JSON file store (set SUPABASE_URL + SUPABASE_SERVICE_KEY for Supabase)');
+    rooms = new RoomManager((type, data) => broadcastToClients(type, data));
+  }
+
+  // Initialize chain service if configured
+  if (process.env.VAULT_CONTRACT_ADDRESS && process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL) {
+    try {
+      const { ChainService } = require('./chain');
+      chain = new ChainService({
+        rpcUrl: process.env.BASE_RPC_URL,
+        vaultAddress: process.env.VAULT_CONTRACT_ADDRESS,
+        operatorKey: process.env.OPERATOR_PRIVATE_KEY
+      });
+
+      // Listen for on-chain deposits → credit chips
+      chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
+        rooms.store.getOrCreateWallet(walletAddress);
+        rooms.store.addBalance(walletAddress, chips);
+        console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
+
+        // Notify connected client
+        for (const [ws, client] of clients) {
+          if (client.walletAddress === walletAddress && ws.readyState === 1) {
+            sendBalance(ws, walletAddress);
+            ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
+          }
+        }
+      };
+
+      chain.startListening();
+      console.log('[Server] Chain service active');
+    } catch (e) {
+      console.error('[Server] Chain init failed:', e.message);
+    }
+  } else {
+    console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
+  }
+
+  server.listen(PORT, () => {
+    console.log(`PokerAI server v5 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}`);
+    rooms.start();
+  });
+}
+
+function broadcastToClients(type, data) {
+  if (type === 'gameState') {
+    const sourceRoom = data ? data.roomId : null;
+    for (const [ws, client] of clients) {
+      if (ws.readyState === 1) {
+        if (sourceRoom && client.activeRoom !== sourceRoom) continue;
+        try {
+          const state = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          ws.send(JSON.stringify({ type: 'gameState', data: state }));
+        } catch (e) { /* client disconnected */ }
+      }
+    }
+  } else {
+    const msg = JSON.stringify({ type, data });
+    for (const [ws, client] of clients) {
+      if (ws.readyState === 1) {
+        if (data && data.roomId && client.activeRoom !== data.roomId) continue;
+        try { ws.send(msg); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+}
+
+startServer().catch(e => {
+  console.error('Failed to start server:', e);
+  process.exit(1);
 });

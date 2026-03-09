@@ -8,9 +8,9 @@ const ROOM_CONFIGS = {
 };
 
 class RoomManager {
-  constructor(broadcastFn) {
+  constructor(broadcastFn, externalStore) {
     this.broadcastFn = broadcastFn;
-    this.store = new AgentStore();
+    this.store = externalStore || new AgentStore();
     this.rooms = {};
     this.lobbyAgents = new Map(); // walletAddress → [agent configs]
 
