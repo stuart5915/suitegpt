@@ -828,29 +828,11 @@ async function fetchLPFees(tokens, wallet) {
 
         if (wethAmt <= 0) return;
 
-        const banner = document.getElementById('lpFeesBanner');
-        const wethEl = document.getElementById('lpFeesWeth');
-        const claimBtn = document.getElementById('lpFeesClaimBtn');
-        if (!banner) return;
-
-        wethEl.textContent = wethAmt.toFixed(6) + ' ETH';
-        // Subtitle — fees are aggregated across all Clanker tokens for this wallet
-        const subtitleEl = document.getElementById('lpFeesSubtitle');
-        if (subtitleEl) {
-            subtitleEl.textContent = 'across all your Clanker tokens';
-            subtitleEl.style.display = '';
-        }
-        banner.style.display = '';
-
-        // Show per-card claim buttons
+        // Show per-card claim buttons with fee amount
         document.querySelectorAll('.claim-single-btn').forEach(btn => {
             btn.style.display = '';
+            btn.textContent = 'Claim ~' + wethAmt.toFixed(6) + ' ETH';
         });
-
-        // Wire claim button (remove old listener first)
-        const newBtn = claimBtn.cloneNode(true);
-        claimBtn.parentNode.replaceChild(newBtn, claimBtn);
-        newBtn.addEventListener('click', () => claimLPFees(wallet, newBtn));
     } catch (e) {
         // silent
     }
@@ -929,58 +911,23 @@ async function fetchSolanaFees(solTokens) {
 
         // Hide banner + per-card buttons when nothing is claimable
         if (!claimable.length) {
-            const banner = document.getElementById('solFeesBanner');
-            if (banner) banner.style.display = 'none';
             document.querySelectorAll('.claim-sol-btn').forEach(b => b.style.display = 'none');
             _solClaimablePositions = [];
             return;
         }
 
         _solClaimablePositions = claimable;
-        const totalSol = claimable.reduce((sum, p) => sum + parseInt(p.totalClaimableLamportsUserShare || 0), 0) / 1e9;
-
-        // Show banner
-        const banner = document.getElementById('solFeesBanner');
-        const amountEl = document.getElementById('solFeesAmount');
-        const subtitleEl = document.getElementById('solFeesSubtitle');
-        const claimBtn = document.getElementById('solFeesClaimBtn');
-        if (!banner) return;
-
-        amountEl.textContent = totalSol.toFixed(6) + ' SOL';
-        if (claimable.length > 0) {
-            subtitleEl.textContent = 'from ' + claimable.length + ' token' + (claimable.length !== 1 ? 's' : '');
-            subtitleEl.style.display = '';
-        }
-        banner.style.display = '';
 
         // Show per-card claim buttons for tokens with claimable fees
+        const solPerToken = {};
+        claimable.forEach(p => { solPerToken[p.baseMint] = parseInt(p.totalClaimableLamportsUserShare || 0) / 1e9; });
         const claimableMints = new Set(claimable.map(p => p.baseMint));
         document.querySelectorAll('.claim-sol-btn').forEach(btn => {
             if (claimableMints.has(btn.dataset.tokenMint)) {
                 if (!btn.dataset.solWallet) btn.dataset.solWallet = solWallet;
+                const amt = solPerToken[btn.dataset.tokenMint];
+                btn.textContent = amt ? 'Claim ~' + amt.toFixed(6) + ' SOL' : 'Claim Fees';
                 btn.style.display = '';
-            }
-        });
-
-        // Wire banner "Claim All" button
-        const newBtn = claimBtn.cloneNode(true);
-        claimBtn.parentNode.replaceChild(newBtn, claimBtn);
-        newBtn.addEventListener('click', async () => {
-            newBtn.disabled = true;
-            newBtn.textContent = 'Claiming...';
-            try {
-                for (const pos of claimable) {
-                    await claimSolanaFees(solWallet, pos.baseMint, null);
-                }
-                newBtn.textContent = 'Claimed!';
-                setTimeout(() => {
-                    const st = solTokens.filter(t => t.chain === 'solana' || (t.token_address && !t.token_address.startsWith('0x')));
-                    if (st.length) fetchSolanaFees(st);
-                }, 3000);
-            } catch (e) {
-                newBtn.disabled = false;
-                newBtn.textContent = 'Claim All';
-                alert(e.message || 'Claim failed');
             }
         });
     } catch (e) {
