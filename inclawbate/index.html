@@ -385,6 +385,40 @@
         }
         .chip-icon { margin-right: 4px; font-size: 0.82rem; }
 
+        /* Chat action buttons */
+        .chat-actions {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            margin-top: var(--space-sm);
+        }
+        .chat-action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: hsla(9, 52%, 54%, 0.1);
+            border: 1px solid hsla(9, 52%, 54%, 0.25);
+            border-radius: var(--radius-full);
+            padding: 5px 14px;
+            font-family: var(--font-body);
+            font-size: 0.74rem; font-weight: 700;
+            color: var(--lobster-300);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-smooth);
+            white-space: nowrap;
+        }
+        .chat-action-btn:hover {
+            background: hsla(9, 52%, 54%, 0.18);
+            border-color: var(--lobster-400);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px hsla(9, 60%, 54%, 0.15);
+        }
+        .chat-bubble a {
+            color: var(--lobster-300);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .chat-bubble a:hover {
+            color: var(--lobster-200);
+        }
+
         /* ── Torn Paper Divider ── */
         .torn-divider {
             display: block;
@@ -2472,7 +2506,24 @@ function addClawsToWallet() {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function addMessage(text, isUser) {
+    function linkify(text) {
+        return text.replace(/(https?:\/\/[^\s,)]+)/g, function(url) {
+            var label = url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+            if (label.length > 40) label = label.slice(0, 37) + '...';
+            return '<a href="' + url + '" target="_blank" rel="noopener">' + label + '</a>';
+        });
+    }
+
+    // Map function_called to action buttons
+    var ACTION_MAP = {
+        browse_apps: [{ label: 'Browse All Apps', icon: '&#128270;', href: '/apps' }],
+        suggest_app_ideas: [{ label: 'Start Building', icon: '&#128296;', href: '/build' }],
+        get_ecosystem_info: [{ label: 'Explore Apps', icon: '&#128270;', href: '/apps' }, { label: 'View Tools', icon: '&#128640;', href: '/tools' }],
+        get_incubation_info: [{ label: 'Apply for Incubation', icon: '&#129438;', href: '/inclawbator#incubate' }, { label: 'DM on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
+        request_incubation: [{ label: 'DM @StuartDeFi on Telegram', icon: '&#128172;', href: 'https://t.me/StuartDeFi' }],
+    };
+
+    function addMessage(text, isUser, functionCalled) {
         var wrapper = document.createElement('div');
         wrapper.className = 'chat-msg ' + (isUser ? 'chat-msg-user' : 'chat-msg-bot');
         var avatar = document.createElement('div');
@@ -2480,9 +2531,30 @@ function addClawsToWallet() {
         avatar.innerHTML = isUser ? '&#128100;' : '&#129438;';
         var bubble = document.createElement('div');
         bubble.className = 'chat-bubble';
-        bubble.textContent = text;
+        if (isUser) {
+            bubble.textContent = text;
+        } else {
+            bubble.innerHTML = linkify(text);
+        }
         wrapper.appendChild(avatar);
         wrapper.appendChild(bubble);
+
+        // Add action buttons for bot messages
+        if (!isUser && functionCalled && ACTION_MAP[functionCalled]) {
+            var actions = document.createElement('div');
+            actions.className = 'chat-actions';
+            ACTION_MAP[functionCalled].forEach(function(a) {
+                var btn = document.createElement('a');
+                btn.className = 'chat-action-btn';
+                btn.href = a.href;
+                btn.target = a.href.startsWith('http') ? '_blank' : '_self';
+                btn.rel = 'noopener';
+                btn.innerHTML = a.icon + ' ' + a.label;
+                actions.appendChild(btn);
+            });
+            bubble.appendChild(actions);
+        }
+
         messages.appendChild(wrapper);
         scrollBottom();
     }
@@ -2525,7 +2597,7 @@ function addClawsToWallet() {
             var data = await res.json();
             hideTyping();
             if (data.reply) {
-                addMessage(data.reply, false);
+                addMessage(data.reply, false, data.function_called);
             } else if (data.error) {
                 addMessage('Sorry, something went wrong. Try again!', false);
             }
