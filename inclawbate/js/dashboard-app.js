@@ -697,12 +697,16 @@ function renderProjectCard(p) {
     });
 
     // Wire per-card Solana claim fees button
-    card.querySelector('.claim-sol-btn')?.addEventListener('click', (e) => {
+    card.querySelector('.claim-sol-btn')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-        const solWallet = btn.dataset.solWallet || (window._phantomSolana && window._phantomSolana.publicKey ? window._phantomSolana.publicKey.toString() : '');
+        let solWallet = btn.dataset.solWallet || (window._phantomSolana && window._phantomSolana.publicKey ? window._phantomSolana.publicKey.toString() : '');
         const tokenMint = btn.dataset.tokenMint;
-        if (solWallet && tokenMint) claimSolanaFees(solWallet, tokenMint, btn);
-        else alert('No Solana wallet connected');
+        if (!solWallet) {
+            btn.disabled = true; btn.textContent = 'Connect wallet...';
+            solWallet = await window.connectSolanaWallet();
+            if (!solWallet) { btn.disabled = false; btn.textContent = 'Claim'; return; }
+        }
+        if (tokenMint) claimSolanaFees(solWallet, tokenMint, btn).catch(err => { alert(err.message); btn.disabled = false; btn.textContent = 'Claim'; });
     });
 
     return card;
@@ -979,6 +983,18 @@ async function fetchSolanaFees(solTokens) {
 
 async function claimSolanaFees(solWallet, tokenMint, btn) {
     if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+
+    // Ensure Solana wallet is connected for signing
+    const hasPhantom = window._solanaProvider === 'phantom' && window._phantomSolana;
+    const hasWalletStd = window._solanaWalletStd && window._solanaAccount;
+    if (!hasPhantom && !hasWalletStd) {
+        if (btn) { btn.textContent = 'Connect wallet...'; }
+        const connected = await window.connectSolanaWallet();
+        if (!connected) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
+            throw new Error('Solana wallet must be connected to claim fees');
+        }
+    }
 
     const token = localStorage.getItem('inclawbate_token');
     const resp = await fetch('/api/inclawbate/inclawbator', {
