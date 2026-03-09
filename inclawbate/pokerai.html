@@ -3429,6 +3429,7 @@ function renderCommunityCard(index, card) {
 // FUNDING — sends to server via WebSocket
 // ============================================================
 const ROOM_LABELS = { micro: 'Micro', mid: 'Mid', high: 'High' };
+let _portfolioTopUpOpen = false;
 
 function renderPortfolioBar() {
   const bar = document.getElementById('portfolioBar');
@@ -3456,6 +3457,9 @@ function renderPortfolioBar() {
   const pnlEl = document.getElementById('portfolioPnl');
   pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
   pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+  // Don't rebuild agent chips if a top-up dropdown is open
+  if (_portfolioTopUpOpen) return;
 
   agentsEl.innerHTML = playing.map(agent => {
     const pnl = agent.pnl || 0;
@@ -3490,13 +3494,17 @@ function renderPortfolioBar() {
 
 function portfolioTopUp(agentId) {
   const el = document.getElementById('ptopup-' + agentId);
-  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  if (!el) return;
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'flex' : 'none';
+  _portfolioTopUpOpen = opening;
 }
 
 // ============================================================
 // SIDEBAR & GRID RENDERERS
 // ============================================================
 function renderAgentsSidebar() {
+  if (_sidebarTopUpOpen) return;
   const container = document.getElementById('agentsSidebar');
   const wallet = getWallet();
   container.innerHTML = gameState.agents.map(agent => {
@@ -3533,9 +3541,13 @@ function renderAgentsSidebar() {
   }).join('');
 }
 
+let _sidebarTopUpOpen = false;
 function sidebarTopUp(agentId) {
   const el = document.getElementById('sidebar-topup-' + agentId);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (!el) return;
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  _sidebarTopUpOpen = opening;
 }
 
 function renderAgentsGrid() {
@@ -4093,6 +4105,8 @@ function topUpAgent(agentId, amount) {
   window._lastTopUpAmount = amount;
   ws.send(JSON.stringify({ type: 'topUp', walletAddress: wallet.address, agentId, amount }));
   showToast(`Topping up ${amount.toLocaleString()} chips...`, 'info');
+  _portfolioTopUpOpen = false;
+  _sidebarTopUpOpen = false;
 }
 
 function toggleTopUp(agentId) {
