@@ -987,12 +987,38 @@ async function claimSolanaFees(solWallet, tokenMint, btn) {
         body: JSON.stringify({ action: 'bags-claim-tx', solana_wallet: solWallet, token_mint: tokenMint })
     });
     const data = await resp.json();
+    console.log('[SolClaim] Raw API response:', JSON.stringify(data).slice(0, 1000));
     if (!resp.ok || data.error) throw new Error(data.error || 'Failed to get claim transactions');
 
-    // data may be an array of txs or wrapped in { response: [...] }, { transactions: [...] }, etc.
-    const txs = Array.isArray(data) ? data : (data.response || data.transactions || data.data || [data]);
+    // Unwrap: Bags API may nest txs under various keys
+    let txs;
+    if (Array.isArray(data)) {
+        txs = data;
+    } else {
+        const inner = data.response || data.transactions || data.claimTransactions
+            || data.txs || data.data || data.result;
+        if (Array.isArray(inner)) {
+            txs = inner;
+        } else if (inner && typeof inner === 'object' && !Array.isArray(inner)) {
+            // inner might itself be a wrapper with transactions array
+            const nested = inner.transactions || inner.claimTransactions || inner.txs || inner.data;
+            txs = Array.isArray(nested) ? nested : [inner];
+        } else if (typeof inner === 'string') {
+            txs = [inner];
+        } else {
+            // Last resort: if data has a transaction/serializedTransaction string, treat as single tx
+            if (data.transaction || data.serializedTransaction) {
+                txs = [data];
+            } else {
+                console.error('[SolClaim] Could not find transactions in response:', Object.keys(data));
+                throw new Error('Unexpected claim response format. Keys: ' + Object.keys(data).join(', '));
+            }
+        }
+    }
+    console.log('[SolClaim] Extracted', txs.length, 'transaction(s)');
 
     for (const tx of txs) {
+        console.log('[SolClaim] tx type:', typeof tx, typeof tx === 'object' && tx !== null ? Object.keys(tx) : '');
         const txBytes = decodeSolTxData(tx);
         await window.signAndSendSolanaTransaction(txBytes);
     }
@@ -1006,17 +1032,27 @@ function decodeSolTxData(data) {
     if (data instanceof Uint8Array) return data;
     if (Array.isArray(data)) return new Uint8Array(data);
     if (typeof data === 'object' && data !== null) {
+        // Try known string fields
         if (typeof data.transaction === 'string') return decodeSolTxData(data.transaction);
         if (typeof data.serializedTransaction === 'string') return decodeSolTxData(data.serializedTransaction);
+        if (typeof data.tx === 'string') return decodeSolTxData(data.tx);
+        if (typeof data.rawTransaction === 'string') return decodeSolTxData(data.rawTransaction);
+        // Buffer-like shapes
         if (data.data && Array.isArray(data.data)) return new Uint8Array(data.data);
         if (data.type === 'Buffer' && data.data) return new Uint8Array(data.data);
+        // Numeric-keyed object (serialized byte array)
         const keys = Object.keys(data);
         if (keys.length > 0 && !isNaN(keys[0])) {
             const arr = new Uint8Array(keys.length);
             for (let i = 0; i < keys.length; i++) arr[i] = data[keys[i]];
             return arr;
         }
-        throw new Error('Unknown tx object format');
+        // If object has a single string value, try it as tx data
+        if (keys.length === 1 && typeof data[keys[0]] === 'string') {
+            return decodeSolTxData(data[keys[0]]);
+        }
+        console.error('[SolClaim] Unknown tx object keys:', keys, JSON.stringify(data).slice(0, 500));
+        throw new Error('Unknown tx object format. Keys: ' + keys.join(', '));
     }
     if (typeof data !== 'string') throw new Error('Unknown tx format: ' + typeof data);
     // Base64 if contains +, /, or =
