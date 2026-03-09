@@ -22,6 +22,7 @@
     function isAdmin() {
         var p = getProfile();
         if (!p) return false;
+        if (state.isAngelHolder) return true;
         if (p.wallet_address && FREE_CREDIT_WALLETS.indexOf(p.wallet_address.toLowerCase()) !== -1) return true;
         if (p.x_handle && FREE_HANDLES.indexOf(p.x_handle.toLowerCase()) !== -1) return true;
         return false;
@@ -40,7 +41,8 @@
         selectedModel: 'gemini',
         previewErrors: [],
         autoFixAttempts: 0,
-        maxAutoFix: 2
+        maxAutoFix: 2,
+        isAngelHolder: false
     };
 
     // ── Starter Prompts Pool ──
@@ -2564,6 +2566,22 @@
 
         // Fetch credits on load
         fetchCredits();
+
+        // Check Angel NFT status
+        (function checkAngel() {
+            var p = getProfile();
+            if (p && p.wallet_address) {
+                fetch('/api/inclawbate/angel-check?wallet=' + encodeURIComponent(p.wallet_address))
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.isAngel) {
+                            state.isAngelHolder = true;
+                            updateCredits();
+                        }
+                    })
+                    .catch(function() {});
+            }
+        })();
 
         // Handle Stripe payment return
         checkPaymentReturn();

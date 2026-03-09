@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Collections — Inclawbate</title>
+    <meta name="description" content="Browse NFT collections in the Inclawbate ecosystem. Angel NFTs, Fight Farm, and more.">
+    <meta property="og:title" content="NFT Collections — Inclawbate">
+    <meta property="og:description" content="Browse NFT collections in the Inclawbate ecosystem.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/nfts">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=nfts">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; background: var(--bg-deepest); }
+
+        .nfts-page {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        .nfts-hero {
+            text-align: center;
+            padding: var(--space-2xl) var(--space-lg);
+            margin-bottom: var(--space-2xl);
+            animation: fadeUp 0.5s ease both;
+        }
+        .nfts-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: var(--space-xs);
+        }
+        .nfts-hero p {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .nft-card {
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+            animation: fadeUp 0.5s ease both;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .nft-card:nth-child(2) { animation-delay: 0.08s; }
+        .nft-card:hover {
+            border-color: var(--border-default);
+            transform: translateY(-2px);
+        }
+        .nft-card--featured {
+            border-color: hsla(270, 60%, 55%, 0.3);
+        }
+        .nft-card--featured:hover {
+            border-color: hsla(270, 60%, 55%, 0.5);
+        }
+        .nft-card--coming-soon {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .nft-card-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+        }
+        .nft-card-image--placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, hsla(0, 0%, 100%, 0.03) 0%, hsla(0, 0%, 100%, 0.01) 100%);
+        }
+        .nft-card-image--placeholder img {
+            width: 50%;
+            height: 50%;
+            object-fit: contain;
+            opacity: 0.5;
+            filter: grayscale(0.6);
+        }
+
+        .nft-card-body {
+            padding: 20px;
+        }
+        .nft-card-badges {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .nft-card-badge {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .nft-card-badge--featured {
+            background: hsla(270, 60%, 55%, 0.15);
+            color: hsl(270, 60%, 72%);
+        }
+        .nft-card-badge--base {
+            background: rgba(56, 133, 255, 0.15);
+            color: #5b8def;
+        }
+        .nft-card-badge--coming {
+            background: hsla(0, 0%, 50%, 0.15);
+            color: hsl(0, 0%, 60%);
+        }
+
+        .nft-card-name {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .nft-card-desc {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+        .nft-card-stats {
+            display: flex;
+            gap: 16px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+        .nft-card-stat span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .nft-grid {
+                grid-template-columns: 1fr;
+            }
+            .nfts-hero h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <div class="nav-group">
+            <span class="nav-link">Explore</span>
+            <div class="nav-group-menu">
+                <a href="/projects">Projects</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+            </div>
+        </div>
+        <a href="/tools" class="nav-link">Launch / Tools</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<div class="nfts-page">
+
+    <section class="nfts-hero">
+        <h1>NFT Collections</h1>
+        <p>Explore NFTs in the Inclawbate ecosystem &mdash; membership badges, game assets, and more.</p>
+    </section>
+
+    <div class="nft-grid">
+
+        <!-- Angel NFT — Featured -->
+        <a href="/angel" class="nft-card nft-card--featured">
+            <img src="/inclawbate/assets/angelnft.jpg" alt="Angel NFT" class="nft-card-image">
+            <div class="nft-card-body">
+                <div class="nft-card-badges">
+                    <span class="nft-card-badge nft-card-badge--featured">Featured</span>
+                    <span class="nft-card-badge nft-card-badge--base">Base</span>
+                </div>
+                <div class="nft-card-name">Angel NFT</div>
+                <div class="nft-card-desc">The founding badge for the 828 original Inclawbate holders. Unlimited builder credits, free tool access, all AI models unlocked, and 5% royalties on secondary sales.</div>
+                <div class="nft-card-stats">
+                    <div class="nft-card-stat">Supply: <span>828</span></div>
+                    <div class="nft-card-stat">Minted: <span id="angelMintCount">...</span></div>
+                    <div class="nft-card-stat">Chain: <span>Base</span></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Fight Farm NFTs — Coming Soon -->
+        <div class="nft-card nft-card--coming-soon">
+            <div class="nft-card-image nft-card-image--placeholder" style="aspect-ratio:1">
+                <img src="/fight-farm/assets/fightfarmlogo.jpg" alt="Fight Farm">
+            </div>
+            <div class="nft-card-body">
+                <div class="nft-card-badges">
+                    <span class="nft-card-badge nft-card-badge--coming">Coming Soon</span>
+                </div>
+                <div class="nft-card-name">Fight Farm NFTs</div>
+                <div class="nft-card-desc">Collectible fighters for the Fight Farm game. Train, battle, and earn with your NFT fighters.</div>
+                <div class="nft-card-stats">
+                    <div class="nft-card-stat">Status: <span>In Development</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; The Agent-Human Economy</p>
+        <div class="footer-links">
+            <a href="/agents" class="footer-link">Agents</a>
+            <a href="/tokens" class="footer-link">Tokens</a>
+            <a href="/apps" class="footer-link">Apps</a>
+            <a href="/stake" class="footer-link">Stake</a>
+            <a href="/skills" class="footer-link">Skills</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="/team" class="footer-link">Team</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+<script>
+// Fetch live mint count for Angel NFT
+(function() {
+    var el = document.getElementById('angelMintCount');
+    if (!el) return;
+
+    var CONTRACT = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
+    var RPC = 'https://mainnet.base.org';
+    // totalSupply() selector
+    var data = '0x18160ddd';
+
+    fetch(RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: CONTRACT, data: data }, 'latest'] })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+        var count = parseInt(j.result, 16);
+        if (!isNaN(count)) el.textContent = count + ' / 828';
+    })
+    .catch(function() { el.textContent = '—'; });
+})();
+</script>
+
+</body>
+</html>

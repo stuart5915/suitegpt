@@ -280,6 +280,60 @@
             background: var(--border-subtle);
         }
 
+        /* ── Angel NFT Banner ── */
+        .angel-banner {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            margin-bottom: var(--space-xl);
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, hsla(270, 60%, 50%, 0.1) 0%, hsla(250, 60%, 55%, 0.06) 100%);
+            border: 1px solid hsla(270, 60%, 55%, 0.2);
+            animation: fadeUp 0.45s ease both;
+        }
+        .angel-banner-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+        .angel-banner-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .angel-banner-title {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: hsl(270, 60%, 72%);
+            margin-bottom: 2px;
+        }
+        .angel-banner-desc {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .angel-banner-status {
+            flex-shrink: 0;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .angel-banner-status--holder {
+            background: hsla(150, 60%, 45%, 0.15);
+            color: hsl(150, 60%, 55%);
+        }
+        .angel-banner-status--mint {
+            background: hsla(270, 60%, 55%, 0.15);
+            color: hsl(270, 60%, 72%);
+            text-decoration: none;
+        }
+        .angel-banner-status--mint:hover {
+            background: hsla(270, 60%, 55%, 0.25);
+        }
+
         /* ── Tool Modal ── */
         .tool-modal-overlay {
             display: none;
@@ -532,6 +586,7 @@
                 <a href="/projects">Projects</a>
                 <a href="/apps">Apps</a>
                 <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
                 <a href="/stake">Staking</a>
             </div>
         </div>
@@ -542,6 +597,16 @@
 </nav>
 
 <div class="tools-page">
+
+    <!-- Angel NFT Banner -->
+    <div class="angel-banner" id="angelBanner">
+        <span class="angel-banner-icon">&#128124;</span>
+        <div class="angel-banner-body">
+            <div class="angel-banner-title">Angel NFT holders get all tools & builder for free</div>
+            <div class="angel-banner-desc">Unlimited credits, all AI models, every tool — no limits.</div>
+        </div>
+        <a href="/angel" class="angel-banner-status angel-banner-status--mint" id="angelBannerStatus">Mint an Angel NFT &rarr;</a>
+    </div>
 
     <!-- Hero Banner -->
     <section class="tools-hero">
@@ -701,6 +766,19 @@
             </div>
             <div class="tool-row-badges">
                 <span class="tool-row-badge tool-row-badge--live">Live</span>
+            </div>
+            <span class="tool-row-arrow">&#8250;</span>
+        </a>
+
+        <a href="/build?prompt=Create%20an%20NFT%20collection%20mint%20page%20with%20wallet%20connect%2C%20mint%20button%2C%20and%20gallery%20preview" class="tool-row" id="tool-nft-collection">
+            <span class="tool-row-icon">&#127912;</span>
+            <div class="tool-row-body">
+                <div class="tool-row-name">Create NFT Collection</div>
+                <div class="tool-row-desc">Build an NFT mint page with AI &mdash; collection art, mint UI, and metadata</div>
+            </div>
+            <div class="tool-row-badges">
+                <span class="tool-row-badge tool-row-badge--ai">AI</span>
+                <span class="tool-row-badge tool-row-badge--new">New</span>
             </div>
             <span class="tool-row-arrow">&#8250;</span>
         </a>
@@ -1096,6 +1174,36 @@ function markdownToHtml(md) {
         .replace(/\n{2,}/g, '</p><p>')
         .replace(/^(?!<[hul])/gm, function(m) { return m ? '<p>' + m : m; });
 }
+
+// ── Angel NFT Banner Check ──
+(function() {
+    var banner = document.getElementById('angelBanner');
+    var statusEl = document.getElementById('angelBannerStatus');
+    if (!banner || !statusEl) return;
+
+    function checkAngel() {
+        try {
+            var profile = JSON.parse(localStorage.getItem('inclawbate_profile'));
+            if (!profile || !profile.wallet_address) return;
+            fetch('/api/inclawbate/angel-check?wallet=' + encodeURIComponent(profile.wallet_address))
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.isAngel) {
+                        statusEl.href = '#';
+                        statusEl.className = 'angel-banner-status angel-banner-status--holder';
+                        statusEl.textContent = 'You have Angel access \u2713';
+                    }
+                })
+                .catch(function() {});
+        } catch (e) {}
+    }
+
+    checkAngel();
+    // Re-check if user logs in
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'inclawbate_profile') checkAngel();
+    });
+})();
 </script>
 
 </body>

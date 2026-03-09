@@ -7,6 +7,7 @@ export const config = { maxDuration: 300 };
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from '../inclawbate/x-callback.js';
+import { checkAngelHolder } from '../inclawbate/angel-check.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -222,9 +223,11 @@ async function getProfile(profileId) {
     return data;
 }
 
-function isAdmin(profile) {
-    return FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
+async function isAdmin(profile) {
+    if (FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())) return true;
+    if (FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())) return true;
+    if (profile?.wallet_address && await checkAngelHolder(profile.wallet_address)) return true;
+    return false;
 }
 
 function injectErrorHandler(html) {
@@ -451,7 +454,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const profile = profileId ? await getProfile(profileId) : null;
-    const admin = isAdmin(profile);
+    const admin = await isAdmin(profile);
     const anonymous = !profileId;
 
     // Resolve model tier

@@ -1874,6 +1874,69 @@ function addDisperseRecipientRow() {
     recalcEvenSplit();
 }
 
+async function loadAngelHolders() {
+    var btn = document.getElementById('disperseAngelAirdrop');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
+
+    try {
+        var CONTRACT = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
+        var RPC = 'https://mainnet.base.org';
+
+        // Get totalSupply
+        var supplyResp = await fetch(RPC, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: CONTRACT, data: '0x18160ddd' }, 'latest'] })
+        });
+        var supplyJson = await supplyResp.json();
+        var totalSupply = parseInt(supplyJson.result, 16);
+        if (!totalSupply || totalSupply <= 0) throw new Error('Could not read totalSupply');
+
+        // Batch ownerOf calls (token IDs 1..totalSupply)
+        var batchSize = 50;
+        var owners = new Set();
+
+        for (var start = 1; start <= totalSupply; start += batchSize) {
+            var batch = [];
+            for (var i = start; i < start + batchSize && i <= totalSupply; i++) {
+                // ownerOf(uint256) = 0x6352211e
+                var tokenIdHex = i.toString(16).padStart(64, '0');
+                batch.push({ jsonrpc: '2.0', id: i, method: 'eth_call', params: [{ to: CONTRACT, data: '0x6352211e' + tokenIdHex }, 'latest'] });
+            }
+            var resp = await fetch(RPC, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(batch)
+            });
+            var results = await resp.json();
+            results.forEach(function(r) {
+                if (r.result && r.result !== '0x') {
+                    var addr = '0x' + r.result.slice(26);
+                    if (addr.length === 42) owners.add(addr.toLowerCase());
+                }
+            });
+        }
+
+        // Clear existing rows and populate
+        var list = document.getElementById('disperseRecipientList');
+        if (list) list.innerHTML = '';
+        var uniqueOwners = Array.from(owners);
+        uniqueOwners.forEach(function(addr) {
+            addDisperseRecipientRow();
+            var rows = list.querySelectorAll('.disperse-recipient-row');
+            var lastRow = rows[rows.length - 1];
+            var input = lastRow.querySelector('.disperse-addr-input');
+            if (input) input.value = addr;
+        });
+        recalcEvenSplit();
+
+        if (btn) { btn.textContent = '\uD83D\uDC7C ' + uniqueOwners.length + ' holders loaded'; }
+    } catch (e) {
+        console.error('Angel holder load failed:', e);
+        if (btn) { btn.textContent = 'Failed — try again'; btn.disabled = false; }
+    }
+}
+
 function recalcEvenSplit() {
     var cb = document.getElementById('disperseEvenSplit');
     if (!cb || !cb.checked) return;
@@ -2284,6 +2347,8 @@ async function init() {
     if (disperseExecBtn) disperseExecBtn.addEventListener('click', handleDisperseExecute);
     var disperseAddRow = document.getElementById('disperseAddRow');
     if (disperseAddRow) disperseAddRow.addEventListener('click', addDisperseRecipientRow);
+    var disperseAngelAirdrop = document.getElementById('disperseAngelAirdrop');
+    if (disperseAngelAirdrop) disperseAngelAirdrop.addEventListener('click', loadAngelHolders);
     var disperseEvenSplit = document.getElementById('disperseEvenSplit');
     if (disperseEvenSplit) disperseEvenSplit.addEventListener('change', toggleEvenSplit);
     var disperseInputSelect = document.getElementById('disperseInputSelect');

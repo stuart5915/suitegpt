@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
+import { checkAngelHolder } from './angel-check.js';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -90,7 +91,8 @@ export default async function handler(req, res) {
         .single();
 
     const isAdmin = FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())
-        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase());
+        || FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())
+        || (profile?.wallet_address && await checkAngelHolder(profile.wallet_address));
 
     if (!isAdmin) {
         if ((profile?.credits || 0) < CREDIT_COST) {
