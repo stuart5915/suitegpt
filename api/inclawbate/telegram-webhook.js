@@ -52,8 +52,8 @@ function timeAgo(dateStr) {
 // ── Command Handlers ──
 
 async function handleState(chatId) {
-    // Get latest state entries
-    const { data: entries } = await supabase
+    // Pull latest DB updates (overlays on top of baseline)
+    const { data: stateEntry } = await supabase
         .from('team_state')
         .select('*')
         .eq('category', 'state')
@@ -67,6 +67,20 @@ async function handleState(chatId) {
         .order('created_at', { ascending: false })
         .limit(5);
 
+    const { data: blockers } = await supabase
+        .from('team_state')
+        .select('*')
+        .eq('category', 'blocker')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+    const { data: ships } = await supabase
+        .from('team_state')
+        .select('*')
+        .eq('category', 'ship')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
     const { data: recent } = await supabase
         .from('team_state')
         .select('*')
@@ -75,28 +89,62 @@ async function handleState(chatId) {
 
     let msg = '🦞 <b>INCLAWBATE — Current State</b>\n\n';
 
-    if (entries && entries[0]) {
-        msg += `<b>Status:</b>\n${esc(entries[0].content)}\n<i>${timeAgo(entries[0].created_at)}</i>\n\n`;
+    // Status — DB override or baseline
+    if (stateEntry && stateEntry[0]) {
+        msg += `<b>📊 Status:</b> ${esc(stateEntry[0].content)}\n<i>Updated ${timeAgo(stateEntry[0].created_at)}</i>\n\n`;
     } else {
-        msg += '<i>No state set yet. Admin can use /update state &lt;text&gt;</i>\n\n';
+        msg += '<b>📊 Status:</b> Platform live. 12 apps published, targeting 50. Staking active (CLAWS, INCLAWNCH, S4H). Mobile wallet fixes shipped. Building fiat on-ramp + team coordination.\n\n';
     }
 
+    // Priorities — DB override or baseline
+    msg += '<b>🔴 Priorities:</b>\n';
     if (priorities && priorities.length) {
-        msg += '<b>Current Priorities:</b>\n';
         priorities.forEach((p, i) => {
-            msg += `${i + 1}. ${esc(p.content)} <i>(${timeAgo(p.created_at)})</i>\n`;
+            msg += `${i + 1}. ${esc(p.content)}\n`;
+        });
+    } else {
+        msg += '1. Coinbase Commerce — fiat on-ramp (deadline Mar 31)\n';
+        msg += '2. 50 apps goal — grow the app ecosystem\n';
+        msg += '3. Automated ETH/USDC LP manager\n';
+        msg += '4. App reward pools — earn CLAWS for using apps\n';
+    }
+    msg += '\n';
+
+    // Blockers
+    if (blockers && blockers.length) {
+        msg += '<b>🚧 Blockers:</b>\n';
+        blockers.forEach(b => { msg += `• ${esc(b.content)}\n`; });
+        msg += '\n';
+    }
+
+    // Recently shipped
+    msg += '<b>🚀 Recently Shipped:</b>\n';
+    if (ships && ships.length) {
+        ships.forEach(s => { msg += `• ${esc(s.content)}\n`; });
+    } else {
+        msg += '• CLAWS tokenomics article\n';
+        msg += '• Wallet selector modal (multi-wallet + mobile)\n';
+        msg += '• Mobile wallet browser auto-connect fix\n';
+        msg += '• Wave 1+2 apps (12 total)\n';
+        msg += '• CEO Bot for team coordination\n';
+    }
+    msg += '\n';
+
+    // Recent DB updates
+    if (recent && recent.length) {
+        msg += '<b>📝 Latest Updates:</b>\n';
+        recent.forEach(r => {
+            const emoji = { state: '📊', priority: '🔴', task: '📋', note: '📝', ship: '🚀', blocker: '🚧', vision: '🌟' };
+            msg += `${emoji[r.category] || '•'} ${esc(r.content).slice(0, 100)} <i>(${timeAgo(r.created_at)})</i>\n`;
         });
         msg += '\n';
     }
 
-    if (recent && recent.length) {
-        msg += '<b>Recent Updates:</b>\n';
-        recent.forEach(r => {
-            msg += `• [${esc(r.category)}] ${esc(r.content).slice(0, 120)} <i>(${timeAgo(r.created_at)})</i>\n`;
-        });
-    }
-
+    // Team & revenue
+    msg += '<b>👥 Team:</b> Stuart (founder), Heval (research/marketing), Clay\n';
+    msg += '<b>💰 Revenue:</b> LP fees, staking fees, agent fees (active) · Fiat payments (planned)\n';
     msg += '\n🔗 inclawbate.com/dashboard';
+
     await sendMsg(chatId, msg);
 }
 
