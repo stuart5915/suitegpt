@@ -54,17 +54,18 @@ async function handleState(chatId) {
         .order('created_at', { ascending: false })
         .limit(10);
 
-    let msg = '🦞 <b>INCLAWBATE</b>\n\n';
+    let msg = '🦞 <b>INCLAWBATE</b>\n';
 
     if (todos && todos.length) {
+        msg += `\n<b>TODO (${todos.length}):</b>\n`;
         todos.forEach(t => { msg += `☐ ${esc(t.content)}\n`; });
     } else {
-        msg += '<i>Nothing on the list. Use /add to add stuff.</i>\n';
+        msg += '\n<i>List is empty. /add something</i>\n';
     }
 
     if (done && done.length) {
-        msg += '\n<b>Done:</b>\n';
-        done.forEach(d => { msg += `☑ ${esc(d.content)}\n`; });
+        msg += `\n<b>DONE (${done.length}):</b>\n`;
+        done.forEach(d => { msg += `✅ ${esc(d.content)}\n`; });
     }
 
     await sendMsg(chatId, msg);
@@ -88,7 +89,7 @@ async function handleAdd(chatId, username, args) {
     const { error } = await supabase.from('team_state').insert(rows);
     if (error) { await sendMsg(chatId, '❌ ' + esc(error.message)); return; }
 
-    let msg = '';
+    let msg = `<b>Added${items.length > 1 ? ' ' + items.length + ' items' : ''}:</b>\n`;
     items.forEach(i => { msg += `☐ ${esc(i)}\n`; });
     await sendMsg(chatId, msg);
 }
@@ -119,7 +120,7 @@ async function handleDone(chatId, username, args) {
 
     await supabase.from('team_state').delete().eq('id', data[0].id);
     await supabase.from('team_state').insert({ category: 'done', content: data[0].content, author: username });
-    await sendMsg(chatId, `☑ ${esc(data[0].content)}`);
+    await sendMsg(chatId, `✅ <b>Done:</b> ${esc(data[0].content)}`);
 }
 
 // ── /remove — delete something (admin only) ──
