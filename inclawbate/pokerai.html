@@ -3332,49 +3332,94 @@ function withdrawFromAgent(agentId) {
 
 function renderFundPositions() {
   const container = document.getElementById('fundPositions');
+  let html = '';
 
-  if (gameState.fundPositions.length === 0) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">No active positions.<br>Fund an agent to see their pocket cards and earn profits.</div>';
+  // Custom agents at the table
+  const wallet = getWallet();
+  const myPlayingAgents = wallet ? gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address) : [];
+
+  if (myPlayingAgents.length > 0) {
+    html += myPlayingAgents.map(agent => {
+      const pnl = agent.chips - agent.baseChips;
+      const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const pnlSign = pnl >= 0 ? '+' : '';
+      return `
+      <div style="background:var(--bg-surface);border:1px solid ${pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${agent.emoji}</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--accent-green)">${agent.name}</div>
+              <div style="font-size:10px;color:var(--text-muted)">Your agent</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
+            <div style="font-size:9px;color:var(--text-muted)">P&L</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
+            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Started</div>
+            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-primary)">${agent.baseChips.toLocaleString()}</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
+            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Current Stack</div>
+            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${agent.chips.toLocaleString()}</div>
+          </div>
+        </div>
+        <button onclick="leaveTable('${agent.id}')" style="width:100%;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Sit Out</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Funded house bot positions (old system)
+  if (gameState.fundPositions.length > 0) {
+    html += gameState.fundPositions.map(pos => {
+      const agent = gameState.agents.find(a => a.id === pos.agentId);
+      const pnlColor = pos.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const pnlSign = pos.pnl >= 0 ? '+' : '';
+      const sharePct = agent ? Math.round((pos.deposited / pos.startStack) * 100) : 0;
+      return `
+      <div style="background:var(--bg-surface);border:1px solid ${pos.pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${pos.agentEmoji}</span>
+            <div>
+              <div style="font-size:13px;font-weight:600">${pos.agentName}</div>
+              <div style="font-size:10px;color:var(--text-muted)">${sharePct}% share · funded</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:${pnlColor}">${pnlSign}${pos.pnl.toLocaleString()}</div>
+            <div style="font-size:9px;color:var(--text-muted)">P&L (95% yours)</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
+            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Deposited</div>
+            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-primary)">${pos.deposited.toLocaleString()}</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
+            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Current</div>
+            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${pos.currentValue.toLocaleString()}</div>
+          </div>
+          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
+            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Agent Stack</div>
+            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-secondary)">${agent ? formatChips(agent.chips) : '—'}</div>
+          </div>
+        </div>
+        <button onclick="withdrawFromAgent('${pos.agentId}')" style="width:100%;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Withdraw ${pos.currentValue.toLocaleString()}</button>
+      </div>`;
+    }).join('');
+  }
+
+  if (!html) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">No active positions.<br><a href="#" onclick="showView(\'myagents\');return false" style="color:var(--accent-gold)">Create an agent</a> or fund a house bot.</div>';
     return;
   }
 
-  container.innerHTML = gameState.fundPositions.map(pos => {
-    const agent = gameState.agents.find(a => a.id === pos.agentId);
-    const pnlColor = pos.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    const pnlSign = pos.pnl >= 0 ? '+' : '';
-    const sharePct = agent ? Math.round((pos.deposited / pos.startStack) * 100) : 0;
-    return `
-    <div style="background:var(--bg-surface);border:1px solid ${pos.pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:20px">${pos.agentEmoji}</span>
-          <div>
-            <div style="font-size:13px;font-weight:600">${pos.agentName}</div>
-            <div style="font-size:10px;color:var(--text-muted)">${sharePct}% share of stack</div>
-          </div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:${pnlColor}">${pnlSign}${pos.pnl.toLocaleString()}</div>
-          <div style="font-size:9px;color:var(--text-muted)">P&L (95% yours)</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-        <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-          <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Deposited</div>
-          <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-primary)">${pos.deposited.toLocaleString()}</div>
-        </div>
-        <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-          <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Current</div>
-          <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${pos.currentValue.toLocaleString()}</div>
-        </div>
-        <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-          <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Agent Stack</div>
-          <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-secondary)">${agent ? formatChips(agent.chips) : '—'}</div>
-        </div>
-      </div>
-      <button onclick="withdrawFromAgent('${pos.agentId}')" style="width:100%;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Withdraw ${pos.currentValue.toLocaleString()}</button>
-    </div>`;
-  }).join('');
+  container.innerHTML = html;
 }
 
 function renderFundSelect() {
