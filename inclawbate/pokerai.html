@@ -2952,8 +2952,13 @@ function handleMessage(msg) {
     case 'welcome':
       sessionId = msg.data.sessionId;
       document.getElementById('viewerCount').textContent = msg.data.viewerCount;
-      // Tell server our wallet address so it can show pocket cards for our custom agents
+      // Tell server our wallet address so it can include lobbyAgents in gameState
       syncWalletToServer();
+      // Request full agent list for My Agents view
+      const w = getWallet();
+      if (w && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: w.address }));
+      }
       break;
 
     case 'gameState':

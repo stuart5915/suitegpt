@@ -93,6 +93,9 @@ wss.on('connection', (ws) => {
       switch (msg.type) {
         case 'setWallet': {
           client.walletAddress = msg.walletAddress || null;
+          // Re-send state with wallet context so lobbyAgents are included
+          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
         case 'subscribeRoom': {
