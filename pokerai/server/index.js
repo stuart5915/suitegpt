@@ -129,7 +129,7 @@ wss.on('connection', (ws) => {
         case 'joinTable': {
           client.walletAddress = msg.walletAddress;
           const roomId = msg.roomId || 'micro';
-          const result = rooms.joinRoom(msg.walletAddress, msg.agentId, roomId);
+          const result = rooms.joinRoom(msg.walletAddress, msg.agentId, roomId, msg.chipStack);
           ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
           // Switch client to the room they joined
           if (result.success) {

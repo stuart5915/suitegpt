@@ -106,7 +106,7 @@ class RoomManager {
       traits: { aggression, bluffing, patience, tiltResist },
       walletAddress,
       isCustom: true,
-      chipStack: chipStack || 10000,
+      chipStack: 0, // funded when joining a table
       handsWon: 0,
       handsPlayed: 0,
       biggestPot: 0
@@ -132,7 +132,7 @@ class RoomManager {
 
   // === Room operations ===
 
-  joinRoom(walletAddress, agentId, roomId) {
+  joinRoom(walletAddress, agentId, roomId, chipStack) {
     const walletLobby = this.lobbyAgents.get(walletAddress);
     if (!walletLobby) return { error: 'No agents in lobby' };
 
@@ -142,7 +142,11 @@ class RoomManager {
     const room = this.rooms[roomId];
     if (!room) return { error: 'Room not found' };
 
+    if (!chipStack || chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
+
     const lobbyAgent = walletLobby[lobbyIdx];
+    // Set the chip stack now (funded at join time, not creation)
+    lobbyAgent.chipStack = chipStack;
 
     const table = this._findAvailableTable(roomId);
     if (!table) return { error: 'No tables available' };

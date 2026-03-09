@@ -2415,21 +2415,8 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Chip Stack (from your balance)</label>
-            <div class="stack-presets">
-              <div class="stack-preset" onclick="selectStack(1000, this)">1K</div>
-              <div class="stack-preset" onclick="selectStack(2500, this)">2.5K</div>
-              <div class="stack-preset active" onclick="selectStack(5000, this)">5K</div>
-              <div class="stack-preset" onclick="selectStack(10000, this)">10K</div>
-            </div>
-            <input type="number" class="form-input" id="agentStack" placeholder="Chip stack amount" min="500" value="5000">
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
-              Your balance: <span id="formBalance" style="color:var(--accent-gold)">0</span> chips
-            </div>
-          </div>
-
           <button class="btn-deploy" id="deployBtn" onclick="deployAgent()">🤖 Create Agent</button>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:6px">Free to create — fund when you join a table</div>
         </div>
 
         <!-- MY AGENTS LIST -->
@@ -2442,7 +2429,7 @@
             <div class="no-agents-msg">
               <div class="icon">🤖</div>
               <div class="title">No Agents Yet</div>
-              <p style="font-size:13px;margin-top:8px">Create your first agent using the form. It will join the live table and start playing immediately.</p>
+              <p style="font-size:13px;margin-top:8px">Create your first agent using the form, then pick a room and fund it to start playing.</p>
             </div>
           </div>
         </div>
@@ -3025,17 +3012,9 @@ function handleMessage(msg) {
 
     case 'createAgentResult':
       if (msg.data.error) {
-        window._pendingDeploy = 0;
         showToast(msg.data.error, 'error');
       } else {
-        const dw = getWallet();
-        if (dw && window._pendingDeploy) {
-          dw.balance -= window._pendingDeploy;
-          saveWallet(dw);
-          updateWalletUI();
-        }
-        window._pendingDeploy = 0;
-        showToast(`${msg.data.agentName} created! Now send it to a table.`, 'success');
+        showToast(`${msg.data.agentName} created! Now pick a table to join.`, 'success');
         document.getElementById('agentName').value = '';
         refreshMyAgentsView();
       }
@@ -3043,8 +3022,19 @@ function handleMessage(msg) {
 
     case 'joinTableResult':
       if (msg.data.error) {
+        // Refund chips on failure
+        if (window._pendingJoin) {
+          const rw = getWallet();
+          if (rw) {
+            rw.balance += window._pendingJoin.amount;
+            saveWallet(rw);
+            updateWalletUI();
+          }
+          window._pendingJoin = null;
+        }
         showToast(msg.data.error, 'error');
       } else {
+        window._pendingJoin = null;
         const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
         const rn = roomNames[msg.data.roomId] || msg.data.roomId;
         showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
@@ -3806,8 +3796,9 @@ function renderMyAgents() {
             </div>
           </div>
           <div style="text-align:right">
-            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div>
-            <div style="font-size:10px;color:var(--text-muted)">chips</div>
+            ${agent.chipStack > 0
+              ? `<div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div><div style="font-size:10px;color:var(--text-muted)">chips</div>`
+              : `<div style="font-size:11px;color:var(--text-muted)">Not funded</div>`}
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -3821,19 +3812,31 @@ function renderMyAgents() {
             <button class="btn-recall" onclick="recallAgent('${agent.id}')">Delete</button>
           </div>
         </div>
-        <div id="roomPicker-${agent.id}" class="room-picker" style="display:none">
-          <button class="room-pick-btn" onclick="joinTable('${agent.id}','micro')">
-            <span class="pick-label">Micro</span>
-            <span class="pick-sub">$1 · 25/50</span>
-          </button>
-          <button class="room-pick-btn" onclick="joinTable('${agent.id}','mid')">
-            <span class="pick-label">Mid</span>
-            <span class="pick-sub">$5 · 125/250</span>
-          </button>
-          <button class="room-pick-btn" onclick="joinTable('${agent.id}','high')">
-            <span class="pick-label">High</span>
-            <span class="pick-sub">$25 · 625/1250</span>
-          </button>
+        <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Choose Room & Buy-in</div>
+          <div class="room-picker">
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','micro')">
+              <span class="pick-label">Micro</span>
+              <span class="pick-sub">$1 · 25/50</span>
+            </button>
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','mid')">
+              <span class="pick-label">Mid</span>
+              <span class="pick-sub">$5 · 125/250</span>
+            </button>
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','high')">
+              <span class="pick-label">High</span>
+              <span class="pick-sub">$25 · 625/1250</span>
+            </button>
+          </div>
+          <div id="fundStep-${agent.id}" style="display:none;margin-top:8px">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's stack:</div>
+            <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
+              <button onclick="confirmJoin('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">GO</button>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">0</span> chips</div>
+          </div>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
       </div>`;
@@ -3948,22 +3951,14 @@ function deployAgent() {
   if (!name) { showToast('Give your agent a name!', 'error'); return; }
   if (name.length > 20) { showToast('Name too long (max 20 chars)', 'error'); return; }
 
-  const chipStack = parseInt(document.getElementById('agentStack').value);
-  if (!chipStack || chipStack < 500) { showToast('Minimum stack is 500', 'error'); return; }
-  if (chipStack > wallet.balance) { showToast(`Not enough chips! You have ${wallet.balance.toLocaleString()}`, 'error'); return; }
-
   const config = {
     name,
     emoji: getSelectedEmoji(),
     aggression: parseInt(document.getElementById('sliderAggression').value),
     bluffing: parseInt(document.getElementById('sliderBluffing').value),
     patience: parseInt(document.getElementById('sliderPatience').value),
-    tiltResist: parseInt(document.getElementById('sliderTiltResist').value),
-    chipStack
+    tiltResist: parseInt(document.getElementById('sliderTiltResist').value)
   };
-
-  // Store pending deduction — only commit on success
-  window._pendingDeploy = chipStack;
 
   ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet.address, config }));
   showToast('Creating agent...', 'info');
@@ -3971,16 +3966,72 @@ function deployAgent() {
 
 function toggleRoomPicker(agentId) {
   const el = document.getElementById('roomPicker-' + agentId);
-  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  if (el) {
+    const visible = el.style.display !== 'none';
+    el.style.display = visible ? 'none' : 'block';
+    // Reset inner state
+    if (!visible) {
+      const fundStep = document.getElementById('fundStep-' + agentId);
+      if (fundStep) fundStep.style.display = 'none';
+      document.querySelectorAll('#roomPicker-' + agentId + ' .room-pick-btn').forEach(b => b.style.borderColor = '');
+    }
+  }
 }
 
-function joinTable(agentId, roomId) {
+const ROOM_PRESETS = {
+  micro:  [1000, 2500, 5000, 10000],
+  mid:    [5000, 10000, 25000, 50000],
+  high:   [25000, 50000, 100000, 250000]
+};
+
+function selectRoomForJoin(agentId, roomId) {
+  // Store selected room
+  window._joinRoom = window._joinRoom || {};
+  window._joinRoom[agentId] = roomId;
+
+  // Highlight selected room button
+  const picker = document.getElementById('roomPicker-' + agentId);
+  picker.querySelectorAll('.room-pick-btn').forEach(b => {
+    b.style.borderColor = '';
+    b.style.background = '';
+  });
+  event.currentTarget.style.borderColor = 'var(--accent-gold)';
+  event.currentTarget.style.background = 'rgba(245,197,66,0.08)';
+
+  // Show fund step with presets for this room
+  const fundStep = document.getElementById('fundStep-' + agentId);
+  fundStep.style.display = 'block';
+
+  const presets = ROOM_PRESETS[roomId] || ROOM_PRESETS.micro;
+  const presetsEl = document.getElementById('fundPresets-' + agentId);
+  presetsEl.innerHTML = presets.map(amt => {
+    const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
+    return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
+  }).join('');
+
+  // Default to first preset
+  document.getElementById('fundAmount-' + agentId).value = presets[0];
+}
+
+function confirmJoin(agentId) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId: roomId || 'micro' }));
-  showToast('Joining ' + (roomId || 'micro') + ' table...', 'info');
+  const roomId = (window._joinRoom && window._joinRoom[agentId]) || 'micro';
+  const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
+  if (!amount || amount < 500) { showToast('Minimum buy-in is 500 chips', 'error'); return; }
+  if (amount > wallet.balance) { showToast(`Not enough chips! You have ${wallet.balance.toLocaleString()}`, 'error'); return; }
+
+  // Deduct chips and join
+  wallet.balance -= amount;
+  saveWallet(wallet);
+  updateWalletUI();
+  window._pendingJoin = { agentId, amount };
+
+  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId, chipStack: amount }));
+  const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  showToast(`Joining ${roomNames[roomId]} with ${amount.toLocaleString()} chips...`, 'info');
 }
 
 function topUpAgent(agentId, amount) {
