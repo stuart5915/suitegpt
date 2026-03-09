@@ -106,7 +106,7 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) 
   let strength = 0.3;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
-    strength = (handEval.rank / 8) * 0.7 + Math.random() * 0.3;
+    strength = (handEval.rank / 8) * 0.85 + Math.random() * 0.15;
   } else {
     // Preflop: evaluate based on actual hole cards
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
@@ -225,18 +225,18 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
 
   // There's a bet to match — call, raise, or fold
   if (agent.style === 'aggressive') {
-    if (r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (r < agent.raisePct + 30) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.5 && r < agent.raisePct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.25 || r < 25) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
     if (strength > 0.7 && r < 30 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-    if (strength > 0.5 || r < 20) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (strength > 0.5 || r < 15) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
-    if (r < agent.bluffPct * 0.5 && agent.chips > raiseAmt) return { type: 'raise', label: `Bluff Raise ${raiseAmt}`, amount: raiseAmt };
-    if (r < 65) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+    if (r < agent.bluffPct * 0.4 && agent.chips > raiseAmt) return { type: 'raise', label: `Bluff Raise ${raiseAmt}`, amount: raiseAmt };
+    if (strength > 0.3 || r < 40) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'mathematical') {
@@ -255,7 +255,7 @@ function _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityC
   }
   // balanced
   if (strength > 0.65 && r < 35 && agent.chips > raiseAmt) return { type: 'raise', label: `Raise ${raiseAmt}`, amount: raiseAmt };
-  if (strength > 0.35 || r < 35) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
+  if (strength > 0.4 || r < 25) return { type: 'call', label: `Call ${toCall}`, amount: toCall };
   return { type: 'fold', label: 'Fold', amount: 0 };
 }
 
@@ -488,8 +488,9 @@ class PokerEngine {
         lastRaiserIdx = startIdx;
       }
 
-      // If no one has raised yet, set initial "last raiser" to stop after one full orbit
-      if (lastRaiserIdx === -1 && actedCount === 0) {
+      // If no one has raised yet, set orbit marker on first non-fold action
+      // (Can't use a folded agent's index — they're skipped and break never triggers)
+      if (lastRaiserIdx === -1 && action.type !== 'fold') {
         lastRaiserIdx = startIdx;
       }
 
@@ -922,7 +923,14 @@ class PokerEngine {
       allIn: false
     };
 
+    // If a hand is in progress, mark as folded so the bot sits out until next hand
+    if (this.phase !== 'waiting') {
+      tableAgent.folded = true;
+    }
+
     this.agents[houseBotIndex] = tableAgent;
+    // Update chip tracking for conservation check (external chip flow)
+    this._lastChipTotal = this.agents.reduce((sum, a2) => sum + a2.chips, 0) + this.contractPool;
     this.broadcastGameState();
     return { success: true, replacedBot: replacedBot.name };
   }
@@ -963,8 +971,9 @@ class PokerEngine {
         handsWon: 0,
         handsPlayed: 0,
         biggestPot: 0,
+        handHistory: [],
         hand: [],
-        folded: false,
+        folded: this.phase !== 'waiting', // sit out if hand in progress
         currentBet: 0,
         roundBet: 0,
         allIn: false
@@ -972,6 +981,8 @@ class PokerEngine {
       this.replacedBots.delete(agentId);
     }
 
+    // Update chip tracking for conservation check (external chip flow)
+    this._lastChipTotal = this.agents.reduce((sum, a2) => sum + a2.chips, 0) + this.contractPool;
     this.broadcastGameState();
     return { success: true, agent: lobbyAgent };
   }
@@ -993,8 +1004,9 @@ class PokerEngine {
         handsWon: 0,
         handsPlayed: 0,
         biggestPot: 0,
+        handHistory: [],
         hand: [],
-        folded: false,
+        folded: this.phase !== 'waiting', // sit out if hand in progress
         currentBet: 0,
         roundBet: 0,
         allIn: false
@@ -1002,6 +1014,8 @@ class PokerEngine {
       this.replacedBots.delete(agentId);
     }
 
+    // Update chip tracking for conservation check (external chip flow)
+    this._lastChipTotal = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
     this.broadcastGameState();
     return { success: true, finalChips, pnl };
   }
@@ -1018,6 +1032,8 @@ class PokerEngine {
     const oldChips = agent.chips;
     agent.chips += amount;
     agent.baseChips += amount;
+    // Update chip tracking for conservation check (external chip flow)
+    this._lastChipTotal = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
     console.log(`[topUp] ${agent.name}: ${oldChips} + ${amount} = ${agent.chips} (baseChips: ${agent.baseChips})`);
 
     this.broadcastGameState();
