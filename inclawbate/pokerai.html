@@ -3062,6 +3062,21 @@ function handleMessage(msg) {
       }
       break;
 
+    case 'topUpResult':
+      if (msg.data.error) {
+        // Refund local wallet on failure
+        const tw = getWallet();
+        if (tw && window._lastTopUpAmount) {
+          tw.balance += window._lastTopUpAmount;
+          saveWallet(tw);
+          updateWalletUI();
+        }
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`${msg.data.agentName} topped up! Stack: ${msg.data.newStack.toLocaleString()}`, 'success');
+      }
+      break;
+
     case 'leaveTableResult':
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
@@ -3368,7 +3383,13 @@ function renderFundPositions() {
             <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${agent.chips.toLocaleString()}</div>
           </div>
         </div>
-        <button onclick="leaveTable('${agent.id}')" style="width:100%;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Sit Out</button>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button onclick="toggleTopUp('${agent.id}')" style="flex:1;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid rgba(99,102,241,0.4);color:var(--accent-primary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-primary)';this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)';this.style.background='var(--bg-dark)'">+ Top Up</button>
+          <button onclick="leaveTable('${agent.id}')" style="flex:1;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Sit Out</button>
+        </div>
+        <div id="topup-${agent.id}" style="display:none;gap:4px;flex-wrap:wrap">
+          ${[1000, 2500, 5000, 10000].map(amt => `<button onclick="topUpAgent('${agent.id}', ${amt})" style="flex:1;min-width:60px;padding:6px 4px;font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">${(amt/1000)}K</button>`).join('')}
+        </div>
       </div>`;
     }).join('');
   }
@@ -3904,6 +3925,25 @@ function joinTable(agentId) {
 
   ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId }));
   showToast('Joining table...', 'info');
+}
+
+function topUpAgent(agentId, amount) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (wallet.balance < amount) { showToast('Not enough chips in wallet!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  wallet.balance -= amount;
+  saveWallet(wallet);
+  updateWalletUI();
+  window._lastTopUpAmount = amount;
+  ws.send(JSON.stringify({ type: 'topUp', walletAddress: wallet.address, agentId, amount }));
+  showToast(`Topping up ${amount.toLocaleString()} chips...`, 'info');
+}
+
+function toggleTopUp(agentId) {
+  const el = document.getElementById('topup-' + agentId);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
 }
 
 function leaveTable(agentId) {

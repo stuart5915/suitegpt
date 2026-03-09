@@ -118,6 +118,22 @@ wss.on('connection', (ws) => {
           }
           break;
         }
+        case 'topUp': {
+          const result = engine.topUpAgent(msg.walletAddress, msg.agentId, msg.amount);
+          ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
+          if (result.success) {
+            // Broadcast to all — agent stack changed
+            for (const [c, cData] of clients) {
+              if (c.readyState === 1) {
+                try {
+                  const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
+                  c.send(JSON.stringify({ type: 'gameState', data: s }));
+                } catch (e) { /* ignore */ }
+              }
+            }
+          }
+          break;
+        }
         case 'leaveTable': {
           const result = engine.leaveTable(msg.walletAddress, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));

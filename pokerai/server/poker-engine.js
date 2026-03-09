@@ -649,6 +649,20 @@ class PokerEngine {
     };
   }
 
+  topUpAgent(walletAddress, agentId, amount) {
+    if (amount < 100) return { error: 'Minimum top-up is 100 chips' };
+
+    // Must be at the table
+    const agent = this.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
+    if (!agent) return { error: 'Agent not found at table' };
+
+    agent.chips += amount;
+    agent.baseChips += amount; // Increase base so P&L stays relative to total invested
+
+    this.broadcastGameState();
+    return { success: true, agentName: agent.name, newStack: agent.chips, totalInvested: agent.baseChips };
+  }
+
   deleteAgent(walletAddress, agentId) {
     // Check if agent is at the table first
     const tableIdx = this.agents.findIndex(a => a.id === agentId && a.walletAddress === walletAddress);
