@@ -59,7 +59,6 @@ async function handleState(chatId) {
     if (todos && todos.length) {
         msg += `\n<b>TODO (${todos.length}):</b>\n`;
         todos.forEach((t, i) => { msg += `<b>${i + 1}.</b> ${esc(t.content)}\n`; });
-        msg += '\n<i>/done 1 · /remove 2</i>\n';
     } else {
         msg += '\n<i>List is empty. /add something</i>\n';
     }
