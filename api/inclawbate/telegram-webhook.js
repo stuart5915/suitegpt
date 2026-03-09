@@ -218,6 +218,125 @@ async function handleUpdate(chatId, username, args) {
     await sendMsg(chatId, `${emoji[category] || '✅'} <b>${esc(category).toUpperCase()}</b> logged.\n\n${esc(content)}`);
 }
 
+async function handleBulk(chatId, username, args) {
+    if (!isAdmin(username)) {
+        await sendMsg(chatId, '🔒 Only the admin can bulk import.');
+        return;
+    }
+
+    // Parse: /bulk <category>\n- item 1\n- item 2\n...
+    // Or: /bulk task\nitem 1\nitem 2\n...
+    const lines = args.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) {
+        await sendMsg(chatId,
+            '📦 <b>Bulk Import</b>\n\n' +
+            '<b>Usage:</b>\n/bulk task\n- Coinbase Commerce integration\n- Automated LP manager\n- App reward pools\n\n' +
+            'Or:\n/bulk priority\nShip fiat by March 31\n50 apps goal\n\n' +
+            'Categories: task, priority, note, blocker, ship'
+        );
+        return;
+    }
+
+    const validCategories = ['state', 'priority', 'task', 'note', 'ship', 'blocker', 'vision'];
+    const category = lines[0].toLowerCase();
+    if (!validCategories.includes(category)) {
+        await sendMsg(chatId, `❌ Unknown category "${esc(lines[0])}". Use: ${validCategories.join(', ')}`);
+        return;
+    }
+
+    const items = lines.slice(1).map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+    if (!items.length) {
+        await sendMsg(chatId, '❌ No items found. Put each item on a new line.');
+        return;
+    }
+
+    const rows = items.map(content => ({ category, content, author: username }));
+    const { error } = await supabase.from('team_state').insert(rows);
+
+    if (error) {
+        await sendMsg(chatId, '❌ Failed: ' + esc(error.message));
+        return;
+    }
+
+    let msg = `📦 <b>${items.length} ${category}(s) imported:</b>\n\n`;
+    items.forEach((item, i) => { msg += `${i + 1}. ${esc(item)}\n`; });
+    await sendMsg(chatId, msg);
+}
+
+async function handleDone(chatId, username, args) {
+    if (!isAdmin(username)) {
+        await sendMsg(chatId, '🔒 Only the admin can mark tasks done.');
+        return;
+    }
+
+    if (!args) {
+        await sendMsg(chatId,
+            '✅ <b>Usage:</b> /done &lt;search text&gt;\n\n' +
+            'Marks the matching task/priority as shipped.\n\n' +
+            'Example: /done Coinbase Commerce'
+        );
+        return;
+    }
+
+    // Find the matching entry
+    const { data } = await supabase
+        .from('team_state')
+        .select('*')
+        .in('category', ['task', 'priority', 'blocker'])
+        .ilike('content', `%${args}%`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    if (!data || !data.length) {
+        await sendMsg(chatId, `❌ No task found matching "${esc(args)}"`);
+        return;
+    }
+
+    const entry = data[0];
+
+    // Delete the old entry and log a "ship" entry
+    await supabase.from('team_state').delete().eq('id', entry.id);
+    await supabase.from('team_state').insert({
+        category: 'ship',
+        content: entry.content,
+        author: username
+    });
+
+    await sendMsg(chatId, `🚀 <b>SHIPPED:</b> ${esc(entry.content)}`);
+}
+
+async function handleClear(chatId, username, args) {
+    if (!isAdmin(username)) {
+        await sendMsg(chatId, '🔒 Only the admin can clear.');
+        return;
+    }
+
+    const validCategories = ['state', 'priority', 'task', 'note', 'ship', 'blocker', 'vision', 'all'];
+    const category = args.toLowerCase();
+
+    if (!category || !validCategories.includes(category)) {
+        await sendMsg(chatId,
+            '🗑️ <b>Usage:</b> /clear &lt;category&gt;\n\n' +
+            'Categories: task, priority, note, ship, blocker, vision, all\n\n' +
+            '⚠️ This deletes all entries in that category.'
+        );
+        return;
+    }
+
+    let query = supabase.from('team_state').delete();
+    if (category !== 'all') query = query.eq('category', category);
+    // Need a filter for delete — use created_at is not null (always true)
+    query = query.not('id', 'is', null);
+
+    const { error, count } = await query;
+    if (error) {
+        await sendMsg(chatId, '❌ Failed: ' + esc(error.message));
+        return;
+    }
+
+    await sendMsg(chatId, `🗑️ Cleared all <b>${category}</b> entries.`);
+}
+
 async function handleLinks(chatId) {
     await sendMsg(chatId,
         '🦞 <b>INCLAWBATE — Links</b>\n\n' +
@@ -249,6 +368,9 @@ async function handleHelp(chatId) {
         '/help — This message\n\n' +
         '<b>Admin only:</b>\n' +
         '/update &lt;category&gt; &lt;text&gt; — Log an update\n' +
+        '/bulk &lt;category&gt; — Bulk import (one per line)\n' +
+        '/done &lt;search text&gt; — Mark a task as shipped\n' +
+        '/clear &lt;category&gt; — Wipe a category\n' +
         '  Categories: state, priority, task, note, ship, blocker, vision\n\n' +
         '<b>DM only:</b>\n' +
         '/start &lt;handle&gt; — Connect your Inclawbate profile'
@@ -339,6 +461,15 @@ export default async function handler(req, res) {
                 break;
             case 'update':
                 await handleUpdate(chatId, username, args);
+                break;
+            case 'bulk':
+                await handleBulk(chatId, username, args);
+                break;
+            case 'done':
+                await handleDone(chatId, username, args);
+                break;
+            case 'clear':
+                await handleClear(chatId, username, args);
                 break;
             case 'links':
                 await handleLinks(chatId);
