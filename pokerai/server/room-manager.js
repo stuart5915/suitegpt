@@ -241,6 +241,7 @@ class RoomManager {
               handsPlayed: a.handsPlayed,
               biggestPot: a.biggestPot,
               traits: a.traits,
+              rules: a.rules || {},
               pnl: a.chips - a.baseChips,
               status: 'playing',
               roomId: table.roomId,
@@ -266,6 +267,7 @@ class RoomManager {
         handsPlayed: a.handsPlayed,
         biggestPot: a.biggestPot,
         traits: a.traits,
+        rules: a.rules || {},
         pnl: 0,
         status: 'lobby'
       });
@@ -313,6 +315,7 @@ class RoomManager {
         handsPlayed: a.handsPlayed,
         biggestPot: a.biggestPot,
         traits: a.traits,
+        rules: a.rules || {},
         status: 'lobby'
       }));
     } else {
