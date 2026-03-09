@@ -2,9 +2,10 @@ const { PokerEngine } = require('./poker-engine');
 const { AgentStore } = require('./agent-store');
 
 const ROOM_CONFIGS = {
-  micro:  { name: 'Micro',       buyIn: '$1',  bb: 50,   baseChips: 10000,  rakePct: 0.05 },   // 5% rake
-  mid:    { name: 'Mid Stakes',  buyIn: '$5',  bb: 250,  baseChips: 50000,  rakePct: 0.04 },   // 4% rake
-  high:   { name: 'High Stakes', buyIn: '$25', bb: 1250, baseChips: 250000, rakePct: 0.025 }   // 2.5% rake
+  sandbox: { name: 'Sandbox',      buyIn: 'FREE', bb: 50,   baseChips: 10000,  rakePct: 0,    isSandbox: true },
+  micro:   { name: 'Micro',        buyIn: '$1',   bb: 50,   baseChips: 10000,  rakePct: 0.05 },   // 5% rake
+  mid:     { name: 'Mid Stakes',   buyIn: '$5',   bb: 250,  baseChips: 50000,  rakePct: 0.04 },   // 4% rake
+  high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025 }   // 2.5% rake
 };
 
 class RoomManager {
@@ -89,7 +90,7 @@ class RoomManager {
 
   _persistPlayingAgents(table) {
     for (const a of table.agents) {
-      if (a.isCustom) {
+      if (a.isCustom && !a.walletAddress?.startsWith('sandbox_')) {
         this.store.updateAgentStats(a.id, {
           chipStack: a.chips,
           handsWon: a.handsWon,
@@ -174,8 +175,10 @@ class RoomManager {
     }
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
-    // Persist
-    this.store.saveAgent(lobbyAgent);
+    // Persist (skip sandbox agents — they're ephemeral)
+    if (!walletAddress.startsWith('sandbox_')) {
+      this.store.saveAgent(lobbyAgent);
+    }
 
     return {
       success: true,
@@ -201,6 +204,27 @@ class RoomManager {
 
     const room = this.rooms[roomId];
     if (!room) return { error: 'Room not found' };
+
+    // Sandbox: free chips, no wallet deduction
+    if (room.isSandbox) {
+      const freeChips = chipStack || room.baseChips;
+      const lobbyAgent = walletLobby[lobbyIdx];
+      lobbyAgent.chipStack = freeChips;
+
+      const table = this._findAvailableTable(roomId);
+      if (!table) return { error: 'No tables available' };
+
+      const result = table.seatAgent(lobbyAgent);
+      if (result.error) return result;
+
+      walletLobby.splice(lobbyIdx, 1);
+      if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
+
+      return {
+        success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot,
+        sandbox: true
+      };
+    }
 
     if (!chipStack || chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
 
@@ -248,8 +272,10 @@ class RoomManager {
     }
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
-    // Persist updated agent
-    this.store.saveAgent(lobbyAgent);
+    // Persist updated agent (skip sandbox)
+    if (!walletAddress.startsWith('sandbox_')) {
+      this.store.saveAgent(lobbyAgent);
+    }
 
     return {
       success: true,
@@ -312,13 +338,16 @@ class RoomManager {
       }
     }
 
-    // Return chips to wallet
-    if (finalChips > 0) {
+    // Return chips to wallet (not for sandbox agents)
+    const wasInSandbox = table && this.rooms[table.roomId] && this.rooms[table.roomId].isSandbox;
+    if (finalChips > 0 && !wasInSandbox) {
       this.store.addBalance(walletAddress, finalChips);
     }
 
-    // Remove from persistent store
-    this.store.deleteAgent(agentId);
+    // Remove from persistent store (skip sandbox)
+    if (!walletAddress.startsWith('sandbox_')) {
+      this.store.deleteAgent(agentId);
+    }
 
     return {
       success: true, finalChips, pnl,

@@ -1633,6 +1633,20 @@
     color: var(--accent-green);
     margin-top: 3px;
   }
+  .room-tab.sandbox-tab.active {
+    border-color: var(--accent-green);
+    background: rgba(16,185,129,0.08);
+  }
+  .room-tab.sandbox-tab.active .room-tab-name {
+    color: var(--accent-green);
+  }
+  .room-tab.sandbox-tab:hover {
+    border-color: var(--accent-green);
+  }
+  .sandbox-pick {
+    border-color: var(--accent-green) !important;
+    color: var(--accent-green);
+  }
   .room-picker {
     display: flex;
     gap: 6px;
@@ -2721,7 +2735,12 @@
     </div>
 
     <div class="room-tabs" id="roomTabs">
-      <button class="room-tab active" onclick="switchRoom('micro')" id="roomTab-micro">
+      <button class="room-tab sandbox-tab active" onclick="switchRoom('sandbox')" id="roomTab-sandbox">
+        <span class="room-tab-name">Sandbox</span>
+        <span class="room-tab-info">FREE · Play Money</span>
+        <span class="room-tab-players" id="roomPlayers-sandbox"></span>
+      </button>
+      <button class="room-tab" onclick="switchRoom('micro')" id="roomTab-micro">
         <span class="room-tab-name">Micro</span>
         <span class="room-tab-info">$1 buy-in · 25/50</span>
         <span class="room-tab-players" id="roomPlayers-micro"></span>
@@ -3382,7 +3401,7 @@ let pingInterval = null;
 // ============================================================
 // GAME STATE (populated from server)
 // ============================================================
-let activeRoom = 'micro';
+let activeRoom = 'sandbox';
 let gameState = {
   running: false,
   round: 0,
@@ -3546,7 +3565,7 @@ function handleMessage(msg) {
           walletBalance = msg.data.newBalance;
           updateWalletUI();
         }
-        const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+        const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
         const rn = roomNames[msg.data.roomId] || msg.data.roomId;
         showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
         if (msg.data.roomId) activeRoom = msg.data.roomId;
@@ -3648,7 +3667,7 @@ function switchRoom(roomId) {
   const tab = document.getElementById('roomTab-' + roomId);
   if (tab) tab.classList.add('active');
   // Update table title
-  const names = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  const names = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
   const titleEl = document.getElementById('tableTitle');
   if (titleEl) titleEl.textContent = '🃏 PokerAI — ' + (names[roomId] || roomId);
   // Tell server
@@ -3867,7 +3886,7 @@ function renderCommunityCard(index, card) {
 // ============================================================
 // FUNDING — sends to server via WebSocket
 // ============================================================
-const ROOM_LABELS = { micro: 'Micro', mid: 'Mid', high: 'High' };
+const ROOM_LABELS = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
 let _portfolioTopUpOpen = false;
 
 function renderPortfolioBar() {
@@ -4434,6 +4453,10 @@ function renderMyAgents() {
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
           <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Choose Room & Buy-in</div>
           <div class="room-picker">
+            <button class="room-pick-btn sandbox-pick" onclick="selectRoomForJoin('${agent.id}','sandbox')">
+              <span class="pick-label">Sandbox</span>
+              <span class="pick-sub">FREE</span>
+            </button>
             <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','micro')">
               <span class="pick-label">Micro</span>
               <span class="pick-sub">$1 · 25/50</span>
@@ -4656,15 +4679,24 @@ function toggleRoomPicker(agentId) {
 }
 
 const ROOM_PRESETS = {
-  micro:  [1000, 2500, 5000, 10000],
-  mid:    [5000, 10000, 25000, 50000],
-  high:   [25000, 50000, 100000, 250000]
+  sandbox: [5000, 10000, 25000, 50000],
+  micro:   [1000, 2500, 5000, 10000],
+  mid:     [5000, 10000, 25000, 50000],
+  high:    [25000, 50000, 100000, 250000]
 };
 
 function selectRoomForJoin(agentId, roomId) {
   // Store selected room
   window._joinRoom = window._joinRoom || {};
   window._joinRoom[agentId] = roomId;
+
+  // Sandbox: instant join with free chips, no buy-in step
+  if (roomId === 'sandbox') {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'joinTable', agentId, roomId: 'sandbox', chipStack: 10000 }));
+    }
+    return;
+  }
 
   // Highlight selected room button
   const picker = document.getElementById('roomPicker-' + agentId);
@@ -4703,7 +4735,7 @@ function confirmJoin(agentId) {
   // Server handles balance deduction
   _roomPickerOpen = false;
   ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId, chipStack: amount }));
-  const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
   showToast(`Joining ${roomNames[roomId]} with ${amount.toLocaleString()} chips...`, 'info');
 }
 
