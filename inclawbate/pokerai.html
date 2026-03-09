@@ -1226,6 +1226,89 @@
   .no-agents-msg .title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
 
   /* Responsive */
+  /* ROOM TABS */
+  .room-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .room-tab {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+  }
+  .room-tab:hover {
+    border-color: var(--accent-primary);
+  }
+  .room-tab.active {
+    border-color: var(--accent-gold);
+    background: rgba(245,197,66,0.08);
+  }
+  .room-tab-name {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .room-tab.active .room-tab-name {
+    color: var(--accent-gold);
+  }
+  .room-tab-info {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .room-tab-players {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--accent-green);
+    margin-top: 3px;
+  }
+  .room-picker {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .room-pick-btn {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .room-pick-btn:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    background: rgba(245,197,66,0.06);
+  }
+  .room-pick-btn .pick-label {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .room-pick-btn .pick-sub {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
   /* HOW IT WORKS */
   .hiw-hero {
     text-align: center;
@@ -2110,12 +2193,30 @@
       </div>
       <button onclick="showView('myagents')" style="padding:6px 14px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:8px;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-green)';this.style.color='var(--accent-green)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Manage Agents</button>
     </div>
+    <div class="room-tabs" id="roomTabs">
+      <button class="room-tab active" onclick="switchRoom('micro')" id="roomTab-micro">
+        <span class="room-tab-name">Micro</span>
+        <span class="room-tab-info">$1 buy-in · 25/50</span>
+        <span class="room-tab-players" id="roomPlayers-micro"></span>
+      </button>
+      <button class="room-tab" onclick="switchRoom('mid')" id="roomTab-mid">
+        <span class="room-tab-name">Mid Stakes</span>
+        <span class="room-tab-info">$5 buy-in · 125/250</span>
+        <span class="room-tab-players" id="roomPlayers-mid"></span>
+      </button>
+      <button class="room-tab" onclick="switchRoom('high')" id="roomTab-high">
+        <span class="room-tab-name">High Stakes</span>
+        <span class="room-tab-info">$25 buy-in · 625/1250</span>
+        <span class="room-tab-players" id="roomPlayers-high"></span>
+      </button>
+    </div>
+
     <div class="arena-layout">
 
       <div>
         <div class="table-container">
           <div class="table-header">
-            <div class="table-title">🃏 PokerAI — Texas Hold'em</div>
+            <div class="table-title" id="tableTitle">🃏 PokerAI — Micro</div>
             <div id="liveBadge" class="live-badge">
               <div class="live-dot"></div>
               Live
@@ -2779,6 +2880,7 @@ let pingInterval = null;
 // ============================================================
 // GAME STATE (populated from server)
 // ============================================================
+let activeRoom = 'micro';
 let gameState = {
   running: false,
   round: 0,
@@ -2795,7 +2897,8 @@ let gameState = {
   contractPool: 20000,
   totalCashouts: 0,
   totalBuyins: 0,
-  poolFlows: []
+  poolFlows: [],
+  rooms: {}
 };
 
 function isFunded(agentId) {
@@ -2942,9 +3045,13 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        showToast(`Agent joined the table! Replaced ${msg.data.replacedBot}`, 'success');
+        const roomNames = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+        const rn = roomNames[msg.data.roomId] || msg.data.roomId;
+        showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
+        if (msg.data.roomId) activeRoom = msg.data.roomId;
         setTimeout(() => {
           showView('arena');
+          switchRoom(activeRoom);
           showToast('Watch your agent play! (green border = yours)', 'gold');
         }, 600);
       }
@@ -3018,8 +3125,45 @@ function applyServerState(data) {
   gameState.fundPositions = data.positions || [];
   gameState.totalPnl = data.totalPnl || 0;
   gameState.lobbyAgents = data.lobbyAgents || [];
+  gameState.rooms = data.rooms || {};
+  if (data.activeRoom) activeRoom = data.activeRoom;
 
+  updateRoomTabs();
   renderFullState();
+}
+
+function switchRoom(roomId) {
+  activeRoom = roomId;
+  // Update tab UI immediately
+  document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('roomTab-' + roomId);
+  if (tab) tab.classList.add('active');
+  // Update table title
+  const names = { micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  const titleEl = document.getElementById('tableTitle');
+  if (titleEl) titleEl.textContent = '🃏 PokerAI — ' + (names[roomId] || roomId);
+  // Tell server
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'subscribeRoom', roomId }));
+  }
+}
+
+function updateRoomTabs() {
+  const rooms = gameState.rooms || {};
+  for (const [roomId, info] of Object.entries(rooms)) {
+    const el = document.getElementById('roomPlayers-' + roomId);
+    if (el) {
+      if (info.playerCount > 0) {
+        el.textContent = info.playerCount + ' player' + (info.playerCount !== 1 ? 's' : '') + ' · ' + info.tableCount + ' table' + (info.tableCount !== 1 ? 's' : '');
+      } else {
+        el.textContent = info.tableCount + ' table' + (info.tableCount !== 1 ? 's' : '');
+      }
+    }
+  }
+  // Highlight active tab
+  document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('roomTab-' + activeRoom);
+  if (tab) tab.classList.add('active');
 }
 
 function renderFullState() {
@@ -3621,10 +3765,13 @@ function renderMyAgents() {
   const wallet = getWallet();
   if (!wallet) return;
 
-  // Playing agents (at the table)
-  const playing = gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address);
-  // Lobby agents (from server state)
-  const lobby = gameState.lobbyAgents || [];
+  // Use myAgents if available (has all rooms), fallback to gameState
+  const allAgents = myAgents.length > 0 ? myAgents : [
+    ...gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address).map(a => ({ ...a, status: 'playing' })),
+    ...(gameState.lobbyAgents || []).map(a => ({ ...a, status: 'lobby' }))
+  ];
+  const playing = allAgents.filter(a => a.status === 'playing');
+  const lobby = allAgents.filter(a => a.status === 'lobby');
 
   if (playing.length === 0 && lobby.length === 0) {
     grid.innerHTML = `
@@ -3670,9 +3817,23 @@ function renderMyAgents() {
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button onclick="joinTable('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>
+            <button onclick="toggleRoomPicker('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>
             <button class="btn-recall" onclick="recallAgent('${agent.id}')">Delete</button>
           </div>
+        </div>
+        <div id="roomPicker-${agent.id}" class="room-picker" style="display:none">
+          <button class="room-pick-btn" onclick="joinTable('${agent.id}','micro')">
+            <span class="pick-label">Micro</span>
+            <span class="pick-sub">$1 · 25/50</span>
+          </button>
+          <button class="room-pick-btn" onclick="joinTable('${agent.id}','mid')">
+            <span class="pick-label">Mid</span>
+            <span class="pick-sub">$5 · 125/250</span>
+          </button>
+          <button class="room-pick-btn" onclick="joinTable('${agent.id}','high')">
+            <span class="pick-label">High</span>
+            <span class="pick-sub">$25 · 625/1250</span>
+          </button>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
       </div>`;
@@ -3682,7 +3843,7 @@ function renderMyAgents() {
   // PLAYING section
   if (playing.length > 0) {
     html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:${lobby.length > 0 ? '20px' : '0'} 0 8px;display:flex;align-items:center;gap:6px">
-      <span style="color:var(--accent-green)">🟢</span> Playing at Table (${playing.length})
+      <span style="color:var(--accent-green)">🟢</span> Playing (${playing.length})
     </div>`;
     html += playing.map(agent => {
       const pnl = agent.chips - agent.baseChips;
@@ -3690,6 +3851,8 @@ function renderMyAgents() {
       const pnlSign = pnl >= 0 ? '+' : '';
       const cardClass = pnl >= 0 ? 'profitable' : 'losing';
       const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+      const roomNames = { micro: 'Micro', mid: 'Mid', high: 'High' };
+      const roomLabel = roomNames[agent.roomId] || '';
 
       return `
       <div class="my-agent-card ${cardClass}">
@@ -3701,7 +3864,7 @@ function renderMyAgents() {
                 <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
                 <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
                   <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
-                  LIVE
+                  LIVE${roomLabel ? ' · ' + roomLabel : ''}
                 </span>
               </div>
               <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
@@ -3737,7 +3900,7 @@ function renderMyAgents() {
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button onclick="showView('arena')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
+            <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
             <button onclick="leaveTable('${agent.id}')" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
           </div>
         </div>
@@ -3806,13 +3969,18 @@ function deployAgent() {
   showToast('Creating agent...', 'info');
 }
 
-function joinTable(agentId) {
+function toggleRoomPicker(agentId) {
+  const el = document.getElementById('roomPicker-' + agentId);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+function joinTable(agentId, roomId) {
   const wallet = getWallet();
   if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
-  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId }));
-  showToast('Joining table...', 'info');
+  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId: roomId || 'micro' }));
+  showToast('Joining ' + (roomId || 'micro') + ' table...', 'info');
 }
 
 function topUpAgent(agentId, amount) {

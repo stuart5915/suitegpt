@@ -4,7 +4,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { PokerEngine } = require('./poker-engine');
+const { RoomManager } = require('./room-manager');
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -24,25 +24,29 @@ app.use(express.json());
 
 // WebSocket server
 const wss = new WebSocketServer({ server });
-const clients = new Map(); // ws → { sessionId, walletAddress }
+const clients = new Map(); // ws → { sessionId, walletAddress, activeRoom }
 
-// Game engine — broadcast sends per-client state
-const engine = new PokerEngine((type, data) => {
+// Room manager — 3 rooms (micro/mid/high), auto-spawns tables
+const rooms = new RoomManager((type, data) => {
   if (type === 'gameState') {
-    // Send per-client state (each client gets their own funded agent cards)
+    const sourceRoom = data ? data.roomId : null;
     for (const [ws, client] of clients) {
       if (ws.readyState === 1) {
+        // Only send state updates for the room the client is watching
+        if (sourceRoom && client.activeRoom !== sourceRoom) continue;
         try {
-          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
+          const state = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
         } catch (e) { /* client disconnected */ }
       }
     }
   } else {
-    // Broadcast same message to all
+    // Tag with room/table, let client filter
     const msg = JSON.stringify({ type, data });
-    for (const [ws] of clients) {
+    for (const [ws, client] of clients) {
       if (ws.readyState === 1) {
+        // Only send log/action messages for the room the client is watching
+        if (data && data.roomId && client.activeRoom !== data.roomId) continue;
         try { ws.send(msg); } catch (e) { /* ignore */ }
       }
     }
@@ -59,13 +63,24 @@ function broadcastViewerCount() {
   }
 }
 
+function broadcastStateToAll() {
+  for (const [ws, client] of clients) {
+    if (ws.readyState === 1) {
+      try {
+        const state = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+        ws.send(JSON.stringify({ type: 'gameState', data: state }));
+      } catch (e) { /* ignore */ }
+    }
+  }
+}
+
 wss.on('connection', (ws) => {
   const sessionId = uuidv4();
-  clients.set(ws, { sessionId });
+  clients.set(ws, { sessionId, activeRoom: 'micro' });
 
   // Send welcome + initial state
   ws.send(JSON.stringify({ type: 'welcome', data: { sessionId, viewerCount: clients.size } }));
-  const state = engine.getStateForClient(sessionId, null);
+  const state = rooms.getStateForClient(sessionId, null, 'micro');
   ws.send(JSON.stringify({ type: 'gameState', data: state }));
   broadcastViewerCount();
 
@@ -80,90 +95,69 @@ wss.on('connection', (ws) => {
           client.walletAddress = msg.walletAddress || null;
           break;
         }
+        case 'subscribeRoom': {
+          const roomId = msg.roomId || 'micro';
+          if (['micro', 'mid', 'high'].includes(roomId)) {
+            client.activeRoom = roomId;
+            const s = rooms.getStateForClient(client.sessionId, client.walletAddress, roomId);
+            ws.send(JSON.stringify({ type: 'gameState', data: s }));
+          }
+          break;
+        }
         case 'fund': {
-          const result = engine.fundAgent(client.sessionId, msg.agentId, msg.amount);
+          const result = rooms.fundAgent(client.sessionId, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'fundResult', data: result }));
-          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
-          ws.send(JSON.stringify({ type: 'gameState', data: state }));
+          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
         case 'withdraw': {
-          const result = engine.withdrawAgent(client.sessionId, msg.agentId);
+          const result = rooms.withdrawAgent(client.sessionId, msg.agentId);
           ws.send(JSON.stringify({ type: 'withdrawResult', data: result }));
-          const state = engine.getStateForClient(client.sessionId, client.walletAddress);
-          ws.send(JSON.stringify({ type: 'gameState', data: state }));
+          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
         case 'createAgent': {
           client.walletAddress = msg.walletAddress;
-          const result = engine.createLobbyAgent(msg.walletAddress, msg.config);
+          const result = rooms.createLobbyAgent(msg.walletAddress, msg.config);
           ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
-          // Send updated state to this client (lobby agents are per-wallet)
-          const s = engine.getStateForClient(client.sessionId, client.walletAddress);
+          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
         case 'joinTable': {
           client.walletAddress = msg.walletAddress;
-          const result = engine.joinTable(msg.walletAddress, msg.agentId);
+          const roomId = msg.roomId || 'micro';
+          const result = rooms.joinRoom(msg.walletAddress, msg.agentId, roomId);
           ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
-          // Broadcast to all — table changed
-          for (const [c, cData] of clients) {
-            if (c.readyState === 1) {
-              try {
-                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
-                c.send(JSON.stringify({ type: 'gameState', data: s }));
-              } catch (e) { /* ignore */ }
-            }
+          // Switch client to the room they joined
+          if (result.success) {
+            client.activeRoom = roomId;
           }
+          broadcastStateToAll();
           break;
         }
         case 'topUp': {
-          const result = engine.topUpAgent(msg.walletAddress, msg.agentId, msg.amount);
+          const result = rooms.topUpAgent(msg.walletAddress, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
-          if (result.success) {
-            // Broadcast to all — agent stack changed
-            for (const [c, cData] of clients) {
-              if (c.readyState === 1) {
-                try {
-                  const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
-                  c.send(JSON.stringify({ type: 'gameState', data: s }));
-                } catch (e) { /* ignore */ }
-              }
-            }
-          }
+          if (result.success) broadcastStateToAll();
           break;
         }
         case 'leaveTable': {
-          const result = engine.leaveTable(msg.walletAddress, msg.agentId);
+          const result = rooms.leaveTable(msg.walletAddress, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
-          // Broadcast to all — table changed
-          for (const [c, cData] of clients) {
-            if (c.readyState === 1) {
-              try {
-                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
-                c.send(JSON.stringify({ type: 'gameState', data: s }));
-              } catch (e) { /* ignore */ }
-            }
-          }
+          broadcastStateToAll();
           break;
         }
         case 'recallAgent': {
-          const result = engine.deleteAgent(msg.walletAddress, msg.agentId);
+          const result = rooms.deleteAgent(msg.walletAddress, msg.agentId);
           ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
-          // Broadcast to all — table may have changed if agent was playing
-          for (const [c, cData] of clients) {
-            if (c.readyState === 1) {
-              try {
-                const s = engine.getStateForClient(cData.sessionId, cData.walletAddress);
-                c.send(JSON.stringify({ type: 'gameState', data: s }));
-              } catch (e) { /* ignore */ }
-            }
-          }
+          broadcastStateToAll();
           break;
         }
         case 'getMyAgents': {
-          const result = engine.getAgentsForWallet(msg.walletAddress);
+          const result = rooms.getAgentsForWallet(msg.walletAddress);
           ws.send(JSON.stringify({ type: 'myAgents', data: result }));
           break;
         }
@@ -179,7 +173,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     const client = clients.get(ws);
     if (client) {
-      engine.withdrawAll(client.sessionId);
+      rooms.withdrawAll(client.sessionId);
     }
     clients.delete(ws);
     broadcastViewerCount();
@@ -188,20 +182,24 @@ wss.on('connection', (ws) => {
 
 // REST endpoints
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: 2, viewers: clients.size, handsPlayed: engine.handsPlayed });
+  res.json({
+    status: 'ok',
+    version: 3,
+    viewers: clients.size,
+    handsPlayed: rooms.totalHandsPlayed,
+    rooms: rooms.getRoomsSummary()
+  });
 });
 
 app.get('/stats', (req, res) => {
-  const state = engine.getPublicState();
   res.json({
     viewers: clients.size,
-    handsPlayed: state.handsPlayed,
-    contractPool: state.contractPool,
-    agents: state.agents.map(a => ({ id: a.id, name: a.name, chips: a.chips, handsWon: a.handsWon }))
+    handsPlayed: rooms.totalHandsPlayed,
+    rooms: rooms.getRoomsSummary()
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`PokerAI server v2 running on port ${PORT} — custom agents enabled`);
-  engine.start();
+  console.log(`PokerAI server v3 running on port ${PORT} — 3 rooms (micro/mid/high)`);
+  rooms.start();
 });

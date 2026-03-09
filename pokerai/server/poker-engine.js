@@ -3,9 +3,6 @@ const { AGENTS } = require('./agents');
 const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const SUITS = ['♠','♥','♦','♣'];
 const RANK_VALUES = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
-const BB = 50;
-const BASE_CHIPS = 10000;
-const CASHOUT_THRESHOLD = 2.0;
 const ACTION_DELAY = 1500;
 const BETWEEN_HANDS_DELAY = 3000;
 
@@ -82,8 +79,8 @@ function getBestHand(holeCards, communityCards) {
   return best;
 }
 
-// Agent AI decision
-function agentDecide(agent, communityCards, pot) {
+// Agent AI decision — bb passed as parameter for stake-level scaling
+function agentDecide(agent, communityCards, pot, bb) {
   let strength = 0.3 + Math.random() * 0.5;
 
   if (communityCards.length > 0) {
@@ -92,53 +89,59 @@ function agentDecide(agent, communityCards, pot) {
   }
 
   const r = Math.random() * 100;
-  const maxBet = Math.min(Math.floor(agent.chips * 0.4), 500);
-  const betAmt = Math.max(BB, Math.floor(Math.random() * maxBet));
+  const maxBet = Math.min(Math.floor(agent.chips * 0.4), bb * 10);
+  const betAmt = Math.max(bb, Math.floor(Math.random() * maxBet));
 
   if (agent.style === 'aggressive') {
     if (r < agent.raisePct) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (r < agent.raisePct + 30) return { type: 'call', label: 'Call', amount: BB };
+    if (r < agent.raisePct + 30) return { type: 'call', label: 'Call', amount: bb };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'conservative') {
     if (strength > 0.7 && r < 40) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-    if (strength > 0.5 || r < 25) return { type: 'call', label: 'Call', amount: BB };
+    if (strength > 0.5 || r < 25) return { type: 'call', label: 'Call', amount: bb };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'bluffer') {
     if (r < agent.bluffPct * 0.8) return { type: 'raise', label: `Bluff ${betAmt}`, amount: betAmt };
-    if (r < 70) return { type: 'call', label: 'Call', amount: BB };
+    if (r < 70) return { type: 'call', label: 'Call', amount: bb };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'mathematical') {
-    const potOdds = pot > 0 ? BB / pot : 1;
+    const potOdds = pot > 0 ? bb / pot : 1;
     if (strength > potOdds + 0.2 && r < 45) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
     if (strength > potOdds || r < 20) return { type: 'check', label: 'Check', amount: 0 };
-    if (strength > 0.3) return { type: 'call', label: 'Call', amount: BB };
+    if (strength > 0.3) return { type: 'call', label: 'Call', amount: bb };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   if (agent.style === 'chaotic') {
     const chaos = Math.random();
     if (chaos < 0.3) return { type: 'raise', label: `YOLO ${betAmt}`, amount: betAmt };
-    if (chaos < 0.5) return { type: 'call', label: 'Call', amount: BB };
+    if (chaos < 0.5) return { type: 'call', label: 'Call', amount: bb };
     if (chaos < 0.65) return { type: 'check', label: 'Check', amount: 0 };
-    if (chaos < 0.85 && agent.chips > 200) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
+    if (chaos < 0.85 && agent.chips > bb * 4) return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
   // balanced / default
   if (strength > 0.7 && r < 50) return { type: 'raise', label: `Raise ${betAmt}`, amount: betAmt };
-  if (strength > 0.4 || r < 40) return { type: 'call', label: 'Call', amount: Math.min(BB, agent.chips) };
+  if (strength > 0.4 || r < 40) return { type: 'call', label: 'Call', amount: Math.min(bb, agent.chips) };
   if (r < 20) return { type: 'check', label: 'Check', amount: 0 };
   return { type: 'fold', label: 'Fold', amount: 0 };
 }
 
 class PokerEngine {
-  constructor(broadcast) {
-    this.broadcast = broadcast; // fn(type, data) → send to all clients
+  constructor(broadcast, config = {}) {
+    this.broadcast = broadcast;
+    this.tableId = config.tableId || 'default';
+    this.roomId = config.roomId || 'micro';
+    this.bb = config.bb || 50;
+    this.baseChips = config.baseChips || 10000;
+    this.cashoutThreshold = config.cashoutThreshold || 2.0;
+
     this.agents = AGENTS.map(a => ({
       ...a,
-      chips: BASE_CHIPS,
-      baseChips: BASE_CHIPS,
+      chips: this.baseChips,
+      baseChips: this.baseChips,
       handsWon: 0,
       handsPlayed: 0,
       biggestPot: 0,
@@ -156,13 +159,12 @@ class PokerEngine {
     this.dealerIndex = 0;
     this.currentTurnIndex = 0;
     this.lastWinner = null;
-    this.contractPool = 20000;
+    this.contractPool = this.baseChips * 2;
     this.totalCashouts = 0;
     this.totalBuyins = 0;
     this.poolFlows = [];
-    this.fundPositions = new Map(); // sessionId → [{ agentId, deposited, startStack }]
-    this.replacedBots = new Map(); // agentId → original bot data
-    this.lobbyAgents = new Map(); // walletAddress → [agent configs]
+    this.fundPositions = new Map();
+    this.replacedBots = new Map();
     this.running = false;
   }
 
@@ -191,7 +193,7 @@ class PokerEngine {
     // Reset agents — bust agents rebuy from pool
     for (const a of this.agents) {
       if (a.chips <= 0) {
-        const rebuyAmount = Math.min(5000, this.contractPool);
+        const rebuyAmount = Math.min(Math.floor(this.baseChips / 2), this.contractPool);
         if (rebuyAmount > 0) {
           this.contractPool -= rebuyAmount;
           this.totalBuyins += rebuyAmount;
@@ -217,16 +219,16 @@ class PokerEngine {
     const sbIdx = (this.dealerIndex + 1) % this.agents.length;
     const bbIdx = (this.dealerIndex + 2) % this.agents.length;
     const sb = this.agents[sbIdx];
-    const bb = this.agents[bbIdx];
-    const sbAmt = Math.min(Math.floor(BB / 2), sb.chips);
-    const bbAmt = Math.min(BB, bb.chips);
+    const bbAgent = this.agents[bbIdx];
+    const sbAmt = Math.min(Math.floor(this.bb / 2), sb.chips);
+    const bbAmt = Math.min(this.bb, bbAgent.chips);
     sb.chips -= sbAmt;
-    bb.chips -= bbAmt;
+    bbAgent.chips -= bbAmt;
     this.pot += sbAmt + bbAmt;
 
     this.broadcast('log', { html: `<span class="system">--- Hand #${this.handsPlayed} ---</span>` });
     this.broadcast('log', { html: `<span class="agent">${sb.name}</span> posts SB <span class="amount">${sbAmt}</span>` });
-    this.broadcast('log', { html: `<span class="agent">${bb.name}</span> posts BB <span class="amount">${bbAmt}</span>` });
+    this.broadcast('log', { html: `<span class="agent">${bbAgent.name}</span> posts BB <span class="amount">${bbAmt}</span>` });
 
     this.currentTurnIndex = (bbIdx + 1) % this.agents.length;
     this.broadcastGameState();
@@ -240,7 +242,6 @@ class PokerEngine {
     ];
 
     for (let pi = 0; pi < phases.length; pi++) {
-      // Deal community cards
       if (pi > 0) {
         const p = phases[pi];
         this.phase = p.name;
@@ -253,16 +254,13 @@ class PokerEngine {
         await sleep(ACTION_DELAY);
       }
 
-      // Run betting for this phase
       const handOver = await this.runBettingRound();
       if (handOver) return;
 
-      // Reset bets for next phase
       this.agents.forEach(a => a.currentBet = 0);
       this.currentTurnIndex = (this.dealerIndex + 1) % this.agents.length;
     }
 
-    // Showdown
     this.phase = 'showdown';
     this.broadcast('log', { html: '<span class="system">--- Showdown! ---</span>' });
     const activePlayers = this.agents.filter(a => !a.folded);
@@ -283,7 +281,7 @@ class PokerEngine {
         return true;
       }
 
-      const action = agentDecide(agent, this.communityCards, this.pot);
+      const action = agentDecide(agent, this.communityCards, this.pot, this.bb);
       this.applyAction(agent, action);
       this.broadcast('action', { agentId: agent.id, action: action.type, amount: action.amount, label: action.label });
       this.broadcastGameState();
@@ -366,7 +364,7 @@ class PokerEngine {
 
   checkAgentCashouts() {
     for (const agent of this.agents) {
-      const threshold = agent.baseChips * CASHOUT_THRESHOLD;
+      const threshold = agent.baseChips * this.cashoutThreshold;
       if (agent.chips > threshold) {
         const excess = agent.chips - agent.baseChips;
         agent.chips = agent.baseChips;
@@ -384,7 +382,7 @@ class PokerEngine {
     if (this.poolFlows.length > 20) this.poolFlows.pop();
   }
 
-  // Fund positions
+  // Fund positions (house bot funding — legacy system)
   fundAgent(sessionId, agentId, amount) {
     const agent = this.agents.find(a => a.id === agentId);
     if (!agent) return { error: 'Agent not found' };
@@ -466,76 +464,16 @@ class PokerEngine {
     }
   }
 
-  // Custom agent management — two-step flow: Create → Join Table
+  // === Custom agent table operations (lobby managed by RoomManager) ===
 
-  createLobbyAgent(walletAddress, agentConfig) {
-    const { name, emoji, aggression, bluffing, patience, tiltResist, chipStack } = agentConfig;
-
-    const agentId = `custom_${walletAddress}_${Date.now()}`;
-    const raisePct = Math.round(aggression * 0.65 + 5);
-    const bluffPct = Math.round(bluffing * 0.7);
-    const foldPct = Math.max(5, Math.round(patience * 0.6));
-
-    let style;
-    if (aggression >= 70) style = 'aggressive';
-    else if (bluffing >= 60) style = 'bluffer';
-    else if (patience >= 70) style = 'conservative';
-    else style = 'balanced';
-
-    const lobbyAgent = {
-      id: agentId,
-      name,
-      emoji,
-      style,
-      description: `Custom agent by ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`,
-      raisePct,
-      bluffPct,
-      foldPct,
-      traits: { aggression, bluffing, patience, tiltResist },
-      walletAddress,
-      isCustom: true,
-      chipStack: chipStack || BASE_CHIPS,
-      handsWon: 0,
-      handsPlayed: 0,
-      biggestPot: 0
-    };
-
-    if (!this.lobbyAgents.has(walletAddress)) {
-      this.lobbyAgents.set(walletAddress, []);
-    }
-    this.lobbyAgents.get(walletAddress).push(lobbyAgent);
-
-    return {
-      success: true,
-      agent: {
-        id: lobbyAgent.id,
-        name: lobbyAgent.name,
-        emoji: lobbyAgent.emoji,
-        style: lobbyAgent.style,
-        traits: lobbyAgent.traits,
-        chipStack: lobbyAgent.chipStack
-      }
-    };
-  }
-
-  joinTable(walletAddress, agentId) {
-    const walletLobby = this.lobbyAgents.get(walletAddress);
-    if (!walletLobby) return { error: 'No agents in lobby' };
-
-    const lobbyIdx = walletLobby.findIndex(a => a.id === agentId);
-    if (lobbyIdx === -1) return { error: 'Agent not found in lobby' };
-
-    // Find the first house bot (one without isCustom) to replace
+  seatAgent(lobbyAgent) {
     const houseBotIndex = this.agents.findIndex(a => !a.isCustom);
     if (houseBotIndex === -1) {
       return { error: 'Table full — no house bot to replace' };
     }
 
-    const lobbyAgent = walletLobby[lobbyIdx];
-
-    // Store a clean copy of the replaced house bot
     const replacedBot = this.agents[houseBotIndex];
-    this.replacedBots.set(agentId, {
+    this.replacedBots.set(lobbyAgent.id, {
       id: replacedBot.id,
       name: replacedBot.name,
       emoji: replacedBot.emoji,
@@ -549,7 +487,6 @@ class PokerEngine {
       index: houseBotIndex
     });
 
-    // Create table agent from lobby agent
     const tableAgent = {
       id: lobbyAgent.id,
       name: lobbyAgent.name,
@@ -573,24 +510,19 @@ class PokerEngine {
       allIn: false
     };
 
-    // Place at table and remove from lobby
     this.agents[houseBotIndex] = tableAgent;
-    walletLobby.splice(lobbyIdx, 1);
-    if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
-
     this.broadcastGameState();
-    return { success: true, agentId, replacedBot: replacedBot.name };
+    return { success: true, replacedBot: replacedBot.name };
   }
 
-  leaveTable(walletAddress, agentId) {
+  unseatAgent(walletAddress, agentId) {
     const agentIndex = this.agents.findIndex(a => a.id === agentId && a.walletAddress === walletAddress);
     if (agentIndex === -1) {
-      return { error: 'Agent not found at table or not owned by this wallet' };
+      return { error: 'Agent not found at this table' };
     }
 
     const agent = this.agents[agentIndex];
 
-    // Build lobby agent from current table state (carry over chips + stats)
     const lobbyAgent = {
       id: agent.id,
       name: agent.name,
@@ -609,13 +541,12 @@ class PokerEngine {
       biggestPot: agent.biggestPot
     };
 
-    // Restore the house bot it replaced
     const originalBot = this.replacedBots.get(agentId);
     if (originalBot) {
       this.agents[agentIndex] = {
         ...originalBot,
-        chips: BASE_CHIPS,
-        baseChips: BASE_CHIPS,
+        chips: this.baseChips,
+        baseChips: this.baseChips,
         handsWon: 0,
         handsPlayed: 0,
         biggestPot: 0,
@@ -627,138 +558,61 @@ class PokerEngine {
       this.replacedBots.delete(agentId);
     }
 
-    // Put agent back in lobby
-    if (!this.lobbyAgents.has(walletAddress)) {
-      this.lobbyAgents.set(walletAddress, []);
+    this.broadcastGameState();
+    return { success: true, agent: lobbyAgent };
+  }
+
+  removeFromTable(walletAddress, agentId) {
+    const tableIdx = this.agents.findIndex(a => a.id === agentId && a.walletAddress === walletAddress);
+    if (tableIdx === -1) return { error: 'Agent not found at this table' };
+
+    const agent = this.agents[tableIdx];
+    const finalChips = agent.chips;
+    const pnl = finalChips - agent.baseChips;
+
+    const originalBot = this.replacedBots.get(agentId);
+    if (originalBot) {
+      this.agents[tableIdx] = {
+        ...originalBot,
+        chips: this.baseChips,
+        baseChips: this.baseChips,
+        handsWon: 0,
+        handsPlayed: 0,
+        biggestPot: 0,
+        hand: [],
+        folded: false,
+        currentBet: 0,
+        allIn: false
+      };
+      this.replacedBots.delete(agentId);
     }
-    this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
     this.broadcastGameState();
-    return {
-      success: true,
-      agent: {
-        id: lobbyAgent.id,
-        name: lobbyAgent.name,
-        emoji: lobbyAgent.emoji,
-        style: lobbyAgent.style,
-        chipStack: lobbyAgent.chipStack,
-        handsWon: lobbyAgent.handsWon,
-        handsPlayed: lobbyAgent.handsPlayed,
-        biggestPot: lobbyAgent.biggestPot
-      }
-    };
+    return { success: true, finalChips, pnl };
   }
 
   topUpAgent(walletAddress, agentId, amount) {
     if (amount < 100) return { error: 'Minimum top-up is 100 chips' };
 
-    // Must be at the table
     const agent = this.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
     if (!agent) return { error: 'Agent not found at table' };
 
     agent.chips += amount;
-    agent.baseChips += amount; // Increase base so P&L stays relative to total invested
+    agent.baseChips += amount;
 
     this.broadcastGameState();
     return { success: true, agentName: agent.name, newStack: agent.chips, totalInvested: agent.baseChips };
   }
 
-  deleteAgent(walletAddress, agentId) {
-    // Check if agent is at the table first
-    const tableIdx = this.agents.findIndex(a => a.id === agentId && a.walletAddress === walletAddress);
-    if (tableIdx !== -1) {
-      const agent = this.agents[tableIdx];
-      const finalChips = agent.chips;
-      const pnl = finalChips - agent.baseChips;
-
-      // Restore the house bot it replaced
-      const originalBot = this.replacedBots.get(agentId);
-      if (originalBot) {
-        this.agents[tableIdx] = {
-          ...originalBot,
-          chips: BASE_CHIPS,
-          baseChips: BASE_CHIPS,
-          handsWon: 0,
-          handsPlayed: 0,
-          biggestPot: 0,
-          hand: [],
-          folded: false,
-          currentBet: 0,
-          allIn: false
-        };
-        this.replacedBots.delete(agentId);
-      }
-
-      this.broadcastGameState();
-      return { success: true, finalChips, pnl };
-    }
-
-    // Check lobby
-    const walletLobby = this.lobbyAgents.get(walletAddress);
-    if (walletLobby) {
-      const lobbyIdx = walletLobby.findIndex(a => a.id === agentId);
-      if (lobbyIdx !== -1) {
-        const agent = walletLobby[lobbyIdx];
-        const finalChips = agent.chipStack;
-        walletLobby.splice(lobbyIdx, 1);
-        if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
-        return { success: true, finalChips, pnl: 0 };
-      }
-    }
-
-    return { error: 'Agent not found or not owned by this wallet' };
-  }
-
-  getAgentsForWallet(walletAddress) {
-    const results = [];
-
-    // Table agents
-    for (const a of this.agents) {
-      if (a.isCustom && a.walletAddress === walletAddress) {
-        results.push({
-          id: a.id,
-          name: a.name,
-          emoji: a.emoji,
-          style: a.style,
-          chips: a.chips,
-          chipStack: a.chips,
-          baseChips: a.baseChips,
-          handsWon: a.handsWon,
-          handsPlayed: a.handsPlayed,
-          biggestPot: a.biggestPot,
-          traits: a.traits,
-          pnl: a.chips - a.baseChips,
-          status: 'playing'
-        });
-      }
-    }
-
-    // Lobby agents
-    const walletLobby = this.lobbyAgents.get(walletAddress) || [];
-    for (const a of walletLobby) {
-      results.push({
-        id: a.id,
-        name: a.name,
-        emoji: a.emoji,
-        style: a.style,
-        chips: a.chipStack,
-        chipStack: a.chipStack,
-        baseChips: a.chipStack,
-        handsWon: a.handsWon,
-        handsPlayed: a.handsPlayed,
-        biggestPot: a.biggestPot,
-        traits: a.traits,
-        pnl: 0,
-        status: 'lobby'
-      });
-    }
-
-    return results;
+  hasAvailableSeat() {
+    return this.agents.some(a => !a.isCustom);
   }
 
   // State getters
   getPublicState() {
     return {
+      tableId: this.tableId,
+      roomId: this.roomId,
       agents: this.agents.map(a => ({
         id: a.id,
         name: a.name,
@@ -799,7 +653,6 @@ class PokerEngine {
     const positions = this.fundPositions.get(sessionId) || [];
     const fundedAgentIds = new Set(positions.map(p => p.agentId));
 
-    // Add pocket cards for funded agents AND custom agents owned by this wallet
     state.agents = state.agents.map(a => {
       const agent = this.agents.find(ag => ag.id === a.id);
       const isFunded = fundedAgentIds.has(a.id);
@@ -816,30 +669,11 @@ class PokerEngine {
     state.positions = positions;
     state.totalPnl = totalPnl;
 
-    // Include lobby agents for this wallet
-    if (walletAddress) {
-      const walletLobby = this.lobbyAgents.get(walletAddress) || [];
-      state.lobbyAgents = walletLobby.map(a => ({
-        id: a.id,
-        name: a.name,
-        emoji: a.emoji,
-        style: a.style,
-        chipStack: a.chipStack,
-        handsWon: a.handsWon,
-        handsPlayed: a.handsPlayed,
-        biggestPot: a.biggestPot,
-        traits: a.traits,
-        status: 'lobby'
-      }));
-    } else {
-      state.lobbyAgents = [];
-    }
-
     return state;
   }
 
   broadcastGameState() {
-    this.broadcast('gameState', null); // signal server to send per-client state
+    this.broadcast('gameState', null);
   }
 
   capitalize(s) {
