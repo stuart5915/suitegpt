@@ -19,18 +19,29 @@ function esc(str) {
 
 async function sendMsg(chatId, text) {
     if (!BOT_TOKEN) return;
+    // Split on newlines to avoid cutting HTML tags
+    const lines = text.split('\n');
     const chunks = [];
-    let remaining = text;
-    while (remaining.length > 0) {
-        chunks.push(remaining.slice(0, 4000));
-        remaining = remaining.slice(4000);
+    let current = '';
+    for (const line of lines) {
+        if (current.length + line.length + 1 > 4000) {
+            chunks.push(current);
+            current = '';
+        }
+        current += (current ? '\n' : '') + line;
     }
+    if (current) chunks.push(current);
+
     for (const chunk of chunks) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, text: chunk, parse_mode: 'HTML', disable_web_page_preview: true })
         });
+        if (!resp.ok) {
+            const err = await resp.text();
+            console.error('TG sendMessage error:', err);
+        }
     }
 }
 
