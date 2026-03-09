@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Just4Claws</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+    <div class="atmo-top"></div>
+
+    <div class="page-container" style="max-width:640px">
+        <div class="page-header">
+            <h1>Settings</h1>
+        </div>
+
+        <!-- Profile Settings -->
+        <div class="card" style="margin-bottom:24px">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-bright);margin-bottom:20px">Profile</h3>
+            <form onsubmit="saveProfile(event)">
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" class="input" id="set-name" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Handle</label>
+                    <input type="text" class="input" id="set-handle" disabled>
+                    <div class="form-hint">Handle cannot be changed</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bio</label>
+                    <textarea class="textarea" id="set-bio" rows="3" maxlength="500" placeholder="Tell subscribers about yourself..."></textarea>
+                </div>
+                <div class="form-group" id="set-price-group" style="display:none">
+                    <label class="form-label">Subscription Price</label>
+                    <input type="number" class="input" id="set-price" min="2" max="50" step="0.01">
+                    <div class="form-hint">$2 - $50 per month</div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+
+        <!-- Active Subscriptions -->
+        <div class="card" style="margin-bottom:24px">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-bright);margin-bottom:20px">Your Subscriptions</h3>
+            <div id="subs-list">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card" style="border-color:rgba(239,68,68,0.2)">
+            <h3 style="font-size:16px;font-weight:700;color:var(--red);margin-bottom:12px">Danger Zone</h3>
+            <p style="font-size:14px;color:var(--text);margin-bottom:16px">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button class="btn btn-danger" onclick="deleteAccount()">Delete Account</button>
+        </div>
+    </div>
+
+    <script src="/js/supabase-init.js"></script>
+    <script src="/js/nav.js"></script>
+    <script>
+        (async () => {
+            const profile = await initAuth();
+            if (!profile) return;
+
+            document.getElementById('set-name').value = profile.display_name || '';
+            document.getElementById('set-handle').value = '@' + (profile.handle || '');
+            document.getElementById('set-bio').value = profile.bio || '';
+
+            if (['creator', 'creator_pro'].includes(profile.role)) {
+                document.getElementById('set-price-group').style.display = 'block';
+                document.getElementById('set-price').value = profile.subscription_price || '';
+            }
+
+            loadSubscriptions();
+        })();
+
+        async function saveProfile(e) {
+            e.preventDefault();
+            const updates = {
+                display_name: document.getElementById('set-name').value.trim(),
+                bio: document.getElementById('set-bio').value.trim()
+            };
+
+            if (['creator', 'creator_pro'].includes(j4c.profile.role)) {
+                const price = document.getElementById('set-price').value;
+                if (price) updates.subscription_price = parseFloat(price);
+            }
+
+            updates.updated_at = new Date().toISOString();
+
+            const { error } = await supabase
+                .from('j4c_profiles')
+                .update(updates)
+                .eq('id', j4c.profile.id);
+
+            if (error) {
+                showToast('Failed to save: ' + error.message, 'error');
+            } else {
+                showToast('Profile saved!', 'success');
+            }
+        }
+
+        async function loadSubscriptions() {
+            const { data: subs } = await supabase
+                .from('j4c_subscriptions')
+                .select('*, creator:j4c_profiles!creator_id(display_name, handle, avatar_url)')
+                .eq('subscriber_id', j4c.profile.id)
+                .in('status', ['active', 'paused'])
+                .order('created_at', { ascending: false });
+
+            const list = document.getElementById('subs-list');
+
+            if (!subs || subs.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px"><p>No active subscriptions</p><a href="/app" class="btn btn-sm btn-secondary" style="margin-top:8px">Discover Creators</a></div>';
+                return;
+            }
+
+            list.innerHTML = subs.map(s => {
+                const c = s.creator;
+                return `
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border)">
+                        <div style="display:flex; align-items:center; gap:12px">
+                            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--pink),var(--purple));flex-shrink:0">
+                                ${c?.avatar_url ? `<img src="${c.avatar_url}" style="width:100%;height:100%;object-fit:cover">` :
+                                    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${(c?.display_name || '?')[0]}</div>`}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;color:var(--text-bright);font-size:14px">${c?.display_name}</div>
+                                <div style="font-size:12px;color:var(--text-dim)">@${c?.handle} &middot; ${formatMoney(s.price_at_subscribe)}/mo</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="cancelSub('${s.id}')">Cancel</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function cancelSub(subId) {
+            if (!confirm('Cancel this subscription?')) return;
+            await supabase.from('j4c_subscriptions')
+                .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+                .eq('id', subId);
+            showToast('Subscription cancelled', '');
+            loadSubscriptions();
+        }
+
+        async function deleteAccount() {
+            if (!confirm('Are you sure? This will permanently delete your account and all content. This CANNOT be undone.')) return;
+            if (!confirm('Really sure? Last chance.')) return;
+
+            // Delete profile (cascades to content, subscriptions, etc.)
+            await supabase.from('j4c_profiles').delete().eq('id', j4c.profile.id);
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Manager | Just4Claws</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+    <div class="atmo-top"></div>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Content Manager</h1>
+            <p>Manage your published and draft content</p>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-bottom:24px">
+            <a href="/studio" class="btn btn-primary">Create New Content</a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(this, 'published')">Published</button>
+            <button class="tab" onclick="switchTab(this, 'drafts')">Drafts</button>
+        </div>
+
+        <div id="tab-published">
+            <div class="content-grid" id="published-grid">
+                <div class="loading-spinner"></div>
+            </div>
+            <div class="empty-state" id="published-empty" style="display:none">
+                <div class="empty-icon">&#x1F4F8;</div>
+                <h3>No published content</h3>
+                <p>Go to the AI Studio to create and publish content.</p>
+                <a href="/studio" class="btn btn-primary">Open Studio</a>
+            </div>
+        </div>
+
+        <div id="tab-drafts" style="display:none">
+            <div class="content-grid" id="drafts-grid">
+                <div class="loading-spinner"></div>
+            </div>
+            <div class="empty-state" id="drafts-empty" style="display:none">
+                <div class="empty-icon">&#x1F3A8;</div>
+                <h3>No drafts</h3>
+                <p>Content you generate in the AI Studio will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            <div class="modal-title">Edit Post</div>
+            <div class="form-group">
+                <label class="form-label">Caption</label>
+                <textarea class="textarea" id="edit-caption" rows="3" placeholder="Add a caption..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Visibility</label>
+                <select class="select" id="edit-gating">
+                    <option value="gated">Subscribers Only</option>
+                    <option value="free">Free (Public)</option>
+                    <option value="ppv">Pay-Per-View</option>
+                </select>
+            </div>
+            <div class="form-group" id="ppv-price-group" style="display:none">
+                <label class="form-label">PPV Price</label>
+                <input type="number" class="input" id="edit-ppv-price" placeholder="4.99" min="1" step="0.01">
+            </div>
+            <div style="display:flex; gap:8px">
+                <button class="btn btn-primary" onclick="saveEdit()" style="flex:1">Save</button>
+                <button class="btn btn-danger" onclick="deletePost()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/supabase-init.js"></script>
+    <script src="/js/nav.js"></script>
+    <script>
+        let editingId = null;
+
+        (async () => {
+            const profile = await initAuth();
+            if (!profile || !['creator', 'creator_pro'].includes(profile.role)) {
+                window.location.href = '/app';
+                return;
+            }
+            loadContent();
+        })();
+
+        async function loadContent() {
+            // Published
+            const { data: published } = await supabase
+                .from('j4c_content')
+                .select('*')
+                .eq('creator_id', j4c.profile.id)
+                .eq('is_published', true)
+                .order('published_at', { ascending: false });
+
+            const pubGrid = document.getElementById('published-grid');
+            if (!published || published.length === 0) {
+                pubGrid.innerHTML = '';
+                document.getElementById('published-empty').style.display = 'block';
+            } else {
+                document.getElementById('published-empty').style.display = 'none';
+                pubGrid.innerHTML = published.map(c => contentCard(c, true)).join('');
+            }
+
+            // Drafts
+            const { data: drafts } = await supabase
+                .from('j4c_content')
+                .select('*')
+                .eq('creator_id', j4c.profile.id)
+                .eq('is_published', false)
+                .order('created_at', { ascending: false });
+
+            const draftGrid = document.getElementById('drafts-grid');
+            if (!drafts || drafts.length === 0) {
+                draftGrid.innerHTML = '';
+                document.getElementById('drafts-empty').style.display = 'block';
+            } else {
+                document.getElementById('drafts-empty').style.display = 'none';
+                draftGrid.innerHTML = drafts.map(c => contentCard(c, false)).join('');
+            }
+        }
+
+        function contentCard(c, isPublished) {
+            return `
+                <div class="content-item" onclick="openEditModal('${c.id}', '${(c.caption || '').replace(/'/g, "\\'")}', ${c.is_gated}, ${c.is_ppv}, ${c.ppv_price || 0}, ${isPublished})">
+                    ${c.thumbnail_url || c.image_url
+                        ? `<img src="${c.thumbnail_url || c.image_url}" alt="">`
+                        : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#2d1035,var(--pink))"></div>`
+                    }
+                    <div class="content-badge">
+                        ${c.is_ppv ? '<span class="badge badge-pro">PPV</span>'
+                            : c.is_gated ? '<span class="badge badge-gated">Subs</span>'
+                            : '<span class="badge badge-free">Free</span>'}
+                    </div>
+                    ${c.like_count ? `<div class="content-overlay">&#x2764; ${c.like_count}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function switchTab(el, tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('tab-published').style.display = tab === 'published' ? 'block' : 'none';
+            document.getElementById('tab-drafts').style.display = tab === 'drafts' ? 'block' : 'none';
+        }
+
+        function openEditModal(id, caption, isGated, isPpv, ppvPrice, isPublished) {
+            editingId = id;
+            document.getElementById('edit-caption').value = caption;
+            document.getElementById('edit-gating').value = isPpv ? 'ppv' : isGated ? 'gated' : 'free';
+            document.getElementById('edit-ppv-price').value = ppvPrice || '';
+            document.getElementById('ppv-price-group').style.display = isPpv ? 'block' : 'none';
+            document.getElementById('edit-modal').classList.add('open');
+
+            document.getElementById('edit-gating').onchange = function() {
+                document.getElementById('ppv-price-group').style.display = this.value === 'ppv' ? 'block' : 'none';
+            };
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('open');
+            editingId = null;
+        }
+
+        async function saveEdit() {
+            if (!editingId) return;
+            const gating = document.getElementById('edit-gating').value;
+
+            await supabase.from('j4c_content').update({
+                caption: document.getElementById('edit-caption').value,
+                is_gated: gating !== 'free',
+                is_ppv: gating === 'ppv',
+                ppv_price: gating === 'ppv' ? parseFloat(document.getElementById('edit-ppv-price').value) : null
+            }).eq('id', editingId);
+
+            closeEditModal();
+            showToast('Post updated', 'success');
+            loadContent();
+        }
+
+        async function deletePost() {
+            if (!editingId) return;
+            if (!confirm('Delete this post? This cannot be undone.')) return;
+
+            await supabase.from('j4c_content').delete().eq('id', editingId);
+            closeEditModal();
+            showToast('Post deleted', '');
+            loadContent();
+        }
+    </script>
+</body>
+</html>

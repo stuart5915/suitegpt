@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed | Just4Claws</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+    <div class="atmo-top"></div>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Your Feed</h1>
+            <p>Content from creators you're subscribed to</p>
+        </div>
+
+        <div class="feed" id="feed">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <div class="empty-state" id="empty-state" style="display:none">
+            <div class="empty-icon">&#x1F4F0;</div>
+            <h3>Your feed is empty</h3>
+            <p>Subscribe to creators to see their content here.</p>
+            <a href="/app" class="btn btn-primary">Discover Creators</a>
+        </div>
+    </div>
+
+    <!-- Tip Modal -->
+    <div class="modal-overlay" id="tip-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeTipModal()">&times;</button>
+            <div class="modal-title">Send a Tip</div>
+            <div class="form-group">
+                <label class="form-label">Amount (USD)</label>
+                <input type="number" class="input" id="tip-amount" placeholder="5.00" min="1" step="0.01">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Payment Method</label>
+                <select class="select" id="tip-method">
+                    <option value="card">Credit / Debit Card</option>
+                    <option value="eth">ETH</option>
+                    <option value="usdc">USDC</option>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="sendTip()">Send Tip</button>
+        </div>
+    </div>
+
+    <script src="/js/supabase-init.js"></script>
+    <script src="/js/nav.js"></script>
+    <script>
+        let tipCreatorId = null;
+        let tipContentId = null;
+
+        (async () => {
+            const profile = await initAuth();
+            if (profile) loadFeed();
+        })();
+
+        async function loadFeed() {
+            const feed = document.getElementById('feed');
+
+            // Get active subscriptions
+            const { data: subs } = await supabase
+                .from('j4c_subscriptions')
+                .select('creator_id')
+                .eq('subscriber_id', j4c.profile.id)
+                .eq('status', 'active');
+
+            if (!subs || subs.length === 0) {
+                feed.innerHTML = '';
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+
+            const creatorIds = subs.map(s => s.creator_id);
+
+            // Get content from subscribed creators
+            const { data: posts } = await supabase
+                .from('j4c_content')
+                .select('*, creator:j4c_profiles!creator_id(display_name, handle, avatar_url)')
+                .in('creator_id', creatorIds)
+                .eq('is_published', true)
+                .eq('moderation_status', 'approved')
+                .order('published_at', { ascending: false })
+                .limit(50);
+
+            if (!posts || posts.length === 0) {
+                feed.innerHTML = '';
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+
+            // Get user's likes
+            const { data: likes } = await supabase
+                .from('j4c_likes')
+                .select('content_id')
+                .eq('user_id', j4c.profile.id);
+            const likedIds = new Set((likes || []).map(l => l.content_id));
+
+            feed.innerHTML = posts.map(p => postHTML(p, likedIds.has(p.id))).join('');
+        }
+
+        function postHTML(post, isLiked) {
+            const creator = post.creator;
+            const initial = (creator?.display_name || '?')[0].toUpperCase();
+
+            return `
+                <div class="feed-post">
+                    <div class="feed-post-header">
+                        <div class="feed-post-avatar" onclick="window.location.href='/creator/${creator?.handle}'" style="cursor:pointer">
+                            ${creator?.avatar_url
+                                ? `<img src="${creator.avatar_url}" alt="">`
+                                : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">${initial}</div>`
+                            }
+                        </div>
+                        <div>
+                            <div class="feed-post-name">${creator?.display_name || 'Unknown'}</div>
+                            <div class="feed-post-time">${timeAgo(post.published_at)}</div>
+                        </div>
+                    </div>
+                    ${post.image_url ? `
+                        <div class="feed-post-image">
+                            <img src="${post.thumbnail_url || post.image_url}" alt="">
+                        </div>
+                    ` : ''}
+                    <div class="feed-post-body">
+                        ${post.caption ? `<div class="feed-post-caption">${post.caption}</div>` : ''}
+                        <div class="feed-post-actions">
+                            <button class="feed-post-action ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', this)">
+                                ${isLiked ? '&#x2764;' : '&#x2661;'} ${post.like_count || 0}
+                            </button>
+                            <button class="feed-post-action" onclick="openTipModal('${post.creator_id}', '${post.id}')">
+                                &#x1F4B0; Tip
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function toggleLike(contentId, btn) {
+            const isLiked = btn.classList.contains('liked');
+
+            if (isLiked) {
+                await supabase.from('j4c_likes').delete()
+                    .eq('user_id', j4c.profile.id)
+                    .eq('content_id', contentId);
+                btn.classList.remove('liked');
+            } else {
+                await supabase.from('j4c_likes').insert({
+                    user_id: j4c.profile.id,
+                    content_id: contentId
+                });
+                btn.classList.add('liked');
+            }
+        }
+
+        function openTipModal(creatorId, contentId) {
+            tipCreatorId = creatorId;
+            tipContentId = contentId;
+            document.getElementById('tip-modal').classList.add('open');
+        }
+
+        function closeTipModal() {
+            document.getElementById('tip-modal').classList.remove('open');
+        }
+
+        async function sendTip() {
+            const amount = parseFloat(document.getElementById('tip-amount').value);
+            if (!amount || amount < 1) {
+                showToast('Minimum tip is $1', 'error');
+                return;
+            }
+
+            const platformFee = amount * 0.20;
+            const creatorAmount = amount - platformFee;
+
+            await supabase.from('j4c_transactions').insert({
+                type: 'tip',
+                from_user_id: j4c.profile.id,
+                to_user_id: tipCreatorId,
+                amount,
+                platform_fee: platformFee,
+                creator_amount: creatorAmount,
+                payment_method: document.getElementById('tip-method').value,
+                content_id: tipContentId
+            });
+
+            closeTipModal();
+            showToast('Tip sent!', 'success');
+        }
+    </script>
+</body>
+</html>

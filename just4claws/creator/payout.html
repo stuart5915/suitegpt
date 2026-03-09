@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payouts | Just4Claws</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+    <div class="atmo-top"></div>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Payouts</h1>
+            <p>Manage your earnings and withdrawal methods</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Available Balance</div>
+                <div class="stat-value" id="balance-available">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value" id="balance-pending">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Lifetime Earned</div>
+                <div class="stat-value" id="balance-lifetime">$0.00</div>
+            </div>
+        </div>
+
+        <!-- Withdrawal -->
+        <div class="card" style="margin-bottom:32px">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-bright);margin-bottom:16px">Request Withdrawal</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end">
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="input" id="withdraw-amount" placeholder="20.00" min="20" step="0.01">
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Method</label>
+                    <select class="select" id="withdraw-method">
+                        <option value="">Select method...</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="requestWithdrawal()">Withdraw</button>
+            </div>
+            <div class="form-hint" style="margin-top:8px">Minimum withdrawal: $20. Bank transfers take 1-3 business days. Crypto is instant.</div>
+        </div>
+
+        <!-- Payout Methods -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-bright)">Payout Methods</h3>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('add-method-modal').classList.add('open')">Add Method</button>
+        </div>
+        <div id="methods-list">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Payout History -->
+        <h3 style="font-size:16px;font-weight:700;color:var(--text-bright);margin-top:32px;margin-bottom:16px">Payout History</h3>
+        <div class="card">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr>
+                    </thead>
+                    <tbody id="payout-history">
+                        <tr><td colspan="4" style="text-align:center;color:var(--text-dim)">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Method Modal -->
+    <div class="modal-overlay" id="add-method-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="document.getElementById('add-method-modal').classList.remove('open')">&times;</button>
+            <div class="modal-title">Add Payout Method</div>
+            <div class="form-group">
+                <label class="form-label">Type</label>
+                <select class="select" id="method-type" onchange="toggleMethodFields()">
+                    <option value="eth">ETH Wallet</option>
+                    <option value="usdc">USDC Wallet</option>
+                    <option value="bank">Bank Account (ACH)</option>
+                </select>
+            </div>
+            <div id="crypto-fields">
+                <div class="form-group">
+                    <label class="form-label">Wallet Address</label>
+                    <input type="text" class="input" id="method-wallet" placeholder="0x...">
+                </div>
+            </div>
+            <div id="bank-fields" style="display:none">
+                <div class="form-group">
+                    <label class="form-label">Account Number (last 4)</label>
+                    <input type="text" class="input" id="method-account" placeholder="1234" maxlength="4">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Routing Number (last 4)</label>
+                    <input type="text" class="input" id="method-routing" placeholder="5678" maxlength="4">
+                </div>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="addMethod()">Add Method</button>
+        </div>
+    </div>
+
+    <script src="/js/supabase-init.js"></script>
+    <script src="/js/nav.js"></script>
+    <script>
+        (async () => {
+            const profile = await initAuth();
+            if (!profile || !['creator', 'creator_pro'].includes(profile.role)) {
+                window.location.href = '/app';
+                return;
+            }
+
+            // Load balance
+            const { data: balance } = await supabase
+                .from('j4c_creator_balances')
+                .select('*')
+                .eq('creator_id', profile.id)
+                .single();
+
+            if (balance) {
+                document.getElementById('balance-available').textContent = formatMoney(balance.available_usd);
+                document.getElementById('balance-pending').textContent = formatMoney(balance.pending_usd);
+                document.getElementById('balance-lifetime').textContent = formatMoney(balance.lifetime_earned_usd);
+            }
+
+            loadMethods();
+            loadPayoutHistory();
+        })();
+
+        function toggleMethodFields() {
+            const type = document.getElementById('method-type').value;
+            document.getElementById('crypto-fields').style.display = type === 'bank' ? 'none' : 'block';
+            document.getElementById('bank-fields').style.display = type === 'bank' ? 'block' : 'none';
+        }
+
+        async function loadMethods() {
+            const { data: methods } = await supabase
+                .from('j4c_payout_methods')
+                .select('*')
+                .eq('creator_id', j4c.profile.id)
+                .order('created_at', { ascending: false });
+
+            const list = document.getElementById('methods-list');
+            const select = document.getElementById('withdraw-method');
+
+            if (!methods || methods.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:24px"><p>No payout methods. Add one to withdraw earnings.</p></div>';
+                return;
+            }
+
+            list.innerHTML = methods.map(m => `
+                <div class="card" style="margin-bottom:8px; padding:16px; display:flex; justify-content:space-between; align-items:center">
+                    <div>
+                        <span class="badge ${m.type === 'bank' ? 'badge-ai' : 'badge-pro'}">${m.type.toUpperCase()}</span>
+                        <span style="margin-left:8px; color:var(--text-bright); font-weight:600">
+                            ${m.type === 'bank' ? `Account ****${m.bank_account_last4}` : `${m.wallet_address.slice(0, 6)}...${m.wallet_address.slice(-4)}`}
+                        </span>
+                        ${m.is_default ? '<span class="badge badge-free" style="margin-left:8px">Default</span>' : ''}
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteMethod('${m.id}')">Remove</button>
+                </div>
+            `).join('');
+
+            select.innerHTML = methods.map(m => `
+                <option value="${m.id}">
+                    ${m.type.toUpperCase()} — ${m.type === 'bank' ? `****${m.bank_account_last4}` : `${m.wallet_address.slice(0, 6)}...${m.wallet_address.slice(-4)}`}
+                </option>
+            `).join('');
+        }
+
+        async function addMethod() {
+            const type = document.getElementById('method-type').value;
+            const data = {
+                creator_id: j4c.profile.id,
+                type,
+                is_default: true
+            };
+
+            if (type === 'bank') {
+                data.bank_account_last4 = document.getElementById('method-account').value;
+                data.bank_routing_hint = document.getElementById('method-routing').value;
+            } else {
+                data.wallet_address = document.getElementById('method-wallet').value;
+                if (!data.wallet_address) {
+                    showToast('Please enter a wallet address', 'error');
+                    return;
+                }
+            }
+
+            await supabase.from('j4c_payout_methods').insert(data);
+            document.getElementById('add-method-modal').classList.remove('open');
+            showToast('Method added', 'success');
+            loadMethods();
+        }
+
+        async function deleteMethod(id) {
+            await supabase.from('j4c_payout_methods').delete().eq('id', id);
+            showToast('Method removed', '');
+            loadMethods();
+        }
+
+        async function requestWithdrawal() {
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const methodId = document.getElementById('withdraw-method').value;
+
+            if (!amount || amount < 20) {
+                showToast('Minimum withdrawal is $20', 'error');
+                return;
+            }
+            if (!methodId) {
+                showToast('Select a payout method', 'error');
+                return;
+            }
+
+            await supabase.from('j4c_payouts').insert({
+                creator_id: j4c.profile.id,
+                payout_method_id: methodId,
+                amount,
+                status: 'pending'
+            });
+
+            showToast('Withdrawal requested!', 'success');
+            loadPayoutHistory();
+        }
+
+        async function loadPayoutHistory() {
+            const { data: payouts } = await supabase
+                .from('j4c_payouts')
+                .select('*, method:j4c_payout_methods!payout_method_id(type)')
+                .eq('creator_id', j4c.profile.id)
+                .order('created_at', { ascending: false });
+
+            const tbody = document.getElementById('payout-history');
+            if (!payouts || payouts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No payouts yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = payouts.map(p => `
+                <tr>
+                    <td style="font-weight:600;color:var(--text-bright)">${formatMoney(p.amount)}</td>
+                    <td>${p.method?.type?.toUpperCase() || '—'}</td>
+                    <td><span class="badge ${p.status === 'completed' ? 'badge-free' : p.status === 'failed' ? 'badge-gated' : 'badge-ai'}">${p.status}</span></td>
+                    <td>${timeAgo(p.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

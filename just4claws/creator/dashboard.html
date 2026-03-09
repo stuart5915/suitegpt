@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Just4Claws</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/nav.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <style>
+        .dashboard-actions {
+            display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap;
+        }
+        .earnings-chart {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px;
+        }
+        .earnings-chart h3 {
+            font-size: 16px; font-weight: 700; color: var(--text-bright); margin-bottom: 16px;
+        }
+        .chart-bars {
+            display: flex; align-items: flex-end; gap: 4px; height: 120px;
+        }
+        .chart-bar {
+            flex: 1; border-radius: 4px 4px 0 0; min-height: 4px;
+            background: linear-gradient(180deg, var(--pink), var(--purple));
+            transition: height 0.5s ease;
+            position: relative;
+        }
+        .chart-bar:hover { opacity: 0.8; }
+        .chart-bar .chart-tooltip {
+            display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+            transform: translateX(-50%); background: var(--bg-card);
+            border: 1px solid var(--border-bright); border-radius: 6px;
+            padding: 4px 8px; font-size: 11px; color: var(--text-bright);
+            white-space: nowrap;
+        }
+        .chart-bar:hover .chart-tooltip { display: block; }
+        .chart-labels {
+            display: flex; gap: 4px; margin-top: 8px;
+        }
+        .chart-labels span {
+            flex: 1; text-align: center; font-size: 10px; color: var(--text-dim);
+        }
+        .section-heading {
+            font-size: 16px; font-weight: 700; color: var(--text-bright);
+            margin-bottom: 16px; margin-top: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div class="atmo-top"></div>
+
+    <div class="page-container">
+        <div class="page-header">
+            <h1>Creator Dashboard</h1>
+            <p>Track your earnings, subscribers, and content performance</p>
+        </div>
+
+        <div class="dashboard-actions">
+            <a href="/studio" class="btn btn-primary">Open AI Studio</a>
+            <a href="/content" class="btn btn-secondary">Manage Content</a>
+            <a href="/payout" class="btn btn-secondary">Payout Settings</a>
+        </div>
+
+        <div class="stats-grid" id="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Earned</div>
+                <div class="stat-value" id="stat-earned">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" id="stat-month">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Subscribers</div>
+                <div class="stat-value" id="stat-subs">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Posts</div>
+                <div class="stat-value" id="stat-posts">0</div>
+            </div>
+        </div>
+
+        <div class="earnings-chart">
+            <h3>Earnings — Last 14 Days</h3>
+            <div class="chart-bars" id="chart-bars"></div>
+            <div class="chart-labels" id="chart-labels"></div>
+        </div>
+
+        <h3 class="section-heading">Recent Transactions</h3>
+        <div class="card">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>From</th>
+                            <th>Amount</th>
+                            <th>Your Earnings</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txn-table">
+                        <tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/supabase-init.js"></script>
+    <script src="/js/nav.js"></script>
+    <script>
+        (async () => {
+            const profile = await initAuth();
+            if (!profile) return;
+
+            if (!['creator', 'creator_pro'].includes(profile.role)) {
+                window.location.href = '/app';
+                return;
+            }
+
+            // Load balance
+            const { data: balance } = await supabase
+                .from('j4c_creator_balances')
+                .select('*')
+                .eq('creator_id', profile.id)
+                .single();
+
+            if (balance) {
+                document.getElementById('stat-earned').textContent = formatMoney(balance.lifetime_earned_usd);
+            }
+
+            // Active subs count
+            const { count: subCount } = await supabase
+                .from('j4c_subscriptions')
+                .select('id', { count: 'exact', head: true })
+                .eq('creator_id', profile.id)
+                .eq('status', 'active');
+            document.getElementById('stat-subs').textContent = subCount || 0;
+
+            // Post count
+            const { count: postCount } = await supabase
+                .from('j4c_content')
+                .select('id', { count: 'exact', head: true })
+                .eq('creator_id', profile.id)
+                .eq('is_published', true);
+            document.getElementById('stat-posts').textContent = postCount || 0;
+
+            // Recent transactions
+            const { data: txns } = await supabase
+                .from('j4c_transactions')
+                .select('*, from_user:j4c_profiles!from_user_id(display_name, handle)')
+                .eq('to_user_id', profile.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            const txnTable = document.getElementById('txn-table');
+
+            // This month earnings
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const monthTxns = (txns || []).filter(t => t.created_at >= monthStart);
+            const monthTotal = monthTxns.reduce((sum, t) => sum + parseFloat(t.creator_amount || 0), 0);
+            document.getElementById('stat-month').textContent = formatMoney(monthTotal);
+
+            if (!txns || txns.length === 0) {
+                txnTable.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No transactions yet</td></tr>';
+            } else {
+                txnTable.innerHTML = txns.map(t => `
+                    <tr>
+                        <td><span class="badge ${t.type === 'subscription' ? 'badge-gated' : t.type === 'tip' ? 'badge-pro' : 'badge-ai'}">${t.type}</span></td>
+                        <td>${t.from_user?.display_name || 'User'}</td>
+                        <td>${formatMoney(t.amount)}</td>
+                        <td style="color:var(--green)">${formatMoney(t.creator_amount)}</td>
+                        <td>${timeAgo(t.created_at)}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render chart (last 14 days)
+            renderChart(txns || []);
+        })();
+
+        function renderChart(txns) {
+            const bars = document.getElementById('chart-bars');
+            const labels = document.getElementById('chart-labels');
+            const days = [];
+
+            for (let i = 13; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                const dayTxns = txns.filter(t => t.created_at?.startsWith(dateStr));
+                const total = dayTxns.reduce((sum, t) => sum + parseFloat(t.creator_amount || 0), 0);
+                days.push({ date: d, total, label: d.getDate() });
+            }
+
+            const max = Math.max(...days.map(d => d.total), 1);
+
+            bars.innerHTML = days.map(d => {
+                const height = Math.max((d.total / max) * 100, 4);
+                return `<div class="chart-bar" style="height:${height}%"><div class="chart-tooltip">${formatMoney(d.total)}</div></div>`;
+            }).join('');
+
+            labels.innerHTML = days.map(d =>
+                `<span>${d.label}</span>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>
