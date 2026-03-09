@@ -147,7 +147,7 @@ wss.on('connection', (ws) => {
 
 // REST endpoints
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', viewers: clients.size, handsPlayed: engine.handsPlayed });
+  res.json({ status: 'ok', version: 2, viewers: clients.size, handsPlayed: engine.handsPlayed });
 });
 
 app.get('/stats', (req, res) => {
@@ -161,6 +161,6 @@ app.get('/stats', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`PokerAI server running on port ${PORT}`);
+  console.log(`PokerAI server v2 running on port ${PORT} — custom agents enabled`);
   engine.start();
 });
