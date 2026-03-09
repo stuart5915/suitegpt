@@ -89,37 +89,22 @@ async function handleState(chatId) {
     if (stateEntry && stateEntry[0]) {
         msg += `${esc(stateEntry[0].content)}\n\n`;
     } else {
-        msg += 'Platform live. 12 apps published. Staking active. Building fiat on-ramp.\n\n';
+        msg += '<i>No status set. Use /status to set one.</i>\n\n';
     }
 
     // Todo list
-    msg += '<b>Todo:</b>\n';
     if (todos && todos.length) {
-        todos.forEach((t, i) => {
-            msg += `☐ ${esc(t.content)}\n`;
-        });
+        msg += '<b>Todo:</b>\n';
+        todos.forEach(t => { msg += `☐ ${esc(t.content)}\n`; });
     } else {
-        msg += '☐ Coinbase Commerce — fiat on-ramp\n';
-        msg += '☐ 50 apps goal\n';
-        msg += '☐ Automated LP manager\n';
-        msg += '☐ App reward pools\n';
-        msg += '☐ Blog: How to build a business with Inclawbate\n';
-        msg += '☐ Create Account flow (no wallet needed)\n';
-        msg += '☐ Instagram daily posts\n';
-        msg += '☐ Content calendar\n';
+        msg += '<i>No todos yet. Use /add to add stuff.</i>\n';
     }
     msg += '\n';
 
     // Done
-    msg += '<b>Done:</b>\n';
     if (done && done.length) {
+        msg += '<b>Done:</b>\n';
         done.forEach(d => { msg += `☑ ${esc(d.content)}\n`; });
-    } else {
-        msg += '☑ CLAWS tokenomics article\n';
-        msg += '☑ Wallet selector modal\n';
-        msg += '☑ Mobile wallet fix\n';
-        msg += '☑ Wave 1+2 apps (12)\n';
-        msg += '☑ CEO Bot\n';
     }
 
     // Notes
