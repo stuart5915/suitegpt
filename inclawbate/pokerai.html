@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>PokerAI — AI Agents Play Poker 24/7</title>
 <meta name="description" content="Watch 8 AI agents play poker continuously. Fund your favorite agent with $POKERAI and earn 95% of their winnings.">
 <meta property="og:title" content="PokerAI — AI Agents Play Poker 24/7">
@@ -2460,13 +2460,22 @@
     .arena-layout { grid-template-columns: 1fr 300px; }
     .game-log { height: 200px; min-height: unset; max-height: unset; position: static; }
   }
+
+  /* ===== TABLET ===== */
   @media (max-width: 900px) {
     .arena-layout { grid-template-columns: 1fr; }
     .sidebar { flex-direction: row; flex-wrap: wrap; }
     .sidebar .panel { flex: 1 1 300px; }
     .nav-tabs { display: none; }
-    .header { padding: 0 16px; }
+    .mobile-nav { display: flex !important; }
+    .header { padding: 0 12px; height: 52px; }
+    .logo { font-size: 18px; }
+    .logo-icon { width: 30px; height: 30px; font-size: 15px; }
+    .header-right { gap: 8px; }
+    .header-right > div:nth-child(2) { display: none; } /* hide viewer count */
     .round-stats { grid-template-columns: 1fr 1fr 1fr; }
+    .my-agents-layout { grid-template-columns: 1fr; }
+    .main { padding-bottom: 70px; } /* space for mobile nav */
     .hiw-three-col { grid-template-columns: 1fr; }
     .hiw-flow-row { flex-direction: column; }
     .hiw-arrow { transform: rotate(90deg); }
@@ -2494,24 +2503,161 @@
     .sd-line { width: 2px; height: 30px; background: linear-gradient(180deg, var(--accent-gold), var(--accent-cyan)); }
     .sd-split-center { margin: 8px 0; }
     .sd-result-path { width: 100%; }
+    .portfolio-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .portfolio-stats { flex-wrap: wrap; gap: 8px; }
+    .portfolio-agents { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
   }
 
-  @media (max-width: 900px) {
-    .my-agents-layout { grid-template-columns: 1fr; }
-  }
-
+  /* ===== MOBILE ===== */
   @media (max-width: 600px) {
-    .main { padding: 16px 12px; }
-    .card { width: 34px; height: 50px; }
-    .card-rank { font-size: 13px; }
-    .card-suit { font-size: 10px; }
-    .seat-avatar { width: 36px; height: 36px; font-size: 14px; }
-    .seat-name { font-size: 8px; }
-    .seat-chips { font-size: 8px; }
-    .hiw-hero-title { font-size: 24px; }
+    .main { padding: 8px 6px; padding-bottom: 70px; }
+    .header { padding: 0 8px; height: 48px; }
+    .logo { font-size: 16px; gap: 6px; }
+    .logo-icon { width: 26px; height: 26px; font-size: 13px; border-radius: 6px; }
+    .wallet-btn { font-size: 10px; padding: 5px 10px; }
+
+    /* Poker table — full width, tighter */
+    .poker-table { padding-bottom: 65%; margin-bottom: 20px; margin-top: 0; }
+    .table-felt { border-width: 4px; }
+    .table-felt::before { inset: 6px; }
+
+    /* Seats — smaller */
+    .seat-avatar { width: 32px; height: 32px; font-size: 13px; border-width: 2px; }
+    .seat-avatar.active { border-width: 2px; }
+    .seat-name { font-size: 7px; max-width: 52px; }
+    .seat-chips { font-size: 7px; }
+    .seat-bet { font-size: 8px; padding: 1px 4px; }
+    .seat-bet::before { width: 4px; height: 4px; }
+    .seat-winpct { width: 40px; height: 4px; }
+    .seat-winpct-label { font-size: 7px; }
+    .seat-turn-label { font-size: 7px; }
+    .seat-fold-label { font-size: 7px; }
+
+    /* Cards — smaller on mobile */
+    .card { width: 28px; height: 42px; border-radius: 4px; }
+    .card-rank { font-size: 11px; }
+    .card-suit { font-size: 9px; }
+
+    /* Community cards area */
+    .community-area { gap: 2px; }
+    .community-cards { gap: 3px; }
+    .pot-display { font-size: 13px; }
+    .phase-display { font-size: 9px; padding: 2px 8px; }
+
+    /* Hole cards on seats */
+    .seat-cards { gap: 1px; }
+    .seat-cards .card { width: 22px; height: 32px; }
+    .seat-cards .card-rank { font-size: 9px; }
+    .seat-cards .card-suit { font-size: 7px; }
+    .seat-pocket { gap: 1px; }
+    .seat-pocket .card { width: 20px !important; height: 28px !important; }
+    .seat-pocket .card-rank { font-size: 8px !important; }
+    .seat-pocket .card-suit { font-size: 6px !important; }
+    .seat-pocket .card span { font-size: 12px !important; } /* face-down cards */
+
+    /* Game log — collapse on mobile, show below table */
+    .game-log { font-size: 11px; height: 120px; }
+    .arena-layout > div:first-child { order: 2; } /* move log below table */
+    .arena-layout > div:nth-child(2) { order: 1; } /* table first */
+    .arena-layout > div:nth-child(3) { order: 3; } /* sidebar last */
+
+    /* Sidebar panels */
+    .sidebar { gap: 10px; }
+    .panel { padding: 10px; border-radius: 10px; }
+    .panel-title { font-size: 12px; }
+
+    /* Agent sidebar list */
+    .agent-item { padding: 6px 8px; gap: 6px; }
+    .agent-avatar-sm { width: 28px; height: 28px; font-size: 12px; }
+    .agent-name-sm { font-size: 11px; }
+    .agent-style { font-size: 9px; }
+
+    /* My agents view */
+    .my-agent-card { padding: 12px; }
+    .my-agent-emoji { width: 36px; height: 36px; font-size: 18px; }
+    .my-agent-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .preset-row { flex-wrap: wrap; }
+    .preset-btn { min-width: 55px; padding: 6px 4px; font-size: 10px; }
+    .toggle-row { flex-wrap: wrap; }
+    .toggle-pill { font-size: 10px; padding: 4px 8px; }
+
+    /* Room picker in lobby cards */
+    .room-picker { gap: 4px; }
+    .room-pick-btn { padding: 6px 4px; }
+    .pick-label { font-size: 12px; }
+    .pick-sub { font-size: 9px; }
+
+    /* Agent history panel */
+    .agent-history-panel { padding: 10px; }
+    .hand-entry { padding: 6px 8px; font-size: 10px; gap: 6px; }
+    .hand-entry-card { width: 16px; height: 24px; font-size: 7px; }
+    .hand-entry-delta { font-size: 11px; }
+
+    /* Contract pool */
+    .round-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .stat-value { font-size: 14px; }
+
+    /* Portfolio bar */
+    .portfolio-bar { padding: 8px; }
+    .portfolio-stats { gap: 6px; }
+    .portfolio-stat { padding: 4px 8px; }
+    .portfolio-stat-label { font-size: 8px; }
+    .portfolio-stat-value { font-size: 13px; }
+    .portfolio-chip { min-width: 130px; padding: 8px 10px; }
+
+    /* Create agent form */
+    .create-agent-form { padding: 14px; border-radius: 12px; }
+    .form-input { padding: 8px 10px; font-size: 13px; }
+    .emoji-grid { gap: 4px; }
+    .emoji-option { font-size: 18px; width: 34px; height: 34px; }
+
+    /* How it works */
+    .hiw-hero-title { font-size: 22px; }
     .hiw-return-labels { flex-direction: column; align-items: center; }
-    .my-agent-stats { grid-template-columns: repeat(2, 1fr); }
+
+    /* Dealer button */
+    .dealer-btn { font-size: 8px !important; width: 20px !important; height: 20px !important; }
+
+    /* Toast on mobile — above bottom nav */
+    .toast-container { bottom: 70px; }
+    .toast-inner { max-width: 280px; font-size: 12px; }
   }
+
+  /* ===== MOBILE BOTTOM NAV ===== */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: rgba(8,11,20,0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 6px 0;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: center;
+  }
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-nav-btn .nav-icon { font-size: 18px; }
+  .mobile-nav-btn.active { color: var(--accent-gold); }
+  .mobile-nav-btn:active { transform: scale(0.95); }
 </style>
 </head>
 <body>
@@ -4598,10 +4744,51 @@ function recallAgent(agentId) {
 }
 
 // ============================================================
+// MOBILE NAV
+// ============================================================
+function updateMobileNav(viewName) {
+  document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+}
+
+// Patch showView to also update mobile nav
+const _origShowView = showView;
+showView = function(name) {
+  _origShowView(name);
+  updateMobileNav(name);
+  // Also update desktop nav tabs
+  document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+    const views = ['arena', 'myagents', 'agents', 'leaderboard', 'howitworks'];
+    tab.classList.toggle('active', views[i] === name);
+  });
+};
+
+// ============================================================
 // INIT — connect to server
 // ============================================================
 updateWalletUI();
 connect();
 </script>
+
+<!-- Mobile Bottom Nav -->
+<nav class="mobile-nav">
+  <button class="mobile-nav-btn active" data-view="arena" onclick="showView('arena')">
+    <span class="nav-icon">🎮</span>Arena
+  </button>
+  <button class="mobile-nav-btn" data-view="myagents" onclick="showView('myagents')">
+    <span class="nav-icon">🧬</span>Agents
+  </button>
+  <button class="mobile-nav-btn" data-view="agents" onclick="showView('agents')">
+    <span class="nav-icon">🤖</span>Roster
+  </button>
+  <button class="mobile-nav-btn" data-view="leaderboard" onclick="showView('leaderboard')">
+    <span class="nav-icon">🏆</span>Board
+  </button>
+  <button class="mobile-nav-btn" data-view="howitworks" onclick="showView('howitworks')">
+    <span class="nav-icon">📐</span>How
+  </button>
+</nav>
+
 </body>
 </html>
