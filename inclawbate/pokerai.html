@@ -1225,6 +1225,26 @@
   .no-agents-msg .icon { font-size: 48px; margin-bottom: 12px; }
   .no-agents-msg .title { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
 
+  /* POSITIONS BAR — above table */
+  .positions-bar {
+    margin-bottom: 14px;
+    padding: 12px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .positions-bar .position-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-surface);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+  }
+  .positions-bar .position-chip.positive { border-color: rgba(34,197,94,0.3); }
+  .positions-bar .position-chip.negative { border-color: rgba(239,68,68,0.3); }
+
   /* Responsive */
   /* ROOM TABS */
   .room-tabs {
@@ -2211,6 +2231,18 @@
       </button>
     </div>
 
+    <!-- Your Positions — moved above the table -->
+    <div id="positionsBar" class="positions-bar" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="positionsBarContent">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--text-muted)">Total P&L:</span>
+          <span style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-green)" id="totalPnl">+0</span>
+        </div>
+      </div>
+    </div>
+
     <div class="arena-layout">
 
       <div>
@@ -2240,10 +2272,6 @@
               <div class="stat-label">Total Hands</div>
               <div class="stat-value green" id="handsPlayed">0</div>
             </div>
-            <div class="stat-box" style="border-color:rgba(6,182,212,0.3)">
-              <div class="stat-label">🏦 Contract Pool</div>
-              <div class="stat-value pool" id="poolDisplay">20,000</div>
-            </div>
           </div>
 
           <div class="poker-table" id="pokerTable">
@@ -2268,6 +2296,28 @@
           <div class="game-controls" style="justify-content:flex-end">
             <div style="font-size:11px;color:var(--text-muted)">Server-synced live game</div>
           </div>
+
+          <!-- Contract Pool — below the table -->
+          <div class="panel pool-panel" style="margin-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="panel-title" style="margin-bottom:0"><span class="icon">🏦</span> Contract Pool</div>
+              <div style="font-family:'Rajdhani';font-size:22px;font-weight:700;color:var(--accent-cyan)" id="poolBalance">20,000</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+              <div class="pool-stat-mini">
+                <div class="mini-label">Total Cashouts</div>
+                <div class="mini-val" style="color:var(--accent-green)" id="poolCashouts">0</div>
+              </div>
+              <div class="pool-stat-mini">
+                <div class="mini-label">Total Buyins</div>
+                <div class="mini-val" style="color:var(--accent-red)" id="poolBuyins">0</div>
+              </div>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Recent Activity</div>
+            <div id="poolFlowLog" style="max-height:160px;overflow-y:auto">
+              <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2276,63 +2326,6 @@
         <div class="panel">
           <div class="panel-title"><span class="icon">🤖</span> Agents at Table</div>
           <div id="agentsSidebar"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title"><span class="icon">💰</span> Fund a House Bot</div>
-          <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
-            Fund a house bot's stack. You earn 95% of their profits. Or <a href="#" onclick="showView('myagents');return false" style="color:var(--accent-gold)">create your own agent</a>.
-          </p>
-          <select class="bet-agent-select" id="fundAgentSelect">
-            <option value="">Choose an agent...</option>
-          </select>
-          <div class="bet-presets">
-            <div class="bet-preset" onclick="selectPreset(500, this)">500</div>
-            <div class="bet-preset" onclick="selectPreset(1000, this)">1,000</div>
-            <div class="bet-preset" onclick="selectPreset(2500, this)">2,500</div>
-            <div class="bet-preset" onclick="selectPreset(5000, this)">5,000</div>
-          </div>
-          <div class="bet-input-row">
-            <input type="number" class="bet-input" id="fundAmount" placeholder="Amount to deposit" min="100" value="1000">
-          </div>
-          <button class="btn-place-bet" onclick="fundAgent()">💰 Fund Agent</button>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title"><span class="icon">📊</span> Your Positions</div>
-          <div id="fundPositions">
-            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">
-              No active positions.<br>Fund an agent to see their pocket cards and earn profits.
-            </div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-            <span style="font-size:12px;color:var(--text-muted)">Total P&L:</span>
-            <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)" id="totalPnl">+0</span>
-          </div>
-        </div>
-        <div class="panel pool-panel">
-          <div class="panel-title"><span class="icon">🏦</span> Contract Pool</div>
-          <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
-            The vault holds $POKERAI for agent rebuys and cashouts. Agents cash out excess chips when winning big and buy back in when bust.
-          </p>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
-            <div class="pool-stat-mini">
-              <div class="mini-label">Pool Balance</div>
-              <div class="mini-val" style="color:var(--accent-cyan)" id="poolBalance">20,000</div>
-            </div>
-            <div class="pool-stat-mini">
-              <div class="mini-label">Total Cashouts</div>
-              <div class="mini-val" style="color:var(--accent-green)" id="poolCashouts">0</div>
-            </div>
-            <div class="pool-stat-mini">
-              <div class="mini-label">Total Buyins</div>
-              <div class="mini-val" style="color:var(--accent-red)" id="poolBuyins">0</div>
-            </div>
-          </div>
-          <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Recent Activity</div>
-          <div id="poolFlowLog" style="max-height:160px;overflow-y:auto">
-            <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">No pool activity yet</div>
-          </div>
         </div>
       </div>
     </div>
@@ -2879,8 +2872,6 @@ let gameState = {
   currentTurnIndex: 0,
   dealerIndex: 0,
   lastWinner: null,
-  fundPositions: [],
-  totalPnl: 0,
   contractPool: 20000,
   totalCashouts: 0,
   totalBuyins: 0,
@@ -2888,9 +2879,6 @@ let gameState = {
   rooms: {}
 };
 
-function isFunded(agentId) {
-  return gameState.fundPositions.some(p => p.agentId === agentId);
-}
 
 // ============================================================
 // WEBSOCKET CONNECTION
@@ -3112,8 +3100,8 @@ function applyServerState(data) {
   gameState.totalBuyins = data.totalBuyins;
   gameState.poolFlows = data.poolFlows;
   gameState.running = data.running;
-  gameState.fundPositions = data.positions || [];
-  gameState.totalPnl = data.totalPnl || 0;
+
+
   gameState.lobbyAgents = data.lobbyAgents || [];
   gameState.rooms = data.rooms || {};
   if (data.activeRoom) activeRoom = data.activeRoom;
@@ -3171,20 +3159,13 @@ function renderFullState() {
   }
 
   // Pool
-  document.getElementById('poolDisplay').textContent = gameState.contractPool.toLocaleString();
   document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
   document.getElementById('poolCashouts').textContent = gameState.totalCashouts.toLocaleString();
   document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
 
-  // PnL
-  const pnlEl = document.getElementById('totalPnl');
-  pnlEl.textContent = (gameState.totalPnl >= 0 ? '+' : '') + gameState.totalPnl.toLocaleString();
-  pnlEl.style.color = gameState.totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-
   renderTableSeats();
   renderAgentsSidebar();
   renderFundPositions();
-  renderFundSelect();
   renderPoolFlows();
   renderLeaderboard();
   updateMyAgentBanner();
@@ -3264,12 +3245,9 @@ function renderTableSeats() {
     const isMyAgent = agent.isCustom && wallet && agent.walletAddress === wallet.address;
     const isOtherCustom = agent.isCustom && !isMyAgent;
 
-    const funded = isFunded(agent.id);
     let cornerBadge = '';
     if (isMyAgent) {
       cornerBadge = '<div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;background:var(--accent-green);border-radius:50%;border:2px solid var(--bg-dark);font-size:7px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">✓</div>';
-    } else if (funded) {
-      cornerBadge = '<div style="position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;background:var(--accent-gold);border-radius:50%;border:2px solid var(--bg-dark);font-size:6px;display:flex;align-items:center;justify-content:center">$</div>';
     }
 
     let pnlBadge = '';
@@ -3278,13 +3256,6 @@ function renderTableSeats() {
       const pnlColor = agentPnl >= 0 ? '#22c55e' : '#ef4444';
       const pnlSign = agentPnl >= 0 ? '+' : '';
       pnlBadge = `<div style="font-size:8px;font-weight:700;color:${pnlColor};text-shadow:0 1px 3px rgba(0,0,0,0.9)">${pnlSign}${agentPnl.toLocaleString()}</div>`;
-    } else if (funded) {
-      const position = gameState.fundPositions.find(p => p.agentId === agent.id);
-      if (position) {
-        const pnlColor = position.pnl >= 0 ? '#22c55e' : '#ef4444';
-        const pnlSign = position.pnl >= 0 ? '+' : '';
-        pnlBadge = `<div style="font-size:8px;font-weight:700;color:${pnlColor};text-shadow:0 1px 3px rgba(0,0,0,0.9)">${pnlSign}${position.pnl.toLocaleString()}</div>`;
-      }
     }
 
     const myBorder = isMyAgent ? 'border-color:var(--accent-green);' : isOtherCustom ? 'border-color:var(--accent-cyan);' : '';
@@ -3294,7 +3265,7 @@ function renderTableSeats() {
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
            title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${myBorder}"
-           onclick="quickFund('${agent.id}')">
+          >
         ${agent.emoji}
         ${cornerBadge}
       </div>
@@ -3345,137 +3316,45 @@ function renderCommunityCard(index, card) {
 // ============================================================
 // FUNDING — sends to server via WebSocket
 // ============================================================
-function selectPreset(amount, el) {
-  document.getElementById('fundAmount').value = amount;
-  document.querySelectorAll('.bet-preset').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-}
-
-function fundAgent() {
-  const agentId = document.getElementById('fundAgentSelect').value;
-  const amount = parseInt(document.getElementById('fundAmount').value);
-
-  if (!agentId) { showToast('Select an agent to fund!', 'error'); return; }
-  if (!amount || amount < 100) { showToast('Minimum deposit is 100!', 'error'); return; }
-  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
-
-  ws.send(JSON.stringify({ type: 'fund', agentId, amount }));
-}
-
-function withdrawFromAgent(agentId) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
-  ws.send(JSON.stringify({ type: 'withdraw', agentId }));
-}
-
 function renderFundPositions() {
-  const container = document.getElementById('fundPositions');
-  let html = '';
+  const bar = document.getElementById('positionsBar');
+  const content = document.getElementById('positionsBarContent');
+  const pnlEl = document.getElementById('totalPnl');
 
-  // Custom agents at the table
   const wallet = getWallet();
   const myPlayingAgents = wallet ? gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address) : [];
 
-  if (myPlayingAgents.length > 0) {
-    html += myPlayingAgents.map(agent => {
-      const pnl = agent.chips - agent.baseChips;
-      const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-      const pnlSign = pnl >= 0 ? '+' : '';
-      return `
-      <div style="background:var(--bg-surface);border:1px solid ${pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">${agent.emoji}</span>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--accent-green)">${agent.name}</div>
-              <div style="font-size:10px;color:var(--text-muted)">Your agent</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
-            <div style="font-size:9px;color:var(--text-muted)">P&L</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Started</div>
-            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-primary)">${agent.baseChips.toLocaleString()}</div>
-          </div>
-          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Current Stack</div>
-            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${agent.chips.toLocaleString()}</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button onclick="toggleTopUp('${agent.id}')" style="flex:1;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid rgba(99,102,241,0.4);color:var(--accent-primary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-primary)';this.style.background='rgba(99,102,241,0.1)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)';this.style.background='var(--bg-dark)'">+ Top Up</button>
-          <button onclick="leaveTable('${agent.id}')" style="flex:1;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Sit Out</button>
-        </div>
-        <div id="topup-${agent.id}" style="display:none;gap:4px;flex-wrap:wrap">
-          ${[1000, 2500, 5000, 10000].map(amt => `<button onclick="topUpAgent('${agent.id}', ${amt})" style="flex:1;min-width:60px;padding:6px 4px;font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">${(amt/1000)}K</button>`).join('')}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // Funded house bot positions (old system)
-  if (gameState.fundPositions.length > 0) {
-    html += gameState.fundPositions.map(pos => {
-      const agent = gameState.agents.find(a => a.id === pos.agentId);
-      const pnlColor = pos.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-      const pnlSign = pos.pnl >= 0 ? '+' : '';
-      const sharePct = agent ? Math.round((pos.deposited / pos.startStack) * 100) : 0;
-      return `
-      <div style="background:var(--bg-surface);border:1px solid ${pos.pnl >= 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'};border-radius:12px;padding:12px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">${pos.agentEmoji}</span>
-            <div>
-              <div style="font-size:13px;font-weight:600">${pos.agentName}</div>
-              <div style="font-size:10px;color:var(--text-muted)">${sharePct}% share · funded</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:${pnlColor}">${pnlSign}${pos.pnl.toLocaleString()}</div>
-            <div style="font-size:9px;color:var(--text-muted)">P&L (95% yours)</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Deposited</div>
-            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-primary)">${pos.deposited.toLocaleString()}</div>
-          </div>
-          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Current</div>
-            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--accent-gold)">${pos.currentValue.toLocaleString()}</div>
-          </div>
-          <div style="background:var(--bg-dark);padding:6px;border-radius:6px;text-align:center">
-            <div style="font-size:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Agent Stack</div>
-            <div style="font-family:'Rajdhani';font-size:14px;font-weight:700;color:var(--text-secondary)">${agent ? formatChips(agent.chips) : '—'}</div>
-          </div>
-        </div>
-        <button onclick="withdrawFromAgent('${pos.agentId}')" style="width:100%;padding:7px;font-size:11px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif" onmouseover="this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)'">Withdraw ${pos.currentValue.toLocaleString()}</button>
-      </div>`;
-    }).join('');
-  }
-
-  if (!html) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px;line-height:1.6">No active positions.<br><a href="#" onclick="showView(\'myagents\');return false" style="color:var(--accent-gold)">Create an agent</a> or fund a house bot.</div>';
+  if (myPlayingAgents.length === 0) {
+    bar.style.display = 'none';
     return;
   }
 
-  container.innerHTML = html;
-}
+  bar.style.display = 'block';
 
-function renderFundSelect() {
-  const sel = document.getElementById('fundAgentSelect');
-  sel.innerHTML = '<option value="">Choose an agent...</option>' +
-    gameState.agents.map(a => `<option value="${a.id}">${a.emoji} ${a.name} — ${formatChips(a.chips)} stack</option>`).join('');
-}
+  let totalPnl = 0;
+  content.innerHTML = myPlayingAgents.map(agent => {
+    const pnl = agent.chips - agent.baseChips;
+    totalPnl += pnl;
+    const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const pnlSign = pnl >= 0 ? '+' : '';
+    const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+    return `
+    <div class="position-chip ${pnlClass}">
+      <span style="font-size:18px">${agent.emoji}</span>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-primary)">${agent.name}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${formatChips(agent.chips)} stack</div>
+      </div>
+      <div style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
+      <div style="display:flex;gap:4px">
+        <button onclick="toggleTopUp('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">+ Top Up</button>
+        <button onclick="leaveTable('${agent.id}')" style="padding:4px 8px;font-size:10px;font-weight:600;background:var(--bg-dark);border:1px solid var(--border-light);color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">Sit Out</button>
+      </div>
+    </div>`;
+  }).join('');
 
-function quickFund(agentId) {
-  const sel = document.getElementById('fundAgentSelect');
-  sel.value = agentId;
-  const panel = sel.closest('.panel');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  pnlEl.textContent = (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString();
+  pnlEl.style.color = totalPnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 }
 
 // ============================================================
@@ -3532,7 +3411,7 @@ function renderAgentsGrid() {
       </div>
       ${agent.isCustom
         ? `<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--accent-cyan)">Custom Agent${agent.walletAddress ? ' — ' + agent.walletAddress.slice(0,6) + '...' : ''}</div>`
-        : `<button onclick="document.getElementById('fundAgentSelect').value='${agent.id}';showView('arena');showToast('Selected ${agent.name} — set amount and fund!','info')" style="margin-top:12px;width:100%;padding:10px;background:linear-gradient(135deg,#f5c542,#e67e22);border:none;border-radius:10px;color:#080b14;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px">Fund ${agent.name}</button>`
+        : `<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--text-muted)">House Bot</div>`
       }
     </div>
   `).join('');
