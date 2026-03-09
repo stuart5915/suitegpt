@@ -376,8 +376,9 @@
 
   .seat-avatar.active {
     border-color: var(--accent-gold);
-    box-shadow: 0 0 20px rgba(245,197,66,0.5);
-    animation: activeGlow 1.5s infinite;
+    border-width: 3px;
+    box-shadow: 0 0 20px rgba(245,197,66,0.6), 0 0 40px rgba(245,197,66,0.3);
+    animation: activeGlow 1s infinite;
   }
 
   .seat-avatar.winner {
@@ -385,11 +386,57 @@
     box-shadow: 0 0 20px rgba(34,197,94,0.6);
   }
 
-  .seat-avatar.folded { opacity: 0.4; filter: grayscale(1); }
+  .seat-avatar.folded { opacity: 0.35; filter: grayscale(1); }
 
   @keyframes activeGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(245,197,66,0.4); }
-    50% { box-shadow: 0 0 30px rgba(245,197,66,0.8); }
+    0%, 100% { box-shadow: 0 0 15px rgba(245,197,66,0.5), 0 0 40px rgba(245,197,66,0.2); }
+    50% { box-shadow: 0 0 25px rgba(245,197,66,0.9), 0 0 50px rgba(245,197,66,0.4); }
+  }
+
+  .seat-turn-label {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    animation: turnPulse 1s infinite;
+  }
+  @keyframes turnPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .seat-bet {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(245,197,66,0.4);
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  }
+  .seat-bet::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    box-shadow: 0 0 4px rgba(245,197,66,0.6);
+  }
+
+  .seat-fold-label {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--accent-red);
+    text-transform: uppercase;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    opacity: 0.7;
   }
 
   .seat-name {
@@ -3373,6 +3420,24 @@ function renderTableSeats() {
     const myBorder = isMyAgent ? 'border-color:var(--accent-green);' : isOtherCustom ? 'border-color:var(--accent-cyan);' : '';
     const nameColor = isMyAgent ? 'color:var(--accent-green)' : '';
 
+    // Current bet badge
+    let betHTML = '';
+    if (agent.currentBet > 0 && gameState.running && !folded) {
+      betHTML = `<div class="seat-bet">${formatChips(agent.currentBet)}</div>`;
+    }
+
+    // Turn / fold / winner / all-in label
+    let statusLabel = '';
+    if (isCurrent) {
+      statusLabel = `<div class="seat-turn-label">Thinking...</div>`;
+    } else if (folded) {
+      statusLabel = `<div class="seat-fold-label">Fold</div>`;
+    } else if (isWinner) {
+      statusLabel = `<div style="font-size:8px;font-weight:700;color:var(--accent-green);text-shadow:0 1px 3px rgba(0,0,0,0.9)">Winner!</div>`;
+    } else if (agent.allIn) {
+      statusLabel = `<div style="font-size:8px;font-weight:700;color:var(--accent-purple);text-shadow:0 1px 3px rgba(0,0,0,0.9);text-transform:uppercase">All In!</div>`;
+    }
+
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
       <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
@@ -3381,8 +3446,10 @@ function renderTableSeats() {
         ${agent.emoji}
         ${cornerBadge}
       </div>
-      <div class="seat-name" style="${nameColor}">${agent.name.length > 8 ? agent.name.slice(0,8) : agent.name}</div>
+      <div class="seat-name" style="${nameColor}">${agent.name.length > 10 ? agent.name.slice(0,10) : agent.name}</div>
       <div class="seat-chips">${formatChips(agent.chips)}</div>
+      ${betHTML}
+      ${statusLabel}
       ${pnlBadge}
       ${pocketHTML}
     `;
