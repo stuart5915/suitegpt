@@ -8,7 +8,7 @@ const ROOM_CONFIGS = {
   high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025 }   // 2.5% rake
 };
 
-const RAKE_FLUSH_THRESHOLD = 10000; // Flush to chain every 10K chips (~$1 USDC)
+const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
 
 class RoomManager {
   constructor(broadcastFn, externalStore) {
@@ -107,7 +107,6 @@ class RoomManager {
   }
 
   _collectRake(table) {
-    // Track how much new rake this table generated since last check
     const key = '_lastRakeSnapshot';
     const prev = table[key] || 0;
     const current = table.totalRake;
@@ -115,21 +114,22 @@ class RoomManager {
     if (newRake > 0) {
       table[key] = current;
       this.pendingRakeChips += newRake;
-      // Flush to chain when threshold reached
-      if (this.pendingRakeChips >= RAKE_FLUSH_THRESHOLD) {
-        this._flushRake();
-      }
     }
+  }
+
+  _startRakeTimer() {
+    setInterval(() => this._flushRake(), RAKE_FLUSH_INTERVAL);
+    console.log(`[RoomManager] Rake flush scheduled every ${RAKE_FLUSH_INTERVAL / 60000} min`);
   }
 
   _flushRake() {
     if (this.pendingRakeChips <= 0 || !this.chainService) return;
     const chips = this.pendingRakeChips;
     this.pendingRakeChips = 0;
+    console.log(`[RoomManager] Flushing ${chips} chips rake to chain`);
     this.chainService.recordRake(chips).catch(e => {
-      // On failure, add back to pending so we don't lose it
       this.pendingRakeChips += chips;
-      console.error('[RoomManager] Rake flush failed, will retry:', e.message);
+      console.error('[RoomManager] Rake flush failed, will retry next cycle:', e.message);
     });
   }
 
@@ -139,6 +139,7 @@ class RoomManager {
         table.start();
       }
     }
+    this._startRakeTimer();
   }
 
   _findAvailableTable(roomId) {
