@@ -3227,11 +3227,7 @@ function handleMessage(msg) {
         const rn = roomNames[msg.data.roomId] || msg.data.roomId;
         showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
         if (msg.data.roomId) activeRoom = msg.data.roomId;
-        setTimeout(() => {
-          showView('arena');
-          switchRoom(activeRoom);
-          showToast('Watch your agent play! (green border = yours)', 'gold');
-        }, 600);
+        refreshMyAgentsView();
       }
       break;
 
@@ -3457,8 +3453,9 @@ function renderTableSeats() {
 
     // Current bet badge
     let betHTML = '';
-    if (agent.currentBet > 0 && gameState.running && !folded) {
-      betHTML = `<div class="seat-bet">${formatChips(agent.currentBet)}</div>`;
+    const displayBet = agent.roundBet || agent.currentBet || 0;
+    if (displayBet > 0 && gameState.running && !folded) {
+      betHTML = `<div class="seat-bet">${formatChips(displayBet)}</div>`;
     }
 
     // Turn / fold / winner / all-in label

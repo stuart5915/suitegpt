@@ -34,7 +34,7 @@ function evaluateHand(cards) {
   const counts = {};
   vals.forEach(v => counts[v] = (counts[v] || 0) + 1);
   const isFlush = suits.every(s => s === suits[0]);
-  const isStraight = checkStraight(vals);
+  const straightHigh = checkStraight(vals); // false or high card value
 
   // Sort groups by count desc, then value desc for kicker ordering
   const groups = Object.entries(counts)
@@ -43,25 +43,27 @@ function evaluateHand(cards) {
 
   const kickers = groups.map(g => g.val);
 
-  if (isFlush && isStraight) return { rank: 8, name: 'Straight Flush', kickers };
+  // Straights use high card as kicker (handles ace-low correctly)
+  if (isFlush && straightHigh) return { rank: 8, name: 'Straight Flush', kickers: [straightHigh] };
   if (groups[0].count === 4) return { rank: 7, name: 'Four of a Kind', kickers };
   if (groups[0].count === 3 && groups.length >= 2 && groups[1].count === 2) return { rank: 6, name: 'Full House', kickers };
   if (isFlush) return { rank: 5, name: 'Flush', kickers };
-  if (isStraight) return { rank: 4, name: 'Straight', kickers };
+  if (straightHigh) return { rank: 4, name: 'Straight', kickers: [straightHigh] };
   if (groups[0].count === 3) return { rank: 3, name: 'Three of a Kind', kickers };
   if (groups[0].count === 2 && groups.length >= 2 && groups[1].count === 2) return { rank: 2, name: 'Two Pair', kickers };
   if (groups[0].count === 2) return { rank: 1, name: 'One Pair', kickers };
   return { rank: 0, name: 'High Card', kickers };
 }
 
+// Returns the high card of the straight, or false
 function checkStraight(vals) {
   const unique = [...new Set(vals)].sort((a, b) => b - a);
   if (unique.length < 5) return false;
   for (let i = 0; i <= unique.length - 5; i++) {
-    if (unique[i] - unique[i + 4] === 4) return true;
+    if (unique[i] - unique[i + 4] === 4) return unique[i]; // return high card
   }
-  // Ace-low straight (A-2-3-4-5)
-  if (unique[0] === 14 && unique.slice(-4).join(',') === '5,4,3,2') return true;
+  // Ace-low straight (A-2-3-4-5) — high card is 5, not 14
+  if (unique[0] === 14 && unique.slice(-4).join(',') === '5,4,3,2') return 5;
   return false;
 }
 
@@ -345,14 +347,14 @@ class PokerEngine {
     this.resolveHand(remaining);
   }
 
-  // Find next active (non-folded, has chips OR is all-in) agent index after given index
+  // Find next active (non-folded) agent index after given index
   _nextActive(fromIdx) {
     const n = this.agents.length;
     for (let i = 1; i <= n; i++) {
       const idx = (fromIdx + i) % n;
       if (!this.agents[idx].folded) return idx;
     }
-    return fromIdx;
+    return -1; // no active agents found
   }
 
   // Post a bet (blinds, calls, raises)
