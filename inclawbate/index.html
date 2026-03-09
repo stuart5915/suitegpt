@@ -337,53 +337,59 @@
             opacity: 0.4; cursor: not-allowed; transform: none;
         }
 
-        /* Floating prompt chips */
+        /* Suggestion carousel */
         .chat-prompts {
-            position: absolute;
-            inset: -20px -200px;
-            pointer-events: none;
-            z-index: 1;
+            width: 100%;
+            max-width: 620px;
+            margin: 0 auto var(--space-md);
+            position: relative;
         }
+        .chat-prompts-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
+        .chat-prompts-scroll {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 160px;
+            overflow-y: auto;
+            padding: 4px 2px 4px 0;
+            scrollbar-width: thin;
+            scrollbar-color: hsla(9, 52%, 54%, 0.25) transparent;
+        }
+        .chat-prompts-scroll::-webkit-scrollbar { width: 4px; }
+        .chat-prompts-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-prompts-scroll::-webkit-scrollbar-thumb { background: hsla(9, 52%, 54%, 0.25); border-radius: 4px; }
         .chat-prompt-chip {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px)));
             background: hsla(240, 10%, 8%, 0.85);
             backdrop-filter: blur(12px);
-            border: 1px solid hsla(9, 52%, 54%, 0.15);
+            border: 1px solid hsla(9, 52%, 54%, 0.12);
             border-radius: var(--radius-full);
-            padding: 6px 16px;
+            padding: 5px 14px;
             font-family: var(--font-body);
-            font-size: 0.76rem; font-weight: 600;
+            font-size: 0.72rem; font-weight: 600;
             color: var(--text-secondary);
             white-space: nowrap;
             cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.25s var(--ease-smooth);
-            opacity: 0;
-            animation: chip-appear 0.5s var(--ease-smooth) forwards, chip-drift 14s ease-in-out infinite;
-            animation-delay: var(--d, 0s), calc(var(--d, 0s) + 0.5s);
-        }
-        @keyframes chip-appear {
-            from { opacity: 0; transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px))) scale(0.8); }
-            to { opacity: 0.8; transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px))) scale(1); }
-        }
-        @keyframes chip-drift {
-            0%, 100% { transform: translate(calc(-50% + var(--ox)), calc(-50% + var(--oy))); }
-            25% { transform: translate(calc(-50% + var(--ox) + 8px), calc(-50% + var(--oy) - 6px)); }
-            50% { transform: translate(calc(-50% + var(--ox) - 5px), calc(-50% + var(--oy) + 10px)); }
-            75% { transform: translate(calc(-50% + var(--ox) + 10px), calc(-50% + var(--oy) + 4px)); }
+            transition: all 0.2s var(--ease-smooth);
+            opacity: 0.8;
+            flex-shrink: 0;
         }
         .chat-prompt-chip:hover {
             border-color: var(--lobster-400);
             color: var(--text-primary);
             background: hsla(9, 52%, 54%, 0.12);
-            box-shadow: 0 0 20px hsla(9, 60%, 54%, 0.15);
-            transform: translate(calc(-50% + var(--ox)), calc(-50% + var(--oy))) scale(1.06) !important;
-            animation-play-state: paused;
-            opacity: 1 !important;
+            box-shadow: 0 0 16px hsla(9, 60%, 54%, 0.12);
+            transform: scale(1.04);
+            opacity: 1;
         }
-        .chip-icon { margin-right: 4px; font-size: 0.82rem; }
+        .chip-icon { margin-right: 3px; font-size: 0.78rem; }
 
         /* Chat action buttons */
         .chat-actions {
@@ -1695,23 +1701,9 @@
             .hero-actions { flex-wrap: wrap; }
             .hero-actions .btn { width: 100%; justify-content: center; text-align: center; }
             .hero-chat { max-width: 100%; }
-            .chat-prompts {
-                position: static;
-                display: flex; flex-wrap: wrap;
-                gap: var(--space-sm);
-                justify-content: center;
-                margin-bottom: var(--space-md);
-                pointer-events: auto;
-            }
-            .chat-prompt-chip {
-                position: static !important;
-                transform: none !important;
-                animation: none !important;
-                opacity: 0.85 !important;
-                font-size: 0.72rem;
-                padding: 5px 12px;
-            }
-            .chat-prompt-chip:hover { transform: scale(1.04) !important; }
+            .chat-prompts { max-width: 100%; }
+            .chat-prompts-scroll { max-height: 120px; }
+            .chat-prompt-chip { font-size: 0.68rem; padding: 4px 10px; }
             .chat-messages { max-height: 180px; }
             .build-section { padding: var(--space-2xl) var(--space-md); }
             .build-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
@@ -1804,12 +1796,85 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
         <!-- Chat Widget -->
         <div class="hero-chat" id="heroChat">
             <div class="chat-prompts" id="chatPrompts">
-                <button class="chat-prompt-chip" data-prompt="What apps do you have for DeFi?" style="--ox:-380px;--oy:-30px;--d:0.1s"><span class="chip-icon">&#128270;</span> What apps do you have?</button>
-                <button class="chat-prompt-chip" data-prompt="I want to build a staking dashboard" style="--ox:370px;--oy:-40px;--d:0.3s"><span class="chip-icon">&#128296;</span> I want to build something</button>
-                <button class="chat-prompt-chip" data-prompt="Launch a meme token on Base for me" style="--ox:-390px;--oy:40px;--d:0.5s"><span class="chip-icon">&#128640;</span> Launch a token for me</button>
-                <button class="chat-prompt-chip" data-prompt="What does Inclawbate do?" style="--ox:385px;--oy:50px;--d:0.7s"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
-                <button class="chat-prompt-chip" data-prompt="Incubate my AI agent project" style="--ox:-360px;--oy:110px;--d:0.9s"><span class="chip-icon">&#129438;</span> Incubate my project</button>
-                <button class="chat-prompt-chip" data-prompt="Give me app ideas for gaming" style="--ox:360px;--oy:115px;--d:1.1s"><span class="chip-icon">&#128161;</span> Give me app ideas</button>
+                <div class="chat-prompts-label">Try asking&hellip;</div>
+                <div class="chat-prompts-scroll">
+                    <!-- Build & Create -->
+                    <button class="chat-prompt-chip" data-prompt="I want to build a staking dashboard"><span class="chip-icon">&#128296;</span> Build a staking dashboard</button>
+                    <button class="chat-prompt-chip" data-prompt="Help me create a voting app"><span class="chip-icon">&#128296;</span> Create a voting app</button>
+                    <button class="chat-prompt-chip" data-prompt="Build me a portfolio tracker"><span class="chip-icon">&#128296;</span> Portfolio tracker</button>
+                    <button class="chat-prompt-chip" data-prompt="I want to make a chat app"><span class="chip-icon">&#128296;</span> Make a chat app</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a minting page for my NFT collection"><span class="chip-icon">&#128296;</span> NFT minting page</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a leaderboard for my community"><span class="chip-icon">&#128296;</span> Community leaderboard</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a simple landing page for my project"><span class="chip-icon">&#128296;</span> Project landing page</button>
+                    <button class="chat-prompt-chip" data-prompt="Make me an airdrop claim page"><span class="chip-icon">&#128296;</span> Airdrop claim page</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a DAO dashboard"><span class="chip-icon">&#128296;</span> DAO dashboard</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a tip jar app for creators"><span class="chip-icon">&#128296;</span> Creator tip jar</button>
+                    <!-- Launch & Token -->
+                    <button class="chat-prompt-chip" data-prompt="Launch a meme token on Base for me"><span class="chip-icon">&#128640;</span> Launch a meme token</button>
+                    <button class="chat-prompt-chip" data-prompt="I want to launch a token with staking"><span class="chip-icon">&#128640;</span> Token with staking</button>
+                    <button class="chat-prompt-chip" data-prompt="Help me launch a community token"><span class="chip-icon">&#128640;</span> Community token</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a token with revenue sharing"><span class="chip-icon">&#128640;</span> Revenue sharing token</button>
+                    <button class="chat-prompt-chip" data-prompt="Launch a charity token that donates fees"><span class="chip-icon">&#128640;</span> Charity token</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a loyalty points token for my store"><span class="chip-icon">&#128640;</span> Loyalty points token</button>
+                    <!-- DeFi -->
+                    <button class="chat-prompt-chip" data-prompt="What DeFi apps do you have?"><span class="chip-icon">&#128176;</span> DeFi apps</button>
+                    <button class="chat-prompt-chip" data-prompt="Show me yield farming tools"><span class="chip-icon">&#128176;</span> Yield farming tools</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a token swap interface"><span class="chip-icon">&#128176;</span> Token swap</button>
+                    <button class="chat-prompt-chip" data-prompt="Build me a liquidity pool dashboard"><span class="chip-icon">&#128176;</span> LP dashboard</button>
+                    <button class="chat-prompt-chip" data-prompt="What's the best way to earn passive income on-chain?"><span class="chip-icon">&#128176;</span> Passive income on-chain</button>
+                    <!-- Games & Fun -->
+                    <button class="chat-prompt-chip" data-prompt="Give me app ideas for gaming"><span class="chip-icon">&#127918;</span> Gaming app ideas</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a prediction market game"><span class="chip-icon">&#127918;</span> Prediction market</button>
+                    <button class="chat-prompt-chip" data-prompt="I want a trivia game for my community"><span class="chip-icon">&#127918;</span> Community trivia</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a betting app for sports"><span class="chip-icon">&#127918;</span> Sports betting app</button>
+                    <button class="chat-prompt-chip" data-prompt="Make a poker game that plays 24/7"><span class="chip-icon">&#127918;</span> 24/7 poker game</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a raffle app with crypto prizes"><span class="chip-icon">&#127918;</span> Crypto raffle</button>
+                    <!-- Social & Community -->
+                    <button class="chat-prompt-chip" data-prompt="Build a social feed for my community"><span class="chip-icon">&#128172;</span> Social feed</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a forum for my token holders"><span class="chip-icon">&#128172;</span> Token holder forum</button>
+                    <button class="chat-prompt-chip" data-prompt="Create an anonymous confessions board"><span class="chip-icon">&#128172;</span> Confessions board</button>
+                    <button class="chat-prompt-chip" data-prompt="Make a polls app for community decisions"><span class="chip-icon">&#128172;</span> Polls app</button>
+                    <button class="chat-prompt-chip" data-prompt="I want a guestbook for my website"><span class="chip-icon">&#128172;</span> Website guestbook</button>
+                    <!-- AI & Agents -->
+                    <button class="chat-prompt-chip" data-prompt="Incubate my AI agent project"><span class="chip-icon">&#129302;</span> Incubate my AI agent</button>
+                    <button class="chat-prompt-chip" data-prompt="Build an AI chatbot for my community"><span class="chip-icon">&#129302;</span> AI chatbot</button>
+                    <button class="chat-prompt-chip" data-prompt="I want an AI that manages my Discord"><span class="chip-icon">&#129302;</span> Discord AI manager</button>
+                    <button class="chat-prompt-chip" data-prompt="Create an AI art generator app"><span class="chip-icon">&#129302;</span> AI art generator</button>
+                    <button class="chat-prompt-chip" data-prompt="Help me build an AI trading assistant"><span class="chip-icon">&#129302;</span> AI trading assistant</button>
+                    <button class="chat-prompt-chip" data-prompt="I need an AI that writes tweets for me"><span class="chip-icon">&#129302;</span> AI tweet writer</button>
+                    <!-- Tools -->
+                    <button class="chat-prompt-chip" data-prompt="What tools does Inclawbate have?"><span class="chip-icon">&#128270;</span> Browse tools</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a wallet analytics tool"><span class="chip-icon">&#128270;</span> Wallet analytics</button>
+                    <button class="chat-prompt-chip" data-prompt="Show me your token radar"><span class="chip-icon">&#128270;</span> Token radar</button>
+                    <button class="chat-prompt-chip" data-prompt="Do you have a whiteboard app?"><span class="chip-icon">&#128270;</span> Whiteboard</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a notepad I can share"><span class="chip-icon">&#128270;</span> Shareable notepad</button>
+                    <!-- Business & Stores -->
+                    <button class="chat-prompt-chip" data-prompt="Build me an online store"><span class="chip-icon">&#128717;</span> Online store</button>
+                    <button class="chat-prompt-chip" data-prompt="I want to sell merch with crypto payments"><span class="chip-icon">&#128717;</span> Crypto merch store</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a booking page for my service"><span class="chip-icon">&#128717;</span> Booking page</button>
+                    <button class="chat-prompt-chip" data-prompt="I need an invoice generator"><span class="chip-icon">&#128717;</span> Invoice generator</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a freelancer marketplace"><span class="chip-icon">&#128717;</span> Freelancer marketplace</button>
+                    <button class="chat-prompt-chip" data-prompt="Make a donation page for my nonprofit"><span class="chip-icon">&#128717;</span> Nonprofit donations</button>
+                    <!-- Learn & Info -->
+                    <button class="chat-prompt-chip" data-prompt="What does Inclawbate do?"><span class="chip-icon">&#10067;</span> What is Inclawbate?</button>
+                    <button class="chat-prompt-chip" data-prompt="How do I earn CLAWS?"><span class="chip-icon">&#10067;</span> How to earn CLAWS</button>
+                    <button class="chat-prompt-chip" data-prompt="What is the incubation program?"><span class="chip-icon">&#10067;</span> Incubation program</button>
+                    <button class="chat-prompt-chip" data-prompt="How does staking work?"><span class="chip-icon">&#10067;</span> How staking works</button>
+                    <button class="chat-prompt-chip" data-prompt="Tell me about UBI on Inclawbate"><span class="chip-icon">&#10067;</span> UBI explained</button>
+                    <button class="chat-prompt-chip" data-prompt="What chain is Inclawbate on?"><span class="chip-icon">&#10067;</span> What chain?</button>
+                    <button class="chat-prompt-chip" data-prompt="How do I list my app on Inclawbate?"><span class="chip-icon">&#10067;</span> List my app</button>
+                    <!-- Creative & Unique -->
+                    <button class="chat-prompt-chip" data-prompt="Build a church website with donations"><span class="chip-icon">&#128161;</span> Church website</button>
+                    <button class="chat-prompt-chip" data-prompt="I want a music jukebox app"><span class="chip-icon">&#128161;</span> Music jukebox</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a recipe sharing app"><span class="chip-icon">&#128161;</span> Recipe sharing</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a habit tracker"><span class="chip-icon">&#128161;</span> Habit tracker</button>
+                    <button class="chat-prompt-chip" data-prompt="I need a countdown timer for my launch"><span class="chip-icon">&#128161;</span> Launch countdown</button>
+                    <button class="chat-prompt-chip" data-prompt="Make a mood board / vision board app"><span class="chip-icon">&#128161;</span> Vision board</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a collaborative todo list"><span class="chip-icon">&#128161;</span> Collaborative todo</button>
+                    <button class="chat-prompt-chip" data-prompt="I want a drawing game like Pictionary"><span class="chip-icon">&#128161;</span> Drawing game</button>
+                    <button class="chat-prompt-chip" data-prompt="Create a typing speed race game"><span class="chip-icon">&#128161;</span> Typing race</button>
+                    <button class="chat-prompt-chip" data-prompt="Build a reaction time test"><span class="chip-icon">&#128161;</span> Reaction test</button>
+                </div>
             </div>
             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
