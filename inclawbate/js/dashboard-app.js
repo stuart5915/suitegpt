@@ -826,13 +826,28 @@ async function fetchLPFees(tokens, wallet) {
         const wethHex = await rpcCall(CLANKER_FEE_LOCKER, wethData);
         const wethAmt = fromWei(wethHex);
 
-        if (wethAmt <= 0) return;
+        if (wethAmt <= 0) {
+            const hideBtn = document.getElementById('claimAllEthBtn');
+            if (hideBtn) hideBtn.style.display = 'none';
+            document.querySelectorAll('.claim-single-btn').forEach(btn => btn.style.display = 'none');
+            return;
+        }
 
         // Show per-card claim buttons with fee amount
         document.querySelectorAll('.claim-single-btn').forEach(btn => {
             btn.style.display = '';
             btn.textContent = 'Claim ~' + wethAmt.toFixed(6) + ' ETH';
         });
+
+        // Show Claim All ETH header button
+        const claimAllEthBtn = document.getElementById('claimAllEthBtn');
+        if (claimAllEthBtn) {
+            claimAllEthBtn.textContent = 'Claim ' + wethAmt.toFixed(6) + ' ETH';
+            claimAllEthBtn.style.display = '';
+            const freshBtn = claimAllEthBtn.cloneNode(true);
+            claimAllEthBtn.parentNode.replaceChild(freshBtn, claimAllEthBtn);
+            freshBtn.addEventListener('click', () => claimLPFees(wallet, freshBtn));
+        }
     } catch (e) {
         // silent
     }
@@ -909,14 +924,17 @@ async function fetchSolanaFees(solTokens) {
             ? positions.filter(p => ourMints.has(p.baseMint) && parseInt(p.totalClaimableLamportsUserShare || 0) > 0)
             : [];
 
-        // Hide banner + per-card buttons when nothing is claimable
+        // Hide per-card buttons + header btn when nothing is claimable
         if (!claimable.length) {
             document.querySelectorAll('.claim-sol-btn').forEach(b => b.style.display = 'none');
+            const hideBtn = document.getElementById('claimAllSolBtn');
+            if (hideBtn) hideBtn.style.display = 'none';
             _solClaimablePositions = [];
             return;
         }
 
         _solClaimablePositions = claimable;
+        const totalSol = claimable.reduce((sum, p) => sum + parseInt(p.totalClaimableLamportsUserShare || 0), 0) / 1e9;
 
         // Show per-card claim buttons for tokens with claimable fees
         const solPerToken = {};
@@ -930,6 +948,33 @@ async function fetchSolanaFees(solTokens) {
                 btn.style.display = '';
             }
         });
+
+        // Show Claim All SOL header button
+        const claimAllSolBtn = document.getElementById('claimAllSolBtn');
+        if (claimAllSolBtn) {
+            claimAllSolBtn.textContent = 'Claim ' + totalSol.toFixed(6) + ' SOL';
+            claimAllSolBtn.style.display = '';
+            const freshBtn = claimAllSolBtn.cloneNode(true);
+            claimAllSolBtn.parentNode.replaceChild(freshBtn, claimAllSolBtn);
+            freshBtn.addEventListener('click', async () => {
+                freshBtn.disabled = true;
+                freshBtn.textContent = 'Claiming...';
+                try {
+                    for (const pos of claimable) {
+                        await claimSolanaFees(solWallet, pos.baseMint, null);
+                    }
+                    freshBtn.textContent = 'Claimed!';
+                    setTimeout(() => {
+                        const st = solTokens.filter(t => t.chain === 'solana' || (t.token_address && !t.token_address.startsWith('0x')));
+                        if (st.length) fetchSolanaFees(st);
+                    }, 3000);
+                } catch (e) {
+                    freshBtn.disabled = false;
+                    freshBtn.textContent = 'Claim ' + totalSol.toFixed(6) + ' SOL';
+                    alert(e.message || 'Claim failed');
+                }
+            });
+        }
     } catch (e) {
         // silent
     }
