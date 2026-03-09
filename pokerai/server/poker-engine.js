@@ -613,14 +613,22 @@ class PokerEngine {
     const potWinners = []; // for logging
 
     for (const sidePot of sidePots) {
-      // Find winner of this side pot
+      // Find winner(s) of this side pot — handle ties by splitting
       let bestHand = null;
-      let winner = null;
+      let winners = [];
 
       for (const player of sidePot.eligible) {
-        if (!bestHand || compareHands(player._handScore, bestHand) > 0) {
+        if (!bestHand) {
           bestHand = player._handScore;
-          winner = player;
+          winners = [player];
+        } else {
+          const cmp = compareHands(player._handScore, bestHand);
+          if (cmp > 0) {
+            bestHand = player._handScore;
+            winners = [player];
+          } else if (cmp === 0) {
+            winners.push(player);
+          }
         }
       }
 
@@ -629,9 +637,17 @@ class PokerEngine {
       totalRake += rake;
       const netPot = sidePot.amount - rake;
 
-      const prev = winnings.get(winner.id) || 0;
-      winnings.set(winner.id, prev + netPot);
-      potWinners.push({ winner, amount: netPot, handName: winner._handName });
+      // Split evenly among tied winners
+      const share = Math.floor(netPot / winners.length);
+      const remainder = netPot - share * winners.length;
+
+      for (let w = 0; w < winners.length; w++) {
+        // First winner gets any remainder from rounding
+        const amount = share + (w === 0 ? remainder : 0);
+        const prev = winnings.get(winners[w].id) || 0;
+        winnings.set(winners[w].id, prev + amount);
+        potWinners.push({ winner: winners[w], amount, handName: winners[w]._handName, split: winners.length > 1 });
+      }
     }
 
     // Apply rake
@@ -663,7 +679,8 @@ class PokerEngine {
       this.broadcast('log', { html: `<span class="win">🏆 ${pw.winner.name} wins ${pw.amount.toLocaleString()} with ${pw.handName}!</span>${rakeNote}` });
     } else {
       for (const pw of potWinners) {
-        this.broadcast('log', { html: `<span class="win">🏆 ${pw.winner.name} wins ${pw.amount.toLocaleString()} with ${pw.handName}!</span>` });
+        const splitNote = pw.split ? ' (split)' : '';
+        this.broadcast('log', { html: `<span class="win">🏆 ${pw.winner.name} wins ${pw.amount.toLocaleString()} with ${pw.handName}${splitNote}!</span>` });
       }
       if (totalRake > 0) {
         this.broadcast('log', { html: `<span style="color:#888;font-size:10px">Total rake: ${totalRake.toLocaleString()}</span>` });
@@ -884,6 +901,7 @@ class PokerEngine {
       bluffPct: agent.bluffPct,
       foldPct: agent.foldPct,
       traits: agent.traits,
+      rules: agent.rules || {},
       walletAddress: agent.walletAddress,
       isCustom: true,
       chipStack: agent.chips,
@@ -1012,15 +1030,25 @@ class PokerEngine {
       const simCommunity = [...this.communityCards, ...shuffled.slice(0, cardsNeeded)];
 
       let bestHand = null;
-      let winnerId = null;
+      let winnerIds = [];
       for (const a of active) {
         const h = getBestHand(a.hand, simCommunity);
-        if (!bestHand || compareHands(h, bestHand) > 0) {
+        if (!bestHand) {
           bestHand = h;
-          winnerId = a.id;
+          winnerIds = [a.id];
+        } else {
+          const cmp = compareHands(h, bestHand);
+          if (cmp > 0) {
+            bestHand = h;
+            winnerIds = [a.id];
+          } else if (cmp === 0) {
+            winnerIds.push(a.id);
+          }
         }
       }
-      wins[winnerId]++;
+      // Split credit among tied winners
+      const credit = 1 / winnerIds.length;
+      for (const id of winnerIds) wins[id] += credit;
     }
 
     const result = {};
