@@ -38,7 +38,7 @@ function isAdmin(username) {
     return username && username.toLowerCase() === ADMIN_USERNAME.toLowerCase();
 }
 
-// ── /state — shows everything ──
+// ── /state — shows everything with numbers ──
 
 async function handleState(chatId) {
     const { data: todos } = await supabase
@@ -58,7 +58,8 @@ async function handleState(chatId) {
 
     if (todos && todos.length) {
         msg += `\n<b>TODO (${todos.length}):</b>\n`;
-        todos.forEach(t => { msg += `☐ ${esc(t.content)}\n`; });
+        todos.forEach((t, i) => { msg += `<b>${i + 1}.</b> ${esc(t.content)}\n`; });
+        msg += '\n<i>/done 1 · /remove 2</i>\n';
     } else {
         msg += '\n<i>List is empty. /add something</i>\n';
     }
@@ -94,18 +95,24 @@ async function handleAdd(chatId, username, args) {
     await sendMsg(chatId, msg);
 }
 
-// ── /done — check something off (admin only) ──
+// ── find a todo by number (from /state) or text match ──
 
-async function handleDone(chatId, username, args) {
-    if (!isAdmin(username)) {
-        await sendMsg(chatId, '🔒 Only the admin can check things off.');
-        return;
-    }
-    if (!args) {
-        await sendMsg(chatId, '/done some matching text');
-        return;
+async function findTodo(args) {
+    const num = parseInt(args, 10);
+
+    // If it's a number, get the Nth todo (1-indexed)
+    if (!isNaN(num) && num > 0 && String(num) === args.trim()) {
+        const { data } = await supabase
+            .from('team_state')
+            .select('*')
+            .eq('category', 'todo')
+            .order('created_at', { ascending: true });
+
+        if (data && data[num - 1]) return data[num - 1];
+        return null;
     }
 
+    // Otherwise fuzzy text match
     const { data } = await supabase
         .from('team_state')
         .select('*')
@@ -113,31 +120,42 @@ async function handleDone(chatId, username, args) {
         .ilike('content', `%${args}%`)
         .limit(1);
 
-    if (!data || !data.length) {
+    return (data && data[0]) || null;
+}
+
+// ── /done — check something off by number or text (admin only) ──
+
+async function handleDone(chatId, username, args) {
+    if (!isAdmin(username)) {
+        await sendMsg(chatId, '🔒 Only the admin can check things off.');
+        return;
+    }
+    if (!args) {
+        await sendMsg(chatId, '/done 1  (use number from /state)');
+        return;
+    }
+
+    const item = await findTodo(args);
+    if (!item) {
         await sendMsg(chatId, `❌ No match for "${esc(args)}"`);
         return;
     }
 
-    await supabase.from('team_state').delete().eq('id', data[0].id);
-    await supabase.from('team_state').insert({ category: 'done', content: data[0].content, author: username });
-    await sendMsg(chatId, `✅ <b>Done:</b> ${esc(data[0].content)}`);
+    await supabase.from('team_state').delete().eq('id', item.id);
+    await supabase.from('team_state').insert({ category: 'done', content: item.content, author: username });
+    await sendMsg(chatId, `✅ <b>Done:</b> ${esc(item.content)}`);
 }
 
-// ── /remove — delete something (admin only) ──
+// ── /remove — delete by number or text (admin only) ──
 
 async function handleRemove(chatId, username, args) {
     if (!isAdmin(username)) return;
-    if (!args) { await sendMsg(chatId, '/remove some matching text'); return; }
+    if (!args) { await sendMsg(chatId, '/remove 1  (use number from /state)'); return; }
 
-    const { data } = await supabase
-        .from('team_state')
-        .select('*')
-        .ilike('content', `%${args}%`)
-        .limit(1);
-
-    if (!data || !data.length) { await sendMsg(chatId, `❌ No match`); return; }
-    await supabase.from('team_state').delete().eq('id', data[0].id);
-    await sendMsg(chatId, `🗑 ${esc(data[0].content)}`);
+    const item = await findTodo(args);
+    if (!item) { await sendMsg(chatId, `❌ No match`); return; }
+    await supabase.from('team_state').delete().eq('id', item.id);
+    await sendMsg(chatId, `🗑 ${esc(item.content)}`);
 }
 
 // ── /start — link profile (DM only) ──
@@ -196,10 +214,10 @@ export default async function handler(req, res) {
         } else if (cmd === 'help') {
             await sendMsg(chatId,
                 '🦞 <b>Inclawbate Bot</b>\n\n' +
-                '/state — See the list\n' +
+                '/state — See numbered list\n' +
                 '/add thing — Add to list\n' +
-                '/done thing — Check it off\n' +
-                '/remove thing — Delete it'
+                '/done 1 — Check off by number\n' +
+                '/remove 2 — Delete by number'
             );
         }
 
