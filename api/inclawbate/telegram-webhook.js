@@ -253,8 +253,9 @@ Bullets, no fluff. Actionable today.`;
 async function handleResearch(chatId) {
     await sendMsg(chatId,
         '🔬 <b>Daily Research Prompt</b>\n\n' +
-        'Copy the prompt below and paste it into Claude, Grok, ChatGPT, or Perplexity. Drop the results back here!\n\n' +
-        '<code>' + esc(RESEARCH_PROMPT) + '</code>'
+        'Copy the prompt below and paste it into any AI tool. Drop the results back here!\n\n' +
+        '<code>' + esc(RESEARCH_PROMPT) + '</code>\n\n' +
+        '🔗 <a href="https://claude.ai/new">Claude</a>  |  <a href="https://gemini.google.com/app">Gemini</a>  |  <a href="https://grok.com/">Grok</a>'
     );
 }
 
