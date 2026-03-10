@@ -298,12 +298,19 @@ export default async function handler(req, res) {
         } else if (cmd === 'help') {
             await sendMsg(chatId,
                 '🦞 <b>Inclawbate Bot</b>\n\n' +
+                '<b>Tasks</b>\n' +
                 '/state — See numbered list\n' +
                 '/current 3 — Set current task\n' +
+                '/current clear — Clear current task\n' +
                 '/add thing — Add to list\n' +
                 '/done 1 — Check off by number\n' +
-                '/remove 2 — Delete by number\n' +
-                '/research — Daily marketing research prompt'
+                '/remove 2 — Delete by number\n\n' +
+                '<b>Marketing</b>\n' +
+                '/research — Daily research prompt\n\n' +
+                '<b>Other</b>\n' +
+                '/start yourxhandle — Link your X profile (DM)\n' +
+                '/myid — Get your chat ID\n' +
+                '/help — This message'
             );
         }
 
