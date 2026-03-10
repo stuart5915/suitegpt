@@ -3925,11 +3925,11 @@
           </div>
           <div class="vault-conversion" id="withdrawConversion">= $0.00 USDC</div>
         </div>
-        <div class="vault-presets">
-          <button class="vault-preset" onclick="setWithdrawChips(10000)">10K</button>
-          <button class="vault-preset" onclick="setWithdrawChips(50000)">50K</button>
-          <button class="vault-preset" onclick="setWithdrawChips(100000)">100K</button>
-          <button class="vault-preset" onclick="setWithdrawChips(walletBalance)">ALL</button>
+        <div class="vault-presets" id="withdrawPresets">
+          <button class="vault-preset" onclick="setWithdrawPct(25)">25%</button>
+          <button class="vault-preset" onclick="setWithdrawPct(50)">50%</button>
+          <button class="vault-preset" onclick="setWithdrawPct(75)">75%</button>
+          <button class="vault-preset" onclick="setWithdrawPct(100)">ALL</button>
         </div>
         <button class="vault-btn withdraw-btn" id="withdrawBtn" onclick="doWithdraw()">
           Withdraw to Wallet
@@ -5300,6 +5300,13 @@ function updateDepositPreview() {
 function setWithdrawChips(chips) {
   document.getElementById('withdrawChips').value = chips;
   updateWithdrawPreview();
+}
+
+function setWithdrawPct(pct) {
+  const chips = Math.floor(walletBalance * pct / 100);
+  // Round down to nearest 1000
+  const rounded = Math.max(1000, Math.floor(chips / 1000) * 1000);
+  setWithdrawChips(pct === 100 ? walletBalance : rounded);
 }
 
 function setWithdrawMax() {
