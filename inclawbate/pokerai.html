@@ -1793,8 +1793,29 @@
   /* ROOM TABS */
   .room-tabs {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     margin-bottom: 14px;
+  }
+  .room-category {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .room-category-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0 4px;
+  }
+  .room-category-label.free { color: var(--accent-green); }
+  .room-category-label.usdc { color: var(--accent-gold); }
+  .room-category-label.pokerai { color: #a855f7; }
+  .room-category-row {
+    display: flex;
+    gap: 6px;
   }
   .room-tab {
     flex: 1;
@@ -1830,6 +1851,13 @@
     color: var(--text-muted);
     margin-top: 2px;
   }
+  .room-tab-rake {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    opacity: 0.7;
+  }
   .room-tab-players {
     display: inline-block;
     font-size: 9px;
@@ -1845,6 +1873,24 @@
   }
   .room-tab.sandbox-tab:hover {
     border-color: var(--accent-green);
+  }
+  .room-tab.usdc-tab:hover {
+    border-color: var(--accent-gold);
+  }
+  .room-tab.usdc-tab.active {
+    border-color: var(--accent-gold);
+    background: rgba(245,197,66,0.08);
+  }
+  .room-tab.usdc-tab.active .room-tab-name {
+    color: var(--accent-gold);
+  }
+  .room-tab.pokerai-tab {
+    opacity: 0.5;
+    cursor: default;
+    border-style: dashed;
+  }
+  .room-tab.pokerai-tab:hover {
+    border-color: rgba(168,85,247,0.4);
   }
   .sandbox-pick {
     border-color: var(--accent-green) !important;
@@ -3081,26 +3127,57 @@
     </div>
 
     <div class="room-tabs" id="roomTabs">
-      <button class="room-tab sandbox-tab active" onclick="switchRoom('sandbox')" id="roomTab-sandbox">
-        <span class="room-tab-name">Sandbox</span>
-        <span class="room-tab-info">FREE · Play Money</span>
-        <span class="room-tab-players" id="roomPlayers-sandbox"></span>
-      </button>
-      <button class="room-tab" onclick="switchRoom('micro')" id="roomTab-micro">
-        <span class="room-tab-name">Micro</span>
-        <span class="room-tab-info">$1 buy-in · 25/50</span>
-        <span class="room-tab-players" id="roomPlayers-micro"></span>
-      </button>
-      <button class="room-tab" onclick="switchRoom('mid')" id="roomTab-mid">
-        <span class="room-tab-name">Mid Stakes</span>
-        <span class="room-tab-info">$5 buy-in · 125/250</span>
-        <span class="room-tab-players" id="roomPlayers-mid"></span>
-      </button>
-      <button class="room-tab" onclick="switchRoom('high')" id="roomTab-high">
-        <span class="room-tab-name">High Stakes</span>
-        <span class="room-tab-info">$25 buy-in · 625/1250</span>
-        <span class="room-tab-players" id="roomPlayers-high"></span>
-      </button>
+      <!-- Sandbox -->
+      <div class="room-category">
+        <div class="room-category-label free">🎮 Free Play</div>
+        <div class="room-category-row">
+          <button class="room-tab sandbox-tab active" onclick="switchRoom('sandbox')" id="roomTab-sandbox">
+            <span class="room-tab-name">Sandbox</span>
+            <span class="room-tab-info">FREE · Play Money</span>
+            <span class="room-tab-rake">AI Bots · No Rake</span>
+            <span class="room-tab-players" id="roomPlayers-sandbox"></span>
+          </button>
+        </div>
+      </div>
+      <!-- USDC Tables -->
+      <div class="room-category">
+        <div class="room-category-label usdc">💵 USDC Tables · 2.5% Rake · PvP Only</div>
+        <div class="room-category-row">
+          <button class="room-tab usdc-tab" onclick="switchRoom('micro')" id="roomTab-micro">
+            <span class="room-tab-name">Micro</span>
+            <span class="room-tab-info">$1 · 25/50</span>
+            <span class="room-tab-players" id="roomPlayers-micro"></span>
+          </button>
+          <button class="room-tab usdc-tab" onclick="switchRoom('mid')" id="roomTab-mid">
+            <span class="room-tab-name">Mid</span>
+            <span class="room-tab-info">$5 · 125/250</span>
+            <span class="room-tab-players" id="roomPlayers-mid"></span>
+          </button>
+          <button class="room-tab usdc-tab" onclick="switchRoom('high')" id="roomTab-high">
+            <span class="room-tab-name">High</span>
+            <span class="room-tab-info">$25 · 625/1250</span>
+            <span class="room-tab-players" id="roomPlayers-high"></span>
+          </button>
+        </div>
+      </div>
+      <!-- $POKERAI Tables -->
+      <div class="room-category">
+        <div class="room-category-label pokerai">🃏 $POKERAI Tables · 0% Rake · PvP Only</div>
+        <div class="room-category-row">
+          <button class="room-tab pokerai-tab" disabled>
+            <span class="room-tab-name" style="color:#a855f7;opacity:0.6">Micro</span>
+            <span class="room-tab-info">100K · Coming Soon</span>
+          </button>
+          <button class="room-tab pokerai-tab" disabled>
+            <span class="room-tab-name" style="color:#a855f7;opacity:0.6">Mid</span>
+            <span class="room-tab-info">1M · Coming Soon</span>
+          </button>
+          <button class="room-tab pokerai-tab" disabled>
+            <span class="room-tab-name" style="color:#a855f7;opacity:0.6">High</span>
+            <span class="room-tab-info">10M · Coming Soon</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="arena-layout">
@@ -4334,7 +4411,7 @@ function switchRoom(roomId) {
   const tab = document.getElementById('roomTab-' + roomId);
   if (tab) tab.classList.add('active');
   // Update table title
-  const names = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  const names = { sandbox: 'Sandbox', micro: 'Micro (USDC)', mid: 'Mid Stakes (USDC)', high: 'High Stakes (USDC)' };
   const titleEl = document.getElementById('tableTitle');
   if (titleEl) titleEl.textContent = '🃏 PokerAI — ' + (names[roomId] || roomId);
   // Tell server
@@ -5455,25 +5532,29 @@ function renderMyAgents() {
           </div>
         </div>
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Choose Room & Buy-in</div>
-          <div class="room-picker">
+          <div style="font-size:10px;font-weight:700;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🎮 Free Play</div>
+          <div class="room-picker" style="margin-bottom:10px">
             <button class="room-pick-btn sandbox-pick" onclick="selectRoomForJoin('${agent.id}','sandbox')">
               <span class="pick-label">Sandbox</span>
-              <span class="pick-sub">FREE</span>
+              <span class="pick-sub">FREE · Bots</span>
             </button>
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','micro')">
+          </div>
+          <div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake · PvP</div>
+          <div class="room-picker" style="margin-bottom:10px">
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','micro')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Micro</span>
               <span class="pick-sub">$1 · 25/50</span>
             </button>
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','mid')">
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','mid')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Mid</span>
               <span class="pick-sub">$5 · 125/250</span>
             </button>
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','high')">
+            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','high')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">High</span>
               <span class="pick-sub">$25 · 625/1250</span>
             </button>
           </div>
+          <div style="font-size:10px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;opacity:0.5">🃏 $POKERAI · 0% Rake · Coming Soon</div>
           <div id="fundStep-${agent.id}" style="display:none;margin-top:8px">
             <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's stack:</div>
             <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
