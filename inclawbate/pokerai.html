@@ -3092,9 +3092,16 @@
 
         <!-- MY AGENTS LIST -->
         <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
             <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> Your Agents</div>
-            <div style="font-size:12px;color:var(--text-muted)">Balance: <span id="headerBalance" style="color:var(--accent-gold);font-weight:700" class="wallet-balance">0</span></div>
+            <div id="balanceBar" style="display:flex;align-items:center;gap:12px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;padding:8px 16px">
+              <div style="display:flex;align-items:baseline;gap:6px">
+                <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Balance</span>
+                <span id="headerBalance" style="font-family:'Rajdhani';font-size:28px;font-weight:800;color:var(--accent-gold);line-height:1" class="wallet-balance">0</span>
+                <span style="font-size:11px;color:var(--text-muted)">chips</span>
+              </div>
+              <button id="balanceTopUpBtn" onclick="openVault()" style="padding:6px 14px;background:linear-gradient(135deg,#f5c542,#e67e22);border:none;border-radius:8px;color:#000;font-size:11px;font-weight:800;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ DEPOSIT</button>
+            </div>
           </div>
           <div class="my-agents-grid" id="myAgentsGrid">
             <div class="no-agents-msg">
@@ -4839,6 +4846,16 @@ function refreshMyAgentsView() {
   content.style.display = 'block';
   updateWalletUI();
 
+  // Show/hide balance bar based on mode
+  const balanceBar = document.getElementById('balanceBar');
+  if (balanceBar) {
+    if (isSandbox) {
+      balanceBar.style.display = 'none';
+    } else {
+      balanceBar.style.display = 'flex';
+    }
+  }
+
   // Request agents list from server (server resolves sandbox wallet from session)
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'getMyAgents' }));
@@ -4913,7 +4930,10 @@ function renderMyAgents() {
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button onclick="toggleRoomPicker('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>
+            ${activeRoom === 'sandbox'
+              ? `<button onclick="selectRoomForJoin('${agent.id}','sandbox')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">▶ PLAY FREE</button>`
+              : `<button onclick="toggleRoomPicker('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>`
+            }
             <button class="btn-recall" onclick="recallAgent('${agent.id}')">Delete</button>
           </div>
         </div>
@@ -4963,7 +4983,7 @@ function renderMyAgents() {
       const pnlSign = pnl >= 0 ? '+' : '';
       const cardClass = pnl >= 0 ? 'profitable' : 'losing';
       const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
-      const roomNames = { micro: 'Micro', mid: 'Mid', high: 'High' };
+      const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
       const roomLabel = roomNames[agent.roomId] || '';
 
       return `
@@ -5013,7 +5033,8 @@ function renderMyAgents() {
           </div>
           <div style="display:flex;flex-direction:column;gap:6px">
             <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
-            <button onclick="leaveTable('${agent.id}')" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
+            ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}', 2500)" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)'" onmouseout="this.style.background='var(--bg-surface)'">+ TOP UP</button>` : ''}
+            <button onclick="leaveTable('${agent.id}')" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.2);border-radius:8px;color:var(--text-muted);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
           </div>
         </div>
       </div>`;
