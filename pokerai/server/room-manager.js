@@ -465,8 +465,11 @@ class RoomManager {
   // === Wallet ===
 
   getWalletBalance(walletAddress) {
-    const wallet = this.store.getOrCreateWallet(walletAddress);
-    return wallet;
+    // Use synchronous cache read (getWallet) for hot path
+    const wallet = this.store.getWallet ? this.store.getWallet(walletAddress) : null;
+    if (wallet) return wallet;
+    // Fallback: return 0 balance, don't create wallet synchronously
+    return { address: walletAddress, balance: 0 };
   }
 
   // === State ===

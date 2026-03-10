@@ -324,7 +324,7 @@ app.post('/check-deposit', async (req, res) => {
     const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
 
     // Get current server balance
-    const wallet = rooms.store.getOrCreateWallet(addr);
+    const wallet = await rooms.store.getOrCreateWallet(addr);
     const serverBalance = wallet.balance || 0;
 
     // If on-chain says they deposited more than server knows about, credit the difference
@@ -336,7 +336,7 @@ app.post('/check-deposit', async (req, res) => {
 
     if (expectedMinBalance > totalServerChips) {
       const credit = expectedMinBalance - totalServerChips;
-      rooms.store.addBalance(addr, credit);
+      await rooms.store.addBalance(addr, credit);
       console.log(`[CheckDeposit] Credited ${credit} chips to ${addr}`);
 
       // Notify connected client
@@ -392,8 +392,8 @@ async function startServer() {
 
       // Listen for on-chain deposits → credit chips
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
-        rooms.store.getOrCreateWallet(walletAddress);
-        rooms.store.addBalance(walletAddress, chips);
+        await rooms.store.getOrCreateWallet(walletAddress);
+        await rooms.store.addBalance(walletAddress, chips);
         console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
 
         // Notify connected client
