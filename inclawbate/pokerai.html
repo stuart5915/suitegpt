@@ -634,6 +634,161 @@
   .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.4); }
   .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.4); }
 
+  /* Hand Timeline */
+  .hand-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .hand-timeline-track {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 4px 0;
+    scrollbar-width: none;
+  }
+  .hand-timeline-track::-webkit-scrollbar { display: none; }
+  .hand-dot {
+    min-width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    background: var(--bg-dark);
+    flex-shrink: 0;
+  }
+  .hand-dot:hover {
+    background: rgba(99,102,241,0.15);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+  }
+  .hand-dot.win { border-color: rgba(34,197,94,0.4); color: var(--accent-green); }
+  .hand-dot.loss { border-color: rgba(239,68,68,0.3); color: var(--accent-red); }
+  .hand-dot.active {
+    background: rgba(99,102,241,0.2);
+    border-color: var(--accent-primary);
+    color: white;
+    box-shadow: 0 0 8px rgba(99,102,241,0.3);
+  }
+  .hand-dot.live-dot {
+    background: rgba(34,197,94,0.15);
+    border-color: rgba(34,197,94,0.4);
+    color: var(--accent-green);
+    min-width: 48px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .hand-dot.live-dot.active {
+    background: rgba(34,197,94,0.25);
+    border-color: var(--accent-green);
+    box-shadow: 0 0 10px rgba(34,197,94,0.3);
+  }
+  .timeline-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+
+  /* Hand Recap Overlay */
+  .hand-recap {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10,10,15,0.95);
+    z-index: 50;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .hand-recap.show { display: flex; }
+  .hand-recap-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .hand-recap-winner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 12px;
+    padding: 12px 20px;
+  }
+  .hand-recap-winner-emoji {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    border: 2px solid var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .hand-recap-cards {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .hand-recap-community {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .hand-recap-pot {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent-gold);
+  }
+  .hand-recap-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .hand-recap-close:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
   /* Dealer button */
   .dealer-btn {
     position: absolute;
@@ -2988,7 +3143,24 @@
             </div>
           </div>
 
-          <div class="poker-table" id="pokerTable">
+          <!-- Hand Timeline -->
+          <div class="hand-timeline" id="handTimeline">
+            <div class="timeline-label">HANDS</div>
+            <div class="hand-timeline-track" id="handTimelineTrack">
+              <div class="hand-dot live-dot active" onclick="jumpToLive()" id="liveBtn">● LIVE</div>
+            </div>
+          </div>
+
+          <div class="poker-table" id="pokerTable" style="position:relative">
+            <div class="hand-recap" id="handRecap">
+              <button class="hand-recap-close" onclick="closeRecap()">← Back to LIVE</button>
+              <div class="hand-recap-title" id="recapTitle">Hand #0</div>
+              <div class="hand-recap-winner" id="recapWinner"></div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Community Cards</div>
+              <div class="hand-recap-community" id="recapCommunity"></div>
+              <div class="hand-recap-pot" id="recapPot"></div>
+              <div id="recapPlayers" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px"></div>
+            </div>
             <div class="table-felt" id="tableFelt">
               <div class="community-area" id="communityArea">
                 <div class="pot-display" id="potChips">POT: 0</div>
@@ -3999,11 +4171,163 @@ function applyServerState(data) {
     }, 3000);
   }
 
+  // Detect hand completion → cache for timeline
+  detectHandComplete(data);
+
   updateRoomTabs();
+  if (!_replayingHand) renderFullState();
+}
+
+// ============================================================
+// HAND TIMELINE — DVR-style replay of past hands
+// ============================================================
+const handHistoryCache = [];
+let _prevRunning = false;
+let _prevRound = 0;
+let _replayingHand = null; // null = live, index = viewing past hand
+
+function detectHandComplete(data) {
+  const justEnded = _prevRunning && !data.running && data.lastWinner;
+  _prevRunning = data.running;
+
+  if (justEnded && data.round !== _prevRound) {
+    _prevRound = data.round;
+
+    // Find winner agent
+    const winnerAgent = data.agents.find(a => a.id === data.lastWinner);
+    const wallet = getWallet();
+
+    // Snapshot the hand
+    const handSnapshot = {
+      handNum: data.round,
+      pot: data.pot || 0,
+      winnerId: data.lastWinner,
+      winnerName: winnerAgent ? winnerAgent.name : '?',
+      winnerEmoji: winnerAgent ? winnerAgent.emoji : '?',
+      communityCards: [...(data.communityCards || [])],
+      agents: data.agents.map(a => ({
+        id: a.id,
+        name: a.name,
+        emoji: a.emoji,
+        chips: a.chips,
+        folded: a.folded,
+        hand: a.hand ? [...a.hand] : null,
+        isCustom: a.isCustom,
+        walletAddress: a.walletAddress,
+        isWinner: a.id === data.lastWinner
+      })),
+      isMyAgentWin: winnerAgent && winnerAgent.isCustom && (
+        (wallet && winnerAgent.walletAddress === wallet.address) ||
+        (!wallet && sessionId && winnerAgent.walletAddress === 'sandbox_' + sessionId)
+      ),
+      timestamp: Date.now()
+    };
+
+    // Estimate pot from chip changes if pot is 0 at this point
+    if (!handSnapshot.pot && winnerAgent) {
+      // Look for the pot from any agent's recent handHistory
+      for (const a of data.agents) {
+        if (a.handHistory && a.handHistory.length > 0) {
+          const last = a.handHistory[a.handHistory.length - 1];
+          if (last.hand === data.round && last.delta > 0) {
+            handSnapshot.pot = last.delta;
+            break;
+          }
+        }
+      }
+    }
+
+    handHistoryCache.push(handSnapshot);
+    // Keep max 50 hands
+    if (handHistoryCache.length > 50) handHistoryCache.shift();
+
+    renderTimeline();
+  }
+}
+
+function renderTimeline() {
+  const track = document.getElementById('handTimelineTrack');
+  if (!track) return;
+
+  let html = '';
+  handHistoryCache.forEach((h, i) => {
+    const isActive = _replayingHand === i;
+    let cls = 'hand-dot';
+    if (h.isMyAgentWin) cls += ' win';
+    if (isActive) cls += ' active';
+    html += `<div class="${cls}" onclick="showHandRecap(${i})" title="Hand #${h.handNum} — ${h.winnerName} wins">${h.handNum}</div>`;
+  });
+
+  // Live button
+  const liveActive = _replayingHand === null;
+  html += `<div class="hand-dot live-dot${liveActive ? ' active' : ''}" onclick="jumpToLive()" id="liveBtn">● LIVE</div>`;
+
+  track.innerHTML = html;
+  // Auto-scroll to right (latest)
+  track.scrollLeft = track.scrollWidth;
+}
+
+function showHandRecap(index) {
+  const h = handHistoryCache[index];
+  if (!h) return;
+
+  _replayingHand = index;
+  renderTimeline();
+
+  // Populate recap overlay
+  document.getElementById('recapTitle').textContent = `Hand #${h.handNum}`;
+  document.getElementById('recapPot').textContent = `POT: ${(h.pot || 0).toLocaleString()}`;
+
+  // Winner
+  const winEl = document.getElementById('recapWinner');
+  const winAgent = h.agents.find(a => a.isWinner);
+  winEl.innerHTML = winAgent ? `
+    <div class="hand-recap-winner-emoji">${winAgent.emoji}</div>
+    <div>
+      <div style="font-family:'Rajdhani';font-size:20px;font-weight:800;color:var(--accent-green)">${winAgent.name} wins!</div>
+      ${winAgent.hand ? `<div style="display:flex;gap:4px;margin-top:4px">${winAgent.hand.map(c => `<div class="card${c.red ? ' red' : ''}" style="width:36px;height:50px"><div class="card-rank" style="font-size:14px">${c.rank}</div><div class="card-suit" style="font-size:11px">${c.suit}</div></div>`).join('')}</div>` : ''}
+    </div>
+  ` : '';
+
+  // Community cards
+  const commEl = document.getElementById('recapCommunity');
+  commEl.innerHTML = h.communityCards.filter(c => c).map(c =>
+    `<div class="card${c.red ? ' red' : ''}" style="width:44px;height:62px"><div class="card-rank" style="font-size:16px">${c.rank}</div><div class="card-suit" style="font-size:13px">${c.suit}</div></div>`
+  ).join('');
+
+  // Players
+  const playersEl = document.getElementById('recapPlayers');
+  playersEl.innerHTML = h.agents.filter(a => !a.isWinner).map(a => `
+    <div style="display:flex;align-items:center;gap:6px;background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px">
+      <span style="font-size:16px">${a.emoji}</span>
+      <span style="color:${a.folded ? 'var(--text-muted)' : 'var(--text-secondary)'}">${a.name}</span>
+      ${a.folded ? '<span style="color:var(--accent-red);font-size:9px;font-weight:700">FOLD</span>' : ''}
+      ${a.hand ? `<span style="display:flex;gap:2px">${a.hand.map(c => `<div class="card${c.red ? ' red' : ''}" style="width:20px;height:28px;font-size:7px"><div class="card-rank" style="font-size:9px">${c.rank}</div><div class="card-suit" style="font-size:7px">${c.suit}</div></div>`).join('')}</span>` : ''}
+    </div>
+  `).join('');
+
+  // Show overlay
+  document.getElementById('handRecap').classList.add('show');
+}
+
+function closeRecap() {
+  _replayingHand = null;
+  document.getElementById('handRecap').classList.remove('show');
+  renderTimeline();
   renderFullState();
 }
 
+function jumpToLive() {
+  closeRecap();
+}
+
 function switchRoom(roomId) {
+  // Clear hand history when switching rooms
+  handHistoryCache.length = 0;
+  _replayingHand = null;
+  _prevRound = 0;
+  document.getElementById('handRecap').classList.remove('show');
+  renderTimeline();
   activeRoom = roomId;
   // Update tab UI immediately
   document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
