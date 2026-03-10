@@ -314,6 +314,21 @@ wss.on('connection', (ws) => {
 });
 
 // REST endpoints
+app.get('/wallet/:address', async (req, res) => {
+  const addr = req.params.address.toLowerCase();
+  const wallet = await rooms.store.getOrCreateWallet(addr);
+  const inPlay = rooms.getChipsInPlay(addr);
+  const autoTopUp = rooms.getAutoTopUp(addr);
+  let onChain = null;
+  if (chain) {
+    try {
+      const stats = await chain.vault.playerStats(addr);
+      onChain = { deposited: Number(stats[0]), withdrawn: Number(stats[1]) };
+    } catch (e) { onChain = { error: e.message }; }
+  }
+  res.json({ address: addr, balance: wallet.balance, inPlay, autoTopUp, onChain });
+});
+
 app.get('/health', async (req, res) => {
   const vaultStats = chain ? await chain.getVaultStats() : null;
   res.json({
