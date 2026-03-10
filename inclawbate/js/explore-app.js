@@ -273,6 +273,19 @@
 
         var tokenItems = normalizeTokens(apiTokens);
 
+        // Auto-populate POOL_CONFIG for API tokens not already in the hardcoded config
+        apiTokens.forEach(function (t) {
+            if (!t.staking_address || !t.token_address) return;
+            var sKey = t.staking_address.toLowerCase();
+            if (POOL_CONFIG[sKey]) return; // already configured
+            POOL_CONFIG[sKey] = {
+                ticker: t.token_symbol || '',
+                rewardTicker: t.reward_token_symbol || 'CLAWS',
+                token: t.token_address,
+                rewardToken: t.reward_token_address || '0x7ca47B141639B893C6782823C0b219f872056379'
+            };
+        });
+
         // Normalize projects — keep all, they link to project detail pages
         var projectItems = normalizeProjects(projects);
 

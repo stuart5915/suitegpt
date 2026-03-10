@@ -2122,12 +2122,18 @@ async function init() {
                 if (!p.staking_address || !p.token_address) return;
                 var key = p.token_symbol.toLowerCase();
                 if (POOLS[key]) return; // don't overwrite hardcoded pools
+                // Determine reward token — factory deploys use CLAWS
+                var isSelfReward = !p.reward_token_address ||
+                    p.reward_token_address.toLowerCase() === p.token_address.toLowerCase();
+                var rToken = p.reward_token_address || '0x7ca47B141639B893C6782823C0b219f872056379'; // default CLAWS
+                var rTicker = p.reward_token_symbol || (isSelfReward ? p.token_symbol : 'CLAWS');
+
                 POOLS[key] = {
                     name: p.token_name,
                     ticker: p.token_symbol,
                     token: p.token_address,
-                    rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808',
-                    rewardTicker: 'CLAWS',
+                    rewardToken: rToken,
+                    rewardTicker: rTicker,
                     staking: p.staking_address,
                     decimals: 18,
                     logo: p.logo_url || '',
@@ -2135,6 +2141,7 @@ async function init() {
                     colorDim: p.color_dim || 'hsla(172, 32%, 48%, 0.12)',
                     glow: p.glow || 'hsla(172, 32%, 48%, 0.18)',
                     description: p.description || '',
+                    website: p.website_url || '',
                     buyLink: 'https://app.uniswap.org/swap?inputCurrency=ETH&outputCurrency=' + p.token_address + '&chain=base',
                     chartLink: 'https://dexscreener.com/base/' + p.token_address,
                     featured: false,
