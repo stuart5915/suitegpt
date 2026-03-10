@@ -37,16 +37,24 @@ export default async function handler(req, res) {
     }
 
     // Completed — extract image
+    // ComfyUI worker returns: { output: { images: [{ image: "base64...", type: "output" }] } }
+    // or: { output: { message: "url", status: "ok" } }
     let imageUrl = null;
+    const out = data.output;
 
-    if (data.output?.image_url) {
-      imageUrl = data.output.image_url;
-    } else if (data.output?.image) {
-      imageUrl = await uploadBase64(data.output.image, req.query.uid);
-    } else if (data.output?.images?.[0]) {
-      imageUrl = await uploadBase64(data.output.images[0], req.query.uid);
+    if (out?.image_url) {
+      imageUrl = out.image_url;
+    } else if (out?.message && typeof out.message === 'string' && out.message.startsWith('http')) {
+      imageUrl = out.message;
+    } else if (out?.images?.[0]?.image) {
+      // ComfyUI format: images array with {image: base64} objects
+      imageUrl = await uploadBase64(out.images[0].image, req.query.uid);
+    } else if (out?.image) {
+      imageUrl = await uploadBase64(out.image, req.query.uid);
+    } else if (out?.images?.[0] && typeof out.images[0] === 'string') {
+      imageUrl = await uploadBase64(out.images[0], req.query.uid);
     } else {
-      return res.status(200).json({ status: 'COMPLETED', error: 'No image in response: ' + JSON.stringify(data.output || {}).slice(0, 200) });
+      return res.status(200).json({ status: 'COMPLETED', error: 'No image in response: ' + JSON.stringify(out || {}).slice(0, 300) });
     }
 
     return res.status(200).json({ status: 'COMPLETED', image_url: imageUrl });
