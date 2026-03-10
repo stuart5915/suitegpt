@@ -374,6 +374,36 @@
     cursor: pointer;
   }
 
+  .seat-avatar.my-agent {
+    width: 68px;
+    height: 68px;
+    font-size: 28px;
+    border: 3px solid var(--accent-green);
+    box-shadow: 0 0 16px rgba(34,197,94,0.5), 0 0 32px rgba(34,197,94,0.2);
+    animation: myAgentGlow 2s infinite;
+  }
+  .seat-avatar.my-agent.folded {
+    animation: none;
+    box-shadow: none;
+  }
+  @keyframes myAgentGlow {
+    0%, 100% { box-shadow: 0 0 14px rgba(34,197,94,0.4), 0 0 28px rgba(34,197,94,0.15); }
+    50% { box-shadow: 0 0 22px rgba(34,197,94,0.7), 0 0 44px rgba(34,197,94,0.3); }
+  }
+
+  .my-agent-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
   .seat-avatar.active {
     border-color: var(--accent-gold);
     border-width: 3px;
@@ -4065,27 +4095,37 @@ function renderTableSeats() {
     const folded = agent.folded;
     const isWinner = gameState.lastWinner === agent.id;
 
+    const wallet = getWallet();
+    const isMyAgent = agent.isCustom && (
+      (wallet && agent.walletAddress === wallet.address) ||
+      (!wallet && sessionId && agent.walletAddress === 'sandbox_' + sessionId)
+    );
+    const isOtherCustom = agent.isCustom && !isMyAgent;
+
+    // Card sizes — bigger for user's agent
+    const cw = isMyAgent ? 38 : 26;
+    const ch = isMyAgent ? 52 : 36;
+    const crk = isMyAgent ? 15 : 11;
+    const csu = isMyAgent ? 13 : 9;
+    const cfd = isMyAgent ? 22 : 16;
+
     let pocketHTML = '';
     if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded) {
       const c1 = agent.hand[0], c2 = agent.hand[1];
-      pocketHTML = `<div class="seat-pocket">
-        <div class="card${c1.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c1.rank}</div><div class="card-suit" style="font-size:9px">${c1.suit}</div></div>
-        <div class="card${c2.red ? ' red' : ''}" style="width:26px;height:36px;font-size:8px"><div class="card-rank" style="font-size:11px">${c2.rank}</div><div class="card-suit" style="font-size:9px">${c2.suit}</div></div>
+      pocketHTML = `<div class="seat-pocket" style="gap:${isMyAgent ? 4 : 2}px">
+        <div class="card${c1.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;font-size:8px"><div class="card-rank" style="font-size:${crk}px">${c1.rank}</div><div class="card-suit" style="font-size:${csu}px">${c1.suit}</div></div>
+        <div class="card${c2.red ? ' red' : ''}" style="width:${cw}px;height:${ch}px;font-size:8px"><div class="card-rank" style="font-size:${crk}px">${c2.rank}</div><div class="card-suit" style="font-size:${csu}px">${c2.suit}</div></div>
       </div>`;
     } else if (agent.hasCards && gameState.running && !agent.folded) {
-      pocketHTML = `<div class="seat-pocket">
-        <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
-        <div class="card face-down" style="width:26px;height:36px"><span style="font-size:16px">🂠</span></div>
+      pocketHTML = `<div class="seat-pocket" style="gap:${isMyAgent ? 4 : 2}px">
+        <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
+        <div class="card face-down" style="width:${cw}px;height:${ch}px"><span style="font-size:${cfd}px">🂠</span></div>
       </div>`;
     }
 
-    const wallet = getWallet();
-    const isMyAgent = agent.isCustom && wallet && agent.walletAddress === wallet.address;
-    const isOtherCustom = agent.isCustom && !isMyAgent;
-
     let cornerBadge = '';
     if (isMyAgent) {
-      cornerBadge = '<div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;background:var(--accent-green);border-radius:50%;border:2px solid var(--bg-dark);font-size:7px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">✓</div>';
+      cornerBadge = '<div style="position:absolute;bottom:-3px;right:-3px;width:22px;height:22px;background:var(--accent-green);border-radius:50%;border:2px solid var(--bg-dark);font-size:11px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">✓</div>';
     }
 
     let pnlBadge = '';
@@ -4093,7 +4133,7 @@ function renderTableSeats() {
       const agentPnl = agent.chips - agent.baseChips;
       const pnlColor = agentPnl >= 0 ? '#22c55e' : '#ef4444';
       const pnlSign = agentPnl >= 0 ? '+' : '';
-      pnlBadge = `<div style="font-size:8px;font-weight:700;color:${pnlColor};text-shadow:0 1px 3px rgba(0,0,0,0.9)">${pnlSign}${agentPnl.toLocaleString()}</div>`;
+      pnlBadge = `<div style="font-size:13px;font-weight:800;color:${pnlColor};text-shadow:0 1px 4px rgba(0,0,0,0.9);font-family:'Rajdhani',sans-serif">${pnlSign}${agentPnl.toLocaleString()}</div>`;
     }
 
     const myBorder = isMyAgent ? 'border-color:var(--accent-green);' : isOtherCustom ? 'border-color:var(--accent-cyan);' : '';
@@ -4123,24 +4163,30 @@ function renderTableSeats() {
     if (gameState.running && !folded && agent.winPct > 0) {
       const pct = agent.winPct;
       const barColor = pct >= 50 ? '#22c55e' : pct >= 25 ? '#eab308' : '#ef4444';
+      const barW = isMyAgent ? 80 : 60;
+      const lblSize = isMyAgent ? 11 : 8;
       winPctHTML = `
-        <div class="seat-winpct-label" style="color:${barColor}">${pct}%</div>
-        <div class="seat-winpct">
+        <div class="seat-winpct-label" style="color:${barColor};font-size:${lblSize}px">${pct}%</div>
+        <div class="seat-winpct" style="width:${barW}px">
           <div class="seat-winpct-fill" style="width:${pct}%;background:${barColor}"></div>
         </div>`;
     }
 
     const isSelected = _selectedAgentId === agent.id;
+    const myAgentClass = isMyAgent ? ' my-agent' : '';
+    const nameSize = isMyAgent ? 'font-size:13px;font-weight:700' : '';
+    const chipsSize = isMyAgent ? 'font-size:13px;font-weight:700' : '';
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
-      <div class="seat-avatar ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
-           title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${myBorder}${isSelected ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
+      ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
+      <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
+           title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
         ${agent.emoji}
         ${cornerBadge}
       </div>
-      <div class="seat-name" style="${nameColor}">${agent.name.length > 10 ? agent.name.slice(0,10) : agent.name}</div>
-      <div class="seat-chips">${formatChips(agent.chips)}</div>
+      <div class="seat-name" style="${nameColor};${nameSize}">${agent.name.length > 12 ? agent.name.slice(0,12) : agent.name}</div>
+      <div class="seat-chips" style="${chipsSize}">${formatChips(agent.chips)}</div>
       ${winPctHTML}
       ${betHTML}
       ${statusLabel}
