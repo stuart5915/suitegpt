@@ -443,6 +443,25 @@ class RoomManager {
     return results;
   }
 
+  // Get total chips currently in play (at tables + lobby) for a wallet
+  getChipsInPlay(walletAddress) {
+    let total = 0;
+    for (const room of Object.values(this.rooms)) {
+      for (const table of room.tables) {
+        for (const a of table.agents) {
+          if (a.isCustom && a.walletAddress === walletAddress) {
+            total += a.chips;
+          }
+        }
+      }
+    }
+    const walletLobby = this.lobbyAgents.get(walletAddress) || [];
+    for (const a of walletLobby) {
+      total += a.chipStack || 0;
+    }
+    return total;
+  }
+
   // === Wallet ===
 
   getWalletBalance(walletAddress) {

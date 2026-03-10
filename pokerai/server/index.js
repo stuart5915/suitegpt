@@ -308,6 +308,55 @@ app.get('/stats', (req, res) => {
   });
 });
 
+// Check on-chain deposit and credit if missing (fallback for missed events)
+app.post('/check-deposit', async (req, res) => {
+  if (!chain) return res.json({ error: 'Chain not configured' });
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
+
+  const addr = walletAddress.toLowerCase();
+  try {
+    // Get on-chain deposit total for this player
+    const stats = await chain.vault.playerStats(addr);
+    const onChainDeposited = Number(stats[0]); // total USDC deposited (raw)
+    const onChainWithdrawn = Number(stats[1]); // total USDC withdrawn (raw)
+    const onChainChips = Math.floor((onChainDeposited * 10000) / 1e6);
+    const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
+
+    // Get current server balance
+    const wallet = rooms.store.getOrCreateWallet(addr);
+    const serverBalance = wallet.balance || 0;
+
+    // If on-chain says they deposited more than server knows about, credit the difference
+    const expectedMinBalance = onChainChips - withdrawnChips;
+    const agentChipsInPlay = rooms.getChipsInPlay(addr);
+    const totalServerChips = serverBalance + agentChipsInPlay;
+
+    console.log(`[CheckDeposit] ${addr}: onChain=${onChainChips} chips deposited, ${withdrawnChips} withdrawn, server balance=${serverBalance}, in play=${agentChipsInPlay}, total=${totalServerChips}`);
+
+    if (expectedMinBalance > totalServerChips) {
+      const credit = expectedMinBalance - totalServerChips;
+      rooms.store.addBalance(addr, credit);
+      console.log(`[CheckDeposit] Credited ${credit} chips to ${addr}`);
+
+      // Notify connected client
+      for (const [ws, client] of clients) {
+        if (client.walletAddress === addr && ws.readyState === 1) {
+          sendBalance(ws, addr);
+          ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit, usdcAmount: (credit / 10000) } }));
+        }
+      }
+
+      res.json({ success: true, credited: credit, newBalance: serverBalance + credit });
+    } else {
+      res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance already correct' });
+    }
+  } catch (e) {
+    console.error('[CheckDeposit] Error:', e.message);
+    res.json({ error: e.message });
+  }
+});
+
 // =========== Server startup ===========
 
 async function startServer() {

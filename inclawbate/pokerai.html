@@ -4895,11 +4895,28 @@ async function doDeposit() {
     document.getElementById('depositNote').textContent = 'Waiting for confirmation on Base...';
     await tx.wait();
 
-    showToast(`Deposited $${usd.toFixed(2)} USDC!`, 'success');
+    showToast(`Deposited $${usd.toFixed(2)} USDC! Crediting chips...`, 'success');
     document.getElementById('depositAmount').value = '';
     updateDepositPreview();
+    document.getElementById('depositNote').textContent = 'Crediting chips to your account...';
+
+    // Fallback: tell server to check on-chain and credit if event was missed
+    const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+    try {
+      const resp = await fetch(API_BASE + '/check-deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: signerAddr })
+      });
+      const result = await resp.json();
+      console.log('[Deposit] check-deposit result:', result);
+      if (result.credited > 0) {
+        showToast(`${result.credited.toLocaleString()} chips credited!`, 'success');
+      }
+    } catch (e) {
+      console.error('[Deposit] check-deposit failed:', e);
+    }
     document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
-    // Server will detect the Deposit event and credit chips automatically
   } catch (e) {
     console.error('Deposit failed:', e);
     const reason = e.reason || e.message || 'Transaction failed';
