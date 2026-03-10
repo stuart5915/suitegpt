@@ -47,8 +47,9 @@ function broadcastViewerCount() {
 }
 
 function getClientWallet(client) {
-  if (client.walletAddress) return client.walletAddress;
+  // Sandbox agents live under sandbox_<sessionId>, even if real wallet is connected
   if (client.activeRoom === 'sandbox') return `sandbox_${client.sessionId}`;
+  if (client.walletAddress) return client.walletAddress;
   return null;
 }
 
@@ -133,7 +134,7 @@ wss.on('connection', (ws) => {
             const wallet = rooms.getWalletBalance(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
           }
-          const s = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
         }
@@ -142,7 +143,7 @@ wss.on('connection', (ws) => {
           const roomId = msg.roomId || 'micro';
           if (['sandbox', 'micro', 'mid', 'high'].includes(roomId)) {
             client.activeRoom = roomId;
-            const s = rooms.getStateForClient(client.sessionId, client.walletAddress, roomId);
+            const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), roomId);
             ws.send(JSON.stringify({ type: 'gameState', data: s }));
           }
           break;
@@ -390,7 +391,7 @@ function broadcastToClients(type, data) {
       if (ws.readyState === 1) {
         if (sourceRoom && client.activeRoom !== sourceRoom) continue;
         try {
-          const state = rooms.getStateForClient(client.sessionId, client.walletAddress, client.activeRoom);
+          const state = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
         } catch (e) { /* client disconnected */ }
       }
