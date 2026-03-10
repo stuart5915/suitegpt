@@ -109,7 +109,7 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     const handEval = getBestHand(agent.hand, communityCards);
     strength = (handEval.rank / 8) * 0.85 + Math.random() * 0.15;
     // Hands are relatively stronger with fewer opponents
-    if (headsUp) strength = Math.min(0.98, strength + 0.15);
+    if (headsUp) strength = Math.min(0.98, strength + 0.20);
     else if (playerCount <= 4) strength = Math.min(0.98, strength + 0.08);
   } else {
     // Preflop: evaluate based on actual hole cards
@@ -129,15 +129,15 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     if (paired && highCard >= 10) preflopStr += 0.15;
     if (highCard === 14 && lowCard >= 12) preflopStr += 0.1;
 
-    // Heads-up: almost every hand is playable, boost significantly
-    if (headsUp) preflopStr += 0.25;
+    // Heads-up: almost every hand is playable, massive boost
+    if (headsUp) preflopStr += 0.40;
     else if (playerCount <= 4) preflopStr += 0.12;
 
     strength = Math.min(0.95, Math.max(0.05, preflopStr * 0.7 + Math.random() * 0.2));
   }
 
-  // === RULE: Tight Preflop — fold weak hands preflop ===
-  if (rules.tightPreflop && communityCards.length === 0) {
+  // === RULE: Tight Preflop — fold weak hands preflop (disabled in heads-up) ===
+  if (rules.tightPreflop && communityCards.length === 0 && !headsUp) {
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
     const paired = c1 === c2;
     const highCard = Math.max(c1, c2);

@@ -333,7 +333,7 @@ app.get('/health', async (req, res) => {
   const vaultStats = chain ? await chain.getVaultStats() : null;
   res.json({
     status: 'ok',
-    version: 7,
+    version: 8,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary(),
