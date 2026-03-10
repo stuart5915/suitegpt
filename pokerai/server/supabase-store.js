@@ -42,13 +42,13 @@ class SupabaseStore {
     const wallet = { balance: 0, createdAt: Date.now() };
     this.walletCache.set(addr, wallet);
 
-    await this.supabase.from('poker_wallets').upsert({
+    const { error } = await this.supabase.from('poker_wallets').upsert({
       address: addr,
       chip_balance: 0,
       created_at: new Date().toISOString()
     }, { onConflict: 'address' });
-
-    console.log(`[SupabaseStore] New wallet: ${addr}`);
+    if (error) console.error(`[SupabaseStore] getOrCreateWallet WRITE FAILED:`, error.message, error.details);
+    else console.log(`[SupabaseStore] New wallet: ${addr}`);
     return { address: addr, balance: 0 };
   }
 
@@ -68,8 +68,7 @@ class SupabaseStore {
     cached.balance += amount;
 
     const { error } = await this.supabase.from('poker_wallets')
-      .update({ chip_balance: cached.balance })
-      .eq('address', addr);
+      .upsert({ address: addr, chip_balance: cached.balance, created_at: new Date().toISOString() }, { onConflict: 'address' });
     if (error) console.error(`[SupabaseStore] addBalance write failed:`, error.message);
     else console.log(`[SupabaseStore] addBalance ${addr.slice(0,8)}... → ${cached.balance} chips`);
   }
@@ -127,6 +126,15 @@ class SupabaseStore {
       this.agentCache[idx] = data;
     } else {
       this.agentCache.push(data);
+    }
+
+    // Ensure wallet row exists in DB (foreign key requirement)
+    if (data.walletAddress) {
+      await this.supabase.from('poker_wallets').upsert({
+        address: data.walletAddress,
+        chip_balance: this.walletCache.has(data.walletAddress) ? this.walletCache.get(data.walletAddress).balance : 0,
+        created_at: new Date().toISOString()
+      }, { onConflict: 'address' });
     }
 
     const { error } = await this.supabase.from('poker_agents').upsert(this._toDbAgent(data), { onConflict: 'id' });
