@@ -197,6 +197,94 @@
             justify-content: center;
         }
 
+        /* ── Example Pitches Carousel ── */
+        .pitch-examples {
+            max-width: 520px;
+            margin: var(--space-lg) auto 0;
+            position: relative;
+            z-index: 3;
+        }
+        .pitch-examples-label {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .pitch-examples-track {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 4px 0 8px;
+        }
+        .pitch-examples-track::-webkit-scrollbar { display: none; }
+        .pitch-example {
+            flex: 0 0 85%;
+            max-width: 440px;
+            scroll-snap-align: center;
+            background: hsla(240, 10%, 8%, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.15s;
+            position: relative;
+        }
+        .pitch-example:hover {
+            border-color: var(--lobster-400);
+            transform: translateY(-1px);
+        }
+        .pitch-example-text {
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .pitch-example-text em {
+            color: var(--lobster-300);
+            font-style: normal;
+            font-weight: 600;
+        }
+        .pitch-example-use {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            text-align: right;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .pitch-example:hover .pitch-example-use { opacity: 1; }
+        .pitch-examples-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .pitch-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border-subtle);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .pitch-dot.active {
+            background: var(--lobster-400);
+            transform: scale(1.3);
+        }
+
         /* ── Pitch Box ── */
         .pitch-box {
             max-width: 520px;
@@ -1822,6 +1910,8 @@
             .hero-sub { font-size: 0.95rem; max-width: 100%; }
             .hero-actions { flex-wrap: wrap; }
             .hero-actions .btn { width: 100%; justify-content: center; text-align: center; }
+            .pitch-examples { max-width: 100%; }
+            .pitch-example { flex: 0 0 90%; }
             .pitch-box { max-width: 100%; padding: var(--space-md); }
             .pitch-contact-row { flex-direction: column; }
             .pitch-send { width: 100%; padding: 12px; }
@@ -1917,6 +2007,42 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
         <h1 class="hero-title"><span class="grad-text">We Incubate</span> <span class="ransom-word"><span class="ransom-letter" style="background:#d63031;font-family:'Special Elite',cursive;transform:rotate(-2deg)">A</span><span class="ransom-letter" style="background:#0984e3;font-family:'Permanent Marker',cursive;transform:rotate(1.5deg)">n</span><span class="ransom-letter" style="background:#00b894;font-family:'Special Elite',cursive;transform:rotate(-1deg)">y</span><span class="ransom-letter" style="background:#fdcb6e;color:#222;font-family:'Permanent Marker',cursive;transform:rotate(2deg)">t</span><span class="ransom-letter" style="background:#e17055;font-family:'Special Elite',cursive;transform:rotate(-2.5deg)">h</span><span class="ransom-letter" style="background:#6c5ce7;font-family:'Permanent Marker',cursive;transform:rotate(1deg)">i</span><span class="ransom-letter" style="background:#d63031;font-family:'Special Elite',cursive;transform:rotate(-1.5deg)">n</span><span class="ransom-letter" style="background:#0984e3;font-family:'Permanent Marker',cursive;transform:rotate(2deg)">g</span></span><br><span class="grad-text">for</span> <span class="ransom-word"><span class="ransom-letter" style="background:#00b894;font-family:'Permanent Marker',cursive;transform:rotate(-2deg)">A</span><span class="ransom-letter" style="background:#e17055;font-family:'Special Elite',cursive;transform:rotate(1.5deg)">n</span><span class="ransom-letter" style="background:#6c5ce7;font-family:'Permanent Marker',cursive;transform:rotate(-1deg)">y</span><span class="ransom-letter" style="background:#fdcb6e;color:#222;font-family:'Special Elite',cursive;transform:rotate(2.5deg)">o</span><span class="ransom-letter" style="background:#d63031;font-family:'Permanent Marker',cursive;transform:rotate(-1.5deg)">n</span><span class="ransom-letter" style="background:#0984e3;font-family:'Special Elite',cursive;transform:rotate(2deg)">e</span></span></h1>
         <p class="hero-sub">Apps. Stores. Services. Churches. Whatever you need &mdash; we build it. You keep 100%.</p>
         <div class="hero-ubi-teaser">Oh, and we pay you daily just for being here.</div>
+
+        <!-- Example Pitches -->
+        <div class="pitch-examples">
+            <div class="pitch-examples-label">People are building...</div>
+            <div class="pitch-examples-track" id="pitchExamplesTrack">
+                <div class="pitch-example" data-pitch="I want to launch a meme token for my podcast community. We have about 2,000 listeners per episode and I want to reward the most engaged fans with token airdrops. I need the token on Base, a staking pool so holders earn rewards, and a simple landing page that explains the tokenomics. I've never done crypto before but I have the audience.">
+                    <div class="pitch-example-text">I want to launch a <em>meme token for my podcast community</em>. We have about 2,000 listeners per episode and I want to reward the most engaged fans with token airdrops. I need the token on Base, a staking pool so holders earn rewards, and a simple landing page that explains the tokenomics. I've never done crypto before but I have the audience.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="I run a small church in rural Texas and we need a website that handles sermon archives, event calendars, online tithing, and a prayer request form. We're not tech savvy at all. Our budget is basically zero. We just need something clean and simple that our 60-year-old pastor can update without calling his grandson every time.">
+                    <div class="pitch-example-text">I run a <em>small church in rural Texas</em> and we need a website that handles sermon archives, event calendars, online tithing, and a prayer request form. We're not tech savvy at all. Our budget is basically zero. We just need something clean and simple that our 60-year-old pastor can update without calling his grandson every time.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="I'm a personal trainer and I want to build an app where my clients can log workouts, track macros, and message me directly. I currently use 4 different apps for this and it's a mess. Ideally I'd have a dashboard where I can see all my clients' progress in one place. I have about 35 active clients and I charge $150/month each.">
+                    <div class="pitch-example-text">I'm a <em>personal trainer</em> and I want to build an app where my clients can log workouts, track macros, and message me directly. I currently use 4 different apps for this and it's a mess. Ideally I'd have a dashboard where I can see all my clients' progress in one place. I have about 35 active clients and I charge $150/month each.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="My grandma makes the best hot sauce in Louisiana and we want to sell it online. We need a store with shipping integration, a subscription option for monthly deliveries, and some kind of referral program where customers get a discount for sharing. She's 74 and has been making this recipe for 50 years. We just need someone to handle the tech side.">
+                    <div class="pitch-example-text">My grandma makes the <em>best hot sauce in Louisiana</em> and we want to sell it online. We need a store with shipping integration, a subscription option for monthly deliveries, and some kind of referral program where customers get a discount for sharing. She's 74 and has been making this recipe for 50 years. We just need someone to handle the tech side.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="I'm building an AI agent that analyzes on-chain whale movements and posts alerts to Telegram and X automatically. I need it to track wallets across Base, Ethereum, and Solana, detect large buys/sells in real-time, and generate human-readable summaries. I want to tokenize it so holders get access to the premium alert feed and stakers earn from the subscription revenue.">
+                    <div class="pitch-example-text">I'm building an <em>AI agent that analyzes on-chain whale movements</em> and posts alerts to Telegram and X automatically. I need it to track wallets across Base, Ethereum, and Solana, detect large buys/sells in real-time, and generate human-readable summaries. I want to tokenize it so holders get access to the premium feed and stakers earn from subscription revenue.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="I teach music lessons to kids in my neighborhood and I want a booking system where parents can see my availability, book lessons, pay online, and get reminders. I also want to track each student's progress and share recordings of their performances with their families. Nothing fancy, just something that works and doesn't cost me $50/month in SaaS fees.">
+                    <div class="pitch-example-text">I <em>teach music lessons to kids</em> in my neighborhood and I want a booking system where parents can see my availability, book lessons, pay online, and get reminders. I also want to track each student's progress and share recordings of their performances with their families. Nothing fancy, just something that works and doesn't cost me $50/month in SaaS fees.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+                <div class="pitch-example" data-pitch="We're a DAO of 200 people and we need a governance platform where members can submit proposals, vote with token-weighted ballots, and see results transparently on-chain. We also need a treasury dashboard showing all our holdings across 3 chains, pending proposals, and historical spending. The current tools we use are clunky and half our members can't figure them out.">
+                    <div class="pitch-example-text">We're a <em>DAO of 200 people</em> and we need a governance platform where members can submit proposals, vote with token-weighted ballots, and see results transparently on-chain. We also need a treasury dashboard showing all our holdings across 3 chains, pending proposals, and historical spending. The current tools we use are clunky and half our members can't figure them out.</div>
+                    <div class="pitch-example-use">click to use this &rarr;</div>
+                </div>
+            </div>
+            <div class="pitch-examples-dots" id="pitchExamplesDots"></div>
+        </div>
 
         <!-- Pitch Box — Main CTA -->
         <div class="pitch-box" id="pitchBox">
@@ -2745,6 +2871,54 @@ function addClawsToWallet() {
         feedback.className = 'pitch-msg ' + type;
         feedback.textContent = text;
     }
+})();
+
+// ── Example Pitches Carousel ──
+(function() {
+    var track = document.getElementById('pitchExamplesTrack');
+    var dotsEl = document.getElementById('pitchExamplesDots');
+    var msgEl = document.getElementById('pitchMsg');
+    if (!track || !dotsEl) return;
+
+    var examples = track.querySelectorAll('.pitch-example');
+    examples.forEach(function(_, i) {
+        var dot = document.createElement('div');
+        dot.className = 'pitch-dot' + (i === 0 ? ' active' : '');
+        dotsEl.appendChild(dot);
+    });
+    var dots = dotsEl.querySelectorAll('.pitch-dot');
+
+    // Click to fill textarea
+    examples.forEach(function(ex) {
+        ex.addEventListener('click', function() {
+            var text = ex.dataset.pitch;
+            if (msgEl && text) {
+                msgEl.value = text;
+                msgEl.focus();
+                msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    });
+
+    // Update dots on scroll
+    track.addEventListener('scroll', function() {
+        var scrollLeft = track.scrollLeft;
+        var cardWidth = examples[0].offsetWidth + 12;
+        var idx = Math.round(scrollLeft / cardWidth);
+        dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+    });
+
+    // Auto-scroll every 5s
+    var autoId = setInterval(function() {
+        var cardWidth = examples[0].offsetWidth + 12;
+        var maxScroll = track.scrollWidth - track.clientWidth;
+        if (track.scrollLeft >= maxScroll - 10) {
+            track.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+            track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+        }
+    }, 5000);
+    track.addEventListener('mouseenter', function() { clearInterval(autoId); });
 })();
 </script>
 <script>
