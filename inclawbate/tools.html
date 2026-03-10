@@ -509,51 +509,6 @@
             font-weight: 600;
         }
 
-        /* ── Marketing Plan Result ── */
-        .marketing-result {
-            display: none;
-            margin-top: var(--space-md);
-            padding: var(--space-md);
-            background: var(--bg-elevated);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-subtle);
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .marketing-result h2 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--lobster-400);
-            margin-top: var(--space-md);
-            margin-bottom: var(--space-xs);
-        }
-        .marketing-result h2:first-child { margin-top: 0; }
-        .marketing-result p,
-        .marketing-result li {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-        .marketing-result ul {
-            padding-left: var(--space-md);
-            margin: var(--space-xs) 0;
-        }
-        .copy-plan-btn {
-            display: none;
-            margin-top: var(--space-sm);
-            padding: 8px 16px;
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            font-weight: 600;
-            background: var(--bg-surface);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: border-color 0.15s;
-        }
-        .copy-plan-btn:hover { border-color: var(--lobster-400); }
-
         /* ── Mobile ── */
         @media (max-width: 600px) {
             .tools-hero { padding: var(--space-xl) var(--space-md); }
@@ -677,18 +632,18 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-action="marketing" id="tool-marketing">
+        <a href="/market-dash" class="tool-row" id="tool-marketing" style="text-decoration:none;color:inherit">
             <span class="launch-step-num">05</span>
             <span class="tool-row-icon">&#128200;</span>
             <div class="tool-row-body">
-                <div class="tool-row-name">Generate Marketing Plan</div>
-                <div class="tool-row-desc">AI-powered launch strategy and content plan</div>
+                <div class="tool-row-name">Marketing Dashboard</div>
+                <div class="tool-row-desc">Per-project vitals, AI marketing plan, content ideas, socials</div>
             </div>
             <div class="tool-row-badges">
                 <span class="tool-row-badge tool-row-badge--ai">AI</span>
             </div>
             <span class="tool-row-arrow">&#8250;</span>
-        </div>
+        </a>
 
         <div class="tool-row" data-tool="incubate" id="tool-incubate">
             <span class="launch-step-num">06</span>
@@ -850,37 +805,6 @@
     </div>
 </div>
 
-<!-- Generate Marketing Plan Modal -->
-<div class="native-modal-overlay" id="marketingOverlay">
-    <div class="native-modal">
-        <button class="modal-close" onclick="closeMarketingModal()">&times;</button>
-        <h3>&#128200; Generate Marketing Plan</h3>
-        <form id="marketingForm" onsubmit="submitMarketing(event)">
-            <div id="marketingNoAuth" style="display:none">
-                <p style="color:var(--text-dim);font-size:0.85rem">Sign in to generate a marketing plan.</p>
-            </div>
-            <div id="marketingFields">
-                <label for="marketingName">Project Name</label>
-                <input type="text" id="marketingName" placeholder="My Project" required>
-
-                <label for="marketingSymbol">Token Symbol</label>
-                <input type="text" id="marketingSymbol" placeholder="TOKEN" required>
-
-                <label for="marketingUnique">What makes it unique?</label>
-                <textarea id="marketingUnique" placeholder="Describe what sets your project apart..."></textarea>
-
-                <label for="marketingAudience">Target Audience</label>
-                <input type="text" id="marketingAudience" placeholder="e.g. DeFi users, meme traders, builders">
-
-                <button type="submit" class="modal-btn" id="marketingSubmitBtn">Generate Plan</button>
-            </div>
-            <div class="modal-error" id="marketingError"></div>
-        </form>
-        <div class="marketing-result" id="marketingResult"></div>
-        <button class="copy-plan-btn" id="copyPlanBtn" onclick="copyPlan()">Copy Plan</button>
-    </div>
-</div>
-
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
 <script>
@@ -928,7 +852,6 @@
             var action = row.getAttribute('data-action');
             history.replaceState(null, '', '#' + action);
             if (action === 'socials') openSocialsModal();
-            if (action === 'marketing') openMarketingModal();
         });
     });
 
@@ -937,7 +860,6 @@
         if (e.key === 'Escape') {
             closeToolModal();
             closeSocialsModal();
-            closeMarketingModal();
         }
     });
 
@@ -981,8 +903,6 @@
                 setTimeout(function() { openTool(row.dataset.tool); }, 400);
             } else if (row.dataset.action === 'socials') {
                 setTimeout(function() { openSocialsModal(); }, 400);
-            } else if (row.dataset.action === 'marketing') {
-                setTimeout(function() { openMarketingModal(); }, 400);
             }
         }
     }
@@ -1088,92 +1008,7 @@ async function submitSocials(e) {
     }
 }
 
-// ── Generate Marketing Plan ──
-function openMarketingModal() {
-    var ov = document.getElementById('marketingOverlay');
-    ov.classList.add('open');
-    document.body.style.overflow = 'hidden';
-
-    document.getElementById('marketingError').style.display = 'none';
-    document.getElementById('marketingResult').style.display = 'none';
-    document.getElementById('copyPlanBtn').style.display = 'none';
-
-    document.getElementById('marketingNoAuth').style.display = 'none';
-    document.getElementById('marketingFields').style.display = 'block';
-}
-
-function closeMarketingModal() {
-    document.getElementById('marketingOverlay').classList.remove('open');
-    document.body.style.overflow = '';
-}
-document.getElementById('marketingOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closeMarketingModal();
-});
-
-var rawPlanText = '';
-
-async function submitMarketing(e) {
-    e.preventDefault();
-    var auth = getAuth();
-    if (!auth || !auth.token) return;
-
-    var btn = document.getElementById('marketingSubmitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Generating...';
-    document.getElementById('marketingError').style.display = 'none';
-    document.getElementById('marketingResult').style.display = 'none';
-    document.getElementById('copyPlanBtn').style.display = 'none';
-
-    try {
-        var resp = await fetch('/api/inclawbate/generate-marketing', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + auth.token
-            },
-            body: JSON.stringify({
-                projectName: document.getElementById('marketingName').value,
-                tokenSymbol: document.getElementById('marketingSymbol').value,
-                uniqueValue: document.getElementById('marketingUnique').value,
-                targetAudience: document.getElementById('marketingAudience').value
-            })
-        });
-
-        var data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Failed to generate');
-
-        rawPlanText = data.plan;
-        var resultEl = document.getElementById('marketingResult');
-        resultEl.innerHTML = markdownToHtml(data.plan);
-        resultEl.style.display = 'block';
-        document.getElementById('copyPlanBtn').style.display = 'inline-block';
-    } catch(err) {
-        var errEl = document.getElementById('marketingError');
-        errEl.textContent = err.message || 'Failed to generate plan.';
-        errEl.style.display = 'block';
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Generate Plan';
-    }
-}
-
-function copyPlan() {
-    navigator.clipboard.writeText(rawPlanText).then(function() {
-        var btn = document.getElementById('copyPlanBtn');
-        btn.textContent = 'Copied!';
-        setTimeout(function() { btn.textContent = 'Copy Plan'; }, 1500);
-    });
-}
-
-function markdownToHtml(md) {
-    return md
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^### (.+)$/gm, '<h3 style="font-size:0.9rem;color:var(--text-primary);margin:8px 0 4px">$1</h3>')
-        .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-        .replace(/\n{2,}/g, '</p><p>')
-        .replace(/^(?!<[hul])/gm, function(m) { return m ? '<p>' + m : m; });
-}
+// Marketing modal removed — now lives at /market-dash
 
 // ── Angel NFT Banner Check ──
 (function() {
