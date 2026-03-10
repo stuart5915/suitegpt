@@ -4844,10 +4844,13 @@ async function doDeposit() {
   if (!await ensureBaseNetwork()) { btn.disabled = false; return; }
 
   const usdcAmount = BigInt(Math.floor(usd * 1e6)); // USDC has 6 decimals
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
 
   try {
+    // Create provider AFTER network switch so it's on Base
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const signerAddr = await signer.getAddress();
+
     // Step 1: Check USDC balance
     btn.innerHTML = '<span class="spinner"></span>Checking balance...';
     const usdc = new ethers.Contract(USDC_ADDRESS, [
@@ -4856,14 +4859,14 @@ async function doDeposit() {
       'function approve(address,uint256) returns (bool)'
     ], signer);
 
-    const balance = await usdc.balanceOf(wallet.address);
+    const balance = await usdc.balanceOf(signerAddr);
     if (balance < usdcAmount) {
       showToast(`Not enough USDC. You have $${(Number(balance) / 1e6).toFixed(2)}`, 'error');
       btn.disabled = false; btn.innerHTML = 'Deposit USDC'; return;
     }
 
     // Step 2: Check allowance, approve if needed
-    const allowance = await usdc.allowance(wallet.address, VAULT_ADDRESS);
+    const allowance = await usdc.allowance(signerAddr, VAULT_ADDRESS);
     if (allowance < usdcAmount) {
       btn.innerHTML = '<span class="spinner"></span>Approve USDC...';
       document.getElementById('depositNote').textContent = 'Step 1/2: Approve USDC spending in your wallet';
