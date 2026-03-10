@@ -432,7 +432,17 @@ app.get('/debug/supabase-test', async (req, res) => {
     // Try reading poker_agents directly
     const { data: agents, error: readErr } = await rooms.store.supabase.from('poker_agents').select('id, name, wallet_address').limit(10);
     if (readErr) return res.json({ error: 'Read failed: ' + readErr.message, code: readErr.code, details: readErr.details });
-    res.json({ agentCount: agents.length, agents, cacheCount: rooms.store.agentCache.length });
+
+    // If cache has agents but DB doesn't, try to force-save and return the error
+    let writeTest = null;
+    if (rooms.store.agentCache.length > 0 && agents.length === 0) {
+      const testAgent = rooms.store.agentCache[0];
+      const dbRow = rooms.store._toDbAgent(testAgent);
+      const { error: writeErr } = await rooms.store.supabase.from('poker_agents').upsert(dbRow, { onConflict: 'id' });
+      writeTest = writeErr ? { error: writeErr.message, code: writeErr.code, details: writeErr.details, hint: writeErr.hint, row: dbRow } : { success: true, row: dbRow };
+    }
+
+    res.json({ agentCount: agents.length, agents, cacheCount: rooms.store.agentCache.length, writeTest });
   } catch (e) {
     res.json({ error: e.message });
   }
