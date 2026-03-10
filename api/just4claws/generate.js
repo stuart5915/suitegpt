@@ -47,8 +47,8 @@ export default async function handler(req, res) {
       width: chosen.width,
       height: chosen.height,
       samples: 1,
-      safety_checker: 'no',
-      enhance_prompt: 'no',
+      safety_checker: chosen.model_id ? 'no' : false,
+      enhance_prompt: chosen.model_id ? 'no' : false,
       seed: null
     };
 
