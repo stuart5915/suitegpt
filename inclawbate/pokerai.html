@@ -4362,12 +4362,14 @@ function updateRoomTabs() {
 }
 
 function renderFullState() {
-  // Round stats
-  document.getElementById('roundNum').textContent = gameState.round;
-  document.getElementById('handsPlayed').textContent = gameState.handsPlayed;
-  document.getElementById('phaseDisplay').textContent = capitalize(gameState.phase);
-  document.getElementById('potDisplay').textContent = gameState.pot.toLocaleString();
-  document.getElementById('potChips').textContent = `POT: ${gameState.pot.toLocaleString()}`;
+  // Round stats — show empty state for tables with no agents
+  const isEmpty = gameState.agents.length === 0;
+  const needsMore = gameState.agents.length === 1;
+  document.getElementById('roundNum').textContent = isEmpty ? '-' : gameState.round;
+  document.getElementById('handsPlayed').textContent = isEmpty ? '-' : gameState.handsPlayed;
+  document.getElementById('phaseDisplay').textContent = isEmpty ? 'Empty' : needsMore ? 'Waiting...' : capitalize(gameState.phase);
+  document.getElementById('potDisplay').textContent = isEmpty ? '-' : gameState.pot.toLocaleString();
+  document.getElementById('potChips').textContent = isEmpty ? '' : `POT: ${gameState.pot.toLocaleString()}`;
 
   // Community cards
   for (let i = 0; i < 5; i++) {
@@ -4414,6 +4416,38 @@ function renderTableSeats() {
   const felt = document.getElementById('tableFelt');
   felt.querySelectorAll('.seat').forEach(s => s.remove());
   felt.querySelectorAll('.dealer-btn').forEach(s => s.remove());
+
+  // Remove old empty-table message if any
+  const oldEmpty = felt.querySelector('.empty-table-msg');
+  if (oldEmpty) oldEmpty.remove();
+
+  // Show empty state for PvP rooms with no agents
+  if (gameState.agents.length === 0) {
+    const isSandbox = activeRoom === 'sandbox';
+    const msg = document.createElement('div');
+    msg.className = 'empty-table-msg';
+    msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:15';
+    msg.innerHTML = `
+      <div style="font-size:48px;margin-bottom:12px">🪑</div>
+      <div style="font-family:Rajdhani,sans-serif;font-size:22px;font-weight:800;color:var(--text-primary);margin-bottom:6px">Waiting for Players</div>
+      <div style="font-size:13px;color:var(--text-muted);max-width:260px">
+        ${isSandbox ? 'No agents at this table yet.' : 'Deploy your agents from the <b>My Agents</b> tab to start playing.'}
+      </div>
+      <div style="margin-top:16px;font-size:12px;color:var(--text-muted)">0 / 8 seats</div>
+    `;
+    felt.appendChild(msg);
+    return;
+  } else if (gameState.agents.length === 1) {
+    // Only 1 agent — show "need 1 more" message in center
+    const msg = document.createElement('div');
+    msg.className = 'empty-table-msg';
+    msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:5';
+    msg.innerHTML = `
+      <div style="font-family:Rajdhani,sans-serif;font-size:16px;font-weight:700;color:var(--accent-gold)">Need 1 more player to start</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${gameState.agents.length} / 8 seats</div>
+    `;
+    felt.appendChild(msg);
+  }
 
   gameState.agents.forEach((agent, i) => {
     const pos = SEAT_POSITIONS[i];
