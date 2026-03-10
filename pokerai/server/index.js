@@ -426,6 +426,15 @@ app.post('/check-deposit', async (req, res) => {
   }
 });
 
+app.get('/debug/agents', (req, res) => {
+  const storeAgents = rooms.store.agents || [];
+  const lobbyMap = {};
+  for (const [wallet, agents] of rooms.lobbyAgents) {
+    lobbyMap[wallet] = agents.map(a => ({ id: a.id, name: a.name, chipStack: a.chipStack }));
+  }
+  res.json({ storeAgentCount: storeAgents.length, storeAgents: storeAgents.map(a => ({ id: a.id, name: a.name, wallet: a.walletAddress, chipStack: a.chipStack })), lobbyAgents: lobbyMap });
+});
+
 // =========== Server startup ===========
 
 async function startServer() {
