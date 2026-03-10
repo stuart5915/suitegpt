@@ -277,34 +277,12 @@ export default async function handler(req, res) {
             const projectTier = validTiers.includes(tier) ? tier : 'permissionless';
             const status = (projectTier === 'incubated') ? 'pending' : 'active';
 
-            // Allocation / burn validation
+            // Allocation validation (free for all tiers)
             const allocPct = parseInt(allocation_pct) || 0;
             if (!VALID_ALLOCATION_PCTS.includes(allocPct)) {
                 return res.status(400).json({ error: 'Invalid allocation_pct. Must be 0, 1, 2, 5, or 10.' });
             }
-            let verifiedBurnAmount = 0;
-            if (allocPct > 0) {
-                // Check if creator holds Angel NFT — free allocation, no burn required
-                const ANGEL_NFT = '0x14d44d4d9f7898be1b9e1184a116502061eff5e7';
-                const balanceOfSelector = '0x70a08231000000000000000000000000' + creator_wallet.slice(2).toLowerCase();
-                let hasAngelNFT = false;
-                try {
-                    const balHex = await rpcCall('eth_call', [{ to: ANGEL_NFT, data: balanceOfSelector }, 'latest']);
-                    hasAngelNFT = balHex && BigInt(balHex) > 0n;
-                } catch (e) { /* NFT check failed, require burn */ }
-
-                if (!hasAngelNFT) {
-                    if (!burn_tx_hash) {
-                        return res.status(400).json({ error: 'burn_tx_hash required for allocation > 0%' });
-                    }
-                    const expectedBurn = ALLOCATION_BURN_COSTS[allocPct];
-                    const burnVerify = await verifyBurnTx(burn_tx_hash, creator_wallet, expectedBurn);
-                    if (!burnVerify.valid) {
-                        return res.status(400).json({ error: 'Burn verification failed: ' + burnVerify.reason });
-                    }
-                    verifiedBurnAmount = burnVerify.amount;
-                }
-            }
+            const verifiedBurnAmount = 0;
 
             // Agent config
             const wantsAgent = agent_enabled === true;

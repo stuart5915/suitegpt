@@ -388,29 +388,8 @@ function selectAllocationTier(pct) {
 }
 
 function updateAllocationUI() {
-    var balanceEl = document.getElementById('allocationBalance');
-    var balanceDisplay = document.getElementById('clawsBalanceDisplay');
-    var costDisplay = document.getElementById('allocationCostDisplay');
-    var warningEl = document.getElementById('allocationWarning');
     var lockupNote = document.getElementById('allocationLockupNote');
-
-    if (state.allocationPct === 0) {
-        if (balanceEl) balanceEl.style.display = 'none';
-        if (warningEl) warningEl.classList.remove('visible');
-        if (lockupNote) lockupNote.style.display = 'none';
-        return;
-    }
-
-    if (balanceEl) balanceEl.style.display = 'flex';
-    if (balanceDisplay) balanceDisplay.textContent = fmt(state.clawsBalance);
-    if (lockupNote) lockupNote.style.display = 'block';
-
-    var cost = ALLOCATION_TIERS[state.allocationPct] || 0;
-    {
-        if (costDisplay) costDisplay.textContent = 'Cost: ' + fmt(cost) + ' CLAWS';
-        var insufficient = state.clawsBalance < cost && state.wallet;
-        if (warningEl) warningEl.classList.toggle('visible', insufficient);
-    }
+    if (lockupNote) lockupNote.style.display = state.allocationPct > 0 ? 'block' : 'none';
 }
 
 function buildMerkleRoot(address, amount) {
@@ -486,7 +465,7 @@ var DEPLOY_TOKEN_ABI = [{
     outputs: [{ name: 'tokenAddress', type: 'address' }]
 }];
 
-function encodeClankerDeploy(name, symbol, devBuyWei) {
+function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
     var iface = new ethers.Interface(DEPLOY_TOKEN_ABI);
     var saltBytes = new Uint8Array(32);
     crypto.getRandomValues(saltBytes);
@@ -506,7 +485,7 @@ function encodeClankerDeploy(name, symbol, devBuyWei) {
             name: name,
             symbol: symbol,
             salt: salt,
-            image: '',
+            image: imageUrl || '',
             metadata: '',
             context: '',
             originatingChainId: 8453
@@ -901,6 +880,9 @@ async function handleLaunchDeploy() {
     var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
     var desc = document.getElementById('launchDesc').value.trim();
     var website = document.getElementById('launchWebsite').value.trim();
+    var imageUrl = (document.getElementById('launchImageUrl') || {}).value || '';
+    var xHandle = (document.getElementById('launchXHandle') || {}).value || '';
+    var telegram = (document.getElementById('launchTelegram') || {}).value || '';
 
     if (!name) return showToast('Token name is required', 'error');
     if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
@@ -924,7 +906,7 @@ async function handleLaunchDeploy() {
         setBtnState(btn, 'Deploying token...', true);
 
         // Step 1: Deploy token via Clanker v4
-        var calldata = encodeClankerDeploy(name, symbol, devBuyWei);
+        var calldata = encodeClankerDeploy(name, symbol, devBuyWei, imageUrl);
         var txValue = devBuyWei > 0n ? '0x' + devBuyWei.toString(16) : undefined;
         var result = await sendTxAndWait(state.provider, state.wallet, CLANKER_V4, calldata, '0x7A1200', txValue);
 
@@ -996,12 +978,14 @@ async function handleLaunchDeploy() {
             deploy_tx_hash: result.txHash,
             description: desc,
             website_url: website,
+            logo_url: imageUrl || null,
+            x_handle: xHandle || null,
+            telegram_url: telegram || null,
             fee_split_bps: 2000,
             tier: 'permissionless',
             creator_wallet: state.wallet,
-            burn_tx_hash: state.burnTxHash || null,
             allocation_pct: state.allocationPct,
-            burn_amount: burnAmount
+            burn_amount: 0
         });
 
         if (regResult.error) {
@@ -1315,20 +1299,17 @@ function selectChain(chain) {
     var devBuyHint = document.getElementById('devBuyHint');
     var feeBase = document.getElementById('feeStructureBase');
     var feeSolana = document.getElementById('feeStructureSolana');
-    var imageGroup = document.getElementById('imageUrlGroup');
 
     if (chain === 'solana') {
         if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'none';
         if (feeSolana) feeSolana.style.display = 'inline';
-        if (imageGroup) imageGroup.style.display = 'block';
     } else {
         if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'inline';
         if (feeSolana) feeSolana.style.display = 'none';
-        if (imageGroup) imageGroup.style.display = 'none';
     }
 }
 window.selectChain = selectChain;
@@ -1464,6 +1445,9 @@ async function handleSolanaLaunch() {
 
         // Step 9: Register with backend
         setBtnState(btn, 'Registering project...', true);
+        var solImageUrl = (document.getElementById('launchImageUrl') || {}).value || '';
+        var solXHandle = (document.getElementById('launchXHandle') || {}).value || '';
+        var solTelegram = (document.getElementById('launchTelegram') || {}).value || '';
         var regResult = await apiPost({
             action: 'register',
             token_address: tokenMint,
@@ -1472,9 +1456,14 @@ async function handleSolanaLaunch() {
             deploy_tx_hash: state.deployTxHash,
             description: desc,
             website_url: website,
+            logo_url: solImageUrl || null,
+            x_handle: solXHandle || null,
+            telegram_url: solTelegram || null,
             fee_split_bps: 2000,
             tier: 'permissionless',
             creator_wallet: state.wallet,
+            allocation_pct: state.allocationPct,
+            burn_amount: 0,
             chain: 'solana',
             solana_wallet: solPubkey,
             solana_token_mint: tokenMint
