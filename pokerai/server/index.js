@@ -69,10 +69,10 @@ function sendBalance(ws, walletAddress) {
   ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
 }
 
-// Check if a wallet action requires authentication
+// Check if a wallet action requires a connected wallet
 function requireAuth(client, ws) {
-  if (!client.walletAddress || !authenticatedWallets.has(client.walletAddress)) {
-    ws.send(JSON.stringify({ type: 'error', data: { message: 'Wallet not authenticated — sign the challenge first' } }));
+  if (!client.walletAddress) {
+    ws.send(JSON.stringify({ type: 'error', data: { message: 'Connect wallet first' } }));
     return false;
   }
   return true;
@@ -126,9 +126,9 @@ wss.on('connection', (ws) => {
           break;
         }
 
-        // === Legacy setWallet (still works for spectating, but won't allow money actions) ===
         case 'setWallet': {
           client.walletAddress = msg.walletAddress ? msg.walletAddress.toLowerCase() : null;
+          client.authenticated = !!client.walletAddress;
           if (client.walletAddress) {
             const wallet = rooms.getWalletBalance(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));

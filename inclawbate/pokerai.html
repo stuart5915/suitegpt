@@ -3701,11 +3701,11 @@ function handleMessage(msg) {
     case 'welcome':
       sessionId = msg.data.sessionId;
       document.getElementById('viewerCount').textContent = msg.data.viewerCount;
-      // Authenticate if wallet is saved, otherwise just sync for spectating
       const w = getWallet();
       if (w && ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: w.address }));
+        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: w.address }));
         ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: w.address }));
+        walletAuthenticated = true;
       } else {
         syncWalletToServer();
       }
@@ -4541,10 +4541,14 @@ async function toggleWallet() {
     saveWallet({ address });
     updateWalletUI();
 
-    // Start auth flow — request challenge from server
+    // Tell server we're this wallet — MetaMask already verified ownership
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: address }));
+      ws.send(JSON.stringify({ type: 'setWallet', walletAddress: address }));
+      ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: address }));
     }
+    walletAuthenticated = true;
+    showToast('Wallet connected!', 'gold');
+    refreshMyAgentsView();
 
     window.ethereum.on('accountsChanged', (accs) => {
       if (accs.length === 0) {
@@ -4557,10 +4561,10 @@ async function toggleWallet() {
       } else {
         const newAddr = accs[0].toLowerCase();
         saveWallet({ address: newAddr });
-        walletAuthenticated = false;
+        walletAuthenticated = true;
         updateWalletUI();
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: newAddr }));
+          ws.send(JSON.stringify({ type: 'setWallet', walletAddress: newAddr }));
         }
         refreshMyAgentsView();
       }
