@@ -197,7 +197,129 @@
             justify-content: center;
         }
 
-        /* ── Hero Chat Widget ── */
+        /* ── Pitch Box ── */
+        .pitch-box {
+            max-width: 520px;
+            margin: var(--space-xl) auto var(--space-lg);
+            background: hsla(240, 10%, 6%, 0.75);
+            backdrop-filter: blur(20px) saturate(1.2);
+            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+            border: 1px solid hsla(9, 52%, 54%, 0.2);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-lg) var(--space-xl);
+            box-shadow:
+                0 8px 40px hsla(0, 0%, 0%, 0.5),
+                0 0 60px hsla(9, 60%, 54%, 0.06),
+                inset 0 1px 0 hsla(0, 0%, 100%, 0.04);
+            position: relative;
+            z-index: 3;
+        }
+        .pitch-label {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+            text-align: left;
+        }
+        .pitch-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px 14px;
+            background: hsla(240, 10%, 10%, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.15s;
+            box-sizing: border-box;
+        }
+        .pitch-textarea:focus { border-color: var(--lobster-400); }
+        .pitch-textarea::placeholder { color: var(--text-dim); }
+        .pitch-contact-row {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        .pitch-contact {
+            flex: 1;
+            padding: 10px 14px;
+            background: hsla(240, 10%, 10%, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.86rem;
+            outline: none;
+            transition: border-color 0.15s;
+            box-sizing: border-box;
+        }
+        .pitch-contact:focus { border-color: var(--lobster-400); }
+        .pitch-contact::placeholder { color: var(--text-dim); }
+        .pitch-send {
+            padding: 10px 28px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-lg);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px hsla(9, 60%, 54%, 0.25);
+            flex-shrink: 0;
+        }
+        .pitch-send:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px hsla(9, 60%, 54%, 0.35);
+        }
+        .pitch-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .pitch-msg {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: var(--space-sm);
+            text-align: center;
+        }
+        .pitch-msg.success { color: var(--seafoam-400); }
+        .pitch-msg.error { color: #ef4444; }
+        .pitch-or {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: var(--space-md);
+        }
+        .pitch-dm-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-top: var(--space-sm);
+        }
+        .pitch-dm-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .pitch-dm-link:hover {
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+
+        /* ── Hero Chat Widget (admin only) ── */
         .hero-chat {
             position: relative;
             max-width: 560px;
@@ -1700,6 +1822,9 @@
             .hero-sub { font-size: 0.95rem; max-width: 100%; }
             .hero-actions { flex-wrap: wrap; }
             .hero-actions .btn { width: 100%; justify-content: center; text-align: center; }
+            .pitch-box { max-width: 100%; padding: var(--space-md); }
+            .pitch-contact-row { flex-direction: column; }
+            .pitch-send { width: 100%; padding: 12px; }
             .hero-chat { max-width: 100%; }
             .chat-prompts { max-width: 100%; }
             .chat-prompts-scroll { max-height: 120px; }
@@ -1793,7 +1918,23 @@ if (!localStorage.getItem('claws-banner-dismissed')) {
         <p class="hero-sub">Apps. Stores. Services. Churches. Whatever you need &mdash; we build it. You keep 100%.</p>
         <div class="hero-ubi-teaser">Oh, and we pay you daily just for being here.</div>
 
-        <!-- Chat Widget -->
+        <!-- Pitch Box — Main CTA -->
+        <div class="pitch-box" id="pitchBox">
+            <div class="pitch-label">What are you building?</div>
+            <textarea class="pitch-textarea" id="pitchMsg" placeholder="I have an idea for a meme token... / I need help launching my project... / I want to build an app that..." maxlength="2000"></textarea>
+            <div class="pitch-contact-row">
+                <input type="text" class="pitch-contact" id="pitchContact" placeholder="Your Telegram or X handle" maxlength="100">
+                <button type="button" class="pitch-send" id="pitchSend">Send</button>
+            </div>
+            <div class="pitch-msg" id="pitchFeedback" style="display:none"></div>
+            <div class="pitch-or">or DM us directly</div>
+            <div class="pitch-dm-links">
+                <a href="https://t.me/StuartDeFi" target="_blank" rel="noopener" class="pitch-dm-link">Telegram</a>
+                <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="pitch-dm-link">X / Twitter</a>
+            </div>
+        </div>
+
+        <!-- Chat Widget (admin only) -->
         <div class="hero-chat" id="heroChat" style="display:none">
             <div class="chat-prompts" id="chatPrompts">
                 <div class="chat-prompts-label">Try asking&hellip;</div>
@@ -2556,6 +2697,55 @@ function addClawsToWallet() {
         }}
     }).catch(function() {});
 }
+</script>
+<script>
+// ── Pitch Box ──
+(function() {
+    var btn = document.getElementById('pitchSend');
+    var msgEl = document.getElementById('pitchMsg');
+    var contactEl = document.getElementById('pitchContact');
+    var feedback = document.getElementById('pitchFeedback');
+
+    btn.addEventListener('click', function() {
+        var message = msgEl.value.trim();
+        if (!message || message.length < 5) {
+            showFeedback('error', 'Tell us a bit more about your idea!');
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        feedback.style.display = 'none';
+
+        fetch('/api/inclawbate/pitch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message, contact: contactEl.value.trim() })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+            btn.disabled = false;
+            btn.textContent = 'Send';
+            if (res.ok) {
+                showFeedback('success', "Got it! We'll be in touch soon.");
+                msgEl.value = '';
+                contactEl.value = '';
+            } else {
+                showFeedback('error', res.data.error || 'Something went wrong.');
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Send';
+            showFeedback('error', 'Network error. Try again.');
+        });
+    });
+
+    function showFeedback(type, text) {
+        feedback.style.display = 'block';
+        feedback.className = 'pitch-msg ' + type;
+        feedback.textContent = text;
+    }
+})();
 </script>
 <script>
 // ── Hero Chat Widget (admin only — ?admin=1 to show) ──
