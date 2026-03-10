@@ -248,9 +248,13 @@ wss.on('connection', (ws) => {
         }
 
         case 'getMyAgents': {
-          const addr = client.walletAddress
-            ? client.walletAddress.toLowerCase()
-            : (client.activeRoom === 'sandbox' ? `sandbox_${client.sessionId}` : '');
+          // Sandbox agents live under sandbox_<sessionId>, not real wallet
+          let addr;
+          if (client.activeRoom === 'sandbox') {
+            addr = `sandbox_${client.sessionId}`;
+          } else {
+            addr = client.walletAddress ? client.walletAddress.toLowerCase() : '';
+          }
           if (!addr) break;
           const result = rooms.getAgentsForWallet(addr);
           ws.send(JSON.stringify({ type: 'myAgents', data: result }));

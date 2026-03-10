@@ -3706,10 +3706,14 @@ function handleMessage(msg) {
       const w = getWallet();
       if (w && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'setWallet', walletAddress: w.address }));
-        ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: w.address }));
+        ws.send(JSON.stringify({ type: 'getMyAgents' }));
         walletAuthenticated = true;
       } else {
         syncWalletToServer();
+        // Still request sandbox agents even without wallet
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'getMyAgents' }));
+        }
       }
       break;
 
@@ -3880,9 +3884,11 @@ function applyServerState(data) {
   if (data.activeRoom) activeRoom = data.activeRoom;
 
   // Refresh full agent list for portfolio bar (cross-room)
-  const _w = getWallet();
-  if (_w && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: _w.address }));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const _w = getWallet();
+    if (_w || activeRoom === 'sandbox') {
+      ws.send(JSON.stringify({ type: 'getMyAgents' }));
+    }
   }
 
   updateRoomTabs();
@@ -4548,7 +4554,7 @@ async function toggleWallet() {
     // Tell server we're this wallet — MetaMask already verified ownership
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'setWallet', walletAddress: address }));
-      ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: address }));
+      ws.send(JSON.stringify({ type: 'getMyAgents' }));
     }
     walletAuthenticated = true;
     showToast('Wallet connected!', 'gold');
@@ -4819,10 +4825,11 @@ let myAgents = []; // populated from server via getMyAgents
 
 function refreshMyAgentsView() {
   const wallet = getWallet();
+  const isSandbox = activeRoom === 'sandbox';
   const gated = document.getElementById('myAgentsGated');
   const content = document.getElementById('myAgentsContent');
 
-  if (!wallet) {
+  if (!wallet && !isSandbox) {
     gated.style.display = 'block';
     content.style.display = 'none';
     return;
@@ -4832,9 +4839,9 @@ function refreshMyAgentsView() {
   content.style.display = 'block';
   updateWalletUI();
 
-  // Request agents list from server
+  // Request agents list from server (server resolves sandbox wallet from session)
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: wallet.address }));
+    ws.send(JSON.stringify({ type: 'getMyAgents' }));
   }
 
   renderMyAgents();
@@ -4845,14 +4852,16 @@ let _roomPickerOpen = false;
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
   const wallet = getWallet();
-  if (!wallet) return;
+  const isSandbox = activeRoom === 'sandbox';
+  if (!wallet && !isSandbox) return;
 
   // Don't re-render if a room picker is open (would destroy interactive state)
   if (_roomPickerOpen) return;
 
   // Use myAgents if available (has all rooms), fallback to gameState
+  const walletAddr = wallet ? wallet.address : null;
   const allAgents = myAgents.length > 0 ? myAgents : [
-    ...gameState.agents.filter(a => a.isCustom && a.walletAddress === wallet.address).map(a => ({ ...a, status: 'playing' })),
+    ...gameState.agents.filter(a => a.isCustom && walletAddr && a.walletAddress === walletAddr).map(a => ({ ...a, status: 'playing' })),
     ...(gameState.lobbyAgents || []).map(a => ({ ...a, status: 'lobby' }))
   ];
   const playing = allAgents.filter(a => a.status === 'playing');
@@ -5100,7 +5109,8 @@ function refreshTogglesUI() {
 // ============================================================
 function deployAgent() {
   const wallet = getWallet();
-  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  const isSandbox = activeRoom === 'sandbox';
+  if (!wallet && !isSandbox) { showToast('Connect wallet first!', 'error'); return; }
   if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
 
   const name = document.getElementById('agentName').value.trim();
@@ -5117,7 +5127,7 @@ function deployAgent() {
     rules: { ..._activeToggles }
   };
 
-  ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet.address, config }));
+  ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet ? wallet.address : null, config }));
   showToast('Creating agent...', 'info');
 }
 
