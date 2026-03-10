@@ -612,11 +612,14 @@ export default async function handler(req, res) {
                 // Verify ownership
                 const { data: app } = await supabase
                     .from('user_apps')
-                    .select('id, user_id')
+                    .select('id, user_id, creator_x_handle')
                     .eq('id', app_id)
                     .single();
                 if (!app) return res.status(404).json({ error: 'App not found' });
-                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                const ownsById = app.user_id && app.user_id === user.sub;
+                const ownsByHandle = app.creator_x_handle && user.x_handle &&
+                    app.creator_x_handle.toLowerCase() === user.x_handle.toLowerCase();
+                if (!ownsById && !ownsByHandle && !isSuperAdmin(user)) {
                     return res.status(403).json({ error: 'You can only rename your own apps' });
                 }
 
@@ -634,12 +637,20 @@ export default async function handler(req, res) {
 
                 const { data: app } = await supabase
                     .from('user_apps')
-                    .select('id, user_id')
+                    .select('id, user_id, creator_x_handle')
                     .eq('id', app_id)
                     .single();
                 if (!app) return res.status(404).json({ error: 'App not found' });
-                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                const ownsById = app.user_id && app.user_id === user.sub;
+                const ownsByHandle = app.creator_x_handle && user.x_handle &&
+                    app.creator_x_handle.toLowerCase() === user.x_handle.toLowerCase();
+                if (!ownsById && !ownsByHandle && !isSuperAdmin(user)) {
                     return res.status(403).json({ error: 'You can only edit your own apps' });
+                }
+
+                // Backfill user_id if matched by handle but missing
+                if (!app.user_id && ownsByHandle) {
+                    supabase.from('user_apps').update({ user_id: user.sub }).eq('id', app_id).then(() => {});
                 }
 
                 const updates = { updated_at: new Date().toISOString() };
@@ -682,11 +693,14 @@ export default async function handler(req, res) {
 
                 const { data: app } = await supabase
                     .from('user_apps')
-                    .select('id, user_id, is_public')
+                    .select('id, user_id, creator_x_handle, is_public')
                     .eq('id', app_id)
                     .single();
                 if (!app) return res.status(404).json({ error: 'App not found' });
-                if (app.user_id !== user.sub && !isSuperAdmin(user)) {
+                const ownsById = app.user_id && app.user_id === user.sub;
+                const ownsByHandle = app.creator_x_handle && user.x_handle &&
+                    app.creator_x_handle.toLowerCase() === user.x_handle.toLowerCase();
+                if (!ownsById && !ownsByHandle && !isSuperAdmin(user)) {
                     return res.status(403).json({ error: 'You can only manage your own apps' });
                 }
 
