@@ -282,11 +282,13 @@
         var stakingItems = tokenItems
             .filter(function (t) { return t.staking_address; })
             .map(function (t) {
+                var sCfg = POOL_CONFIG[(t.staking_address || '').toLowerCase()];
+                var rTicker = (sCfg && sCfg.rewardTicker) ? sCfg.rewardTicker : (t.token_symbol || '');
                 return {
                     type: 'staking',
                     name: t.name + ' Staking',
                     slug: '',
-                    description: 'Stake $' + (t.token_symbol || '') + ' to earn rewards',
+                    description: 'Stake $' + (t.token_symbol || '') + ' → Earn $' + rTicker,
                     logo_url: t.logo_url,
                     href: '/stake/' + (t.token_symbol || '').toLowerCase(),
                     token_address: t.token_address,
@@ -374,12 +376,6 @@
 
         if (!items.length) {
             resultsEl.innerHTML = '<div class="explore-empty">No results found.</div>';
-            return;
-        }
-
-        // Staking tab → rich card layout
-        if (activeTab === 'staking') {
-            renderStakingCards(items);
             return;
         }
 
@@ -581,58 +577,6 @@
         });
 
         render();
-    }
-
-    // ── Render staking cards (staking tab) ──
-    function renderStakingCards(items) {
-        var html = '<div class="staking-grid">';
-        items.forEach(function (item) {
-            var stats = stakingStats[(item.staking_address || '').toLowerCase()] || {};
-            var poolCfg = POOL_CONFIG[(item.staking_address || '').toLowerCase()];
-            var tokenPrice = prices[(item.token_address || '').toLowerCase()] || 0;
-            var tvl = (stats.totalStaked || 0) * tokenPrice;
-
-            // Logo
-            var logoHtml = item.logo_url
-                ? '<img class="staking-card-logo" src="' + item.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-                  + '<div class="staking-card-logo-ph" style="display:none;background:' + hashColor(item.name) + '">' + item.name.charAt(0).toUpperCase() + '</div>'
-                : '<div class="staking-card-logo-ph" style="background:' + hashColor(item.name) + '">' + item.name.charAt(0).toUpperCase() + '</div>';
-
-            // Pair text
-            var stakeTicker = item.token_symbol || '';
-            var rewardTicker = (poolCfg && poolCfg.rewardTicker) ? poolCfg.rewardTicker : stakeTicker;
-            var pairHtml = 'Stake <strong>$' + escapeHtml(stakeTicker) + '</strong> → Earn <strong>$' + escapeHtml(rewardTicker) + '</strong>';
-
-            // Status
-            var statusCls, statusLbl;
-            if (stats.active === true) { statusCls = 'status-active'; statusLbl = 'Active'; }
-            else if (stats.active === false) { statusCls = 'status-ended'; statusLbl = 'Ended'; }
-            else { statusCls = 'status-loading'; statusLbl = '···'; }
-
-            // Stats
-            var tvlStr = tvl > 0 ? fmtUsd(tvl) : (stats.totalStaked > 0 ? Math.round(stats.totalStaked).toLocaleString() : '--');
-            var apyStr = stats.apy > 0 ? (stats.apy >= 10000 ? (stats.apy / 1000).toFixed(0) + 'K' : stats.apy >= 100 ? Math.round(stats.apy) : stats.apy.toFixed(1)) + '%' : '--';
-            var stakersStr = stats.stakers > 0 ? stats.stakers.toString() : '--';
-
-            html += '<a href="' + item.href + '" class="staking-card">'
-                + '<div class="staking-card-header">'
-                    + '<div>' + logoHtml + '</div>'
-                    + '<div class="staking-card-info">'
-                        + '<div class="staking-card-title">' + escapeHtml(item.name) + '</div>'
-                        + '<div class="staking-card-pair">' + pairHtml + '</div>'
-                    + '</div>'
-                    + '<span class="staking-card-status ' + statusCls + '">' + statusLbl + '</span>'
-                + '</div>'
-                + '<div class="staking-card-stats">'
-                    + '<div class="staking-stat"><div class="staking-stat-label">TVL</div><div class="staking-stat-val tvl-val">' + tvlStr + '</div></div>'
-                    + '<div class="staking-stat"><div class="staking-stat-label">APY</div><div class="staking-stat-val apy-val">' + apyStr + '</div></div>'
-                    + '<div class="staking-stat"><div class="staking-stat-label">Stakers</div><div class="staking-stat-val">' + stakersStr + '</div></div>'
-                + '</div>'
-                + '<div class="staking-card-cta">Stake Now →</div>'
-            + '</a>';
-        });
-        html += '</div>';
-        resultsEl.innerHTML = html;
     }
 
     // ── Tab & search events ──
