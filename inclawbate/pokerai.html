@@ -2672,7 +2672,144 @@
   .mobile-nav-btn .nav-icon { font-size: 18px; }
   .mobile-nav-btn.active { color: var(--accent-gold); }
   .mobile-nav-btn:active { transform: scale(0.95); }
+
+  /* ── Vault Modal ── */
+  .vault-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+  .vault-overlay.show { opacity: 1; pointer-events: auto; }
+  .vault-modal {
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: 20px; padding: 0; width: 90%; max-width: 380px;
+    transform: scale(0.85) translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+  }
+  .vault-overlay.show .vault-modal { transform: scale(1) translateY(0); }
+  .vault-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 0; margin-bottom: 4px;
+  }
+  .vault-header h2 {
+    font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700;
+    color: var(--text-primary); margin: 0;
+  }
+  .vault-close {
+    background: none; border: none; color: var(--text-muted); font-size: 22px;
+    cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;
+    line-height: 1;
+  }
+  .vault-close:hover { color: var(--text-primary); background: var(--bg-surface); }
+  .vault-balance-bar {
+    padding: 12px 24px 16px; text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .vault-balance-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .vault-balance-amount {
+    font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
+    color: var(--accent-gold); line-height: 1.1;
+  }
+  .vault-balance-usd { font-size: 12px; color: var(--text-secondary); }
+  .vault-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+  }
+  .vault-tab {
+    flex: 1; padding: 12px; text-align: center; cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); border: none; background: none;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .vault-tab:hover { color: var(--text-secondary); }
+  .vault-tab.active { color: var(--accent-gold); border-bottom-color: var(--accent-gold); }
+  .vault-tab.active.withdraw-tab { color: var(--accent-green); border-bottom-color: var(--accent-green); }
+  .vault-body { padding: 20px 24px 24px; }
+  .vault-input-group { margin-bottom: 16px; }
+  .vault-input-label {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 6px; display: block;
+  }
+  .vault-input-wrap {
+    display: flex; align-items: center; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: 12px; padding: 0 14px;
+    transition: border-color 0.2s;
+  }
+  .vault-input-wrap:focus-within { border-color: var(--accent-gold); }
+  .vault-input {
+    flex: 1; background: none; border: none; color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif; font-size: 24px; font-weight: 700;
+    padding: 12px 0; outline: none; width: 100%;
+  }
+  .vault-input::placeholder { color: var(--text-muted); }
+  .vault-input-suffix {
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .vault-max-btn {
+    background: rgba(245,197,66,0.1); color: var(--accent-gold);
+    border: 1px solid rgba(245,197,66,0.2); border-radius: 6px;
+    font-size: 10px; font-weight: 700; padding: 4px 8px; cursor: pointer;
+    margin-left: 8px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .vault-max-btn:hover { background: rgba(245,197,66,0.2); }
+  .vault-conversion {
+    font-size: 12px; color: var(--text-secondary); margin-top: 6px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .vault-presets {
+    display: flex; gap: 6px; margin-bottom: 16px;
+  }
+  .vault-preset {
+    flex: 1; padding: 8px 4px; text-align: center;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+    color: var(--text-secondary);
+  }
+  .vault-preset:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+  .vault-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;
+    transition: all 0.25s; position: relative; overflow: hidden;
+  }
+  .vault-btn.deposit-btn {
+    background: linear-gradient(135deg, #f5c542, #e67e22);
+    color: var(--bg-deep);
+  }
+  .vault-btn.deposit-btn:hover { box-shadow: var(--glow-gold); transform: translateY(-1px); }
+  .vault-btn.withdraw-btn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+  }
+  .vault-btn.withdraw-btn:hover { box-shadow: var(--glow-green); transform: translateY(-1px); }
+  .vault-btn:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none !important;
+    box-shadow: none !important;
+  }
+  .vault-btn .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid transparent; border-top-color: currentColor;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .vault-step-note {
+    font-size: 11px; color: var(--text-muted); text-align: center;
+    margin-top: 10px; line-height: 1.4;
+  }
+  .vault-network-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(59,130,246,0.1); color: var(--accent-blue);
+    border: 1px solid rgba(59,130,246,0.2); border-radius: 6px;
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    text-transform: uppercase;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
 </head>
 <body>
 
@@ -3383,6 +3520,74 @@
   </div>
 </div>
 
+<!-- Vault Deposit/Withdraw Modal -->
+<div class="vault-overlay" id="vaultOverlay" onclick="if(event.target===this)closeVault()">
+  <div class="vault-modal">
+    <div class="vault-header">
+      <h2>Vault</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="vault-network-badge">Base</span>
+        <button class="vault-close" onclick="closeVault()">&times;</button>
+      </div>
+    </div>
+    <div class="vault-balance-bar">
+      <div class="vault-balance-label">Your Chip Balance</div>
+      <div class="vault-balance-amount" id="vaultChipBalance">0</div>
+      <div class="vault-balance-usd" id="vaultUsdBalance">$0.00 USDC</div>
+      <button onclick="closeVault();toggleWallet()" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--text-muted);font-size:10px;padding:4px 12px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-red)';this.style.color='var(--accent-red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Disconnect Wallet</button>
+    </div>
+    <div class="vault-tabs">
+      <button class="vault-tab active" onclick="switchVaultTab('deposit')" id="vaultTabDeposit">Deposit</button>
+      <button class="vault-tab withdraw-tab" onclick="switchVaultTab('withdraw')" id="vaultTabWithdraw">Withdraw</button>
+    </div>
+    <div class="vault-body">
+      <!-- Deposit View -->
+      <div id="vaultDeposit">
+        <div class="vault-input-group">
+          <label class="vault-input-label">Amount (USDC)</label>
+          <div class="vault-input-wrap">
+            <input type="number" class="vault-input" id="depositAmount" placeholder="0.00" min="0.10" step="0.01" oninput="updateDepositPreview()">
+            <span class="vault-input-suffix">USDC</span>
+          </div>
+          <div class="vault-conversion" id="depositConversion">= 0 chips</div>
+        </div>
+        <div class="vault-presets">
+          <button class="vault-preset" onclick="setDepositAmount(1)">$1</button>
+          <button class="vault-preset" onclick="setDepositAmount(5)">$5</button>
+          <button class="vault-preset" onclick="setDepositAmount(25)">$25</button>
+          <button class="vault-preset" onclick="setDepositAmount(100)">$100</button>
+        </div>
+        <button class="vault-btn deposit-btn" id="depositBtn" onclick="doDeposit()">
+          Deposit USDC
+        </button>
+        <div class="vault-step-note" id="depositNote">Deposits USDC on Base and credits chips instantly</div>
+      </div>
+      <!-- Withdraw View -->
+      <div id="vaultWithdraw" style="display:none">
+        <div class="vault-input-group">
+          <label class="vault-input-label">Amount (Chips)</label>
+          <div class="vault-input-wrap">
+            <input type="number" class="vault-input" id="withdrawChips" placeholder="0" min="1000" step="1000" oninput="updateWithdrawPreview()">
+            <span class="vault-input-suffix">chips</span>
+            <button class="vault-max-btn" onclick="setWithdrawMax()">MAX</button>
+          </div>
+          <div class="vault-conversion" id="withdrawConversion">= $0.00 USDC</div>
+        </div>
+        <div class="vault-presets">
+          <button class="vault-preset" onclick="setWithdrawChips(10000)">10K</button>
+          <button class="vault-preset" onclick="setWithdrawChips(50000)">50K</button>
+          <button class="vault-preset" onclick="setWithdrawChips(100000)">100K</button>
+          <button class="vault-preset" onclick="setWithdrawChips(walletBalance)">ALL</button>
+        </div>
+        <button class="vault-btn withdraw-btn" id="withdrawBtn" onclick="doWithdraw()">
+          Withdraw to Wallet
+        </button>
+        <div class="vault-step-note">Minimum withdrawal: 1,000 chips ($0.10 USDC)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -3496,12 +3701,13 @@ function handleMessage(msg) {
     case 'welcome':
       sessionId = msg.data.sessionId;
       document.getElementById('viewerCount').textContent = msg.data.viewerCount;
-      // Tell server our wallet address so it can include lobbyAgents in gameState
-      syncWalletToServer();
-      // Request full agent list for My Agents view
+      // Authenticate if wallet is saved, otherwise just sync for spectating
       const w = getWallet();
       if (w && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: w.address }));
         ws.send(JSON.stringify({ type: 'getMyAgents', walletAddress: w.address }));
+      } else {
+        syncWalletToServer();
       }
       break;
 
@@ -3613,6 +3819,27 @@ function handleMessage(msg) {
     case 'walletBalance':
       walletBalance = msg.data.balance || 0;
       updateWalletUI();
+      break;
+
+    case 'challenge':
+      handleChallenge(msg.data);
+      break;
+
+    case 'authenticated':
+      handleAuthenticated(msg.data);
+      break;
+
+    case 'authFailed':
+      showToast('Auth failed: ' + (msg.data.error || 'Unknown'), 'error');
+      syncWalletToServer(); // fallback to legacy
+      break;
+
+    case 'withdrawUsdcResult':
+      handleWithdrawResult(msg.data);
+      break;
+
+    case 'depositConfirmed':
+      handleDepositConfirmed(msg.data);
       break;
 
     case 'myAgents':
@@ -4258,10 +4485,16 @@ function capitalize(s) {
 }
 
 // ============================================================
-// REAL WALLET CONNECTION (MetaMask / Coinbase Wallet / etc)
+// WALLET CONNECTION + AUTH + VAULT
 // ============================================================
 const WALLET_KEY = 'pokerai_wallet';
-let walletBalance = 0; // server-authoritative balance
+const VAULT_ADDRESS = '0x810a68b796D6C89F181133355EFe297A36e547D0';
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const BASE_CHAIN_ID = '0x2105'; // 8453
+const CHIPS_PER_USDC = 10000;
+
+let walletBalance = 0;
+let walletAuthenticated = false;
 
 function getWallet() {
   try {
@@ -4285,9 +4518,9 @@ function syncWalletToServer() {
 async function toggleWallet() {
   const wallet = getWallet();
   if (wallet) {
-    // Disconnect
     localStorage.removeItem(WALLET_KEY);
     walletBalance = 0;
+    walletAuthenticated = false;
     updateWalletUI();
     syncWalletToServer();
     showToast('Wallet disconnected', 'info');
@@ -4295,45 +4528,74 @@ async function toggleWallet() {
     return;
   }
 
-  // Connect — try real wallet first
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      if (accounts && accounts.length > 0) {
-        const address = accounts[0].toLowerCase();
-        saveWallet({ address });
-        updateWalletUI();
-        syncWalletToServer();
-        showToast('Wallet connected!', 'gold');
-        refreshMyAgentsView();
-
-        // Listen for account changes
-        window.ethereum.on('accountsChanged', (accs) => {
-          if (accs.length === 0) {
-            localStorage.removeItem(WALLET_KEY);
-            walletBalance = 0;
-            updateWalletUI();
-            syncWalletToServer();
-            refreshMyAgentsView();
-          } else {
-            const newAddr = accs[0].toLowerCase();
-            saveWallet({ address: newAddr });
-            updateWalletUI();
-            syncWalletToServer();
-            refreshMyAgentsView();
-          }
-        });
-        return;
-      }
-    } catch (e) {
-      console.error('Wallet connect failed:', e);
-      showToast('Wallet connection rejected', 'error');
-      return;
-    }
+  if (typeof window.ethereum === 'undefined') {
+    showToast('No wallet found! Install MetaMask or Coinbase Wallet.', 'error');
+    return;
   }
 
-  // No wallet extension — show message
-  showToast('No wallet found! Install MetaMask or Coinbase Wallet.', 'error');
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) return;
+
+    const address = accounts[0].toLowerCase();
+    saveWallet({ address });
+    updateWalletUI();
+
+    // Start auth flow — request challenge from server
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: address }));
+    }
+
+    window.ethereum.on('accountsChanged', (accs) => {
+      if (accs.length === 0) {
+        localStorage.removeItem(WALLET_KEY);
+        walletBalance = 0;
+        walletAuthenticated = false;
+        updateWalletUI();
+        syncWalletToServer();
+        refreshMyAgentsView();
+      } else {
+        const newAddr = accs[0].toLowerCase();
+        saveWallet({ address: newAddr });
+        walletAuthenticated = false;
+        updateWalletUI();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'requestChallenge', walletAddress: newAddr }));
+        }
+        refreshMyAgentsView();
+      }
+    });
+  } catch (e) {
+    console.error('Wallet connect failed:', e);
+    showToast('Wallet connection rejected', 'error');
+  }
+}
+
+async function handleChallenge(data) {
+  // Server sent a challenge message to sign
+  try {
+    const wallet = getWallet();
+    if (!wallet) return;
+    const signature = await window.ethereum.request({
+      method: 'personal_sign',
+      params: [data.message, wallet.address]
+    });
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'authenticate', walletAddress: wallet.address, signature }));
+    }
+  } catch (e) {
+    console.error('Signature rejected:', e);
+    showToast('Signature rejected — using view-only mode', 'info');
+    syncWalletToServer(); // fallback to legacy setWallet
+  }
+}
+
+function handleAuthenticated(data) {
+  walletAuthenticated = true;
+  walletBalance = data.balance || 0;
+  updateWalletUI();
+  showToast('Wallet verified!', 'gold');
+  refreshMyAgentsView();
 }
 
 function updateWalletUI() {
@@ -4342,16 +4604,201 @@ function updateWalletUI() {
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
+    btn.onclick = openVault;
     btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(walletBalance)}</span>`;
   } else {
     btn.className = 'wallet-btn disconnected';
+    btn.onclick = toggleWallet;
     btn.innerHTML = 'Connect Wallet';
   }
-  // Update balance displays
   const fb = document.getElementById('formBalance');
   const hb = document.getElementById('headerBalance');
   if (fb) fb.textContent = walletBalance.toLocaleString();
   if (hb) hb.textContent = formatChips(walletBalance);
+  // Update vault modal if open
+  const vb = document.getElementById('vaultChipBalance');
+  if (vb) {
+    vb.textContent = walletBalance.toLocaleString();
+    const usd = document.getElementById('vaultUsdBalance');
+    if (usd) usd.textContent = '$' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' USDC';
+  }
+}
+
+// ── Vault Modal ──
+
+function openVault() {
+  const wallet = getWallet();
+  if (!wallet) { toggleWallet(); return; }
+  updateWalletUI();
+  document.getElementById('vaultOverlay').classList.add('show');
+}
+
+function closeVault() {
+  document.getElementById('vaultOverlay').classList.remove('show');
+}
+
+function switchVaultTab(tab) {
+  document.getElementById('vaultTabDeposit').className = 'vault-tab' + (tab === 'deposit' ? ' active' : '');
+  document.getElementById('vaultTabWithdraw').className = 'vault-tab withdraw-tab' + (tab === 'withdraw' ? ' active' : '');
+  document.getElementById('vaultDeposit').style.display = tab === 'deposit' ? 'block' : 'none';
+  document.getElementById('vaultWithdraw').style.display = tab === 'withdraw' ? 'block' : 'none';
+}
+
+function setDepositAmount(usd) {
+  document.getElementById('depositAmount').value = usd;
+  updateDepositPreview();
+}
+
+function updateDepositPreview() {
+  const usd = parseFloat(document.getElementById('depositAmount').value) || 0;
+  const chips = Math.floor(usd * CHIPS_PER_USDC);
+  document.getElementById('depositConversion').textContent = '= ' + chips.toLocaleString() + ' chips';
+}
+
+function setWithdrawChips(chips) {
+  document.getElementById('withdrawChips').value = chips;
+  updateWithdrawPreview();
+}
+
+function setWithdrawMax() {
+  setWithdrawChips(walletBalance);
+}
+
+function updateWithdrawPreview() {
+  const chips = parseInt(document.getElementById('withdrawChips').value) || 0;
+  const usd = (chips / CHIPS_PER_USDC).toFixed(2);
+  document.getElementById('withdrawConversion').textContent = '= $' + usd + ' USDC';
+}
+
+async function ensureBaseNetwork() {
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== BASE_CHAIN_ID) {
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: BASE_CHAIN_ID, chainName: 'Base',
+              nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org']
+            }]
+          });
+        } else throw switchErr;
+      }
+    }
+    return true;
+  } catch (e) {
+    showToast('Please switch to Base network', 'error');
+    return false;
+  }
+}
+
+async function doDeposit() {
+  const usd = parseFloat(document.getElementById('depositAmount').value);
+  if (!usd || usd < 0.10) { showToast('Minimum deposit is $0.10 USDC', 'error'); return; }
+
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first', 'error'); return; }
+
+  const btn = document.getElementById('depositBtn');
+  btn.disabled = true;
+
+  // Ensure Base network
+  if (!await ensureBaseNetwork()) { btn.disabled = false; return; }
+
+  const usdcAmount = BigInt(Math.floor(usd * 1e6)); // USDC has 6 decimals
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+
+  try {
+    // Step 1: Check USDC balance
+    btn.innerHTML = '<span class="spinner"></span>Checking balance...';
+    const usdc = new ethers.Contract(USDC_ADDRESS, [
+      'function balanceOf(address) view returns (uint256)',
+      'function allowance(address,address) view returns (uint256)',
+      'function approve(address,uint256) returns (bool)'
+    ], signer);
+
+    const balance = await usdc.balanceOf(wallet.address);
+    if (balance < usdcAmount) {
+      showToast(`Not enough USDC. You have $${(Number(balance) / 1e6).toFixed(2)}`, 'error');
+      btn.disabled = false; btn.innerHTML = 'Deposit USDC'; return;
+    }
+
+    // Step 2: Check allowance, approve if needed
+    const allowance = await usdc.allowance(wallet.address, VAULT_ADDRESS);
+    if (allowance < usdcAmount) {
+      btn.innerHTML = '<span class="spinner"></span>Approve USDC...';
+      document.getElementById('depositNote').textContent = 'Step 1/2: Approve USDC spending in your wallet';
+      const approveTx = await usdc.approve(VAULT_ADDRESS, usdcAmount);
+      await approveTx.wait();
+    }
+
+    // Step 3: Deposit
+    btn.innerHTML = '<span class="spinner"></span>Depositing...';
+    document.getElementById('depositNote').textContent = 'Step 2/2: Confirm the deposit in your wallet';
+    const vault = new ethers.Contract(VAULT_ADDRESS, [
+      'function deposit(uint256 usdcAmount)'
+    ], signer);
+    const tx = await vault.deposit(usdcAmount);
+    btn.innerHTML = '<span class="spinner"></span>Confirming...';
+    document.getElementById('depositNote').textContent = 'Waiting for confirmation on Base...';
+    await tx.wait();
+
+    showToast(`Deposited $${usd.toFixed(2)} USDC!`, 'success');
+    document.getElementById('depositAmount').value = '';
+    updateDepositPreview();
+    document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
+    // Server will detect the Deposit event and credit chips automatically
+  } catch (e) {
+    console.error('Deposit failed:', e);
+    const reason = e.reason || e.message || 'Transaction failed';
+    showToast(reason.length > 60 ? reason.slice(0, 60) + '...' : reason, 'error');
+    document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Deposit USDC';
+}
+
+function doWithdraw() {
+  const chips = parseInt(document.getElementById('withdrawChips').value);
+  if (!chips || chips < 1000) { showToast('Minimum withdrawal: 1,000 chips ($0.10)', 'error'); return; }
+  if (chips > walletBalance) { showToast(`Not enough chips. You have ${walletBalance.toLocaleString()}`, 'error'); return; }
+
+  const btn = document.getElementById('withdrawBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Processing...';
+
+  // Send withdraw request via WebSocket — server handles the on-chain tx
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'withdrawUsdc', chips }));
+  }
+  // Result handled in handleMessage → withdrawUsdcResult
+}
+
+function handleWithdrawResult(data) {
+  const btn = document.getElementById('withdrawBtn');
+  btn.disabled = false;
+  btn.innerHTML = 'Withdraw to Wallet';
+
+  if (data.error) {
+    showToast(data.error, 'error');
+  } else {
+    const usd = data.usdcAmount || (data.chipAmount / CHIPS_PER_USDC);
+    showToast(`Withdrew $${usd.toFixed(2)} USDC to your wallet!`, 'success');
+    document.getElementById('withdrawChips').value = '';
+    updateWithdrawPreview();
+  }
+}
+
+function handleDepositConfirmed(data) {
+  showToast(`+${data.chips.toLocaleString()} chips deposited!`, 'gold');
+  updateWalletUI();
 }
 
 // ============================================================
