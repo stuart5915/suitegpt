@@ -91,9 +91,10 @@ async function fetchMarketCaps() {
             var data = await res.json();
             (data.pairs || []).forEach(function(pair) {
                 var addr = pair.baseToken && pair.baseToken.address ? pair.baseToken.address.toLowerCase() : null;
-                if (addr && pair.marketCap) {
-                    if (!lpState.mcaps[addr] || pair.marketCap > lpState.mcaps[addr]) {
-                        lpState.mcaps[addr] = pair.marketCap;
+                var val = pair.marketCap || pair.fdv || 0;
+                if (addr && val > 0) {
+                    if (!lpState.mcaps[addr] || val > lpState.mcaps[addr]) {
+                        lpState.mcaps[addr] = val;
                     }
                 }
             });
@@ -106,8 +107,11 @@ async function fetchMarketCaps() {
     if (!missing.length) return;
     var changed = false;
     for (var j = 0; j < missing.length; j++) {
+        // Determine network — Solana addresses are base58 (no 0x prefix)
+        var isSol = !missing[j].startsWith('0x');
+        var network = isSol ? 'solana' : 'base';
         try {
-            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/' + missing[j]);
+            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/' + missing[j]);
             if (!gRes.ok) continue;
             var gData = await gRes.json();
             var attrs = gData.data && gData.data.attributes;
