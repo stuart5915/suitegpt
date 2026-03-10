@@ -178,6 +178,32 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'fundAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.fundLobbyAgent(addr, msg.agentId, msg.amount);
+          ws.send(JSON.stringify({ type: 'fundAgentResult', data: result }));
+          if (result.success) {
+            sendBalance(ws, addr);
+            const agents = rooms.getMyAgents(addr);
+            ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
+          }
+          break;
+        }
+
+        case 'defundAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.defundLobbyAgent(addr, msg.agentId, msg.amount);
+          ws.send(JSON.stringify({ type: 'defundAgentResult', data: result }));
+          if (result.success) {
+            sendBalance(ws, addr);
+            const agents = rooms.getMyAgents(addr);
+            ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
+          }
+          break;
+        }
+
         case 'joinTable': {
           const isSandbox = (msg.roomId || client.activeRoom) === 'sandbox';
           if (!isSandbox && !requireAuth(client, ws)) break;

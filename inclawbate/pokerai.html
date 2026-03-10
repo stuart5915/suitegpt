@@ -4145,6 +4145,22 @@ function handleMessage(msg) {
       }
       break;
 
+    case 'fundAgentResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`Agent funded! ${msg.data.chipStack.toLocaleString()} chips ready`, 'success');
+      }
+      break;
+
+    case 'defundAgentResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`Withdrew ${msg.data.amount.toLocaleString()} chips back to wallet`, 'success');
+      }
+      break;
+
     case 'joinTableResult':
       _roomPickerOpen = false;
       if (msg.data.error) {
@@ -5604,10 +5620,28 @@ function renderMyAgents() {
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <button onclick="toggleRoomPicker('${agent.id}')" style="padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(34,197,94,0.25)'">🃏 JOIN TABLE</button>
+            ${agent.chipStack > 0
+              ? `<button onclick="toggleRoomPicker('${agent.id}')" style="padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(34,197,94,0.25)'">🃏 JOIN TABLE</button>
+                <div style="display:flex;gap:4px">
+                  <button onclick="toggleFundPanel('${agent.id}')" style="flex:1;font-size:11px;padding:6px 8px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700">+ Add</button>
+                  <button onclick="defundAgent('${agent.id}')" style="flex:1;font-size:11px;padding:6px 8px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700">Withdraw</button>
+                </div>`
+              : `<button onclick="toggleFundPanel('${agent.id}')" style="padding:12px 24px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:12px;color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(245,197,66,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(245,197,66,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(245,197,66,0.25)'">💰 FUND</button>`
+            }
             <button class="btn-recall" onclick="recallAgent('${agent.id}')" style="font-size:12px;padding:8px 16px">Delete</button>
           </div>
         </div>
+        <!-- Fund panel (shown when agent has no chips) -->
+        <div id="fundPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(245,197,66,0.3);border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's chip stack:</div>
+          <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
+            <button onclick="confirmFund('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> chips</div>
+        </div>
+        <!-- Room picker (shown when agent is funded) -->
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
           <div style="font-size:10px;font-weight:700;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🎮 Free Play</div>
           <div class="room-picker" style="margin-bottom:10px">
@@ -5618,29 +5652,20 @@ function renderMyAgents() {
           </div>
           <div style="font-size:10px;font-weight:700;color:var(--accent-gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💵 USDC · 2.5% Rake · PvP</div>
           <div class="room-picker" style="margin-bottom:10px">
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','micro')" style="border-color:rgba(245,197,66,0.3)">
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','micro')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Micro</span>
               <span class="pick-sub">$1 · 25/50</span>
             </button>
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','mid')" style="border-color:rgba(245,197,66,0.3)">
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','mid')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">Mid</span>
               <span class="pick-sub">$5 · 125/250</span>
             </button>
-            <button class="room-pick-btn" onclick="selectRoomForJoin('${agent.id}','high')" style="border-color:rgba(245,197,66,0.3)">
+            <button class="room-pick-btn" onclick="joinFundedAgent('${agent.id}','high')" style="border-color:rgba(245,197,66,0.3)">
               <span class="pick-label">High</span>
               <span class="pick-sub">$25 · 625/1250</span>
             </button>
           </div>
           <div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;opacity:0.5">🃏 $POKERAI · 0% Rake · Coming Soon</div>
-          <div id="fundStep-${agent.id}" style="display:none;margin-top:8px">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's stack:</div>
-            <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
-              <button onclick="confirmJoin('${agent.id}')" style="padding:8px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap">FUND</button>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Balance: <span class="wallet-balance" style="color:var(--accent-gold)">${walletBalance.toLocaleString()}</span> chips</div>
-          </div>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
       </div>`;
@@ -5844,43 +5869,70 @@ function deployAgent() {
   showToast('Creating agent...', 'info');
 }
 
+function toggleFundPanel(agentId) {
+  const el = document.getElementById('fundPanel-' + agentId);
+  if (el) {
+    const visible = el.style.display !== 'none';
+    el.style.display = visible ? 'none' : 'block';
+    if (!visible) {
+      // Populate presets (default to micro presets for funding)
+      const presets = FUND_PRESETS;
+      const presetsEl = document.getElementById('fundPresets-' + agentId);
+      presetsEl.innerHTML = presets.map(amt => {
+        const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
+        return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
+      }).join('');
+      document.getElementById('fundAmount-' + agentId).value = presets[0];
+    }
+  }
+}
+
 function toggleRoomPicker(agentId) {
   const el = document.getElementById('roomPicker-' + agentId);
   if (el) {
     const visible = el.style.display !== 'none';
     el.style.display = visible ? 'none' : 'block';
     _roomPickerOpen = !visible;
-    // Reset inner state
-    if (!visible) {
-      const fundStep = document.getElementById('fundStep-' + agentId);
-      if (fundStep) fundStep.style.display = 'none';
-      document.querySelectorAll('#roomPicker-' + agentId + ' .room-pick-btn').forEach(b => b.classList.remove('selected'));
-    }
   }
 }
 
-const ROOM_PRESETS = {
-  sandbox: [5000, 10000, 25000, 50000],
-  micro:   [1000, 2500, 5000, 10000],
-  mid:     [5000, 10000, 25000, 50000],
-  high:    [25000, 50000, 100000, 250000]
-};
+const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
+
+function confirmFund(agentId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
+  if (!amount || amount < 500) { showToast('Minimum fund is 500 chips', 'error'); return; }
+  if (amount > walletBalance) { showToast(`Not enough chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
+
+  ws.send(JSON.stringify({ type: 'fundAgent', agentId, amount }));
+  showToast(`Funding agent with ${amount.toLocaleString()} chips...`, 'info');
+}
+
+function defundAgent(agentId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  // Withdraw all chips back to wallet
+  ws.send(JSON.stringify({ type: 'defundAgent', agentId }));
+}
+
+function joinFundedAgent(agentId, roomId) {
+  const wallet = getWallet();
+  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
+
+  _roomPickerOpen = false;
+  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId }));
+  const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
+  showToast(`Joining ${roomNames[roomId]}...`, 'info');
+}
 
 function selectRoomForJoin(agentId, roomId) {
-  // Store selected room
-  window._joinRoom = window._joinRoom || {};
-  window._joinRoom[agentId] = roomId;
-
-  // Clear all selections first
-  const picker = document.getElementById('roomPicker-' + agentId);
-  picker.querySelectorAll('.room-pick-btn').forEach(b => b.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-
-  // Hide fund step when switching rooms
-  const fundStep = document.getElementById('fundStep-' + agentId);
-  if (fundStep) fundStep.style.display = 'none';
-
-  // Sandbox: instant join with free chips, no buy-in step
+  // Sandbox: instant join with free chips
   if (roomId === 'sandbox') {
     _roomPickerOpen = false;
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -5888,37 +5940,8 @@ function selectRoomForJoin(agentId, roomId) {
     }
     return;
   }
-
-  // Show fund step with presets for this room
-  const fundStepEl = document.getElementById('fundStep-' + agentId);
-  fundStepEl.style.display = 'block';
-
-  const presets = ROOM_PRESETS[roomId] || ROOM_PRESETS.micro;
-  const presetsEl = document.getElementById('fundPresets-' + agentId);
-  presetsEl.innerHTML = presets.map(amt => {
-    const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
-    return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
-  }).join('');
-
-  // Default to first preset
-  document.getElementById('fundAmount-' + agentId).value = presets[0];
-}
-
-function confirmJoin(agentId) {
-  const wallet = getWallet();
-  if (!wallet) { showToast('Connect wallet first!', 'error'); return; }
-  if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected to server!', 'error'); return; }
-
-  const roomId = (window._joinRoom && window._joinRoom[agentId]) || 'micro';
-  const amount = parseInt(document.getElementById('fundAmount-' + agentId).value);
-  if (!amount || amount < 500) { showToast('Minimum buy-in is 500 chips', 'error'); return; }
-  if (amount > walletBalance) { showToast(`Not enough chips! You have ${walletBalance.toLocaleString()}`, 'error'); return; }
-
-  // Server handles balance deduction
-  _roomPickerOpen = false;
-  ws.send(JSON.stringify({ type: 'joinTable', walletAddress: wallet.address, agentId, roomId, chipStack: amount }));
-  const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
-  showToast(`Joining ${roomNames[roomId]} with ${amount.toLocaleString()} chips...`, 'info');
+  // For funded agents, just join directly
+  joinFundedAgent(agentId, roomId);
 }
 
 function switchAgentRoom(agentId) {

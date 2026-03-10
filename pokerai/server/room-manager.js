@@ -317,6 +317,42 @@ class RoomManager {
     };
   }
 
+  // === Fund agent in lobby (separate from joining) ===
+
+  fundLobbyAgent(walletAddress, agentId, amount) {
+    const walletLobby = this.lobbyAgents.get(walletAddress);
+    if (!walletLobby) return { error: 'No agents in lobby' };
+    const agent = walletLobby.find(a => a.id === agentId);
+    if (!agent) return { error: 'Agent not found in lobby' };
+    if (!amount || amount < 500) return { error: 'Minimum fund is 500 chips' };
+
+    const wallet = this.store.getWallet(walletAddress);
+    if (!wallet || wallet.balance < amount) return { error: `Not enough chips! You have ${(wallet ? wallet.balance : 0).toLocaleString()}` };
+
+    this.store.deductBalance(walletAddress, amount);
+    agent.chipStack += amount;
+    this.store.saveAgent(agent);
+    console.log(`[RoomManager] Funded ${agent.name} with ${amount} chips (total: ${agent.chipStack})`);
+    return { success: true, agentId, chipStack: agent.chipStack };
+  }
+
+  defundLobbyAgent(walletAddress, agentId, amount) {
+    const walletLobby = this.lobbyAgents.get(walletAddress);
+    if (!walletLobby) return { error: 'No agents in lobby' };
+    const agent = walletLobby.find(a => a.id === agentId);
+    if (!agent) return { error: 'Agent not found in lobby' };
+
+    // If no amount specified, withdraw all
+    const withdrawAmt = amount || agent.chipStack;
+    if (withdrawAmt <= 0 || withdrawAmt > agent.chipStack) return { error: 'Invalid amount' };
+
+    agent.chipStack -= withdrawAmt;
+    this.store.addBalance(walletAddress, withdrawAmt);
+    this.store.saveAgent(agent);
+    console.log(`[RoomManager] Defunded ${agent.name}: -${withdrawAmt} chips (remaining: ${agent.chipStack})`);
+    return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt };
+  }
+
   // === Room operations ===
 
   joinRoom(walletAddress, agentId, roomId, chipStack) {
@@ -350,15 +386,21 @@ class RoomManager {
       };
     }
 
-    if (!chipStack || chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
-
-    // Deduct from wallet balance (server-side)
-    const wallet = this.store.getWallet(walletAddress);
-    if (!wallet) return { error: 'Wallet not found' };
-    if (wallet.balance < chipStack) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
-
     const lobbyAgent = walletLobby[lobbyIdx];
-    lobbyAgent.chipStack = chipStack;
+
+    // If agent is already funded (via fundAgent), use their existing stack
+    // Otherwise fund inline (legacy flow)
+    if (chipStack && chipStack > 0) {
+      if (chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
+      const wallet = this.store.getWallet(walletAddress);
+      if (!wallet) return { error: 'Wallet not found' };
+      if (wallet.balance < chipStack) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
+      lobbyAgent.chipStack = chipStack;
+    }
+
+    if (!lobbyAgent.chipStack || lobbyAgent.chipStack < 500) {
+      return { error: 'Agent needs at least 500 chips. Fund your agent first!' };
+    }
 
     const table = this._findAvailableTable(roomId);
     if (!table) return { error: 'No tables available' };
@@ -366,15 +408,17 @@ class RoomManager {
     const result = table.seatAgent(lobbyAgent);
     if (result.error) return result;
 
-    // Deduct balance on success
-    this.store.deductBalance(walletAddress, chipStack);
+    // Deduct balance if funded inline (not pre-funded)
+    if (chipStack && chipStack > 0) {
+      this.store.deductBalance(walletAddress, chipStack);
+    }
 
     // Remove from lobby on success
     walletLobby.splice(lobbyIdx, 1);
     if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
 
     // Update persisted agent
-    this.store.updateAgentStats(agentId, { chipStack });
+    this.store.updateAgentStats(agentId, { chipStack: lobbyAgent.chipStack });
 
     return {
       success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot,
