@@ -173,7 +173,7 @@ export default async function handler(req, res) {
             const creatorId = req.query.creator_id;
             let query = supabase
                 .from('user_apps')
-                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, forkable, is_public, created_at', { count: 'exact' });
+                .select('id, name, slug, description, category, claws_price, creator_wallet, creator_x_handle, tags, upvote_count, app_url, code, moderated, forkable, is_public, user_id, created_at', { count: 'exact' });
 
             const creatorWallet = req.query.creator_wallet;
             const creatorXHandle = req.query.creator_x_handle;
@@ -229,6 +229,17 @@ export default async function handler(req, res) {
             if (error) {
                 console.error('apps query error:', JSON.stringify(error));
                 return res.status(500).json({ error: 'Query failed', detail: error.message, code: error.code });
+            }
+
+            // Backfill user_id on apps matched by wallet/handle but missing user_id
+            if (user && creatorId && apps.length > 0) {
+                const orphanIds = apps.filter(a => !a.user_id).map(a => a.id);
+                if (orphanIds.length > 0) {
+                    supabase.from('user_apps')
+                        .update({ user_id: creatorId })
+                        .in('id', orphanIds)
+                        .then(() => {});
+                }
             }
 
             // Check upvotes and unlocks for authenticated user

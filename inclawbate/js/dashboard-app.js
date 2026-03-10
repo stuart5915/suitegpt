@@ -64,15 +64,29 @@ async function loadOverview() {
 
     renderProfileCard(profile);
 
+    // Build apps query from all available identifiers
+    const appParams = new URLSearchParams();
+    if (profile.id) appParams.set('creator_id', profile.id);
+    if (profile.wallet_address) appParams.set('creator_wallet', profile.wallet_address);
+    if (profile.x_handle) appParams.set('creator_x_handle', profile.x_handle);
+
     const [credits, apps] = await Promise.allSettled([
         fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
-        (profile.id || profile.wallet_address || profile.x_handle)
-            ? fetch(`${API_BASE}/apps?${profile.id ? 'creator_id=' + encodeURIComponent(profile.id) : ''}${profile.wallet_address ? (profile.id ? '&' : '') + 'creator_wallet=' + encodeURIComponent(profile.wallet_address) : ''}${profile.x_handle ? '&creator_x_handle=' + encodeURIComponent(profile.x_handle) : ''}`).then(r => r.ok ? r.json() : null)
+        appParams.toString()
+            ? fetch(`${API_BASE}/apps?${appParams}`).then(r => r.ok ? r.json() : null)
             : Promise.resolve(null)
     ]);
 
     const creditsData = credits.status === 'fulfilled' ? credits.value : null;
-    const appsData = apps.status === 'fulfilled' ? apps.value : null;
+    let appsData = apps.status === 'fulfilled' ? apps.value : null;
+
+    // Fallback: if no apps found and user has x_handle, try by handle alone
+    if ((!appsData?.apps?.length) && profile.x_handle) {
+        try {
+            const fb = await fetch(`${API_BASE}/apps?creator=${encodeURIComponent(profile.x_handle)}`);
+            if (fb.ok) appsData = await fb.json();
+        } catch(e) {}
+    }
 
     // Update stat cards
     const creditCount = creditsData?.credits ?? 0;
