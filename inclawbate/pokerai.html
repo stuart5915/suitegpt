@@ -2836,7 +2836,7 @@
       <span id="viewerCount">0</span> watching
     </div>
     <div id="walletArea">
-      <button class="wallet-btn disconnected" id="walletBtn" onclick="toggleWallet()">Connect Wallet</button>
+      <button class="wallet-btn disconnected" id="walletBtn" onclick="handleWalletClick()">Connect Wallet</button>
     </div>
   </div>
 </header>
@@ -4598,17 +4598,20 @@ function handleAuthenticated(data) {
   refreshMyAgentsView();
 }
 
+function handleWalletClick() {
+  const wallet = getWallet();
+  if (wallet) { openVault(); } else { toggleWallet(); }
+}
+
 function updateWalletUI() {
   const wallet = getWallet();
   const btn = document.getElementById('walletBtn');
   if (wallet) {
     const short = wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4);
     btn.className = 'wallet-btn connected';
-    btn.onclick = openVault;
     btn.innerHTML = `${short} <span class="wallet-balance">${formatChips(walletBalance)}</span>`;
   } else {
     btn.className = 'wallet-btn disconnected';
-    btn.onclick = toggleWallet;
     btn.innerHTML = 'Connect Wallet';
   }
   const fb = document.getElementById('formBalance');
@@ -5246,8 +5249,25 @@ showView = function(name) {
 // ============================================================
 // INIT — connect to server
 // ============================================================
-updateWalletUI();
-connect();
+
+// Clear stale wallet if MetaMask has no accounts or different account
+(async () => {
+  const saved = getWallet();
+  if (saved && typeof window.ethereum !== 'undefined') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0 || accounts[0].toLowerCase() !== saved.address) {
+        localStorage.removeItem(WALLET_KEY);
+        walletBalance = 0;
+        walletAuthenticated = false;
+      }
+    } catch (e) {
+      // Can't check — keep saved wallet, will re-auth on WS connect
+    }
+  }
+  updateWalletUI();
+  connect();
+})();
 </script>
 
 <!-- Mobile Bottom Nav -->
