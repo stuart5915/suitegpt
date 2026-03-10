@@ -246,7 +246,16 @@ wss.on('connection', (ws) => {
         case 'getMyAgents': {
           const addr = getClientWallet(client);
           const result = rooms.getAgentsForWallet(addr);
-          ws.send(JSON.stringify({ type: 'myAgents', data: result }));
+          const autoTopUp = addr ? rooms.getAutoTopUp(addr) : { enabled: false };
+          ws.send(JSON.stringify({ type: 'myAgents', data: result, autoTopUp }));
+          break;
+        }
+
+        case 'setAutoTopUp': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.setAutoTopUp(addr, msg.enabled, msg.targetChips);
+          ws.send(JSON.stringify({ type: 'autoTopUpResult', data: result }));
           break;
         }
 
@@ -379,6 +388,15 @@ async function startServer() {
     console.log('[Server] Using JSON file store (set SUPABASE_URL + SUPABASE_SERVICE_KEY for Supabase)');
     rooms = new RoomManager((type, data) => broadcastToClients(type, data));
   }
+
+  // Set up auto-top-up balance change notifications
+  rooms.onBalanceChange = (walletAddress) => {
+    for (const [ws, client] of clients) {
+      if (client.walletAddress === walletAddress && ws.readyState === 1) {
+        sendBalance(ws, walletAddress);
+      }
+    }
+  };
 
   // Initialize chain service if configured
   if (process.env.VAULT_CONTRACT_ADDRESS && process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL) {

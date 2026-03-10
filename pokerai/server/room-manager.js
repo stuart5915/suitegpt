@@ -18,6 +18,8 @@ class RoomManager {
     this.lobbyAgents = new Map(); // walletAddress → [agent configs]
     this.pendingRakeChips = 0; // Accumulated rake waiting to be flushed on-chain
     this.chainService = null; // Set by index.js after init
+    this.autoTopUp = new Map(); // walletAddress → { enabled, targetChips }
+    this.onBalanceChange = null; // callback set by index.js to notify clients
 
     for (const [roomId, config] of Object.entries(ROOM_CONFIGS)) {
       this.rooms[roomId] = {
@@ -115,6 +117,84 @@ class RoomManager {
       table[key] = current;
       this.pendingRakeChips += newRake;
     }
+
+    // Auto top-up: check agents at this table and refill from wallet if needed
+    this._runAutoTopUp(table);
+
+    // Rake recycle: credit contractPool chips back to wallets with auto-top-up
+    this._recycleRake(table);
+  }
+
+  _runAutoTopUp(table) {
+    for (const agent of table.agents) {
+      if (!agent.isCustom || !agent.walletAddress) continue;
+      const config = this.autoTopUp.get(agent.walletAddress);
+      if (!config || !config.enabled) continue;
+
+      const target = config.targetChips;
+      if (agent.chips < target * 0.5) {
+        // Top up to target from wallet balance
+        const needed = target - agent.chips;
+        const wallet = this.store.getWallet(agent.walletAddress);
+        if (!wallet || wallet.balance <= 0) continue;
+
+        const topUp = Math.min(needed, wallet.balance);
+        if (topUp <= 0) continue;
+
+        this.store.deductBalance(agent.walletAddress, topUp);
+        agent.chips += topUp;
+        console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
+
+        // Notify connected client of new balance
+        if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
+      }
+    }
+  }
+
+  _recycleRake(table) {
+    // Credit contractPool chips back to wallets that have auto-top-up enabled
+    // This keeps the system self-sustaining when admin is bootstrapping tables
+    if (table.contractPool <= 0) return;
+
+    // Find all unique wallets with auto-top-up at this table
+    const wallets = new Set();
+    for (const a of table.agents) {
+      if (a.isCustom && a.walletAddress) {
+        const config = this.autoTopUp.get(a.walletAddress);
+        if (config && config.enabled) wallets.add(a.walletAddress);
+      }
+    }
+
+    if (wallets.size === 0) return;
+
+    // Split pool evenly among auto-top-up wallets (usually just 1 admin)
+    const perWallet = Math.floor(table.contractPool / wallets.size);
+    if (perWallet <= 0) return;
+
+    for (const addr of wallets) {
+      this.store.addBalance(addr, perWallet);
+      console.log(`[RakeRecycle] ${addr.slice(0,8)}...: +${perWallet} chips from pool`);
+      if (this.onBalanceChange) this.onBalanceChange(addr);
+    }
+
+    table.contractPool -= perWallet * wallets.size;
+  }
+
+  // === Auto Top-Up settings ===
+
+  setAutoTopUp(walletAddress, enabled, targetChips) {
+    if (enabled) {
+      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000 });
+      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips}`);
+    } else {
+      this.autoTopUp.delete(walletAddress);
+      console.log(`[AutoTopUp] Disabled for ${walletAddress.slice(0,8)}...`);
+    }
+    return { success: true, enabled, targetChips };
+  }
+
+  getAutoTopUp(walletAddress) {
+    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000 };
   }
 
   _startRakeTimer() {
