@@ -47,10 +47,8 @@ function broadcastViewerCount() {
 }
 
 function getClientWallet(client) {
-  // Sandbox agents live under sandbox_<sessionId>, even if real wallet is connected
-  if (client.activeRoom === 'sandbox') return `sandbox_${client.sessionId}`;
-  if (client.walletAddress) return client.walletAddress;
-  return null;
+  // One consistent wallet per client — real wallet if connected, sandbox fallback
+  return client.walletAddress || `sandbox_${client.sessionId}`;
 }
 
 function broadcastStateToAll() {
@@ -152,9 +150,8 @@ wss.on('connection', (ws) => {
         // === Money actions — require wallet auth (sandbox uses session ID) ===
 
         case 'createAgent': {
-          const isSandbox = client.activeRoom === 'sandbox';
-          if (!isSandbox && !requireAuth(client, ws)) break;
-          const addr = isSandbox ? `sandbox_${client.sessionId}` : client.walletAddress;
+          const addr = getClientWallet(client);
+          if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.createLobbyAgent(addr, msg.config);
           ws.send(JSON.stringify({ type: 'createAgentResult', data: { ...result, agentName: msg.config.name } }));
           const s = rooms.getStateForClient(client.sessionId, addr, client.activeRoom);
@@ -165,7 +162,7 @@ wss.on('connection', (ws) => {
         case 'joinTable': {
           const isSandbox = (msg.roomId || client.activeRoom) === 'sandbox';
           if (!isSandbox && !requireAuth(client, ws)) break;
-          const addr = isSandbox ? `sandbox_${client.sessionId}` : client.walletAddress;
+          const addr = getClientWallet(client);
           const roomId = msg.roomId || 'micro';
           const result = rooms.joinRoom(addr, msg.agentId, roomId, msg.chipStack);
           ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
@@ -190,9 +187,8 @@ wss.on('connection', (ws) => {
         }
 
         case 'leaveTable': {
-          const isSandbox = client.activeRoom === 'sandbox';
-          if (!isSandbox && !requireAuth(client, ws)) break;
-          const addr = isSandbox ? `sandbox_${client.sessionId}` : client.walletAddress;
+          const addr = getClientWallet(client);
+          if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.leaveTable(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
           broadcastStateToAll();
@@ -200,12 +196,11 @@ wss.on('connection', (ws) => {
         }
 
         case 'recallAgent': {
-          const isSandbox = client.activeRoom === 'sandbox';
-          if (!isSandbox && !requireAuth(client, ws)) break;
-          const addr = isSandbox ? `sandbox_${client.sessionId}` : client.walletAddress;
+          const addr = getClientWallet(client);
+          if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.deleteAgent(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
-          if (result.success && !isSandbox) sendBalance(ws, addr);
+          if (result.success && client.walletAddress) sendBalance(ws, addr);
           broadcastStateToAll();
           break;
         }
@@ -249,14 +244,7 @@ wss.on('connection', (ws) => {
         }
 
         case 'getMyAgents': {
-          // Sandbox agents live under sandbox_<sessionId>, not real wallet
-          let addr;
-          if (client.activeRoom === 'sandbox') {
-            addr = `sandbox_${client.sessionId}`;
-          } else {
-            addr = client.walletAddress ? client.walletAddress.toLowerCase() : '';
-          }
-          if (!addr) break;
+          const addr = getClientWallet(client);
           const result = rooms.getAgentsForWallet(addr);
           ws.send(JSON.stringify({ type: 'myAgents', data: result }));
           break;
