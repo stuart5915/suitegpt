@@ -213,52 +213,45 @@
                 const address = (await signer.getAddress()).toLowerCase();
 
                 // Sign message to prove ownership
-                const message = `Sign in to Just4Claws\n\nWallet: ${address}\nTimestamp: ${Date.now()}`;
+                const message = `Sign in to Just4Claws\nWallet: ${address}\nTimestamp: ${Date.now()}`;
+                btn.textContent = 'Sign message in wallet...';
                 const signature = await signer.signMessage(message);
 
-                // Use wallet address as pseudo-email auth with Supabase
-                const walletEmail = `${address}@wallet.just4claws.com`;
-                // Use first 32 chars of signature as deterministic password
-                const walletPass = signature.slice(0, 66);
-
-                // Try sign in first
-                let result = await supabase.auth.signInWithPassword({
-                    email: walletEmail,
-                    password: walletPass
+                // Server-side auth: verify signature, create/find user
+                btn.textContent = 'Authenticating...';
+                const authRes = await fetch(J4C_BASE + '/api/wallet-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, message, signature })
                 });
+                const authData = await authRes.json();
 
-                // If no account, sign up
-                if (result.error && result.error.message.includes('Invalid login')) {
-                    result = await supabase.auth.signUp({
-                        email: walletEmail,
-                        password: walletPass,
-                        options: { data: { wallet_address: address } }
-                    });
+                if (authData.error) throw new Error(authData.error);
 
-                    if (result.error) throw result.error;
-
-                    // New user — go to age verification
-                    showStep('verify');
-                    btn.disabled = false;
-                    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg> Connect Wallet';
-                    return;
-                }
+                // Sign in with the credentials from server
+                const result = await supabase.auth.signInWithPassword({
+                    email: authData.email,
+                    password: authData.password
+                });
 
                 if (result.error) throw result.error;
 
-                // Existing user — check profile
-                const { data: profile } = await supabase
-                    .from('j4c_profiles')
-                    .select('*')
-                    .eq('id', result.data.user.id)
-                    .single();
-
-                if (!profile) {
-                    showStep('setup');
-                } else if (!profile.is_age_verified) {
+                if (authData.is_new) {
                     showStep('verify');
                 } else {
-                    window.location.href = J4C_BASE + '/app';
+                    const { data: profile } = await supabase
+                        .from('j4c_profiles')
+                        .select('*')
+                        .eq('id', result.data.user.id)
+                        .single();
+
+                    if (!profile) {
+                        showStep('setup');
+                    } else if (!profile.is_age_verified) {
+                        showStep('verify');
+                    } else {
+                        window.location.href = J4C_BASE + '/app';
+                    }
                 }
             } catch (err) {
                 errEl.textContent = err.message || 'Wallet connection failed';
