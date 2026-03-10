@@ -1688,6 +1688,12 @@
     color: var(--accent-gold);
     background: rgba(245,197,66,0.06);
   }
+  .room-pick-btn.selected {
+    border-color: var(--accent-gold) !important;
+    color: var(--accent-gold) !important;
+    background: rgba(245,197,66,0.12) !important;
+    box-shadow: 0 0 12px rgba(245,197,66,0.15);
+  }
   .room-pick-btn .pick-label {
     display: block;
     font-family: 'Rajdhani', sans-serif;
@@ -3928,12 +3934,17 @@ function applyServerState(data) {
   gameState.rooms = data.rooms || {};
   if (data.activeRoom) activeRoom = data.activeRoom;
 
-  // Refresh full agent list for portfolio bar (cross-room)
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    const _w = getWallet();
-    if (_w || activeRoom === 'sandbox') {
-      ws.send(JSON.stringify({ type: 'getMyAgents' }));
-    }
+  // Debounced refresh of agent list (don't spam on every gameState)
+  if (!window._myAgentsTimer) {
+    window._myAgentsTimer = setTimeout(() => {
+      window._myAgentsTimer = null;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const _w = getWallet();
+        if (_w || activeRoom === 'sandbox') {
+          ws.send(JSON.stringify({ type: 'getMyAgents' }));
+        }
+      }
+    }, 3000);
   }
 
   updateRoomTabs();
@@ -5197,7 +5208,7 @@ function toggleRoomPicker(agentId) {
     if (!visible) {
       const fundStep = document.getElementById('fundStep-' + agentId);
       if (fundStep) fundStep.style.display = 'none';
-      document.querySelectorAll('#roomPicker-' + agentId + ' .room-pick-btn').forEach(b => b.style.borderColor = '');
+      document.querySelectorAll('#roomPicker-' + agentId + ' .room-pick-btn').forEach(b => b.classList.remove('selected'));
     }
   }
 }
@@ -5224,12 +5235,8 @@ function selectRoomForJoin(agentId, roomId) {
 
   // Highlight selected room button
   const picker = document.getElementById('roomPicker-' + agentId);
-  picker.querySelectorAll('.room-pick-btn').forEach(b => {
-    b.style.borderColor = '';
-    b.style.background = '';
-  });
-  event.currentTarget.style.borderColor = 'var(--accent-gold)';
-  event.currentTarget.style.background = 'rgba(245,197,66,0.08)';
+  picker.querySelectorAll('.room-pick-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
 
   // Show fund step with presets for this room
   const fundStep = document.getElementById('fundStep-' + agentId);
