@@ -4859,9 +4859,11 @@ async function doDeposit() {
       'function approve(address,uint256) returns (bool)'
     ], signer);
 
+    const chainId = await provider.getNetwork().then(n => n.chainId);
     const balance = await usdc.balanceOf(signerAddr);
+    console.log('[Deposit Debug]', { signerAddr, chainId: Number(chainId), usdcContract: USDC_ADDRESS, balance: Number(balance), balanceUSD: (Number(balance) / 1e6).toFixed(2) });
     if (balance < usdcAmount) {
-      showToast(`Not enough USDC. You have $${(Number(balance) / 1e6).toFixed(2)}`, 'error');
+      showToast(`Not enough USDC on Base. You have $${(Number(balance) / 1e6).toFixed(2)} (wallet: ${signerAddr.slice(0,6)}...${signerAddr.slice(-4)}, chain: ${Number(chainId)})`, 'error');
       btn.disabled = false; btn.innerHTML = 'Deposit USDC'; return;
     }
 
