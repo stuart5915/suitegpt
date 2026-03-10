@@ -129,8 +129,27 @@ wss.on('connection', (ws) => {
           client.walletAddress = msg.walletAddress ? msg.walletAddress.toLowerCase() : null;
           client.authenticated = !!client.walletAddress;
           if (client.walletAddress) {
-            const wallet = rooms.getWalletBalance(client.walletAddress);
+            // Use async getOrCreateWallet so balance loads from Supabase on fresh restart
+            const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
+
+            // Also check on-chain deposits in background (credits if server missed any)
+            if (chain) {
+              try {
+                const stats = await chain.vault.playerStats(client.walletAddress);
+                const onChainChips = Math.floor((Number(stats[0]) * 10000) / 1e6);
+                const withdrawnChips = Math.floor((Number(stats[1]) * 10000) / 1e6);
+                const expected = onChainChips - withdrawnChips;
+                const inPlay = rooms.getChipsInPlay(client.walletAddress);
+                const total = wallet.balance + inPlay;
+                if (expected > total) {
+                  const credit = expected - total;
+                  await rooms.store.addBalance(client.walletAddress, credit);
+                  sendBalance(ws, client.walletAddress);
+                  ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit } }));
+                }
+              } catch (e) { /* silent — check-deposit HTTP fallback still available */ }
+            }
           }
           const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
@@ -299,7 +318,7 @@ app.get('/health', async (req, res) => {
   const vaultStats = chain ? await chain.getVaultStats() : null;
   res.json({
     status: 'ok',
-    version: 6,
+    version: 7,
     viewers: clients.size,
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary(),
