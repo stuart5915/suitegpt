@@ -4149,7 +4149,8 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        showToast(`Agent funded! ${msg.data.chipStack.toLocaleString()} chips ready`, 'success');
+        _openFundPanel = null; // close fund panel, agent now shows JOIN TABLE
+        showToast(`Agent funded! ${msg.data.chipStack.toLocaleString()} chips ready — now pick a table!`, 'success');
       }
       break;
 
@@ -5516,6 +5517,7 @@ function refreshMyAgentsView() {
   }
 
   renderMyAgents();
+  _applyOpenPanels();
 
   // Show auto-top-up bar on USDC rooms when wallet connected
   const autoTopUpBar = document.getElementById('autoTopUpBar');
@@ -5555,6 +5557,8 @@ function applyAutoTopUpState(config) {
 }
 
 let _roomPickerOpen = false;
+let _openFundPanel = null;  // track which agent's fund panel is open
+let _openRoomPicker = null; // track which agent's room picker is open
 
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
@@ -5870,30 +5874,50 @@ function deployAgent() {
 }
 
 function toggleFundPanel(agentId) {
-  const el = document.getElementById('fundPanel-' + agentId);
-  if (el) {
-    const visible = el.style.display !== 'none';
-    el.style.display = visible ? 'none' : 'block';
-    if (!visible) {
-      // Populate presets (default to micro presets for funding)
-      const presets = FUND_PRESETS;
-      const presetsEl = document.getElementById('fundPresets-' + agentId);
-      presetsEl.innerHTML = presets.map(amt => {
-        const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
-        return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
-      }).join('');
-      document.getElementById('fundAmount-' + agentId).value = presets[0];
-    }
+  if (_openFundPanel === agentId) {
+    _openFundPanel = null;
+  } else {
+    _openFundPanel = agentId;
+    _openRoomPicker = null;
   }
+  _applyOpenPanels();
 }
 
 function toggleRoomPicker(agentId) {
-  const el = document.getElementById('roomPicker-' + agentId);
-  if (el) {
-    const visible = el.style.display !== 'none';
-    el.style.display = visible ? 'none' : 'block';
-    _roomPickerOpen = !visible;
+  if (_openRoomPicker === agentId) {
+    _openRoomPicker = null;
+    _roomPickerOpen = false;
+  } else {
+    _openRoomPicker = agentId;
+    _openFundPanel = null;
+    _roomPickerOpen = true;
   }
+  _applyOpenPanels();
+}
+
+function _applyOpenPanels() {
+  // Show/hide fund panels
+  document.querySelectorAll('[id^="fundPanel-"]').forEach(el => {
+    const id = el.id.replace('fundPanel-', '');
+    el.style.display = (id === _openFundPanel) ? 'block' : 'none';
+    if (id === _openFundPanel) _populateFundPresets(id);
+  });
+  // Show/hide room pickers
+  document.querySelectorAll('[id^="roomPicker-"]').forEach(el => {
+    const id = el.id.replace('roomPicker-', '');
+    el.style.display = (id === _openRoomPicker) ? 'block' : 'none';
+  });
+}
+
+function _populateFundPresets(agentId) {
+  const presetsEl = document.getElementById('fundPresets-' + agentId);
+  if (!presetsEl || presetsEl.children.length > 0) return;
+  presetsEl.innerHTML = FUND_PRESETS.map(amt => {
+    const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
+    return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
+  }).join('');
+  const input = document.getElementById('fundAmount-' + agentId);
+  if (input && !input.value) input.value = FUND_PRESETS[0];
 }
 
 const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
