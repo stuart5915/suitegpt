@@ -5225,6 +5225,15 @@ function selectRoomForJoin(agentId, roomId) {
   window._joinRoom = window._joinRoom || {};
   window._joinRoom[agentId] = roomId;
 
+  // Clear all selections first
+  const picker = document.getElementById('roomPicker-' + agentId);
+  picker.querySelectorAll('.room-pick-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  // Hide fund step when switching rooms
+  const fundStep = document.getElementById('fundStep-' + agentId);
+  if (fundStep) fundStep.style.display = 'none';
+
   // Sandbox: instant join with free chips, no buy-in step
   if (roomId === 'sandbox') {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -5232,11 +5241,6 @@ function selectRoomForJoin(agentId, roomId) {
     }
     return;
   }
-
-  // Highlight selected room button
-  const picker = document.getElementById('roomPicker-' + agentId);
-  picker.querySelectorAll('.room-pick-btn').forEach(b => b.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
 
   // Show fund step with presets for this room
   const fundStep = document.getElementById('fundStep-' + agentId);
