@@ -426,6 +426,18 @@ app.post('/check-deposit', async (req, res) => {
   }
 });
 
+app.get('/debug/supabase-test', async (req, res) => {
+  if (!rooms.store.supabase) return res.json({ error: 'No Supabase connection' });
+  try {
+    // Try reading poker_agents directly
+    const { data: agents, error: readErr } = await rooms.store.supabase.from('poker_agents').select('id, name, wallet_address').limit(10);
+    if (readErr) return res.json({ error: 'Read failed: ' + readErr.message, code: readErr.code, details: readErr.details });
+    res.json({ agentCount: agents.length, agents, cacheCount: rooms.store.agentCache.length });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.get('/debug/agents', (req, res) => {
   const storeAgents = rooms.store.agents || [];
   const lobbyMap = {};
