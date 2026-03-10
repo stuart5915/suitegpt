@@ -4859,11 +4859,19 @@ async function doDeposit() {
       'function approve(address,uint256) returns (bool)'
     ], signer);
 
-    const chainId = await provider.getNetwork().then(n => n.chainId);
     const balance = await usdc.balanceOf(signerAddr);
-    console.log('[Deposit Debug]', { signerAddr, chainId: Number(chainId), usdcContract: USDC_ADDRESS, balance: Number(balance), balanceUSD: (Number(balance) / 1e6).toFixed(2) });
+    // Also check USDbC (bridged USDC on Base) in case user has that instead
+    const USDBC_ADDRESS = '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA';
+    const usdbc = new ethers.Contract(USDBC_ADDRESS, ['function balanceOf(address) view returns (uint256)'], signer);
+    let usdbcBal = 0n;
+    try { usdbcBal = await usdbc.balanceOf(signerAddr); } catch(e) {}
+    console.log('[Deposit Debug]', { signerAddr, usdc: Number(balance), usdbc: Number(usdbcBal) });
     if (balance < usdcAmount) {
-      showToast(`Not enough USDC on Base. You have $${(Number(balance) / 1e6).toFixed(2)} (wallet: ${signerAddr.slice(0,6)}...${signerAddr.slice(-4)}, chain: ${Number(chainId)})`, 'error');
+      if (usdbcBal > 0n) {
+        showToast(`You have $${(Number(usdbcBal) / 1e6).toFixed(2)} USDbC (bridged) but need native USDC. Swap USDbC → USDC on Uniswap or Aerodrome first.`, 'error');
+      } else {
+        showToast(`Not enough USDC on Base. You have $${(Number(balance) / 1e6).toFixed(2)} USDC. Send USDC to ${signerAddr.slice(0,6)}...${signerAddr.slice(-4)} on Base.`, 'error');
+      }
       btn.disabled = false; btn.innerHTML = 'Deposit USDC'; return;
     }
 
