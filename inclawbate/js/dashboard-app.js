@@ -613,7 +613,6 @@ function renderProjectCard(p) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
     }
     if (p.id) {
-        actionsHtml += `<a href="/market-dash?project=${esc(p.id)}" class="project-card-action">Marketing</a>`;
         actionsHtml += `<button type="button" class="project-card-action" data-settings-project="${esc(p.id)}">Settings</button>`;
     }
     // Edit / Delete for incubation applications (no token launched yet)
