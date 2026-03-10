@@ -5427,12 +5427,27 @@ async function doDeposit() {
       const result = await resp.json();
       console.log('[Deposit] check-deposit result:', result);
       if (result.credited > 0) {
-        showToast(`${result.credited.toLocaleString()} chips credited!`, 'success');
+        walletBalance += result.credited;
+        updateWalletUI();
+        showToast(`+${result.credited.toLocaleString()} chips credited!`, 'success');
+      } else if (result.balance !== undefined) {
+        walletBalance = result.balance;
+        updateWalletUI();
+        showToast('Chips already credited!', 'success');
+      }
+      // Also tell WS to refresh balance
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
       }
     } catch (e) {
       console.error('[Deposit] check-deposit failed:', e);
+      // Fallback: re-send wallet to trigger server-side on-chain check
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: signerAddr }));
+      }
     }
     document.getElementById('depositNote').textContent = 'Deposits USDC on Base and credits chips instantly';
+    closeVault();
   } catch (e) {
     console.error('Deposit failed:', e);
     const reason = e.reason || e.message || 'Transaction failed';
