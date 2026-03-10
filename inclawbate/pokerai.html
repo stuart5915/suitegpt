@@ -962,13 +962,13 @@
   .mini-stat {
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 10px;
+    padding: 10px 12px;
     text-align: center;
   }
 
-  .mini-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-  .mini-stat-value { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .mini-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .mini-stat-value { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-primary); }
 
   .agent-description { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
 
@@ -1392,52 +1392,69 @@
   .my-agents-grid {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .my-agent-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    transition: all 0.2s;
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(26,34,54,0.95) 100%);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
   }
-  .my-agent-card:hover { border-color: var(--border-light); }
-  .my-agent-card.profitable { border-color: rgba(34,197,94,0.3); }
-  .my-agent-card.losing { border-color: rgba(239,68,68,0.3); }
+  .my-agent-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-gold), var(--accent-orange));
+    opacity: 0.6;
+  }
+  .my-agent-card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .my-agent-card.profitable { border-color: rgba(34,197,94,0.4); box-shadow: 0 0 24px rgba(34,197,94,0.08); }
+  .my-agent-card.profitable::before { background: linear-gradient(90deg, #22c55e, #06b6d4); }
+  .my-agent-card.losing { border-color: rgba(239,68,68,0.4); box-shadow: 0 0 24px rgba(239,68,68,0.08); }
+  .my-agent-card.losing::before { background: linear-gradient(90deg, #ef4444, #f97316); }
 
   .my-agent-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   .my-agent-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
   }
   .my-agent-emoji {
-    width: 48px; height: 48px;
+    width: 64px; height: 64px;
     border-radius: 50%;
-    background: var(--bg-elevated);
+    background: linear-gradient(135deg, var(--bg-elevated), var(--bg-surface));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    border: 2px solid var(--border-light);
+    font-size: 32px;
+    border: 3px solid var(--border-light);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   }
   .my-agent-pnl {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 32px;
+    font-weight: 800;
   }
 
   .my-agent-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
+    background: var(--bg-dark);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
   }
 
   .btn-recall {
@@ -2587,8 +2604,8 @@
     .agent-style { font-size: 9px; }
 
     /* My agents view */
-    .my-agent-card { padding: 12px; }
-    .my-agent-emoji { width: 36px; height: 36px; font-size: 18px; }
+    .my-agent-card { padding: 16px; }
+    .my-agent-emoji { width: 48px; height: 48px; font-size: 24px; }
     .my-agent-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
     .preset-row { flex-wrap: wrap; }
     .preset-btn { min-width: 55px; padding: 6px 4px; font-size: 10px; }
@@ -4898,8 +4915,8 @@ function renderMyAgents() {
 
   // LOBBY section
   if (lobby.length > 0) {
-    html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-      <span style="color:var(--accent-gold)">⏳</span> Ready to Deploy (${lobby.length})
+    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--accent-gold);font-size:18px">⏳</span> Ready to Deploy (${lobby.length})
     </div>`;
     html += lobby.map(agent => {
       const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
@@ -4909,29 +4926,29 @@ function renderMyAgents() {
           <div class="my-agent-left">
             <div class="my-agent-emoji">${agent.emoji}</div>
             <div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
-                <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(245,197,66,0.12);color:var(--accent-gold);border:1px solid rgba(245,197,66,0.3)">LOBBY</span>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span style="font-family:'Rajdhani';font-size:26px;font-weight:800;color:var(--text-primary)">${agent.name}</span>
+                <span style="padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(245,197,66,0.12);color:var(--accent-gold);border:1px solid rgba(245,197,66,0.3)">LOBBY</span>
               </div>
-              <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
+              <span class="agent-style-badge badge-${agent.style}" style="font-size:12px">${capitalize(agent.style)}</span>
             </div>
           </div>
           <div style="text-align:right">
             ${agent.chipStack > 0
-              ? `<div style="font-family:'Rajdhani';font-size:20px;font-weight:700;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div><div style="font-size:10px;color:var(--text-muted)">chips</div>`
-              : `<div style="font-size:11px;color:var(--text-muted)">Not funded</div>`}
+              ? `<div style="font-family:'Rajdhani';font-size:28px;font-weight:800;color:var(--accent-gold)">${formatChips(agent.chipStack)}</div><div style="font-size:11px;color:var(--text-muted)">chips</div>`
+              : `<div style="font-size:13px;color:var(--text-muted)">Ready to play</div>`}
           </div>
         </div>
         ${renderRuleBadges(agent.rules)}
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
           <div style="flex:1">
             ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
             ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <button onclick="toggleRoomPicker('${agent.id}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">🃏 JOIN TABLE</button>
-            <button class="btn-recall" onclick="recallAgent('${agent.id}')">Delete</button>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button onclick="toggleRoomPicker('${agent.id}')" style="padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(34,197,94,0.25)'">🃏 JOIN TABLE</button>
+            <button class="btn-recall" onclick="recallAgent('${agent.id}')" style="font-size:12px;padding:8px 16px">Delete</button>
           </div>
         </div>
         <div id="roomPicker-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid var(--border);border-radius:10px;padding:10px">
@@ -4971,8 +4988,8 @@ function renderMyAgents() {
 
   // PLAYING section
   if (playing.length > 0) {
-    html += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:${lobby.length > 0 ? '20px' : '0'} 0 8px;display:flex;align-items:center;gap:6px">
-      <span style="color:var(--accent-green)">🟢</span> Playing (${playing.length})
+    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:${lobby.length > 0 ? '24px' : '0'} 0 12px;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--accent-green);font-size:18px">🟢</span> Playing (${playing.length})
     </div>`;
     html += playing.map(agent => {
       const pnl = agent.chips - agent.baseChips;
@@ -4989,25 +5006,25 @@ function renderMyAgents() {
           <div class="my-agent-left">
             <div class="my-agent-emoji">${agent.emoji}</div>
             <div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--text-primary)">${agent.name}</span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
-                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span style="font-family:'Rajdhani';font-size:26px;font-weight:800;color:var(--text-primary)">${agent.name}</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
+                  <span style="width:7px;height:7px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
                   LIVE${roomLabel ? ' · ' + roomLabel : ''}
                 </span>
               </div>
-              <span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span>
+              <span class="agent-style-badge badge-${agent.style}" style="font-size:12px">${capitalize(agent.style)}</span>
             </div>
           </div>
           <div style="text-align:right">
             <div class="my-agent-pnl" style="color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
-            <div style="font-size:10px;color:var(--text-muted)">P&L</div>
+            <div style="font-size:11px;color:var(--text-muted)">P&L</div>
           </div>
         </div>
         <div class="my-agent-stats">
           <div class="mini-stat">
             <div class="mini-stat-label">Stack</div>
-            <div class="mini-stat-value" style="color:var(--accent-gold)">${formatChips(agent.chips)}</div>
+            <div class="mini-stat-value" style="color:var(--accent-gold);font-size:24px">${formatChips(agent.chips)}</div>
           </div>
           <div class="mini-stat">
             <div class="mini-stat-label">Started</div>
@@ -5022,16 +5039,16 @@ function renderMyAgents() {
             <div class="mini-stat-value">${wr}%</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:12px;align-items:center">
           <div style="flex:1">
             ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
             ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
             ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:8px 16px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">👁 WATCH</button>
-            ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}', 2500)" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)'" onmouseout="this.style.background='var(--bg-surface)'">+ TOP UP</button>` : ''}
-            <button onclick="leaveTable('${agent.id}')" style="padding:8px 16px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.2);border-radius:8px;color:var(--text-muted);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(34,197,94,0.25)'">👁 WATCH</button>
+            ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}', 2500)" style="padding:10px 20px;background:var(--bg-surface);border:2px solid rgba(245,197,66,0.3);border-radius:10px;color:var(--accent-gold);font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)';this.style.borderColor='rgba(245,197,66,0.5)'" onmouseout="this.style.background='var(--bg-surface)';this.style.borderColor='rgba(245,197,66,0.3)'">+ TOP UP</button>` : ''}
+            <button onclick="leaveTable('${agent.id}')" style="padding:10px 20px;background:var(--bg-surface);border:1px solid rgba(239,68,68,0.2);border-radius:10px;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background='var(--bg-surface)'">Sit Out</button>
           </div>
         </div>
       </div>`;
