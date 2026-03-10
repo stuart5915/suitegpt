@@ -1,3 +1,6 @@
+const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
+const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_J4C_ENDPOINT_ID;
+
 const BLOCKED_TERMS = [
   'child', 'minor', 'underage', 'kid', 'teen', 'preteen',
   'infant', 'baby', 'toddler', 'young girl', 'young boy',
@@ -19,6 +22,7 @@ export default async function handler(req, res) {
   const { prompt, style } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
   if (!isPromptSafe(prompt)) return res.status(400).json({ error: 'Prompt contains prohibited content.' });
+  if (!RUNPOD_API_KEY || !RUNPOD_ENDPOINT_ID) return res.status(500).json({ error: 'RunPod not configured.' });
 
   const styleModifiers = {
     realistic: 'photorealistic, high detail, cinematic lighting, 8k',
@@ -29,10 +33,37 @@ export default async function handler(req, res) {
   };
 
   const enhancedPrompt = `${prompt}, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality`;
-  const seed = Math.floor(Math.random() * 2147483647);
 
-  // Pollinations AI — free Flux image generation, no API key needed
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1024&height=1024&seed=${seed}&model=flux&nologo=true`;
+  try {
+    // SDXL Turbo — async /run (cold start may take 30-60s first time)
+    const runRes = await fetch(`https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RUNPOD_API_KEY}`
+      },
+      body: JSON.stringify({
+        input: {
+          prompt: enhancedPrompt,
+          negative_prompt: 'child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs',
+          width: 1024,
+          height: 1024,
+          num_inference_steps: 4,
+          guidance_scale: 0.0,
+          seed: Math.floor(Math.random() * 2147483647),
+          num_images: 1
+        }
+      })
+    });
 
-  return res.status(200).json({ image_url: imageUrl });
+    if (!runRes.ok) {
+      const errText = await runRes.text();
+      return res.status(500).json({ error: `RunPod error (${runRes.status}): ${errText.slice(0, 200)}` });
+    }
+
+    const runData = await runRes.json();
+    return res.status(200).json({ job_id: runData.id, status: runData.status });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to submit: ' + (err.message || String(err)) });
+  }
 }

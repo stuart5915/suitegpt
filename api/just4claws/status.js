@@ -21,40 +21,52 @@ export default async function handler(req, res) {
 
     if (!statusRes.ok) {
       const errText = await statusRes.text();
-      return res.status(500).json({ error: `RunPod status error: ${errText.slice(0, 200)}` });
+      return res.status(500).json({ error: `Status error: ${errText.slice(0, 200)}` });
     }
 
     const data = await statusRes.json();
 
-    // Still working
     if (data.status === 'IN_QUEUE' || data.status === 'IN_PROGRESS') {
       return res.status(200).json({ status: data.status });
     }
 
-    // Failed
     if (data.status === 'FAILED') {
       return res.status(200).json({ status: 'FAILED', error: data.error || 'Generation failed' });
     }
 
-    // Completed — extract image
-    // ComfyUI worker returns: { output: { images: [{ image: "base64...", type: "output" }] } }
-    // or: { output: { message: "url", status: "ok" } }
-    let imageUrl = null;
+    // COMPLETED — extract image
     const out = data.output;
+    let imageUrl = null;
 
-    if (out?.image_url) {
+    if (!out) {
+      return res.status(200).json({ status: 'COMPLETED', error: 'Empty output from worker' });
+    }
+
+    let base64Data = null;
+
+    if (typeof out === 'string') {
+      // SDXL Turbo returns output directly as base64 string
+      base64Data = out;
+    } else if (out.images?.[0]?.image) {
+      base64Data = out.images[0].image;
+    } else if (out.images?.[0] && typeof out.images[0] === 'string') {
+      base64Data = out.images[0];
+    } else if (out.image) {
+      base64Data = out.image;
+    } else if (out.image_url) {
       imageUrl = out.image_url;
-    } else if (out?.message && typeof out.message === 'string' && out.message.startsWith('http')) {
-      imageUrl = out.message;
-    } else if (out?.images?.[0]?.image) {
-      // ComfyUI format: images array with {image: base64} objects
-      imageUrl = await uploadBase64(out.images[0].image, req.query.uid);
-    } else if (out?.image) {
-      imageUrl = await uploadBase64(out.image, req.query.uid);
-    } else if (out?.images?.[0] && typeof out.images[0] === 'string') {
-      imageUrl = await uploadBase64(out.images[0], req.query.uid);
-    } else {
-      return res.status(200).json({ status: 'COMPLETED', error: 'No image in response: ' + JSON.stringify(out || {}).slice(0, 300) });
+    }
+
+    if (base64Data && !imageUrl) {
+      const raw = base64Data.replace(/^data:image\/\w+;base64,/, '');
+      imageUrl = await uploadBase64(raw, req.query.uid);
+    }
+
+    if (!imageUrl) {
+      return res.status(200).json({
+        status: 'COMPLETED',
+        error: 'Could not extract image. Output type: ' + typeof out
+      });
     }
 
     return res.status(200).json({ status: 'COMPLETED', image_url: imageUrl });

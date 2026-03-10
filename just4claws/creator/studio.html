@@ -173,17 +173,18 @@
 
             const btn = document.getElementById('gen-btn');
             btn.disabled = true;
-            btn.textContent = 'Generating...';
+            btn.textContent = 'Submitting...';
 
             const preview = document.getElementById('preview-area');
             preview.innerHTML = `
                 <div class="generating-overlay">
                     <div class="loading-spinner"></div>
-                    <p>Generating your content...</p>
+                    <p id="gen-status">Submitting...</p>
                 </div>
             `;
 
             try {
+                // Step 1: Submit job (returns instantly)
                 const res = await fetch(J4C_BASE + '/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -191,35 +192,53 @@
                 });
                 const data = await res.json();
 
-                if (data.error) {
-                    showToast(data.error, 'error');
-                    preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>${data.error}</p></div>`;
-                } else if (data.image_url) {
-                    // Preload the image (Pollinations generates on first request)
-                    const img = new Image();
-                    img.onload = () => {
-                        currentImageUrl = data.image_url;
-                        preview.innerHTML = `<img src="${data.image_url}" alt="Generated content">`;
-                        document.getElementById('preview-actions').style.display = 'flex';
-                        showToast('Image generated!', 'success');
-                        btn.disabled = false;
-                        btn.textContent = 'Generate';
-                    };
-                    img.onerror = () => {
-                        preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>Image failed to load. Try again.</p></div>`;
-                        btn.disabled = false;
-                        btn.textContent = 'Generate';
-                    };
-                    img.src = data.image_url;
-                    return; // button re-enabled in onload/onerror
-                }
+                if (data.error) { showErr(preview, btn, data.error); return; }
+                if (!data.job_id) { showErr(preview, btn, 'No job ID'); return; }
+
+                // Step 2: Poll for result
+                btn.textContent = 'Generating...';
+                const uid = j4c.profile?.id || '';
+                const imageUrl = await pollJob(data.job_id, uid);
+
+                currentImageUrl = imageUrl;
+                preview.innerHTML = `<img src="${imageUrl}" alt="Generated content">`;
+                document.getElementById('preview-actions').style.display = 'flex';
+                showToast('Image generated!', 'success');
             } catch (err) {
-                showToast('Error: ' + err.message, 'error');
-                preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>${err.message}</p></div>`;
+                showErr(preview, btn, err.message);
+                return;
             }
 
             btn.disabled = false;
             btn.textContent = 'Generate';
+        }
+
+        function showErr(preview, btn, msg) {
+            showToast(msg, 'error');
+            preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>${msg}</p></div>`;
+            btn.disabled = false;
+            btn.textContent = 'Generate';
+        }
+
+        async function pollJob(jobId, uid) {
+            for (let i = 0; i < 90; i++) { // 90 x 2s = 3 min max
+                await new Promise(r => setTimeout(r, 2000));
+                const el = document.getElementById('gen-status');
+                if (el) {
+                    if (i < 10) el.textContent = 'Starting GPU worker...';
+                    else if (i < 20) el.textContent = 'Loading model...';
+                    else if (i < 30) el.textContent = 'Generating image...';
+                    else el.textContent = `Still working... (${i * 2}s)`;
+                }
+                const r = await fetch(J4C_BASE + `/api/status?id=${jobId}&uid=${uid}`);
+                const d = await r.json();
+                if (d.status === 'FAILED') throw new Error(d.error || 'Generation failed');
+                if (d.status === 'COMPLETED') {
+                    if (d.image_url) return d.image_url;
+                    throw new Error(d.error || 'No image returned');
+                }
+            }
+            throw new Error('Timed out after 3 minutes. RunPod GPU may be unavailable — try again shortly.');
         }
 
         async function saveToDrafts() {
