@@ -75,10 +75,22 @@ module.exports = async (req, res) => {
       })
     });
 
+    if (!runRes.ok) {
+      const errText = await runRes.text();
+      console.error('RunPod HTTP error:', runRes.status, errText);
+      return res.status(500).json({ error: `RunPod error (${runRes.status}): ${errText.slice(0, 200)}` });
+    }
+
     const runData = await runRes.json();
+    console.log('RunPod response:', JSON.stringify(runData).slice(0, 500));
 
     if (runData.status === 'FAILED') {
-      return res.status(500).json({ error: 'Image generation failed. Try again.' });
+      return res.status(500).json({ error: `Generation failed: ${runData.error || JSON.stringify(runData.output || 'unknown')}` });
+    }
+
+    // If still processing (async), return the job ID
+    if (runData.status === 'IN_QUEUE' || runData.status === 'IN_PROGRESS') {
+      return res.status(202).json({ status: 'processing', id: runData.id, message: 'Image is generating... try again in 15-30 seconds.' });
     }
 
     // RunPod returns base64 image or URL depending on worker config
@@ -86,8 +98,25 @@ module.exports = async (req, res) => {
 
     if (runData.output?.image_url) {
       imageUrl = runData.output.image_url;
+    } else if (runData.output?.image) {
+      // Some workers return single base64 image as 'image'
+      const base64 = runData.output.image;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const fileName = `generated/${effectiveUserId}/${Date.now()}.png`;
+      const buffer = Buffer.from(base64, 'base64');
+
+      const { data: upload, error: uploadErr } = await supabase.storage
+        .from('j4c-content')
+        .upload(fileName, buffer, { contentType: 'image/png', upsert: false });
+
+      if (uploadErr) {
+        return res.status(500).json({ error: 'Failed to save image: ' + uploadErr.message });
+      }
+
+      const { data: urlData } = supabase.storage.from('j4c-content').getPublicUrl(fileName);
+      imageUrl = urlData.publicUrl;
     } else if (runData.output?.images?.[0]) {
-      // If base64, upload to Supabase Storage
+      // If base64 array, upload to Supabase Storage
       const base64 = runData.output.images[0];
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
       const fileName = `generated/${effectiveUserId}/${Date.now()}.png`;
@@ -98,7 +127,7 @@ module.exports = async (req, res) => {
         .upload(fileName, buffer, { contentType: 'image/png', upsert: false });
 
       if (uploadErr) {
-        return res.status(500).json({ error: 'Failed to save generated image' });
+        return res.status(500).json({ error: 'Failed to save image: ' + uploadErr.message });
       }
 
       const { data: urlData } = supabase.storage.from('j4c-content').getPublicUrl(fileName);
@@ -106,7 +135,7 @@ module.exports = async (req, res) => {
     } else if (runData.output?.message) {
       return res.status(500).json({ error: runData.output.message });
     } else {
-      return res.status(500).json({ error: 'Unexpected response from image generator' });
+      return res.status(500).json({ error: 'Unexpected RunPod response: ' + JSON.stringify(runData).slice(0, 300) });
     }
 
     // Track generation in DB
@@ -123,6 +152,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ image_url: imageUrl });
   } catch (err) {
     console.error('Generation error:', err);
-    return res.status(500).json({ error: 'Image generation failed. Please try again.' });
+    return res.status(500).json({ error: 'Generation error: ' + (err.message || String(err)) });
   }
 };
