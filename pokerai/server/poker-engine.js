@@ -99,14 +99,18 @@ function compareHands(a, b) {
 }
 
 // Agent AI decision — needs current bet to call, pot size, and agent's current round bet
-function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) {
+function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, playerCount) {
   const toCall = currentBet - agentRoundBet;
   const rules = agent.rules || {};
+  const headsUp = playerCount <= 2; // much looser play with fewer opponents
 
   let strength = 0.3;
   if (communityCards.length > 0) {
     const handEval = getBestHand(agent.hand, communityCards);
     strength = (handEval.rank / 8) * 0.85 + Math.random() * 0.15;
+    // Hands are relatively stronger with fewer opponents
+    if (headsUp) strength = Math.min(0.98, strength + 0.15);
+    else if (playerCount <= 4) strength = Math.min(0.98, strength + 0.08);
   } else {
     // Preflop: evaluate based on actual hole cards
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
@@ -124,6 +128,10 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet) 
     // Premium hands: high pairs, AK, AQ
     if (paired && highCard >= 10) preflopStr += 0.15;
     if (highCard === 14 && lowCard >= 12) preflopStr += 0.1;
+
+    // Heads-up: almost every hand is playable, boost significantly
+    if (headsUp) preflopStr += 0.25;
+    else if (playerCount <= 4) preflopStr += 0.12;
 
     strength = Math.min(0.95, Math.max(0.05, preflopStr * 0.7 + Math.random() * 0.2));
   }
@@ -482,7 +490,8 @@ class PokerEngine {
       this.broadcastGameState();
       await sleep(ACTION_DELAY);
 
-      const action = agentDecide(agent, this.communityCards, this.pot, this.bb, this.currentHighBet, agent.roundBet);
+      const activePlayers = this.agents.filter(a => !a.folded).length;
+      const action = agentDecide(agent, this.communityCards, this.pot, this.bb, this.currentHighBet, agent.roundBet, activePlayers);
       this._applyAction(agent, action, startIdx);
 
       // If this was a raise/bet, reset the "last raiser" so we go around again

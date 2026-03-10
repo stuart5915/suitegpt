@@ -254,7 +254,7 @@ wss.on('connection', (ws) => {
         case 'setAutoTopUp': {
           if (!requireAuth(client, ws)) break;
           const addr = client.walletAddress;
-          const result = rooms.setAutoTopUp(addr, msg.enabled, msg.targetChips);
+          const result = rooms.setAutoTopUp(addr, msg.enabled, msg.targetChips, msg.cashOutAt);
           ws.send(JSON.stringify({ type: 'autoTopUpResult', data: result }));
           break;
         }

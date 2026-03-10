@@ -3549,15 +3549,27 @@
                 <div style="font-family:'Rajdhani';font-size:16px;font-weight:700;color:var(--accent-green)">Auto Top-Up + Rake Recycle</div>
                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">Agents below 50% auto-refill from wallet. Rake credits back to your balance.</div>
               </div>
-              <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                 <div style="display:flex;align-items:center;gap:6px">
-                  <label style="font-size:11px;color:var(--text-muted)">Target:</label>
+                  <label style="font-size:11px;color:var(--text-muted)">Refill to:</label>
                   <select id="autoTopUpTarget" onchange="updateAutoTopUp()" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Rajdhani'">
+                    <option value="1000">1K</option>
                     <option value="5000">5K</option>
                     <option value="10000" selected>10K</option>
                     <option value="25000">25K</option>
                     <option value="50000">50K</option>
                     <option value="100000">100K</option>
+                  </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <label style="font-size:11px;color:var(--text-muted)">Cash out at:</label>
+                  <select id="autoCashOutTarget" onchange="updateAutoTopUp()" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Rajdhani'">
+                    <option value="0">Off</option>
+                    <option value="15000">15K</option>
+                    <option value="20000" selected>20K</option>
+                    <option value="50000">50K</option>
+                    <option value="100000">100K</option>
+                    <option value="250000">250K</option>
                   </select>
                 </div>
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -5498,22 +5510,25 @@ function refreshMyAgentsView() {
 function updateAutoTopUp() {
   const enabled = document.getElementById('autoTopUpToggle').checked;
   const targetChips = parseInt(document.getElementById('autoTopUpTarget').value) || 10000;
+  const cashOutAt = parseInt(document.getElementById('autoCashOutTarget').value) || 0;
   const label = document.getElementById('autoTopUpLabel');
   if (label) {
     label.textContent = enabled ? 'ON' : 'OFF';
     label.style.color = enabled ? 'var(--accent-green)' : 'var(--text-muted)';
   }
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'setAutoTopUp', enabled, targetChips }));
+    ws.send(JSON.stringify({ type: 'setAutoTopUp', enabled, targetChips, cashOutAt }));
   }
 }
 
 function applyAutoTopUpState(config) {
   const toggle = document.getElementById('autoTopUpToggle');
   const target = document.getElementById('autoTopUpTarget');
+  const cashOut = document.getElementById('autoCashOutTarget');
   const label = document.getElementById('autoTopUpLabel');
   if (toggle) toggle.checked = config.enabled;
   if (target && config.targetChips) target.value = config.targetChips.toString();
+  if (cashOut && config.cashOutAt) cashOut.value = config.cashOutAt.toString();
   if (label) {
     label.textContent = config.enabled ? 'ON' : 'OFF';
     label.style.color = config.enabled ? 'var(--accent-green)' : 'var(--text-muted)';

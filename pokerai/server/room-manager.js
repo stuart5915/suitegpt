@@ -132,8 +132,20 @@ class RoomManager {
       if (!config || !config.enabled) continue;
 
       const target = config.targetChips;
+
+      // Auto cash-out: if agent is above cash-out threshold, skim excess back to wallet
+      if (config.cashOutAt > 0 && agent.chips > config.cashOutAt) {
+        const excess = agent.chips - target; // bring back down to target, not cashOutAt
+        if (excess > 0) {
+          agent.chips -= excess;
+          this.store.addBalance(agent.walletAddress, excess);
+          console.log(`[AutoCashOut] ${agent.name}: -${excess} chips to wallet`);
+          if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
+        }
+      }
+
+      // Auto top-up: if agent drops below 50% of target, refill
       if (agent.chips < target * 0.5) {
-        // Top up to target from wallet balance
         const needed = target - agent.chips;
         const wallet = this.store.getWallet(agent.walletAddress);
         if (!wallet || wallet.balance <= 0) continue;
@@ -145,7 +157,6 @@ class RoomManager {
         agent.chips += topUp;
         console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
 
-        // Notify connected client of new balance
         if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
       }
     }
@@ -182,19 +193,19 @@ class RoomManager {
 
   // === Auto Top-Up settings ===
 
-  setAutoTopUp(walletAddress, enabled, targetChips) {
+  setAutoTopUp(walletAddress, enabled, targetChips, cashOutAt) {
     if (enabled) {
-      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000 });
-      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips}`);
+      this.autoTopUp.set(walletAddress, { enabled: true, targetChips: targetChips || 10000, cashOutAt: cashOutAt || 0 });
+      console.log(`[AutoTopUp] Enabled for ${walletAddress.slice(0,8)}... target=${targetChips} cashOut=${cashOutAt}`);
     } else {
       this.autoTopUp.delete(walletAddress);
       console.log(`[AutoTopUp] Disabled for ${walletAddress.slice(0,8)}...`);
     }
-    return { success: true, enabled, targetChips };
+    return { success: true, enabled, targetChips, cashOutAt };
   }
 
   getAutoTopUp(walletAddress) {
-    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000 };
+    return this.autoTopUp.get(walletAddress) || { enabled: false, targetChips: 10000, cashOutAt: 0 };
   }
 
   _startRakeTimer() {
