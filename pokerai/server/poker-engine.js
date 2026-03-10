@@ -270,20 +270,22 @@ class PokerEngine {
     this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1);
     this.totalRake = 0;
 
-    this.agents = AGENTS.map(a => ({
+    // Sandbox: fill with house bots. Real money rooms: empty (PvP only)
+    const isSandbox = config.roomId === 'sandbox';
+    this.agents = isSandbox ? AGENTS.map(a => ({
       ...a,
       chips: this.baseChips,
       baseChips: this.baseChips,
       handsWon: 0,
       handsPlayed: 0,
       biggestPot: 0,
-      handHistory: [],   // last N hand results
+      handHistory: [],
       hand: [],
       folded: false,
-      currentBet: 0,    // total bet THIS HAND (for side pot calc)
-      roundBet: 0,       // bet this BETTING ROUND (resets each street)
+      currentBet: 0,
+      roundBet: 0,
       allIn: false
-    }));
+    })) : [];
     this.round = 0;
     this.handsPlayed = 0;
     this.pot = 0;
@@ -294,7 +296,7 @@ class PokerEngine {
     this.currentTurnIndex = -1;
     this.currentHighBet = 0;    // highest bet this round
     this.lastWinner = null;
-    this.contractPool = this.baseChips * 2;
+    this.contractPool = isSandbox ? this.baseChips * 2 : 0;
     this.totalCashouts = 0;
     this.totalBuyins = 0;
     this.poolFlows = [];
@@ -877,26 +879,6 @@ class PokerEngine {
   // === Custom agent table operations ===
 
   seatAgent(lobbyAgent) {
-    const houseBotIndex = this.agents.findIndex(a => !a.isCustom);
-    if (houseBotIndex === -1) {
-      return { error: 'Table full — no house bot to replace' };
-    }
-
-    const replacedBot = this.agents[houseBotIndex];
-    this.replacedBots.set(lobbyAgent.id, {
-      id: replacedBot.id,
-      name: replacedBot.name,
-      emoji: replacedBot.emoji,
-      style: replacedBot.style,
-      description: replacedBot.description,
-      raisePct: replacedBot.raisePct,
-      bluffPct: replacedBot.bluffPct,
-      foldPct: replacedBot.foldPct,
-      traits: { ...replacedBot.traits },
-      baseChips: replacedBot.baseChips,
-      index: houseBotIndex
-    });
-
     const tableAgent = {
       id: lobbyAgent.id,
       name: lobbyAgent.name,
@@ -923,16 +905,40 @@ class PokerEngine {
       allIn: false
     };
 
-    // If a hand is in progress, mark as folded so the bot sits out until next hand
+    // If a hand is in progress, mark as folded so agent sits out until next hand
     if (this.phase !== 'waiting') {
       tableAgent.folded = true;
     }
 
-    this.agents[houseBotIndex] = tableAgent;
+    // Try to replace a house bot first (sandbox), otherwise add to table
+    const houseBotIndex = this.agents.findIndex(a => !a.isCustom);
+    if (houseBotIndex !== -1) {
+      const replacedBot = this.agents[houseBotIndex];
+      this.replacedBots.set(lobbyAgent.id, {
+        id: replacedBot.id,
+        name: replacedBot.name,
+        emoji: replacedBot.emoji,
+        style: replacedBot.style,
+        description: replacedBot.description,
+        raisePct: replacedBot.raisePct,
+        bluffPct: replacedBot.bluffPct,
+        foldPct: replacedBot.foldPct,
+        traits: { ...replacedBot.traits },
+        baseChips: replacedBot.baseChips,
+        index: houseBotIndex
+      });
+      this.agents[houseBotIndex] = tableAgent;
+    } else if (this.agents.length < 8) {
+      // PvP room — just add to table (max 8 seats)
+      this.agents.push(tableAgent);
+    } else {
+      return { error: 'Table full (8/8 seats)' };
+    }
+
     // Update chip tracking for conservation check (external chip flow)
     this._lastChipTotal = this.agents.reduce((sum, a2) => sum + a2.chips, 0) + this.contractPool;
     this.broadcastGameState();
-    return { success: true, replacedBot: replacedBot.name };
+    return { success: true };
   }
 
   unseatAgent(walletAddress, agentId) {
@@ -964,6 +970,7 @@ class PokerEngine {
 
     const originalBot = this.replacedBots.get(agentId);
     if (originalBot) {
+      // Sandbox: restore the house bot
       this.agents[agentIndex] = {
         ...originalBot,
         chips: this.baseChips,
@@ -973,12 +980,15 @@ class PokerEngine {
         biggestPot: 0,
         handHistory: [],
         hand: [],
-        folded: this.phase !== 'waiting', // sit out if hand in progress
+        folded: this.phase !== 'waiting',
         currentBet: 0,
         roundBet: 0,
         allIn: false
       };
       this.replacedBots.delete(agentId);
+    } else {
+      // PvP room: remove agent from table entirely
+      this.agents.splice(agentIndex, 1);
     }
 
     // Update chip tracking for conservation check (external chip flow)
@@ -1041,7 +1051,8 @@ class PokerEngine {
   }
 
   hasAvailableSeat() {
-    return this.agents.some(a => !a.isCustom);
+    // Has a house bot to replace, or has open seats (max 8)
+    return this.agents.some(a => !a.isCustom) || this.agents.length < 8;
   }
 
   // Win probability — Monte Carlo sim with remaining cards
