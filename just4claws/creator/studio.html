@@ -194,7 +194,7 @@
                         prompt,
                         style: currentStyle,
                         model: document.getElementById('gen-model').value,
-                        user_id: j4c.profile.id
+                        user_id: j4c.profile?.id || null
                     })
                 });
 
@@ -219,6 +219,10 @@
 
         async function saveToDrafts() {
             if (!currentImageUrl) return;
+            if (!j4c.profile) {
+                showToast('Sign in to save drafts', 'error');
+                return;
+            }
 
             const { error } = await supabase.from('j4c_content').insert({
                 creator_id: j4c.profile.id,

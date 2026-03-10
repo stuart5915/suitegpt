@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
 const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_J4C_ENDPOINT_ID;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bxpfkuqgsypjfcdnoohs.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rdsmdywbdiskxknluiym.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Blocked terms for prompt safety
@@ -27,9 +27,12 @@ module.exports = async (req, res) => {
 
   const { prompt, style, model, user_id } = req.body;
 
-  if (!prompt || !user_id) {
-    return res.status(400).json({ error: 'Prompt and user_id are required' });
+  if (!prompt) {
+    return res.status(400).json({ error: 'Prompt is required' });
   }
+
+  // Use anonymous ID if no user
+  const effectiveUserId = user_id || 'anon';
 
   // Safety filter
   if (!isPromptSafe(prompt)) {
@@ -87,7 +90,7 @@ module.exports = async (req, res) => {
       // If base64, upload to Supabase Storage
       const base64 = runData.output.images[0];
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-      const fileName = `generated/${user_id}/${Date.now()}.png`;
+      const fileName = `generated/${effectiveUserId}/${Date.now()}.png`;
       const buffer = Buffer.from(base64, 'base64');
 
       const { data: upload, error: uploadErr } = await supabase.storage
@@ -110,7 +113,7 @@ module.exports = async (req, res) => {
     if (SUPABASE_SERVICE_KEY) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
       await supabase.from('j4c_transactions').insert({
-        user_id,
+        user_id: effectiveUserId,
         type: 'generation',
         amount: 0,
         metadata: { prompt, style, model: model || 'flux' }
