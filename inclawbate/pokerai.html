@@ -4536,7 +4536,9 @@ async function toggleWallet() {
   }
 
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    // Force wallet picker so user can choose/switch accounts
+    await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
     if (!accounts || accounts.length === 0) return;
 
     const address = accounts[0].toLowerCase();
