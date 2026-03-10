@@ -264,6 +264,8 @@ export default async function handler(req, res) {
             await handleRemove(chatId, username, args);
         } else if (cmd === 'current') {
             await handleCurrent(chatId, username, args);
+        } else if (cmd === 'myid') {
+            await sendMsg(chatId, '🆔 Your chat ID: <code>' + chatId + '</code>');
         } else if (cmd === 'help') {
             await sendMsg(chatId,
                 '🦞 <b>Inclawbate Bot</b>\n\n' +
