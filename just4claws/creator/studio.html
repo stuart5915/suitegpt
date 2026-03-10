@@ -151,14 +151,11 @@
         let currentStyle = 'realistic';
         let currentImageUrl = null;
 
-        (async () => {
-            const profile = await initAuth();
-            if (!profile || !['creator', 'creator_pro'].includes(profile.role)) {
-                window.location.href = J4C_BASE + '/app';
-                return;
-            }
-            loadDrafts();
-        })();
+        // No auth required — anyone can try the studio
+        initAuth({ requireAuth: false, requireAge: false }).then(profile => {
+            if (profile) loadDrafts();
+            else document.getElementById('drafts-grid').innerHTML = '';
+        });
 
         function updateCounter() {
             document.getElementById('char-count').textContent = document.getElementById('gen-prompt').value.length;
