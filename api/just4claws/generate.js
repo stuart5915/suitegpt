@@ -45,11 +45,14 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         input: {
           prompt: enhancedPrompt,
-          negative_prompt: 'child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs',
+          negative_prompt: 'child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality',
           width: 1024,
           height: 1024,
-          num_inference_steps: 4,
-          guidance_scale: 0.0,
+          num_inference_steps: 30,
+          refiner_inference_steps: 50,
+          guidance_scale: 7.5,
+          strength: 0.3,
+          scheduler: 'K_EULER',
           seed: Math.floor(Math.random() * 2147483647),
           num_images: 1
         }
