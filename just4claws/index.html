@@ -657,9 +657,40 @@
                 <a href="#pricing">Pricing</a>
                 <a href="#" class="nav-cta" onclick="window.location.href=J4C_BASE+'/app';return false" style="background:linear-gradient(135deg,var(--pink),var(--rose));color:#fff;padding:8px 20px;border-radius:100px;">Browse</a>
                 <a href="#" class="nav-cta" onclick="window.location.href=J4C_BASE+'/studio';return false" style="background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff;padding:8px 20px;border-radius:100px;">Create</a>
+                <div id="home-wallet"></div>
             </div>
         </div>
     </nav>
+    <script>
+        // Wallet connect for homepage
+        (function() {
+            var el = document.getElementById('home-wallet');
+            var addr = localStorage.getItem('j4c_wallet');
+            function render() {
+                addr = localStorage.getItem('j4c_wallet');
+                if (addr) {
+                    var short = addr.slice(0, 6) + '…' + addr.slice(-4);
+                    el.innerHTML = '<button onclick="homeDisconnect()" style="padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;border:1px solid rgba(99,102,241,0.3);cursor:pointer;background:rgba(255,255,255,0.06);color:#a5b4fc;font-family:inherit">' + short + '</button>';
+                } else {
+                    el.innerHTML = '<button onclick="homeConnect()" style="padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:linear-gradient(135deg,#627eea,#3b5998);color:#fff;font-family:inherit">Connect</button>';
+                }
+            }
+            window.homeConnect = async function() {
+                if (!window.ethereum) { alert('No wallet detected. Install MetaMask.'); return; }
+                try {
+                    var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    localStorage.setItem('j4c_wallet', accounts[0].toLowerCase());
+                    render();
+                } catch(e) { if (e.code !== 4001) alert(e.message); }
+            };
+            window.homeDisconnect = async function() {
+                localStorage.removeItem('j4c_wallet');
+                if (window.ethereum) { try { await window.ethereum.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] }); } catch(e) {} }
+                render();
+            };
+            render();
+        })();
+    </script>
 
     <!-- HERO -->
     <div class="hero">
