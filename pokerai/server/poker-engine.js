@@ -266,7 +266,7 @@ class PokerEngine {
     this.roomId = config.roomId || 'micro';
     this.bb = config.bb || 50;
     this.baseChips = config.baseChips || 10000;
-    this.rakePct = config.rakePct || 0.05;
+    this.rakePct = config.rakePct != null ? config.rakePct : 0.05;
     this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1);
     this.totalRake = 0;
 
