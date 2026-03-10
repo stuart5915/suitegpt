@@ -96,6 +96,22 @@
         }
     ];
 
+    // Pool config — maps staking address (lowercase) to reward info
+    var POOL_CONFIG = {
+        '0x551d9dcd8b49893b9d0e1ca41a128ec202845f40': { ticker: 'CLAWS', rewardTicker: 'CLAWS', token: '0x7ca47B141639B893C6782823C0b219f872056379', rewardToken: null },
+        '0x206c97d4ecf053561bd2c714335aaef0ec1105e6': { ticker: 'INCLAWNCH', rewardTicker: 'INCLAWNCH', token: '0xB0b6e0E9da530f68D713cC03a813B506205aC808', rewardToken: null },
+        '0x3a7f8a12fd0dae62dd45e1e641dbb687a90f170d': { ticker: 'S4H', rewardTicker: 'INCLAWNCH', token: '0x30F5BcB8bdA2B91430BE93dBaE08aC346884EB07', rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808' },
+        '0xada0e738f0e4deb4e2c0b83d6836de953f2e57b9': { ticker: 'CLAWNCH', rewardTicker: 'INCLAWNCH', token: '0xa1F72459dfA10BAD200Ac160eCd78C6b77a747be', rewardToken: '0xB0b6e0E9da530f68D713cC03a813B506205aC808' },
+        '0x9f7cd1c3e4526937736629a400acbdca50836848': { ticker: 'CLAWNSTR', rewardTicker: 'CLAWNSTR', token: '0x1c6B6b77bDC1d1DeBc35760901f39f4A0A66BAa1', rewardToken: null },
+        '0x65aec0c9fd455822f1cc0e3de7965b106d182017': { ticker: 'BV7X', rewardTicker: 'BV7X', token: '0xD88FD4a11255E51f64f78b4a7d74456325c2d8dC', rewardToken: null }
+    };
+
+    var BASE_RPCS = [
+        'https://mainnet.base.org',
+        'https://1rpc.io/base',
+        'https://base-mainnet.public.blastapi.io'
+    ];
+
     // ── DOM ──
     var resultsEl = document.getElementById('exploreResults');
     var searchInput = document.getElementById('exploreSearch');
@@ -105,6 +121,8 @@
     // ── State ──
     var allItems = [];
     var mcaps = {};
+    var prices = {};
+    var stakingStats = {};
     var activeTab = 'all';
     var searchQuery = '';
     var debounceTimer = null;
@@ -128,6 +146,34 @@
         if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
         if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
         return '$' + n.toFixed(0);
+    }
+
+    function fmtUsd(n) {
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        if (n >= 10000) return '$' + (n / 1000).toFixed(0) + 'K';
+        if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+        if (n >= 0.01) return '$' + n.toFixed(2);
+        return '$0';
+    }
+
+    function fromWei(hex) {
+        if (!hex || hex === '0x' || hex === '0x0') return 0;
+        try { return Number(BigInt(hex)) / 1e18; } catch (e) { return 0; }
+    }
+
+    async function rpcCall(to, data) {
+        for (var i = 0; i < BASE_RPCS.length; i++) {
+            try {
+                var res = await fetch(BASE_RPCS[i], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: to, data: data }, 'latest'] })
+                });
+                var json = await res.json();
+                if (json.result) return json.result;
+            } catch (e) { continue; }
+        }
+        return '0x0';
     }
 
     // ── Normalize sources into unified items ──
@@ -331,6 +377,12 @@
             return;
         }
 
+        // Staking tab → rich card layout
+        if (activeTab === 'staking') {
+            renderStakingCards(items);
+            return;
+        }
+
         var html = '<div class="explore-list">';
         items.forEach(function (item, i) {
             var logoHtml;
@@ -353,11 +405,23 @@
                 }
                 statsHtml += '<span class="explore-row-stat">' + formatMcap(mcap) + '</span>';
             } else if (item.type === 'staking') {
-                var smcap = mcaps[(item.token_address || '').toLowerCase()];
+                var sStats = stakingStats[(item.staking_address || '').toLowerCase()] || {};
+                var sPrice = prices[(item.token_address || '').toLowerCase()] || 0;
+                var sTvl = (sStats.totalStaked || 0) * sPrice;
                 if (item.token_symbol) {
                     statsHtml += '<span class="explore-row-stat"><strong>$' + escapeHtml(item.token_symbol) + '</strong></span>';
                 }
-                statsHtml += '<span class="explore-row-stat">' + formatMcap(smcap) + '</span>';
+                if (sTvl > 0) {
+                    statsHtml += '<span class="explore-row-stat">TVL ' + fmtUsd(sTvl) + '</span>';
+                }
+                if (sStats.apy > 0) {
+                    statsHtml += '<span class="explore-row-stat" style="color:var(--lobster-300)">' + (sStats.apy >= 100 ? Math.round(sStats.apy) : sStats.apy.toFixed(1)) + '% APY</span>';
+                }
+                if (sStats.active === true) {
+                    statsHtml += '<span class="explore-row-badge badge-staking">Active</span>';
+                } else if (sStats.active === false) {
+                    statsHtml += '<span class="explore-row-badge" style="color:#f87171;background:rgba(239,68,68,0.12)">Ended</span>';
+                }
             } else if (item.type === 'app' && item.upvote_count) {
                 statsHtml += '<span class="explore-row-stat">' + item.upvote_count + ' upvotes</span>';
             } else if (item.type === 'nft') {
@@ -424,10 +488,14 @@
                 var data = await res.json();
                 (data.pairs || []).forEach(function (pair) {
                     var addr = pair.baseToken && pair.baseToken.address ? pair.baseToken.address.toLowerCase() : null;
-                    if (addr && pair.marketCap) {
-                        if (!mcaps[addr] || pair.marketCap > mcaps[addr]) {
-                            mcaps[addr] = pair.marketCap;
+                    var val = pair.marketCap || pair.fdv || 0;
+                    if (addr && val > 0) {
+                        if (!mcaps[addr] || val > mcaps[addr]) {
+                            mcaps[addr] = val;
                         }
+                    }
+                    if (addr && pair.priceUsd) {
+                        prices[addr] = parseFloat(pair.priceUsd);
                     }
                 });
             } catch (e) { /* DexScreener unavailable */ }
@@ -452,9 +520,119 @@
                     mcaps[missing[j].toLowerCase()] = val;
                     changed = true;
                 }
+                var priceUsd = attrs.price_usd ? parseFloat(attrs.price_usd) : 0;
+                if (priceUsd > 0) prices[missing[j].toLowerCase()] = priceUsd;
             } catch (e) { /* GeckoTerminal unavailable */ }
         }
         if (changed) render();
+    }
+
+    // ── Fetch on-chain staking stats ──
+    async function fetchStakingStats() {
+        var items = allItems.filter(function (it) { return it.type === 'staking' && it.staking_address; });
+        if (!items.length) return;
+
+        var calls = items.map(function (item) {
+            var addr = item.staking_address;
+            return Promise.all([
+                rpcCall(addr, '0x817b1cd2'), // totalStaked
+                rpcCall(addr, '0xdff69787'), // stakerCount
+                rpcCall(addr, '0x7b0a47ee'), // rewardRate
+                rpcCall(addr, '0x506ec095')  // periodEnd
+            ]).then(function (r) {
+                return { stakingAddr: addr, tokenAddr: item.token_address, totalStaked: r[0], stakerCount: r[1], rewardRate: r[2], periodEnd: r[3] };
+            });
+        });
+
+        var results = await Promise.allSettled(calls);
+        var now = Math.floor(Date.now() / 1000);
+
+        results.forEach(function (r) {
+            if (r.status !== 'fulfilled') return;
+            var d = r.value;
+            var totalStaked = fromWei(d.totalStaked);
+            var stakers = parseInt(d.stakerCount, 16) || 0;
+            var rewardRate = fromWei(d.rewardRate);
+            var periodEnd = parseInt(d.periodEnd, 16) || 0;
+            var active = periodEnd > now;
+
+            // APY calculation, adjusted for dual-token pools
+            var apy = 0;
+            if (totalStaked > 0 && active && rewardRate > 0) {
+                var rawApy = (rewardRate * 86400 * 365 / totalStaked) * 100;
+                var poolCfg = POOL_CONFIG[d.stakingAddr.toLowerCase()];
+                if (poolCfg && poolCfg.rewardToken) {
+                    var sp = prices[(poolCfg.token || '').toLowerCase()] || 0;
+                    var rp = prices[(poolCfg.rewardToken || '').toLowerCase()] || 0;
+                    apy = (sp > 0 && rp > 0) ? rawApy * (rp / sp) : rawApy;
+                } else {
+                    apy = rawApy;
+                }
+            }
+
+            stakingStats[d.stakingAddr.toLowerCase()] = {
+                totalStaked: totalStaked,
+                stakers: stakers,
+                rewardRate: rewardRate,
+                periodEnd: periodEnd,
+                active: active,
+                apy: apy
+            };
+        });
+
+        render();
+    }
+
+    // ── Render staking cards (staking tab) ──
+    function renderStakingCards(items) {
+        var html = '<div class="staking-grid">';
+        items.forEach(function (item) {
+            var stats = stakingStats[(item.staking_address || '').toLowerCase()] || {};
+            var poolCfg = POOL_CONFIG[(item.staking_address || '').toLowerCase()];
+            var tokenPrice = prices[(item.token_address || '').toLowerCase()] || 0;
+            var tvl = (stats.totalStaked || 0) * tokenPrice;
+
+            // Logo
+            var logoHtml = item.logo_url
+                ? '<img class="staking-card-logo" src="' + item.logo_url + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+                  + '<div class="staking-card-logo-ph" style="display:none;background:' + hashColor(item.name) + '">' + item.name.charAt(0).toUpperCase() + '</div>'
+                : '<div class="staking-card-logo-ph" style="background:' + hashColor(item.name) + '">' + item.name.charAt(0).toUpperCase() + '</div>';
+
+            // Pair text
+            var stakeTicker = item.token_symbol || '';
+            var rewardTicker = (poolCfg && poolCfg.rewardTicker) ? poolCfg.rewardTicker : stakeTicker;
+            var pairHtml = 'Stake <strong>$' + escapeHtml(stakeTicker) + '</strong> → Earn <strong>$' + escapeHtml(rewardTicker) + '</strong>';
+
+            // Status
+            var statusCls, statusLbl;
+            if (stats.active === true) { statusCls = 'status-active'; statusLbl = 'Active'; }
+            else if (stats.active === false) { statusCls = 'status-ended'; statusLbl = 'Ended'; }
+            else { statusCls = 'status-loading'; statusLbl = '···'; }
+
+            // Stats
+            var tvlStr = tvl > 0 ? fmtUsd(tvl) : (stats.totalStaked > 0 ? Math.round(stats.totalStaked).toLocaleString() : '--');
+            var apyStr = stats.apy > 0 ? (stats.apy >= 10000 ? (stats.apy / 1000).toFixed(0) + 'K' : stats.apy >= 100 ? Math.round(stats.apy) : stats.apy.toFixed(1)) + '%' : '--';
+            var stakersStr = stats.stakers > 0 ? stats.stakers.toString() : '--';
+
+            html += '<a href="' + item.href + '" class="staking-card">'
+                + '<div class="staking-card-header">'
+                    + '<div>' + logoHtml + '</div>'
+                    + '<div class="staking-card-info">'
+                        + '<div class="staking-card-title">' + escapeHtml(item.name) + '</div>'
+                        + '<div class="staking-card-pair">' + pairHtml + '</div>'
+                    + '</div>'
+                    + '<span class="staking-card-status ' + statusCls + '">' + statusLbl + '</span>'
+                + '</div>'
+                + '<div class="staking-card-stats">'
+                    + '<div class="staking-stat"><div class="staking-stat-label">TVL</div><div class="staking-stat-val tvl-val">' + tvlStr + '</div></div>'
+                    + '<div class="staking-stat"><div class="staking-stat-label">APY</div><div class="staking-stat-val apy-val">' + apyStr + '</div></div>'
+                    + '<div class="staking-stat"><div class="staking-stat-label">Stakers</div><div class="staking-stat-val">' + stakersStr + '</div></div>'
+                + '</div>'
+                + '<div class="staking-card-cta">Stake Now →</div>'
+            + '</a>';
+        });
+        html += '</div>';
+        resultsEl.innerHTML = html;
     }
 
     // ── Tab & search events ──
@@ -526,6 +704,7 @@
         buildItemList(projectsData, appsData, tokensData);
         render();
         fetchMarketCaps();
+        fetchStakingStats();
     }
 
     // ── Kick off ──
