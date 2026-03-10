@@ -6,7 +6,8 @@ window.J4C_BASE = location.hostname.includes('just4claws') ? '' : '/j4c';
 const J4C_SUPABASE_URL = 'https://bxpfkuqgsypjfcdnoohs.supabase.co';
 const J4C_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4cGZrdXFnc3lwamZjZG5vb2hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjcwNTE3NzQsImV4cCI6MjA0MjYyNzc3NH0.kpC0k8IeMhWz12K9Y_BPW5GXpSJBFLGBRsUfjmaS7OQ';
 
-const supabase = window.supabase.createClient(J4C_SUPABASE_URL, J4C_SUPABASE_KEY);
+// Reassign from library to client instance (CDN already declared `supabase` globally)
+supabase = supabase.createClient(J4C_SUPABASE_URL, J4C_SUPABASE_KEY);
 
 window.j4c = {
     supabase,
