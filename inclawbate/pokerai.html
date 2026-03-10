@@ -3821,6 +3821,7 @@ function handleMessage(msg) {
       break;
 
     case 'joinTableResult':
+      _roomPickerOpen = false;
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
@@ -3830,7 +3831,7 @@ function handleMessage(msg) {
         }
         const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid Stakes', high: 'High Stakes' };
         const rn = roomNames[msg.data.roomId] || msg.data.roomId;
-        showToast(`Agent joined ${rn}! Replaced ${msg.data.replacedBot}`, 'success');
+        showToast(`Agent joined ${rn}!`, 'success');
         if (msg.data.roomId) activeRoom = msg.data.roomId;
         refreshMyAgentsView();
       }
@@ -3851,6 +3852,7 @@ function handleMessage(msg) {
       break;
 
     case 'leaveTableResult':
+      _roomPickerOpen = false;
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
@@ -3860,6 +3862,7 @@ function handleMessage(msg) {
       break;
 
     case 'recallAgentResult':
+      _roomPickerOpen = false;
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
@@ -5236,6 +5239,7 @@ function selectRoomForJoin(agentId, roomId) {
 
   // Sandbox: instant join with free chips, no buy-in step
   if (roomId === 'sandbox') {
+    _roomPickerOpen = false;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'joinTable', agentId, roomId: 'sandbox', chipStack: 10000 }));
     }
