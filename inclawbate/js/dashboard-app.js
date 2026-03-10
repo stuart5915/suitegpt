@@ -350,6 +350,12 @@ function openEditDetailsModal(app, cardEl) {
             <label class="edit-details-label">Name
                 <input type="text" class="edit-details-input" id="edName" value="${esc(app.name || '')}" maxlength="100">
             </label>
+            <label class="edit-details-label">Slug
+                <div style="display:flex;align-items:center;gap:4px">
+                    <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:0.75rem;white-space:nowrap">inclawbate.com/s/</span>
+                    <input type="text" class="edit-details-input" id="edSlug" value="${esc(app.slug || '')}" maxlength="80" style="margin:0;font-family:var(--font-mono)" placeholder="my-app-name">
+                </div>
+            </label>
             <label class="edit-details-label">Description
                 <textarea class="edit-details-input edit-details-textarea" id="edDesc" maxlength="500" placeholder="What does this app do?">${esc(app.description || '')}</textarea>
             </label>
@@ -385,6 +391,7 @@ function openEditDetailsModal(app, cardEl) {
                     action: 'update-details',
                     app_id: app.id,
                     new_name: document.getElementById('edName').value,
+                    new_slug: document.getElementById('edSlug').value,
                     description: document.getElementById('edDesc').value,
                     category: document.getElementById('edCat').value,
                     tags: document.getElementById('edTags').value,
@@ -394,6 +401,7 @@ function openEditDetailsModal(app, cardEl) {
             const data = await resp.json();
             if (data.updated) {
                 if (data.name !== undefined) { app.name = data.name; cardEl.querySelector('.overview-item-title').textContent = data.name; }
+                if (data.slug !== undefined) app.slug = data.slug;
                 if (data.description !== undefined) app.description = data.description;
                 if (data.category !== undefined) { app.category = data.category; cardEl.querySelector('.overview-item-sub').textContent = `${app.upvote_count || 0} upvotes \u00b7 ${data.category}`; }
                 if (data.tags !== undefined) app.tags = data.tags;
@@ -605,6 +613,7 @@ function renderProjectCard(p) {
         actionsHtml += `<a href="/inclawbator#agent" class="project-card-action">Manage Agent</a>`;
     }
     if (p.id) {
+        actionsHtml += `<a href="/market-dash?project=${esc(p.id)}" class="project-card-action">Marketing</a>`;
         actionsHtml += `<button type="button" class="project-card-action" data-settings-project="${esc(p.id)}">Settings</button>`;
     }
     // Edit / Delete for incubation applications (no token launched yet)

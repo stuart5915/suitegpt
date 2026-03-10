@@ -622,7 +622,7 @@ export default async function handler(req, res) {
                 }
 
                 const updates = { updated_at: new Date().toISOString() };
-                const { new_name, description, category, tags, forkable } = req.body;
+                const { new_name, description, category, tags, forkable, new_slug } = req.body;
                 if (new_name !== undefined) updates.name = (new_name || '').trim().slice(0, 100) || 'Untitled App';
                 if (description !== undefined) updates.description = (description || '').trim().slice(0, 500);
                 if (category !== undefined) {
@@ -631,6 +631,21 @@ export default async function handler(req, res) {
                 }
                 if (tags !== undefined) updates.tags = (tags || '').split(',').map(t => t.trim()).filter(Boolean);
                 if (forkable !== undefined) updates.forkable = !!forkable;
+
+                // Slug change
+                if (new_slug !== undefined) {
+                    const slug = (new_slug || '').toLowerCase().trim().replace(/[^a-z0-9-]/g, '').slice(0, 80);
+                    if (!slug || slug.length < 2) return res.status(400).json({ error: 'Slug must be at least 2 characters (letters, numbers, hyphens only)' });
+                    // Check uniqueness
+                    const { data: existing } = await supabase
+                        .from('user_apps')
+                        .select('id')
+                        .eq('slug', slug)
+                        .neq('id', app_id)
+                        .maybeSingle();
+                    if (existing) return res.status(409).json({ error: 'That slug is already taken' });
+                    updates.slug = slug;
+                }
 
                 const { error: updErr } = await supabase
                     .from('user_apps')
