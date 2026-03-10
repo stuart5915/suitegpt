@@ -63,6 +63,18 @@
         .prompt-counter {
             text-align: right; font-size: 12px; color: var(--text-dim); margin-top: 4px;
         }
+        .prompt-suggestions {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .prompt-chip {
+            padding: 5px 12px; border-radius: 100px; font-size: 12px;
+            background: rgba(232, 67, 147, 0.08); color: var(--pink-bright);
+            border: 1px solid rgba(232, 67, 147, 0.15); cursor: pointer;
+            transition: all 0.2s; font-family: var(--font-body); white-space: nowrap;
+        }
+        .prompt-chip:hover {
+            background: rgba(232, 67, 147, 0.15); border-color: rgba(232, 67, 147, 0.3);
+        }
         .drafts-section { margin-top: 40px; }
         .drafts-section h3 {
             font-size: 18px; font-weight: 700; color: var(--text-bright);
@@ -88,8 +100,13 @@
                 <h3>Create Content</h3>
 
                 <div class="form-group">
+                    <label class="form-label">Quick Ideas</label>
+                    <div class="prompt-suggestions" id="prompt-suggestions"></div>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Prompt</label>
-                    <textarea class="textarea" id="gen-prompt" rows="4" placeholder="Describe the character or scene you want to generate..." maxlength="500" oninput="updateCounter()"></textarea>
+                    <textarea class="textarea" id="gen-prompt" rows="4" placeholder="Describe what you want to generate..." maxlength="500" oninput="updateCounter()"></textarea>
                     <div class="prompt-counter"><span id="char-count">0</span>/500</div>
                 </div>
 
@@ -151,9 +168,57 @@
         let currentStyle = 'realistic';
         let currentImageUrl = null;
 
-        // No auth required — anyone can try the studio
-        initAuth({ requireAuth: false, requireAge: false }).then(profile => {
-            if (profile) loadDrafts();
+        const SUGGESTIONS = [
+            'sexy woman in red lingerie, bedroom, seductive pose',
+            'nude woman lying on silk sheets, soft lighting, elegant',
+            'busty blonde in lace bra, mirror selfie, bedroom',
+            'athletic woman in tiny bikini, poolside, wet skin, sun',
+            'curvy brunette in sheer bodysuit, neon lights',
+            'naked woman in bathtub, candles, steam, romantic',
+            'redhead in stockings and garter belt, boudoir',
+            'woman in leather corset, dark room, dominant pose',
+            'topless woman on beach at sunset, wind in hair',
+            'latina woman in thong, bent over, looking back',
+            'asian woman in schoolgirl skirt, flirty pose',
+            'fitness model flexing, sports bra, sweaty, gym',
+            'woman in wet white t-shirt, rain, see-through',
+            'two women kissing, lingerie, bed, passionate',
+            'woman straddling chair, naked, tattoos, edgy',
+            'blonde in tiny french maid outfit, playful',
+            'woman in shower, glass door, steam, nude',
+            'goth girl in fishnets, dark makeup, chains',
+            'milf in silk robe, open, wine glass, couch',
+            'cheerleader outfit, no underwear, locker room',
+            'nurse costume, unbuttoned, stethoscope, heels',
+            'secretary bent over desk, skirt lifted, office',
+            'woman riding mechanical bull, denim shorts, rodeo',
+            'yoga pose, naked, flexible, studio lighting',
+        ];
+
+        // Render random subset of suggestions
+        function renderSuggestions() {
+            const el = document.getElementById('prompt-suggestions');
+            const shuffled = SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 8);
+            el.innerHTML = shuffled.map(s =>
+                `<button class="prompt-chip" onclick="usePrompt(this)">${s.length > 40 ? s.slice(0, 40) + '…' : s}</button>`
+            ).join('') + `<button class="prompt-chip" onclick="renderSuggestions()" style="background:rgba(255,255,255,0.04);color:var(--text-dim);border-color:var(--border)">↻ More</button>`;
+            // Store full prompts as data attributes
+            el.querySelectorAll('.prompt-chip:not(:last-child)').forEach((btn, i) => {
+                btn.dataset.prompt = shuffled[i];
+            });
+        }
+
+        function usePrompt(btn) {
+            const prompt = btn.dataset.prompt || btn.textContent;
+            document.getElementById('gen-prompt').value = prompt;
+            updateCounter();
+        }
+
+        renderSuggestions();
+
+        // Load drafts if wallet connected
+        initAuth({ requireAuth: false }).then(() => {
+            if (j4c.wallet) loadDrafts();
             else document.getElementById('drafts-grid').innerHTML = '';
         });
 
@@ -250,13 +315,13 @@
 
         async function saveToDrafts() {
             if (!currentImageUrl) return;
-            if (!j4c.profile) {
-                showToast('Sign in to save drafts', 'error');
+            if (!j4c.wallet) {
+                showToast('Connect wallet to save drafts', 'error');
                 return;
             }
 
             const { error } = await supabase.from('j4c_content').insert({
-                creator_id: j4c.profile.id,
+                creator_id: j4c.wallet,
                 image_url: currentImageUrl,
                 thumbnail_url: currentImageUrl,
                 generation_prompt: document.getElementById('gen-prompt').value,
@@ -282,7 +347,7 @@
             const { data: drafts } = await supabase
                 .from('j4c_content')
                 .select('*')
-                .eq('creator_id', j4c.profile.id)
+                .eq('creator_id', j4c.wallet)
                 .eq('is_published', false)
                 .order('created_at', { ascending: false });
 
