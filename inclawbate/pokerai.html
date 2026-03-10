@@ -2957,6 +2957,82 @@
     font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700;
     color: var(--text-primary); margin: 0;
   }
+  /* Balance cards */
+  .bal-card {
+    flex: 1;
+    min-width: 140px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .bal-card.bal-free { border-top: 2px solid var(--accent-green); }
+  .bal-card.bal-usdc { border-top: 2px solid var(--accent-gold); }
+  .bal-card.bal-pokerai { border-top: 2px solid #34d058; opacity: 0.6; }
+  .bal-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .bal-amount {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text-primary);
+  }
+  .bal-card.bal-free .bal-amount { color: var(--accent-green); }
+  .bal-card.bal-usdc .bal-amount { color: var(--accent-gold); }
+  .bal-card.bal-pokerai .bal-amount { color: #34d058; }
+  .bal-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .bal-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    justify-content: center;
+  }
+  .bal-btn {
+    padding: 4px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .bal-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .bal-btn-deposit {
+    background: linear-gradient(135deg, #f5c542, #e67e22);
+    color: #000;
+  }
+  .bal-btn-deposit:hover { transform: translateY(-1px); }
+  .bal-btn-withdraw {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .bal-btn-withdraw:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+  .bal-btn-stake {
+    background: rgba(52,208,88,0.15);
+    color: #34d058;
+    border: 1px solid rgba(52,208,88,0.3);
+  }
+
   .vault-close {
     background: none; border: none; color: var(--text-muted); font-size: 22px;
     cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: all 0.2s;
@@ -3416,13 +3492,34 @@
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
             <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> Your Agents</div>
-            <div id="balanceBar" style="display:flex;align-items:center;gap:12px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;padding:8px 16px">
-              <div style="display:flex;align-items:baseline;gap:6px">
-                <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Balance</span>
-                <span id="headerBalance" style="font-family:'Rajdhani';font-size:28px;font-weight:800;color:var(--accent-gold);line-height:1" class="wallet-balance">0</span>
-                <span style="font-size:11px;color:var(--text-muted)">chips</span>
+            <div id="balanceBar" style="display:none;width:100%">
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <!-- Free Play Balance -->
+                <div class="bal-card bal-free">
+                  <div class="bal-label">🎮 Free Play</div>
+                  <div class="bal-amount"><span id="balFree">∞</span></div>
+                  <div class="bal-sub">unlimited chips</div>
+                </div>
+                <!-- USDC Balance -->
+                <div class="bal-card bal-usdc">
+                  <div class="bal-label">💵 USDC</div>
+                  <div class="bal-amount"><span id="balUsdc" class="wallet-balance">0</span></div>
+                  <div class="bal-sub" id="balUsdcSub">$0.00 USDC</div>
+                  <div class="bal-actions">
+                    <button onclick="openVault()" class="bal-btn bal-btn-deposit">Deposit</button>
+                    <button onclick="openVault('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
+                  </div>
+                </div>
+                <!-- $POKERAI Balance -->
+                <div class="bal-card bal-pokerai">
+                  <div class="bal-label">🃏 $POKERAI</div>
+                  <div class="bal-amount"><span id="balPokerai">—</span></div>
+                  <div class="bal-sub">coming soon</div>
+                  <div class="bal-actions">
+                    <button disabled class="bal-btn bal-btn-stake">Stake</button>
+                  </div>
+                </div>
               </div>
-              <button id="balanceTopUpBtn" onclick="openVault()" style="padding:6px 14px;background:linear-gradient(135deg,#f5c542,#e67e22);border:none;border-radius:8px;color:#000;font-size:11px;font-weight:800;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ DEPOSIT</button>
             </div>
             <div id="sandboxBanner" style="display:none;width:100%;background:linear-gradient(135deg, rgba(34,197,94,0.1), rgba(6,182,212,0.1));border:2px solid rgba(34,197,94,0.3);border-radius:12px;padding:14px 20px;text-align:center">
               <div style="display:flex;align-items:center;justify-content:center;gap:10px">
@@ -5206,9 +5303,12 @@ function updateWalletUI() {
     btn.innerHTML = 'Connect Wallet';
   }
   const fb = document.getElementById('formBalance');
-  const hb = document.getElementById('headerBalance');
+  const hb = document.getElementById('balUsdc');
   if (fb) fb.textContent = walletBalance.toLocaleString();
   if (hb) hb.textContent = formatChips(walletBalance);
+  // Update USDC balance sub text
+  const balUsdcSub = document.getElementById('balUsdcSub');
+  if (balUsdcSub) balUsdcSub.textContent = '$' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' USDC';
   // Update vault modal if open
   const vb = document.getElementById('vaultChipBalance');
   if (vb) {
@@ -5220,11 +5320,20 @@ function updateWalletUI() {
 
 // ── Vault Modal ──
 
-function openVault() {
+function openVault(tab) {
   const wallet = getWallet();
   if (!wallet) { toggleWallet(); return; }
   updateWalletUI();
   document.getElementById('vaultOverlay').classList.add('show');
+  if (tab === 'withdraw') {
+    // Switch to withdraw tab
+    document.querySelectorAll('.vault-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('depositView').style.display = 'none';
+    const wTab = document.querySelector('.withdraw-tab');
+    const wView = document.getElementById('withdrawView');
+    if (wTab) wTab.classList.add('active');
+    if (wView) wView.style.display = 'block';
+  }
 }
 
 function closeVault() {
@@ -5446,17 +5555,12 @@ function refreshMyAgentsView() {
   content.style.display = 'block';
   updateWalletUI();
 
-  // Show/hide balance bar vs sandbox banner
+  // Always show balance bar (has all 3 balances)
   const balanceBar = document.getElementById('balanceBar');
+  if (balanceBar) balanceBar.style.display = 'block';
+  // Hide sandbox banner — info is now in the balance cards
   const sandboxBanner = document.getElementById('sandboxBanner');
-  if (isSandbox) {
-    // Show balance bar if wallet is connected (so user can see their real balance)
-    if (balanceBar) balanceBar.style.display = wallet ? 'flex' : 'none';
-    if (sandboxBanner) sandboxBanner.style.display = 'block';
-  } else {
-    if (balanceBar) balanceBar.style.display = 'flex';
-    if (sandboxBanner) sandboxBanner.style.display = 'none';
-  }
+  if (sandboxBanner) sandboxBanner.style.display = 'none';
 
   // Request agents list from server (server resolves sandbox wallet from session)
   if (ws && ws.readyState === WebSocket.OPEN) {
