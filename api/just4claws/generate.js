@@ -1,5 +1,4 @@
-const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
-const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_J4C_ENDPOINT_ID;
+const MODELSLAB_KEY = process.env.MODELSLAB_API_KEY;
 
 const BLOCKED_TERMS = [
   'child', 'minor', 'underage', 'kid', 'teen', 'preteen',
@@ -12,6 +11,11 @@ function isPromptSafe(prompt) {
   return !BLOCKED_TERMS.some(term => lower.includes(term));
 }
 
+const MODELS = {
+  flux: { id: 'flux', width: 1024, height: 1024, steps: 20, guidance: 3.5, credits: 3 },
+  sdxl: { id: 'sdxl', width: 1024, height: 1024, steps: 30, guidance: 7.5, credits: 1 }
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -19,10 +23,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { prompt, style } = req.body;
+  const { prompt, style, model } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
   if (!isPromptSafe(prompt)) return res.status(400).json({ error: 'Prompt contains prohibited content.' });
-  if (!RUNPOD_API_KEY || !RUNPOD_ENDPOINT_ID) return res.status(500).json({ error: 'RunPod not configured.' });
+  if (!MODELSLAB_KEY) return res.status(500).json({ error: 'Image API not configured.' });
 
   const styleModifiers = {
     realistic: 'photorealistic, high detail, cinematic lighting, 8k',
@@ -32,40 +36,50 @@ export default async function handler(req, res) {
     cyberpunk: 'cyberpunk aesthetic, neon lights, futuristic, high tech'
   };
 
-  const enhancedPrompt = `${prompt}, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality`;
+  const chosen = MODELS[model] || MODELS.sdxl;
+  const enhancedPrompt = `1 person solo, ${prompt}, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality`;
 
   try {
-    // SDXL Turbo — async /run (cold start may take 30-60s first time)
-    const runRes = await fetch(`https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/run`, {
+    const apiRes = await fetch('https://modelslab.com/api/v6/images/text2img', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RUNPOD_API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          prompt: enhancedPrompt,
-          negative_prompt: 'child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality',
-          width: 1024,
-          height: 1024,
-          num_inference_steps: 30,
-          refiner_inference_steps: 50,
-          guidance_scale: 7.5,
-          strength: 0.3,
-          scheduler: 'K_EULER',
-          seed: Math.floor(Math.random() * 2147483647),
-          num_images: 1
-        }
+        key: MODELSLAB_KEY,
+        model_id: chosen.id,
+        prompt: enhancedPrompt,
+        negative_prompt: '2 people, multiple people, child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality, cross eyed',
+        width: chosen.width,
+        height: chosen.height,
+        samples: 1,
+        num_inference_steps: chosen.steps,
+        safety_checker: 'no',
+        guidance_scale: chosen.guidance,
+        enhance_prompt: 'no',
+        seed: null
       })
     });
 
-    if (!runRes.ok) {
-      const errText = await runRes.text();
-      return res.status(500).json({ error: `RunPod error (${runRes.status}): ${errText.slice(0, 200)}` });
+    const data = await apiRes.json();
+
+    if (data.status === 'error') {
+      return res.status(500).json({ error: data.message || data.messege || 'Generation failed' });
     }
 
-    const runData = await runRes.json();
-    return res.status(200).json({ job_id: runData.id, status: runData.status });
+    if (data.status === 'success' && data.output?.[0]) {
+      return res.status(200).json({ status: 'COMPLETED', image_url: data.output[0], credits: chosen.credits });
+    }
+
+    if (data.status === 'processing') {
+      return res.status(200).json({
+        status: 'PROCESSING',
+        fetch_url: data.fetch_result,
+        job_id: data.id,
+        eta: data.eta || 10,
+        credits: chosen.credits
+      });
+    }
+
+    return res.status(500).json({ error: 'Unexpected response: ' + JSON.stringify(data).slice(0, 200) });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to submit: ' + (err.message || String(err)) });
   }

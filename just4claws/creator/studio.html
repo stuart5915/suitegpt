@@ -107,8 +107,8 @@
                 <div class="form-group">
                     <label class="form-label">Model</label>
                     <select class="select" id="gen-model">
-                        <option value="flux">Flux (Recommended)</option>
-                        <option value="dalle">DALL-E 3</option>
+                        <option value="sdxl">SDXL Fast (1 credit, ~15s)</option>
+                        <option value="flux">FLUX Premium (3 credits, ~2-4min)</option>
                     </select>
                 </div>
 
@@ -184,21 +184,28 @@
             `;
 
             try {
-                // Step 1: Submit job (returns instantly)
+                const model = document.getElementById('gen-model').value;
                 const res = await fetch(J4C_BASE + '/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, style: currentStyle })
+                    body: JSON.stringify({ prompt, style: currentStyle, model })
                 });
                 const data = await res.json();
 
                 if (data.error) { showErr(preview, btn, data.error); return; }
-                if (!data.job_id) { showErr(preview, btn, 'No job ID'); return; }
 
-                // Step 2: Poll for result
-                btn.textContent = 'Generating...';
-                const uid = j4c.profile?.id || '';
-                const imageUrl = await pollJob(data.job_id, uid);
+                let imageUrl;
+
+                if (data.status === 'COMPLETED' && data.image_url) {
+                    // Instant result
+                    imageUrl = data.image_url;
+                } else if (data.status === 'PROCESSING' && data.fetch_url) {
+                    // Need to poll
+                    btn.textContent = 'Generating...';
+                    imageUrl = await pollJob(data.fetch_url);
+                } else {
+                    showErr(preview, btn, 'Unexpected response'); return;
+                }
 
                 currentImageUrl = imageUrl;
                 preview.innerHTML = `<img src="${imageUrl}" alt="Generated content">`;
@@ -220,17 +227,17 @@
             btn.textContent = 'Generate';
         }
 
-        async function pollJob(jobId, uid) {
-            for (let i = 0; i < 90; i++) { // 90 x 2s = 3 min max
+        async function pollJob(fetchUrl) {
+            for (let i = 0; i < 150; i++) { // 150 x 2s = 5 min max
                 await new Promise(r => setTimeout(r, 2000));
                 const el = document.getElementById('gen-status');
                 if (el) {
-                    if (i < 10) el.textContent = 'Starting GPU worker...';
-                    else if (i < 20) el.textContent = 'Loading model...';
-                    else if (i < 30) el.textContent = 'Generating image...';
-                    else el.textContent = `Still working... (${i * 2}s)`;
+                    const secs = i * 2;
+                    if (secs < 20) el.textContent = 'Generating image...';
+                    else if (secs < 60) el.textContent = `Rendering... (${secs}s)`;
+                    else el.textContent = `Almost done... (${secs}s)`;
                 }
-                const r = await fetch(J4C_BASE + `/api/status?id=${jobId}&uid=${uid}`);
+                const r = await fetch(J4C_BASE + `/api/status?fetch_url=${encodeURIComponent(fetchUrl)}`);
                 const d = await r.json();
                 if (d.status === 'FAILED') throw new Error(d.error || 'Generation failed');
                 if (d.status === 'COMPLETED') {
@@ -238,7 +245,7 @@
                     throw new Error(d.error || 'No image returned');
                 }
             }
-            throw new Error('Timed out after 3 minutes. RunPod GPU may be unavailable — try again shortly.');
+            throw new Error('Timed out after 5 minutes. Try again or use SDXL Fast model.');
         }
 
         async function saveToDrafts() {
