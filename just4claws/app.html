@@ -62,9 +62,7 @@
             let query = supabase
                 .from('j4c_profiles')
                 .select('*')
-                .in('role', ['creator', 'creator_pro'])
-                .eq('is_suspended', false)
-                .eq('is_age_verified', true);
+                .in('role', ['creator', 'creator_pro']);
 
             if (search) {
                 query = query.or(`handle.ilike.%${search}%,display_name.ilike.%${search}%`);
@@ -84,7 +82,11 @@
 
             const { data: creators, error } = await query;
 
-            if (error || !creators || creators.length === 0) {
+            if (error) {
+                grid.innerHTML = `<div style="color:var(--red);padding:20px">Error: ${error.message}</div>`;
+                return;
+            }
+            if (!creators || creators.length === 0) {
                 grid.innerHTML = '';
                 document.getElementById('empty-state').style.display = 'block';
                 return;
