@@ -106,25 +106,36 @@ async function fetchMarketCaps() {
     var missing = addresses.filter(function(a) { return !lpState.mcaps[a.toLowerCase()]; });
     if (!missing.length) return;
     var changed = false;
-    for (var j = 0; j < missing.length; j++) {
-        // Determine network — Solana addresses are base58 (no 0x prefix)
-        var isSol = !missing[j].startsWith('0x');
-        var network = isSol ? 'solana' : 'base';
+
+    // Split by chain and batch via multi endpoint
+    var baseMissing = missing.filter(function(a) { return a.startsWith('0x'); });
+    var solMissing = missing.filter(function(a) { return !a.startsWith('0x'); });
+
+    async function geckoMulti(network, addrs) {
+        if (!addrs.length) return;
         try {
-            var gRes = await fetch('https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/' + missing[j]);
-            if (!gRes.ok) continue;
+            var url = 'https://api.geckoterminal.com/api/v2/networks/' + network + '/tokens/multi/' + addrs.join(',');
+            var gRes = await fetch(url);
+            if (!gRes.ok) return;
             var gData = await gRes.json();
-            var attrs = gData.data && gData.data.attributes;
-            if (!attrs) continue;
-            var fdv = attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : 0;
-            var mc = attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : 0;
-            var val = mc || fdv;
-            if (val > 0) {
-                lpState.mcaps[missing[j].toLowerCase()] = val;
-                changed = true;
-            }
+            var tokens = gData.data || [];
+            tokens.forEach(function(t) {
+                var attrs = t.attributes;
+                if (!attrs) return;
+                var addr = (attrs.address || '').toLowerCase();
+                var fdv = attrs.fdv_usd ? parseFloat(attrs.fdv_usd) : 0;
+                var mc = attrs.market_cap_usd ? parseFloat(attrs.market_cap_usd) : 0;
+                var val = mc || fdv;
+                if (addr && val > 0) {
+                    lpState.mcaps[addr] = val;
+                    changed = true;
+                }
+            });
         } catch (e) { /* GeckoTerminal unavailable */ }
     }
+
+    await geckoMulti('base', baseMissing);
+    await geckoMulti('solana', solMissing);
     if (changed) renderTable();
 }
 
