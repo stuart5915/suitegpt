@@ -177,14 +177,19 @@ export default async function handler(req, res) {
 
             const creatorWallet = req.query.creator_wallet;
             const creatorXHandle = req.query.creator_x_handle;
-            if (creatorId && creatorWallet && creatorXHandle) {
-                query = query.or(`user_id.eq.${creatorId},creator_wallet.eq.${creatorWallet.toLowerCase()},creator_x_handle.ilike.${creatorXHandle}`);
-            } else if (creatorId && creatorWallet) {
-                query = query.or(`user_id.eq.${creatorId},creator_wallet.eq.${creatorWallet.toLowerCase()}`);
-            } else if (creatorId && creatorXHandle) {
-                query = query.or(`user_id.eq.${creatorId},creator_x_handle.ilike.${creatorXHandle}`);
-            } else if (creatorId) {
-                query = query.eq('user_id', creatorId);
+            // Build OR conditions from all available identifiers
+            const orParts = [];
+            if (creatorId) orParts.push(`user_id.eq.${creatorId}`);
+            if (creatorWallet) orParts.push(`creator_wallet.eq.${creatorWallet.toLowerCase()}`);
+            if (creatorXHandle) orParts.push(`creator_x_handle.ilike.${creatorXHandle}`);
+
+            if (orParts.length > 1) {
+                query = query.or(orParts.join(','));
+            } else if (orParts.length === 1) {
+                // Single identifier — use exact match
+                if (creatorId) query = query.eq('user_id', creatorId);
+                else if (creatorWallet) query = query.ilike('creator_wallet', creatorWallet.toLowerCase());
+                else if (creatorXHandle) query = query.ilike('creator_x_handle', creatorXHandle);
             } else if (creator) {
                 query = query.ilike('creator_x_handle', creator);
             } else {
