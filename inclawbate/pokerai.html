@@ -3799,6 +3799,15 @@ function handleMessage(msg) {
         ws.send(JSON.stringify({ type: 'setWallet', walletAddress: w.address }));
         ws.send(JSON.stringify({ type: 'getMyAgents' }));
         walletAuthenticated = true;
+        // Check for any uncredited on-chain deposits
+        const _api = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+        fetch(_api + '/check-deposit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: w.address })
+        }).then(r => r.json()).then(r => {
+          if (r.credited > 0) showToast(`${r.credited.toLocaleString()} chips credited!`, 'success');
+        }).catch(() => {});
       } else {
         syncWalletToServer();
         // Still request sandbox agents even without wallet
@@ -4676,6 +4685,18 @@ async function toggleWallet() {
     showToast('Wallet connected!', 'gold');
     refreshMyAgentsView();
 
+    // Check for any on-chain deposits not yet credited
+    const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+    fetch(API_BASE + '/check-deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: address })
+    }).then(r => r.json()).then(result => {
+      if (result.credited > 0) {
+        showToast(`${result.credited.toLocaleString()} chips credited from on-chain deposit!`, 'success');
+      }
+    }).catch(() => {});
+
     window.ethereum.on('accountsChanged', (accs) => {
       if (accs.length === 0) {
         localStorage.removeItem(WALLET_KEY);
@@ -4989,7 +5010,8 @@ function refreshMyAgentsView() {
   const balanceBar = document.getElementById('balanceBar');
   const sandboxBanner = document.getElementById('sandboxBanner');
   if (isSandbox) {
-    if (balanceBar) balanceBar.style.display = 'none';
+    // Show balance bar if wallet is connected (so user can see their real balance)
+    if (balanceBar) balanceBar.style.display = wallet ? 'flex' : 'none';
     if (sandboxBanner) sandboxBanner.style.display = 'block';
   } else {
     if (balanceBar) balanceBar.style.display = 'flex';
