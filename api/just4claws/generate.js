@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
 const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_J4C_ENDPOINT_ID;
@@ -17,7 +17,7 @@ function isPromptSafe(prompt) {
   return !BLOCKED_TERMS.some(term => lower.includes(term));
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -154,4 +154,4 @@ module.exports = async (req, res) => {
     console.error('Generation error:', err);
     return res.status(500).json({ error: 'Generation error: ' + (err.message || String(err)) });
   }
-};
+}
