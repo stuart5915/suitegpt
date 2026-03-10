@@ -10,18 +10,21 @@ class SupabaseStore {
 
   async init() {
     // Load all wallets and agents into memory (same pattern as JSON store)
-    const { data: wallets } = await this.supabase
+    const { data: wallets, error: wErr } = await this.supabase
       .from('poker_wallets')
       .select('*');
 
+    if (wErr) console.error(`[SupabaseStore] Failed to load wallets:`, wErr.message);
     for (const w of (wallets || [])) {
       this.walletCache.set(w.address, { balance: w.chip_balance, createdAt: w.created_at });
+      console.log(`[SupabaseStore] Wallet: ${w.address.slice(0,10)}... balance=${w.chip_balance}`);
     }
 
-    const { data: agents } = await this.supabase
+    const { data: agents, error: aErr } = await this.supabase
       .from('poker_agents')
       .select('*');
 
+    if (aErr) console.error(`[SupabaseStore] Failed to load agents:`, aErr.message);
     this.agentCache = (agents || []).map(a => this._fromDbAgent(a));
     this._initialized = true;
     console.log(`[SupabaseStore] Loaded ${this.walletCache.size} wallets, ${this.agentCache.length} agents`);
@@ -126,7 +129,9 @@ class SupabaseStore {
       this.agentCache.push(data);
     }
 
-    await this.supabase.from('poker_agents').upsert(this._toDbAgent(data), { onConflict: 'id' });
+    const { error } = await this.supabase.from('poker_agents').upsert(this._toDbAgent(data), { onConflict: 'id' });
+    if (error) console.error(`[SupabaseStore] saveAgent FAILED:`, error.message, error.details);
+    else console.log(`[SupabaseStore] saveAgent ${data.name} (${data.id.slice(0,20)}...) wallet=${data.walletAddress.slice(0,8)}`);
   }
 
   async deleteAgent(agentId) {
