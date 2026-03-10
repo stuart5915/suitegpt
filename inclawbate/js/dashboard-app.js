@@ -67,7 +67,7 @@ async function loadOverview() {
     const [credits, apps] = await Promise.allSettled([
         fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
         profile.id
-            ? fetch(`${API_BASE}/apps?creator_id=${encodeURIComponent(profile.id)}${profile.wallet_address ? '&creator_wallet=' + encodeURIComponent(profile.wallet_address) : ''}`).then(r => r.ok ? r.json() : null)
+            ? fetch(`${API_BASE}/apps?creator_id=${encodeURIComponent(profile.id)}${profile.wallet_address ? '&creator_wallet=' + encodeURIComponent(profile.wallet_address) : ''}${profile.x_handle ? '&creator_x_handle=' + encodeURIComponent(profile.x_handle) : ''}`).then(r => r.ok ? r.json() : null)
             : Promise.resolve(null)
     ]);
 
