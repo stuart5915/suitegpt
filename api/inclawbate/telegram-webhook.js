@@ -232,6 +232,32 @@ async function handleStart(chatId, handle) {
     await sendMsg(chatId, `✅ Connected! inclawbate.com/u/${esc(profile.x_handle)}`);
 }
 
+// ── /research — daily marketing research prompt anyone can grab ──
+
+const RESEARCH_PROMPT = `You are a marketing researcher for Inclawbate (inclawbate.com) — an incubator that helps ANYONE build and launch projects. We've helped golf equipment manufacturers, churches, app creators, token launchers, and everything in between. Our motto: "Anyone Can Build."
+
+Daily research report:
+
+1. Who needs help building? — Search Reddit, X, Facebook groups, forums for people saying "I have an idea but don't know how to build it", "looking for a developer", "need a website for my business", "how do I launch a product". Find real people we could reach out to.
+
+2. Small business and creator trends — What tools, platforms, or movements are growing? No-code, AI tools, creator economy, small business struggles, side hustles — what are people talking about today?
+
+3. Outreach opportunities — Any communities, events, podcasts, or groups where we should introduce Inclawbate? Think local business groups, startup communities, church networks, maker spaces, NOT just crypto.
+
+4. Content ideas — 3 posts showing real examples of what Inclawbate can build (websites, apps, stores, tokens, communities). Relatable to normal people, not crypto jargon.
+
+5. Partnership leads — Any platforms, influencers, or organizations serving underserved builders (small towns, non-technical founders, creators) we should connect with?
+
+Bullets, no fluff. Actionable today.`;
+
+async function handleResearch(chatId) {
+    await sendMsg(chatId,
+        '🔬 <b>Daily Research Prompt</b>\n\n' +
+        'Copy the prompt below and paste it into Claude, Grok, ChatGPT, or Perplexity. Drop the results back here!\n\n' +
+        '<code>' + esc(RESEARCH_PROMPT) + '</code>'
+    );
+}
+
 // ── Main ──
 
 export default async function handler(req, res) {
@@ -264,6 +290,8 @@ export default async function handler(req, res) {
             await handleRemove(chatId, username, args);
         } else if (cmd === 'current') {
             await handleCurrent(chatId, username, args);
+        } else if (cmd === 'research') {
+            await handleResearch(chatId);
         } else if (cmd === 'myid') {
             await sendMsg(chatId, '🆔 Your chat ID: <code>' + chatId + '</code>');
         } else if (cmd === 'help') {
@@ -273,7 +301,8 @@ export default async function handler(req, res) {
                 '/current 3 — Set current task\n' +
                 '/add thing — Add to list\n' +
                 '/done 1 — Check off by number\n' +
-                '/remove 2 — Delete by number'
+                '/remove 2 — Delete by number\n' +
+                '/research — Daily marketing research prompt'
             );
         }
 
