@@ -958,6 +958,13 @@ class PokerEngine {
 
     const agent = this.agents[agentIndex];
 
+    // If hand is in progress and agent is still active, force-fold (forfeit pot chips)
+    if (this.phase !== 'waiting' && !agent.folded) {
+      agent.folded = true;
+      this.broadcast('log', { html: `<span class="agent">${agent.name}</span> <span class="fold">sits out (mid-hand)</span>` });
+      // Chips already bet this hand stay in the pot — they don't get refunded
+    }
+
     const lobbyAgent = {
       id: agent.id,
       name: agent.name,
