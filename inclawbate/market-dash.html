@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Dashboard — Inclawbate</title>
+    <meta name="description" content="Per-project marketing control center. Track vitals, generate plans, manage socials, and grow your project.">
+    <meta property="og:title" content="Marketing Dashboard — Inclawbate">
+    <meta property="og:description" content="Per-project marketing control center. Track vitals, generate plans, manage socials, and grow your project.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/market-dash">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=market-dash">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; background: var(--bg-deepest); }
+
+        /* ── Layout ── */
+        .md-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Auth Gate ── */
+        .md-auth-gate {
+            text-align: center;
+            padding: var(--space-3xl) var(--space-lg);
+            animation: fadeUp 0.5s ease both;
+        }
+        .md-auth-gate h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        .md-auth-gate p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
+        }
+        .md-auth-btn {
+            display: inline-block;
+            padding: 10px 28px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px hsla(9, 60%, 54%, 0.25);
+        }
+        .md-auth-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px hsla(9, 60%, 54%, 0.35);
+        }
+
+        /* ── Loading ── */
+        .md-loading {
+            text-align: center;
+            padding: var(--space-3xl);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            animation: fadeUp 0.4s ease both;
+        }
+        .md-spinner {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border-subtle);
+            border-top-color: var(--lobster-400);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-bottom: var(--space-sm);
+        }
+
+        /* ── Project Picker ── */
+        .md-picker {
+            animation: fadeUp 0.5s ease both;
+        }
+        .md-picker-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+        .md-picker-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-lg);
+        }
+        .md-picker-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .md-picker-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .md-picker-card:hover {
+            border-color: var(--lobster-400);
+            background: var(--bg-card);
+        }
+        .md-picker-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .md-picker-logo-ph {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .md-picker-info { min-width: 0; }
+        .md-picker-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .md-picker-slug {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+        .md-picker-empty {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        .md-picker-empty a { color: var(--lobster-300); }
+
+        /* ── Dashboard ── */
+        .md-dash { display: none; animation: fadeUp 0.4s ease both; }
+        .md-dash.active { display: block; }
+
+        /* ── Back ── */
+        .md-back-btn {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: var(--space-md);
+            transition: color 0.15s;
+        }
+        .md-back-btn:hover { color: var(--lobster-300); }
+
+        /* ── Header ── */
+        .md-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        .md-header-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .md-header-logo-ph {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .md-header-info { flex: 1; min-width: 0; }
+        .md-header-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .md-header-name {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+        .md-header-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+        }
+        .md-chain-badge {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background: rgba(56, 133, 255, 0.12);
+            color: #5b8def;
+        }
+        .md-header-links {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .md-quick-link {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .md-quick-link:hover {
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+
+        /* ── Vitals Bar ── */
+        .md-vitals {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: var(--space-lg);
+        }
+        .md-vital {
+            background: var(--bg-elevated);
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .md-vital-label {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-bottom: 3px;
+        }
+        .md-vital-value {
+            font-family: var(--font-mono);
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .md-vital-value.positive { color: var(--seafoam-400); }
+        .md-vital-value.negative { color: #ef4444; }
+
+        /* ── Section Titles ── */
+        .md-section-title {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .md-section-title .icon { font-size: 0.95rem; }
+
+        /* ── Checklist ── */
+        .md-checklist { margin-bottom: var(--space-lg); }
+        .md-checklist-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            color: inherit;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: border-color 0.15s;
+        }
+        .md-checklist-toggle:hover { border-color: var(--border-default); }
+        .md-checklist-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .md-checklist-progress {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--seafoam-400);
+            background: hsla(172, 32%, 48%, 0.1);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+        }
+        .md-checklist-arrow {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+        .md-checklist.open .md-checklist-arrow { transform: rotate(180deg); }
+        .md-checklist-body {
+            display: none;
+            padding: var(--space-xs) 0;
+        }
+        .md-checklist.open .md-checklist-body { display: block; }
+        .md-check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid hsla(240, 4%, 16%, 0.3);
+        }
+        .md-check-item:last-child { border-bottom: none; }
+        .md-check-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            flex-shrink: 0;
+        }
+        .md-check-icon.done {
+            background: hsla(172, 32%, 48%, 0.15);
+            color: var(--seafoam-400);
+        }
+        .md-check-icon.pending {
+            border: 1.5px solid var(--border-default);
+        }
+        .md-check-label { flex: 1; }
+        .md-check-label.done { color: var(--text-dim); text-decoration: line-through; }
+        .md-check-link {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .md-check-link:hover { color: var(--lobster-200); }
+
+        /* ── Toolkit Grid ── */
+        .md-toolkit {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: var(--space-lg);
+        }
+        .md-tool-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color 0.15s, transform 0.15s, background 0.15s;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .md-tool-card:hover {
+            border-color: var(--lobster-400);
+            background: var(--bg-card);
+            transform: translateY(-2px);
+        }
+        .md-tool-icon {
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+        .md-tool-name {
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .md-tool-desc {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .md-tool-status {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            margin-top: auto;
+            padding-top: 3px;
+        }
+        .md-tool-status.active { color: var(--seafoam-400); }
+        .md-tool-status.inactive { color: var(--text-dim); }
+        .md-tool-status.info { color: var(--lobster-300); }
+
+        /* ── Inline Panels (Plan, Ideas, Socials) ── */
+        .md-inline-panel {
+            display: none;
+            margin-bottom: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            animation: fadeUp 0.3s ease both;
+        }
+        .md-inline-panel.active { display: block; }
+        .md-inline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .md-inline-header h3 {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .md-inline-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .md-panel-btn {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-default);
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .md-panel-btn:hover {
+            border-color: var(--lobster-400);
+            color: var(--lobster-300);
+        }
+        .md-panel-btn.primary {
+            background: var(--accent-gradient);
+            border-color: transparent;
+            color: #fff;
+        }
+        .md-panel-btn.primary:hover { opacity: 0.9; }
+        .md-panel-btn.save {
+            border-color: hsla(172, 32%, 48%, 0.3);
+            color: var(--seafoam-400);
+        }
+        .md-panel-btn.save:hover {
+            border-color: var(--seafoam-400);
+            background: hsla(172, 32%, 48%, 0.08);
+        }
+        .md-panel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── Plan Form ── */
+        .md-plan-form { padding: 16px; }
+        .md-plan-form label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            margin-top: var(--space-sm);
+        }
+        .md-plan-form label:first-child { margin-top: 0; }
+        .md-plan-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
+        }
+        .md-plan-form input,
+        .md-plan-form textarea {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            font-family: var(--font-body);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s;
+            box-sizing: border-box;
+        }
+        .md-plan-form input:focus,
+        .md-plan-form textarea:focus { border-color: var(--lobster-400); box-shadow: 0 0 0 3px hsla(9, 52%, 56%, 0.06); }
+        .md-plan-form textarea { resize: vertical; min-height: 52px; }
+        .md-plan-gen-btn {
+            display: block;
+            width: 100%;
+            margin-top: var(--space-md);
+            padding: 10px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s, box-shadow 0.15s;
+            box-shadow: 0 3px 12px hsla(9, 60%, 54%, 0.2);
+        }
+        .md-plan-gen-btn:hover { box-shadow: 0 5px 20px hsla(9, 60%, 54%, 0.3); }
+        .md-plan-gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── Plan Content ── */
+        .md-plan-content {
+            padding: 16px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            max-height: 440px;
+            overflow-y: auto;
+        }
+        .md-plan-content h2 {
+            font-family: var(--font-display);
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: var(--lobster-300);
+            margin-top: var(--space-md);
+            margin-bottom: var(--space-xs);
+        }
+        .md-plan-content h2:first-child { margin-top: 0; }
+        .md-plan-content ul { padding-left: var(--space-lg); margin: var(--space-xs) 0; }
+        .md-plan-content li { margin-bottom: 2px; }
+        .md-plan-content strong { color: var(--text-primary); }
+        .md-plan-content::-webkit-scrollbar { width: 5px; }
+        .md-plan-content::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+        .md-plan-msg {
+            padding: 8px 16px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .md-plan-msg.success { color: var(--seafoam-400); background: hsla(172, 32%, 48%, 0.06); }
+        .md-plan-msg.error { color: #ef4444; background: hsla(0, 68%, 56%, 0.06); }
+
+        /* ── Ideas List ── */
+        .md-ideas-list {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .md-idea-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid hsla(240, 4%, 16%, 0.3);
+        }
+        .md-idea-num {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--lobster-300);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .md-idea-text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex: 1;
+        }
+        .md-idea-copy {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.68rem;
+            font-family: var(--font-mono);
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .md-idea-copy:hover { background: var(--bg-card); color: var(--lobster-300); }
+        .md-idea-copy.copied { color: var(--seafoam-400); }
+
+        /* ── Socials Panel ── */
+        .md-socials-inner { padding: 12px 16px; }
+        .md-social-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.82rem;
+        }
+        .md-social-row + .md-social-row {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.3);
+        }
+        .md-social-name {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .md-social-value {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-primary);
+        }
+        .md-social-value.empty { color: var(--text-dim); font-style: italic; }
+        .md-social-value a { color: var(--lobster-300); }
+        .md-socials-edit {
+            display: block;
+            margin-top: var(--space-md);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--lobster-300);
+            text-decoration: none;
+        }
+        .md-socials-edit:hover { color: var(--lobster-200); }
+
+        /* ── Bottom Cards ── */
+        .md-bottom-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: var(--space-lg);
+        }
+        .md-bottom-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+        }
+        .md-bottom-card h3 {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .md-bottom-card h3 .icon { font-size: 0.9rem; }
+        .md-earn-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.82rem;
+        }
+        .md-earn-row + .md-earn-row {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.3);
+        }
+        .md-earn-label { color: var(--text-dim); font-size: 0.75rem; }
+        .md-earn-value {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .md-earn-value.accent { color: var(--seafoam-400); }
+        .md-claim-btn {
+            display: block;
+            width: 100%;
+            margin-top: var(--space-sm);
+            padding: 9px;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            box-shadow: 0 3px 12px hsla(9, 60%, 54%, 0.2);
+        }
+        .md-claim-btn:hover { opacity: 0.9; }
+        .md-claim-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .md-empty-msg {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            text-align: center;
+            padding: var(--space-sm) 0;
+        }
+        .md-staking-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.82rem;
+        }
+        .md-staking-stat + .md-staking-stat {
+            border-top: 1px solid hsla(240, 4%, 16%, 0.3);
+        }
+        .md-staking-label { color: var(--text-dim); font-size: 0.75rem; }
+        .md-staking-value {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ── Footer ── */
+        .md-footer {
+            text-align: center;
+            padding: var(--space-lg) 0;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .md-footer-text {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-bottom: var(--space-sm);
+        }
+        .md-footer-links {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+        }
+        .md-footer-link {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .md-footer-link:hover { color: var(--lobster-300); }
+
+        /* ── Utility ── */
+        .hidden { display: none !important; }
+
+        /* ── Mobile ── */
+        @media (max-width: 700px) {
+            .md-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .md-vitals { grid-template-columns: repeat(2, 1fr); }
+            .md-toolkit { grid-template-columns: repeat(2, 1fr); }
+            .md-bottom-panels { grid-template-columns: 1fr; }
+            .md-header-name { font-size: 1.1rem; }
+            .md-plan-form-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 440px) {
+            .md-toolkit { grid-template-columns: 1fr; }
+            .md-vitals { grid-template-columns: repeat(2, 1fr); }
+            .md-vital { padding: 10px 8px; }
+            .md-vital-value { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/projects">Projects</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+            </div>
+        </div>
+        <a href="/tools" class="nav-link">Launch / Tools</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/blog" class="nav-link">Blog</a>
+    </div>
+</nav>
+
+<div class="md-page">
+
+    <!-- Auth Gate -->
+    <div id="mdAuthGate" class="md-auth-gate hidden">
+        <h2>Marketing Dashboard</h2>
+        <p>Connect your wallet to view your projects and access marketing tools.</p>
+        <button class="md-auth-btn" onclick="window.navWalletConnect && window.navWalletConnect()">Connect Wallet</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="mdLoading" class="md-loading hidden">
+        <div class="md-spinner"></div>
+        <div>Loading projects...</div>
+    </div>
+
+    <!-- Project Picker -->
+    <div id="mdPicker" class="md-picker hidden">
+        <div class="md-picker-title">Select a Project</div>
+        <div class="md-picker-subtitle">Choose a project to open its marketing dashboard.</div>
+        <div class="md-picker-grid" id="mdPickerGrid"></div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="mdDash" class="md-dash">
+
+        <button class="md-back-btn" id="mdBackBtn">&larr; All Projects</button>
+
+        <!-- Header -->
+        <div class="md-header" id="mdHeader"></div>
+
+        <!-- Vitals -->
+        <div class="md-vitals">
+            <div class="md-vital">
+                <div class="md-vital-label">Price</div>
+                <div class="md-vital-value" id="mdVitalPrice">--</div>
+            </div>
+            <div class="md-vital">
+                <div class="md-vital-label">24h Vol</div>
+                <div class="md-vital-value" id="mdVitalVol">--</div>
+            </div>
+            <div class="md-vital">
+                <div class="md-vital-label">Liquidity</div>
+                <div class="md-vital-value" id="mdVitalLiq">--</div>
+            </div>
+            <div class="md-vital">
+                <div class="md-vital-label">24h Change</div>
+                <div class="md-vital-value" id="mdVitalChange">--</div>
+            </div>
+        </div>
+
+        <!-- Launch Checklist -->
+        <div class="md-checklist" id="mdChecklist">
+            <button class="md-checklist-toggle" id="mdChecklistToggle">
+                <span class="md-checklist-toggle-left">
+                    Launch Checklist
+                    <span class="md-checklist-progress" id="mdChecklistProgress">0/5</span>
+                </span>
+                <span class="md-checklist-arrow">&#9660;</span>
+            </button>
+            <div class="md-checklist-body" id="mdChecklistBody"></div>
+        </div>
+
+        <!-- Marketing Toolkit -->
+        <div class="md-section-title">
+            <span class="icon">&#128295;</span> Marketing Toolkit
+        </div>
+        <div class="md-toolkit">
+            <div class="md-tool-card" id="mdToolPlan">
+                <span class="md-tool-icon">&#128200;</span>
+                <span class="md-tool-name">Marketing Plan</span>
+                <span class="md-tool-desc">AI-generated launch strategy</span>
+                <span class="md-tool-status info" id="mdToolPlanStatus">Generate</span>
+            </div>
+            <div class="md-tool-card" id="mdToolSocials">
+                <span class="md-tool-icon">&#128279;</span>
+                <span class="md-tool-name">Socials</span>
+                <span class="md-tool-desc">X, Telegram, Website</span>
+                <span class="md-tool-status" id="mdToolSocialsStatus">--</span>
+            </div>
+            <div class="md-tool-card" id="mdToolAgent">
+                <span class="md-tool-icon">&#129302;</span>
+                <span class="md-tool-name">AI Agent</span>
+                <span class="md-tool-desc">Automated posting</span>
+                <span class="md-tool-status inactive" id="mdToolAgentStatus">Not active</span>
+            </div>
+            <div class="md-tool-card" id="mdToolDisperse">
+                <span class="md-tool-icon">&#128184;</span>
+                <span class="md-tool-name">Disperse / Airdrop</span>
+                <span class="md-tool-desc">Distribute tokens</span>
+                <span class="md-tool-status info">Open tool</span>
+            </div>
+            <div class="md-tool-card" id="mdToolIdeas">
+                <span class="md-tool-icon">&#128161;</span>
+                <span class="md-tool-name">Content Ideas</span>
+                <span class="md-tool-desc">Quick tweet drafts</span>
+                <span class="md-tool-status info">Generate 5</span>
+            </div>
+            <div class="md-tool-card" id="mdToolShare">
+                <span class="md-tool-icon">&#128228;</span>
+                <span class="md-tool-name">Share Project</span>
+                <span class="md-tool-desc">Copy project link</span>
+                <span class="md-tool-status info" id="mdToolShareStatus">Copy link</span>
+            </div>
+        </div>
+
+        <!-- Marketing Plan Panel -->
+        <div class="md-inline-panel" id="mdPlanPanel">
+            <div class="md-inline-header">
+                <h3>Marketing Plan</h3>
+                <div class="md-inline-actions">
+                    <button class="md-panel-btn" id="mdPlanCopyBtn" style="display:none">Copy</button>
+                    <button class="md-panel-btn" id="mdPlanRegenBtn" style="display:none">Regenerate</button>
+                    <button class="md-panel-btn save" id="mdPlanSaveBtn" style="display:none">Save</button>
+                    <button class="md-panel-btn" id="mdPlanCloseBtn">Close</button>
+                </div>
+            </div>
+            <div class="md-plan-form" id="mdPlanForm">
+                <div class="md-plan-form-row">
+                    <div>
+                        <label for="mdPlanName">Project Name</label>
+                        <input type="text" id="mdPlanName" placeholder="My Project">
+                    </div>
+                    <div>
+                        <label for="mdPlanSymbol">Token Symbol</label>
+                        <input type="text" id="mdPlanSymbol" placeholder="TOKEN">
+                    </div>
+                </div>
+                <label for="mdPlanUnique">What makes it unique?</label>
+                <textarea id="mdPlanUnique" placeholder="Describe what sets your project apart..."></textarea>
+                <label for="mdPlanAudience">Target Audience</label>
+                <input type="text" id="mdPlanAudience" placeholder="e.g. DeFi users, meme traders, builders">
+                <button type="button" class="md-plan-gen-btn" id="mdPlanGenBtn">Generate Plan</button>
+            </div>
+            <div class="md-plan-content" id="mdPlanContent"></div>
+            <div class="md-plan-msg" id="mdPlanMsg" style="display:none"></div>
+        </div>
+
+        <!-- Content Ideas Panel -->
+        <div class="md-inline-panel" id="mdIdeasPanel">
+            <div class="md-inline-header">
+                <h3>Content Ideas</h3>
+                <div class="md-inline-actions">
+                    <button class="md-panel-btn" id="mdIdeasRegenBtn">Regenerate</button>
+                    <button class="md-panel-btn" id="mdIdeasCloseBtn">Close</button>
+                </div>
+            </div>
+            <div class="md-ideas-list" id="mdIdeasList"></div>
+        </div>
+
+        <!-- Socials Panel -->
+        <div class="md-inline-panel" id="mdSocialsPanel">
+            <div class="md-inline-header">
+                <h3>Connected Socials</h3>
+            </div>
+            <div class="md-socials-inner">
+                <div id="mdSocialsList"></div>
+                <a href="/tools#socials" class="md-socials-edit">Edit socials settings &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Earnings + Staking -->
+        <div class="md-bottom-panels">
+            <div class="md-bottom-card">
+                <h3><span class="icon">&#128176;</span> LP Earnings</h3>
+                <div id="mdEarningsBody">
+                    <p class="md-empty-msg">No token linked.</p>
+                </div>
+            </div>
+            <div class="md-bottom-card">
+                <h3><span class="icon">&#9878;</span> Staking Pool</h3>
+                <div id="mdStakingBody">
+                    <p class="md-empty-msg">No staking pool.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="md-footer">
+        <p class="md-footer-text">inclawbate &mdash; we incubate anything for anyone.</p>
+        <div class="md-footer-links">
+            <a href="/tools" class="md-footer-link">Tools</a>
+            <a href="/dashboard" class="md-footer-link">Dashboard</a>
+            <a href="/projects" class="md-footer-link">Projects</a>
+            <a href="/tokens" class="md-footer-link">Tokens</a>
+            <a href="/stake" class="md-footer-link">Staking</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="md-footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="md-footer-link">X</a>
+        </div>
+    </footer>
+
+</div>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+<script src="/js/market-dash-app.js"></script>
+
+</body>
+</html>

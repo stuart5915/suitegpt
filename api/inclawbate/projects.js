@@ -154,10 +154,14 @@ export default async function handler(req, res) {
         }
 
         // Only allow updating safe fields
-        const allowed = ['name', 'description', 'long_description', 'app_id', 'app_slug', 'token_address', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url'];
+        const allowed = ['name', 'description', 'long_description', 'app_id', 'app_slug', 'token_address', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url', 'marketing_plan'];
         const patch = { updated_at: new Date().toISOString() };
         for (const key of allowed) {
             if (key in updates) patch[key] = updates[key] || null;
+        }
+        // Auto-set marketing_plan_generated_at when plan is saved
+        if ('marketing_plan' in updates && updates.marketing_plan) {
+            patch.marketing_plan_generated_at = new Date().toISOString();
         }
 
         const { data, error } = await supabase

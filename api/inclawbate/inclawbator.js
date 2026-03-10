@@ -662,7 +662,7 @@ export default async function handler(req, res) {
             const user = authenticateRequest(req);
             if (!user) return res.status(401).json({ error: 'Authentication required' });
 
-            const { project_id, logo_url, color, color_dim, glow, description, website_url, x_handle, telegram_url } = req.body;
+            const { project_id, logo_url, color, color_dim, glow, description, website_url, x_handle, telegram_url, marketing_plan } = req.body;
             if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
             const { data: project } = await supabase
@@ -685,6 +685,10 @@ export default async function handler(req, res) {
             if (website_url !== undefined) updates.website_url = website_url || null;
             if (x_handle !== undefined) updates.x_handle = x_handle || null;
             if (telegram_url !== undefined) updates.telegram_url = telegram_url || null;
+            if (marketing_plan !== undefined) {
+                updates.marketing_plan = marketing_plan || null;
+                updates.marketing_plan_generated_at = marketing_plan ? new Date().toISOString() : null;
+            }
 
             const { data, error } = await supabase
                 .from('inclawbator_projects')
