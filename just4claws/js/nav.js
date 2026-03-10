@@ -9,7 +9,7 @@ function renderNav() {
     nav.className = 'j4c-nav';
     nav.innerHTML = `
         <div class="j4c-nav-inner">
-            <a href="${_B}/" class="j4c-nav-brand">Just4Claws</a>
+            <a href="${_B || '/'}" class="j4c-nav-brand">Just4Claws</a>
             <div class="j4c-nav-links" id="nav-links">
                 <a href="${_B}/app" class="j4c-nav-link ${currentPath.endsWith('/app') ? 'active' : ''}">Discover</a>
                 <a href="${_B}/feed" class="j4c-nav-link ${currentPath.endsWith('/feed') ? 'active' : ''}">Feed</a>
