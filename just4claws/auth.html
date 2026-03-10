@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/core.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
     <style>
         .auth-page {
             min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -60,6 +61,16 @@
             margin-top: 3px; accent-color: var(--pink);
         }
         .checkbox-group label { font-size: 14px; color: var(--text); cursor: pointer; }
+        .btn-wallet {
+            width: 100%; padding: 14px; border-radius: var(--radius);
+            background: linear-gradient(135deg, #627eea, #3b5998);
+            color: #fff; font-size: 15px; font-weight: 700; border: none;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            gap: 10px; transition: opacity 0.2s; font-family: var(--font-body);
+        }
+        .btn-wallet:hover { opacity: 0.9; }
+        .btn-wallet:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-wallet svg { width: 20px; height: 20px; }
         .role-picker {
             display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
         }
@@ -86,6 +97,13 @@
                 <div class="auth-subtitle">Sign in or create your account</div>
 
                 <div class="auth-error" id="auth-error"></div>
+
+                <button class="btn-wallet" id="wallet-btn" onclick="connectWallet()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg>
+                    Connect Wallet
+                </button>
+
+                <div class="auth-divider">or use email</div>
 
                 <form id="auth-form" onsubmit="handleAuth(event)">
                     <div class="form-group">
@@ -174,6 +192,82 @@
     <script>
         let isSignUp = false;
         let selectedRole = 'subscriber';
+
+        async function connectWallet() {
+            const btn = document.getElementById('wallet-btn');
+            const errEl = document.getElementById('auth-error');
+            errEl.classList.remove('show');
+
+            if (!window.ethereum) {
+                errEl.textContent = 'No wallet detected. Install MetaMask or use a Web3 browser.';
+                errEl.classList.add('show');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const address = (await signer.getAddress()).toLowerCase();
+
+                // Sign message to prove ownership
+                const message = `Sign in to Just4Claws\n\nWallet: ${address}\nTimestamp: ${Date.now()}`;
+                const signature = await signer.signMessage(message);
+
+                // Use wallet address as pseudo-email auth with Supabase
+                const walletEmail = `${address}@wallet.just4claws.com`;
+                // Use first 32 chars of signature as deterministic password
+                const walletPass = signature.slice(0, 66);
+
+                // Try sign in first
+                let result = await supabase.auth.signInWithPassword({
+                    email: walletEmail,
+                    password: walletPass
+                });
+
+                // If no account, sign up
+                if (result.error && result.error.message.includes('Invalid login')) {
+                    result = await supabase.auth.signUp({
+                        email: walletEmail,
+                        password: walletPass,
+                        options: { data: { wallet_address: address } }
+                    });
+
+                    if (result.error) throw result.error;
+
+                    // New user — go to age verification
+                    showStep('verify');
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg> Connect Wallet';
+                    return;
+                }
+
+                if (result.error) throw result.error;
+
+                // Existing user — check profile
+                const { data: profile } = await supabase
+                    .from('j4c_profiles')
+                    .select('*')
+                    .eq('id', result.data.user.id)
+                    .single();
+
+                if (!profile) {
+                    showStep('setup');
+                } else if (!profile.is_age_verified) {
+                    showStep('verify');
+                } else {
+                    window.location.href = J4C_BASE + '/app';
+                }
+            } catch (err) {
+                errEl.textContent = err.message || 'Wallet connection failed';
+                errEl.classList.add('show');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg> Connect Wallet';
+        }
 
         // Check if already logged in
         (async () => {

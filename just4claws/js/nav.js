@@ -18,7 +18,8 @@ function renderNav() {
             </div>
             <div class="j4c-nav-actions">
                 <button class="j4c-nav-hamburger" onclick="toggleMobileNav()">&#9776;</button>
-                <div class="j4c-nav-avatar" id="nav-avatar" onclick="toggleAvatarMenu()">
+                <a href="${_B}/auth" class="j4c-nav-connect" id="nav-connect" style="display:none;padding:6px 16px;border-radius:100px;background:linear-gradient(135deg,#627eea,#3b5998);color:#fff;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;">Connect Wallet</a>
+                <div class="j4c-nav-avatar" id="nav-avatar" style="display:none" onclick="toggleAvatarMenu()">
                     <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;" id="nav-avatar-letter"></div>
                 </div>
             </div>
@@ -35,9 +36,19 @@ function renderNav() {
 }
 
 function updateNav(profile) {
-    if (!profile) return;
-    const avatarLetter = document.getElementById('nav-avatar-letter');
+    const connectBtn = document.getElementById('nav-connect');
     const avatar = document.getElementById('nav-avatar');
+
+    if (!profile) {
+        if (connectBtn) connectBtn.style.display = 'inline-block';
+        if (avatar) avatar.style.display = 'none';
+        return;
+    }
+
+    if (connectBtn) connectBtn.style.display = 'none';
+    if (avatar) avatar.style.display = 'flex';
+
+    const avatarLetter = document.getElementById('nav-avatar-letter');
 
     if (profile.avatar_url) {
         avatar.innerHTML = `<img src="${profile.avatar_url}" alt="">`;

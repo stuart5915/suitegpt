@@ -26,6 +26,7 @@ async function initAuth(opts = {}) {
         if (requireAuth) {
             window.location.href = J4C_BASE + '/auth';
         }
+        if (typeof updateNav === 'function') updateNav(null);
         window.j4c.ready = true;
         return null;
     }
