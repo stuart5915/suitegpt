@@ -169,52 +169,90 @@
 
         async function generate() {
             const prompt = document.getElementById('gen-prompt').value.trim();
-            if (!prompt) {
-                showToast('Please enter a prompt', 'error');
-                return;
-            }
+            if (!prompt) { showToast('Please enter a prompt', 'error'); return; }
 
             const btn = document.getElementById('gen-btn');
             btn.disabled = true;
-            btn.textContent = 'Generating...';
+            btn.textContent = 'Submitting...';
 
             const preview = document.getElementById('preview-area');
             preview.innerHTML = `
                 <div class="generating-overlay">
                     <div class="loading-spinner"></div>
-                    <p>Generating your content...</p>
+                    <p id="gen-status">Submitting job...</p>
                 </div>
             `;
 
             try {
+                // Step 1: Submit async job
                 const res = await fetch(J4C_BASE + '/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt,
-                        style: currentStyle,
-                        model: document.getElementById('gen-model').value,
-                        user_id: j4c.profile?.id || null
-                    })
+                    body: JSON.stringify({ prompt, style: currentStyle })
                 });
-
                 const data = await res.json();
 
                 if (data.error) {
-                    showToast(data.error, 'error');
-                    preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>${data.error}</p></div>`;
-                } else {
-                    currentImageUrl = data.image_url;
-                    preview.innerHTML = `<img src="${data.image_url}" alt="Generated content">`;
-                    document.getElementById('preview-actions').style.display = 'flex';
+                    showError(preview, btn, data.error);
+                    return;
                 }
+
+                if (!data.job_id) {
+                    showError(preview, btn, 'No job ID returned');
+                    return;
+                }
+
+                // Step 2: Poll for result
+                btn.textContent = 'Generating...';
+                document.getElementById('gen-status').textContent = 'Worker starting up...';
+                const uid = j4c.profile?.id || '';
+                const imageUrl = await pollForResult(data.job_id, uid);
+
+                currentImageUrl = imageUrl;
+                preview.innerHTML = `<img src="${imageUrl}" alt="Generated content">`;
+                document.getElementById('preview-actions').style.display = 'flex';
+                showToast('Image generated!', 'success');
+
             } catch (err) {
-                showToast('Network error: ' + err.message, 'error');
-                preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>Network error: ${err.message}</p></div>`;
+                showError(preview, btn, err.message);
+                return;
             }
 
             btn.disabled = false;
             btn.textContent = 'Generate';
+        }
+
+        function showError(preview, btn, msg) {
+            showToast(msg, 'error');
+            preview.innerHTML = `<div class="preview-placeholder"><div class="icon">&#x26A0;</div><p>${msg}</p></div>`;
+            btn.disabled = false;
+            btn.textContent = 'Generate';
+        }
+
+        async function pollForResult(jobId, uid) {
+            const maxAttempts = 60; // 60 x 3s = 3 minutes max
+            for (let i = 0; i < maxAttempts; i++) {
+                await new Promise(r => setTimeout(r, 3000));
+
+                const statusEl = document.getElementById('gen-status');
+                if (statusEl) {
+                    if (i < 5) statusEl.textContent = 'Worker starting up...';
+                    else if (i < 10) statusEl.textContent = 'Generating image...';
+                    else statusEl.textContent = `Still working... (${i * 3}s)`;
+                }
+
+                const res = await fetch(J4C_BASE + `/api/status?id=${jobId}&uid=${uid}`);
+                const data = await res.json();
+
+                if (data.error && data.status !== 'FAILED') throw new Error(data.error);
+                if (data.status === 'FAILED') throw new Error(data.error || 'Generation failed');
+                if (data.status === 'COMPLETED') {
+                    if (data.image_url) return data.image_url;
+                    throw new Error(data.error || 'No image returned');
+                }
+                // IN_QUEUE or IN_PROGRESS — keep polling
+            }
+            throw new Error('Generation timed out after 3 minutes');
         }
 
         async function saveToDrafts() {
