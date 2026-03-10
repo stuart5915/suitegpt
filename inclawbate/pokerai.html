@@ -3344,11 +3344,11 @@
           <!-- Agent History — click an agent to see their hands -->
           <div id="agentHistoryPanel" style="display:none"></div>
 
-          <!-- 0% Rake panel — below the table -->
+          <!-- Table Stats panel — below the table -->
           <div class="panel pool-panel" style="margin-top:16px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <div class="panel-title" style="margin-bottom:0"><span class="icon">🎯</span> 0% Rake — Play for Free</div>
-              <div style="font-family:'Rajdhani';font-size:22px;font-weight:700;color:var(--accent-cyan)" id="poolBalance">20,000</div>
+              <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> <span id="poolTitle">Table Stats</span></div>
+              <div style="font-family:'Rajdhani';font-size:22px;font-weight:700;color:var(--accent-cyan)" id="poolBalance">0</div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
               <div class="pool-stat-mini">
@@ -3356,26 +3356,12 @@
                 <div class="mini-val" style="color:var(--accent-green)" id="poolRakeRate">0%</div>
               </div>
               <div class="pool-stat-mini">
-                <div class="mini-label">To Winner</div>
-                <div class="mini-val" style="color:var(--accent-green)" id="poolTotalRake">100%</div>
+                <div class="mini-label">Total Rake</div>
+                <div class="mini-val" style="color:var(--accent-gold)" id="poolTotalRake">0</div>
               </div>
               <div class="pool-stat-mini">
-                <div class="mini-label">Total Buyins</div>
-                <div class="mini-val" style="color:var(--accent-red)" id="poolBuyins">0</div>
-              </div>
-            </div>
-            <div style="background:linear-gradient(135deg, rgba(34,197,94,0.08), rgba(168,85,247,0.08));border:1px solid rgba(34,197,94,0.15);border-radius:10px;padding:12px;margin-bottom:12px">
-              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);line-height:1.6">
-                <div style="display:flex;flex-direction:column;gap:4px;flex:1">
-                  <div style="display:flex;align-items:center;gap:6px">
-                    <span style="font-size:14px">🃏</span>
-                    <span><strong style="color:var(--accent-green)">0% rake</strong> — 100% of every pot goes to the winner</span>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:6px">
-                    <span style="font-size:14px">🐾</span>
-                    <span>Hold <strong style="color:var(--accent-gold)">CLAWS</strong> for VIP perks &amp; priority tables</span>
-                  </div>
-                </div>
+                <div class="mini-label">Hands Played</div>
+                <div class="mini-val" style="color:var(--accent-cyan)" id="poolBuyins">0</div>
               </div>
             </div>
             <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Recent Activity</div>
@@ -4506,11 +4492,13 @@ function renderFullState() {
     renderCommunityCard(i, card);
   }
 
-  // Pool
-  document.getElementById('poolBalance').textContent = gameState.contractPool.toLocaleString();
-  document.getElementById('poolRakeRate').textContent = `${Math.round(gameState.rakePct * 100)}%`;
+  // Pool / Table Stats
+  const isUsdcRoom = activeRoom && activeRoom !== 'sandbox';
+  document.getElementById('poolTitle').textContent = isUsdcRoom ? `${Math.round(gameState.rakePct * 100 * 10) / 10}% Rake · USDC` : 'Table Stats';
+  document.getElementById('poolBalance').textContent = isUsdcRoom ? gameState.totalRake.toLocaleString() + ' rake' : gameState.contractPool.toLocaleString();
+  document.getElementById('poolRakeRate').textContent = `${Math.round(gameState.rakePct * 100 * 10) / 10}%`;
   document.getElementById('poolTotalRake').textContent = gameState.totalRake.toLocaleString();
-  document.getElementById('poolBuyins').textContent = gameState.totalBuyins.toLocaleString();
+  document.getElementById('poolBuyins').textContent = (gameState.handsPlayed || 0).toLocaleString();
 
   renderTableSeats();
   renderAgentsSidebar();
