@@ -1414,37 +1414,41 @@
             'choppy': {
                 name: 'Choppy (Best Case)',
                 seed: 256,
-                drift: 0.0001,
-                volatility: 0.045,
+                drift: 0.0,
+                volatility: 0.018,
+                meanReversion: 0.06,
                 events: [],
-                desc: 'ETH oscillates in a range \u2014 the ideal scenario for concentrated LPs. High trading volume generates maximum fees while the price stays within the vault\u2019s range, requiring minimal rebalances.'
+                desc: 'ETH oscillates in a tight range around $2,500 \u2014 the ideal scenario for concentrated LPs. Lots of trading volume, minimal price drift. The vault stays in range almost all year, earning maximum fees with very few rebalances.'
             },
             'steady-up': {
                 name: 'Steady Up',
                 seed: 42,
-                drift: 0.0008,
-                volatility: 0.02,
+                drift: 0.0006,
+                volatility: 0.018,
+                meanReversion: 0,
                 events: [],
                 desc: 'ETH trends upward steadily. The vault stays in range most of the time, earning consistent fees with only occasional rebalances as price gradually rises.'
             },
             'steady-down': {
                 name: 'Steady Down',
                 seed: 137,
-                drift: -0.0006,
-                volatility: 0.025,
+                drift: -0.0005,
+                volatility: 0.018,
+                meanReversion: 0,
                 events: [],
                 desc: 'ETH trends downward. The vault still earns LP fees while rebalancing periodically. Depositors earn yield in USDC terms even as ETH declines.'
             },
             'crash': {
                 name: 'Crash & Recover',
                 seed: 789,
-                drift: 0.0002,
-                volatility: 0.03,
+                drift: 0.0001,
+                volatility: 0.022,
+                meanReversion: 0,
                 events: [
-                    { start: 55, end: 75, drift: -0.03 },
-                    { start: 100, end: 150, drift: 0.015 }
+                    { start: 55, end: 75, drift: -0.025 },
+                    { start: 100, end: 160, drift: 0.012 }
                 ],
-                desc: 'A sharp crash around day 60 tests the vault\u2019s resilience. It rebalances through the drop and continues earning as ETH recovers by day 150. The vault\u2019s fee income cushions the impact.'
+                desc: 'A sharp crash around day 60 tests the vault\u2019s resilience. It rebalances through the drop and continues earning as ETH recovers. The vault\u2019s fee income cushions the impact.'
             }
         };
 
@@ -1454,7 +1458,8 @@
         var TOTAL_STEPS = DAYS * STEPS_PER_DAY;
         var START_PRICE = 2500;
         var RANGE_WIDTH = 0.10; // +-5%
-        var REBALANCE_BUFFER = 0.02;
+        var REBALANCE_BUFFER = 0.03;
+        var REBALANCE_COOLDOWN = 28; // min 7 days (28 steps) between rebalances
         var INITIAL_DEPOSIT = 1000;
 
         // --- Real Pool Parameters (Aerodrome ETH/USDC CL100 on Base) ---
@@ -1494,6 +1499,11 @@
                     if (day >= s.events[e].start && day <= s.events[e].end) {
                         d = s.events[e].drift;
                     }
+                }
+                // Mean reversion: pull price back toward START_PRICE
+                if (s.meanReversion) {
+                    var logDrift = Math.log(prices[prices.length - 1] / START_PRICE);
+                    d -= s.meanReversion * logDrift;
                 }
                 var z = normalRandom(rng);
                 var change = (d - 0.5 * s.volatility * s.volatility) * dt + s.volatility * Math.sqrt(dt) * z;
@@ -1535,11 +1545,13 @@
                     vv += feeEarned;
                 }
 
-                // Check rebalance
+                // Check rebalance (with cooldown — real vaults don't rebalance every hour)
                 if (i > 0) {
+                    var lastRebal = rebalanceSteps.length > 0 ? rebalanceSteps[rebalanceSteps.length - 1] : -REBALANCE_COOLDOWN;
+                    var cooldownOk = (i - lastRebal) >= REBALANCE_COOLDOWN;
                     var outOfBuffer = price < rL * (1 - REBALANCE_BUFFER) || price > rU * (1 + REBALANCE_BUFFER);
-                    if (outOfBuffer) {
-                        var ilCost = 0.003 + rng() * 0.005;
+                    if (outOfBuffer && cooldownOk) {
+                        var ilCost = 0.003 + rng() * 0.003;
                         vv *= (1 - ilCost);
                         rL = price * (1 - RANGE_WIDTH / 2);
                         rU = price * (1 + RANGE_WIDTH / 2);
