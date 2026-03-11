@@ -466,15 +466,10 @@ export default async function handler(req, res) {
     const tierKey = req.body?.model || 'gemini';
     const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.gemini;
 
-    // Angels can't use Opus — too expensive on our API bill
-    if (angel && tierKey === 'pro') {
-        return res.status(403).json({ error: 'Opus is not available with Angel access. Try Sonnet instead.' });
-    }
-
     let creditsRemaining = profile?.credits || 0;
 
     // Credit gating — paid models require credits (anonymous must use free models)
-    // Angels get free access to non-Opus paid models
+    // Angels get free access to all paid models including Opus
     if (tier.credits > 0 && !admin && !angel) {
         if (anonymous) {
             return res.status(401).json({ error: 'Log in to use ' + tier.label + '. Or try a free model like Gemini Flash.' });
