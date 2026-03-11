@@ -1497,11 +1497,10 @@ function onAgentProjectChange() {
     var bidSection = document.getElementById('agentBidSection');
     if (bidSection) bidSection.style.display = (owner && !hasOwnX) ? '' : 'none';
 
-    // Fetch on-chain CLAWS balance from wallet
-    var auth = getAuth();
-    var walletAddr = auth ? (auth.wallet || auth.walletAddress || '') : '';
-    if (walletAddr) {
-        fetchClawsBalance(walletAddr).then(function(bal) {
+    // Fetch on-chain CLAWS balance from the project owner's wallet
+    var ownerWallet = project.creator_wallet || '';
+    if (ownerWallet) {
+        fetchClawsBalance(ownerWallet).then(function(bal) {
             document.getElementById('agentCredits').textContent = formatClaws(bal) + ' CLAWS';
             // Low balance warning: less than 3 posts worth
             var postCostClaws = getClawsCostPerPost();
