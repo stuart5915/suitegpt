@@ -145,6 +145,7 @@ wss.on('connection', (ws) => {
                 if (expected > total) {
                   const credit = expected - total;
                   await rooms.store.addBalance(client.walletAddress, credit);
+                  await rooms.store.recordTransaction(client.walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
                   sendBalance(ws, client.walletAddress);
                   ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit } }));
                 }
@@ -184,6 +185,7 @@ wss.on('connection', (ws) => {
           const result = rooms.fundLobbyAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'fundAgentResult', data: result }));
           if (result.success) {
+            rooms.store.recordTransaction(addr, 'fund_agent', 0, msg.amount);
             sendBalance(ws, addr);
             const agents = rooms.getMyAgents(addr);
             ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
@@ -197,6 +199,7 @@ wss.on('connection', (ws) => {
           const result = rooms.defundLobbyAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'defundAgentResult', data: result }));
           if (result.success) {
+            rooms.store.recordTransaction(addr, 'defund_agent', 0, result.amount);
             sendBalance(ws, addr);
             const agents = rooms.getMyAgents(addr);
             ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
@@ -225,6 +228,7 @@ wss.on('connection', (ws) => {
           const result = rooms.topUpAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
           if (result.success) {
+            rooms.store.recordTransaction(addr, 'topup_agent', 0, msg.amount);
             sendBalance(ws, addr);
             broadcastStateToAll();
           }
@@ -236,6 +240,9 @@ wss.on('connection', (ws) => {
           if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.leaveTable(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
+          if (result.success && client.walletAddress && result.agent) {
+            rooms.store.recordTransaction(addr, 'leave_table', 0, result.agent.chipStack);
+          }
           broadcastStateToAll();
           break;
         }
@@ -245,7 +252,12 @@ wss.on('connection', (ws) => {
           if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.deleteAgent(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'recallAgentResult', data: result }));
-          if (result.success && client.walletAddress) sendBalance(ws, addr);
+          if (result.success && client.walletAddress) {
+            if (result.finalChips > 0) {
+              rooms.store.recordTransaction(addr, 'delete_agent', 0, result.finalChips);
+            }
+            sendBalance(ws, addr);
+          }
           broadcastStateToAll();
           break;
         }
@@ -282,6 +294,7 @@ wss.on('connection', (ws) => {
             rooms.store.addBalance(addr, chips);
             ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: txResult.error } }));
           } else {
+            await rooms.store.recordTransaction(addr, 'withdraw', Math.floor(chips / 10000 * 1e6), chips, txResult.txHash);
             ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: txResult }));
             sendBalance(ws, addr);
           }
@@ -406,6 +419,7 @@ app.post('/check-deposit', async (req, res) => {
     if (expectedMinBalance > totalServerChips) {
       const credit = expectedMinBalance - totalServerChips;
       await rooms.store.addBalance(addr, credit);
+      await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
       console.log(`[CheckDeposit] Credited ${credit} chips to ${addr}`);
 
       // Notify connected client
@@ -499,6 +513,21 @@ app.get('/debug/supabase-test', async (req, res) => {
   } catch (e) {
     res.json({ error: e.message });
   }
+});
+
+// View transaction history for a wallet
+app.get('/debug/transactions', async (req, res) => {
+  if (!rooms.store.supabase) return res.json({ error: 'No Supabase' });
+  const addr = (req.query.wallet || '').toLowerCase();
+  if (!addr) return res.json({ error: 'Pass ?wallet=0x...' });
+  const { data, error } = await rooms.store.supabase
+    .from('poker_transactions')
+    .select('*')
+    .eq('wallet_address', addr)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) return res.json({ error: error.message });
+  res.json({ count: data.length, transactions: data });
 });
 
 app.get('/debug/agents', (req, res) => {
