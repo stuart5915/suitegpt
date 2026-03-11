@@ -1141,7 +1141,11 @@
 
 // ── Connect Socials ──
 function getAuth() {
-    if (typeof getStoredAuth === 'function') return getStoredAuth();
+    try {
+        var token = localStorage.getItem('inclawbate_token');
+        var profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+        if (token && profile) return { token: token, profile: profile, wallet: profile.wallet_address, walletAddress: profile.wallet_address };
+    } catch(e) {}
     return null;
 }
 
