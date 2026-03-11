@@ -433,18 +433,33 @@ app.get('/debug/supabase-test', async (req, res) => {
     const { data: agents, error: readErr } = await rooms.store.supabase.from('poker_agents').select('id, name, wallet_address').limit(10);
     if (readErr) return res.json({ error: 'Read failed: ' + readErr.message, code: readErr.code, details: readErr.details });
 
-    // If cache has agents but DB doesn't, try saveAgent (which ensures wallet exists first)
+    // If cache has agents but DB doesn't, do step-by-step save with full error visibility
     let writeTest = null;
     if (rooms.store.agentCache.length > 0 && agents.length === 0) {
       const testAgent = rooms.store.agentCache[0];
-      try {
-        await rooms.store.saveAgent(testAgent);
-        // Re-read to verify
-        const { data: check } = await rooms.store.supabase.from('poker_agents').select('id, name').eq('id', testAgent.id);
-        writeTest = check && check.length > 0 ? { success: true, saved: check[0] } : { error: 'saveAgent ran but row not found' };
-      } catch (e) {
-        writeTest = { error: e.message };
+      const dbRow = rooms.store._toDbAgent(testAgent);
+      const steps = {};
+
+      // Step 1: Upsert wallet
+      if (testAgent.walletAddress) {
+        const walletRow = {
+          address: testAgent.walletAddress.toLowerCase(),
+          chip_balance: 0,
+          created_at: new Date().toISOString()
+        };
+        const { error: wErr } = await rooms.store.supabase.from('poker_wallets').upsert(walletRow, { onConflict: 'address' });
+        steps.walletUpsert = wErr ? { error: wErr.message, code: wErr.code, details: wErr.details, hint: wErr.hint, row: walletRow } : { success: true };
       }
+
+      // Step 2: Upsert agent
+      const { error: aErr } = await rooms.store.supabase.from('poker_agents').upsert(dbRow, { onConflict: 'id' });
+      steps.agentUpsert = aErr ? { error: aErr.message, code: aErr.code, details: aErr.details, hint: aErr.hint } : { success: true };
+
+      // Step 3: Re-read to verify
+      const { data: check } = await rooms.store.supabase.from('poker_agents').select('id, name').eq('id', testAgent.id);
+      steps.verify = check && check.length > 0 ? { found: true, row: check[0] } : { found: false };
+
+      writeTest = { steps, dbRow };
     }
 
     res.json({ agentCount: agents.length, agents, cacheCount: rooms.store.agentCache.length, writeTest });
