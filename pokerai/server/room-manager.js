@@ -187,6 +187,8 @@ class RoomManager {
         console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
 
         if (this.onBalanceChange) this.onBalanceChange(agent.walletAddress);
+        // Notify client about the auto-top-up
+        if (this.onAutoTopUp) this.onAutoTopUp(agent.walletAddress, agent.name, topUp, agent.chips);
       }
     }
   }

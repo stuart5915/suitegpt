@@ -4381,6 +4381,10 @@ function handleMessage(msg) {
       }
       break;
 
+    case 'autoTopUpNotify':
+      showToast(`Auto top-up: ${msg.data.agentName} +${msg.data.amount.toLocaleString()} chips (now ${msg.data.newStack.toLocaleString()})`, 'info');
+      break;
+
     case 'backAgentResult':
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
@@ -6286,10 +6290,11 @@ function _populateFundPresets(agentId) {
   if (!presetsEl) return;
   const savedAmt = _selectedFundAmount[agentId] || FUND_PRESETS[0];
   presetsEl.innerHTML = FUND_PRESETS.map(amt => {
-    const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
+    const chipLabel = amt >= 1000 ? (amt / 1000) + 'K' : amt;
+    const usdcLabel = '$' + (amt / 10000).toFixed(2);
     const isSelected = amt === savedAmt;
     const borderStyle = isSelected ? 'border-color:var(--accent-gold);color:var(--accent-gold)' : '';
-    return `<button onclick="_selectFundPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}">${label}</button>`;
+    return `<button onclick="_selectFundPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}"><div>${chipLabel}</div><div style="font-size:8px;opacity:0.6">${usdcLabel}</div></button>`;
   }).join('');
   const input = document.getElementById('fundAmount-' + agentId);
   if (input) input.value = savedAmt;

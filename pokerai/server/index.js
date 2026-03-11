@@ -671,6 +671,15 @@ async function startServer() {
     }
   };
 
+  // Notify clients when auto-top-up fires
+  rooms.onAutoTopUp = (walletAddress, agentName, amount, newStack) => {
+    for (const [ws, client] of clients) {
+      if (client.walletAddress === walletAddress && ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'autoTopUpNotify', data: { agentName, amount, newStack } }));
+      }
+    }
+  };
+
   // Initialize chain service if configured
   if (process.env.VAULT_CONTRACT_ADDRESS && process.env.OPERATOR_PRIVATE_KEY && process.env.BASE_RPC_URL) {
     try {
