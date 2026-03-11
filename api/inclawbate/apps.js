@@ -180,7 +180,7 @@ export default async function handler(req, res) {
             // Build OR conditions from all available identifiers
             const orParts = [];
             if (creatorId) orParts.push(`user_id.eq.${creatorId}`);
-            if (creatorWallet) orParts.push(`creator_wallet.eq.${creatorWallet.toLowerCase()}`);
+            if (creatorWallet) orParts.push(`creator_wallet.ilike.${creatorWallet.toLowerCase()}`);
             if (creatorXHandle) orParts.push(`creator_x_handle.ilike.${creatorXHandle}`);
 
             if (orParts.length > 1) {
