@@ -948,7 +948,7 @@
     <div class="native-modal">
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
         <h3>AI Agent</h3>
-        <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:var(--space-md)">Your agent posts to <a href="https://x.com/inclawbator" target="_blank" style="color:var(--lobster-400)">@inclawbator</a> on behalf of your project. Fund it with CLAWS to keep it running.</p>
+        <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:var(--space-md)">AI generates and posts tweets for your project. Connect your own X account or post through <a href="https://x.com/inclawbator" target="_blank" style="color:var(--lobster-400)">@inclawbator</a>.</p>
 
         <div id="agentNoAuth" style="display:none">
             <p style="color:var(--text-dim);font-size:0.85rem">Sign in to set up an AI agent.</p>
@@ -959,6 +959,10 @@
 
         <!-- Agent status (shown when agent exists) -->
         <div id="agentStatus" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Posts via</span>
+                <span id="agentPostsVia" style="font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--lobster-400)">@inclawbator</span>
+            </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
                 <span style="font-size:0.82rem;color:var(--text-dim)">Credits remaining</span>
                 <span id="agentCredits" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
@@ -978,19 +982,47 @@
             <label for="agentProject">Project</label>
             <select id="agentProject" required onchange="onAgentProjectChange()"></select>
 
-            <label for="agentPersona">Personality</label>
-            <input type="text" id="agentPersona" placeholder="e.g. Witty degen, hype beast, calm analyst..." maxlength="200">
-            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">How should your agent talk? Leave blank for default.</p>
+            <!-- X Account Connection -->
+            <div id="agentXSection" style="margin:var(--space-md) 0;padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02)">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div>
+                        <div style="font-size:0.82rem;font-weight:600;color:var(--text-primary)" id="agentXLabel">X Account</div>
+                        <div style="font-size:0.72rem;color:var(--text-dim)" id="agentXStatus">Not connected — posts via @inclawbator</div>
+                    </div>
+                    <button type="button" class="modal-btn" id="agentXBtn" onclick="connectProjectX()" style="font-size:0.75rem;padding:6px 14px;margin:0;width:auto">Connect X</button>
+                </div>
+            </div>
+
+            <label for="agentTone">Tone</label>
+            <select id="agentTone">
+                <option value="">Default</option>
+                <option value="hype">Hype — high energy, bullish, exclamation marks</option>
+                <option value="chill">Chill — laid back, casual, lowercase vibes</option>
+                <option value="degen">Degen — crypto native, memes, slang</option>
+                <option value="professional">Professional — informative, clean, data-driven</option>
+                <option value="meme">Meme Lord — funny, ironic, shitpost energy</option>
+            </select>
+
+            <label>Focus topics</label>
+            <div id="agentTopics" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-sm)">
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="price"> Price/Trading</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="community" checked> Community</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="utility"> Utility</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="staking"> Staking</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="partnerships"> Partnerships</label>
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="memes"> Memes</label>
+            </div>
+
+            <label for="agentCatchphrase">Custom catchphrase <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
+            <input type="text" id="agentCatchphrase" placeholder="e.g. always signs off with LFG" maxlength="100">
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">A short note woven into the agent's tweets.</p>
 
             <label for="agentFrequency">Posts per day</label>
             <select id="agentFrequency">
-                <option value="2">2 / day</option>
-                <option value="4" selected>4 / day</option>
-                <option value="6">6 / day</option>
-                <option value="8">8 / day</option>
-                <option value="12">12 / day</option>
+                <option value="1">1 / day — 1 credit/day</option>
+                <option value="2" selected>2 / day — 2 credits/day</option>
+                <option value="3">3 / day — 3 credits/day</option>
             </select>
-            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">1 credit per post. More posts = more visibility.</p>
 
             <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
             <div class="modal-success" id="agentSuccess" style="display:none"></div>
@@ -1264,6 +1296,14 @@ function onAgentProjectChange() {
     var statusDiv = document.getElementById('agentStatus');
     var btn = document.getElementById('agentSubmitBtn');
 
+    // X connection status
+    var hasOwnX = project.x_connected && project.x_handle;
+    document.getElementById('agentXLabel').textContent = hasOwnX ? '@' + project.x_handle : 'X Account';
+    document.getElementById('agentXStatus').textContent = hasOwnX ? 'Connected — posts from your account' : 'Not connected — posts via @inclawbator';
+    document.getElementById('agentXBtn').textContent = hasOwnX ? 'Disconnect' : 'Connect X';
+    document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
+    document.getElementById('agentPostsVia').textContent = hasOwnX ? '@' + project.x_handle : '@inclawbator';
+
     if (project.agent_enabled) {
         statusDiv.style.display = 'block';
         document.getElementById('agentCredits').textContent = (project.agent_credits || 0) + ' credits';
@@ -1275,17 +1315,149 @@ function onAgentProjectChange() {
         badge.style.background = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
         badge.style.color = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
 
-        document.getElementById('agentPersona').value = project.agent_persona || '';
-        document.getElementById('agentFrequency').value = project.agent_posts_per_day || 4;
+        // Parse stored persona back into tone/topics/catchphrase
+        parsePersonaIntoForm(project.agent_persona || '');
+        document.getElementById('agentFrequency').value = Math.min(3, project.agent_posts_per_day || 2);
 
         btn.textContent = 'Update Agent';
     } else {
         statusDiv.style.display = 'none';
-        document.getElementById('agentPersona').value = '';
-        document.getElementById('agentFrequency').value = '4';
+        document.getElementById('agentTone').value = '';
+        document.querySelectorAll('#agentTopics input').forEach(function(cb) { cb.checked = cb.value === 'community'; });
+        document.getElementById('agentCatchphrase').value = '';
+        document.getElementById('agentFrequency').value = '2';
         btn.textContent = 'Enable Agent';
     }
 }
+
+function parsePersonaIntoForm(persona) {
+    // Try to parse structured persona: "Tone: hype | Topics: community, memes | Catchphrase: LFG"
+    var tone = '';
+    var topics = [];
+    var catchphrase = '';
+
+    var toneMatch = persona.match(/Tone:\s*(\w+)/i);
+    if (toneMatch) tone = toneMatch[1].toLowerCase();
+
+    var topicMatch = persona.match(/Topics:\s*([^|]+)/i);
+    if (topicMatch) topics = topicMatch[1].split(',').map(function(t) { return t.trim().toLowerCase(); });
+
+    var catchMatch = persona.match(/Catchphrase:\s*(.+)/i);
+    if (catchMatch) catchphrase = catchMatch[1].trim();
+
+    document.getElementById('agentTone').value = tone || '';
+    document.querySelectorAll('#agentTopics input').forEach(function(cb) {
+        cb.checked = topics.length ? topics.indexOf(cb.value) !== -1 : cb.value === 'community';
+    });
+    document.getElementById('agentCatchphrase').value = catchphrase;
+}
+
+function buildPersonaString() {
+    var tone = document.getElementById('agentTone').value;
+    var topics = [];
+    document.querySelectorAll('#agentTopics input:checked').forEach(function(cb) { topics.push(cb.value); });
+    var catchphrase = document.getElementById('agentCatchphrase').value.trim();
+
+    var parts = [];
+    if (tone) parts.push('Tone: ' + tone);
+    if (topics.length) parts.push('Topics: ' + topics.join(', '));
+    if (catchphrase) parts.push('Catchphrase: ' + catchphrase);
+    return parts.join(' | ');
+}
+
+// ── X Account Connection (OAuth 2.0 PKCE) ──
+
+async function connectProjectX() {
+    var auth = getAuth();
+    if (!auth || !auth.token) return alert('Sign in first');
+
+    var projectId = document.getElementById('agentProject').value;
+    if (!projectId) return;
+
+    // Generate PKCE code_verifier + code_challenge
+    var array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    var codeVerifier = btoa(String.fromCharCode.apply(null, array))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    var encoder = new TextEncoder();
+    var digest = await crypto.subtle.digest('SHA-256', encoder.encode(codeVerifier));
+    var codeChallenge = btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    // Store verifier + project_id for callback
+    sessionStorage.setItem('x_connect_verifier', codeVerifier);
+    sessionStorage.setItem('x_connect_project_id', projectId);
+
+    try {
+        var resp = await fetch('/api/inclawbate/x-connect-project', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+            body: JSON.stringify({ action: 'start', project_id: projectId, code_challenge: codeChallenge })
+        });
+        var data = await resp.json();
+        if (!resp.ok || !data.authorize_url) throw new Error(data.error || 'Failed to start X connection');
+        window.location.href = data.authorize_url;
+    } catch (err) {
+        alert(err.message || 'Failed to connect X');
+    }
+}
+
+async function disconnectProjectX(projectId) {
+    if (!confirm('Disconnect X account? Agent will fall back to posting via @inclawbator.')) return;
+    var auth = getAuth();
+    if (!auth || !auth.token) return;
+
+    try {
+        await fetch('/api/inclawbate/x-connect-project', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+            body: JSON.stringify({ action: 'disconnect', project_id: projectId })
+        });
+        var project = _agentProjects.find(function(p) { return p.id === projectId; });
+        if (project) { project.x_connected = false; project.x_handle = null; }
+        onAgentProjectChange();
+    } catch (err) {
+        alert(err.message || 'Failed to disconnect');
+    }
+}
+
+// Handle OAuth callback (X redirects back to /tools?code=xxx&state=xxx)
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    if (!code) return;
+
+    var verifier = sessionStorage.getItem('x_connect_verifier');
+    var projectId = sessionStorage.getItem('x_connect_project_id');
+    if (!verifier || !projectId) return;
+
+    // Clean up URL
+    history.replaceState(null, '', window.location.pathname + '#ai-agent');
+
+    // Exchange code for tokens
+    var auth = getAuth();
+    if (!auth || !auth.token) return;
+
+    sessionStorage.removeItem('x_connect_verifier');
+    sessionStorage.removeItem('x_connect_project_id');
+
+    fetch('/api/inclawbate/x-connect-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+        body: JSON.stringify({ action: 'callback', code: code, code_verifier: verifier, project_id: projectId })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            // Update local project data and auto-open modal
+            setTimeout(function() { openAgentModal(); }, 300);
+        } else {
+            alert('X connection failed: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function() { alert('X connection failed'); });
+})();
 
 function closeAgentModal() {
     document.getElementById('agentOverlay').classList.remove('open');
@@ -1313,7 +1485,7 @@ async function submitAgent(e) {
         var body = {
             action: 'update-agent',
             project_id: projectId,
-            agent_persona: document.getElementById('agentPersona').value,
+            agent_persona: buildPersonaString(),
             agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value)
         };
 

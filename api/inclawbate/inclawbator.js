@@ -144,8 +144,8 @@ export default async function handler(req, res) {
         // Strip secrets, but expose whether X is connected
         function sanitizeProjects(rows) {
             return (rows || []).map(p => {
-                const { x_access_token, x_access_secret, ...safe } = p;
-                safe.x_connected = !!(x_access_token && x_access_secret);
+                const { x_access_token, x_access_secret, x_refresh_token, ...safe } = p;
+                safe.x_connected = !!(x_access_token && (x_access_secret || x_refresh_token));
                 return safe;
             });
         }
@@ -161,8 +161,8 @@ export default async function handler(req, res) {
 
             if (projErr || !project) return res.status(404).json({ error: 'Project not found' });
 
-            const { x_access_token, x_access_secret, ...safe } = project;
-            safe.x_connected = !!(x_access_token && x_access_secret);
+            const { x_access_token, x_access_secret, x_refresh_token: _xrt, ...safe } = project;
+            safe.x_connected = !!(x_access_token && (x_access_secret || _xrt));
             return res.status(200).json({ project: safe });
         }
 
@@ -177,8 +177,8 @@ export default async function handler(req, res) {
 
             if (projErr || !project) return res.status(404).json({ error: 'Project not found' });
 
-            const { x_access_token, x_access_secret, ...safe } = project;
-            safe.x_connected = !!(x_access_token && x_access_secret);
+            const { x_access_token, x_access_secret, x_refresh_token: _xrt, ...safe } = project;
+            safe.x_connected = !!(x_access_token && (x_access_secret || _xrt));
 
             // Last 10 agent posts
             const { data: posts } = await supabase
@@ -680,8 +680,8 @@ export default async function handler(req, res) {
                 .single();
 
             if (error) return res.status(500).json({ error: error.message });
-            const { x_access_token: _t, x_access_secret: _s, ...safeResult } = data;
-            safeResult.x_connected = !!(_t && _s);
+            const { x_access_token: _t, x_access_secret: _s, x_refresh_token: _r, ...safeResult } = data;
+            safeResult.x_connected = !!(_t && (_s || _r));
             return res.status(200).json({ project: safeResult });
         }
 
@@ -708,7 +708,7 @@ export default async function handler(req, res) {
             const updates = { updated_at: new Date().toISOString() };
             if (agent_persona !== undefined) updates.agent_persona = agent_persona || null;
             if (agent_posts_per_day !== undefined) {
-                updates.agent_posts_per_day = Math.min(96, Math.max(1, parseInt(agent_posts_per_day) || 4));
+                updates.agent_posts_per_day = Math.min(3, Math.max(1, parseInt(agent_posts_per_day) || 2));
             }
             if (agent_status === 'active' || agent_status === 'paused') {
                 updates.agent_status = agent_status;
@@ -725,8 +725,8 @@ export default async function handler(req, res) {
                 .single();
 
             if (error) return res.status(500).json({ error: error.message });
-            const { x_access_token: _t, x_access_secret: _s, ...safeResult } = data;
-            safeResult.x_connected = !!(_t && _s);
+            const { x_access_token: _t, x_access_secret: _s, x_refresh_token: _r, ...safeResult } = data;
+            safeResult.x_connected = !!(_t && (_s || _r));
             return res.status(200).json({ project: safeResult });
         }
 

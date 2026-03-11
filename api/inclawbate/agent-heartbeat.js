@@ -1,5 +1,7 @@
-// Inclawbator AI Agent Heartbeat — Cron (every 30 min)
+// Inclawbator AI Agent Heartbeat — Cron (every 15 min)
 // Finds active agents that are due, generates a tweet via Claude Haiku, posts to X.
+// If project has its own X account connected (OAuth 2.0), posts there.
+// Otherwise falls back to shared @inclawbator account (OAuth 1.0a).
 // Self-funding: 1 credit per post, goes dormant when broke.
 
 import { createClient } from '@supabase/supabase-js';
@@ -10,22 +12,54 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const X_CLIENT_ID = process.env.X_CLIENT_ID;
+const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const DAILY_POST_CAP = 40; // global cap across all agents (X Basic tier safety)
+const DAILY_POST_CAP = 40; // global cap across all agents
 
 // ── Tweet generation ──
 
-const PILLARS = [
-    'community', 'utility', 'staking', 'milestones',
-    'degen culture', 'memes', 'market vibes', 'ecosystem growth'
-];
+const TONE_DESCRIPTIONS = {
+    hype: 'High energy, bullish, uses exclamation marks. Excited but not cringey.',
+    chill: 'Laid back, casual, lowercase vibes. Calm and collected.',
+    degen: 'Crypto native, uses slang (gm, ser, lfg, ngmi), meme-aware.',
+    professional: 'Informative, clean, data-driven. No slang.',
+    meme: 'Funny, ironic, shitpost energy. Absurdist humor.'
+};
+
+const DEFAULT_TOPICS = ['community', 'utility', 'staking', 'milestones', 'memes', 'market vibes'];
+
+function parsePersona(persona) {
+    const result = { tone: '', topics: [], catchphrase: '' };
+    if (!persona) return result;
+
+    const toneMatch = persona.match(/Tone:\s*(\w+)/i);
+    if (toneMatch) result.tone = toneMatch[1].toLowerCase();
+
+    const topicMatch = persona.match(/Topics:\s*([^|]+)/i);
+    if (topicMatch) result.topics = topicMatch[1].split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+    const catchMatch = persona.match(/Catchphrase:\s*(.+)/i);
+    if (catchMatch) result.catchphrase = catchMatch[1].trim();
+
+    return result;
+}
 
 async function generateTweet(project) {
-    const pillar = PILLARS[Math.floor(Math.random() * PILLARS.length)];
+    const persona = parsePersona(project.agent_persona);
+    const topics = persona.topics.length ? persona.topics : DEFAULT_TOPICS;
+    const pillar = topics[Math.floor(Math.random() * topics.length)];
+    const toneDesc = TONE_DESCRIPTIONS[persona.tone] || 'Natural, authentic, conversational.';
 
-    const systemPrompt = `You are an AI agent for $${project.token_symbol} (${project.token_name}). You tweet from @inclawbator on behalf of this project.
+    const hasOwnX = project.x_access_token && project.x_refresh_token;
+    const accountNote = hasOwnX && project.x_handle
+        ? `You tweet as @${project.x_handle}.`
+        : `You tweet from @inclawbator on behalf of this project.`;
 
-${project.agent_persona ? 'Personality: ' + project.agent_persona : ''}
+    const systemPrompt = `You are an AI agent for $${project.token_symbol} (${project.token_name}). ${accountNote}
+
+Tone: ${toneDesc}
+${persona.catchphrase ? 'Signature style: ' + persona.catchphrase : ''}
 ${project.description ? 'Project: ' + project.description : ''}
 ${project.website_url ? 'Website: ' + project.website_url : ''}
 
@@ -66,9 +100,57 @@ Write a tweet:`;
     return (data.content?.[0]?.text || '').trim();
 }
 
-// ── X OAuth 1.0a posting (shared @inclawbator account) ──
+// ── OAuth 2.0 token refresh ──
 
-async function postTweet(text) {
+async function refreshOAuth2Token(refreshToken) {
+    if (!X_CLIENT_ID || !X_CLIENT_SECRET || !refreshToken) return null;
+    const basicAuth = Buffer.from(`${X_CLIENT_ID}:${X_CLIENT_SECRET}`).toString('base64');
+    const resp = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${basicAuth}`
+        },
+        body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: X_CLIENT_ID
+        }).toString()
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.access_token) return null;
+    return data;
+}
+
+// ── Post via project's own X account (OAuth 2.0 Bearer) ──
+
+async function postTweetOAuth2(text, accessToken) {
+    const response = await fetch('https://api.twitter.com/2/tweets', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text })
+    });
+
+    const data = await response.json();
+
+    // Token expired — caller should refresh and retry
+    if (response.status === 401) {
+        return { expired: true };
+    }
+
+    if (!response.ok) {
+        throw new Error(data.detail || data.title || 'X API post failed');
+    }
+
+    return { tweetId: data.data?.id || null };
+}
+
+// ── Post via shared @inclawbator account (OAuth 1.0a fallback) ──
+
+async function postTweetShared(text) {
     const X_API_KEY = process.env.INCLAWBATOR_X_API_KEY;
     const X_API_SECRET = process.env.INCLAWBATOR_X_API_SECRET;
     const X_ACCESS_TOKEN = process.env.INCLAWBATOR_X_ACCESS_TOKEN;
@@ -123,6 +205,44 @@ async function postTweet(text) {
     }
 
     return data.data?.id || null;
+}
+
+// ── Post tweet: try project's own account first, fall back to shared ──
+
+async function postTweet(text, project) {
+    const hasOwnX = project.x_access_token && project.x_refresh_token;
+
+    if (hasOwnX) {
+        // Try posting with project's token
+        let result = await postTweetOAuth2(text, project.x_access_token);
+
+        if (result.expired) {
+            // Refresh the token and retry
+            const newTokens = await refreshOAuth2Token(project.x_refresh_token);
+            if (newTokens) {
+                // Save refreshed tokens
+                await supabase
+                    .from('inclawbator_projects')
+                    .update({
+                        x_access_token: newTokens.access_token,
+                        x_refresh_token: newTokens.refresh_token || project.x_refresh_token
+                    })
+                    .eq('id', project.id);
+
+                result = await postTweetOAuth2(text, newTokens.access_token);
+            }
+        }
+
+        if (!result.expired) {
+            return { tweetId: result.tweetId, posted_via: project.x_handle ? '@' + project.x_handle : 'own_account' };
+        }
+
+        // Token refresh failed — fall through to shared account
+    }
+
+    // Fall back to shared @inclawbator
+    const tweetId = await postTweetShared(text);
+    return { tweetId, posted_via: '@inclawbator' };
 }
 
 // ── Main handler ──
@@ -204,8 +324,8 @@ export default async function handler(req, res) {
                     throw new Error('Generated tweet invalid or too long');
                 }
 
-                // Post to X via shared @inclawbator account
-                const tweetId = await postTweet(tweetText);
+                // Post to X (project's own account or shared @inclawbator)
+                const { tweetId, posted_via } = await postTweet(tweetText, project);
 
                 // Record post
                 await supabase
@@ -215,7 +335,8 @@ export default async function handler(req, res) {
                         tweet_text: tweetText,
                         tweet_id: tweetId,
                         credits_cost: 1,
-                        status: 'posted'
+                        status: 'posted',
+                        posted_via: posted_via || '@inclawbator'
                     });
 
                 // Update project
