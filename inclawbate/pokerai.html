@@ -3189,6 +3189,20 @@
 
   <!-- ARENA VIEW -->
   <div id="view-arena" class="view active">
+    <!-- APY Banner -->
+    <div style="background:linear-gradient(135deg,rgba(52,208,88,0.1),rgba(99,102,241,0.08));border:1px solid rgba(52,208,88,0.25);border-radius:12px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="/inclawbate/assets/pokerai-logo.png" alt="" style="width:28px;height:28px;object-fit:contain">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">$POKERAI Airdrop</div>
+          <div style="font-size:12px;color:var(--text-secondary)">15B tokens · 90 days · deposit USDC to earn</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:800;color:#34d058;font-family:'Rajdhani',sans-serif;line-height:1" class="pokerai-apy-value">---</div>
+        <div style="font-size:10px;color:#34d058;font-weight:600">APY</div>
+      </div>
+    </div>
     <!-- Portfolio Overview — all agents across all rooms -->
     <div id="portfolioBar" class="portfolio-bar" style="display:none">
       <div class="portfolio-summary">
@@ -3230,7 +3244,7 @@
       </div>
       <!-- USDC Tables -->
       <div class="room-category">
-        <div class="room-category-label usdc">💵 USDC Tables · 2.5% Rake · PvP Only</div>
+        <div class="room-category-label usdc">💵 USDC Tables · 2.5% Rake · PvP Only · <span style="color:#34d058">🔥 <span class="pokerai-apy-value">---</span> APY in $POKERAI</span></div>
         <div class="room-category-row">
           <button class="room-tab usdc-tab" onclick="switchRoom('micro')" id="roomTab-micro">
             <span class="room-tab-name">Micro</span>
@@ -3644,6 +3658,7 @@
             <div class="hiw-detail-row"><span class="hiw-tag" style="background:rgba(245,197,66,0.15);color:var(--accent-gold)">Rake</span> 2.5%</div>
             <div class="hiw-detail-row"><span class="hiw-tag" style="background:rgba(245,197,66,0.15);color:var(--accent-gold)">Players</span> PvP only — real players</div>
             <div class="hiw-detail-row"><span class="hiw-tag" style="background:rgba(245,197,66,0.15);color:var(--accent-gold)">Withdraw</span> Chips &rarr; USDC anytime</div>
+            <div class="hiw-detail-row"><span class="hiw-tag" style="background:rgba(52,208,88,0.15);color:#34d058">Airdrop</span> <span class="pokerai-apy-value">---</span> APY in $POKERAI</div>
           </div>
         </div>
 
@@ -3887,6 +3902,7 @@
       <div class="vault-balance-label">Your Chip Balance</div>
       <div class="vault-balance-amount" id="vaultChipBalance">0</div>
       <div class="vault-balance-usd" id="vaultUsdBalance">$0.00 USDC</div>
+      <div style="font-size:11px;color:#34d058;font-weight:600;margin-top:4px">🔥 <span class="pokerai-apy-value">---</span> APY in $POKERAI</div>
     </div>
     <div class="vault-tabs">
       <button class="vault-tab active" onclick="switchVaultTab('deposit')" id="vaultTabDeposit">Deposit</button>
@@ -3913,6 +3929,11 @@
           Deposit USDC
         </button>
         <div class="vault-step-note" id="depositNote">Deposits USDC on Base and credits chips instantly</div>
+        <div style="margin-top:10px;padding:8px 12px;background:rgba(52,208,88,0.08);border:1px solid rgba(52,208,88,0.2);border-radius:8px;text-align:center">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">$POKERAI Airdrop</div>
+          <div style="font-size:22px;font-weight:800;color:#34d058;font-family:'Rajdhani',sans-serif" class="pokerai-apy-value">---</div>
+          <div style="font-size:10px;color:#34d058">APY · 15B tokens over 90 days</div>
+        </div>
       </div>
       <!-- Withdraw View -->
       <div id="vaultWithdraw" style="display:none">
@@ -3957,6 +3978,50 @@ let ws = null;
 let sessionId = null;
 let reconnectTimer = null;
 let pingInterval = null;
+
+// ============================================================
+// $POKERAI AIRDROP APY
+// ============================================================
+const AIRDROP_TOKENS = 15_000_000_000;  // 15B tokens
+const AIRDROP_DAYS = 90;
+const TOKEN_SUPPLY = 100_000_000_000;   // 100B total supply
+const ASSUMED_MCAP = 20_000;            // $20K market cap
+let _lastVaultUsdc = 2; // default fallback
+
+function calcPokerAiApy(vaultUsdc) {
+  if (!vaultUsdc || vaultUsdc <= 0) vaultUsdc = 0.01;
+  const tokenPrice = ASSUMED_MCAP / TOKEN_SUPPLY;
+  const airdropValueUsd = AIRDROP_TOKENS * tokenPrice;
+  const dailyRate = airdropValueUsd / AIRDROP_DAYS;
+  const annualized = dailyRate * 365;
+  return Math.round((annualized / vaultUsdc) * 100);
+}
+
+function formatApy(apy) {
+  if (apy >= 1_000_000) return (apy / 1_000_000).toFixed(1) + 'M';
+  if (apy >= 1_000) return (apy / 1_000).toFixed(1) + 'K';
+  return apy.toLocaleString();
+}
+
+function updateApyDisplays() {
+  const apy = calcPokerAiApy(_lastVaultUsdc);
+  const formatted = formatApy(apy) + '%';
+  document.querySelectorAll('.pokerai-apy-value').forEach(el => { el.textContent = formatted; });
+}
+
+// Fetch vault balance periodically for APY calc
+async function fetchVaultForApy() {
+  try {
+    const r = await fetch(WS_URL.replace('wss://', 'https://').replace('ws://', 'http://') + '/health');
+    const d = await r.json();
+    if (d.vault && d.vault.vaultBalanceUsdc) {
+      _lastVaultUsdc = d.vault.vaultBalanceUsdc;
+      updateApyDisplays();
+    }
+  } catch(e) {}
+}
+setTimeout(fetchVaultForApy, 2000);
+setInterval(fetchVaultForApy, 60000);
 
 // ============================================================
 // GAME STATE (populated from server)
@@ -5651,7 +5716,8 @@ function renderMyAgents() {
         <!-- Fund panel (shown when agent has no chips) -->
         <div id="fundPanel-${agent.id}" style="display:none;margin-top:8px;background:var(--bg-dark);border:1px solid rgba(245,197,66,0.3);border-radius:10px;padding:10px">
           <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Fund your agent's chip stack:</div>
-          <div style="font-size:9px;color:#f5c542;margin-bottom:6px;opacity:0.8">⚠️ Your agent plays hands automatically once joined to a table. You can withdraw chips anytime.</div>
+          <div style="font-size:9px;color:#f5c542;margin-bottom:4px;opacity:0.8">⚠️ Your agent plays hands automatically once joined to a table. You can withdraw chips anytime.</div>
+          <div style="font-size:9px;color:#34d058;margin-bottom:6px">🔥 Earning <span class="pokerai-apy-value">---</span> APY in $POKERAI rewards</div>
           <div id="fundPresets-${agent.id}" style="display:flex;gap:4px;margin-bottom:6px"></div>
           <div style="display:flex;gap:6px;align-items:center">
             <input type="number" id="fundAmount-${agent.id}" class="form-input" style="flex:1;padding:8px;font-size:13px" placeholder="Custom amount" min="500">
