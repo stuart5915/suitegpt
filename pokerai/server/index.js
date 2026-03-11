@@ -243,6 +243,8 @@ wss.on('connection', (ws) => {
           if (result.success) {
             rooms.store.recordTransaction(addr, 'topup_agent', 0, msg.amount);
             sendBalance(ws, addr);
+            const agents = rooms.getAgentsForWallet(addr);
+            ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
             broadcastStateToAll();
           }
           break;
