@@ -330,6 +330,40 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        // === Backing (stake on other agents) ===
+        case 'backAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.backAgent(addr, msg.agentId, msg.amount);
+          ws.send(JSON.stringify({ type: 'backAgentResult', data: result }));
+          if (result.success) {
+            rooms.store.recordTransaction(addr, 'back_agent', 0, msg.amount);
+            sendBalance(ws, addr);
+          }
+          broadcastStateToAll();
+          break;
+        }
+
+        case 'unbackAgent': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          const result = rooms.unbackAgent(addr, msg.backingId);
+          ws.send(JSON.stringify({ type: 'unbackAgentResult', data: result }));
+          if (result.success) {
+            rooms.store.recordTransaction(addr, 'unback_agent', 0, result.withdrawn);
+            sendBalance(ws, addr);
+          }
+          broadcastStateToAll();
+          break;
+        }
+
+        case 'getMyBackings': {
+          if (!requireAuth(client, ws)) break;
+          const backings = rooms.store.getBackingsForWallet(client.walletAddress);
+          ws.send(JSON.stringify({ type: 'myBackings', data: backings }));
+          break;
+        }
+
         // === Legacy fund/withdraw (house bot funding) ===
         case 'fund': {
           const result = rooms.fundAgent(client.sessionId, msg.agentId, msg.amount);

@@ -118,6 +118,9 @@ class RoomManager {
       this.pendingRakeChips += newRake;
     }
 
+    // Update backing values based on agent performance this hand
+    this._updateBackingValues(table);
+
     // Auto top-up: check agents at this table and refill from wallet if needed
     this._runAutoTopUp(table);
 
@@ -406,6 +409,78 @@ class RoomManager {
     return { success: true, agentId, chipStack: agent.chipStack, amount: withdrawAmt };
   }
 
+  // === Backing operations ===
+
+  backAgent(walletAddress, agentId, amount) {
+    if (!amount || amount < 500) return { error: 'Minimum backing is 500 chips' };
+
+    // Find agent at a table (not lobby — must be playing)
+    const table = this._findAgentTable(agentId);
+    if (!table) return { error: 'Agent not found at any table' };
+
+    // No backing in sandbox
+    const roomId = table.roomId;
+    const room = this.rooms[roomId];
+    if (room && room.isSandbox) return { error: 'Cannot back agents in sandbox' };
+
+    // Check wallet balance
+    const wallet = this.store.getWallet(walletAddress);
+    if (!wallet || wallet.balance < amount) return { error: `Not enough chips! You have ${(wallet ? wallet.balance : 0).toLocaleString()}` };
+
+    const agent = table.agents.find(a => a.id === agentId);
+    if (!agent) return { error: 'Agent not found' };
+
+    // Deduct from wallet
+    this.store.deductBalance(walletAddress, amount);
+
+    // Create backing record
+    const backing = this.store.createBacking(walletAddress, agentId, amount, roomId);
+
+    console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips`);
+    return { success: true, agentId, agentName: agent.name, amount };
+  }
+
+  unbackAgent(walletAddress, backingId) {
+    const backing = this.store.getBackingById(backingId);
+    if (!backing) return { error: 'Backing not found' };
+    if (backing.backerWallet !== walletAddress.toLowerCase()) return { error: 'Not your backing' };
+
+    const currentValue = Math.max(0, backing.currentValue);
+    const pnl = currentValue - backing.chipsStaked;
+
+    // Return current value to wallet
+    if (currentValue > 0) {
+      this.store.addBalance(walletAddress, currentValue);
+    }
+    this.store.deleteBacking(backingId);
+
+    console.log(`[RoomManager] ${walletAddress.slice(0,8)} withdrew backing: staked=${backing.chipsStaked}, returned=${currentValue}, pnl=${pnl}`);
+    return { success: true, originalStake: backing.chipsStaked, withdrawn: currentValue, pnl };
+  }
+
+  // Called after each hand to update backing values based on agent performance
+  _updateBackingValues(table) {
+    for (const agent of table.agents) {
+      if (agent._startChips === undefined) continue;
+      const delta = agent.chips - agent._startChips;
+      if (delta === 0) continue;
+
+      const backings = this.store.getBackingsForAgent(agent.id);
+      if (backings.length === 0) continue;
+
+      const totalPool = backings.reduce((sum, b) => sum + b.currentValue, 0);
+      if (totalPool <= 0) continue;
+
+      const updates = [];
+      for (const b of backings) {
+        const share = b.currentValue / totalPool;
+        const newValue = Math.max(0, Math.floor(b.currentValue + delta * share));
+        updates.push({ id: b.id, currentValue: newValue });
+      }
+      this.store.updateBackingValues(agent.id, updates);
+    }
+  }
+
   // === Room operations ===
 
   joinRoom(walletAddress, agentId, roomId, chipStack) {
@@ -493,6 +568,11 @@ class RoomManager {
     }
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
+    // Auto-withdraw all backers when agent leaves table
+    if (this.store.withdrawAllBackingsForAgent) {
+      this.store.withdrawAllBackingsForAgent(agentId);
+    }
+
     // Persist updated agent (skip sandbox)
     if (!walletAddress.startsWith('sandbox_')) {
       this.store.saveAgent(lobbyAgent);
@@ -533,6 +613,11 @@ class RoomManager {
   deleteAgent(walletAddress, agentId) {
     let finalChips = 0;
     let pnl = 0;
+
+    // Auto-withdraw all backers before removing agent
+    if (this.store.withdrawAllBackingsForAgent) {
+      this.store.withdrawAllBackingsForAgent(agentId);
+    }
 
     // Check tables first
     const table = this._findAgentTable(agentId);
@@ -682,6 +767,27 @@ class RoomManager {
     }
 
     const state = activeTable.getStateForClient(sessionId, walletAddress);
+
+    // Add backing info per agent
+    if (state.agents) {
+      const wAddr = walletAddress ? walletAddress.toLowerCase() : null;
+      state.agents = state.agents.map(a => {
+        const backings = this.store.getBackingsForAgent ? this.store.getBackingsForAgent(a.id) : [];
+        const totalBacked = backings.reduce((sum, b) => sum + b.currentValue, 0);
+        const myBacking = wAddr ? backings.find(b => b.backerWallet === wAddr) : null;
+        return {
+          ...a,
+          totalBacked,
+          backerCount: backings.length,
+          myBacking: myBacking ? {
+            id: myBacking.id,
+            staked: myBacking.chipsStaked,
+            currentValue: myBacking.currentValue,
+            pnl: myBacking.currentValue - myBacking.chipsStaked
+          } : null
+        };
+      });
+    }
 
     // Add room/table info
     state.activeRoom = activeRoom;

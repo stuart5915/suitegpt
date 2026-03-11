@@ -5,6 +5,7 @@ class SupabaseStore {
     this.supabase = createClient(url, serviceKey);
     this.walletCache = new Map();  // in-memory cache for hot path
     this.agentCache = [];
+    this.backingCache = [];  // in-memory backing records
     this._initialized = false;
   }
 
@@ -26,8 +27,23 @@ class SupabaseStore {
 
     if (aErr) console.error(`[SupabaseStore] Failed to load agents:`, aErr.message);
     this.agentCache = (agents || []).map(a => this._fromDbAgent(a));
+
+    const { data: backings, error: bErr } = await this.supabase
+      .from('poker_backers')
+      .select('*');
+    if (bErr) console.error(`[SupabaseStore] Failed to load backings:`, bErr.message);
+    this.backingCache = (backings || []).map(b => ({
+      id: b.id,
+      backerWallet: b.backer_wallet,
+      agentId: b.agent_id,
+      chipsStaked: b.chips_staked,
+      currentValue: b.current_value,
+      roomId: b.room_id,
+      createdAt: b.created_at
+    }));
+
     this._initialized = true;
-    console.log(`[SupabaseStore] Loaded ${this.walletCache.size} wallets, ${this.agentCache.length} agents`);
+    console.log(`[SupabaseStore] Loaded ${this.walletCache.size} wallets, ${this.agentCache.length} agents, ${this.backingCache.length} backings`);
   }
 
   // =========== Wallet ===========
@@ -186,6 +202,85 @@ class SupabaseStore {
       chip_amount: chipAmount,
       tx_hash: txHash
     });
+  }
+
+  // =========== Backings ===========
+
+  getBackingsForAgent(agentId) {
+    return this.backingCache.filter(b => b.agentId === agentId);
+  }
+
+  getBackingsForWallet(walletAddress) {
+    const addr = walletAddress.toLowerCase();
+    return this.backingCache.filter(b => b.backerWallet === addr);
+  }
+
+  getBackingById(backingId) {
+    return this.backingCache.find(b => b.id === backingId) || null;
+  }
+
+  async createBacking(backerWallet, agentId, chipsStaked, roomId) {
+    const backing = {
+      id: null,
+      backerWallet: backerWallet.toLowerCase(),
+      agentId,
+      chipsStaked,
+      currentValue: chipsStaked,
+      roomId,
+      createdAt: new Date().toISOString()
+    };
+
+    const { data, error } = await this.supabase.from('poker_backers').insert({
+      backer_wallet: backing.backerWallet,
+      agent_id: agentId,
+      chips_staked: chipsStaked,
+      current_value: chipsStaked,
+      room_id: roomId
+    }).select('id').single();
+
+    if (error) {
+      console.error(`[SupabaseStore] createBacking FAILED:`, error.message);
+      return null;
+    }
+    backing.id = data.id;
+    this.backingCache.push(backing);
+    console.log(`[SupabaseStore] Backing created: ${backing.backerWallet.slice(0,8)} → ${agentId.slice(0,20)} (${chipsStaked} chips)`);
+    return backing;
+  }
+
+  async deleteBacking(backingId) {
+    this.backingCache = this.backingCache.filter(b => b.id !== backingId);
+    await this.supabase.from('poker_backers').delete().eq('id', backingId);
+  }
+
+  async updateBackingValues(agentId, updates) {
+    // updates = [{ id, currentValue }]
+    for (const u of updates) {
+      const cached = this.backingCache.find(b => b.id === u.id);
+      if (cached) {
+        cached.currentValue = u.currentValue;
+        cached.updatedAt = new Date().toISOString();
+      }
+    }
+    // Batch write to DB
+    for (const u of updates) {
+      await this.supabase.from('poker_backers')
+        .update({ current_value: u.currentValue, updated_at: new Date().toISOString() })
+        .eq('id', u.id);
+    }
+  }
+
+  async withdrawAllBackingsForAgent(agentId) {
+    const backings = this.getBackingsForAgent(agentId);
+    const results = [];
+    for (const b of backings) {
+      if (b.currentValue > 0) {
+        await this.addBalance(b.backerWallet, b.currentValue);
+        results.push({ wallet: b.backerWallet, returned: b.currentValue, pnl: b.currentValue - b.chipsStaked });
+      }
+      await this.deleteBacking(b.id);
+    }
+    return results;
   }
 
   // =========== DB ↔ App mapping ===========
