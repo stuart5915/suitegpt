@@ -10,6 +10,12 @@ const ROOM_CONFIGS = {
 
 const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
 
+// Platform agent rebalancing — wallets whose agents auto-move between tables as liquidity
+const PLATFORM_WALLETS = new Set(
+  (process.env.PLATFORM_WALLETS || '').split(',').filter(Boolean).map(s => s.trim().toLowerCase())
+);
+const PLATFORM_TARGET_PER_TABLE = 5; // target total players per table with humans
+
 class RoomManager {
   constructor(broadcastFn, externalStore) {
     this.broadcastFn = broadcastFn;
@@ -99,6 +105,13 @@ class RoomManager {
         success: true, pending: false, agentId,
         agent: { id: lobbyAgent.id, name: lobbyAgent.name, chipStack: lobbyAgent.chipStack }
       });
+    };
+
+    // Rebalance platform agents after each hand completes
+    table._onHandComplete = () => {
+      if (!room.isSandbox) {
+        this._rebalanceRoom(roomId);
+      }
     };
 
     room.tables.push(table);
@@ -204,6 +217,127 @@ class RoomManager {
     table.contractPool -= perWallet * wallets.size;
   }
 
+  // === Platform Agent Rebalancing ===
+  // Platform agents act as elastic liquidity — they fill tables so humans always have opponents,
+  // and move between tables as humans join/leave.
+
+  _isPlatformAgent(agent) {
+    return agent.isCustom && agent.walletAddress && PLATFORM_WALLETS.has(agent.walletAddress.toLowerCase());
+  }
+
+  _getTableStats(table) {
+    let humans = 0, platform = 0;
+    for (const a of table.agents) {
+      if (!a.isCustom) continue; // house bot (sandbox only)
+      if (this._isPlatformAgent(a)) platform++;
+      else humans++;
+    }
+    return { humans, platform, total: table.agents.length };
+  }
+
+  // Main rebalancing logic — called after hands complete and after human joins/leaves
+  _rebalanceRoom(roomId) {
+    const room = this.rooms[roomId];
+    if (!room || room.isSandbox || PLATFORM_WALLETS.size === 0) return;
+
+    const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
+    const humanTables = stats.filter(s => s.humans > 0);
+    const noHumanTables = stats.filter(s => s.humans === 0 && s.platform > 0);
+
+    if (humanTables.length > 0) {
+      // Extract platform agents from tables with no humans (free them for human tables)
+      for (const s of noHumanTables) {
+        this._extractPlatformAgents(s.table);
+      }
+
+      // Seed platform agents to human tables that need more opponents
+      for (const s of humanTables) {
+        const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
+        if (needed > 0) {
+          const seeded = this._seedPlatformAgents(s.table, roomId, needed);
+          if (seeded > 0) console.log(`[Rebalance] Seeded ${seeded} platform agent(s) → ${s.table.tableId}`);
+        }
+      }
+    } else {
+      // No humans — keep platform agents at first table as showcase
+      for (let i = 1; i < stats.length; i++) {
+        if (stats[i].platform > 0) {
+          this._extractPlatformAgents(stats[i].table);
+        }
+      }
+      // Seed first table if needed
+      const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - stats[0].table.agents.length);
+      if (needed > 0) {
+        this._seedPlatformAgents(stats[0].table, roomId, needed);
+      }
+    }
+
+    this._cleanupEmptyTables(roomId);
+  }
+
+  // Remove all platform agents from a table — immediate if between hands, queued if mid-hand
+  _extractPlatformAgents(table) {
+    if (table.phase === 'waiting') {
+      // Between hands — safe to splice (reverse iterate for index safety)
+      for (let i = table.agents.length - 1; i >= 0; i--) {
+        const agent = table.agents[i];
+        if (this._isPlatformAgent(agent)) {
+          const result = table._executeUnseat(i, agent);
+          if (result.success) {
+            this._finalizeLeave(agent.walletAddress, table, result.agent);
+          }
+        }
+      }
+    } else {
+      // Hand in progress — queue for end of hand
+      for (const agent of table.agents) {
+        if (this._isPlatformAgent(agent) && !table._pendingLeaves.has(agent.id)) {
+          table._pendingLeaves.set(agent.id, agent.walletAddress);
+        }
+      }
+    }
+  }
+
+  // Seat platform agents from lobby into a table
+  _seedPlatformAgents(table, roomId, count) {
+    let seeded = 0;
+
+    for (const [walletAddress, agents] of this.lobbyAgents) {
+      if (!PLATFORM_WALLETS.has(walletAddress.toLowerCase())) continue;
+
+      for (let i = agents.length - 1; i >= 0; i--) {
+        if (seeded >= count) return seeded;
+        if (!table.hasAvailableSeat()) return seeded;
+
+        const lobbyAgent = agents[i];
+        if (lobbyAgent.chipStack < 500) continue; // not funded enough
+
+        const result = table.seatAgent(lobbyAgent);
+        if (result.success) {
+          agents.splice(i, 1);
+          if (agents.length === 0) this.lobbyAgents.delete(walletAddress);
+          seeded++;
+        }
+      }
+    }
+
+    return seeded;
+  }
+
+  // Remove trailing empty tables (keep at least 1 per room)
+  _cleanupEmptyTables(roomId) {
+    const room = this.rooms[roomId];
+    while (room.tables.length > 1) {
+      const lastTable = room.tables[room.tables.length - 1];
+      if (lastTable.agents.length === 0) {
+        lastTable.running = false;
+        room.tables.pop();
+      } else {
+        break;
+      }
+    }
+  }
+
   // === Auto Top-Up settings ===
 
   setAutoTopUp(walletAddress, enabled, targetChips, cashOutAt) {
@@ -244,19 +378,41 @@ class RoomManager {
       }
     }
     this._startRakeTimer();
+
+    // Initial platform agent seeding for PvP rooms
+    if (PLATFORM_WALLETS.size > 0) {
+      for (const [roomId, room] of Object.entries(this.rooms)) {
+        if (!room.isSandbox) {
+          this._rebalanceRoom(roomId);
+        }
+      }
+      console.log(`[RoomManager] Platform rebalancing active (${PLATFORM_WALLETS.size} platform wallet(s))`);
+    }
   }
 
   _findAvailableTable(roomId) {
     const room = this.rooms[roomId];
     if (!room) return null;
 
-    for (const table of room.tables) {
-      if (table.hasAvailableSeat()) {
-        return table;
+    if (!room.isSandbox) {
+      // PvP: prefer table with most existing players (instant action for human)
+      let bestTable = null;
+      let bestCount = -1;
+      for (const table of room.tables) {
+        if (table.hasAvailableSeat() && table.agents.length > bestCount) {
+          bestCount = table.agents.length;
+          bestTable = table;
+        }
+      }
+      if (bestTable) return bestTable;
+    } else {
+      // Sandbox: first available
+      for (const table of room.tables) {
+        if (table.hasAvailableSeat()) return table;
       }
     }
 
-    // All tables full — spawn new one
+    // All tables full — spawn new one (rebalancing will populate it)
     const table = this._addTable(roomId);
     table.start();
     return table;
@@ -559,6 +715,9 @@ class RoomManager {
 
     // Update persisted agent
     this.store.updateAgentStats(agentId, { chipStack: lobbyAgent.chipStack });
+
+    // Rebalance platform agents (seed opponents to this table if needed)
+    this._rebalanceRoom(roomId);
 
     return {
       success: true, agentId, roomId, tableId: table.tableId, replacedBot: result.replacedBot,
@@ -926,4 +1085,4 @@ class RoomManager {
   }
 }
 
-module.exports = { RoomManager, ROOM_CONFIGS };
+module.exports = { RoomManager, ROOM_CONFIGS, PLATFORM_WALLETS };

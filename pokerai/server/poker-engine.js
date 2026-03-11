@@ -453,6 +453,7 @@ class PokerEngine {
       // Not enough players to play
       this.currentTurnIndex = -1;
       this.broadcastGameState();
+      if (this._onHandComplete) this._onHandComplete();
       return;
     }
 
@@ -848,6 +849,9 @@ class PokerEngine {
         this._onPendingLeave(r.walletAddress, r.agentId, r.agent);
       }
     }
+
+    // Notify room manager for platform agent rebalancing
+    if (this._onHandComplete) this._onHandComplete();
 
     this.broadcastGameState();
   }

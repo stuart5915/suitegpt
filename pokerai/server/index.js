@@ -4,7 +4,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { RoomManager } = require('./room-manager');
+const { RoomManager, PLATFORM_WALLETS } = require('./room-manager');
 const { createChallenge, verifySignature, getChallengeMessage } = require('./wallet-auth');
 
 // Optional: chain + supabase (graceful fallback to JSON store if not configured)
@@ -587,6 +587,54 @@ app.get('/debug/agents', (req, res) => {
     lobbyMap[wallet] = agents.map(a => ({ id: a.id, name: a.name, chipStack: a.chipStack }));
   }
   res.json({ storeAgentCount: storeAgents.length, storeAgents: storeAgents.map(a => ({ id: a.id, name: a.name, wallet: a.walletAddress, chipStack: a.chipStack })), lobbyAgents: lobbyMap });
+});
+
+// Platform agent rebalancing admin endpoints
+app.get('/platform/status', (req, res) => {
+  const wallets = [...PLATFORM_WALLETS];
+  const roomStats = {};
+  for (const [roomId, room] of Object.entries(rooms.rooms)) {
+    if (room.isSandbox) continue;
+    roomStats[roomId] = room.tables.map(t => {
+      let humans = 0, platform = 0;
+      for (const a of t.agents) {
+        if (!a.isCustom) continue;
+        if (a.walletAddress && PLATFORM_WALLETS.has(a.walletAddress.toLowerCase())) platform++;
+        else humans++;
+      }
+      return { tableId: t.tableId, humans, platform, total: t.agents.length, phase: t.phase };
+    });
+  }
+  // Count lobby platform agents
+  let lobbyPlatform = 0;
+  for (const [addr, agents] of rooms.lobbyAgents) {
+    if (PLATFORM_WALLETS.has(addr.toLowerCase())) lobbyPlatform += agents.length;
+  }
+  res.json({ platformWallets: wallets, lobbyPlatformAgents: lobbyPlatform, rooms: roomStats });
+});
+
+app.post('/platform/add-wallet', (req, res) => {
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
+  const addr = walletAddress.toLowerCase();
+  PLATFORM_WALLETS.add(addr);
+  console.log(`[Platform] Added platform wallet: ${addr}`);
+  res.json({ success: true, platformWallets: [...PLATFORM_WALLETS] });
+});
+
+app.post('/platform/remove-wallet', (req, res) => {
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
+  const addr = walletAddress.toLowerCase();
+  PLATFORM_WALLETS.delete(addr);
+  console.log(`[Platform] Removed platform wallet: ${addr}`);
+  res.json({ success: true, platformWallets: [...PLATFORM_WALLETS] });
+});
+
+app.post('/platform/rebalance', (req, res) => {
+  const roomId = req.body.roomId || 'micro';
+  rooms._rebalanceRoom(roomId);
+  res.json({ success: true, message: `Rebalanced room: ${roomId}` });
 });
 
 // =========== Server startup ===========
