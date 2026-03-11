@@ -147,7 +147,7 @@ contract BasisVault is
         admin = _admin;
         feeManager = _feeManager;
         depositCap = _depositCap;
-        performanceFeeBps = 1500; // 15% default
+        performanceFeeBps = 0; // 0% — pure public good
 
         wethIsToken0 = _weth < _usdc;
     }

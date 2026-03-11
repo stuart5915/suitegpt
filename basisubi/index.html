@@ -1008,14 +1008,82 @@
         .vault-tx-status.success { display: block; background: var(--green-dim); color: var(--green); }
         .vault-tx-status.error { display: block; background: rgba(255,100,80,0.1); color: #ff6450; }
 
+        .vault-explainer {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 28px; position: relative;
+        }
+        .vault-explainer-title {
+            font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+            margin-bottom: 20px; color: var(--text);
+        }
+        .vault-explainer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .vault-explain-card {
+            padding: 18px; border-radius: 12px; background: var(--bg);
+            border: 1px solid var(--border);
+        }
+        .vault-explain-card h4 {
+            font-family: var(--font-display); font-size: 0.88rem; font-weight: 700;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+        }
+        .vault-explain-card p {
+            font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7;
+        }
+        .vault-explain-card code {
+            font-family: var(--mono); font-size: 0.72rem; color: var(--accent-bright);
+            background: var(--accent-dim); padding: 2px 6px; border-radius: 4px;
+        }
+        .vault-explain-icon {
+            width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
+            align-items: center; justify-content: center; font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .vault-param-table {
+            width: 100%; border-collapse: collapse; margin-top: 16px;
+            font-size: 0.78rem;
+        }
+        .vault-param-table th {
+            text-align: left; padding: 8px 12px; font-family: var(--mono);
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-dim); border-bottom: 1px solid var(--border);
+        }
+        .vault-param-table td {
+            padding: 10px 12px; border-bottom: 1px solid var(--border);
+        }
+        .vault-param-table td:first-child { font-weight: 600; color: var(--text); }
+        .vault-param-table td:nth-child(2) {
+            font-family: var(--mono); color: var(--accent-bright);
+        }
+        .vault-param-table td:last-child { color: var(--text-secondary); }
+
+        .vault-flow-steps {
+            display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap;
+        }
+        .vault-flow-step {
+            flex: 1; min-width: 100px; padding: 10px; border-radius: 10px;
+            background: var(--surface-2); border: 1px solid var(--border);
+            text-align: center; font-size: 0.72rem; position: relative;
+        }
+        .vault-flow-step-num {
+            font-family: var(--mono); font-size: 0.62rem; font-weight: 600;
+            color: var(--accent-bright); margin-bottom: 4px;
+        }
+        .vault-flow-step-text { color: var(--text-secondary); line-height: 1.5; }
+        .vault-flow-arrow {
+            position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-dim); font-size: 0.7rem;
+        }
+
         @media (max-width: 900px) {
             .vault-status-bar { grid-template-columns: repeat(3, 1fr); }
             .vault-panels { grid-template-columns: 1fr; }
+            .vault-explainer-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
             .vault-status-bar { grid-template-columns: repeat(2, 1fr); }
             .vault-stat-cell { padding: 12px 8px; }
             .vault-stat-val { font-size: 0.9rem; }
+            .vault-flow-steps { flex-direction: column; }
+            .vault-flow-arrow { display: none; }
         }
     </style>
 </head>
@@ -1574,8 +1642,8 @@
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
                             </div>
                             <div>
-                                <h4>Low Fees</h4>
-                                <p>0% management fee. 0% deposit/withdraw fee. 15% performance fee on yield only &mdash; you only pay when the vault earns.</p>
+                                <h4>Zero Fees</h4>
+                                <p>0% management fee. 0% performance fee. 0% deposit/withdraw fee. Pure public good &mdash; 100% of yield stays with depositors.</p>
                             </div>
                         </div>
                     </div>
@@ -1703,6 +1771,186 @@
                                     <span class="vault-strategy-label">Performance Fee</span>
                                     <span class="vault-strategy-val" id="v-perf-fee">--</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══ FULL STRATEGY EXPLAINER ═══ -->
+                    <div class="vault-explainer">
+                        <div class="vault-explainer-title">How the Vault Works</div>
+
+                        <div class="vault-explainer-grid">
+                            <!-- 1. The Range -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:var(--accent-dim); border:1px solid var(--accent);">&#x1F3AF;</span>
+                                    The Range
+                                </h4>
+                                <p>
+                                    The vault sets a <strong style="color:var(--text);">concentrated price range</strong> around the current ETH price.
+                                    The width is controlled by <code>rangeWidth</code> &mdash; measured in ticks (1 tick &asymp; 0.01%).
+                                    A range of 1000 ticks means <strong style="color:var(--text);">&plusmn;5%</strong> around current price.
+                                </p>
+                                <p style="margin-top:8px;">
+                                    <strong style="color:var(--text);">Why &plusmn;5%?</strong> Tighter ranges capture more fees per dollar of capital (up to 4000x vs full-range),
+                                    but require more frequent rebalances. &plusmn;5% balances fee efficiency against rebalance costs.
+                                </p>
+                                <p style="margin-top:8px; font-family:var(--mono); font-size:0.72rem; color:var(--accent-bright);">
+                                    Example: ETH at $2,500 &rarr; range = $2,375 to $2,625
+                                </p>
+                            </div>
+
+                            <!-- 2. How Rebalance Works -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:var(--cyan-dim); border:1px solid var(--cyan);">&#x1F504;</span>
+                                    Rebalancing
+                                </h4>
+                                <p>
+                                    When ETH&rsquo;s price drifts <strong style="color:var(--text);">outside the range + a buffer zone</strong>,
+                                    the position stops earning fees. Anyone can call <code>rebalance()</code> to fix it:
+                                </p>
+                                <div class="vault-flow-steps">
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">01</div>
+                                        <div class="vault-flow-step-text">Pull all liquidity from old position</div>
+                                        <span class="vault-flow-arrow">&rarr;</span>
+                                    </div>
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">02</div>
+                                        <div class="vault-flow-step-text">Collect fees, burn old NFT</div>
+                                        <span class="vault-flow-arrow">&rarr;</span>
+                                    </div>
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">03</div>
+                                        <div class="vault-flow-step-text">Swap everything to USDC</div>
+                                        <span class="vault-flow-arrow">&rarr;</span>
+                                    </div>
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">04</div>
+                                        <div class="vault-flow-step-text">Mint new position centered on current price</div>
+                                    </div>
+                                </div>
+                                <p style="margin-top:8px;">
+                                    The <code>rebalanceBuffer</code> adds extra ticks before triggering &mdash; prevents rebalancing on tiny price fluctuations.
+                                    Cost: ~$0.50&ndash;$2 in swap fees per rebalance on Base.
+                                </p>
+                            </div>
+
+                            <!-- 3. How Compound Works -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:var(--green-dim); border:1px solid var(--green);">&#x1F4B0;</span>
+                                    Compounding
+                                </h4>
+                                <p>
+                                    When USDC sits idle in the vault (from new deposits or collected fees), anyone can call <code>compound()</code>:
+                                </p>
+                                <div class="vault-flow-steps">
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">01</div>
+                                        <div class="vault-flow-step-text">Collect any accrued trading fees</div>
+                                        <span class="vault-flow-arrow">&rarr;</span>
+                                    </div>
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">02</div>
+                                        <div class="vault-flow-step-text">Calculate optimal ETH/USDC split for the range</div>
+                                        <span class="vault-flow-arrow">&rarr;</span>
+                                    </div>
+                                    <div class="vault-flow-step">
+                                        <div class="vault-flow-step-num">03</div>
+                                        <div class="vault-flow-step-text">Swap portion to ETH, add both to LP</div>
+                                    </div>
+                                </div>
+                                <p style="margin-top:8px;">
+                                    Only runs if idle USDC &ge; <code>compoundMinimum</code> (saves gas on tiny amounts).
+                                    Only works when the position is <strong style="color:var(--green);">in range</strong> &mdash; if out of range, call rebalance first.
+                                </p>
+                            </div>
+
+                            <!-- 4. Deposit / Withdraw -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:hsla(40,90%,55%,0.1); border:1px solid hsl(40,90%,55%);">&#x1F4E5;</span>
+                                    Deposit &amp; Withdraw
+                                </h4>
+                                <p>
+                                    <strong style="color:var(--text);">Deposit:</strong> Send USDC &rarr; receive bUSDC shares.
+                                    Share price = <code>totalAssets / totalSupply</code>.
+                                    If the vault has $10,000 and you deposit $1,000, you own 10%.
+                                    USDC sits idle until someone calls <code>compound()</code>.
+                                </p>
+                                <p style="margin-top:8px;">
+                                    <strong style="color:var(--text);">Withdraw:</strong> Burn bUSDC &rarr; receive USDC.
+                                    If the vault doesn&rsquo;t have enough idle USDC, it automatically pulls from the LP position
+                                    (proportional liquidity removal + WETH&rarr;USDC swap).
+                                    <strong style="color:var(--green);">Withdrawals never pause</strong> &mdash; even in emergencies.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Strategy Parameters Table -->
+                        <table class="vault-param-table">
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Value</th>
+                                    <th>What It Means</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Range Width</td>
+                                    <td id="v-param-range">1000 ticks</td>
+                                    <td>&plusmn;5% around current ETH price. All deposited capital is concentrated in this band.</td>
+                                </tr>
+                                <tr>
+                                    <td>Rebalance Buffer</td>
+                                    <td id="v-param-buffer">200 ticks</td>
+                                    <td>Price must move 2% beyond range edge before rebalance triggers. Prevents whipsawing.</td>
+                                </tr>
+                                <tr>
+                                    <td>Compound Minimum</td>
+                                    <td id="v-param-compound">$10 USDC</td>
+                                    <td>Minimum idle USDC before compound() is worth the gas cost.</td>
+                                </tr>
+                                <tr>
+                                    <td>Slippage Tolerance</td>
+                                    <td id="v-param-slippage">0.5%</td>
+                                    <td>Max acceptable slippage on swaps. Reverts if price moves more than this during a transaction.</td>
+                                </tr>
+                                <tr>
+                                    <td>Deposit Cap</td>
+                                    <td id="v-param-cap">$25,000</td>
+                                    <td>Maximum total vault TVL. Limits risk during early operation.</td>
+                                </tr>
+                                <tr>
+                                    <td>Performance Fee</td>
+                                    <td style="color:var(--green);">0%</td>
+                                    <td>Zero fees. 100% of trading fees earned go back to depositors. Pure public good.</td>
+                                </tr>
+                                <tr>
+                                    <td>Management Fee</td>
+                                    <td style="color:var(--green);">0%</td>
+                                    <td>No fee on assets under management. Your principal is never taxed.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Risks -->
+                        <div style="margin-top:20px; padding:16px; background:rgba(255,100,80,0.05); border:1px solid rgba(255,100,80,0.15); border-radius:12px;">
+                            <h4 style="font-family:var(--font-display); font-size:0.85rem; font-weight:700; color:#ff6450; margin-bottom:8px;">Risks</h4>
+                            <div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.7;">
+                                <strong style="color:var(--text);">Impermanent Loss:</strong> As ETH price moves, the vault&rsquo;s position shifts between ETH and USDC.
+                                If ETH drops 10%, you lose more than a plain holder because concentrated LP amplifies the effect.
+                                Fees earned aim to offset this, but aren&rsquo;t guaranteed to.
+                                <br><br>
+                                <strong style="color:var(--text);">Rebalance Cost:</strong> Each rebalance swaps all assets to USDC then back to a 50/50 split &mdash;
+                                two swaps = ~0.3&ndash;0.6% in swap fees. Frequent rebalances in volatile markets eat into returns.
+                                <br><br>
+                                <strong style="color:var(--text);">Smart Contract Risk:</strong> The vault contracts are upgradeable (UUPS) and managed by an admin.
+                                While the code uses audited OpenZeppelin libraries, bugs are always possible.
+                                Admin can pause deposits (never withdrawals) and upgrade the contract.
                             </div>
                         </div>
                     </div>
@@ -3104,7 +3352,7 @@
             document.getElementById('v-rebal-time').textContent = 'Never';
             document.getElementById('v-comp-count').textContent = '0';
             document.getElementById('v-comp-time').textContent = 'Never';
-            document.getElementById('v-perf-fee').textContent = '15%';
+            document.getElementById('v-perf-fee').textContent = '0%';
         }
 
         // ── Init ──
