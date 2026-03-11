@@ -73,19 +73,31 @@ async function loadOverview() {
     const [credits, apps] = await Promise.allSettled([
         fetch(`${API_BASE}/credits`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null),
         appParams.toString()
-            ? fetch(`${API_BASE}/apps?${appParams}`).then(r => r.ok ? r.json() : null)
+            ? fetch(`${API_BASE}/apps?${appParams}`).then(r => {
+                if (!r.ok) { console.warn('[dash] apps fetch status:', r.status); return null; }
+                return r.json();
+            })
             : Promise.resolve(null)
     ]);
 
     const creditsData = credits.status === 'fulfilled' ? credits.value : null;
     let appsData = apps.status === 'fulfilled' ? apps.value : null;
+    if (apps.status === 'rejected') console.warn('[dash] apps fetch rejected:', apps.reason);
 
-    // Fallback: if no apps found and user has x_handle, try by handle alone
-    if ((!appsData?.apps?.length) && profile.x_handle) {
-        try {
-            const fb = await fetch(`${API_BASE}/apps?creator=${encodeURIComponent(profile.x_handle)}`);
-            if (fb.ok) appsData = await fb.json();
-        } catch(e) {}
+    // Fallback: if no apps found, try by handle and/or wallet separately
+    if (!appsData?.apps?.length) {
+        const fallbacks = [];
+        if (profile.x_handle) fallbacks.push(`creator=${encodeURIComponent(profile.x_handle)}`);
+        if (profile.wallet_address) fallbacks.push(`creator_wallet=${encodeURIComponent(profile.wallet_address)}`);
+        for (const q of fallbacks) {
+            try {
+                const fb = await fetch(`${API_BASE}/apps?${q}`);
+                if (fb.ok) {
+                    const d = await fb.json();
+                    if (d?.apps?.length) { appsData = d; break; }
+                }
+            } catch(e) {}
+        }
     }
 
     // Update stat cards
