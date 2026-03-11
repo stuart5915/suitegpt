@@ -3467,5 +3467,133 @@ async function rejectProject(id) {
     }
 }
 
+// ══════════════════════════════════════
+// DASHBOARD TABS
+// ══════════════════════════════════════
+
+(function() {
+    var tabs = document.querySelectorAll('.dash-tab[data-tab]');
+    var sections = document.querySelectorAll('.overview-section[data-section]');
+    var activeTab = 'all';
+
+    function switchTab(tab) {
+        activeTab = tab;
+        tabs.forEach(function(t) {
+            t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+        });
+        sections.forEach(function(s) {
+            var sec = s.getAttribute('data-section');
+            if (tab === 'all') {
+                s.classList.remove('tab-hidden');
+            } else {
+                s.classList.toggle('tab-hidden', sec !== tab);
+            }
+        });
+        // Update URL hash
+        if (tab !== 'all') {
+            history.replaceState(null, '', '/dashboard#' + tab);
+        } else {
+            history.replaceState(null, '', '/dashboard');
+        }
+    }
+
+    tabs.forEach(function(t) {
+        t.addEventListener('click', function() {
+            var tab = t.getAttribute('data-tab');
+            // Toggle: clicking active tab goes back to All
+            if (tab === activeTab && tab !== 'all') {
+                switchTab('all');
+            } else {
+                switchTab(tab);
+            }
+        });
+    });
+
+    // Check initial hash
+    var hash = window.location.hash.replace('#', '');
+    if (hash && ['projects','tokens','apps','staking','agents','incubation'].indexOf(hash) !== -1) {
+        switchTab(hash);
+    } else {
+        // Default: "All" is active
+        tabs.forEach(function(t) {
+            if (t.getAttribute('data-tab') === 'all') t.classList.add('active');
+        });
+    }
+})();
+
+// ══════════════════════════════════════
+// AI AGENTS PANEL
+// ══════════════════════════════════════
+
+async function loadAgents() {
+    var container = document.getElementById('agentsList');
+    if (!container) return;
+
+    var auth = getStoredAuth();
+    if (!auth || !auth.profile || !auth.profile.wallet_address) {
+        container.innerHTML = '<div class="overview-empty"><p>Connect your wallet to see your agents.</p></div>';
+        return;
+    }
+
+    try {
+        var res = await fetch(API_BASE + '/inclawbator?wallet=' + encodeURIComponent(auth.profile.wallet_address));
+        var data = await res.json();
+        var projects = (data.projects || []).filter(function(p) { return p.agent_enabled; });
+
+        if (!projects.length) {
+            container.innerHTML = '<div class="overview-empty"><p>No agents yet. <a href="/tools#ai-agent" style="color:var(--lobster-400)">Set up an AI agent</a> for one of your projects.</p></div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < projects.length; i++) {
+            var p = projects[i];
+            var st = p.agent_status || 'dormant';
+            var stColor = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
+            var stBg = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
+            var postsVia = p.x_connected && p.x_handle ? '@' + p.x_handle : '@inclawbator';
+
+            html += '<div class="overview-item" style="flex-direction:column;align-items:stretch;gap:0;padding:var(--space-lg)">';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">';
+            html += '<div style="font-weight:700;color:var(--text-primary);font-size:0.95rem">$' + (p.token_symbol || '???') + '</div>';
+            html += '<span style="font-family:var(--font-mono);font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:12px;background:' + stBg + ';color:' + stColor + '">' + st + '</span>';
+            html += '</div>';
+
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-sm)">';
+            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Credits</div><div style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">' + (p.agent_credits || 0) + '</div></div>';
+            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Posts</div><div style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">' + (p.agent_total_posts || 0) + '</div></div>';
+            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Posts via</div><div style="font-family:var(--font-mono);font-weight:600;color:var(--lobster-400);font-size:0.8rem">' + postsVia + '</div></div>';
+            html += '</div>';
+
+            html += '<div style="display:flex;gap:6px">';
+            html += '<a href="/tools#ai-agent" style="flex:1;text-align:center;padding:6px 0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-decoration:none">Settings</a>';
+            html += '<a href="/inclawbator?id=' + p.id + '" style="flex:1;text-align:center;padding:6px 0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-decoration:none">Feed Credits</a>';
+            html += '</div>';
+
+            // Show recent posts if available
+            if (p.recent_posts && p.recent_posts.length) {
+                html += '<div style="margin-top:var(--space-sm);border-top:1px solid var(--border-subtle);padding-top:var(--space-sm)">';
+                html += '<div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:4px">Recent tweets</div>';
+                for (var j = 0; j < Math.min(3, p.recent_posts.length); j++) {
+                    var post = p.recent_posts[j];
+                    var ago = timeAgo(post.created_at);
+                    html += '<div style="font-size:0.78rem;color:var(--text-secondary);padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+                    html += '<span style="color:var(--text-dim);font-size:0.68rem;margin-right:6px">' + ago + '</span>' + escapeHtml(post.tweet_text || '');
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        container.innerHTML = '<div class="overview-empty"><p>Failed to load agents.</p></div>';
+    }
+}
+
 // Boot
 init();
+loadAgents();
