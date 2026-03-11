@@ -236,7 +236,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .stat-box {
@@ -256,9 +256,9 @@
   .poker-table {
     position: relative;
     width: 100%;
-    padding-bottom: 68%;
-    margin-bottom: 30px;
-    margin-top: 10px;
+    padding-bottom: 78%;
+    margin-bottom: 20px;
+    margin-top: 20px;
   }
 
   .table-felt {
@@ -395,16 +395,23 @@
   }
 
   .my-agent-label {
-    font-size: 8px;
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 7px;
     font-weight: 800;
     color: var(--accent-green);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-    background: rgba(34,197,94,0.15);
+    background: rgba(34,197,94,0.2);
     border: 1px solid rgba(34,197,94,0.3);
     border-radius: 4px;
-    padding: 1px 6px;
+    padding: 1px 5px;
+    white-space: nowrap;
+    z-index: 15;
+    pointer-events: none;
   }
 
   .seat-avatar.active {
@@ -611,6 +618,8 @@
     display: flex;
     gap: 2px;
     margin-top: 2px;
+    position: relative;
+    z-index: 5;
   }
 
   .seat-action-bubble {
@@ -646,7 +655,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 6px 12px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
     overflow: hidden;
     position: relative;
   }
@@ -2795,7 +2804,7 @@
     .wallet-btn { font-size: 10px; padding: 5px 10px; }
 
     /* Poker table — full width, tighter */
-    .poker-table { padding-bottom: 75%; margin-bottom: 20px; margin-top: 0; }
+    .poker-table { padding-bottom: 85%; margin-bottom: 16px; margin-top: 12px; }
     .table-felt { border-width: 4px; }
     .table-felt::before { inset: 6px; }
 
@@ -4806,14 +4815,14 @@ function renderFullState() {
 // ============================================================
 // Clockwise from bottom-center: ↓ ↙ ← ↖ ↑ ↗ → ↘
 const SEAT_POSITIONS = [
-  { top: '90%', left: '50%' },   // 0: bottom-center
-  { top: '85%', left: '25%' },   // 1: bottom-left
-  { top: '52%', left: '5%' },    // 2: left
-  { top: '10%', left: '18%' },   // 3: top-left
-  { top: '5%', left: '50%' },    // 4: top-center
-  { top: '10%', left: '82%' },   // 5: top-right
-  { top: '52%', left: '95%' },   // 6: right
-  { top: '85%', left: '75%' },   // 7: bottom-right
+  { top: '82%', left: '50%' },   // 0: bottom-center
+  { top: '78%', left: '22%' },   // 1: bottom-left
+  { top: '50%', left: '5%' },    // 2: left
+  { top: '18%', left: '16%' },   // 3: top-left
+  { top: '12%', left: '50%' },   // 4: top-center
+  { top: '18%', left: '84%' },   // 5: top-right
+  { top: '50%', left: '95%' },   // 6: right
+  { top: '78%', left: '78%' },   // 7: bottom-right
 ];
 
 function renderTableSeats() {
@@ -4874,13 +4883,13 @@ function renderTableSeats() {
     );
     const isOtherCustom = agent.isCustom && !isMyAgent;
 
-    // Card sizes — user's agent gets big readable cards, others get compact
-    const cw = isMyAgent ? 52 : 32;
-    const ch = isMyAgent ? 72 : 44;
-    const crk = isMyAgent ? 20 : 13;
-    const csu = isMyAgent ? 16 : 10;
-    const cfd = isMyAgent ? 28 : 18;
-    const cgap = isMyAgent ? 6 : 3;
+    // Card sizes — user's agent gets readable cards, others get compact
+    const cw = isMyAgent ? 42 : 28;
+    const ch = isMyAgent ? 58 : 38;
+    const crk = isMyAgent ? 17 : 12;
+    const csu = isMyAgent ? 14 : 9;
+    const cfd = isMyAgent ? 24 : 16;
+    const cgap = isMyAgent ? 4 : 2;
 
     let pocketHTML = '';
     if (agent.hand && agent.hand.length === 2 && gameState.running && !agent.folded) {
