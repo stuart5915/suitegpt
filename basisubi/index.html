@@ -699,37 +699,131 @@
 
         /* ═══ VAULT SECTION ═══ */
         .vault-section { padding-top: 60px; }
-        .vault-layout { display: grid; grid-template-columns: 380px 1fr; gap: 48px; align-items: start; }
-        .vault-info-col .section-desc { margin-bottom: 32px; }
-        .vault-highlights { display: flex; flex-direction: column; gap: 16px; }
-        .vault-highlight {
-            display: flex; align-items: flex-start; gap: 14px;
-            padding: 16px; border-radius: 12px;
-            background: var(--surface); border: 1px solid var(--border);
-        }
-        .vault-highlight-icon {
-            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; border: 1px solid var(--border-accent); background: var(--accent-dim);
-        }
-        .vault-highlight h4 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-        .vault-highlight p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+        .vault-layout { display: flex; flex-direction: column; gap: 32px; }
 
-        .vault-card {
+        /* ── Hero Numbers ── */
+        .vault-hero {
+            text-align: center; padding: 48px 24px;
             background: var(--surface); border: 1px solid var(--border-accent);
-            border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+            border-radius: 20px; position: relative; overflow: hidden;
         }
-        .vault-card::before {
+        .vault-hero::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
             background: linear-gradient(90deg, var(--accent), var(--cyan), var(--green));
         }
-        .vault-detail-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-top: 1px solid var(--border); font-size: 0.82rem;
+        .vault-hero-status {
+            display: inline-block; padding: 6px 18px; border-radius: 20px;
+            font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 24px;
         }
-        .vault-detail-row:first-of-type { border-top: none; }
-        .vault-detail-label { color: var(--text-secondary); }
-        .vault-detail-value { font-family: var(--mono); color: var(--text); font-weight: 500; }
+        .vault-hero-status.in-range { background: var(--green-dim); color: var(--green); border: 1px solid rgba(50,200,130,0.3); }
+        .vault-hero-status.out-range { background: rgba(255,100,80,0.1); color: #ff6450; border: 1px solid rgba(255,100,80,0.3); }
+        .vault-hero-status.not-deployed { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+
+        .vault-hero-number {
+            font-family: var(--mono); font-weight: 800; line-height: 1;
+            background: linear-gradient(135deg, var(--text) 0%, var(--accent-bright) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .vault-hero-tvl { font-size: 3.5rem; margin-bottom: 8px; }
+        .vault-hero-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-dim); font-family: var(--mono); }
+
+        .vault-hero-sub-stats {
+            display: flex; justify-content: center; gap: 48px; margin-top: 32px;
+            flex-wrap: wrap;
+        }
+        .vault-hero-sub {
+            text-align: center;
+        }
+        .vault-hero-sub-val {
+            font-family: var(--mono); font-size: 1.5rem; font-weight: 700; color: var(--text);
+        }
+        .vault-hero-sub-val.green { color: var(--green); }
+        .vault-hero-sub-val.cyan { color: var(--cyan); }
+        .vault-hero-sub-label {
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em;
+            color: var(--text-dim); font-family: var(--mono); margin-top: 4px;
+        }
+
+        /* ── Range Visualization (big) ── */
+        .vault-range-hero {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 28px 32px; text-align: center;
+        }
+        .vault-range-hero-title {
+            font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 16px;
+        }
+        .vault-range-hero-prices {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--mono); font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;
+        }
+        .vault-range-hero-bar {
+            position: relative; height: 48px; background: var(--bg);
+            border-radius: 12px; overflow: hidden; margin: 8px 0;
+        }
+        .vault-range-hero-fill {
+            position: absolute; top: 0; bottom: 0;
+            background: linear-gradient(90deg, var(--accent-dim), var(--cyan-dim), var(--green-dim));
+            border-radius: 12px; left: 5%; right: 5%;
+        }
+        .vault-range-hero-marker {
+            position: absolute; top: 4px; bottom: 4px; width: 4px;
+            background: var(--green); border-radius: 3px;
+            box-shadow: 0 0 12px var(--green-glow), 0 0 4px var(--green);
+            transition: left 0.5s ease;
+        }
+        .vault-range-hero-eth {
+            font-family: var(--mono); font-size: 1.3rem; font-weight: 700;
+            color: var(--green); margin-top: 12px;
+        }
+        .vault-range-hero-labels {
+            display: flex; justify-content: space-between; font-family: var(--mono);
+            font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;
+        }
+
+        /* ── Your Position (big) ── */
+        .vault-your-position {
+            background: var(--surface); border: 1px solid var(--border-accent);
+            border-radius: 16px; padding: 32px; text-align: center;
+        }
+        .vault-your-value {
+            font-family: var(--mono); font-size: 2.5rem; font-weight: 800; color: var(--text);
+            margin: 8px 0;
+        }
+
+        /* ── Main Grid ── */
+        .vault-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* ── Activity counters ── */
+        .vault-counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
+        .vault-counter-cell { background: var(--surface); padding: 16px; text-align: center; }
+        .vault-counter-val { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; color: var(--text); }
+        .vault-counter-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); font-family: var(--mono); margin-top: 4px; }
+
+        /* ── Highlights row ── */
+        .vault-highlights-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .vault-highlight-mini {
+            padding: 16px; border-radius: 12px; text-align: center;
+            background: var(--surface); border: 1px solid var(--border);
+        }
+        .vault-highlight-mini h4 { font-family: var(--font-display); font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+        .vault-highlight-mini p { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; }
+
+        /* ── Explainer toggle ── */
+        .vault-explainer-toggle {
+            width: 100%; padding: 16px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; cursor: pointer; font-family: var(--font-display);
+            font-size: 0.92rem; font-weight: 600; color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.2s;
+        }
+        .vault-explainer-toggle:hover { color: var(--text); border-color: var(--border-accent); }
+        .vault-explainer-toggle .arrow { transition: transform 0.3s; }
+        .vault-explainer-toggle.open .arrow { transform: rotate(180deg); }
+        .vault-explainer-content { display: none; }
+        .vault-explainer-content.open { display: block; }
 
         /* ═══ POWERED BY ═══ */
         .powered-section { text-align: center; }
@@ -756,8 +850,6 @@
 
         /* ═══ RESPONSIVE ═══ */
         @media (max-width: 900px) {
-            .vault-layout { grid-template-columns: 1fr; }
-            .vault-card { max-width: 440px; }
             .sim-layout { grid-template-columns: 1fr; }
             .event-log { max-height: 300px; }
         }
@@ -800,7 +892,7 @@
             /* Hide nav links on small phones, keep brand */
             .nav-links { display: none; }
             .hero-orbital { width: 350px; height: 350px; }
-            .vault-card { padding: 20px 16px; }
+            /* vault mobile */
             #sim-canvas { height: 240px; }
             .sim-tab { min-width: 0; font-size: 0.72rem; padding: 7px 8px; }
             .sim-tabs { gap: 2px; padding: 3px; }
@@ -1074,14 +1166,21 @@
         }
 
         @media (max-width: 900px) {
-            .vault-status-bar { grid-template-columns: repeat(3, 1fr); }
-            .vault-panels { grid-template-columns: 1fr; }
+            .vault-main-grid { grid-template-columns: 1fr; }
+            .vault-counters { grid-template-columns: repeat(2, 1fr); }
+            .vault-highlights-row { grid-template-columns: 1fr; }
+            .vault-hero-sub-stats { gap: 24px; }
             .vault-explainer-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
-            .vault-status-bar { grid-template-columns: repeat(2, 1fr); }
-            .vault-stat-cell { padding: 12px 8px; }
-            .vault-stat-val { font-size: 0.9rem; }
+            .vault-hero { padding: 32px 16px; }
+            .vault-hero-tvl { font-size: 2.5rem; }
+            .vault-hero-sub-val { font-size: 1.1rem; }
+            .vault-hero-sub-stats { gap: 16px; }
+            .vault-your-value { font-size: 1.8rem; }
+            .vault-range-hero-prices { font-size: 0.85rem; }
+            .vault-range-hero-eth { font-size: 1rem; }
+            .vault-counters { grid-template-columns: repeat(2, 1fr); }
             .vault-flow-steps { flex-direction: column; }
             .vault-flow-arrow { display: none; }
         }
@@ -1614,166 +1713,166 @@
     <section class="vault-section" id="vault">
         <div class="container">
             <div class="vault-layout">
-                <div class="vault-info-col fade-in">
-                    <div class="section-label">The Vault</div>
-                    <h2 class="section-title">Deposit USDC. Earn yield.</h2>
-                    <p class="section-desc">The Basis vault provides concentrated liquidity on Aerodrome&rsquo;s ETH/USDC pool. Parameterized strategy, permissionless rebalancing, automated compounding. You just deposit.</p>
-                    <div class="vault-highlights">
-                        <div class="vault-highlight">
-                            <div class="vault-highlight-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+
+                <!-- ═══ HERO: THE BIG NUMBERS ═══ -->
+                <div class="vault-hero fade-in">
+                    <div class="vault-hero-status not-deployed" id="v-status-badge">NOT YET DEPLOYED</div>
+                    <div class="vault-hero-label">Total Value Locked</div>
+                    <div class="vault-hero-number vault-hero-tvl" id="v-tvl">$0</div>
+
+                    <div class="vault-hero-sub-stats">
+                        <div class="vault-hero-sub">
+                            <div class="vault-hero-sub-val" id="v-share-price">$1.0000</div>
+                            <div class="vault-hero-sub-label">Share Price</div>
+                        </div>
+                        <div class="vault-hero-sub">
+                            <div class="vault-hero-sub-val cyan" id="v-fees">$0</div>
+                            <div class="vault-hero-sub-label">Fees Earned (lifetime)</div>
+                        </div>
+                        <div class="vault-hero-sub">
+                            <div class="vault-hero-sub-val" id="v-cap">$25,000</div>
+                            <div class="vault-hero-sub-label">Deposit Cap</div>
+                        </div>
+                        <div class="vault-hero-sub">
+                            <div class="vault-hero-sub-val green" id="v-perf-fee">0%</div>
+                            <div class="vault-hero-sub-label">All Fees</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ RANGE VISUALIZATION (BIG) ═══ -->
+                <div class="vault-range-hero fade-in">
+                    <div class="vault-range-hero-title">ETH Price Range &mdash; Earning Zone</div>
+                    <div class="vault-range-hero-prices">
+                        <span id="v-range-low" style="color:var(--accent-bright);">$--</span>
+                        <span id="v-range-high" style="color:var(--accent-bright);">$--</span>
+                    </div>
+                    <div class="vault-range-hero-bar">
+                        <div class="vault-range-hero-fill" id="v-range-fill"></div>
+                        <div class="vault-range-hero-marker" id="v-range-marker" style="left:50%;"></div>
+                    </div>
+                    <div class="vault-range-hero-labels">
+                        <span id="v-range-low2">Lower bound</span>
+                        <span id="v-range-high2">Upper bound</span>
+                    </div>
+                    <div class="vault-range-hero-eth" id="v-eth-price">ETH: $--</div>
+                    <div style="font-size:0.75rem; color:var(--text-dim); margin-top:4px;">The green dot is ETH&rsquo;s current price. If it&rsquo;s inside the bar, the vault is earning.</div>
+                </div>
+
+                <!-- ═══ ACTIVITY COUNTERS ═══ -->
+                <div class="vault-counters fade-in">
+                    <div class="vault-counter-cell">
+                        <div class="vault-counter-val" id="v-rebal-count">0</div>
+                        <div class="vault-counter-label">Rebalances</div>
+                    </div>
+                    <div class="vault-counter-cell">
+                        <div class="vault-counter-val" id="v-rebal-time">Never</div>
+                        <div class="vault-counter-label">Last Rebalance</div>
+                    </div>
+                    <div class="vault-counter-cell">
+                        <div class="vault-counter-val" id="v-comp-count">0</div>
+                        <div class="vault-counter-label">Compounds</div>
+                    </div>
+                    <div class="vault-counter-cell">
+                        <div class="vault-counter-val" id="v-comp-time">Never</div>
+                        <div class="vault-counter-label">Last Compound</div>
+                    </div>
+                </div>
+
+                <!-- ═══ YOUR POSITION + DEPOSIT/WITHDRAW ═══ -->
+                <div class="vault-main-grid">
+                    <!-- Left: Your Position -->
+                    <div class="vault-your-position fade-in">
+                        <div class="vault-panel-title">Your Position</div>
+
+                        <div id="v-wallet-disconnected">
+                            <div class="vault-your-value" style="color:var(--text-dim);">--</div>
+                            <p style="color:var(--text-secondary); font-size:0.85rem; margin:12px 0 20px;">Connect your wallet to see your balance and deposit USDC.</p>
+                            <button class="vault-connect-btn" id="v-connect-btn" onclick="vaultConnect()">Connect Wallet</button>
+                        </div>
+
+                        <div id="v-wallet-connected" style="display:none;">
+                            <div class="vault-your-value" id="v-user-value">$0.00</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim); margin-bottom:16px;">
+                                <span id="v-user-shares">0 bUSDC</span> &middot; Wallet: <span id="v-user-usdc">0</span> USDC
                             </div>
-                            <div>
-                                <h4>No Lock-ups</h4>
-                                <p>Withdraw anytime. Withdrawals are never paused, even in emergencies.</p>
+
+                            <!-- Deposit / Withdraw Tabs -->
+                            <div class="vault-tabs">
+                                <button class="vault-tab active" onclick="vaultSwitchTab('deposit')">Deposit</button>
+                                <button class="vault-tab" onclick="vaultSwitchTab('withdraw')">Withdraw</button>
+                            </div>
+
+                            <div id="v-deposit-tab">
+                                <div class="vault-input-group">
+                                    <input type="number" class="vault-input" id="v-deposit-amt" placeholder="USDC amount" min="0" step="any">
+                                    <button class="vault-max-btn" onclick="vaultMaxDeposit()">MAX</button>
+                                </div>
+                                <button class="vault-action-btn green-btn" id="v-deposit-btn" onclick="vaultDeposit()" disabled>Deposit USDC</button>
+                                <div id="v-approve-hint" style="font-size:0.7rem; color:var(--text-dim); margin-top:6px; display:none;">Approval needed first</div>
+                            </div>
+
+                            <div id="v-withdraw-tab" style="display:none;">
+                                <div class="vault-input-group">
+                                    <input type="number" class="vault-input" id="v-withdraw-amt" placeholder="USDC amount" min="0" step="any">
+                                    <button class="vault-max-btn" onclick="vaultMaxWithdraw()">MAX</button>
+                                </div>
+                                <button class="vault-action-btn" id="v-withdraw-btn" onclick="vaultWithdraw()" disabled>Withdraw USDC</button>
+                            </div>
+
+                            <div class="vault-tx-status" id="v-tx-status"></div>
+
+                            <!-- Permissionless Buttons -->
+                            <div style="display:flex; gap:8px; margin-top:12px;">
+                                <button class="vault-action-btn" style="flex:1;" onclick="vaultCompound()" id="v-compound-btn" title="Deploy idle USDC into LP">Compound</button>
+                                <button class="vault-action-btn" style="flex:1;" onclick="vaultRebalance()" id="v-rebalance-btn" title="Re-center LP range">Rebalance</button>
                             </div>
                         </div>
-                        <div class="vault-highlight">
-                            <div class="vault-highlight-icon" style="border-color:var(--cyan); background:var(--cyan-dim);">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
-                            </div>
-                            <div>
-                                <h4>Permissionless</h4>
-                                <p>Anyone can call rebalance() and compound(). No gatekeepers.</p>
-                            </div>
+                    </div>
+
+                    <!-- Right: Activity Log -->
+                    <div class="vault-panel fade-in">
+                        <div class="vault-panel-title">Vault Activity</div>
+                        <div class="vault-log" id="v-log">
+                            <div class="vault-log-entry" style="color:var(--text-dim);">Loading events...</div>
                         </div>
-                        <div class="vault-highlight">
-                            <div class="vault-highlight-icon" style="border-color:var(--green); background:var(--green-dim);">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+
+                        <!-- Position Breakdown -->
+                        <div id="v-breakdown-panel" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+                            <div class="vault-panel-title">Position Breakdown</div>
+                            <div class="vault-position-bar">
+                                <div class="vault-pos-eth" id="v-pos-eth" style="width:50%;">ETH 50%</div>
+                                <div class="vault-pos-usdc" id="v-pos-usdc" style="width:50%;">USDC 50%</div>
                             </div>
-                            <div>
-                                <h4>Zero Fees</h4>
-                                <p>0% management fee. 0% performance fee. 0% deposit/withdraw fee. Pure public good &mdash; 100% of yield stays with depositors.</p>
+                            <div class="vault-pos-detail">
+                                <span id="v-pos-eth-detail">ETH: -- ($--)</span>
+                                <span id="v-pos-usdc-detail">USDC: $--</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="vault-dashboard fade-in delay-2">
-                    <!-- Status Bar -->
-                    <div class="vault-status-bar">
-                        <div class="vault-stat-cell">
-                            <div class="vault-stat-label">TVL</div>
-                            <div class="vault-stat-val" id="v-tvl">--</div>
-                        </div>
-                        <div class="vault-stat-cell">
-                            <div class="vault-stat-label">Share Price</div>
-                            <div class="vault-stat-val" id="v-share-price">--</div>
-                        </div>
-                        <div class="vault-stat-cell">
-                            <div class="vault-stat-label">Status</div>
-                            <div class="vault-stat-val" id="v-status">--</div>
-                        </div>
-                        <div class="vault-stat-cell">
-                            <div class="vault-stat-label">Deposit Cap</div>
-                            <div class="vault-stat-val" id="v-cap">--</div>
-                        </div>
-                        <div class="vault-stat-cell">
-                            <div class="vault-stat-label">Fees Earned</div>
-                            <div class="vault-stat-val cyan" id="v-fees">--</div>
-                        </div>
+                <!-- ═══ HIGHLIGHTS ROW ═══ -->
+                <div class="vault-highlights-row fade-in">
+                    <div class="vault-highlight-mini">
+                        <h4 style="color:var(--accent-bright);">No Lock-ups</h4>
+                        <p>Withdraw anytime. Even in emergencies.</p>
                     </div>
-
-                    <div class="vault-panels">
-                        <!-- Left: Your Position + Actions -->
-                        <div class="vault-panel">
-                            <div class="vault-panel-title">Your Position</div>
-
-                            <div id="v-wallet-disconnected">
-                                <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:16px;">Connect your wallet to deposit USDC and view your position.</p>
-                                <button class="vault-connect-btn" id="v-connect-btn" onclick="vaultConnect()">Connect Wallet</button>
-                            </div>
-
-                            <div id="v-wallet-connected" style="display:none;">
-                                <div class="vault-user-stat">
-                                    <span class="vault-user-stat-label">Your Shares</span>
-                                    <span class="vault-user-stat-value" id="v-user-shares">0 bUSDC</span>
-                                </div>
-                                <div class="vault-user-stat">
-                                    <span class="vault-user-stat-label">Value</span>
-                                    <span class="vault-user-stat-value" id="v-user-value">$0.00</span>
-                                </div>
-                                <div class="vault-user-stat" style="border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:12px;">
-                                    <span class="vault-user-stat-label">USDC Balance</span>
-                                    <span class="vault-user-stat-value" id="v-user-usdc">0</span>
-                                </div>
-
-                                <!-- Deposit / Withdraw Tabs -->
-                                <div class="vault-tabs">
-                                    <button class="vault-tab active" onclick="vaultSwitchTab('deposit')">Deposit</button>
-                                    <button class="vault-tab" onclick="vaultSwitchTab('withdraw')">Withdraw</button>
-                                </div>
-
-                                <div id="v-deposit-tab">
-                                    <div class="vault-input-group">
-                                        <input type="number" class="vault-input" id="v-deposit-amt" placeholder="USDC amount" min="0" step="any">
-                                        <button class="vault-max-btn" onclick="vaultMaxDeposit()">MAX</button>
-                                    </div>
-                                    <button class="vault-action-btn green-btn" id="v-deposit-btn" onclick="vaultDeposit()" disabled>Deposit USDC</button>
-                                    <div id="v-approve-hint" style="font-size:0.7rem; color:var(--text-dim); margin-top:6px; display:none;">Approval needed first</div>
-                                </div>
-
-                                <div id="v-withdraw-tab" style="display:none;">
-                                    <div class="vault-input-group">
-                                        <input type="number" class="vault-input" id="v-withdraw-amt" placeholder="USDC amount" min="0" step="any">
-                                        <button class="vault-max-btn" onclick="vaultMaxWithdraw()">MAX</button>
-                                    </div>
-                                    <button class="vault-action-btn" id="v-withdraw-btn" onclick="vaultWithdraw()" disabled>Withdraw USDC</button>
-                                </div>
-
-                                <div class="vault-tx-status" id="v-tx-status"></div>
-
-                                <!-- Permissionless Buttons -->
-                                <div style="display:flex; gap:8px; margin-top:12px;">
-                                    <button class="vault-action-btn" style="flex:1;" onclick="vaultCompound()" id="v-compound-btn" title="Deploy idle USDC into LP">Compound</button>
-                                    <button class="vault-action-btn" style="flex:1;" onclick="vaultRebalance()" id="v-rebalance-btn" title="Re-center LP range">Rebalance</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Strategy Info -->
-                        <div class="vault-panel">
-                            <div class="vault-panel-title">Vault Strategy</div>
-                            <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:8px;">Current Range</div>
-                            <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.85rem; margin-bottom:4px;">
-                                <span id="v-range-low">$--</span>
-                                <span style="color:var(--text-dim);">ETH price</span>
-                                <span id="v-range-high">$--</span>
-                            </div>
-                            <div class="vault-range-bar">
-                                <div class="vault-range-fill" id="v-range-fill" style="left:10%;right:10%;"></div>
-                                <div class="vault-range-marker" id="v-range-marker" style="left:50%;"></div>
-                            </div>
-                            <div class="vault-range-labels">
-                                <span id="v-range-low2">$--</span>
-                                <span id="v-eth-price" style="color:var(--green);">ETH: $--</span>
-                                <span id="v-range-high2">$--</span>
-                            </div>
-
-                            <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:12px;">
-                                <div class="vault-strategy-row">
-                                    <span class="vault-strategy-label">Rebalances</span>
-                                    <span class="vault-strategy-val" id="v-rebal-count">--</span>
-                                </div>
-                                <div class="vault-strategy-row">
-                                    <span class="vault-strategy-label">Last Rebalance</span>
-                                    <span class="vault-strategy-val" id="v-rebal-time">--</span>
-                                </div>
-                                <div class="vault-strategy-row">
-                                    <span class="vault-strategy-label">Compounds</span>
-                                    <span class="vault-strategy-val" id="v-comp-count">--</span>
-                                </div>
-                                <div class="vault-strategy-row">
-                                    <span class="vault-strategy-label">Last Compound</span>
-                                    <span class="vault-strategy-val" id="v-comp-time">--</span>
-                                </div>
-                                <div class="vault-strategy-row">
-                                    <span class="vault-strategy-label">Performance Fee</span>
-                                    <span class="vault-strategy-val" id="v-perf-fee">--</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="vault-highlight-mini">
+                        <h4 style="color:var(--cyan);">Permissionless</h4>
+                        <p>Anyone can trigger rebalance and compound.</p>
                     </div>
+                    <div class="vault-highlight-mini">
+                        <h4 style="color:var(--green);">Zero Fees</h4>
+                        <p>0% on everything. 100% of yield is yours.</p>
+                    </div>
+                </div>
+
+                <!-- ═══ EXPLAINER (COLLAPSIBLE) ═══ -->
+                <button class="vault-explainer-toggle" id="v-explainer-toggle" onclick="toggleVaultExplainer()">
+                    How does this all work? <span class="arrow">&#x25BC;</span>
+                </button>
+                <div class="vault-explainer-content" id="v-explainer-content">
 
                     <!-- ═══ FULL STRATEGY EXPLAINER ═══ -->
                     <div class="vault-explainer">
@@ -1995,39 +2094,19 @@
                             </div>
                         </div>
                     </div>
+                </div><!-- /vault-explainer-content -->
 
-                    <!-- Position Breakdown -->
-                    <div class="vault-panel" id="v-breakdown-panel" style="display:none;">
-                        <div class="vault-panel-title">Position Breakdown</div>
-                        <div class="vault-position-bar">
-                            <div class="vault-pos-eth" id="v-pos-eth" style="width:50%;">ETH 50%</div>
-                            <div class="vault-pos-usdc" id="v-pos-usdc" style="width:50%;">USDC 50%</div>
-                        </div>
-                        <div class="vault-pos-detail">
-                            <span id="v-pos-eth-detail">ETH: -- ($--)</span>
-                            <span id="v-pos-usdc-detail">USDC: $--</span>
-                        </div>
-                    </div>
-
-                    <!-- Activity Log -->
-                    <div class="vault-panel">
-                        <div class="vault-panel-title">Vault Activity</div>
-                        <div class="vault-log" id="v-log">
-                            <div class="vault-log-entry" style="color:var(--text-dim);">Loading events...</div>
-                        </div>
-                    </div>
-
-                    <!-- Admin Panel (hidden unless admin) -->
-                    <div class="vault-admin-panel" id="v-admin-panel">
-                        <div class="vault-panel-title" style="color:#ff6450;">Admin Controls</div>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button class="vault-action-btn" onclick="vaultAdminPause()" id="v-pause-btn" style="flex:1;">Pause</button>
-                            <button class="vault-action-btn" onclick="vaultAdminUnpause()" id="v-unpause-btn" style="flex:1;">Unpause</button>
-                            <button class="vault-action-btn" onclick="vaultAdminEmergencyExit()" style="flex:1; color:#ff6450; border-color:rgba(255,100,80,0.2);">Emergency Exit</button>
-                        </div>
+                <!-- Admin Panel (hidden unless admin) -->
+                <div class="vault-admin-panel" id="v-admin-panel">
+                    <div class="vault-panel-title" style="color:#ff6450;">Admin Controls</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="vault-action-btn" onclick="vaultAdminPause()" id="v-pause-btn" style="flex:1;">Pause</button>
+                        <button class="vault-action-btn" onclick="vaultAdminUnpause()" id="v-unpause-btn" style="flex:1;">Unpause</button>
+                        <button class="vault-action-btn" onclick="vaultAdminEmergencyExit()" style="flex:1; color:#ff6450; border-color:rgba(255,100,80,0.2);">Emergency Exit</button>
                     </div>
                 </div>
-            </div>
+
+            </div><!-- /vault-layout -->
         </div>
     </section>
 
@@ -3210,16 +3289,16 @@
                 document.getElementById('v-cap').textContent = formatUsd(cap);
                 document.getElementById('v-fees').textContent = formatUsd(feesEarned);
 
-                var statusEl = document.getElementById('v-status');
+                var badge = document.getElementById('v-status-badge');
                 if (paused) {
-                    statusEl.textContent = 'PAUSED';
-                    statusEl.className = 'vault-stat-val red';
+                    badge.textContent = 'PAUSED';
+                    badge.className = 'vault-hero-status out-range';
                 } else if (inRange) {
-                    statusEl.textContent = 'IN RANGE';
-                    statusEl.className = 'vault-stat-val green';
+                    badge.textContent = 'IN RANGE — EARNING FEES';
+                    badge.className = 'vault-hero-status in-range';
                 } else {
-                    statusEl.textContent = 'OUT OF RANGE';
-                    statusEl.className = 'vault-stat-val red';
+                    badge.textContent = 'OUT OF RANGE — NOT EARNING';
+                    badge.className = 'vault-hero-status out-range';
                 }
 
                 // Strategy panel
@@ -3227,8 +3306,8 @@
                 var priceHigh = tickToPrice(tickUpper);
                 document.getElementById('v-range-low').textContent = '$' + Math.round(priceLow).toLocaleString();
                 document.getElementById('v-range-high').textContent = '$' + Math.round(priceHigh).toLocaleString();
-                document.getElementById('v-range-low2').textContent = '$' + Math.round(priceLow).toLocaleString();
-                document.getElementById('v-range-high2').textContent = '$' + Math.round(priceHigh).toLocaleString();
+                document.getElementById('v-range-low2').textContent = '$' + Math.round(priceLow).toLocaleString() + ' lower';
+                document.getElementById('v-range-high2').textContent = '$' + Math.round(priceHigh).toLocaleString() + ' upper';
 
                 document.getElementById('v-rebal-count').textContent = rebalCount;
                 document.getElementById('v-rebal-time').textContent = timeAgo(lastRebal);
@@ -3380,14 +3459,13 @@
             document.getElementById('v-share-price').textContent = '$1.0000';
             document.getElementById('v-cap').textContent = '$25,000';
             document.getElementById('v-fees').textContent = '$0';
-            var statusEl = document.getElementById('v-status');
-            statusEl.textContent = 'NOT DEPLOYED';
-            statusEl.className = 'vault-stat-val';
-            statusEl.style.color = 'var(--text-dim)';
+            var badge = document.getElementById('v-status-badge');
+            badge.textContent = 'NOT YET DEPLOYED';
+            badge.className = 'vault-hero-status not-deployed';
             document.getElementById('v-range-low').textContent = '$--';
             document.getElementById('v-range-high').textContent = '$--';
-            document.getElementById('v-range-low2').textContent = '$--';
-            document.getElementById('v-range-high2').textContent = '$--';
+            document.getElementById('v-range-low2').textContent = 'Lower bound';
+            document.getElementById('v-range-high2').textContent = 'Upper bound';
             document.getElementById('v-eth-price').textContent = 'ETH: $--';
             document.getElementById('v-rebal-count').textContent = '0';
             document.getElementById('v-rebal-time').textContent = 'Never';
@@ -3395,6 +3473,14 @@
             document.getElementById('v-comp-time').textContent = 'Never';
             document.getElementById('v-perf-fee').textContent = '0%';
         }
+
+        // ── Explainer toggle ──
+        window.toggleVaultExplainer = function() {
+            var btn = document.getElementById('v-explainer-toggle');
+            var content = document.getElementById('v-explainer-content');
+            btn.classList.toggle('open');
+            content.classList.toggle('open');
+        };
 
         // ── Init ──
         function initVaultDashboard() {
