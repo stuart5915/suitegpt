@@ -3522,6 +3522,7 @@
                   <div class="bal-label">USDC</div>
                   <div class="bal-amount"><span id="balUsdc" class="wallet-balance">0</span></div>
                   <div class="bal-sub" id="balUsdcSub">$0.00 USDC</div>
+                  <div class="bal-sub" id="balUsdcTotal" style="color:var(--accent-cyan);font-size:9px;margin-top:2px"></div>
                   <div class="bal-actions">
                     <button onclick="openVault()" class="bal-btn bal-btn-deposit">Deposit</button>
                     <button onclick="openVault('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
@@ -5371,6 +5372,17 @@ function updateWalletUI() {
   // Update USDC balance sub text
   const balUsdcSub = document.getElementById('balUsdcSub');
   if (balUsdcSub) balUsdcSub.textContent = '$' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' USDC';
+  // Show total including agent chips
+  const balUsdcTotal = document.getElementById('balUsdcTotal');
+  if (balUsdcTotal) {
+    const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+    const totalChips = walletBalance + agentChips;
+    if (agentChips > 0) {
+      balUsdcTotal.textContent = 'Total: $' + (totalChips / CHIPS_PER_USDC).toFixed(2) + ' (incl. agents)';
+    } else {
+      balUsdcTotal.textContent = '';
+    }
+  }
   // Update vault modal if open
   const vb = document.getElementById('vaultChipBalance');
   if (vb) {
