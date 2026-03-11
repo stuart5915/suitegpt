@@ -393,30 +393,88 @@ export default async function handler(req, res) {
             else if (result === 'dormant') dormant++;
         }
 
-        // ── TRACK 2: Shared @inclawbator — sorted by bid (highest first), capped ──
-        // Sort by bid DESC so highest bidders get priority
-        sharedProjects.sort((a, b) => (b.agent_bid || 0) - (a.agent_bid || 0));
+        // ── TRACK 2: Scheduled @inclawbator slots (calendar bookings) ──
+        let scheduledPosted = 0;
+        const { data: dueSlots } = await supabase
+            .from('agent_schedule')
+            .select('*, projects(*)')
+            .eq('status', 'scheduled')
+            .lte('scheduled_at', new Date().toISOString())
+            .order('scheduled_at', { ascending: true });
 
-        let sharedPosted = 0;
-        for (const project of sharedProjects) {
+        for (const slot of (dueSlots || [])) {
             if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
-            if (sharedPosted >= sharedSlotsRemaining) break;
 
-            const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
-            const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
-            if (now - lastPost < intervalMs) continue;
+            const project = slot.projects;
+            if (!project) {
+                await supabase.from('agent_schedule').update({ status: 'failed' }).eq('id', slot.id);
+                continue;
+            }
 
-            const result = await processAgentPost(project, errors);
-            if (result === 'posted') { posted++; sharedPosted++; }
-            else if (result === 'dormant') dormant++;
+            try {
+                // Override persona with slot-specific settings
+                const slotPersona = [];
+                if (slot.tone && slot.tone !== 'default') slotPersona.push('Tone: ' + slot.tone);
+                if (slot.content_angle) slotPersona.push('Topics: ' + slot.content_angle);
+                if (slot.catchphrase) slotPersona.push('Catchphrase: ' + slot.catchphrase);
+
+                const projectWithPersona = {
+                    ...project,
+                    agent_persona: slotPersona.length ? slotPersona.join(' | ') : project.agent_persona,
+                    // Force shared account context — scheduled slots always post via @inclawbator
+                    x_access_token: null,
+                    x_refresh_token: null
+                };
+
+                const tweetText = await generateTweet(projectWithPersona);
+                if (!tweetText || tweetText.length > 280) {
+                    throw new Error('Generated tweet invalid or too long');
+                }
+
+                // Post to shared @inclawbator
+                const tweetId = await postTweetShared(tweetText);
+
+                // Mark slot as posted
+                await supabase
+                    .from('agent_schedule')
+                    .update({ status: 'posted', tweet_text: tweetText, tweet_id: tweetId })
+                    .eq('id', slot.id);
+
+                // Also log in project_agent_posts
+                await supabase
+                    .from('project_agent_posts')
+                    .insert({
+                        project_id: project.id,
+                        tweet_text: tweetText,
+                        tweet_id: tweetId,
+                        credits_cost: slot.credits_cost || CREDIT_COST,
+                        status: 'posted',
+                        posted_via: '@inclawbator'
+                    });
+
+                await supabase
+                    .from('projects')
+                    .update({ agent_total_posts: (project.agent_total_posts || 0) + 1 })
+                    .eq('id', project.id);
+
+                posted++;
+                scheduledPosted++;
+
+            } catch (postErr) {
+                await supabase
+                    .from('agent_schedule')
+                    .update({ status: 'failed', tweet_text: postErr.message })
+                    .eq('id', slot.id);
+
+                errors.push(`${project.name}: ${postErr.message}`);
+            }
         }
 
         return res.status(200).json({
             posted,
             dormant,
-            agents_checked: projects.length,
-            shared_slots_used: (sharedPostsToday || 0) + sharedPosted,
-            shared_slots_cap: SHARED_DAILY_CAP,
+            scheduled_posted: scheduledPosted,
+            agents_checked: (projects || []).length,
             credit_cost: CREDIT_COST,
             ...(errors.length ? { errors } : {})
         });

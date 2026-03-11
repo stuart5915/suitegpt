@@ -943,153 +943,92 @@
     </div>
 </div>
 
-<!-- AI Agent Modal -->
+<!-- AI Agent Schedule Modal -->
 <style>
-    .agent-project-list { display:flex;flex-direction:column;gap:8px;margin-bottom:var(--space-md); }
-    .agent-project-card {
-        display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);
-        border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.15s;
+    .sched-modal { max-width:680px; }
+    .sched-days { display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;margin-bottom:var(--space-md); }
+    .sched-day {
+        flex-shrink:0;padding:8px 14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);
+        background:var(--bg-card);cursor:pointer;text-align:center;transition:all 0.15s;min-width:70px;
     }
-    .agent-project-card:hover { border-color:var(--lobster-400);background:rgba(232,121,85,0.04); }
-    .agent-project-card.selected { border-color:var(--lobster-400);background:rgba(232,121,85,0.08);box-shadow:0 0 0 1px var(--lobster-400); }
-    .agent-project-logo {
-        width:40px;height:40px;border-radius:10px;background:var(--bg-card);flex-shrink:0;
-        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;
-        color:var(--lobster-400);overflow:hidden;
+    .sched-day:hover { border-color:var(--border-bright); }
+    .sched-day.active { border-color:var(--lobster-400);background:rgba(232,121,85,0.08); }
+    .sched-day-name { font-size:0.65rem;font-weight:600;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.05em; }
+    .sched-day-date { font-family:var(--font-mono);font-size:0.9rem;font-weight:700;color:var(--text-primary); }
+    .sched-day.today .sched-day-name { color:var(--lobster-400); }
+    .sched-slots { display:flex;flex-direction:column;gap:6px; }
+    .sched-slot {
+        display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-md);
+        border:1px solid var(--border-subtle);background:var(--bg-card);transition:all 0.15s;
     }
-    .agent-project-logo img { width:100%;height:100%;object-fit:cover; }
-    .agent-project-info { flex:1;min-width:0; }
-    .agent-project-top { display:flex;align-items:center;gap:6px;margin-bottom:2px; }
-    .agent-project-symbol { font-weight:700;font-size:0.88rem;color:var(--text-primary); }
-    .agent-project-chain {
-        font-family:var(--font-mono);font-size:0.62rem;font-weight:600;text-transform:uppercase;
-        padding:2px 6px;border-radius:6px;letter-spacing:0.04em;
-    }
-    .agent-project-chain[data-chain="base"] { background:rgba(0,82,255,0.15);color:#3b82f6; }
-    .agent-project-chain[data-chain="solana"] { background:rgba(153,69,255,0.15);color:#a78bfa; }
-    .agent-project-chain[data-chain="cardano"] { background:rgba(0,180,160,0.15);color:#2dd4bf; }
-    .agent-project-name { font-size:0.75rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-    .agent-project-badges { display:flex;gap:6px;flex-shrink:0;align-items:center; }
-    .agent-badge {
-        font-family:var(--font-mono);font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:10px;
-    }
-    .agent-badge--active { background:rgba(34,197,94,0.15);color:#4ade80; }
-    .agent-badge--dormant { background:rgba(239,68,68,0.15);color:#f87171; }
-    .agent-badge--paused { background:rgba(251,191,36,0.15);color:#fbbf24; }
-    .agent-badge--off { background:rgba(255,255,255,0.05);color:var(--text-dim); }
-    .agent-config-section {
-        padding-top:var(--space-md);border-top:1px solid var(--border-subtle);margin-top:var(--space-sm);
-    }
+    .sched-slot--available { cursor:pointer; }
+    .sched-slot--available:hover { border-color:var(--seafoam-400);background:rgba(45,212,191,0.04); }
+    .sched-slot--booked { border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.05); }
+    .sched-slot--posted { border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);opacity:0.7; }
+    .sched-slot--past { opacity:0.4;pointer-events:none; }
+    .sched-slot--mine { border-color:var(--lobster-400);background:rgba(232,121,85,0.06); }
+    .sched-time { font-family:var(--font-mono);font-size:0.78rem;font-weight:600;color:var(--text-dim);width:52px;flex-shrink:0; }
+    .sched-content { flex:1;min-width:0; }
+    .sched-content-name { font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .sched-content-angle { font-size:0.72rem;color:var(--text-dim); }
+    .sched-avail { font-size:0.78rem;color:var(--seafoam-400);font-weight:600; }
+    .sched-logo { width:28px;height:28px;border-radius:6px;background:var(--bg-elevated);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;color:var(--lobster-400); }
+    .sched-logo img { width:100%;height:100%;object-fit:cover; }
+    .sched-tag { font-family:var(--font-mono);font-size:0.6rem;font-weight:600;padding:2px 6px;border-radius:6px; }
+    .sched-tag--posted { background:rgba(34,197,94,0.15);color:#4ade80; }
+    .sched-tag--mine { background:rgba(232,121,85,0.15);color:var(--lobster-400); }
+    /* Booking form */
+    .sched-book { padding:var(--space-md);border-radius:var(--radius-md);border:1px solid var(--seafoam-400);background:rgba(45,212,191,0.04);margin-top:var(--space-sm); }
+    .sched-book label { font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:block; }
+    .sched-book select, .sched-book input, .sched-book textarea { font-size:0.82rem;margin-bottom:var(--space-sm); }
+    .sched-book textarea { min-height:50px;resize:vertical; }
+    .sched-info { display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);flex-wrap:wrap;gap:8px; }
+    .sched-info-item { font-size:0.78rem;color:var(--text-dim); }
+    .sched-info-item strong { color:var(--text-primary);font-family:var(--font-mono); }
 </style>
 <div class="native-modal-overlay" id="agentOverlay">
-    <div class="native-modal">
+    <div class="native-modal sched-modal">
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
-        <h3>AI Agent</h3>
-        <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:var(--space-md)">AI generates and posts tweets for your project. Connect your own X account or post through <a href="https://x.com/inclawbator" target="_blank" style="color:var(--lobster-400)">@inclawbator</a>.</p>
-
-        <div id="agentNoAuth" style="display:none">
-            <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:var(--space-md)">Connect your wallet to configure or fund an AI agent.</p>
-            <button class="modal-btn" onclick="window.navWalletConnect && window.navWalletConnect()">Connect Wallet</button>
-        </div>
-        <div id="agentNoProjects" style="display:none">
-            <p style="color:var(--text-dim);font-size:0.85rem">No projects found. <a href="/inclawbator" style="color:var(--lobster-400)">Register a project first</a>.</p>
+        <h3>@inclawbator Schedule</h3>
+        <div class="sched-info">
+            <span class="sched-info-item">12 slots/day &middot; <strong id="schedCost">~$0.05</strong> per slot</span>
+            <span class="sched-info-item">Balance: <strong id="schedBalance">—</strong></span>
         </div>
 
-        <!-- Project selector cards -->
-        <div id="agentProjectList" class="agent-project-list" style="display:none"></div>
+        <!-- Day selector strip -->
+        <div class="sched-days" id="schedDays"></div>
 
-        <!-- Agent status (shown when agent exists) -->
-        <div id="agentStatus" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Posts via</span>
-                <span id="agentPostsVia" style="font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--lobster-400)">@inclawbator</span>
+        <!-- Slot list for selected day -->
+        <div class="sched-slots" id="schedSlots"></div>
+
+        <!-- Booking form (appears when clicking available slot) -->
+        <div class="sched-book" id="schedBookForm" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-sm)">
+                <span style="font-weight:700;color:var(--text-primary)" id="schedBookTime">Book 2:00 PM</span>
+                <button type="button" onclick="closeBookForm()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem">&times;</button>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Status</span>
-                <span id="agentStatusBadge" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px"></span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Total posts</span>
-                <span id="agentTotalPosts" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Your balance</span>
-                <span id="agentCredits" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">—</span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Cost per post</span>
-                <span id="agentCostPerPost" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-secondary)">~$0.05 in CLAWS</span>
-            </div>
-            <div id="agentLowCredits" style="display:none;margin-bottom:var(--space-md);padding:10px;border-radius:var(--radius-md);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)">
-                <p style="font-size:0.78rem;color:#f87171;margin:0 0 6px">Low CLAWS — agent will go dormant when balance runs out.</p>
-                <a href="/build" style="font-size:0.78rem;font-weight:600;color:var(--lobster-400)">Get CLAWS</a>
-            </div>
+            <input type="hidden" id="schedBookSlotTime" value="">
+
+            <label>Project</label>
+            <select id="schedBookProject"></select>
+
+            <label>What should the tweet be about?</label>
+            <textarea id="schedBookAngle" placeholder="e.g. announce our new staking rewards, hype the community, meme about gas fees..." maxlength="200"></textarea>
+
+            <label>Tone</label>
+            <select id="schedBookTone">
+                <option value="default">Default</option>
+                <option value="hype">Hype</option>
+                <option value="chill">Chill</option>
+                <option value="degen">Degen</option>
+                <option value="professional">Professional</option>
+                <option value="meme">Meme Lord</option>
+            </select>
+
+            <button class="modal-btn" id="schedBookBtn" onclick="bookSlot()">Book This Slot</button>
+            <div class="modal-success" id="schedBookSuccess" style="display:none"></div>
+            <div class="modal-error" id="schedBookError" style="display:none"></div>
         </div>
-
-        <!-- Agent setup form -->
-        <form id="agentForm" style="display:none" onsubmit="submitAgent(event)">
-            <input type="hidden" id="agentProject" value="">
-
-            <!-- X Account Connection -->
-            <div id="agentXSection" style="margin-bottom:var(--space-md);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02)">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                    <div>
-                        <div style="font-size:0.82rem;font-weight:600;color:var(--text-primary)" id="agentXLabel">X Account</div>
-                        <div style="font-size:0.72rem;color:var(--text-dim)" id="agentXStatus">Not connected — posts via @inclawbator</div>
-                    </div>
-                    <button type="button" class="modal-btn" id="agentXBtn" onclick="connectProjectX()" style="font-size:0.75rem;padding:6px 14px;margin:0;width:auto">Connect X</button>
-                </div>
-            </div>
-
-            <div class="agent-config-section">
-                <label for="agentTone">Tone</label>
-                <select id="agentTone">
-                    <option value="">Default</option>
-                    <option value="hype">Hype — high energy, bullish, exclamation marks</option>
-                    <option value="chill">Chill — laid back, casual, lowercase vibes</option>
-                    <option value="degen">Degen — crypto native, memes, slang</option>
-                    <option value="professional">Professional — informative, clean, data-driven</option>
-                    <option value="meme">Meme Lord — funny, ironic, shitpost energy</option>
-                </select>
-
-                <label>Focus topics</label>
-                <div id="agentTopics" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-sm)">
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="price"> Price/Trading</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="community" checked> Community</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="utility"> Utility</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="staking"> Staking</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="partnerships"> Partnerships</label>
-                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="memes"> Memes</label>
-                </div>
-
-                <label for="agentCatchphrase">Custom catchphrase <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
-                <input type="text" id="agentCatchphrase" placeholder="e.g. always signs off with LFG" maxlength="100">
-                <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">A short note woven into the agent's tweets.</p>
-
-                <label for="agentFrequency">Posts per day</label>
-                <select id="agentFrequency" onchange="updateAgentCostDisplay()">
-                    <option value="1">1 / day</option>
-                    <option value="2" selected>2 / day</option>
-                    <option value="3">3 / day</option>
-                </select>
-                <p id="agentDailyCost" style="font-size:0.72rem;color:var(--text-dim);margin-top:2px"></p>
-
-                <!-- Bid for @inclawbator slots (only shown when using shared account) -->
-                <div id="agentBidSection" style="margin-top:var(--space-md);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(99,102,241,0.04)">
-                    <label for="agentBid" style="margin:0 0 4px">Priority bid <span style="font-weight:400;color:var(--text-dim)">(extra CLAWS per post)</span></label>
-                    <p style="font-size:0.72rem;color:var(--text-dim);margin:0 0 8px">@inclawbator has 12 slots/day. Higher bid = your project posts first. Bid is charged on top of the base cost.</p>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <input type="number" id="agentBid" placeholder="0" min="0" style="flex:1;margin:0" onchange="updateAgentCostDisplay()" oninput="updateAgentCostDisplay()">
-                        <span style="font-size:0.78rem;color:var(--text-dim);white-space:nowrap">extra CLAWS</span>
-                    </div>
-                    <p id="agentBidCost" style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px"></p>
-                </div>
-
-                <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
-                <div class="modal-success" id="agentSuccess" style="display:none"></div>
-                <div class="modal-error" id="agentError" style="display:none"></div>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -1193,6 +1132,8 @@
                 setTimeout(function() { openTool(row.dataset.tool); }, 400);
             } else if (row.dataset.action === 'socials') {
                 setTimeout(function() { openSocialsModal(); }, 400);
+            } else if (row.dataset.action === 'ai-agent') {
+                setTimeout(function() { openAgentModal(); }, 400);
             }
         }
     }
@@ -1342,340 +1283,329 @@ function getClawsCostPerPost() {
     return _clawsPerCredit * CREDIT_COST_PER_POST;
 }
 
-function updateAgentCostDisplay() {
-    var freq = parseInt(document.getElementById('agentFrequency').value) || 2;
-    var bid = parseInt(document.getElementById('agentBid').value) || 0;
-    var perPost = getClawsCostPerPost();
-    var costEl = document.getElementById('agentCostPerPost');
-    var dailyEl = document.getElementById('agentDailyCost');
-    var bidCostEl = document.getElementById('agentBidCost');
-
-    var baseCostUsd = 0.05;
-    var bidUsd = (_clawsPrice > 0 && bid > 0) ? (bid * _clawsPrice) : 0;
-    var totalUsd = baseCostUsd + bidUsd;
-
-    if (perPost > 0) {
-        var totalClaws = perPost + bid;
-        costEl.textContent = '~' + formatClaws(totalClaws) + ' CLAWS (~$' + totalUsd.toFixed(3) + ')';
-        if (dailyEl) dailyEl.textContent = freq + ' posts = ~' + formatClaws(totalClaws * freq) + ' CLAWS/day (~$' + (totalUsd * freq).toFixed(3) + '/day)';
-    } else {
-        costEl.textContent = '~$' + totalUsd.toFixed(3) + ' in CLAWS';
-        if (dailyEl) dailyEl.textContent = freq + ' posts = ~$' + (totalUsd * freq).toFixed(3) + '/day in CLAWS';
-    }
-
-    if (bidCostEl) {
-        if (bid > 0) {
-            bidCostEl.textContent = 'Bid: ' + bid.toLocaleString() + ' CLAWS' + (bidUsd > 0 ? ' (~$' + bidUsd.toFixed(4) + ')' : '') + ' extra per post';
-        } else {
-            bidCostEl.textContent = 'No bid — base rate only. Higher bidders post first.';
-        }
-    }
-}
+// ── Schedule View State ──
+var _schedSlots = [];
+var _schedProjects = [];
+var _selectedDay = null;
+var _userWallet = '';
 
 async function openAgentModal() {
     var ov = document.getElementById('agentOverlay');
     ov.classList.add('open');
     document.body.style.overflow = 'hidden';
 
-    document.getElementById('agentSuccess').style.display = 'none';
-    document.getElementById('agentError').style.display = 'none';
-    document.getElementById('agentStatus').style.display = 'none';
-    document.getElementById('agentProjectList').style.display = 'none';
-    document.getElementById('agentForm').style.display = 'none';
-    document.getElementById('agentNoAuth').style.display = 'none';
-    document.getElementById('agentNoProjects').style.display = 'none';
+    // Reset
+    document.getElementById('schedBookForm').style.display = 'none';
+    document.getElementById('schedBookSuccess').style.display = 'none';
+    document.getElementById('schedBookError').style.display = 'none';
 
-    try {
-        // Fetch ALL public projects (not just user's)
-        var resp = await fetch('/api/inclawbate/projects?public=1');
-        var data = await resp.json();
-        _agentProjects = data.projects || [];
-
-        if (!_agentProjects.length) {
-            document.getElementById('agentNoProjects').style.display = 'block';
-            return;
-        }
-
-        renderProjectCards();
-        document.getElementById('agentProjectList').style.display = 'flex';
-
-        // Auto-select first project
-        selectAgentProject(_agentProjects[0].id);
-    } catch(err) {
-        document.getElementById('agentNoProjects').style.display = 'block';
-    }
-}
-
-function renderProjectCards() {
-    var list = document.getElementById('agentProjectList');
-    list.innerHTML = '';
-
-    _agentProjects.forEach(function(p) {
-        var card = document.createElement('div');
-        card.className = 'agent-project-card';
-        card.setAttribute('data-id', p.id);
-        card.onclick = function() { selectAgentProject(p.id); };
-
-        var agentSt = p.agent_enabled ? (p.agent_status || 'dormant') : 'off';
-        var badgeClass = agentSt === 'active' ? 'agent-badge--active'
-            : agentSt === 'dormant' ? 'agent-badge--dormant'
-            : agentSt === 'paused' ? 'agent-badge--paused' : 'agent-badge--off';
-        var badgeText = agentSt === 'off' ? 'no agent' : agentSt;
-
-        var firstChar = (p.name || '?').charAt(0).toUpperCase();
-        var logoHtml = p.logo_url
-            ? '<img src="' + p.logo_url + '" alt="" onerror="this.parentNode.textContent=\'' + firstChar + '\'">'
-            : firstChar;
-
-        var descSnippet = p.description ? p.description.slice(0, 60) + (p.description.length > 60 ? '...' : '') : '';
-
-        // Build badges row: token symbol, app, staking, creator handle
-        var badgesHtml = '';
-        if (p.token_symbol) badgesHtml += '<span class="agent-project-chain" data-chain="base">$' + p.token_symbol + '</span>';
-        else if (p.token_address) badgesHtml += '<span class="agent-project-chain" data-chain="base">Token</span>';
-        if (p.app_slug) badgesHtml += '<span class="agent-project-chain" data-chain="cardano">App</span>';
-        if (p.staking_address) badgesHtml += '<span class="agent-project-chain" data-chain="solana">Staking</span>';
-
-        card.innerHTML = '<div class="agent-project-logo">' + logoHtml + '</div>'
-            + '<div class="agent-project-info">'
-            + '<div class="agent-project-top">'
-            + '<span class="agent-project-symbol">' + (p.name || 'Project') + '</span>'
-            + badgesHtml
-            + '</div>'
-            + '<div class="agent-project-name">' + (descSnippet || '/' + (p.slug || '')) + '</div>'
-            + '</div>'
-            + '<div class="agent-project-badges">'
-            + (p.agent_enabled ? '<span class="agent-badge ' + badgeClass + '">' + badgeText + '</span>' : '<span class="agent-badge agent-badge--off">no agent</span>')
-            + '</div>';
-
-        list.appendChild(card);
-    });
-}
-
-function selectAgentProject(id) {
-    // Update card selection state
-    document.querySelectorAll('.agent-project-card').forEach(function(c) {
-        c.classList.toggle('selected', c.getAttribute('data-id') === id);
-    });
-
-    document.getElementById('agentProject').value = id;
-    document.getElementById('agentForm').style.display = 'block';
-    onAgentProjectChange();
-}
-
-function isProjectOwner(project) {
     var auth = getAuth();
-    if (!auth || !auth.wallet) return false;
-    return (project.creator_wallet || '').toLowerCase() === auth.wallet.toLowerCase();
-}
+    _userWallet = auth ? (auth.wallet || '').toLowerCase() : '';
 
-function onAgentProjectChange() {
-    var id = document.getElementById('agentProject').value;
-    var project = _agentProjects.find(function(p) { return p.id === id; });
-    if (!project) return;
-
-    var statusDiv = document.getElementById('agentStatus');
-    var btn = document.getElementById('agentSubmitBtn');
-    var configSection = document.querySelector('.agent-config-section');
-    var xSection = document.getElementById('agentXSection');
-    var owner = isProjectOwner(project);
-
-    // X connection status
-    var hasOwnX = project.x_connected && project.x_handle;
-    document.getElementById('agentXLabel').textContent = hasOwnX ? '@' + project.x_handle : 'X Account';
-    document.getElementById('agentXStatus').textContent = hasOwnX ? 'Connected — posts from your account' : 'Not connected — posts via @inclawbator';
-    document.getElementById('agentPostsVia').textContent = hasOwnX ? '@' + project.x_handle : '@inclawbator';
-
-    // Only owner can connect X / configure agent
-    xSection.style.display = owner ? '' : 'none';
-    if (owner) {
-        document.getElementById('agentXBtn').textContent = hasOwnX ? 'Disconnect' : 'Connect X';
-        document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
-    }
-
-    // Show bid section only when using shared @inclawbator (no own X)
-    var bidSection = document.getElementById('agentBidSection');
-    if (bidSection) bidSection.style.display = (owner && !hasOwnX) ? '' : 'none';
-
-    // Fetch on-chain CLAWS balance from the project owner's wallet
-    var ownerWallet = project.creator_wallet || '';
-    if (ownerWallet) {
-        fetchClawsBalance(ownerWallet).then(function(bal) {
-            document.getElementById('agentCredits').textContent = formatClaws(bal) + ' CLAWS';
-            // Low balance warning: less than 3 posts worth
-            var postCostClaws = getClawsCostPerPost();
-            var lowEl = document.getElementById('agentLowCredits');
-            if (lowEl) lowEl.style.display = (postCostClaws > 0 && bal < postCostClaws * 3) ? 'block' : 'none';
+    // Show CLAWS balance if logged in
+    if (_userWallet) {
+        fetchClawsBalance(_userWallet).then(function(bal) {
+            document.getElementById('schedBalance').textContent = formatClaws(bal) + ' CLAWS';
         }).catch(function() {
-            document.getElementById('agentCredits').textContent = '—';
+            document.getElementById('schedBalance').textContent = '—';
         });
     }
 
-    updateAgentCostDisplay();
-
-    if (project.agent_enabled) {
-        statusDiv.style.display = 'block';
-        document.getElementById('agentTotalPosts').textContent = project.agent_total_posts || 0;
-
-        var badge = document.getElementById('agentStatusBadge');
-        var st = project.agent_status || 'dormant';
-        badge.textContent = st;
-        badge.style.background = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
-        badge.style.color = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
-
-        if (owner) {
-            parsePersonaIntoForm(project.agent_persona || '');
-            document.getElementById('agentFrequency').value = Math.min(3, project.agent_posts_per_day || 2);
-            document.getElementById('agentBid').value = project.agent_bid || 0;
-            btn.textContent = 'Update Agent';
-            configSection.style.display = '';
-        } else {
-            configSection.style.display = 'none';
-        }
-    } else {
-        statusDiv.style.display = 'none';
-        if (owner) {
-            document.getElementById('agentTone').value = '';
-            document.querySelectorAll('#agentTopics input').forEach(function(cb) { cb.checked = cb.value === 'community'; });
-            document.getElementById('agentCatchphrase').value = '';
-            document.getElementById('agentFrequency').value = '2';
-            document.getElementById('agentBid').value = 0;
-            btn.textContent = 'Enable Agent';
-            configSection.style.display = '';
-        } else {
-            configSection.style.display = 'none';
-        }
+    // Update cost display
+    var costPerSlot = getClawsCostPerPost();
+    if (costPerSlot > 0) {
+        document.getElementById('schedCost').textContent = '~' + formatClaws(costPerSlot) + ' CLAWS (~$0.05)';
     }
-}
 
-function parsePersonaIntoForm(persona) {
-    // Try to parse structured persona: "Tone: hype | Topics: community, memes | Catchphrase: LFG"
-    var tone = '';
-    var topics = [];
-    var catchphrase = '';
-
-    var toneMatch = persona.match(/Tone:\s*(\w+)/i);
-    if (toneMatch) tone = toneMatch[1].toLowerCase();
-
-    var topicMatch = persona.match(/Topics:\s*([^|]+)/i);
-    if (topicMatch) topics = topicMatch[1].split(',').map(function(t) { return t.trim().toLowerCase(); });
-
-    var catchMatch = persona.match(/Catchphrase:\s*(.+)/i);
-    if (catchMatch) catchphrase = catchMatch[1].trim();
-
-    document.getElementById('agentTone').value = tone || '';
-    document.querySelectorAll('#agentTopics input').forEach(function(cb) {
-        cb.checked = topics.length ? topics.indexOf(cb.value) !== -1 : cb.value === 'community';
-    });
-    document.getElementById('agentCatchphrase').value = catchphrase;
-}
-
-function buildPersonaString() {
-    var tone = document.getElementById('agentTone').value;
-    var topics = [];
-    document.querySelectorAll('#agentTopics input:checked').forEach(function(cb) { topics.push(cb.value); });
-    var catchphrase = document.getElementById('agentCatchphrase').value.trim();
-
-    var parts = [];
-    if (tone) parts.push('Tone: ' + tone);
-    if (topics.length) parts.push('Topics: ' + topics.join(', '));
-    if (catchphrase) parts.push('Catchphrase: ' + catchphrase);
-    return parts.join(' | ');
-}
-
-// ── X Account Connection (OAuth 2.0 PKCE) ──
-
-async function connectProjectX() {
-    var auth = getAuth();
-    if (!auth || !auth.token) return alert('Sign in first');
-
-    var projectId = document.getElementById('agentProject').value;
-    if (!projectId) return;
-
-    // Generate PKCE code_verifier + code_challenge
-    var array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    var codeVerifier = btoa(String.fromCharCode.apply(null, array))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-    var encoder = new TextEncoder();
-    var digest = await crypto.subtle.digest('SHA-256', encoder.encode(codeVerifier));
-    var codeChallenge = btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-    // Store verifier + project_id for callback
-    sessionStorage.setItem('x_connect_verifier', codeVerifier);
-    sessionStorage.setItem('x_connect_project_id', projectId);
+    // Fetch schedule (next 7 days)
+    var start = new Date();
+    start.setHours(0, 0, 0, 0);
+    var end = new Date(start.getTime() + 7 * 86400000);
 
     try {
-        var resp = await fetch('/api/inclawbate/x-connect-project', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-            body: JSON.stringify({ action: 'start', project_id: projectId, code_challenge: codeChallenge })
-        });
+        var resp = await fetch('/api/inclawbate/agent-schedule?start=' + start.toISOString() + '&end=' + end.toISOString());
         var data = await resp.json();
-        if (!resp.ok || !data.authorize_url) throw new Error(data.error || 'Failed to start X connection');
-        window.location.href = data.authorize_url;
-    } catch (err) {
-        alert(err.message || 'Failed to connect X');
+        _schedSlots = data.slots || [];
+    } catch (e) {
+        _schedSlots = [];
+    }
+
+    // Fetch user's projects for booking dropdown
+    if (_userWallet) {
+        try {
+            var pResp = await fetch('/api/inclawbate/projects?wallet=' + encodeURIComponent(_userWallet));
+            var pData = await pResp.json();
+            _schedProjects = pData.projects || pData || [];
+        } catch (e) {
+            _schedProjects = [];
+        }
+    }
+
+    // Render day strip and select today
+    renderDayStrip();
+    selectDay(new Date(start));
+}
+
+function renderDayStrip() {
+    var container = document.getElementById('schedDays');
+    container.innerHTML = '';
+    var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    for (var i = 0; i < 7; i++) {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + i);
+
+        var dayStr = d.toISOString().split('T')[0];
+        var bookedCount = _schedSlots.filter(function(s) { return new Date(s.scheduled_at).toISOString().startsWith(dayStr); }).length;
+
+        var btn = document.createElement('div');
+        btn.className = 'sched-day' + (i === 0 ? ' today' : '');
+        btn.setAttribute('data-date', dayStr);
+        btn.innerHTML = '<div class="sched-day-name">' + (i === 0 ? 'Today' : dayNames[d.getDay()]) + '</div>'
+            + '<div class="sched-day-date">' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
+            + (bookedCount > 0 ? '<div style="font-size:0.6rem;color:var(--text-dim)">' + bookedCount + '/12</div>' : '');
+
+        (function(date) {
+            btn.addEventListener('click', function() { selectDay(date); });
+        })(new Date(d));
+
+        container.appendChild(btn);
     }
 }
 
-async function disconnectProjectX(projectId) {
-    if (!confirm('Disconnect X account? Agent will fall back to posting via @inclawbator.')) return;
+function selectDay(date) {
+    _selectedDay = date;
+    var dayStr = date.toISOString().split('T')[0];
+
+    document.querySelectorAll('.sched-day').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-date') === dayStr);
+    });
+
+    closeBookForm();
+    renderSlots(date);
+}
+
+function renderSlots(date) {
+    var container = document.getElementById('schedSlots');
+    container.innerHTML = '';
+    var now = Date.now();
+    var HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+
+    HOURS.forEach(function(hour) {
+        var slotTime = new Date(date);
+        slotTime.setUTCHours(hour, 0, 0, 0);
+        var slotISO = slotTime.toISOString();
+
+        // Find matching booked slot (compare as timestamps — Supabase returns +00:00, JS uses .000Z)
+        var slotMs = slotTime.getTime();
+        var booked = _schedSlots.find(function(s) {
+            return new Date(s.scheduled_at).getTime() === slotMs && s.status !== 'cancelled';
+        });
+
+        var isPast = slotTime.getTime() <= now;
+        var isMine = booked && booked.booked_by_wallet === _userWallet;
+        var isPosted = booked && booked.status === 'posted';
+
+        var el = document.createElement('div');
+        var cls = 'sched-slot';
+        if (isPast && !booked) cls += ' sched-slot--past';
+        else if (isPosted) cls += ' sched-slot--posted';
+        else if (isMine) cls += ' sched-slot--mine';
+        else if (booked) cls += ' sched-slot--booked';
+        else if (!isPast) cls += ' sched-slot--available';
+        else cls += ' sched-slot--past';
+        el.className = cls;
+
+        var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        var html = '<span class="sched-time">' + timeStr + '</span>';
+
+        if (booked) {
+            var logoChar = (booked.project_name || '?').charAt(0).toUpperCase();
+            var logoHtml = booked.project_logo
+                ? '<img src="' + booked.project_logo + '" alt="" onerror="this.parentNode.textContent=\'' + logoChar + '\'">'
+                : logoChar;
+
+            html += '<div class="sched-logo">' + logoHtml + '</div>';
+            html += '<div class="sched-content">';
+            html += '<div class="sched-content-name">' + (booked.project_name || 'Project');
+            if (booked.project_symbol) html += ' <span style="opacity:0.6">$' + booked.project_symbol + '</span>';
+            html += '</div>';
+            if (booked.content_angle) {
+                html += '<div class="sched-content-angle">' + booked.content_angle + '</div>';
+            }
+            html += '</div>';
+
+            if (isPosted) {
+                html += '<span class="sched-tag sched-tag--posted">posted</span>';
+            } else if (isMine && !isPast) {
+                html += '<span class="sched-tag sched-tag--mine">yours</span>';
+                html += '<button onclick="event.stopPropagation();cancelSlot(\'' + booked.id + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">cancel</button>';
+            } else if (isMine && isPast) {
+                html += '<span class="sched-tag sched-tag--mine">yours</span>';
+            }
+        } else if (!isPast) {
+            html += '<span class="sched-avail">Available — click to book</span>';
+        } else {
+            html += '<span style="font-size:0.78rem;color:var(--text-dim)">—</span>';
+        }
+
+        el.innerHTML = html;
+
+        if (!booked && !isPast) {
+            (function(t) {
+                el.addEventListener('click', function() { openBookForm(t); });
+            })(new Date(slotTime));
+        }
+
+        container.appendChild(el);
+    });
+}
+
+function openBookForm(slotTime) {
+    var form = document.getElementById('schedBookForm');
+    form.style.display = 'block';
+
+    var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    var dateStr = (slotTime.getMonth() + 1) + '/' + slotTime.getDate();
+    document.getElementById('schedBookTime').textContent = 'Book ' + dateStr + ' at ' + timeStr;
+    document.getElementById('schedBookSlotTime').value = slotTime.toISOString();
+
+    // Populate project dropdown
+    var sel = document.getElementById('schedBookProject');
+    sel.innerHTML = '';
+
+    if (!_userWallet) {
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sign in to book slots';
+        sel.appendChild(opt);
+    } else if (!_schedProjects.length) {
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No projects — create one at /projects first';
+        sel.appendChild(opt);
+    } else {
+        _schedProjects.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name || p.token_symbol || 'Project';
+            sel.appendChild(opt);
+        });
+    }
+
+    // Reset form
+    document.getElementById('schedBookAngle').value = '';
+    document.getElementById('schedBookTone').value = 'default';
+    document.getElementById('schedBookSuccess').style.display = 'none';
+    document.getElementById('schedBookError').style.display = 'none';
+    document.getElementById('schedBookBtn').disabled = false;
+    document.getElementById('schedBookBtn').textContent = 'Book This Slot';
+
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeBookForm() {
+    document.getElementById('schedBookForm').style.display = 'none';
+}
+
+async function bookSlot() {
+    var auth = getAuth();
+    if (!auth || !auth.token) {
+        document.getElementById('schedBookError').textContent = 'Sign in first';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
+    var projectId = document.getElementById('schedBookProject').value;
+    if (!projectId) {
+        document.getElementById('schedBookError').textContent = 'Select a project first';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
+    var btn = document.getElementById('schedBookBtn');
+    btn.disabled = true;
+    btn.textContent = 'Booking...';
+    document.getElementById('schedBookSuccess').style.display = 'none';
+    document.getElementById('schedBookError').style.display = 'none';
+
+    try {
+        var resp = await fetch('/api/inclawbate/agent-schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + auth.token
+            },
+            body: JSON.stringify({
+                action: 'book',
+                project_id: projectId,
+                scheduled_at: document.getElementById('schedBookSlotTime').value,
+                content_angle: document.getElementById('schedBookAngle').value,
+                tone: document.getElementById('schedBookTone').value
+            })
+        });
+
+        var data = await resp.json();
+
+        if (!resp.ok) {
+            throw new Error(data.error || 'Failed to book slot');
+        }
+
+        document.getElementById('schedBookSuccess').textContent = 'Booked! @inclawbator will tweet for your project at this time.';
+        document.getElementById('schedBookSuccess').style.display = 'block';
+
+        // Enrich with project info from local data and add to slots
+        if (data.slot) {
+            var proj = _schedProjects.find(function(p) { return p.id === data.slot.project_id; });
+            if (proj) {
+                data.slot.project_name = proj.name;
+                data.slot.project_logo = proj.logo_url;
+                data.slot.project_slug = proj.slug;
+                data.slot.project_symbol = proj.token_symbol;
+            }
+            _schedSlots.push(data.slot);
+        }
+
+        setTimeout(function() {
+            closeBookForm();
+            renderSlots(_selectedDay);
+        }, 1500);
+
+    } catch (err) {
+        document.getElementById('schedBookError').textContent = err.message || 'Failed to book slot';
+        document.getElementById('schedBookError').style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Book This Slot';
+    }
+}
+
+async function cancelSlot(slotId) {
+    if (!confirm('Cancel this slot? Credits will be refunded.')) return;
+
     var auth = getAuth();
     if (!auth || !auth.token) return;
 
     try {
-        await fetch('/api/inclawbate/x-connect-project', {
+        var resp = await fetch('/api/inclawbate/agent-schedule', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-            body: JSON.stringify({ action: 'disconnect', project_id: projectId })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + auth.token
+            },
+            body: JSON.stringify({ action: 'cancel', slot_id: slotId })
         });
-        var project = _agentProjects.find(function(p) { return p.id === projectId; });
-        if (project) { project.x_connected = false; project.x_handle = null; }
-        onAgentProjectChange();
+
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Failed to cancel');
+
+        _schedSlots = _schedSlots.filter(function(s) { return s.id !== slotId; });
+        renderSlots(_selectedDay);
+
     } catch (err) {
-        alert(err.message || 'Failed to disconnect');
+        alert(err.message || 'Failed to cancel slot');
     }
 }
-
-// Handle OAuth callback (X redirects back to /tools?code=xxx&state=xxx)
-(function() {
-    var params = new URLSearchParams(window.location.search);
-    var code = params.get('code');
-    if (!code) return;
-
-    var verifier = sessionStorage.getItem('x_connect_verifier');
-    var projectId = sessionStorage.getItem('x_connect_project_id');
-    if (!verifier || !projectId) return;
-
-    // Clean up URL
-    history.replaceState(null, '', window.location.pathname + '#ai-agent');
-
-    // Exchange code for tokens
-    var auth = getAuth();
-    if (!auth || !auth.token) return;
-
-    sessionStorage.removeItem('x_connect_verifier');
-    sessionStorage.removeItem('x_connect_project_id');
-
-    fetch('/api/inclawbate/x-connect-project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-        body: JSON.stringify({ action: 'callback', code: code, code_verifier: verifier, project_id: projectId })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            // Update local project data and auto-open modal
-            setTimeout(function() { openAgentModal(); }, 300);
-        } else {
-            alert('X connection failed: ' + (data.error || 'Unknown error'));
-        }
-    })
-    .catch(function() { alert('X connection failed'); });
-})();
 
 function closeAgentModal() {
     document.getElementById('agentOverlay').classList.remove('open');
@@ -1685,63 +1615,31 @@ document.getElementById('agentOverlay').addEventListener('click', function(e) {
     if (e.target === this) closeAgentModal();
 });
 
-async function submitAgent(e) {
-    e.preventDefault();
+// Handle X OAuth callback (keep for projects that connect own X)
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    if (!code) return;
+    var verifier = sessionStorage.getItem('x_connect_verifier');
+    var projectId = sessionStorage.getItem('x_connect_project_id');
+    if (!verifier || !projectId) return;
+    history.replaceState(null, '', window.location.pathname + '#ai-agent');
     var auth = getAuth();
     if (!auth || !auth.token) return;
-
-    var btn = document.getElementById('agentSubmitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
-    document.getElementById('agentSuccess').style.display = 'none';
-    document.getElementById('agentError').style.display = 'none';
-
-    var projectId = document.getElementById('agentProject').value;
-    var project = _agentProjects.find(function(p) { return p.id === projectId; });
-
-    try {
-        var body = {
-            id: projectId,
-            agent_persona: buildPersonaString(),
-            agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value),
-            agent_bid: parseInt(document.getElementById('agentBid').value) || 0
-        };
-
-        if (!project.agent_enabled) {
-            body.agent_enabled = true;
-            body.agent_status = 'active';
-        }
-
-        var resp = await fetch('/api/inclawbate/projects', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
-            body: JSON.stringify(body)
-        });
-
-        if (!resp.ok) {
-            var errData = await resp.json().catch(function() { return {}; });
-            throw new Error(errData.error || 'Failed to save agent');
-        }
-
-        var suc = document.getElementById('agentSuccess');
-        suc.textContent = project.agent_enabled ? 'Agent updated!' : 'Agent enabled! Fund it with CLAWS on the Inclawbator page to start posting.';
-        suc.style.display = 'block';
-
-        // Refresh project data
-        project.agent_enabled = true;
-        onAgentProjectChange();
-    } catch(err) {
-        var errEl = document.getElementById('agentError');
-        errEl.textContent = err.message || 'Failed to save agent settings.';
-        errEl.style.display = 'block';
-    } finally {
-        btn.disabled = false;
-        btn.textContent = project.agent_enabled ? 'Update Agent' : 'Enable Agent';
-    }
-}
-
-// Marketing modal removed — now lives at /market-dash
-
+    sessionStorage.removeItem('x_connect_verifier');
+    sessionStorage.removeItem('x_connect_project_id');
+    fetch('/api/inclawbate/x-connect-project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+        body: JSON.stringify({ action: 'callback', code: code, code_verifier: verifier, project_id: projectId })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) setTimeout(function() { openAgentModal(); }, 300);
+        else alert('X connection failed: ' + (data.error || 'Unknown error'));
+    })
+    .catch(function() { alert('X connection failed'); });
+})();
 
 // ── Angel NFT Banner Check ──
 (function() {
