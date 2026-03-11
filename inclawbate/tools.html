@@ -1325,9 +1325,29 @@ var USD_PER_CREDIT = 0.005;
 })();
 
 function formatClaws(n) {
+    if (n >= 1000000000) return (n / 1000000000).toFixed(2) + 'B';
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
     return Math.round(n).toLocaleString();
+}
+
+// Read on-chain CLAWS balance (ERC20 balanceOf via Base RPC)
+var CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
+function fetchClawsBalance(wallet) {
+    var paddedAddr = '0x000000000000000000000000' + wallet.replace('0x', '').toLowerCase();
+    var callData = '0x70a08231' + paddedAddr; // balanceOf(address)
+    return fetch('https://mainnet.base.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: CLAWS_TOKEN, data: callData }, 'latest'] })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.result || d.result === '0x') return 0;
+        // CLAWS has 18 decimals
+        var raw = BigInt(d.result);
+        return Number(raw / BigInt(1e14)) / 10000; // keep 4 decimal precision
+    });
 }
 
 function getClawsCostPerPost() {
@@ -1489,27 +1509,17 @@ function onAgentProjectChange() {
     var bidSection = document.getElementById('agentBidSection');
     if (bidSection) bidSection.style.display = (owner && !hasOwnX) ? '' : 'none';
 
-    // Fetch owner's credit balance and show as CLAWS equivalent
+    // Fetch on-chain CLAWS balance from wallet
     var auth = getAuth();
-    if (auth && auth.token) {
-        fetch('/api/inclawbate/credits', {
-            headers: { 'Authorization': 'Bearer ' + auth.token }
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            var credits = d.credits || 0;
-            // Convert credits to CLAWS equivalent for display
-            if (_clawsPerCredit > 0) {
-                var clawsEquiv = credits * _clawsPerCredit;
-                document.getElementById('agentCredits').textContent = formatClaws(clawsEquiv) + ' CLAWS';
-            } else {
-                document.getElementById('agentCredits').textContent = credits.toLocaleString() + ' credits (~$' + (credits * 0.005).toFixed(2) + ')';
-            }
-            // Show low-credits warning if under 30 credits (3 posts worth)
+    var walletAddr = auth ? (auth.wallet || auth.walletAddress || '') : '';
+    if (walletAddr) {
+        fetchClawsBalance(walletAddr).then(function(bal) {
+            document.getElementById('agentCredits').textContent = formatClaws(bal) + ' CLAWS';
+            // Low balance warning: less than 3 posts worth
+            var postCostClaws = getClawsCostPerPost();
             var lowEl = document.getElementById('agentLowCredits');
-            if (lowEl) lowEl.style.display = credits < 30 ? 'block' : 'none';
-        })
-        .catch(function() {
+            if (lowEl) lowEl.style.display = (postCostClaws > 0 && bal < postCostClaws * 3) ? 'block' : 'none';
+        }).catch(function() {
             document.getElementById('agentCredits').textContent = '—';
         });
     }
