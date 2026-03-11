@@ -185,7 +185,7 @@ wss.on('connection', (ws) => {
           const result = rooms.updateLobbyAgent(addr, msg.agentId, msg.config);
           ws.send(JSON.stringify({ type: 'updateAgentResult', data: result }));
           if (result.success) {
-            const agents = rooms.getMyAgents(addr);
+            const agents = rooms.getAgentsForWallet(addr);
             ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
             broadcastStateToAll();
           }
@@ -200,7 +200,7 @@ wss.on('connection', (ws) => {
           if (result.success) {
             rooms.store.recordTransaction(addr, 'fund_agent', 0, msg.amount);
             sendBalance(ws, addr);
-            const agents = rooms.getMyAgents(addr);
+            const agents = rooms.getAgentsForWallet(addr);
             ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
           }
           break;
@@ -214,7 +214,7 @@ wss.on('connection', (ws) => {
           if (result.success) {
             rooms.store.recordTransaction(addr, 'defund_agent', 0, result.amount);
             sendBalance(ws, addr);
-            const agents = rooms.getMyAgents(addr);
+            const agents = rooms.getAgentsForWallet(addr);
             ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
           }
           break;

@@ -4248,7 +4248,14 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
-        _openFundPanel = null; // close fund panel, agent now shows JOIN TABLE
+        _openFundPanel = null;
+        // Optimistically update local agent data so card refreshes immediately
+        const fundedAgent = myAgents.find(a => a.id === msg.data.agentId);
+        if (fundedAgent) {
+          fundedAgent.chipStack = msg.data.chipStack;
+          fundedAgent.chips = msg.data.chipStack;
+          renderMyAgents();
+        }
         showToast(`Agent funded! ${msg.data.chipStack.toLocaleString()} chips ready — now pick a table!`, 'success');
       }
       break;
@@ -4257,6 +4264,12 @@ function handleMessage(msg) {
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
+        const defundedAgent = myAgents.find(a => a.id === msg.data.agentId);
+        if (defundedAgent) {
+          defundedAgent.chipStack = msg.data.chipStack;
+          defundedAgent.chips = msg.data.chipStack;
+          renderMyAgents();
+        }
         showToast(`Withdrew ${msg.data.amount.toLocaleString()} chips back to wallet`, 'success');
       }
       break;
