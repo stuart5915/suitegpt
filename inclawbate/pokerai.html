@@ -5571,6 +5571,7 @@ function applyAutoTopUpState(config) {
 let _roomPickerOpen = false;
 let _openFundPanel = null;  // track which agent's fund panel is open
 let _openRoomPicker = null; // track which agent's room picker is open
+let _selectedFundAmount = {};  // track selected preset per agent { agentId: amount }
 
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
@@ -5923,13 +5924,24 @@ function _applyOpenPanels() {
 
 function _populateFundPresets(agentId) {
   const presetsEl = document.getElementById('fundPresets-' + agentId);
-  if (!presetsEl || presetsEl.children.length > 0) return;
+  if (!presetsEl) return;
+  const savedAmt = _selectedFundAmount[agentId] || FUND_PRESETS[0];
   presetsEl.innerHTML = FUND_PRESETS.map(amt => {
     const label = amt >= 1000 ? (amt / 1000) + 'K' : amt;
-    return `<button onclick="document.getElementById('fundAmount-${agentId}').value=${amt};this.parentNode.querySelectorAll('button').forEach(b=>{b.style.borderColor='';b.style.color=''});this.style.borderColor='var(--accent-gold)';this.style.color='var(--accent-gold)'" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s">${label}</button>`;
+    const isSelected = amt === savedAmt;
+    const borderStyle = isSelected ? 'border-color:var(--accent-gold);color:var(--accent-gold)' : '';
+    return `<button onclick="_selectFundPreset('${agentId}',${amt},this)" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;font-family:'Rajdhani',sans-serif;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);border-radius:6px;cursor:pointer;transition:all 0.2s;${borderStyle}">${label}</button>`;
   }).join('');
   const input = document.getElementById('fundAmount-' + agentId);
-  if (input && !input.value) input.value = FUND_PRESETS[0];
+  if (input) input.value = savedAmt;
+}
+
+function _selectFundPreset(agentId, amt, btn) {
+  _selectedFundAmount[agentId] = amt;
+  document.getElementById('fundAmount-' + agentId).value = amt;
+  btn.parentNode.querySelectorAll('button').forEach(b => { b.style.borderColor = ''; b.style.color = ''; });
+  btn.style.borderColor = 'var(--accent-gold)';
+  btn.style.color = 'var(--accent-gold)';
 }
 
 const FUND_PRESETS = [1000, 2500, 5000, 10000, 25000, 50000];
