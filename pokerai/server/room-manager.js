@@ -122,8 +122,10 @@ class RoomManager {
   _persistPlayingAgents(table) {
     for (const a of table.agents) {
       if (a.isCustom && !a.walletAddress?.startsWith('sandbox_')) {
+        // For sandbox tables, persist the REAL chipStack (not inflated sandbox chips)
+        const chipStack = (a._realChipStack !== undefined) ? a._realChipStack : a.chips;
         this.store.updateAgentStats(a.id, {
-          chipStack: a.chips,
+          chipStack,
           handsWon: a.handsWon,
           handsPlayed: a.handsPlayed,
           biggestPot: a.biggestPot
