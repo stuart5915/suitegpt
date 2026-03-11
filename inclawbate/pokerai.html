@@ -366,6 +366,14 @@
     transform: translate(-50%, -70%);
   }
 
+  .seat.seat-left {
+    transform: translate(-70%, -50%);
+  }
+
+  .seat.seat-right {
+    transform: translate(-30%, -50%);
+  }
+
   .seat-avatar {
     width: 56px;
     height: 56px;
@@ -4870,7 +4878,8 @@ function renderTableSeats() {
     const pos = SEAT_POSITIONS[i];
     const seat = document.createElement('div');
     const bottomSeat = (i === 0 || i === 1 || i === 7);
-    seat.className = 'seat' + (bottomSeat ? ' seat-bottom' : '');
+    const seatClass = bottomSeat ? ' seat-bottom' : i === 2 ? ' seat-left' : i === 6 ? ' seat-right' : '';
+    seat.className = 'seat' + seatClass;
     seat.id = `seat-${agent.id}`;
     seat.style.top = pos.top;
     seat.style.left = pos.left;
@@ -4965,15 +4974,16 @@ function renderTableSeats() {
     const myAgentClass = isMyAgent ? ' my-agent' : '';
     const nameSize = isMyAgent ? 'font-size:15px;font-weight:700' : '';
     const chipsSize = isMyAgent ? 'font-size:16px;font-weight:800' : '';
-    // Bottom-half seats: render cards ABOVE the agent (toward table center)
-    const isBottomSeat = i === 0 || i === 1 || i === 7;
+    // Bottom + side seats: render cards ABOVE the avatar (away from community cards)
+    // Top seats (3,4,5): render cards below avatar (they're far above community area)
+    const cardsAbove = i === 0 || i === 1 || i === 2 || i === 6 || i === 7;
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
-      ${isBottomSeat ? pocketHTML : ''}
-      ${isBottomSeat ? pnlBadge : ''}
-      ${isBottomSeat ? statusLabel : ''}
-      ${isBottomSeat ? betHTML : ''}
-      ${isBottomSeat ? winPctHTML : ''}
+      ${cardsAbove ? pocketHTML : ''}
+      ${cardsAbove ? pnlBadge : ''}
+      ${cardsAbove ? statusLabel : ''}
+      ${cardsAbove ? betHTML : ''}
+      ${cardsAbove ? winPctHTML : ''}
       ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
       <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
            title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
@@ -4983,11 +4993,11 @@ function renderTableSeats() {
       </div>
       <div class="seat-name" style="${nameColor};${nameSize}">${agent.name.length > 12 ? agent.name.slice(0,12) : agent.name}</div>
       <div class="seat-chips" style="${chipsSize}">${formatChips(agent.chips)}</div>
-      ${!isBottomSeat ? winPctHTML : ''}
-      ${!isBottomSeat ? betHTML : ''}
-      ${!isBottomSeat ? statusLabel : ''}
-      ${!isBottomSeat ? pnlBadge : ''}
-      ${!isBottomSeat ? pocketHTML : ''}
+      ${!cardsAbove ? winPctHTML : ''}
+      ${!cardsAbove ? betHTML : ''}
+      ${!cardsAbove ? statusLabel : ''}
+      ${!cardsAbove ? pnlBadge : ''}
+      ${!cardsAbove ? pocketHTML : ''}
     `;
     felt.appendChild(seat);
 
