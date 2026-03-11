@@ -192,7 +192,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status } = req.body || {};
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid } = req.body || {};
         if (!id) return res.status(400).json({ error: 'id is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -218,6 +218,9 @@ export default async function handler(req, res) {
         }
         if (agent_status && ['active', 'dormant', 'paused'].includes(agent_status)) {
             patch.agent_status = agent_status;
+        }
+        if (agent_bid !== undefined) {
+            patch.agent_bid = Math.max(0, parseInt(agent_bid) || 0);
         }
 
         const { data, error } = await supabase

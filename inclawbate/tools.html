@@ -1074,6 +1074,17 @@
                 </select>
                 <p id="agentDailyCost" style="font-size:0.72rem;color:var(--text-dim);margin-top:2px"></p>
 
+                <!-- Bid for @inclawbator slots (only shown when using shared account) -->
+                <div id="agentBidSection" style="margin-top:var(--space-md);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(99,102,241,0.04)">
+                    <label for="agentBid" style="margin:0 0 4px">Priority bid <span style="font-weight:400;color:var(--text-dim)">(extra CLAWS per post)</span></label>
+                    <p style="font-size:0.72rem;color:var(--text-dim);margin:0 0 8px">@inclawbator has 12 slots/day. Higher bid = your project posts first. Bid is charged on top of the base cost.</p>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <input type="number" id="agentBid" placeholder="0" min="0" style="flex:1;margin:0" onchange="updateAgentCostDisplay()" oninput="updateAgentCostDisplay()">
+                        <span style="font-size:0.78rem;color:var(--text-dim);white-space:nowrap">extra CLAWS</span>
+                    </div>
+                    <p id="agentBidCost" style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px"></p>
+                </div>
+
                 <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
                 <div class="modal-success" id="agentSuccess" style="display:none"></div>
                 <div class="modal-error" id="agentError" style="display:none"></div>
@@ -1325,16 +1336,31 @@ function getClawsCostPerPost() {
 
 function updateAgentCostDisplay() {
     var freq = parseInt(document.getElementById('agentFrequency').value) || 2;
+    var bid = parseInt(document.getElementById('agentBid').value) || 0;
     var perPost = getClawsCostPerPost();
     var costEl = document.getElementById('agentCostPerPost');
     var dailyEl = document.getElementById('agentDailyCost');
+    var bidCostEl = document.getElementById('agentBidCost');
+
+    var baseCostUsd = 0.05;
+    var bidUsd = (_clawsPrice > 0 && bid > 0) ? (bid * _clawsPrice) : 0;
+    var totalUsd = baseCostUsd + bidUsd;
 
     if (perPost > 0) {
-        costEl.textContent = '~' + formatClaws(perPost) + ' CLAWS (~$0.05)';
-        if (dailyEl) dailyEl.textContent = freq + ' posts = ~' + formatClaws(perPost * freq) + ' CLAWS/day (~$' + (0.05 * freq).toFixed(2) + '/day)';
+        var totalClaws = perPost + bid;
+        costEl.textContent = '~' + formatClaws(totalClaws) + ' CLAWS (~$' + totalUsd.toFixed(3) + ')';
+        if (dailyEl) dailyEl.textContent = freq + ' posts = ~' + formatClaws(totalClaws * freq) + ' CLAWS/day (~$' + (totalUsd * freq).toFixed(3) + '/day)';
     } else {
-        costEl.textContent = '~$0.05 in CLAWS';
-        if (dailyEl) dailyEl.textContent = freq + ' posts = ~$' + (0.05 * freq).toFixed(2) + '/day in CLAWS';
+        costEl.textContent = '~$' + totalUsd.toFixed(3) + ' in CLAWS';
+        if (dailyEl) dailyEl.textContent = freq + ' posts = ~$' + (totalUsd * freq).toFixed(3) + '/day in CLAWS';
+    }
+
+    if (bidCostEl) {
+        if (bid > 0) {
+            bidCostEl.textContent = 'Bid: ' + bid.toLocaleString() + ' CLAWS' + (bidUsd > 0 ? ' (~$' + bidUsd.toFixed(4) + ')' : '') + ' extra per post';
+        } else {
+            bidCostEl.textContent = 'No bid — base rate only. Higher bidders post first.';
+        }
     }
 }
 
@@ -1459,6 +1485,10 @@ function onAgentProjectChange() {
         document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
     }
 
+    // Show bid section only when using shared @inclawbator (no own X)
+    var bidSection = document.getElementById('agentBidSection');
+    if (bidSection) bidSection.style.display = (owner && !hasOwnX) ? '' : 'none';
+
     // Fetch owner's credit balance and show as CLAWS equivalent
     var auth = getAuth();
     if (auth && auth.token) {
@@ -1499,6 +1529,7 @@ function onAgentProjectChange() {
         if (owner) {
             parsePersonaIntoForm(project.agent_persona || '');
             document.getElementById('agentFrequency').value = Math.min(3, project.agent_posts_per_day || 2);
+            document.getElementById('agentBid').value = project.agent_bid || 0;
             btn.textContent = 'Update Agent';
             configSection.style.display = '';
         } else {
@@ -1511,6 +1542,7 @@ function onAgentProjectChange() {
             document.querySelectorAll('#agentTopics input').forEach(function(cb) { cb.checked = cb.value === 'community'; });
             document.getElementById('agentCatchphrase').value = '';
             document.getElementById('agentFrequency').value = '2';
+            document.getElementById('agentBid').value = 0;
             btn.textContent = 'Enable Agent';
             configSection.style.display = '';
         } else {
@@ -1674,7 +1706,8 @@ async function submitAgent(e) {
         var body = {
             id: projectId,
             agent_persona: buildPersonaString(),
-            agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value)
+            agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value),
+            agent_bid: parseInt(document.getElementById('agentBid').value) || 0
         };
 
         if (!project.agent_enabled) {

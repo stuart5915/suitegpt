@@ -17,7 +17,8 @@ const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const DAILY_POST_CAP = 40; // global cap across all agents
-const CREDIT_COST = 10; // same as Haiku in build studio
+const SHARED_DAILY_CAP = 12; // max posts/day on shared @inclawbator account
+const CREDIT_COST = 10; // base cost same as Haiku in build studio
 
 // Admin wallets that bypass credit checks
 const FREE_CREDIT_WALLETS = [
@@ -327,19 +328,10 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Check global daily post count (last 24h across all agents)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count: recentPosts } = await supabase
-            .from('project_agent_posts')
-            .select('id', { count: 'exact', head: true })
-            .gte('created_at', oneDayAgo)
-            .eq('status', 'posted');
+        const now = Date.now();
 
-        if ((recentPosts || 0) >= DAILY_POST_CAP) {
-            return res.status(200).json({ message: 'Daily post cap reached', cap: DAILY_POST_CAP });
-        }
-
-        // Find agents that are due (from projects table)
+        // Find all active agents
         const { data: projects, error: queryErr } = await supabase
             .from('projects')
             .select('*')
@@ -351,112 +343,80 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: 'No active agents' });
         }
 
-        const now = Date.now();
+        // Split into two tracks: own X account vs shared @inclawbator
+        const ownXProjects = [];
+        const sharedProjects = [];
+
+        for (const p of projects) {
+            const hasOwnX = p.x_access_token && p.x_refresh_token;
+            if (hasOwnX) {
+                ownXProjects.push(p);
+            } else {
+                sharedProjects.push(p);
+            }
+        }
+
+        // Count today's shared @inclawbator posts
+        const { count: sharedPostsToday } = await supabase
+            .from('project_agent_posts')
+            .select('id', { count: 'exact', head: true })
+            .gte('created_at', oneDayAgo)
+            .eq('status', 'posted')
+            .eq('posted_via', '@inclawbator');
+
+        // Count total posts today
+        const { count: totalPostsToday } = await supabase
+            .from('project_agent_posts')
+            .select('id', { count: 'exact', head: true })
+            .gte('created_at', oneDayAgo)
+            .eq('status', 'posted');
+
+        if ((totalPostsToday || 0) >= DAILY_POST_CAP) {
+            return res.status(200).json({ message: 'Daily post cap reached', cap: DAILY_POST_CAP });
+        }
+
         let posted = 0;
         let dormant = 0;
         const errors = [];
+        const sharedSlotsRemaining = SHARED_DAILY_CAP - (sharedPostsToday || 0);
 
-        for (const project of projects) {
-            // Check if we've hit the daily cap during this run
-            if ((recentPosts || 0) + posted >= DAILY_POST_CAP) break;
+        // ── TRACK 1: Own X account projects — process normally, no slot limits ──
+        for (const project of ownXProjects) {
+            if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
 
-            // Check if enough time has passed since last post
             const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
             const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
+            if (now - lastPost < intervalMs) continue;
 
-            if (now - lastPost < intervalMs) continue; // not due yet
+            const result = await processAgentPost(project, errors);
+            if (result === 'posted') posted++;
+            else if (result === 'dormant') dormant++;
+        }
 
-            // Look up project owner's credit balance
-            const ownerProfile = await getOwnerProfile(project.creator_wallet);
-            if (!ownerProfile) {
-                errors.push(`${project.name}: No owner profile found`);
-                continue;
-            }
+        // ── TRACK 2: Shared @inclawbator — sorted by bid (highest first), capped ──
+        // Sort by bid DESC so highest bidders get priority
+        sharedProjects.sort((a, b) => (b.agent_bid || 0) - (a.agent_bid || 0));
 
-            const adminBypass = isAdmin(ownerProfile);
+        let sharedPosted = 0;
+        for (const project of sharedProjects) {
+            if ((totalPostsToday || 0) + posted >= DAILY_POST_CAP) break;
+            if (sharedPosted >= sharedSlotsRemaining) break;
 
-            // Check credits (admin wallets bypass)
-            if (!adminBypass && (ownerProfile.credits || 0) < CREDIT_COST) {
-                // Insufficient credits — go dormant
-                await supabase
-                    .from('projects')
-                    .update({ agent_status: 'dormant' })
-                    .eq('id', project.id);
-                dormant++;
-                continue;
-            }
+            const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
+            const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
+            if (now - lastPost < intervalMs) continue;
 
-            // Deduct credits from owner (unless admin)
-            if (!adminBypass) {
-                const newBal = await deductOwnerCredits(ownerProfile.id, CREDIT_COST);
-                if (newBal === -1) {
-                    await supabase
-                        .from('projects')
-                        .update({ agent_status: 'dormant' })
-                        .eq('id', project.id);
-                    dormant++;
-                    continue;
-                }
-            }
-
-            try {
-                // Generate tweet
-                const tweetText = await generateTweet(project);
-                if (!tweetText || tweetText.length > 280) {
-                    throw new Error('Generated tweet invalid or too long');
-                }
-
-                // Post to X (project's own account or shared @inclawbator)
-                const { tweetId, posted_via } = await postTweet(tweetText, project);
-
-                // Record post
-                await supabase
-                    .from('project_agent_posts')
-                    .insert({
-                        project_id: project.id,
-                        tweet_text: tweetText,
-                        tweet_id: tweetId,
-                        credits_cost: CREDIT_COST,
-                        status: 'posted',
-                        posted_via: posted_via || '@inclawbator'
-                    });
-
-                // Update project
-                await supabase
-                    .from('projects')
-                    .update({
-                        agent_last_post_at: new Date().toISOString(),
-                        agent_total_posts: (project.agent_total_posts || 0) + 1
-                    })
-                    .eq('id', project.id);
-
-                posted++;
-
-            } catch (postErr) {
-                // Record failed post
-                await supabase
-                    .from('project_agent_posts')
-                    .insert({
-                        project_id: project.id,
-                        tweet_text: postErr.message || 'Generation failed',
-                        credits_cost: CREDIT_COST,
-                        status: 'failed',
-                        error_message: postErr.message
-                    });
-
-                // Refund the credit on failure (unless admin)
-                if (!adminBypass) {
-                    await refundOwnerCredits(ownerProfile.id, CREDIT_COST);
-                }
-
-                errors.push(`${project.token_symbol || project.name}: ${postErr.message}`);
-            }
+            const result = await processAgentPost(project, errors);
+            if (result === 'posted') { posted++; sharedPosted++; }
+            else if (result === 'dormant') dormant++;
         }
 
         return res.status(200).json({
             posted,
             dormant,
             agents_checked: projects.length,
+            shared_slots_used: (sharedPostsToday || 0) + sharedPosted,
+            shared_slots_cap: SHARED_DAILY_CAP,
             credit_cost: CREDIT_COST,
             ...(errors.length ? { errors } : {})
         });
@@ -464,5 +424,91 @@ export default async function handler(req, res) {
     } catch (e) {
         console.error('Agent heartbeat error:', e);
         return res.status(500).json({ error: e.message || 'Internal server error' });
+    }
+}
+
+// ── Process a single agent post (shared between both tracks) ──
+
+async function processAgentPost(project, errors) {
+    const ownerProfile = await getOwnerProfile(project.creator_wallet);
+    if (!ownerProfile) {
+        errors.push(`${project.name}: No owner profile found`);
+        return 'skip';
+    }
+
+    const adminBypass = isAdmin(ownerProfile);
+
+    // Total cost = base + bid (bid only applies to shared @inclawbator posts)
+    const hasOwnX = project.x_access_token && project.x_refresh_token;
+    const bidCost = hasOwnX ? 0 : (project.agent_bid || 0);
+    const totalCost = CREDIT_COST + bidCost;
+
+    // Check credits
+    if (!adminBypass && (ownerProfile.credits || 0) < totalCost) {
+        await supabase
+            .from('projects')
+            .update({ agent_status: 'dormant' })
+            .eq('id', project.id);
+        return 'dormant';
+    }
+
+    // Deduct credits
+    if (!adminBypass) {
+        const newBal = await deductOwnerCredits(ownerProfile.id, totalCost);
+        if (newBal === -1) {
+            await supabase
+                .from('projects')
+                .update({ agent_status: 'dormant' })
+                .eq('id', project.id);
+            return 'dormant';
+        }
+    }
+
+    try {
+        const tweetText = await generateTweet(project);
+        if (!tweetText || tweetText.length > 280) {
+            throw new Error('Generated tweet invalid or too long');
+        }
+
+        const { tweetId, posted_via } = await postTweet(tweetText, project);
+
+        await supabase
+            .from('project_agent_posts')
+            .insert({
+                project_id: project.id,
+                tweet_text: tweetText,
+                tweet_id: tweetId,
+                credits_cost: totalCost,
+                status: 'posted',
+                posted_via: posted_via || '@inclawbator'
+            });
+
+        await supabase
+            .from('projects')
+            .update({
+                agent_last_post_at: new Date().toISOString(),
+                agent_total_posts: (project.agent_total_posts || 0) + 1
+            })
+            .eq('id', project.id);
+
+        return 'posted';
+
+    } catch (postErr) {
+        await supabase
+            .from('project_agent_posts')
+            .insert({
+                project_id: project.id,
+                tweet_text: postErr.message || 'Generation failed',
+                credits_cost: totalCost,
+                status: 'failed',
+                error_message: postErr.message
+            });
+
+        if (!adminBypass) {
+            await refundOwnerCredits(ownerProfile.id, totalCost);
+        }
+
+        errors.push(`${project.token_symbol || project.name}: ${postErr.message}`);
+        return 'error';
     }
 }
