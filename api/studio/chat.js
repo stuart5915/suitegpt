@@ -226,8 +226,12 @@ async function getProfile(profileId) {
 async function isAdmin(profile) {
     if (FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase())) return true;
     if (FREE_HANDLES.includes(profile?.x_handle?.toLowerCase())) return true;
-    if (profile?.wallet_address && await checkAngelHolder(profile.wallet_address)) return true;
     return false;
+}
+
+async function isAngel(profile) {
+    if (!profile?.wallet_address) return false;
+    return await checkAngelHolder(profile.wallet_address);
 }
 
 function injectErrorHandler(html) {
@@ -455,16 +459,23 @@ export default async function handler(req, res) {
 
     const profile = profileId ? await getProfile(profileId) : null;
     const admin = await isAdmin(profile);
+    const angel = !admin && await isAngel(profile);
     const anonymous = !profileId;
 
     // Resolve model tier
     const tierKey = req.body?.model || 'gemini';
     const tier = MODEL_TIERS[tierKey] || MODEL_TIERS.gemini;
 
+    // Angels can't use Opus — too expensive on our API bill
+    if (angel && tierKey === 'pro') {
+        return res.status(403).json({ error: 'Opus is not available with Angel access. Try Sonnet instead.' });
+    }
+
     let creditsRemaining = profile?.credits || 0;
 
     // Credit gating — paid models require credits (anonymous must use free models)
-    if (tier.credits > 0 && !admin) {
+    // Angels get free access to non-Opus paid models
+    if (tier.credits > 0 && !admin && !angel) {
         if (anonymous) {
             return res.status(401).json({ error: 'Log in to use ' + tier.label + '. Or try a free model like Gemini Flash.' });
         }
@@ -494,7 +505,7 @@ export default async function handler(req, res) {
 
         if (!message || !message.trim()) {
             // Refund — no work done
-            if (!anonymous && !admin) {
+            if (!anonymous && !admin && !angel) {
                 await supabase.from('human_profiles')
                     .update({ credits: creditsRemaining + tier.credits })
                     .eq('id', profileId);
@@ -832,7 +843,7 @@ export default async function handler(req, res) {
                 content: assistantText,
                 code: code,
                 tokens_used: tokensUsed,
-                credits_charged: admin ? 0 : tier.credits
+                credits_charged: (admin || angel) ? 0 : tier.credits
             });
 
             if (code) {
@@ -854,7 +865,7 @@ export default async function handler(req, res) {
             code: code,
             credits_remaining: creditsRemaining,
             tier_used: tierKey,
-            credits_charged: admin ? 0 : tier.credits,
+            credits_charged: (admin || angel) ? 0 : tier.credits,
             surcharge: 0
         }) + '\n\n');
 
