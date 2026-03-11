@@ -143,14 +143,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="document.getElementById('explicit-toggle').click()">
+                    <div class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleExplicit()">
                         Explicit Mode
                         <div style="position:relative;width:40px;height:22px">
-                            <input type="checkbox" id="explicit-toggle" style="display:none">
-                            <div class="toggle-track" id="toggle-track" onclick="event.stopPropagation();document.getElementById('explicit-toggle').click();updateToggle()"></div>
+                            <div class="toggle-track" id="toggle-track"></div>
                         </div>
                         <span id="explicit-label" style="font-size:12px;color:var(--text-dim)">OFF</span>
-                    </label>
+                    </div>
                     <p style="font-size:11px;color:var(--text-dim);margin-top:4px">Adds NSFW/nude modifiers to your prompt</p>
                 </div>
 
@@ -192,14 +191,15 @@
     <script>
         let currentStyle = 'realistic';
         let currentImageUrl = null;
+        let explicitMode = false;
 
-        function updateToggle() {
-            const cb = document.getElementById('explicit-toggle');
+        function toggleExplicit() {
+            explicitMode = !explicitMode;
             const track = document.getElementById('toggle-track');
             const label = document.getElementById('explicit-label');
-            track.classList.toggle('on', cb.checked);
-            label.textContent = cb.checked ? 'ON' : 'OFF';
-            label.style.color = cb.checked ? 'var(--pink-bright)' : 'var(--text-dim)';
+            track.classList.toggle('on', explicitMode);
+            label.textContent = explicitMode ? 'ON' : 'OFF';
+            label.style.color = explicitMode ? 'var(--pink-bright)' : 'var(--text-dim)';
         }
 
         const SUGGESTIONS = [
@@ -284,11 +284,10 @@
 
             try {
                 const model = document.getElementById('gen-model').value;
-                const explicit = document.getElementById('explicit-toggle').checked;
                 const res = await fetch(J4C_BASE + '/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, style: currentStyle, model, explicit })
+                    body: JSON.stringify({ prompt, style: currentStyle, model, explicit: explicitMode })
                 });
                 const data = await res.json();
 
