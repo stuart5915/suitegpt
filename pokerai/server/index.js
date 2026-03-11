@@ -253,7 +253,10 @@ wss.on('connection', (ws) => {
           if (client.walletAddress && !requireAuth(client, ws)) break;
           const result = rooms.leaveTable(addr, msg.agentId);
           ws.send(JSON.stringify({ type: 'leaveTableResult', data: result }));
-          if (result.success && client.walletAddress && result.agent) {
+          if (result.success && result.pending) {
+            // Queued — agent finishes current hand then leaves
+            // _onPendingLeave callback handles the actual removal + lobby return
+          } else if (result.success && client.walletAddress && result.agent) {
             rooms.store.recordTransaction(addr, 'leave_table', 0, result.agent.chipStack);
           }
           broadcastStateToAll();

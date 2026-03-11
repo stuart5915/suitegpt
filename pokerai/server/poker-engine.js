@@ -375,6 +375,7 @@ class PokerEngine {
     this.fundPositions = new Map();
     this.replacedBots = new Map();
     this.running = false;
+    this._pendingLeaves = new Map(); // agentId → walletAddress (queued for end of hand)
     this._lastChipTotal = this.agents.reduce((sum, a) => sum + a.chips, 0) + this.contractPool;
   }
 
@@ -823,6 +824,15 @@ class PokerEngine {
     // Only auto-cashout HOUSE bots (not custom agents)
     this._checkHouseBotCashouts();
     this.updateAllFundPositions();
+
+    // Process pending leaves (agents that requested sit-out mid-hand)
+    const pendingResults = this._processPendingLeaves();
+    if (pendingResults.length > 0 && this._onPendingLeave) {
+      for (const r of pendingResults) {
+        this._onPendingLeave(r.walletAddress, r.agentId, r.agent);
+      }
+    }
+
     this.broadcastGameState();
   }
 
@@ -1023,13 +1033,32 @@ class PokerEngine {
 
     const agent = this.agents[agentIndex];
 
-    // If hand is in progress and agent is still active, force-fold (forfeit pot chips)
+    // If hand is in progress and agent hasn't folded yet, queue leave for end of hand
     if (this.phase !== 'waiting' && !agent.folded) {
-      agent.folded = true;
-      this.broadcast('log', { html: `<span class="agent">${agent.name}</span> <span class="fold">sits out (mid-hand)</span>` });
-      // Chips already bet this hand stay in the pot — they don't get refunded
+      this._pendingLeaves.set(agentId, walletAddress);
+      this.broadcast('log', { html: `<span class="agent">${agent.name}</span> <span class="fold">will leave after this hand</span>` });
+      this.broadcastGameState();
+      return { success: true, pending: true, agentId };
     }
 
+    return this._executeUnseat(agentIndex, agent);
+  }
+
+  // Cancel a pending leave (if user changes their mind before hand ends)
+  cancelPendingLeave(agentId) {
+    if (this._pendingLeaves.has(agentId)) {
+      this._pendingLeaves.delete(agentId);
+      const agent = this.agents.find(a => a.id === agentId);
+      if (agent) {
+        this.broadcast('log', { html: `<span class="agent">${agent.name}</span> <span class="system">cancelled sit-out</span>` });
+      }
+      this.broadcastGameState();
+      return { success: true };
+    }
+    return { error: 'No pending leave found' };
+  }
+
+  _executeUnseat(agentIndex, agent) {
     const lobbyAgent = {
       id: agent.id,
       name: agent.name,
@@ -1050,7 +1079,7 @@ class PokerEngine {
       _realChipStack: agent._realChipStack  // preserve for sandbox restore
     };
 
-    const originalBot = this.replacedBots.get(agentId);
+    const originalBot = this.replacedBots.get(agent.id);
     if (originalBot) {
       // Sandbox: restore the house bot
       this.agents[agentIndex] = {
@@ -1067,7 +1096,7 @@ class PokerEngine {
         roundBet: 0,
         allIn: false
       };
-      this.replacedBots.delete(agentId);
+      this.replacedBots.delete(agent.id);
     } else {
       // PvP room: remove agent from table entirely
       this.agents.splice(agentIndex, 1);
@@ -1077,6 +1106,22 @@ class PokerEngine {
     this._lastChipTotal = this.agents.reduce((sum, a2) => sum + a2.chips, 0) + this.contractPool;
     this.broadcastGameState();
     return { success: true, agent: lobbyAgent };
+  }
+
+  // Process all pending leaves — called from _postHandCleanup
+  _processPendingLeaves() {
+    const results = [];
+    for (const [agentId, walletAddress] of this._pendingLeaves) {
+      const agentIndex = this.agents.findIndex(a => a.id === agentId);
+      if (agentIndex !== -1) {
+        const result = this._executeUnseat(agentIndex, this.agents[agentIndex]);
+        if (result.success) {
+          results.push({ agentId, walletAddress, agent: result.agent });
+        }
+      }
+    }
+    this._pendingLeaves.clear();
+    return results;
   }
 
   removeFromTable(walletAddress, agentId) {
@@ -1245,7 +1290,8 @@ class PokerEngine {
         isCustom: a.isCustom || false,
         walletAddress: a.walletAddress || null,
         hasCards: a.hand && a.hand.length === 2,
-        handHistory: a.handHistory || []
+        handHistory: a.handHistory || [],
+        pendingLeave: this._pendingLeaves.has(a.id)
       })),
       round: this.round,
       handsPlayed: this.handsPlayed,

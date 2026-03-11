@@ -4266,8 +4266,10 @@ function handleMessage(msg) {
       _roomPickerOpen = false;
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
-      } else {
-        showToast(`${msg.data.agent.name} left the table — back in lobby with ${msg.data.agent.chipStack.toLocaleString()} chips`, 'info');
+      } else if (msg.data.pending) {
+        showToast('Agent will leave after the current hand finishes', 'info');
+      } else if (msg.data.agent) {
+        showToast(`${msg.data.agent.name} left the table — back in lobby with ${(msg.data.agent.chipStack || 0).toLocaleString()} chips`, 'info');
         refreshMyAgentsView();
       }
       break;
@@ -4742,9 +4744,11 @@ function renderTableSeats() {
       betHTML = `<div class="seat-bet">${formatChips(displayBet)}</div>`;
     }
 
-    // Turn / fold / winner / all-in label
+    // Turn / fold / winner / all-in / leaving label
     let statusLabel = '';
-    if (isCurrent) {
+    if (agent.pendingLeave) {
+      statusLabel = `<div style="font-size:11px;font-weight:700;color:var(--accent-orange);text-shadow:0 1px 3px rgba(0,0,0,0.9)">Leaving...</div>`;
+    } else if (isCurrent) {
       statusLabel = `<div class="seat-turn-label">Thinking...</div>`;
     } else if (folded) {
       statusLabel = `<div class="seat-fold-label">Fold</div>`;

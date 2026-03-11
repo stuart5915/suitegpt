@@ -91,6 +91,16 @@ class RoomManager {
       rakePct: room.rakePct
     });
 
+    // Handle deferred leaves (agents that requested sit-out mid-hand)
+    table._onPendingLeave = (walletAddress, agentId, lobbyAgent) => {
+      this._finalizeLeave(walletAddress, table, lobbyAgent);
+      // Notify connected clients
+      this.broadcastFn('leaveTableResult', {
+        success: true, pending: false, agentId,
+        agent: { id: lobbyAgent.id, name: lobbyAgent.name, chipStack: lobbyAgent.chipStack }
+      });
+    };
+
     room.tables.push(table);
     return table;
   }
@@ -560,21 +570,27 @@ class RoomManager {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
 
-    // Check if this was a sandbox table
-    const isSandboxTable = table.roomId === 'sandbox';
-
     const result = table.unseatAgent(walletAddress, agentId);
     if (result.error) return result;
 
-    // Put agent back in lobby
-    const lobbyAgent = result.agent;
+    // If queued for end of hand, return pending status (don't move to lobby yet)
+    if (result.pending) {
+      return { success: true, pending: true, agentId };
+    }
+
+    // Immediate leave — put agent back in lobby
+    return this._finalizeLeave(walletAddress, table, result.agent);
+  }
+
+  // Called both for immediate leaves and deferred (post-hand) leaves
+  _finalizeLeave(walletAddress, table, lobbyAgent) {
+    const isSandboxTable = table.roomId === 'sandbox';
 
     // Sandbox: restore real chipStack, don't let sandbox chips leak out
     if (isSandboxTable && lobbyAgent._realChipStack !== undefined) {
       lobbyAgent.chipStack = lobbyAgent._realChipStack;
       delete lobbyAgent._realChipStack;
     } else if (isSandboxTable) {
-      // Fallback: if _realChipStack wasn't set (old agents), reset to 0
       lobbyAgent.chipStack = 0;
     }
 
@@ -585,7 +601,7 @@ class RoomManager {
 
     // Auto-withdraw all backers when agent leaves table
     if (this.store.withdrawAllBackingsForAgent) {
-      this.store.withdrawAllBackingsForAgent(agentId);
+      this.store.withdrawAllBackingsForAgent(lobbyAgent.id);
     }
 
     // Persist updated agent (skip sandbox)
