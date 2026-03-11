@@ -68,28 +68,6 @@
             max-width: 520px;
             margin: 0 auto;
         }
-        .create-project-btn {
-            display: inline-block;
-            margin-top: var(--space-md);
-            padding: 14px 40px;
-            font-family: var(--font-display);
-            font-size: 1rem;
-            font-weight: 800;
-            border: none;
-            border-radius: var(--radius-lg);
-            background: linear-gradient(135deg, var(--lobster-400), var(--seafoam-400, #2dd4bf));
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-            letter-spacing: 0.02em;
-        }
-        .create-project-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(232, 121, 85, 0.3);
-        }
-        .create-project-btn:active {
-            transform: translateY(0);
-        }
 
         /* ── Section Headers ── */
         .section-header {
@@ -586,14 +564,13 @@
         <div class="tools-hero-badge">Inclawbator</div>
         <h1>Launch Your Project</h1>
         <p>Everything you need to go from idea to live &mdash; token, app, staking, socials, and distribution.</p>
-        <button class="create-project-btn" id="createProjectBtn">+ Create Project</button>
-        <a href="/inclawbator" style="display:inline-block;margin-top:var(--space-xs);font-size:0.8rem;color:var(--lobster-300,#e87955);text-decoration:none;opacity:0.8;transition:opacity 0.15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Learn more about the Inclawbator &rarr;</a>
+        <a href="/inclawbator" style="display:inline-block;margin-top:var(--space-sm);font-size:0.8rem;color:var(--lobster-300,#e87955);text-decoration:none;opacity:0.8;transition:opacity 0.15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Learn more about the Inclawbator &rarr;</a>
     </section>
 
     <!-- Steps -->
     <div class="section-header">
-        <h2>Then Build It Out</h2>
-        <p>Use these tools to bring your project to life.</p>
+        <h2>Create Your Project</h2>
+        <p>Follow the steps to launch, grow, and distribute your project.</p>
     </div>
 
     <div class="tool-list launch-steps">
@@ -741,34 +718,6 @@
 
     </div>
 
-</div>
-
-<!-- Create Project Modal -->
-<div class="native-modal-overlay" id="createProjectOverlay">
-    <div class="native-modal">
-        <button class="modal-close" onclick="closeCreateProject()">&times;</button>
-        <h3>Create Your Project</h3>
-
-        <div id="cpNoAuth" style="display:none">
-            <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:var(--space-sm)">Connect your wallet to create a project.</p>
-            <button class="modal-btn" onclick="if(typeof connectWallet==='function')connectWallet();closeCreateProject();">Connect Wallet</button>
-        </div>
-
-        <form id="cpForm" style="display:none" onsubmit="submitCreateProject(event)">
-            <label for="cpName">Project Name *</label>
-            <input type="text" id="cpName" placeholder="My Awesome Project" required maxlength="80">
-
-            <label for="cpDesc">Short Description</label>
-            <input type="text" id="cpDesc" placeholder="One-liner about your project" maxlength="200">
-
-            <label for="cpLogo">Logo URL</label>
-            <input type="url" id="cpLogo" placeholder="https://... (optional)">
-
-            <button type="submit" class="modal-btn" id="cpSubmitBtn">Create Project</button>
-            <div class="modal-success" id="cpSuccess"></div>
-            <div class="modal-error" id="cpError"></div>
-        </form>
-    </div>
 </div>
 
 <!-- Footer -->
@@ -1033,83 +982,6 @@ async function submitSocials(e) {
 
 // Marketing modal removed — now lives at /market-dash
 
-// ── Create Project ──
-document.getElementById('createProjectBtn').addEventListener('click', function() {
-    var ov = document.getElementById('createProjectOverlay');
-    ov.classList.add('open');
-    document.body.style.overflow = 'hidden';
-
-    document.getElementById('cpSuccess').style.display = 'none';
-    document.getElementById('cpError').style.display = 'none';
-    document.getElementById('cpName').value = '';
-    document.getElementById('cpDesc').value = '';
-    document.getElementById('cpLogo').value = '';
-
-    var auth = getAuth();
-    if (!auth || !auth.token) {
-        document.getElementById('cpNoAuth').style.display = 'block';
-        document.getElementById('cpForm').style.display = 'none';
-    } else {
-        document.getElementById('cpNoAuth').style.display = 'none';
-        document.getElementById('cpForm').style.display = 'block';
-    }
-});
-
-function closeCreateProject() {
-    document.getElementById('createProjectOverlay').classList.remove('open');
-    document.body.style.overflow = '';
-}
-document.getElementById('createProjectOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closeCreateProject();
-});
-
-async function submitCreateProject(e) {
-    e.preventDefault();
-    var auth = getAuth();
-    if (!auth || !auth.token) return;
-
-    var btn = document.getElementById('cpSubmitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Creating...';
-    document.getElementById('cpSuccess').style.display = 'none';
-    document.getElementById('cpError').style.display = 'none';
-
-    try {
-        var resp = await fetch('/api/inclawbate/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + auth.token
-            },
-            body: JSON.stringify({
-                name: document.getElementById('cpName').value.trim(),
-                description: document.getElementById('cpDesc').value.trim() || null,
-                logo_url: document.getElementById('cpLogo').value.trim() || null
-            })
-        });
-
-        var data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Failed to create project');
-
-        var project = data.project;
-        var successEl = document.getElementById('cpSuccess');
-        successEl.innerHTML = 'Project created! <a href="/projects/' + project.slug + '" style="color:inherit;text-decoration:underline">View it here &rarr;</a>';
-        successEl.style.display = 'block';
-        document.getElementById('cpForm').querySelector('button[type=submit]').style.display = 'none';
-    } catch(err) {
-        var errEl = document.getElementById('cpError');
-        errEl.textContent = err.message || 'Failed to create project.';
-        errEl.style.display = 'block';
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Create Project';
-    }
-}
-
-// Close create project on Escape too
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeCreateProject();
-});
 
 // ── Angel NFT Banner Check ──
 (function() {
