@@ -214,13 +214,19 @@ class RoomManager {
     const perWallet = Math.floor(table.contractPool / wallets.size);
     if (perWallet <= 0) return;
 
+    let totalRecycled = 0;
     for (const addr of wallets) {
       this.store.addBalance(addr, perWallet);
+      totalRecycled += perWallet;
       console.log(`[RakeRecycle] ${addr.slice(0,8)}...: +${perWallet} chips from pool`);
       if (this.onBalanceChange) this.onBalanceChange(addr);
     }
 
-    table.contractPool -= perWallet * wallets.size;
+    table.contractPool -= totalRecycled;
+
+    // Subtract recycled chips from pending on-chain rake to prevent double-counting
+    // (chips recycled in-game should NOT also be flushed on-chain)
+    this.pendingRakeChips = Math.max(0, this.pendingRakeChips - totalRecycled);
   }
 
   // === Platform Agent Rebalancing ===
