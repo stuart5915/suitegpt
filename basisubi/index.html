@@ -503,6 +503,37 @@
         .story-card-code pre .str { color: hsl(100, 60%, 60%); }
         .story-card-code pre .num { color: hsl(30, 90%, 65%); }
 
+        /* ═══ POOL INFO BANNER ═══ */
+        .sim-pool-info {
+            margin-top: 14px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            background: rgba(50, 140, 255, 0.04);
+            border: 1px solid rgba(50, 140, 255, 0.12);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        .sim-pool-info strong { color: var(--text); font-size: 0.8rem; }
+        .sim-pool-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+            margin-top: 8px;
+        }
+        .sim-pool-stat {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+        }
+        .sim-pool-stat span { color: var(--text-secondary); font-weight: 500; }
+        .sim-pool-note {
+            margin-top: 8px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
         /* ═══ DEEP DIVE SECTION ═══ */
         .deepdive-section { padding-top: 60px; }
         .deepdive-timeline { max-width: 720px; margin: 48px auto 0; position: relative; }
@@ -947,6 +978,19 @@
                     <!-- Description -->
                     <div class="sim-desc" id="sim-desc">
                         ETH oscillates in a range &mdash; the ideal scenario for concentrated LPs. High trading volume generates maximum fees while the price stays within the vault&rsquo;s range, requiring minimal rebalances.
+                    </div>
+
+                    <!-- Pool Stats Banner -->
+                    <div class="sim-pool-info">
+                        <strong>Based on current Aerodrome ETH/USDC pool stats:</strong>
+                        <div class="sim-pool-stats">
+                            <div class="sim-pool-stat">Pool TVL: <span>$15M</span></div>
+                            <div class="sim-pool-stat">Avg Daily Volume: <span>$40M</span></div>
+                            <div class="sim-pool-stat">Swap Fee: <span>0.04%</span></div>
+                            <div class="sim-pool-stat">Range: <span>&plusmn;5%</span></div>
+                            <div class="sim-pool-stat">Deposit: <span>$1,000</span></div>
+                        </div>
+                        <div class="sim-pool-note">Fee-only simulation &mdash; does not include AERO emission rewards. Actual volume and TVL fluctuate daily. Not financial advice.</div>
                     </div>
                 </div>
 
@@ -1413,6 +1457,11 @@
         var REBALANCE_BUFFER = 0.02;
         var INITIAL_DEPOSIT = 1000;
 
+        // --- Real Pool Parameters (Aerodrome ETH/USDC CL100 on Base) ---
+        var POOL_FEE_RATE = 0.0004;         // 0.04% per swap (4 bps)
+        var POOL_AVG_DAILY_VOL = 40000000;  // $40M avg daily volume (conservative)
+        var POOL_TVL = 15000000;             // $15M total pool liquidity
+
         // --- State ---
         var sim = {
             prices: [],
@@ -1474,9 +1523,14 @@
                 var price = prices[i];
                 var ir = price >= rL && price <= rU;
 
+                // Realistic fee model: volume varies with price action
+                var priceMove = i > 0 ? Math.abs(prices[i] - prices[i - 1]) / prices[i - 1] : 0;
+                var volMultiplier = 0.5 + 0.5 * rng() + priceMove * 15; // random + volatility boost
+                var stepVolume = (POOL_AVG_DAILY_VOL / STEPS_PER_DAY) * volMultiplier;
+
                 if (ir) {
-                    var dailyRate = 0.25 / 365 / STEPS_PER_DAY;
-                    var feeEarned = vv * dailyRate;
+                    var stepPoolFees = stepVolume * POOL_FEE_RATE;
+                    var feeEarned = stepPoolFees * (vv / POOL_TVL);
                     totalFees += feeEarned;
                     vv += feeEarned;
                 }
