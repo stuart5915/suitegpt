@@ -1883,20 +1883,35 @@
             document.getElementById('sim-time').textContent = 'Day ' + day;
         }
 
-        // --- Animation Loop ---
-        function animate() {
+        // --- Animation Loop (time-based: ~2 days/sec at 1x) ---
+        var STEP_INTERVAL = 125; // ms per step at 1x (8 steps/sec = 2 days/sec)
+        var lastAnimTime = 0;
+        var stepAccumulator = 0;
+
+        function animate(timestamp) {
             if (!sim.playing) return;
-            sim.currentStep += sim.speed;
-            if (sim.currentStep >= TOTAL_STEPS) {
-                sim.currentStep = TOTAL_STEPS;
-                sim.playing = false;
-                document.getElementById('sim-play').innerHTML = '&#9654;';
+            if (!lastAnimTime) lastAnimTime = timestamp;
+            var dt = timestamp - lastAnimTime;
+            lastAnimTime = timestamp;
+
+            // Accumulate fractional steps based on elapsed time
+            stepAccumulator += (dt / STEP_INTERVAL) * sim.speed;
+            var stepsToAdvance = Math.floor(stepAccumulator);
+            stepAccumulator -= stepsToAdvance;
+
+            if (stepsToAdvance > 0) {
+                sim.currentStep += stepsToAdvance;
+                if (sim.currentStep >= TOTAL_STEPS) {
+                    sim.currentStep = TOTAL_STEPS;
+                    sim.playing = false;
+                    document.getElementById('sim-play').innerHTML = '&#9654;';
+                }
+                document.getElementById('sim-scrubber').value = sim.currentStep;
+                render();
+                updateStats();
+                renderEvents();
+                updateCanvasStatus();
             }
-            document.getElementById('sim-scrubber').value = sim.currentStep;
-            render();
-            updateStats();
-            renderEvents();
-            updateCanvasStatus();
             if (sim.playing) {
                 sim.animFrame = requestAnimationFrame(animate);
             }
@@ -1946,7 +1961,11 @@
                 }
                 sim.playing = !sim.playing;
                 this.innerHTML = sim.playing ? '&#10074;&#10074;' : '&#9654;';
-                if (sim.playing) animate();
+                if (sim.playing) {
+                    lastAnimTime = 0;
+                    stepAccumulator = 0;
+                    requestAnimationFrame(animate);
+                }
             });
 
             // Scrubber
