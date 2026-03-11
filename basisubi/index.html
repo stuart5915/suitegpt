@@ -1415,7 +1415,7 @@
                             <div class="sim-stat-value" id="sim-fees" style="color:var(--green)">$0.00</div>
                         </div>
                         <div class="sim-stat">
-                            <div class="sim-stat-label">Price Impact (IL)</div>
+                            <div class="sim-stat-label">Non-Fee P&L</div>
                             <div class="sim-stat-value" id="sim-il" style="color:var(--text-secondary)">$0.00</div>
                         </div>
                         <div class="sim-stat">
@@ -2374,8 +2374,8 @@
                 var volMultiplier = 0.4 + 0.6 * rng() + priceMove * 12;
                 var stepVolume = (POOL_AVG_DAILY_VOL / STEPS_PER_DAY) * volMultiplier;
 
-                // Accrue fees (only when in range)
-                if (ir) {
+                // Accrue fees (only when in range, skip step 0 — no time has elapsed yet)
+                if (ir && i > 0) {
                     var stepPoolFees = stepVolume * POOL_FEE_RATE;
                     var feeEarned = stepPoolFees * (deployed / POOL_TVL);
                     totalFees += feeEarned;
@@ -2576,7 +2576,7 @@
             // X axis labels (months)
             ctx.textAlign = 'center';
             for (var m = 0; m <= 12; m += 3) {
-                var xp = xS(m * 30 * STEPS_PER_DAY);
+                var xp = xS(Math.round(m / 12 * TOTAL_STEPS));
                 ctx.beginPath(); ctx.moveTo(xp, pad.top); ctx.lineTo(xp, pad.top + plotH); ctx.stroke();
                 ctx.fillText(m === 0 ? 'Start' : m + 'mo', xp, H - 10);
             }
@@ -2586,44 +2586,34 @@
             // --- Range Band (draw up to current step) ---
             if (step > 0) {
                 // Draw range bands in segments: green when in-range, red-ish when out
+                function drawRangeSeg(s, e, isInR) {
+                    ctx.beginPath();
+                    ctx.moveTo(xS(s), yS(sim.rangeUpper[s]));
+                    for (var j = s; j <= e; j++) ctx.lineTo(xS(j), yS(sim.rangeUpper[j]));
+                    for (var j = e; j >= s; j--) ctx.lineTo(xS(j), yS(sim.rangeLower[j]));
+                    ctx.closePath();
+                    ctx.fillStyle = isInR ? 'rgba(34, 200, 120, 0.08)' : 'rgba(255, 100, 80, 0.04)';
+                    ctx.fill();
+                    ctx.beginPath();
+                    for (var j = s; j <= e; j++) { if (j === s) ctx.moveTo(xS(j), yS(sim.rangeUpper[j])); else ctx.lineTo(xS(j), yS(sim.rangeUpper[j])); }
+                    ctx.strokeStyle = isInR ? 'rgba(34, 200, 120, 0.25)' : 'rgba(255, 100, 80, 0.15)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    for (var j = s; j <= e; j++) { if (j === s) ctx.moveTo(xS(j), yS(sim.rangeLower[j])); else ctx.lineTo(xS(j), yS(sim.rangeLower[j])); }
+                    ctx.stroke();
+                }
                 var segStart = 0;
                 for (var i = 1; i <= step; i++) {
                     var wasIn = sim.inRange[i - 1];
                     var isIn = sim.inRange[i];
                     var isEnd = i === step;
-                    if (isIn !== wasIn || isEnd) {
-                        var endIdx = isEnd ? i : i - 1;
-                        // Draw this segment
-                        ctx.beginPath();
-                        ctx.moveTo(xS(segStart), yS(sim.rangeUpper[segStart]));
-                        for (var j = segStart; j <= endIdx; j++) {
-                            ctx.lineTo(xS(j), yS(sim.rangeUpper[j]));
-                        }
-                        for (var j = endIdx; j >= segStart; j--) {
-                            ctx.lineTo(xS(j), yS(sim.rangeLower[j]));
-                        }
-                        ctx.closePath();
-                        ctx.fillStyle = wasIn ? 'rgba(34, 200, 120, 0.08)' : 'rgba(255, 100, 80, 0.04)';
-                        ctx.fill();
-
-                        // Range border lines
-                        ctx.beginPath();
-                        for (var j = segStart; j <= endIdx; j++) {
-                            if (j === segStart) ctx.moveTo(xS(j), yS(sim.rangeUpper[j]));
-                            else ctx.lineTo(xS(j), yS(sim.rangeUpper[j]));
-                        }
-                        ctx.strokeStyle = wasIn ? 'rgba(34, 200, 120, 0.25)' : 'rgba(255, 100, 80, 0.15)';
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-
-                        ctx.beginPath();
-                        for (var j = segStart; j <= endIdx; j++) {
-                            if (j === segStart) ctx.moveTo(xS(j), yS(sim.rangeLower[j]));
-                            else ctx.lineTo(xS(j), yS(sim.rangeLower[j]));
-                        }
-                        ctx.stroke();
-
-                        if (!isEnd) segStart = i - 1;
+                    if (isIn !== wasIn) {
+                        drawRangeSeg(segStart, i - 1, wasIn);
+                        segStart = i;
+                    }
+                    if (isEnd) {
+                        drawRangeSeg(segStart, i, sim.inRange[i]);
                     }
                 }
             }
@@ -2696,16 +2686,16 @@
 
             // --- Canvas Annotations ---
 
-            // "EARNING ZONE" label inside range band (centered at current visible midpoint)
+            // "EARNING ZONE" label inside current range band
             if (step > 0) {
-                var midStep = Math.floor(step / 2);
-                var bandMidY = (yS(sim.rangeUpper[midStep]) + yS(sim.rangeLower[midStep])) / 2;
-                var bandHeight = Math.abs(yS(sim.rangeLower[midStep]) - yS(sim.rangeUpper[midStep]));
+                var bandMidY = (yS(sim.rangeUpper[step]) + yS(sim.rangeLower[step])) / 2;
+                var bandHeight = Math.abs(yS(sim.rangeLower[step]) - yS(sim.rangeUpper[step]));
+                var labelX = xS(Math.max(0, step - Math.floor(TOTAL_STEPS * 0.15))); // near current step
                 if (bandHeight > 30) {
                     ctx.font = '9px "IBM Plex Mono"';
                     ctx.fillStyle = sim.inRange[step] ? 'rgba(34, 200, 120, 0.3)' : 'rgba(255, 100, 80, 0.15)';
                     ctx.textAlign = 'center';
-                    ctx.fillText('EARNING ZONE', xS(midStep), bandMidY + 3);
+                    ctx.fillText('EARNING ZONE', labelX, bandMidY + 3);
                 }
             }
 
@@ -2840,8 +2830,12 @@
             var ethPctRound = Math.round(ethFrac * 100);
             var usdcPctRound = 100 - ethPctRound;
 
-            document.getElementById('sim-bar-eth').style.width = Math.max(ethPctRound, 2) + '%';
-            document.getElementById('sim-bar-usdc').style.width = Math.max(usdcPctRound, 2) + '%';
+            var ethW = Math.max(ethPctRound, 2);
+            var usdcW = Math.max(usdcPctRound, 2);
+            var barTotal = ethW + usdcW;
+            if (barTotal > 100) { ethW = ethW / barTotal * 100; usdcW = usdcW / barTotal * 100; }
+            document.getElementById('sim-bar-eth').style.width = ethW.toFixed(1) + '%';
+            document.getElementById('sim-bar-usdc').style.width = usdcW.toFixed(1) + '%';
             document.getElementById('sim-eth-label').textContent = ethPctRound + '% ETH';
             document.getElementById('sim-usdc-label').textContent = usdcPctRound + '% USDC';
 
