@@ -1463,7 +1463,7 @@
                             <div class="sim-pool-stat">Range: <span>&plusmn;5%</span></div>
                             <div class="sim-pool-stat">Deposit: <span>$1,000</span></div>
                         </div>
-                        <div class="sim-pool-note">Includes impermanent loss modeling. Does not include AERO emission rewards. Actual volume and TVL fluctuate daily. Not financial advice.</div>
+                        <div class="sim-pool-note">Includes concentrated IL + rebalance crystallization. Does NOT include AERO emission rewards (which add real yield on top). Fees compound daily. Rebalance costs ~0.4&ndash;0.8% per event. Not financial advice.</div>
                     </div>
                 </div>
 
@@ -2226,37 +2226,37 @@
                 volatility: 0.012,
                 meanReversion: 0.15,
                 events: [],
-                desc: 'ETH oscillates in a tight range around $2,500 \u2014 the ideal scenario for concentrated LPs. Lots of trading volume, minimal price drift. The vault stays in range almost all year, earning maximum fees with very few rebalances.'
+                desc: 'ETH oscillates in a tight range around $2,500 \u2014 the ideal scenario for concentrated LPs. High volume, minimal drift. The vault stays in range almost all year, compounding fees with very few rebalances.'
             },
             'steady-up': {
                 name: 'Steady Up',
                 seed: 42,
-                drift: 0.0004,
+                drift: 0.0003,
                 volatility: 0.014,
                 meanReversion: 0,
                 events: [],
-                desc: 'ETH trends upward steadily (~15% over the year). The vault rebalances a few times as price rises, locking in gains along the way. Fees + favorable IL = strong returns.'
+                desc: 'ETH trends up ~12% over the year. The vault rebalances a few times as price rises. Fees accumulate but each rebalance crystallizes some IL. Net result: positive, but less than just holding ETH.'
             },
             'steady-down': {
                 name: 'Steady Down',
                 seed: 137,
-                drift: -0.0003,
+                drift: -0.00035,
                 volatility: 0.014,
                 meanReversion: 0,
                 events: [],
-                desc: 'ETH trends downward (~10% over the year). The vault earns fees but faces impermanent loss as price drops. This shows the real trade-off: fees vs IL.'
+                desc: 'ETH trends down ~12% over the year. The vault earns fees but concentrated IL hurts more than full-range. Each rebalance locks in losses at lower prices. Fees try to offset \u2014 but may not.'
             },
             'crash': {
                 name: 'Crash & Recover',
                 seed: 789,
-                drift: 0.0001,
-                volatility: 0.013,
-                meanReversion: 0,
+                drift: 0.0,
+                volatility: 0.011,
+                meanReversion: 0.04,
                 events: [
-                    { start: 60, end: 78, drift: -0.007 },
-                    { start: 100, end: 200, drift: 0.003 }
+                    { start: 55, end: 80, drift: -0.008 },
+                    { start: 120, end: 280, drift: 0.0008 }
                 ],
-                desc: 'A ~15-20% crash around day 60 tests the vault\u2019s resilience. IL spikes during the drop as the vault rebalances through it. As ETH recovers over the next months, fees + price recovery bring the position back.'
+                desc: 'ETH crashes ~25% around day 60, then slowly recovers. The vault rebalances at the bottom, locking in losses. Even if ETH recovers fully, the crystallized IL from rebalancing means your position is permanently smaller. Fees help but can\u2019t fully undo the damage.'
             }
         };
 
@@ -2361,29 +2361,36 @@
             var rL = prices[0] * (1 - RANGE_WIDTH / 2);
             var rU = prices[0] * (1 + RANGE_WIDTH / 2);
             var totalFees = 0;
-            var deployed = INITIAL_DEPOSIT;  // Capital in the LP (gets reset on rebalance)
+            var pendingFees = 0; // Fees accrued but not yet compounded
+            var deployed = INITIAL_DEPOSIT;  // Capital actively in the LP
             var deployPrice = prices[0];
 
             for (var i = 0; i <= TOTAL_STEPS; i++) {
                 var price = prices[i];
                 var ir = price >= rL && price <= rU;
 
-                // Realistic fee model: volume varies with price action
+                // Fee model: volume varies with price action + randomness
                 var priceMove = i > 0 ? Math.abs(prices[i] - prices[i - 1]) / prices[i - 1] : 0;
-                var volMultiplier = 0.5 + 0.5 * rng() + priceMove * 15;
+                var volMultiplier = 0.4 + 0.6 * rng() + priceMove * 12;
                 var stepVolume = (POOL_AVG_DAILY_VOL / STEPS_PER_DAY) * volMultiplier;
 
-                // Fees: compound into deployed capital (as real vaults do)
+                // Accrue fees (only when in range)
                 if (ir) {
                     var stepPoolFees = stepVolume * POOL_FEE_RATE;
                     var feeEarned = stepPoolFees * (deployed / POOL_TVL);
                     totalFees += feeEarned;
-                    deployed += feeEarned;
+                    pendingFees += feeEarned;
                 }
 
-                // LP position value with IL applied
+                // Compound once per day (every 4 steps) — fees go back into LP
+                if (i > 0 && i % STEPS_PER_DAY === 0 && pendingFees > 0 && ir) {
+                    deployed += pendingFees;
+                    pendingFees = 0;
+                }
+
+                // LP position value with IL applied (only on deployed capital)
                 var ilFactor = clPositionValue(price, deployPrice, rL, rU);
-                var vv = deployed * ilFactor;
+                var vv = deployed * ilFactor + pendingFees; // deployed (with IL) + uncollected fees
 
                 // Check rebalance (with cooldown)
                 if (i > 0) {
@@ -2391,10 +2398,12 @@
                     var cooldownOk = (i - lastRebal) >= REBALANCE_COOLDOWN;
                     var outOfBuffer = price < rL * (1 - REBALANCE_BUFFER) || price > rU * (1 + REBALANCE_BUFFER);
                     if (outOfBuffer && cooldownOk) {
-                        var swapCost = 0.003 + rng() * 0.003;
+                        // Rebalance cost: TWO swaps (consolidate to USDC + redeploy)
+                        var swapCost = 0.004 + rng() * 0.004; // 0.4-0.8% for double swap
                         vv *= (1 - swapCost);
-                        // Redeploy everything at new price
+                        // Redeploy everything at new price — IL is now CRYSTALLIZED
                         deployed = vv;
+                        pendingFees = 0;
                         deployPrice = price;
                         rL = price * (1 - RANGE_WIDTH / 2);
                         rU = price * (1 + RANGE_WIDTH / 2);
