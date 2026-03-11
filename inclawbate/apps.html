@@ -247,6 +247,11 @@
             white-space: nowrap;
         }
         .cat-tab:hover { border-color: var(--border-bright); color: var(--text-primary); }
+        .cat-divider {
+            width: 1px; height: 20px; background: var(--border-subtle); align-self: center;
+        }
+        .cat-tab[data-pricing="free"].active { background: var(--green, #10b981); border-color: var(--green, #10b981); }
+        .cat-tab[data-pricing="paid"].active { background: var(--lobster-400, #e17055); border-color: var(--lobster-400, #e17055); }
         .cat-tab.active {
             background: var(--accent-primary);
             border-color: var(--accent-primary);
@@ -960,6 +965,9 @@
             <button class="cat-tab" data-cat="creative">Creative</button>
             <button class="cat-tab" data-cat="finance">Finance</button>
             <button class="cat-tab" data-cat="social">Social</button>
+            <span class="cat-divider"></span>
+            <button class="cat-tab" data-pricing="free">Free</button>
+            <button class="cat-tab" data-pricing="paid">Paid</button>
         </div>
         <input class="apps-search" type="text" placeholder="Search apps..." id="appSearch">
         <select class="apps-sort" id="appSort">
@@ -997,6 +1005,7 @@
     var API = '/api/inclawbate/apps';
     var state = {
         category: 'all',
+        pricing: '',
         search: '',
         sort: 'trending',
         page: 1,
@@ -1035,11 +1044,28 @@
     }
 
     // ── Category tabs ──
-    document.querySelectorAll('.cat-tab').forEach(function(tab) {
+    document.querySelectorAll('.cat-tab[data-cat]').forEach(function(tab) {
         tab.addEventListener('click', function() {
-            document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.cat-tab[data-cat]').forEach(function(t) { t.classList.remove('active'); });
             tab.classList.add('active');
             state.category = tab.dataset.cat;
+            state.page = 1;
+            loadApps();
+        });
+    });
+
+    // ── Pricing tabs (Free / Paid) ──
+    document.querySelectorAll('.cat-tab[data-pricing]').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            if (tab.classList.contains('active')) {
+                // Toggle off — deselect
+                tab.classList.remove('active');
+                state.pricing = '';
+            } else {
+                document.querySelectorAll('.cat-tab[data-pricing]').forEach(function(t) { t.classList.remove('active'); });
+                tab.classList.add('active');
+                state.pricing = tab.dataset.pricing;
+            }
             state.page = 1;
             loadApps();
         });
@@ -1156,6 +1182,7 @@
             limit: 18
         });
         if (state.category !== 'all') params.set('category', state.category);
+        if (state.pricing) params.set('pricing', state.pricing);
         if (state.search) params.set('search', state.search);
         if (state.showHidden) params.set('show_hidden', 'true');
 
@@ -1627,8 +1654,14 @@
         var params = new URLSearchParams(window.location.search);
         if (params.get('category')) {
             state.category = params.get('category');
-            document.querySelectorAll('.cat-tab').forEach(function(t) {
+            document.querySelectorAll('.cat-tab[data-cat]').forEach(function(t) {
                 t.classList.toggle('active', t.dataset.cat === state.category);
+            });
+        }
+        if (params.get('pricing')) {
+            state.pricing = params.get('pricing');
+            document.querySelectorAll('.cat-tab[data-pricing]').forEach(function(t) {
+                t.classList.toggle('active', t.dataset.pricing === state.pricing);
             });
         }
         if (params.get('search')) {

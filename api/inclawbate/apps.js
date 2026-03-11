@@ -209,6 +209,14 @@ export default async function handler(req, res) {
                 query = query.eq('category', category);
             }
 
+            // Pricing filter
+            const pricing = req.query.pricing;
+            if (pricing === 'free') {
+                query = query.or('claws_price.is.null,claws_price.eq.0');
+            } else if (pricing === 'paid') {
+                query = query.gt('claws_price', 0);
+            }
+
             if (search) {
                 query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
             }
