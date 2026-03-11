@@ -2,6 +2,7 @@
 // GET  ?wallet=0x...  — list user's projects
 // POST                — create project (JWT auth)
 // PUT                 — update project (JWT auth, owner only)
+// PATCH               — update agent settings (JWT auth, owner only)
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
@@ -42,6 +43,17 @@ async function uniqueSlug(base) {
     }
 }
 
+function sanitizeProject(p) {
+    if (!p) return p;
+    const { x_access_token, x_refresh_token, ...safe } = p;
+    safe.x_connected = !!(x_access_token && x_refresh_token);
+    return safe;
+}
+
+function sanitizeProjects(rows) {
+    return (rows || []).map(sanitizeProject);
+}
+
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     if (ALLOWED_ORIGINS.includes(origin)) {
@@ -62,7 +74,7 @@ export default async function handler(req, res) {
             .single();
 
         if (error || !data) return res.status(404).json({ error: 'Project not found' });
-        return res.status(200).json({ project: data });
+        return res.status(200).json({ project: sanitizeProject(data) });
     }
 
     // GET — public: list all projects
@@ -74,7 +86,7 @@ export default async function handler(req, res) {
             .limit(100);
 
         if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json({ projects: data || [] });
+        return res.status(200).json({ projects: sanitizeProjects(data) });
     }
 
     // GET — list projects by wallet
@@ -89,7 +101,7 @@ export default async function handler(req, res) {
             .order('created_at', { ascending: false });
 
         if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json({ projects: data || [] });
+        return res.status(200).json({ projects: sanitizeProjects(data) });
     }
 
     // POST — create project
@@ -173,6 +185,50 @@ export default async function handler(req, res) {
 
         if (error) return res.status(500).json({ error: error.message });
         return res.status(200).json({ project: data });
+    }
+
+    // PATCH — update agent settings (owner only)
+    if (req.method === 'PATCH') {
+        const user = authenticateRequest(req);
+        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status } = req.body || {};
+        if (!id) return res.status(400).json({ error: 'id is required' });
+
+        const wallet = (user.wallet_address || '').toLowerCase();
+
+        // Verify ownership
+        const { data: existing } = await supabase
+            .from('projects')
+            .select('creator_wallet, agent_enabled')
+            .eq('id', id)
+            .single();
+
+        if (!existing || existing.creator_wallet !== wallet) {
+            return res.status(403).json({ error: 'Not your project' });
+        }
+
+        const patch = { updated_at: new Date().toISOString() };
+
+        if (typeof agent_enabled === 'boolean') patch.agent_enabled = agent_enabled;
+        if (agent_persona !== undefined) patch.agent_persona = agent_persona || null;
+        if (agent_posts_per_day !== undefined) {
+            const ppd = Math.max(1, Math.min(3, parseInt(agent_posts_per_day) || 2));
+            patch.agent_posts_per_day = ppd;
+        }
+        if (agent_status && ['active', 'dormant', 'paused'].includes(agent_status)) {
+            patch.agent_status = agent_status;
+        }
+
+        const { data, error } = await supabase
+            .from('projects')
+            .update(patch)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ project: sanitizeProject(data) });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

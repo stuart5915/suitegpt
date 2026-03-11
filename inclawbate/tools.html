@@ -988,7 +988,7 @@
         <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:var(--space-md)">AI generates and posts tweets for your project. Connect your own X account or post through <a href="https://x.com/inclawbator" target="_blank" style="color:var(--lobster-400)">@inclawbator</a>.</p>
 
         <div id="agentNoAuth" style="display:none">
-            <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:var(--space-md)">Connect your wallet to set up an AI agent.</p>
+            <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:var(--space-md)">Connect your wallet to configure or fund an AI agent.</p>
             <button class="modal-btn" onclick="window.navWalletConnect && window.navWalletConnect()">Connect Wallet</button>
         </div>
         <div id="agentNoProjects" style="display:none">
@@ -1294,29 +1294,21 @@ async function openAgentModal() {
     document.getElementById('agentError').style.display = 'none';
     document.getElementById('agentStatus').style.display = 'none';
     document.getElementById('agentProjectList').style.display = 'none';
-
-    var auth = getAuth();
-    if (!auth || !auth.token) {
-        document.getElementById('agentNoAuth').style.display = 'block';
-        document.getElementById('agentForm').style.display = 'none';
-        document.getElementById('agentNoProjects').style.display = 'none';
-        return;
-    }
+    document.getElementById('agentForm').style.display = 'none';
     document.getElementById('agentNoAuth').style.display = 'none';
+    document.getElementById('agentNoProjects').style.display = 'none';
 
     try {
-        var wallet = auth.wallet || auth.walletAddress || '';
-        var resp = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(wallet));
+        // Fetch ALL public projects (not just user's)
+        var resp = await fetch('/api/inclawbate/projects?public=1');
         var data = await resp.json();
-        _agentProjects = (data.projects || []).filter(function(p) { return p.status === 'active'; });
+        _agentProjects = data.projects || [];
 
         if (!_agentProjects.length) {
             document.getElementById('agentNoProjects').style.display = 'block';
-            document.getElementById('agentForm').style.display = 'none';
             return;
         }
 
-        document.getElementById('agentNoProjects').style.display = 'none';
         renderProjectCards();
         document.getElementById('agentProjectList').style.display = 'flex';
 
@@ -1324,7 +1316,6 @@ async function openAgentModal() {
         selectAgentProject(_agentProjects[0].id);
     } catch(err) {
         document.getElementById('agentNoProjects').style.display = 'block';
-        document.getElementById('agentForm').style.display = 'none';
     }
 }
 
@@ -1338,28 +1329,33 @@ function renderProjectCards() {
         card.setAttribute('data-id', p.id);
         card.onclick = function() { selectAgentProject(p.id); };
 
-        var chain = (p.chain || 'base').toLowerCase();
         var agentSt = p.agent_enabled ? (p.agent_status || 'dormant') : 'off';
         var badgeClass = agentSt === 'active' ? 'agent-badge--active'
             : agentSt === 'dormant' ? 'agent-badge--dormant'
             : agentSt === 'paused' ? 'agent-badge--paused' : 'agent-badge--off';
         var badgeText = agentSt === 'off' ? 'no agent' : agentSt;
 
+        var firstChar = (p.name || '?').charAt(0).toUpperCase();
         var logoHtml = p.logo_url
-            ? '<img src="' + p.logo_url + '" alt="" onerror="this.parentNode.textContent=\'' + (p.token_symbol || '?').charAt(0) + '\'">'
-            : (p.token_symbol || '?').charAt(0);
+            ? '<img src="' + p.logo_url + '" alt="" onerror="this.parentNode.textContent=\'' + firstChar + '\'">'
+            : firstChar;
 
         var descSnippet = p.description ? p.description.slice(0, 60) + (p.description.length > 60 ? '...' : '') : '';
-        var nameText = p.token_name || 'Project';
-        if (descSnippet) nameText = descSnippet;
+
+        // Build badges row: token symbol, app, staking, creator handle
+        var badgesHtml = '';
+        if (p.token_symbol) badgesHtml += '<span class="agent-project-chain" data-chain="base">$' + p.token_symbol + '</span>';
+        else if (p.token_address) badgesHtml += '<span class="agent-project-chain" data-chain="base">Token</span>';
+        if (p.app_slug) badgesHtml += '<span class="agent-project-chain" data-chain="cardano">App</span>';
+        if (p.staking_address) badgesHtml += '<span class="agent-project-chain" data-chain="solana">Staking</span>';
 
         card.innerHTML = '<div class="agent-project-logo">' + logoHtml + '</div>'
             + '<div class="agent-project-info">'
             + '<div class="agent-project-top">'
-            + '<span class="agent-project-symbol">$' + (p.token_symbol || '') + '</span>'
-            + '<span class="agent-project-chain" data-chain="' + chain + '">' + chain + '</span>'
+            + '<span class="agent-project-symbol">' + (p.name || 'Project') + '</span>'
+            + badgesHtml
             + '</div>'
-            + '<div class="agent-project-name">' + nameText + '</div>'
+            + '<div class="agent-project-name">' + (descSnippet || '/' + (p.slug || '')) + '</div>'
             + '</div>'
             + '<div class="agent-project-badges">'
             + (p.agent_enabled ? '<span class="agent-badge ' + badgeClass + '">' + badgeText + '</span>' : '<span class="agent-badge agent-badge--off">no agent</span>')
@@ -1380,6 +1376,12 @@ function selectAgentProject(id) {
     onAgentProjectChange();
 }
 
+function isProjectOwner(project) {
+    var auth = getAuth();
+    if (!auth || !auth.wallet) return false;
+    return (project.creator_wallet || '').toLowerCase() === auth.wallet.toLowerCase();
+}
+
 function onAgentProjectChange() {
     var id = document.getElementById('agentProject').value;
     var project = _agentProjects.find(function(p) { return p.id === id; });
@@ -1387,14 +1389,22 @@ function onAgentProjectChange() {
 
     var statusDiv = document.getElementById('agentStatus');
     var btn = document.getElementById('agentSubmitBtn');
+    var configSection = document.querySelector('.agent-config-section');
+    var xSection = document.getElementById('agentXSection');
+    var owner = isProjectOwner(project);
 
     // X connection status
     var hasOwnX = project.x_connected && project.x_handle;
     document.getElementById('agentXLabel').textContent = hasOwnX ? '@' + project.x_handle : 'X Account';
     document.getElementById('agentXStatus').textContent = hasOwnX ? 'Connected — posts from your account' : 'Not connected — posts via @inclawbator';
-    document.getElementById('agentXBtn').textContent = hasOwnX ? 'Disconnect' : 'Connect X';
-    document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
     document.getElementById('agentPostsVia').textContent = hasOwnX ? '@' + project.x_handle : '@inclawbator';
+
+    // Only owner can connect X / configure agent
+    xSection.style.display = owner ? '' : 'none';
+    if (owner) {
+        document.getElementById('agentXBtn').textContent = hasOwnX ? 'Disconnect' : 'Connect X';
+        document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
+    }
 
     if (project.agent_enabled) {
         statusDiv.style.display = 'block';
@@ -1407,18 +1417,26 @@ function onAgentProjectChange() {
         badge.style.background = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
         badge.style.color = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
 
-        // Parse stored persona back into tone/topics/catchphrase
-        parsePersonaIntoForm(project.agent_persona || '');
-        document.getElementById('agentFrequency').value = Math.min(3, project.agent_posts_per_day || 2);
-
-        btn.textContent = 'Update Agent';
+        if (owner) {
+            parsePersonaIntoForm(project.agent_persona || '');
+            document.getElementById('agentFrequency').value = Math.min(3, project.agent_posts_per_day || 2);
+            btn.textContent = 'Update Agent';
+            configSection.style.display = '';
+        } else {
+            configSection.style.display = 'none';
+        }
     } else {
         statusDiv.style.display = 'none';
-        document.getElementById('agentTone').value = '';
-        document.querySelectorAll('#agentTopics input').forEach(function(cb) { cb.checked = cb.value === 'community'; });
-        document.getElementById('agentCatchphrase').value = '';
-        document.getElementById('agentFrequency').value = '2';
-        btn.textContent = 'Enable Agent';
+        if (owner) {
+            document.getElementById('agentTone').value = '';
+            document.querySelectorAll('#agentTopics input').forEach(function(cb) { cb.checked = cb.value === 'community'; });
+            document.getElementById('agentCatchphrase').value = '';
+            document.getElementById('agentFrequency').value = '2';
+            btn.textContent = 'Enable Agent';
+            configSection.style.display = '';
+        } else {
+            configSection.style.display = 'none';
+        }
     }
 }
 
@@ -1575,8 +1593,7 @@ async function submitAgent(e) {
 
     try {
         var body = {
-            action: 'update-agent',
-            project_id: projectId,
+            id: projectId,
             agent_persona: buildPersonaString(),
             agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value)
         };
@@ -1586,8 +1603,8 @@ async function submitAgent(e) {
             body.agent_status = 'active';
         }
 
-        var resp = await fetch('/api/inclawbate/inclawbator', {
-            method: 'POST',
+        var resp = await fetch('/api/inclawbate/projects', {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
             body: JSON.stringify(body)
         });

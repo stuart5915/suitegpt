@@ -56,7 +56,11 @@ async function generateTweet(project) {
         ? `You tweet as @${project.x_handle}.`
         : `You tweet from @inclawbator on behalf of this project.`;
 
-    const systemPrompt = `You are an AI agent for $${project.token_symbol} (${project.token_name}). ${accountNote}
+    const symbol = project.token_symbol;
+    const projectName = project.name || project.token_name || 'this project';
+    const tokenRef = symbol ? `$${symbol}` : projectName;
+
+    const systemPrompt = `You are an AI agent for ${tokenRef}${symbol ? ' (' + projectName + ')' : ''}. ${accountNote}
 
 Tone: ${toneDesc}
 ${persona.catchphrase ? 'Signature style: ' + persona.catchphrase : ''}
@@ -65,7 +69,7 @@ ${project.website_url ? 'Website: ' + project.website_url : ''}
 
 Rules:
 - Under 280 characters (STRICT — count carefully)
-- Mention $${project.token_symbol} naturally
+${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name naturally'}
 - No hashtags
 - No "excited to announce" or any corporate speak
 - No em dashes
@@ -263,7 +267,7 @@ export default async function handler(req, res) {
         // Check global daily post count (last 24h across all agents)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { count: recentPosts } = await supabase
-            .from('inclawbator_agent_posts')
+            .from('project_agent_posts')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', oneDayAgo)
             .eq('status', 'posted');
@@ -272,13 +276,12 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: 'Daily post cap reached', cap: DAILY_POST_CAP });
         }
 
-        // Find agents that are due
+        // Find agents that are due (from projects table)
         const { data: projects, error: queryErr } = await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .select('*')
             .eq('agent_enabled', true)
             .eq('agent_status', 'active')
-            .eq('status', 'active')
             .gt('agent_credits', 0);
 
         if (queryErr) throw queryErr;
@@ -302,7 +305,7 @@ export default async function handler(req, res) {
             if (now - lastPost < intervalMs) continue; // not due yet
 
             // Deduct 1 credit atomically
-            const { data: newBalance } = await supabase.rpc('deduct_agent_credit', {
+            const { data: newBalance } = await supabase.rpc('deduct_project_agent_credit', {
                 p_project_id: project.id,
                 p_amount: 1
             });
@@ -310,7 +313,7 @@ export default async function handler(req, res) {
             if (newBalance === -1) {
                 // Insufficient credits — go dormant
                 await supabase
-                    .from('inclawbator_projects')
+                    .from('projects')
                     .update({ agent_status: 'dormant' })
                     .eq('id', project.id);
                 dormant++;
@@ -329,7 +332,7 @@ export default async function handler(req, res) {
 
                 // Record post
                 await supabase
-                    .from('inclawbator_agent_posts')
+                    .from('project_agent_posts')
                     .insert({
                         project_id: project.id,
                         tweet_text: tweetText,
@@ -341,7 +344,7 @@ export default async function handler(req, res) {
 
                 // Update project
                 await supabase
-                    .from('inclawbator_projects')
+                    .from('projects')
                     .update({
                         agent_last_post_at: new Date().toISOString(),
                         agent_total_posts: (project.agent_total_posts || 0) + 1
@@ -353,7 +356,7 @@ export default async function handler(req, res) {
             } catch (postErr) {
                 // Record failed post
                 await supabase
-                    .from('inclawbator_agent_posts')
+                    .from('project_agent_posts')
                     .insert({
                         project_id: project.id,
                         tweet_text: postErr.message || 'Generation failed',
@@ -363,12 +366,12 @@ export default async function handler(req, res) {
                     });
 
                 // Refund the credit on failure
-                await supabase.rpc('add_agent_credits', {
+                await supabase.rpc('add_project_agent_credits', {
                     p_project_id: project.id,
                     p_amount: 1
                 });
 
-                errors.push(`${project.token_symbol}: ${postErr.message}`);
+                errors.push(`${project.token_symbol || project.name}: ${postErr.message}`);
             }
         }
 
