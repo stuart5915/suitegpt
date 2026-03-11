@@ -991,7 +991,7 @@
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
         <h3>@inclawbator Schedule</h3>
         <div class="sched-info">
-            <span class="sched-info-item">Hold 50K+ CLAWS to book &middot; max 3 active</span>
+            <span class="sched-info-item">~$0.05 in CLAWS per slot &middot; max 3 active</span>
             <span class="sched-info-item"><strong id="schedBalance">—</strong></span>
         </div>
 
@@ -1025,6 +1025,7 @@
                 <option value="meme">Meme Lord</option>
             </select>
 
+            <div id="schedBookCost" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:var(--space-sm);padding:8px;border-radius:var(--radius-sm);background:rgba(45,212,191,0.06)">Cost: ~$0.05 in CLAWS</div>
             <button class="modal-btn" id="schedBookBtn" onclick="bookSlot()">Book This Slot</button>
             <div class="modal-success" id="schedBookSuccess" style="display:none"></div>
             <div class="modal-error" id="schedBookError" style="display:none"></div>
@@ -1257,12 +1258,25 @@ function fetchClawsBalance(wallet) {
         .then(function(d) { return d.balance || 0; });
 }
 
+var SLOT_COST_USD = 0.05;
+var CLAWS_TOKEN_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
+var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+
+function fetchClawsPrice() {
+    return fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_TOKEN_ADDR)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.pairs && d.pairs.length > 0) return parseFloat(d.pairs[0].priceUsd) || 0;
+            return 0;
+        })
+        .catch(function() { return 0; });
+}
+
 // ── Schedule View State ──
 var _schedSlots = [];
 var _schedProjects = [];
 var _selectedDay = null;
 var _userWallet = '';
-var MIN_CLAWS = 50000;
 
 async function openAgentModal() {
     var ov = document.getElementById('agentOverlay');
@@ -1484,6 +1498,18 @@ function openBookForm(slotTime) {
     document.getElementById('schedBookBtn').disabled = false;
     document.getElementById('schedBookBtn').textContent = 'Book This Slot';
 
+    // Show live cost
+    var costEl = document.getElementById('schedBookCost');
+    costEl.textContent = 'Cost: ~$0.05 in CLAWS (loading price...)';
+    fetchClawsPrice().then(function(price) {
+        if (price > 0) {
+            var amount = Math.ceil(SLOT_COST_USD / price * 10000) / 10000;
+            costEl.textContent = 'Cost: ' + formatClaws(amount) + ' CLAWS (~$0.05) sent to inclawbate.base.eth';
+        } else {
+            costEl.textContent = 'Cost: ~$0.05 in CLAWS';
+        }
+    });
+
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -1506,13 +1532,83 @@ async function bookSlot() {
         return;
     }
 
+    if (!window.ethereum) {
+        document.getElementById('schedBookError').textContent = 'No wallet detected. Install MetaMask or similar.';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
     var btn = document.getElementById('schedBookBtn');
     btn.disabled = true;
-    btn.textContent = 'Booking...';
     document.getElementById('schedBookSuccess').style.display = 'none';
     document.getElementById('schedBookError').style.display = 'none';
 
     try {
+        // 1. Get CLAWS price
+        btn.textContent = 'Fetching price...';
+        var clawsPrice = await fetchClawsPrice();
+        if (!clawsPrice) throw new Error('Could not fetch CLAWS price. Try again.');
+
+        // 2. Calculate CLAWS amount ($0.05 worth, 18 decimals)
+        var clawsNeeded = SLOT_COST_USD / clawsPrice;
+        var clawsWhole = Math.ceil(clawsNeeded * 10000);
+        var costWei = (BigInt(clawsWhole) * BigInt('100000000000000')).toString(16);
+
+        btn.textContent = 'Send ' + formatClaws(clawsNeeded) + ' CLAWS...';
+
+        // 3. Ensure Base chain (0x2105 = 8453)
+        var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{ chainId: '0x2105', chainName: 'Base', rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'], nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 } }]
+                    });
+                } else {
+                    throw new Error('Switch to Base network in your wallet.');
+                }
+            }
+        }
+
+        // 4. Send ERC20 transfer to admin wallet
+        var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (!accounts || !accounts[0]) {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        }
+        var fromAddr = accounts[0];
+        if (!fromAddr) throw new Error('Connect your wallet first.');
+
+        var transferData = '0xa9059cbb'
+            + ADMIN_WALLET.replace('0x', '').toLowerCase().padStart(64, '0')
+            + costWei.padStart(64, '0');
+
+        var txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: fromAddr, to: CLAWS_TOKEN_ADDR, data: transferData }]
+        });
+
+        // 5. Wait for on-chain confirmation
+        btn.textContent = 'Confirming tx...';
+        var confirmed = false;
+        for (var i = 0; i < 15; i++) {
+            try {
+                var receipt = await window.ethereum.request({
+                    method: 'eth_getTransactionReceipt', params: [txHash]
+                });
+                if (receipt && receipt.status === '0x1') { confirmed = true; break; }
+                if (receipt && receipt.status !== '0x1') throw new Error('Transaction failed on-chain.');
+            } catch (e) {
+                if (e.message === 'Transaction failed on-chain.') throw e;
+            }
+            await new Promise(function(r) { setTimeout(r, 2000); });
+        }
+        if (!confirmed) throw new Error('Transaction not confirmed after 30s. Contact support with tx: ' + txHash);
+
+        // 6. Book the slot (server verifies payment)
+        btn.textContent = 'Booking slot...';
         var resp = await fetch('/api/inclawbate/agent-schedule', {
             method: 'POST',
             headers: {
@@ -1524,20 +1620,17 @@ async function bookSlot() {
                 project_id: projectId,
                 scheduled_at: document.getElementById('schedBookSlotTime').value,
                 content_angle: document.getElementById('schedBookAngle').value,
-                tone: document.getElementById('schedBookTone').value
+                tone: document.getElementById('schedBookTone').value,
+                tx_hash: txHash
             })
         });
 
         var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Booking failed');
 
-        if (!resp.ok) {
-            throw new Error(data.error || 'Failed to book slot');
-        }
-
-        document.getElementById('schedBookSuccess').textContent = 'Booked! @inclawbator will tweet for your project at this time.';
+        document.getElementById('schedBookSuccess').textContent = 'Booked! Payment confirmed. @inclawbator will tweet at this time.';
         document.getElementById('schedBookSuccess').style.display = 'block';
 
-        // Enrich with project info from local data and add to slots
         if (data.slot) {
             var proj = _schedProjects.find(function(p) { return p.id === data.slot.project_id; });
             if (proj) {
@@ -1563,7 +1656,7 @@ async function bookSlot() {
 }
 
 async function cancelSlot(slotId) {
-    if (!confirm('Cancel this slot? Credits will be refunded.')) return;
+    if (!confirm('Cancel this slot? Note: CLAWS payment is not refundable.')) return;
 
     var auth = getAuth();
     if (!auth || !auth.token) return;
