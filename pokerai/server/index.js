@@ -729,7 +729,7 @@ function broadcastToClients(type, data) {
       if (ws.readyState === 1) {
         if (sourceRoom && client.activeRoom !== sourceRoom) continue;
         try {
-          const state = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
+          const state = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom, client.activeTableId);
           ws.send(JSON.stringify({ type: 'gameState', data: state }));
         } catch (e) { /* client disconnected */ }
       }
