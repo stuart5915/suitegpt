@@ -99,10 +99,55 @@ function compareHands(a, b) {
 }
 
 // Agent AI decision — needs current bet to call, pot size, and agent's current round bet
+// Parse text prompt into numeric modifiers (cached per agent)
+const _promptCache = new Map();
+function _parsePrompt(agent) {
+  const prompt = (agent.prompt || '').toLowerCase();
+  if (!prompt) return {};
+  const cacheKey = agent.id + ':' + prompt;
+  if (_promptCache.has(cacheKey)) return _promptCache.get(cacheKey);
+
+  const mods = { strengthBoost: 0, raiseBoost: 0, foldBoost: 0, bluffBoost: 0, allInBoost: 0 };
+
+  // Aggression keywords
+  if (/\b(very aggressive|hyper.?aggress|ultra.?aggress|max aggress)\b/.test(prompt)) mods.raiseBoost += 20;
+  else if (/\b(aggressive|aggro|attack|pressure|bet big|bet heavy|raise.?a.?lot)\b/.test(prompt)) mods.raiseBoost += 10;
+
+  // Passive / tight keywords
+  if (/\b(very tight|super tight|ultra tight|nit)\b/.test(prompt)) { mods.foldBoost += 20; mods.raiseBoost -= 10; }
+  else if (/\b(tight|careful|cautious|conservative|passive|patient)\b/.test(prompt)) { mods.foldBoost += 10; mods.raiseBoost -= 5; }
+
+  // Loose keywords
+  if (/\b(loose|wide range|play everything|call station|never fold|don.?t fold)\b/.test(prompt)) { mods.foldBoost -= 20; mods.strengthBoost += 0.1; }
+
+  // Bluffing keywords
+  if (/\b(bluff.?a.?lot|heavy bluff|always bluff|bluff.?every|max bluff)\b/.test(prompt)) mods.bluffBoost += 25;
+  else if (/\b(bluff|semi.?bluff|represent|fake)\b/.test(prompt)) mods.bluffBoost += 12;
+  if (/\b(never bluff|no bluff|don.?t bluff|honest)\b/.test(prompt)) mods.bluffBoost -= 30;
+
+  // All-in keywords
+  if (/\b(all.?in|shove|push|jam)\b/.test(prompt)) mods.allInBoost += 15;
+  if (/\b(never all.?in|no all.?in|avoid all.?in)\b/.test(prompt)) mods.allInBoost -= 30;
+
+  // Street-specific (stored for later use)
+  if (/\b(preflop|pre.?flop).*\b(tight|fold|careful)\b/.test(prompt)) mods.preflopTight = true;
+  if (/\b(preflop|pre.?flop).*\b(loose|aggressive|raise)\b/.test(prompt)) mods.preflopLoose = true;
+  if (/\b(flop|turn|river).*\b(aggressive|attack|bet)\b/.test(prompt)) mods.postflopAggro = true;
+  if (/\b(river).*\b(bluff|big bet)\b/.test(prompt)) mods.riverBluff = true;
+
+  // Trap / slow play
+  if (/\b(trap|slow.?play|check.?raise|lure)\b/.test(prompt)) mods.slowPlay = true;
+
+  _promptCache.set(cacheKey, mods);
+  if (_promptCache.size > 200) _promptCache.clear(); // prevent memory leak
+  return mods;
+}
+
 function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, playerCount) {
   const toCall = currentBet - agentRoundBet;
   const rules = agent.rules || {};
   const headsUp = playerCount <= 2; // much looser play with fewer opponents
+  const promptMods = _parsePrompt(agent);
 
   let strength = 0.3;
   if (communityCards.length > 0) {
@@ -136,6 +181,14 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     strength = Math.min(0.95, Math.max(0.05, preflopStr * 0.7 + Math.random() * 0.2));
   }
 
+  // === Apply prompt modifiers ===
+  if (promptMods.strengthBoost) strength = Math.min(0.95, Math.max(0.05, strength + promptMods.strengthBoost));
+  if (promptMods.preflopTight && communityCards.length === 0 && strength < 0.4) strength -= 0.1;
+  if (promptMods.preflopLoose && communityCards.length === 0) strength += 0.1;
+  if (promptMods.postflopAggro && communityCards.length > 0) strength += 0.08;
+  if (promptMods.riverBluff && communityCards.length === 5) strength += 0.12;
+  strength = Math.min(0.95, Math.max(0.05, strength));
+
   // === RULE: Tight Preflop — fold weak hands preflop (disabled in heads-up) ===
   if (rules.tightPreflop && communityCards.length === 0 && !headsUp) {
     const c1 = RANK_VALUES[agent.hand[0].rank], c2 = RANK_VALUES[agent.hand[1].rank];
@@ -160,16 +213,27 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
 
   // If can't afford to call, either all-in or fold
   if (toCall >= agent.chips) {
-    if (rules.neverAllIn) return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
-    // Require decent hand strength to commit entire stack
-    if (strength > 0.5 || (strength > 0.35 && r < 20)) {
+    if (rules.neverAllIn && promptMods.allInBoost <= 0) return { type: 'fold', label: 'Fold (no all-in)', amount: 0 };
+    // Require decent hand strength to commit entire stack (prompt can lower threshold)
+    const allInThreshold = Math.max(0.2, 0.5 - (promptMods.allInBoost || 0) / 100);
+    if (strength > allInThreshold || (strength > allInThreshold - 0.15 && r < 20)) {
       return { type: 'allin', label: 'ALL IN!', amount: agent.chips };
     }
     return { type: 'fold', label: 'Fold', amount: 0 };
   }
 
+  // Apply prompt modifiers to agent percentages (temporary for this decision)
+  let effectiveAgent = agent;
+  if (promptMods.raiseBoost || promptMods.bluffBoost || promptMods.foldBoost) {
+    effectiveAgent = Object.create(agent);
+    effectiveAgent.raisePct = Math.max(0, Math.min(100, agent.raisePct + (promptMods.raiseBoost || 0)));
+    effectiveAgent.bluffPct = Math.max(0, Math.min(100, agent.bluffPct + (promptMods.bluffBoost || 0)));
+    effectiveAgent.foldPct = Math.max(0, Math.min(100, agent.foldPct + (promptMods.foldBoost || 0)));
+  }
+  if (promptMods.slowPlay) rules.slowPlay = true;
+
   // Make the base decision first, then apply rule overrides
-  let decision = _baseDecision(agent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
+  let decision = _baseDecision(effectiveAgent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
 
   // === RULE: Never All-In — downgrade all-in to a big raise or call ===
   if (rules.neverAllIn && decision.type === 'allin') {
