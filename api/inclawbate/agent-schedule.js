@@ -257,6 +257,39 @@ export default async function handler(req, res) {
             return res.status(201).json({ slot: sanitizeSlot(slot) });
         }
 
+        // ── Edit a slot ──
+        if (action === 'edit') {
+            const { slot_id, content_angle, tone } = req.body;
+            if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
+
+            const { data: slot } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .eq('status', 'scheduled')
+                .single();
+
+            if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
+            if (slot.booked_by_wallet !== wallet) {
+                return res.status(403).json({ error: 'Not your slot' });
+            }
+            if (new Date(slot.scheduled_at).getTime() <= Date.now()) {
+                return res.status(400).json({ error: 'Cannot edit past slots' });
+            }
+
+            const updates = {};
+            if (content_angle !== undefined) updates.content_angle = (content_angle || '').slice(0, 200) || null;
+            if (tone !== undefined) updates.tone = ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default';
+
+            const { error: updateErr } = await supabase
+                .from('agent_schedule')
+                .update(updates)
+                .eq('id', slot_id);
+
+            if (updateErr) return res.status(500).json({ error: updateErr.message });
+            return res.status(200).json({ updated: true });
+        }
+
         // ── Cancel a slot ──
         if (action === 'cancel') {
             const { slot_id } = req.body;
