@@ -248,36 +248,132 @@ class RoomManager {
   // Main rebalancing logic — called after hands complete and after human joins/leaves
   _rebalanceRoom(roomId) {
     const room = this.rooms[roomId];
-    if (!room || room.isSandbox || PLATFORM_WALLETS.size === 0) return;
+    if (!room || room.isSandbox) return;
 
-    const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
-    const humanTables = stats.filter(s => s.humans > 0);
-    const noHumanTables = stats.filter(s => s.humans === 0 && s.platform > 0);
+    // Step 1: Balance tables — even distribution across all tables
+    this._balanceTables(roomId);
 
-    if (humanTables.length > 0) {
-      // Extract platform agents from tables with no humans (free them for human tables)
-      for (const s of noHumanTables) {
-        this._extractPlatformAgents(s.table);
-      }
+    // Step 2: Platform agent liquidity (seed from lobby / extract when no humans)
+    if (PLATFORM_WALLETS.size > 0) {
+      const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
+      const humanTables = stats.filter(s => s.humans > 0);
+      const noHumanTables = stats.filter(s => s.humans === 0 && s.platform > 0);
 
-      // Seed platform agents to human tables that need more opponents
-      for (const s of humanTables) {
-        const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
-        if (needed > 0) {
-          const seeded = this._seedPlatformAgents(s.table, roomId, needed);
-          if (seeded > 0) console.log(`[Rebalance] Seeded ${seeded} platform agent(s) → ${s.table.tableId}`);
-        }
-      }
-    } else {
-      // No humans — pull all platform agents back to lobby (save resources)
-      for (const s of stats) {
-        if (s.platform > 0) {
+      if (humanTables.length > 0) {
+        for (const s of noHumanTables) {
           this._extractPlatformAgents(s.table);
+        }
+        for (const s of humanTables) {
+          const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
+          if (needed > 0) {
+            const seeded = this._seedPlatformAgents(s.table, roomId, needed);
+            if (seeded > 0) console.log(`[Rebalance] Seeded ${seeded} platform agent(s) → ${s.table.tableId}`);
+          }
+        }
+      } else {
+        for (const s of stats) {
+          if (s.platform > 0) {
+            this._extractPlatformAgents(s.table);
+          }
         }
       }
     }
 
     this._cleanupEmptyTables(roomId);
+  }
+
+  // Balance agents evenly across tables in a room
+  // e.g. 9 agents across 2 tables → 5 + 4 (not 8 + 1)
+  _balanceTables(roomId) {
+    const room = this.rooms[roomId];
+    const activeTables = room.tables.filter(t => t.agents.length > 0);
+    if (activeTables.length < 2) return;
+
+    const totalAgents = activeTables.reduce((sum, t) => sum + t.agents.length, 0);
+    if (totalAgents === 0) return;
+
+    // Check if we can consolidate to fewer tables (max 8 per table)
+    const minTables = Math.ceil(totalAgents / 8);
+    if (minTables < activeTables.length) {
+      // Merge: move everyone from smallest tables into bigger ones
+      const sorted = [...activeTables].sort((a, b) => a.agents.length - b.agents.length);
+      for (const source of sorted) {
+        if (activeTables.filter(t => t.agents.length > 0).length <= minTables) break;
+        if (source.phase !== 'waiting') continue; // can't move mid-hand
+        // Move all agents from this table to others
+        for (let i = source.agents.length - 1; i >= 0; i--) {
+          const target = activeTables.find(t => t !== source && t.agents.length < 8);
+          if (!target) break;
+          this._moveAgentBetweenTables(source, i, target);
+        }
+      }
+    }
+
+    // Even out: move agents from overfull to underfull tables
+    const tablesWithAgents = room.tables.filter(t => t.agents.length > 0);
+    if (tablesWithAgents.length < 2) return;
+
+    const total = tablesWithAgents.reduce((sum, t) => sum + t.agents.length, 0);
+    const ideal = Math.ceil(total / tablesWithAgents.length);
+
+    // Sort: biggest first
+    const sorted = [...tablesWithAgents].sort((a, b) => b.agents.length - a.agents.length);
+
+    for (const source of sorted) {
+      if (source.agents.length <= ideal) continue;
+      if (source.phase !== 'waiting') continue; // can only move between hands
+
+      const excess = source.agents.length - ideal;
+      let moved = 0;
+
+      for (const target of [...sorted].reverse()) {
+        if (moved >= excess) break;
+        if (target === source) continue;
+        if (target.agents.length >= ideal) continue;
+
+        const needed = ideal - target.agents.length;
+        const toMove = Math.min(excess - moved, needed);
+
+        for (let m = 0; m < toMove; m++) {
+          // Move from end of agents array (most recently seated)
+          const idx = source.agents.length - 1;
+          if (idx < 0) break;
+          if (this._moveAgentBetweenTables(source, idx, target)) {
+            moved++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Move a single agent from one table to another (between hands only)
+  _moveAgentBetweenTables(source, agentIndex, target) {
+    if (!target.hasAvailableSeat()) return false;
+
+    const agent = source.agents[agentIndex];
+    if (!agent) return false;
+
+    const wasAutoSeated = agent._autoSeated;
+    const result = source._executeUnseat(agentIndex, agent);
+    if (!result.success) return false;
+
+    const lobbyAgent = result.agent;
+    const seatResult = target.seatAgent(lobbyAgent);
+    if (seatResult.success) {
+      // Preserve _autoSeated flag on the new table agent
+      if (wasAutoSeated) {
+        const seated = target.agents.find(a => a.id === lobbyAgent.id);
+        if (seated) seated._autoSeated = true;
+      }
+      console.log(`[TableBalance] Moved ${lobbyAgent.name} from ${source.tableId} → ${target.tableId}`);
+      return true;
+    }
+
+    // Failed to seat at target — put back in lobby
+    this._finalizeLeave(lobbyAgent.walletAddress, source, lobbyAgent);
+    return false;
   }
 
   // Remove auto-seated platform agents from a table — immediate if between hands, queued if mid-hand
@@ -740,6 +836,7 @@ class RoomManager {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
 
+    const roomId = table.roomId;
     const result = table.unseatAgent(walletAddress, agentId);
     if (result.error) return result;
 
@@ -749,7 +846,12 @@ class RoomManager {
     }
 
     // Immediate leave — put agent back in lobby
-    return this._finalizeLeave(walletAddress, table, result.agent);
+    const leaveResult = this._finalizeLeave(walletAddress, table, result.agent);
+
+    // Rebalance tables after leave (may merge tables)
+    if (roomId !== 'sandbox') this._rebalanceRoom(roomId);
+
+    return leaveResult;
   }
 
   // Called both for immediate leaves and deferred (post-hand) leaves
