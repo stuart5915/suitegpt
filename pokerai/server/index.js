@@ -519,17 +519,16 @@ async function startServer() {
         operatorKey: process.env.OPERATOR_PRIVATE_KEY
       });
 
-      // Listen for on-chain deposits → credit chips
+      // Listen for on-chain deposits → notify client to call /check-deposit
+      // NOTE: Do NOT credit chips here — /check-deposit handles crediting
+      // to avoid double-counting
       chain.onDeposit = async (walletAddress, chips, usdcRaw) => {
-        await rooms.store.getOrCreateWallet(walletAddress);
-        await rooms.store.addBalance(walletAddress, chips);
-        console.log(`[Chain] Credited ${chips} chips to ${walletAddress}`);
+        console.log(`[Chain] Deposit event: ${walletAddress} → ${chips} chips (notifying client to verify)`);
 
-        // Notify connected client
+        // Notify connected client to trigger /check-deposit
         for (const [ws, client] of clients) {
           if (client.walletAddress === walletAddress && ws.readyState === 1) {
-            sendBalance(ws, walletAddress);
-            ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
+            ws.send(JSON.stringify({ type: 'depositDetected', data: { chips, usdcAmount: usdcRaw / 1e6 } }));
           }
         }
       };

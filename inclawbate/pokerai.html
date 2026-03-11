@@ -4295,6 +4295,11 @@ function handleMessage(msg) {
       handleDepositConfirmed(msg.data);
       break;
 
+    case 'depositDetected':
+      // Server detected on-chain deposit, trigger /check-deposit to credit chips
+      checkDepositBalance();
+      break;
+
     case 'myAgents':
       myAgents = msg.data || [];
       if (msg.autoTopUp) applyAutoTopUpState(msg.autoTopUp);
@@ -5522,6 +5527,28 @@ async function doDeposit() {
 
   btn.disabled = false;
   btn.innerHTML = 'Deposit USDC';
+}
+
+async function checkDepositBalance() {
+  const wallet = getWallet();
+  if (!wallet) return;
+  const API_BASE = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+  try {
+    const resp = await fetch(API_BASE + '/check-deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet })
+    });
+    const result = await resp.json();
+    if (result.credited > 0) {
+      walletBalance += result.credited;
+      updateWalletUI();
+      showToast(`+${result.credited.toLocaleString()} chips credited!`, 'success');
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'setWallet', walletAddress: wallet }));
+      }
+    }
+  } catch (e) { console.error('[checkDepositBalance]', e); }
 }
 
 function doWithdraw() {
