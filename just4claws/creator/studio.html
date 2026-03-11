@@ -200,9 +200,10 @@
             track.classList.toggle('on', explicitMode);
             label.textContent = explicitMode ? 'ON' : 'OFF';
             label.style.color = explicitMode ? 'var(--pink-bright)' : 'var(--text-dim)';
+            renderSuggestions();
         }
 
-        const SUGGESTIONS = [
+        const SUGGESTIONS_SOFT = [
             'sexy woman in red lingerie, bedroom, seductive pose',
             'nude woman lying on silk sheets, soft lighting, elegant',
             'busty blonde in lace bra, mirror selfie, bedroom',
@@ -212,27 +213,48 @@
             'redhead in stockings and garter belt, boudoir',
             'woman in leather corset, dark room, dominant pose',
             'topless woman on beach at sunset, wind in hair',
-            'latina woman in thong, bent over, looking back',
-            'asian woman in schoolgirl skirt, flirty pose',
             'fitness model flexing, sports bra, sweaty, gym',
             'woman in wet white t-shirt, rain, see-through',
-            'two women kissing, lingerie, bed, passionate',
             'woman straddling chair, naked, tattoos, edgy',
             'blonde in tiny french maid outfit, playful',
             'woman in shower, glass door, steam, nude',
             'goth girl in fishnets, dark makeup, chains',
             'milf in silk robe, open, wine glass, couch',
-            'cheerleader outfit, no underwear, locker room',
-            'nurse costume, unbuttoned, stethoscope, heels',
-            'secretary bent over desk, skirt lifted, office',
-            'woman riding mechanical bull, denim shorts, rodeo',
             'yoga pose, naked, flexible, studio lighting',
+        ];
+
+        const SUGGESTIONS_XXX = [
+            'naked woman spread eagle on bed, legs open wide, explicit full frontal',
+            'woman on all fours, ass up, looking back, naked, bedroom',
+            'woman bent over table, naked from behind, explicit pose',
+            'two nude women intertwined on bed, kissing, hands exploring bodies',
+            'woman riding cowgirl position, nude, sweaty, intense expression',
+            'naked woman touching herself, hand between legs, eyes closed, pleasure',
+            'woman in doggy position, arched back, gripping sheets, nude',
+            'busty woman squeezing breasts together, naked, oil on skin, close up',
+            'woman sitting on face, POV from below, nude, dominant',
+            'nude woman legs behind head, flexible, explicit pose, studio lighting',
+            'woman in bondage rope harness, nude, tied up, submissive pose',
+            'two women scissoring, nude, tangled legs, passionate',
+            'woman deepthroating banana, suggestive, drool, messy',
+            'naked woman handcuffed to bedpost, spread, vulnerable',
+            'woman peeling off wet panties, bending over, looking back seductively',
+            'nude woman pressed against glass shower door, steam, wet body',
+            'woman in split position, nude, explicit, pole dancer, stage lights',
+            'three nude women in pile on bed, orgy, intertwined limbs',
+            'woman straddling pillow, grinding, nude, messy hair, bedroom',
+            'naked woman arching back in ecstasy, hands gripping headboard',
+            'woman licking whipped cream off another womans body, nude, kitchen',
+            'nude woman squatting, explicit angle from below, high heels only',
+            'woman in latex mask and nothing else, kneeling, collar and leash',
+            'soaking wet nude woman, water dripping everywhere, mouth open, wild eyes',
         ];
 
         // Render random subset of suggestions
         function renderSuggestions() {
             const el = document.getElementById('prompt-suggestions');
-            const shuffled = SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 8);
+            const pool = explicitMode ? SUGGESTIONS_XXX : SUGGESTIONS_SOFT;
+            const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 8);
             el.innerHTML = shuffled.map(s =>
                 `<button class="prompt-chip" onclick="usePrompt(this)">${s.length > 40 ? s.slice(0, 40) + '…' : s}</button>`
             ).join('') + `<button class="prompt-chip" onclick="renderSuggestions()" style="background:rgba(255,255,255,0.04);color:var(--text-dim);border-color:var(--border)">↻ More</button>`;
