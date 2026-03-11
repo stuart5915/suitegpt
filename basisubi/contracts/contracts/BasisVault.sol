@@ -74,8 +74,15 @@ contract BasisVault is
     // Token ordering: true if WETH < USDC by address (WETH is token0)
     bool public wethIsToken0;
 
+    // Counters for dashboard
+    uint256 public rebalanceCount;
+    uint256 public lastRebalanceTime;
+    uint256 public compoundCount;
+    uint256 public lastCompoundTime;
+    uint256 public totalFeesEarnedUsdc;
+
     // Reserve storage slots for future upgrades
-    uint256[50] private __gap;
+    uint256[45] private __gap;
 
     // ══════════════════════════════════════════════════════════════
     //  EVENTS
@@ -237,6 +244,9 @@ contract BasisVault is
             _addToPosition(idle);
         }
 
+        compoundCount++;
+        lastCompoundTime = block.timestamp;
+
         emit Compounded(fees0, fees1, idle);
     }
 
@@ -277,6 +287,9 @@ contract BasisVault is
         if (idle > 0) {
             _mintNewPosition(idle);
         }
+
+        rebalanceCount++;
+        lastRebalanceTime = block.timestamp;
 
         emit RebalanceExecuted(oldLower, oldUpper, currentTickLower, currentTickUpper);
     }
@@ -434,6 +447,59 @@ contract BasisVault is
     function _isInRange() internal view returns (bool) {
         (, int24 currentTick,,,,) = ICLPool(strategy.pool).slot0();
         return currentTick >= currentTickLower && currentTick < currentTickUpper;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  PUBLIC VIEWS — DASHBOARD
+    // ══════════════════════════════════════════════════════════════
+
+    /// @notice Whether the current LP position is in range.
+    function isInRange() public view returns (bool) {
+        if (tokenId == 0) return false;
+        return _isInRange();
+    }
+
+    /// @notice All key vault data in a single RPC call for dashboard.
+    function getVaultInfo() external view returns (
+        uint256 _totalAssets,
+        uint256 _totalSupply,
+        int24 _tickLower,
+        int24 _tickUpper,
+        bool _inRange,
+        uint256 _rebalanceCount,
+        uint256 _lastRebalanceTime,
+        uint256 _compoundCount,
+        uint256 _lastCompoundTime,
+        uint256 _totalFeesEarned,
+        uint256 _depositCap,
+        uint256 _performanceFeeBps,
+        bool _paused
+    ) {
+        _totalAssets = totalAssets();
+        _totalSupply = totalSupply();
+        _tickLower = currentTickLower;
+        _tickUpper = currentTickUpper;
+        _inRange = tokenId != 0 ? _isInRange() : false;
+        _rebalanceCount = rebalanceCount;
+        _lastRebalanceTime = lastRebalanceTime;
+        _compoundCount = compoundCount;
+        _lastCompoundTime = lastCompoundTime;
+        _totalFeesEarned = totalFeesEarnedUsdc;
+        _depositCap = depositCap;
+        _performanceFeeBps = performanceFeeBps;
+        _paused = paused();
+    }
+
+    /// @notice Returns a user's shares and their USDC value.
+    function getUserPosition(address user) external view returns (
+        uint256 shares,
+        uint256 value
+    ) {
+        shares = balanceOf(user);
+        uint256 supply = totalSupply();
+        if (supply > 0) {
+            value = (shares * totalAssets()) / supply;
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -639,6 +705,9 @@ contract BasisVault is
             uint256 swapped = _swap(address(weth), asset(), wethFees);
             usdcFees += swapped;
         }
+
+        // Track total fees earned (before fee cut)
+        totalFeesEarnedUsdc += usdcFees;
 
         // Take performance fee
         uint256 fee = (usdcFees * performanceFeeBps) / 10000;
