@@ -503,6 +503,70 @@
         .story-card-code pre .str { color: hsl(100, 60%, 60%); }
         .story-card-code pre .num { color: hsl(30, 90%, 65%); }
 
+        /* ═══ POSITION BREAKDOWN ═══ */
+        .sim-position {
+            margin-top: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+        .sim-position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .sim-position-rebal {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.03);
+        }
+        .sim-position-bar {
+            display: flex;
+            height: 28px;
+            border-radius: 6px;
+            overflow: hidden;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+        .sim-position-eth {
+            background: linear-gradient(135deg, hsl(210, 80%, 50%), hsl(220, 70%, 55%));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.3s ease;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .sim-position-usdc {
+            background: linear-gradient(135deg, hsl(155, 60%, 40%), hsl(165, 50%, 45%));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.3s ease;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .sim-position-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            font-family: var(--mono);
+        }
+
         /* ═══ POOL INFO BANNER ═══ */
         .sim-pool-info {
             margin-top: 14px;
@@ -702,7 +766,7 @@
             .features-grid { grid-template-columns: 1fr; }
             .cl101-grid { grid-template-columns: 1fr; }
             .stats-inner { grid-template-columns: repeat(2, 1fr); }
-            .sim-stats { grid-template-columns: repeat(2, 1fr); }
+            .sim-stats { grid-template-columns: repeat(3, 1fr) !important; }
             .powered-grid { grid-template-columns: 1fr; }
             .nav-links { gap: 20px; }
             .nav-links a { font-size: 0.8rem; }
@@ -956,22 +1020,38 @@
                     </div>
 
                     <!-- Stats Row -->
-                    <div class="sim-stats">
-                        <div class="sim-stat">
-                            <div class="sim-stat-label">You Earned</div>
-                            <div class="sim-stat-value" id="sim-fees" style="color:var(--green)">$0.00</div>
-                        </div>
+                    <div class="sim-stats" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="sim-stat">
                             <div class="sim-stat-label">Your $1,000 Is Now</div>
                             <div class="sim-stat-value" id="sim-vault">$1,000.00</div>
                         </div>
                         <div class="sim-stat">
-                            <div class="sim-stat-label">vs Just Holding Cash</div>
-                            <div class="sim-stat-value" id="sim-vs" style="color:var(--green)">+0.00%</div>
+                            <div class="sim-stat-label">Fees Earned</div>
+                            <div class="sim-stat-value" id="sim-fees" style="color:var(--green)">$0.00</div>
                         </div>
                         <div class="sim-stat">
-                            <div class="sim-stat-label">Times Vault Adjusted</div>
-                            <div class="sim-stat-value" id="sim-rebal">0</div>
+                            <div class="sim-stat-label">Price Impact (IL)</div>
+                            <div class="sim-stat-value" id="sim-il" style="color:var(--text-secondary)">$0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Position Breakdown -->
+                    <div class="sim-position" id="sim-position">
+                        <div class="sim-position-header">
+                            <span>Your position right now</span>
+                            <span class="sim-position-rebal" id="sim-rebal-count">0 rebalances</span>
+                        </div>
+                        <div class="sim-position-bar">
+                            <div class="sim-position-eth" id="sim-bar-eth" style="width:50%;">
+                                <span id="sim-eth-label">50% ETH</span>
+                            </div>
+                            <div class="sim-position-usdc" id="sim-bar-usdc" style="width:50%;">
+                                <span id="sim-usdc-label">50% USDC</span>
+                            </div>
+                        </div>
+                        <div class="sim-position-detail">
+                            <span id="sim-eth-val">~$500 in ETH</span>
+                            <span id="sim-usdc-val">~$500 in USDC</span>
                         </div>
                     </div>
 
@@ -990,7 +1070,7 @@
                             <div class="sim-pool-stat">Range: <span>&plusmn;5%</span></div>
                             <div class="sim-pool-stat">Deposit: <span>$1,000</span></div>
                         </div>
-                        <div class="sim-pool-note">Fee-only simulation &mdash; does not include AERO emission rewards. Actual volume and TVL fluctuate daily. Not financial advice.</div>
+                        <div class="sim-pool-note">Includes impermanent loss modeling. Does not include AERO emission rewards. Actual volume and TVL fluctuate daily. Not financial advice.</div>
                     </div>
                 </div>
 
@@ -1042,7 +1122,7 @@
                 <div class="story-card">
                     <div class="story-card-num">2</div>
                     <h3>The vault goes to work</h3>
-                    <p>Your USDC gets split into USDC + ETH and placed as liquidity on Aerodrome&rsquo;s ETH/USDC trading pool. But not across all prices &mdash; concentrated into a tight band around the current ETH price (say $2,375 to $2,625) for maximum fee capture.</p>
+                    <p>Your USDC gets split into USDC + ETH and placed as liquidity on Aerodrome&rsquo;s ETH/USDC trading pool. <strong>This means you now have ETH exposure</strong> &mdash; roughly half your deposit is converted to ETH. The position is concentrated into a tight band around the current price (say $2,375 to $2,625) for maximum fee capture.</p>
                     <button class="story-code-toggle" onclick="this.closest('.story-card').classList.toggle('code-open')">Show smart contract code</button>
                     <div class="story-card-code">
                         <pre><span class="cm">/// @notice Deploy idle USDC into the Aerodrome LP position.</span>
@@ -1078,7 +1158,7 @@
                 <div class="story-card">
                     <div class="story-card-num">4</div>
                     <h3>Price drifts? Auto-rebalance</h3>
-                    <p>If ETH&rsquo;s price moves outside your range, you stop earning. The vault detects this, pulls everything out, re-centers the range around the new price, and starts earning again. This costs a small amount (0.3&ndash;0.8%) but keeps you active instead of sitting idle.</p>
+                    <p>If ETH&rsquo;s price moves outside your range, you stop earning. The vault detects this, pulls everything out, re-centers the range around the new price, and starts earning again. This costs a small swap fee (0.3&ndash;0.6%). Note: as price moves, your position shifts between ETH and USDC &mdash; this is called <strong>impermanent loss</strong>. Fees earned aim to outweigh this cost.</p>
                     <button class="story-code-toggle" onclick="this.closest('.story-card').classList.toggle('code-open')">Show smart contract code</button>
                     <div class="story-card-code">
                         <pre><span class="cm">/// @notice Re-center LP position on current tick.</span>
@@ -1476,6 +1556,7 @@
             fees: [],
             vaultValue: [],
             rebalanceSteps: [],
+            ethPct: [],
             events: [],
             scenario: 'choppy',
             currentStep: 0,
@@ -1512,6 +1593,30 @@
             return prices;
         }
 
+        // --- Concentrated LP position math ---
+        // Returns the USDC value of a CL position as a ratio vs its value at deployPrice.
+        // P = current price, P0 = deploy price, pa/pb = range bounds.
+        function clPositionValue(P, P0, pa, pb) {
+            var sqP = Math.sqrt(P), sqP0 = Math.sqrt(P0);
+            var sqA = Math.sqrt(pa), sqB = Math.sqrt(pb);
+            function posVal(p, sq) {
+                if (p <= pa) return p * (1/sqA - 1/sqB);         // all ETH
+                if (p >= pb) return sqB - sqA;                    // all USDC
+                return p * (1/sq - 1/sqB) + (sq - sqA);          // mixed
+            }
+            return posVal(P, sqP) / posVal(P0, sqP0);
+        }
+
+        // Returns what % of position value is in ETH vs USDC (0 = all USDC, 1 = all ETH)
+        function clEthFraction(P, pa, pb) {
+            if (P <= pa) return 1;
+            if (P >= pb) return 0;
+            var sqP = Math.sqrt(P), sqA = Math.sqrt(pa), sqB = Math.sqrt(pb);
+            var ethVal = P * (1/sqP - 1/sqB);
+            var usdcVal = sqP - sqA;
+            return ethVal / (ethVal + usdcVal);
+        }
+
         // --- Run Full Simulation ---
         function runSimulation(scenarioKey) {
             var prices = generatePrices(scenarioKey);
@@ -1523,11 +1628,13 @@
             var fees = [];
             var vaultValue = [];
             var rebalanceSteps = [];
+            var ethPct = [];    // ETH fraction of position at each step
 
             var rL = prices[0] * (1 - RANGE_WIDTH / 2);
             var rU = prices[0] * (1 + RANGE_WIDTH / 2);
             var totalFees = 0;
-            var vv = INITIAL_DEPOSIT;
+            var deployed = INITIAL_DEPOSIT;  // Capital in the LP (gets reset on rebalance)
+            var deployPrice = prices[0];
 
             for (var i = 0; i <= TOTAL_STEPS; i++) {
                 var price = prices[i];
@@ -1535,24 +1642,32 @@
 
                 // Realistic fee model: volume varies with price action
                 var priceMove = i > 0 ? Math.abs(prices[i] - prices[i - 1]) / prices[i - 1] : 0;
-                var volMultiplier = 0.5 + 0.5 * rng() + priceMove * 15; // random + volatility boost
+                var volMultiplier = 0.5 + 0.5 * rng() + priceMove * 15;
                 var stepVolume = (POOL_AVG_DAILY_VOL / STEPS_PER_DAY) * volMultiplier;
 
+                // Fees: compound into deployed capital (as real vaults do)
                 if (ir) {
                     var stepPoolFees = stepVolume * POOL_FEE_RATE;
-                    var feeEarned = stepPoolFees * (vv / POOL_TVL);
+                    var feeEarned = stepPoolFees * (deployed / POOL_TVL);
                     totalFees += feeEarned;
-                    vv += feeEarned;
+                    deployed += feeEarned;
                 }
 
-                // Check rebalance (with cooldown — real vaults don't rebalance every hour)
+                // LP position value with IL applied
+                var ilFactor = clPositionValue(price, deployPrice, rL, rU);
+                var vv = deployed * ilFactor;
+
+                // Check rebalance (with cooldown)
                 if (i > 0) {
                     var lastRebal = rebalanceSteps.length > 0 ? rebalanceSteps[rebalanceSteps.length - 1] : -REBALANCE_COOLDOWN;
                     var cooldownOk = (i - lastRebal) >= REBALANCE_COOLDOWN;
                     var outOfBuffer = price < rL * (1 - REBALANCE_BUFFER) || price > rU * (1 + REBALANCE_BUFFER);
                     if (outOfBuffer && cooldownOk) {
-                        var ilCost = 0.003 + rng() * 0.003;
-                        vv *= (1 - ilCost);
+                        var swapCost = 0.003 + rng() * 0.003;
+                        vv *= (1 - swapCost);
+                        // Redeploy everything at new price
+                        deployed = vv;
+                        deployPrice = price;
                         rL = price * (1 - RANGE_WIDTH / 2);
                         rU = price * (1 + RANGE_WIDTH / 2);
                         rebalanceSteps.push(i);
@@ -1563,6 +1678,7 @@
                 rangeUpper.push(rU);
                 inRange.push(ir);
                 fees.push(totalFees);
+                ethPct.push(clEthFraction(price, rL, rU));
                 vaultValue.push(vv);
             }
 
@@ -1646,6 +1762,7 @@
             sim.fees = fees;
             sim.vaultValue = vaultValue;
             sim.rebalanceSteps = rebalanceSteps;
+            sim.ethPct = ethPct;
             sim.events = events;
             sim.scenario = scenarioKey;
             sim.lastRenderedEventCount = 0;
@@ -1930,19 +2047,52 @@
         // --- Update Stats ---
         function updateStats() {
             var step = Math.min(sim.currentStep, TOTAL_STEPS);
-            document.getElementById('sim-fees').textContent = '$' + sim.fees[step].toFixed(2);
-            document.getElementById('sim-vault').textContent = '$' + sim.vaultValue[step].toFixed(2);
-            var pct = ((sim.vaultValue[step] - INITIAL_DEPOSIT) / INITIAL_DEPOSIT * 100);
-            var vsEl = document.getElementById('sim-vs');
-            vsEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-            vsEl.style.color = pct >= 0 ? 'var(--green)' : '#ff6450';
+            var vv = sim.vaultValue[step];
+            var feesEarned = sim.fees[step];
+            var ilAmount = vv - INITIAL_DEPOSIT - feesEarned; // IL = total change minus fees
 
-            // Count rebalances up to current step
+            // Main stats
+            var vaultEl = document.getElementById('sim-vault');
+            vaultEl.textContent = '$' + vv.toFixed(2);
+            vaultEl.style.color = vv >= INITIAL_DEPOSIT ? 'var(--green)' : '#ff6450';
+
+            document.getElementById('sim-fees').textContent = '+$' + feesEarned.toFixed(2);
+
+            var ilEl = document.getElementById('sim-il');
+            ilEl.textContent = (ilAmount >= 0 ? '+' : '') + '$' + Math.abs(ilAmount).toFixed(2);
+            if (ilAmount < -0.5) {
+                ilEl.textContent = '-$' + Math.abs(ilAmount).toFixed(2);
+                ilEl.style.color = '#ff6450';
+            } else if (ilAmount > 0.5) {
+                ilEl.textContent = '+$' + ilAmount.toFixed(2);
+                ilEl.style.color = 'var(--green)';
+            } else {
+                ilEl.textContent = '$0.00';
+                ilEl.style.color = 'var(--text-secondary)';
+            }
+
+            // Rebalance count
             var rebalCount = 0;
             for (var r = 0; r < sim.rebalanceSteps.length; r++) {
                 if (sim.rebalanceSteps[r] <= step) rebalCount++;
             }
-            document.getElementById('sim-rebal').textContent = rebalCount;
+            document.getElementById('sim-rebal-count').textContent = rebalCount + ' rebalance' + (rebalCount !== 1 ? 's' : '');
+
+            // Position breakdown bar (ETH vs USDC)
+            var ethFrac = sim.ethPct[step];
+            var usdcFrac = 1 - ethFrac;
+            var ethPctRound = Math.round(ethFrac * 100);
+            var usdcPctRound = 100 - ethPctRound;
+
+            document.getElementById('sim-bar-eth').style.width = Math.max(ethPctRound, 2) + '%';
+            document.getElementById('sim-bar-usdc').style.width = Math.max(usdcPctRound, 2) + '%';
+            document.getElementById('sim-eth-label').textContent = ethPctRound + '% ETH';
+            document.getElementById('sim-usdc-label').textContent = usdcPctRound + '% USDC';
+
+            var ethVal = vv * ethFrac;
+            var usdcVal = vv * usdcFrac;
+            document.getElementById('sim-eth-val').textContent = '~$' + Math.round(ethVal) + ' in ETH';
+            document.getElementById('sim-usdc-val').textContent = '~$' + Math.round(usdcVal) + ' in USDC';
 
             // Day display
             var day = Math.floor(step / STEPS_PER_DAY);
