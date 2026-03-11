@@ -3335,6 +3335,9 @@
             </div>
           </div>
 
+          <!-- Table tabs (shown when multiple tables exist) -->
+          <div id="tableTabsBar" style="display:none;margin-bottom:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap"></div>
+
           <div class="poker-table" id="pokerTable" style="position:relative">
             <div class="hand-recap" id="handRecap">
               <button class="hand-recap-close" onclick="closeRecap()">← Back to LIVE</button>
@@ -4433,7 +4436,12 @@ function applyServerState(data) {
 
   gameState.lobbyAgents = data.lobbyAgents || [];
   gameState.rooms = data.rooms || {};
+  gameState.tables = data.tables || [];
+  gameState.activeTableId = data.activeTableId || null;
   if (data.activeRoom) activeRoom = data.activeRoom;
+
+  // Update table tabs
+  renderTableTabs();
 
   // Debounced refresh of agent list (don't spam on every gameState)
   if (!window._myAgentsTimer) {
@@ -4727,6 +4735,31 @@ function updateRoomTabs() {
   document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
   const tab = document.getElementById('roomTab-' + activeRoom);
   if (tab) tab.classList.add('active');
+}
+
+function renderTableTabs() {
+  const bar = document.getElementById('tableTabsBar');
+  if (!bar) return;
+  const tables = gameState.tables || [];
+  if (tables.length <= 1) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  bar.innerHTML = tables.map((t, i) => {
+    const isActive = t.tableId === gameState.activeTableId;
+    const hasMine = t.hasMyAgent;
+    const bg = isActive ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.05)';
+    const border = isActive ? 'var(--accent-primary)' : hasMine ? 'rgba(34,197,94,0.4)' : 'var(--border)';
+    const color = isActive ? 'var(--accent-primary)' : 'var(--text-secondary)';
+    const dot = hasMine ? '<span style="color:var(--accent-green);font-size:8px">●</span> ' : '';
+    return `<button onclick="switchTable('${t.tableId}')" style="padding:6px 14px;background:${bg};border:1px solid ${border};border-radius:8px;color:${color};font-size:12px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.2s">${dot}Table ${i + 1} <span style="font-size:10px;opacity:0.7">(${t.playerCount})</span></button>`;
+  }).join('');
+}
+
+function switchTable(tableId) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'subscribeRoom', roomId: activeRoom, tableId }));
 }
 
 function renderFullState() {

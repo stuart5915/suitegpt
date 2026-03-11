@@ -55,7 +55,7 @@ function broadcastStateToAll() {
   for (const [ws, client] of clients) {
     if (ws.readyState === 1) {
       try {
-        const state = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
+        const state = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom, client.activeTableId);
         ws.send(JSON.stringify({ type: 'gameState', data: state }));
       } catch (e) { /* ignore */ }
     }
@@ -161,7 +161,8 @@ wss.on('connection', (ws) => {
           const roomId = msg.roomId || 'micro';
           if (['sandbox', 'micro', 'mid', 'high'].includes(roomId)) {
             client.activeRoom = roomId;
-            const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), roomId);
+            if (msg.tableId) client.activeTableId = msg.tableId;
+            const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), roomId, client.activeTableId);
             ws.send(JSON.stringify({ type: 'gameState', data: s }));
           }
           break;
@@ -229,6 +230,7 @@ wss.on('connection', (ws) => {
           ws.send(JSON.stringify({ type: 'joinTableResult', data: result }));
           if (result.success) {
             client.activeRoom = roomId;
+            client.activeTableId = result.tableId; // track which table to show
             if (!isSandbox) sendBalance(ws, addr);
           }
           broadcastStateToAll();

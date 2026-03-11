@@ -1068,15 +1068,28 @@ class RoomManager {
 
   // === State ===
 
-  getStateForClient(sessionId, walletAddress, activeRoom = 'micro') {
+  getStateForClient(sessionId, walletAddress, activeRoom = 'micro', preferredTableId = null) {
     const room = this.rooms[activeRoom];
     if (!room || room.tables.length === 0) {
       return { agents: [], rooms: this.getRoomsSummary(), lobbyAgents: [], activeRoom };
     }
 
-    // Find table: prefer one with this wallet's agent, else first table
+    // Find table: prefer client's requested table (if it has their agent), else first with their agent
     let activeTable = room.tables[0];
-    if (walletAddress) {
+    if (preferredTableId && walletAddress) {
+      const preferred = room.tables.find(t => t.tableId === preferredTableId);
+      if (preferred && preferred.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
+        activeTable = preferred;
+      } else {
+        // Preferred table no longer has our agent (rebalanced?) — find where they are
+        for (const table of room.tables) {
+          if (table.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
+            activeTable = table;
+            break;
+          }
+        }
+      }
+    } else if (walletAddress) {
       for (const table of room.tables) {
         if (table.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
           activeTable = table;
@@ -1111,6 +1124,13 @@ class RoomManager {
     // Add room/table info
     state.activeRoom = activeRoom;
     state.activeTableId = activeTable.tableId;
+    state.tableCount = room.tables.length;
+    state.tables = room.tables.map(t => ({
+      tableId: t.tableId,
+      playerCount: t.agents.filter(a => a.isCustom).length,
+      phase: t.phase,
+      hasMyAgent: walletAddress ? t.agents.some(a => a.isCustom && a.walletAddress === walletAddress) : false
+    }));
     state.rooms = this.getRoomsSummary();
 
     // Add lobby agents for this wallet
