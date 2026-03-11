@@ -607,3 +607,103 @@
         return result;
     };
 })();
+
+// ══════════════════════════════════════
+// CARDANO WALLET (CIP-30 — Nami, Eternl, Lace, Flint, Yoroi)
+// ══════════════════════════════════════
+(function() {
+    var CARDANO_WALLETS = ['nami', 'eternl', 'lace', 'flint', 'yoroi', 'typhon', 'begin'];
+
+    // Store enabled CIP-30 API handle
+    window._cardanoWalletApi = null;
+
+    window.connectCardanoWallet = async function() {
+        if (!window.cardano) {
+            if (confirm('No Cardano wallet detected. Install Nami or Eternl?')) {
+                window.open('https://namiwallet.io/', '_blank');
+            }
+            return null;
+        }
+
+        // Find available wallets
+        var available = CARDANO_WALLETS.filter(function(name) {
+            return window.cardano && window.cardano[name];
+        });
+
+        if (available.length === 0) {
+            if (confirm('No Cardano wallet detected. Install Nami or Eternl?')) {
+                window.open('https://namiwallet.io/', '_blank');
+            }
+            return null;
+        }
+
+        // Use the first available wallet, prefer Nami > Eternl > Lace > others
+        var walletName = available[0];
+        console.log('[Cardano] Connecting to', walletName);
+
+        try {
+            var api = await window.cardano[walletName].enable();
+            window._cardanoWalletApi = api;
+
+            // Get used addresses (returns array of CBOR-encoded addresses)
+            var addresses = await api.getUsedAddresses();
+            if (!addresses || addresses.length === 0) {
+                // Fallback to unused addresses
+                addresses = await api.getUnusedAddresses();
+            }
+            if (!addresses || addresses.length === 0) {
+                throw new Error('No addresses found in Cardano wallet');
+            }
+
+            // Convert hex address to bech32 for display
+            // CIP-30 returns hex-encoded addresses; we'll use hex for the API
+            var hexAddr = addresses[0];
+            console.log('[Cardano] Connected, address (hex):', hexAddr);
+
+            return hexAddr;
+        } catch (e) {
+            if (e.code === -3 || (e.message && e.message.includes('refused'))) {
+                // User declined
+                return null;
+            }
+            console.error('[Cardano] Connection failed:', e);
+            alert('Cardano wallet connection failed: ' + (e.message || e));
+            return null;
+        }
+    };
+
+    // Sign and submit a Cardano transaction (CBOR hex string)
+    window.signAndSubmitCardanoTx = async function(unsignedTxCbor) {
+        var api = window._cardanoWalletApi;
+        if (!api) throw new Error('Cardano wallet not connected');
+
+        // Sign the transaction (partial = true allows the server to add its own signatures)
+        var signedTxCbor = await api.signTx(unsignedTxCbor, true);
+
+        // Submit the signed transaction
+        var txHash;
+        try {
+            txHash = await api.submitTx(signedTxCbor);
+        } catch (submitErr) {
+            console.error('[Cardano] CIP-30 submitTx failed, trying server fallback:', submitErr);
+            // Fallback: submit via server-side Blockfrost
+            var fallbackResp = await fetch('/api/inclawbate/inclawbator', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + (localStorage.getItem('inclawbate_token') || '')
+                },
+                body: JSON.stringify({
+                    action: 'cardano-submit-tx',
+                    signed_tx: signedTxCbor
+                })
+            });
+            var fallbackData = await fallbackResp.json();
+            if (fallbackData.error) throw new Error('Submit failed: ' + fallbackData.error);
+            txHash = fallbackData.txHash;
+        }
+
+        console.log('[Cardano] Transaction submitted:', txHash);
+        return { txHash: txHash };
+    };
+})();

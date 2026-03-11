@@ -215,7 +215,10 @@ function renderTable() {
             : '<div class="tok-logo-placeholder" style="background:' + logoColor + '">' + name[0].toUpperCase() + '</div>';
 
         var isSolana = p.chain === 'solana';
-        var chainBadge = isSolana
+        var isCardano = p.chain === 'cardano';
+        var chainBadge = isCardano
+            ? '<span class="lp-badge-chain lp-chain-cardano">Cardano</span>'
+            : isSolana
             ? '<span class="lp-badge-chain lp-chain-solana">Solana</span>'
             : '<span class="lp-badge-chain lp-chain-base">Base</span>';
         var badges = chainBadge + '<span class="' + tier.cls + '">' + tier.label + '</span>';
@@ -225,7 +228,11 @@ function renderTable() {
         var actions = '';
         var CLAWS_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
         if (p.token_address) {
-            if (isSolana) {
+            if (isCardano) {
+                var cardanoPolicyId = p.cardano_policy_id || p.token_address.slice(0, 56);
+                var cardanoAssetName = p.cardano_asset_name || p.token_address.slice(56);
+                actions += '<a href="https://app.minswap.org/swap?currencySymbolA=&tokenNameA=&currencySymbolB=' + cardanoPolicyId + '&tokenNameB=' + cardanoAssetName + '" target="_blank" rel="noopener" class="btn-uniswap" style="background:linear-gradient(135deg,#1a44b7,#4a84ff)">Minswap</a>';
+            } else if (isSolana) {
                 actions += '<a href="https://jup.ag/swap/SOL-' + p.token_address + '" target="_blank" rel="noopener" class="btn-uniswap" style="background:linear-gradient(135deg,#00d18c,#08b4c9)">Jupiter</a>';
             } else {
                 if (p.token_address.toLowerCase() !== CLAWS_ADDR.toLowerCase()) {

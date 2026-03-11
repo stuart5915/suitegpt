@@ -223,8 +223,9 @@ var state = {
     clawsBalance: 0,
     burnTxHash: null,
     // Chain
-    chain: 'base',        // 'base' | 'solana'
+    chain: 'base',        // 'base' | 'solana' | 'cardano'
     solanaWallet: null,    // Solana pubkey string
+    cardanoWallet: null,   // Cardano bech32 address string
     // Disperse
     disperseQuote: null,
     disperseRunning: false,
@@ -750,14 +751,14 @@ function showPoolTokenForm(projects, loading, noTokens, form, select) {
     select.innerHTML = '<option value="">Choose a token...</option>';
     projects.forEach(function(p) {
         var opt = document.createElement('option');
-        var chain = (p.chain === 'solana') ? 'solana' : 'base';
-        var chainLabel = chain === 'solana' ? ' [Solana]' : ' [Base]';
+        var chain = (p.chain === 'solana') ? 'solana' : (p.chain === 'cardano') ? 'cardano' : 'base';
+        var chainLabel = chain === 'solana' ? ' [Solana]' : chain === 'cardano' ? ' [Cardano]' : ' [Base]';
         opt.value = p.token_address || p.solana_token_mint || '';
         opt.textContent = (p.token_name || 'Unknown') + ' ($' + (p.token_symbol || '???') + ')' + chainLabel;
         opt.dataset.name = p.token_name || '';
         opt.dataset.symbol = p.token_symbol || '';
         opt.dataset.chain = chain;
-        if (chain === 'solana') {
+        if (chain === 'solana' || chain === 'cardano') {
             opt.disabled = true;
             opt.textContent += ' — Coming Soon';
         }
@@ -875,6 +876,8 @@ async function handleLaunchDeploy() {
 
     // Dispatch to Solana flow if chain is solana
     if (state.chain === 'solana') return handleSolanaLaunch();
+    // Dispatch to Cardano flow if chain is cardano
+    if (state.chain === 'cardano') return handleCardanoLaunch();
 
     var name = document.getElementById('tokenName').value.trim();
     var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
@@ -1239,6 +1242,7 @@ function resetForm() {
     state.burnTxHash = null;
     state.chain = 'base';
     state.solanaWallet = null;
+    state.cardanoWallet = null;
 
     // Clear all form inputs
     ['tokenName', 'tokenSymbol', 'launchDesc', 'launchWebsite',
@@ -1299,17 +1303,26 @@ function selectChain(chain) {
     var devBuyHint = document.getElementById('devBuyHint');
     var feeBase = document.getElementById('feeStructureBase');
     var feeSolana = document.getElementById('feeStructureSolana');
+    var feeCardano = document.getElementById('feeStructureCardano');
 
     if (chain === 'solana') {
         if (devBuyUnit) devBuyUnit.textContent = '(SOL)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with SOL. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'none';
         if (feeSolana) feeSolana.style.display = 'inline';
+        if (feeCardano) feeCardano.style.display = 'none';
+    } else if (chain === 'cardano') {
+        if (devBuyUnit) devBuyUnit.textContent = '(ADA)';
+        if (devBuyHint) devBuyHint.textContent = 'Add initial liquidity with ADA. Minimum 2 ADA. Leave blank to skip.';
+        if (feeBase) feeBase.style.display = 'none';
+        if (feeSolana) feeSolana.style.display = 'none';
+        if (feeCardano) feeCardano.style.display = 'inline';
     } else {
         if (devBuyUnit) devBuyUnit.textContent = '(ETH)';
         if (devBuyHint) devBuyHint.textContent = 'Buy your own token at launch with ETH. Leave blank to skip.';
         if (feeBase) feeBase.style.display = 'inline';
         if (feeSolana) feeSolana.style.display = 'none';
+        if (feeCardano) feeCardano.style.display = 'none';
     }
 }
 window.selectChain = selectChain;
@@ -1494,6 +1507,169 @@ async function handleSolanaLaunch() {
     }
 }
 
+// ══════════════════════════════════════
+// CARDANO LAUNCH FLOW (via Mesh SDK + Minswap)
+// ══════════════════════════════════════
+
+async function handleCardanoLaunch() {
+    if (state.deploying) return;
+
+    var name = document.getElementById('tokenName').value.trim();
+    var symbol = document.getElementById('tokenSymbol').value.trim().toUpperCase();
+    var desc = document.getElementById('launchDesc').value.trim();
+    var website = document.getElementById('launchWebsite').value.trim();
+
+    if (!name) return showToast('Token name is required', 'error');
+    if (!symbol || symbol.length > 10) return showToast('Symbol required (max 10 chars)', 'error');
+
+    var btn = document.getElementById('deployLaunchBtn');
+
+    try {
+        // Step 1: Connect Cardano wallet (CIP-30)
+        setBtnState(btn, 'Connecting Cardano wallet...', true);
+        state.deploying = true;
+        state.burnTxHash = null;
+
+        var cardanoAddr = await window.connectCardanoWallet();
+        if (!cardanoAddr) {
+            state.deploying = false;
+            setBtnState(btn, 'Deploy Token', false);
+            return;
+        }
+        state.cardanoWallet = cardanoAddr;
+
+        // Step 2: Ensure EVM wallet connected (for JWT auth)
+        if (!state.wallet) {
+            setBtnState(btn, 'Connect EVM wallet for auth...', true);
+            await connectWallet();
+            if (!state.wallet) {
+                state.deploying = false;
+                setBtnState(btn, 'Deploy Token', false);
+                return;
+            }
+        }
+
+        // Ensure JWT
+        if (!localStorage.getItem('inclawbate_token') && state.wallet) {
+            try {
+                var authResp = await fetch('/api/inclawbate/wallet-connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: state.wallet })
+                });
+                var authData = await authResp.json();
+                if (authResp.ok && authData.success && authData.token) {
+                    localStorage.setItem('inclawbate_token', authData.token);
+                    if (authData.profile) localStorage.setItem('inclawbate_profile', JSON.stringify(authData.profile));
+                }
+            } catch (e) { /* will fail gracefully */ }
+        }
+
+        // Step 3: Mint token on Cardano (server builds the tx)
+        setBtnState(btn, 'Creating token on Cardano...', true);
+        var imageUrl = (document.getElementById('launchImageUrl') || {}).value || '';
+        var mintResult = await apiPost({
+            action: 'cardano-mint-token',
+            name: name,
+            symbol: symbol,
+            description: desc,
+            image_url: imageUrl || 'https://www.inclawbate.com/inclawbate/assets/inclawbate-logo.png',
+            creator_cardano_address: cardanoAddr
+        });
+        if (mintResult.error) throw new Error('Mint failed: ' + mintResult.error);
+
+        var unsignedMintTx = mintResult.unsignedTx;
+        var policyId = mintResult.policyId;
+        var assetName = mintResult.assetName;
+        var tokenUnit = mintResult.unit || (policyId + assetName);
+        if (!unsignedMintTx) throw new Error('No unsigned transaction returned from server');
+
+        // Step 4: Sign mint tx in Cardano wallet
+        setBtnState(btn, 'Sign in wallet to mint...', true);
+        var mintTxResult = await window.signAndSubmitCardanoTx(unsignedMintTx);
+        var mintTxHash = mintTxResult.txHash;
+
+        // Step 5: Create Minswap liquidity pool (if dev buy > 0)
+        var devBuyInput = document.getElementById('devBuyAmount');
+        var devBuyAda = devBuyInput ? parseFloat(devBuyInput.value) || 0 : 0;
+
+        if (devBuyAda >= 2) {
+            setBtnState(btn, 'Creating Minswap pool...', true);
+            var poolResult = await apiPost({
+                action: 'cardano-create-pool-tx',
+                policy_id: policyId,
+                asset_name: assetName,
+                creator_cardano_address: cardanoAddr,
+                ada_amount: devBuyAda,
+                mint_tx_hash: mintTxHash
+            });
+            if (poolResult.error) {
+                showToast('Token minted but pool creation failed: ' + poolResult.error + '. You can add liquidity manually on Minswap.', 'error', 10000);
+            } else if (poolResult.unsignedTx) {
+                // Step 6: Sign pool tx
+                setBtnState(btn, 'Sign pool creation...', true);
+                var poolTxResult = await window.signAndSubmitCardanoTx(poolResult.unsignedTx);
+                // Use pool tx hash as the deploy hash if successful
+                if (poolTxResult.txHash) mintTxHash = poolTxResult.txHash;
+            }
+        } else if (devBuyAda > 0 && devBuyAda < 2) {
+            showToast('Minimum 2 ADA for liquidity pool. Skipping pool creation.', 'error');
+        }
+
+        state.deployedToken = tokenUnit;
+        state.deployTxHash = mintTxHash;
+
+        // Step 7: Register with backend
+        setBtnState(btn, 'Registering project...', true);
+        var xHandle = (document.getElementById('launchXHandle') || {}).value || '';
+        var telegram = (document.getElementById('launchTelegram') || {}).value || '';
+        var regResult = await apiPost({
+            action: 'register',
+            token_address: tokenUnit,
+            token_name: name,
+            token_symbol: symbol,
+            deploy_tx_hash: mintTxHash,
+            description: desc,
+            website_url: website,
+            logo_url: imageUrl || null,
+            x_handle: xHandle || null,
+            telegram_url: telegram || null,
+            fee_split_bps: 2000,
+            tier: 'permissionless',
+            creator_wallet: state.wallet,
+            allocation_pct: state.allocationPct,
+            burn_amount: 0,
+            chain: 'cardano',
+            cardano_wallet: cardanoAddr,
+            cardano_policy_id: policyId,
+            cardano_asset_name: assetName
+        });
+
+        if (regResult.error) {
+            showToast('Token launched on Cardano but registration failed: ' + regResult.error, 'error', 10000);
+        } else {
+            state.project = regResult.project;
+            showToast('Token launched on Cardano!', 'success');
+        }
+
+        state.step = 4;
+        state.deploying = false;
+        closeToolDrawer();
+        updateUI();
+        var successEl = document.getElementById('successStep');
+        if (successEl) successEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    } catch (e) {
+        state.deploying = false;
+        setBtnState(btn, 'Deploy Token', false);
+        if (e.code === 4001 || (e.message && e.message.includes('rejected')) || (e.message && e.message.includes('declined'))) {
+            showToast('Transaction rejected by user', 'error');
+        } else {
+            showToast('Cardano launch failed: ' + (e.message || 'Unknown error'), 'error');
+        }
+    }
+}
+
 // ── Tier Selection for Incubation ──
 var selectedIncTier = 'incubation';
 
@@ -1548,11 +1724,15 @@ function updateUI() {
     if (state.step === 4 && successStep) {
         successStep.style.display = 'block';
         var isSolana = state.chain === 'solana';
+        var isCardano = state.chain === 'cardano';
         var addrEl = successStep.querySelector('.deployed-address');
         if (addrEl && state.deployedToken) addrEl.textContent = state.deployedToken;
         var txLink = successStep.querySelector('.deploy-tx-link');
         if (txLink && state.deployTxHash) {
-            if (isSolana) {
+            if (isCardano) {
+                txLink.href = 'https://cardanoscan.io/transaction/' + state.deployTxHash;
+                txLink.textContent = 'View on CardanoScan';
+            } else if (isSolana) {
                 txLink.href = 'https://solscan.io/tx/' + state.deployTxHash;
                 txLink.textContent = 'View on Solscan';
             } else {
@@ -1561,11 +1741,15 @@ function updateUI() {
             }
         }
         var successSubtitle = document.getElementById('successSubtitle');
-        if (successSubtitle) successSubtitle.textContent = isSolana ? 'Your token is live on Solana. Here are the details:' : 'Your token is live on Base. Here are the details:';
+        if (successSubtitle) {
+            if (isCardano) successSubtitle.textContent = 'Your token is live on Cardano. Here are the details:';
+            else if (isSolana) successSubtitle.textContent = 'Your token is live on Solana. Here are the details:';
+            else successSubtitle.textContent = 'Your token is live on Base. Here are the details:';
+        }
         var projectIdEl = successStep.querySelector('.project-id');
         if (projectIdEl && state.project) projectIdEl.textContent = state.project.id;
         var stakingNote = document.getElementById('stakingSuccessNote');
-        if (stakingNote) stakingNote.style.display = isSolana ? 'none' : '';
+        if (stakingNote) stakingNote.style.display = (isSolana || isCardano) ? 'none' : '';
         var agentNote = document.getElementById('agentSuccessNote');
         if (agentNote && state.project && state.project.agent_enabled) agentNote.style.display = 'block';
         // Burn/allocation info

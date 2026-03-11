@@ -753,7 +753,7 @@
             <span class="tool-row-arrow">&#8250;</span>
         </div>
 
-        <div class="tool-row" data-tool="ai-agent" id="tool-ai-agent">
+        <div class="tool-row" data-action="ai-agent" id="tool-ai-agent">
             <span class="launch-step-num">06</span>
             <span class="tool-row-icon">&#129302;</span>
             <div class="tool-row-body">
@@ -943,6 +943,62 @@
     </div>
 </div>
 
+<!-- AI Agent Modal -->
+<div class="native-modal-overlay" id="agentOverlay">
+    <div class="native-modal">
+        <button class="modal-close" onclick="closeAgentModal()">&times;</button>
+        <h3>AI Agent</h3>
+        <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:var(--space-md)">Your agent posts to <a href="https://x.com/inclawbator" target="_blank" style="color:var(--lobster-400)">@inclawbator</a> on behalf of your project. Fund it with CLAWS to keep it running.</p>
+
+        <div id="agentNoAuth" style="display:none">
+            <p style="color:var(--text-dim);font-size:0.85rem">Sign in to set up an AI agent.</p>
+        </div>
+        <div id="agentNoProjects" style="display:none">
+            <p style="color:var(--text-dim);font-size:0.85rem">No projects found. <a href="/inclawbator" style="color:var(--lobster-400)">Register a project first</a>.</p>
+        </div>
+
+        <!-- Agent status (shown when agent exists) -->
+        <div id="agentStatus" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Credits remaining</span>
+                <span id="agentCredits" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Status</span>
+                <span id="agentStatusBadge" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px"></span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Total posts</span>
+                <span id="agentTotalPosts" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
+            </div>
+        </div>
+
+        <!-- Agent setup form -->
+        <form id="agentForm" style="display:none" onsubmit="submitAgent(event)">
+            <label for="agentProject">Project</label>
+            <select id="agentProject" required onchange="onAgentProjectChange()"></select>
+
+            <label for="agentPersona">Personality</label>
+            <input type="text" id="agentPersona" placeholder="e.g. Witty degen, hype beast, calm analyst..." maxlength="200">
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">How should your agent talk? Leave blank for default.</p>
+
+            <label for="agentFrequency">Posts per day</label>
+            <select id="agentFrequency">
+                <option value="2">2 / day</option>
+                <option value="4" selected>4 / day</option>
+                <option value="6">6 / day</option>
+                <option value="8">8 / day</option>
+                <option value="12">12 / day</option>
+            </select>
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">1 credit per post. More posts = more visibility.</p>
+
+            <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
+            <div class="modal-success" id="agentSuccess" style="display:none"></div>
+            <div class="modal-error" id="agentError" style="display:none"></div>
+        </form>
+    </div>
+</div>
+
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
 <script>
@@ -990,6 +1046,7 @@
             var action = row.getAttribute('data-action');
             history.replaceState(null, '', '#' + action);
             if (action === 'socials') openSocialsModal();
+            if (action === 'ai-agent') openAgentModal();
         });
     });
 
@@ -998,6 +1055,7 @@
         if (e.key === 'Escape') {
             closeToolModal();
             closeSocialsModal();
+            closeAgentModal();
         }
     });
 
@@ -1143,6 +1201,152 @@ async function submitSocials(e) {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Save Socials';
+    }
+}
+
+// ── AI Agent Modal ──
+var _agentProjects = [];
+
+async function openAgentModal() {
+    var ov = document.getElementById('agentOverlay');
+    ov.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('agentSuccess').style.display = 'none';
+    document.getElementById('agentError').style.display = 'none';
+    document.getElementById('agentStatus').style.display = 'none';
+
+    var auth = getAuth();
+    if (!auth || !auth.token) {
+        document.getElementById('agentNoAuth').style.display = 'block';
+        document.getElementById('agentForm').style.display = 'none';
+        document.getElementById('agentNoProjects').style.display = 'none';
+        return;
+    }
+    document.getElementById('agentNoAuth').style.display = 'none';
+
+    try {
+        var wallet = auth.wallet || auth.walletAddress || '';
+        var resp = await fetch('/api/inclawbate/inclawbator?wallet=' + encodeURIComponent(wallet));
+        var data = await resp.json();
+        _agentProjects = (data.projects || []).filter(function(p) { return p.status === 'active'; });
+
+        if (!_agentProjects.length) {
+            document.getElementById('agentNoProjects').style.display = 'block';
+            document.getElementById('agentForm').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('agentNoProjects').style.display = 'none';
+        document.getElementById('agentForm').style.display = 'block';
+
+        var sel = document.getElementById('agentProject');
+        sel.innerHTML = '';
+        _agentProjects.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = '$' + (p.token_symbol || '') + ' — ' + (p.token_name || 'Project');
+            sel.appendChild(opt);
+        });
+
+        onAgentProjectChange();
+    } catch(err) {
+        document.getElementById('agentNoProjects').style.display = 'block';
+        document.getElementById('agentForm').style.display = 'none';
+    }
+}
+
+function onAgentProjectChange() {
+    var id = document.getElementById('agentProject').value;
+    var project = _agentProjects.find(function(p) { return p.id === id; });
+    if (!project) return;
+
+    var statusDiv = document.getElementById('agentStatus');
+    var btn = document.getElementById('agentSubmitBtn');
+
+    if (project.agent_enabled) {
+        statusDiv.style.display = 'block';
+        document.getElementById('agentCredits').textContent = (project.agent_credits || 0) + ' credits';
+        document.getElementById('agentTotalPosts').textContent = project.agent_total_posts || 0;
+
+        var badge = document.getElementById('agentStatusBadge');
+        var st = project.agent_status || 'dormant';
+        badge.textContent = st;
+        badge.style.background = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
+        badge.style.color = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
+
+        document.getElementById('agentPersona').value = project.agent_persona || '';
+        document.getElementById('agentFrequency').value = project.agent_posts_per_day || 4;
+
+        btn.textContent = 'Update Agent';
+    } else {
+        statusDiv.style.display = 'none';
+        document.getElementById('agentPersona').value = '';
+        document.getElementById('agentFrequency').value = '4';
+        btn.textContent = 'Enable Agent';
+    }
+}
+
+function closeAgentModal() {
+    document.getElementById('agentOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+document.getElementById('agentOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeAgentModal();
+});
+
+async function submitAgent(e) {
+    e.preventDefault();
+    var auth = getAuth();
+    if (!auth || !auth.token) return;
+
+    var btn = document.getElementById('agentSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    document.getElementById('agentSuccess').style.display = 'none';
+    document.getElementById('agentError').style.display = 'none';
+
+    var projectId = document.getElementById('agentProject').value;
+    var project = _agentProjects.find(function(p) { return p.id === projectId; });
+
+    try {
+        var body = {
+            action: 'update-agent',
+            project_id: projectId,
+            agent_persona: document.getElementById('agentPersona').value,
+            agent_posts_per_day: parseInt(document.getElementById('agentFrequency').value)
+        };
+
+        if (!project.agent_enabled) {
+            body.agent_enabled = true;
+            body.agent_status = 'active';
+        }
+
+        var resp = await fetch('/api/inclawbate/inclawbator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token },
+            body: JSON.stringify(body)
+        });
+
+        if (!resp.ok) {
+            var errData = await resp.json().catch(function() { return {}; });
+            throw new Error(errData.error || 'Failed to save agent');
+        }
+
+        var suc = document.getElementById('agentSuccess');
+        suc.textContent = project.agent_enabled ? 'Agent updated!' : 'Agent enabled! Fund it with CLAWS on the Inclawbator page to start posting.';
+        suc.style.display = 'block';
+
+        // Refresh project data
+        project.agent_enabled = true;
+        onAgentProjectChange();
+    } catch(err) {
+        var errEl = document.getElementById('agentError');
+        errEl.textContent = err.message || 'Failed to save agent settings.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = project.agent_enabled ? 'Update Agent' : 'Enable Agent';
     }
 }
 

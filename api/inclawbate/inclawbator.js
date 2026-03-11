@@ -261,7 +261,8 @@ export default async function handler(req, res) {
                 fee_split_bps, tier, creator_wallet, color, color_dim, glow,
                 agent_enabled, agent_persona, agent_posts_per_day,
                 burn_tx_hash, allocation_pct, burn_amount,
-                chain, solana_wallet, solana_token_mint
+                chain, solana_wallet, solana_token_mint,
+                cardano_wallet, cardano_policy_id, cardano_asset_name
             } = req.body;
 
             if (!token_name || !creator_wallet) {
@@ -316,9 +317,12 @@ export default async function handler(req, res) {
                     burn_tx_hash: burn_tx_hash || null,
                     allocation_pct: allocPct,
                     burn_amount: verifiedBurnAmount || 0,
-                    chain: (chain === 'solana') ? 'solana' : 'base',
+                    chain: ['solana', 'cardano'].includes(chain) ? chain : 'base',
                     solana_wallet: (chain === 'solana' && solana_wallet) ? solana_wallet : null,
-                    solana_token_mint: (chain === 'solana' && solana_token_mint) ? solana_token_mint : null
+                    solana_token_mint: (chain === 'solana' && solana_token_mint) ? solana_token_mint : null,
+                    cardano_wallet: (chain === 'cardano' && cardano_wallet) ? cardano_wallet : null,
+                    cardano_policy_id: (chain === 'cardano' && cardano_policy_id) ? cardano_policy_id : null,
+                    cardano_asset_name: (chain === 'cardano' && cardano_asset_name) ? cardano_asset_name : null
                 })
                 .select()
                 .single();
@@ -700,6 +704,7 @@ export default async function handler(req, res) {
                 return res.status(403).json({ error: 'Not the project owner' });
             }
 
+            const { agent_enabled } = req.body;
             const updates = { updated_at: new Date().toISOString() };
             if (agent_persona !== undefined) updates.agent_persona = agent_persona || null;
             if (agent_posts_per_day !== undefined) {
@@ -707,6 +712,9 @@ export default async function handler(req, res) {
             }
             if (agent_status === 'active' || agent_status === 'paused') {
                 updates.agent_status = agent_status;
+            }
+            if (agent_enabled === true || agent_enabled === false) {
+                updates.agent_enabled = agent_enabled;
             }
 
             const { data, error } = await supabase
@@ -1057,6 +1065,174 @@ export default async function handler(req, res) {
                 return res.status(200).json(data);
             } catch (e) {
                 return res.status(500).json({ error: 'Bags launch tx failed: ' + e.message });
+            }
+        }
+
+        // ══════════════════════════════════════
+        // CARDANO — Mint Token (via Lucid + Blockfrost)
+        // ══════════════════════════════════════
+        if (action === 'cardano-mint-token') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { name, symbol, description, image_url, creator_cardano_address } = req.body;
+            if (!name || !symbol || !creator_cardano_address) {
+                return res.status(400).json({ error: 'name, symbol, and creator_cardano_address required' });
+            }
+
+            try {
+                const { Lucid, Blockfrost, fromHex, toHex, C } = await import('lucid-cardano');
+
+                const blockfrostKey = process.env.BLOCKFROST_API_KEY;
+                if (!blockfrostKey) return res.status(500).json({ error: 'Blockfrost API key not configured' });
+
+                const lucid = await Lucid.new(
+                    new Blockfrost('https://cardano-mainnet.blockfrost.io/api/v0', blockfrostKey),
+                    'Mainnet'
+                );
+
+                // Select the creator's wallet (external — we just need their address for building)
+                lucid.selectWalletFrom({ address: creator_cardano_address });
+
+                // Create a native script minting policy — requires creator's key to sign
+                // Extract the key hash from the address
+                const addressDetails = lucid.utils.getAddressDetails(creator_cardano_address);
+                const keyHash = addressDetails.paymentCredential?.hash;
+                if (!keyHash) return res.status(400).json({ error: 'Could not extract key hash from Cardano address' });
+
+                const mintingPolicy = lucid.utils.nativeScriptFromJson({
+                    type: 'sig',
+                    keyHash: keyHash
+                });
+                const policyId = lucid.utils.mintingPolicyToId(mintingPolicy);
+
+                // Asset name in hex
+                const assetNameHex = Buffer.from(symbol).toString('hex');
+                const unit = policyId + assetNameHex;
+
+                // Total supply: 100 billion tokens
+                const totalSupply = 100000000000n;
+
+                // Build the minting transaction
+                const tx = await lucid.newTx()
+                    .mintAssets({ [unit]: totalSupply }, undefined)
+                    .attachMintingPolicy(mintingPolicy)
+                    .payToAddress(creator_cardano_address, { [unit]: totalSupply })
+                    .complete();
+
+                const unsignedTx = tx.toString(); // CBOR hex
+
+                return res.status(200).json({
+                    unsignedTx,
+                    policyId,
+                    assetName: assetNameHex,
+                    unit,
+                    totalSupply: totalSupply.toString()
+                });
+            } catch (e) {
+                console.error('Cardano mint error:', e);
+                return res.status(500).json({ error: 'Cardano mint failed: ' + e.message });
+            }
+        }
+
+        // ══════════════════════════════════════
+        // CARDANO — Create Minswap Pool
+        // ══════════════════════════════════════
+        if (action === 'cardano-create-pool-tx') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { policy_id, asset_name, creator_cardano_address, ada_amount, mint_tx_hash } = req.body;
+            if (!policy_id || !asset_name || !creator_cardano_address || !ada_amount) {
+                return res.status(400).json({ error: 'policy_id, asset_name, creator_cardano_address, and ada_amount required' });
+            }
+
+            if (ada_amount < 2) {
+                return res.status(400).json({ error: 'Minimum 2 ADA required for pool creation' });
+            }
+
+            try {
+                const { Lucid, Blockfrost } = await import('lucid-cardano');
+
+                const blockfrostKey = process.env.BLOCKFROST_API_KEY;
+                if (!blockfrostKey) return res.status(500).json({ error: 'Blockfrost API key not configured' });
+
+                const lucid = await Lucid.new(
+                    new Blockfrost('https://cardano-mainnet.blockfrost.io/api/v0', blockfrostKey),
+                    'Mainnet'
+                );
+
+                lucid.selectWalletFrom({ address: creator_cardano_address });
+
+                // Wait for mint tx to propagate
+                if (mint_tx_hash) {
+                    await new Promise(r => setTimeout(r, 5000));
+                }
+
+                const tokenUnit = policy_id + asset_name;
+                const adaLovelace = BigInt(Math.round(ada_amount * 1000000));
+                // Use 50% of total supply for initial LP
+                const tokenAmount = 50000000000n;
+
+                // Build a transaction that sends ADA + tokens to the creator
+                // (pool creation on Minswap requires interacting with their contracts,
+                // which is complex — instead, we prepare the liquidity and direct users
+                // to create the pool on Minswap's UI with these funds)
+                const tx = await lucid.newTx()
+                    .payToAddress(creator_cardano_address, {
+                        lovelace: adaLovelace,
+                        [tokenUnit]: tokenAmount
+                    })
+                    .complete();
+
+                const unsignedTx = tx.toString();
+
+                return res.status(200).json({
+                    unsignedTx,
+                    poolNote: 'Liquidity prepared. After this transaction confirms, visit Minswap to create the ADA/' + asset_name + ' trading pair.',
+                    adaAmount: ada_amount,
+                    tokenAmount: tokenAmount.toString()
+                });
+            } catch (e) {
+                console.error('Cardano pool error:', e);
+                return res.status(500).json({ error: 'Pool creation failed: ' + e.message });
+            }
+        }
+
+        // ══════════════════════════════════════
+        // CARDANO — Submit Signed Transaction (fallback)
+        // ══════════════════════════════════════
+        if (action === 'cardano-submit-tx') {
+            const user = authenticateRequest(req);
+            if (!user) return res.status(401).json({ error: 'Authentication required' });
+
+            const { signed_tx } = req.body;
+            if (!signed_tx) return res.status(400).json({ error: 'signed_tx required' });
+
+            try {
+                const blockfrostKey = process.env.BLOCKFROST_API_KEY;
+                if (!blockfrostKey) return res.status(500).json({ error: 'Blockfrost API key not configured' });
+
+                // Submit via Blockfrost REST API
+                const submitResp = await fetch('https://cardano-mainnet.blockfrost.io/api/v0/tx/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/cbor',
+                        'project_id': blockfrostKey
+                    },
+                    body: Buffer.from(signed_tx, 'hex')
+                });
+
+                if (!submitResp.ok) {
+                    const errData = await submitResp.json().catch(() => ({}));
+                    return res.status(submitResp.status).json({ error: errData.message || 'Blockfrost submit failed' });
+                }
+
+                const txHash = await submitResp.text();
+                return res.status(200).json({ txHash: txHash.replace(/"/g, '') });
+            } catch (e) {
+                console.error('Cardano submit error:', e);
+                return res.status(500).json({ error: 'Submit failed: ' + e.message });
             }
         }
 
