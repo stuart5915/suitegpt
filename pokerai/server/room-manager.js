@@ -228,11 +228,18 @@ class RoomManager {
     return agent.isCustom && agent.walletAddress && PLATFORM_WALLETS.has(agent.walletAddress.toLowerCase());
   }
 
+  // Check if agent was auto-seated by rebalancing (vs manually joined)
+  _isAutoSeated(agent) {
+    return this._isPlatformAgent(agent) && agent._autoSeated === true;
+  }
+
   _getTableStats(table) {
     let humans = 0, platform = 0;
     for (const a of table.agents) {
       if (!a.isCustom) continue; // house bot (sandbox only)
-      if (this._isPlatformAgent(a)) platform++;
+      // Only count auto-seated platform agents as "platform"
+      // Manually joined platform-wallet agents count as humans
+      if (this._isAutoSeated(a)) platform++;
       else humans++;
     }
     return { humans, platform, total: table.agents.length };
@@ -273,13 +280,15 @@ class RoomManager {
     this._cleanupEmptyTables(roomId);
   }
 
-  // Remove all platform agents from a table — immediate if between hands, queued if mid-hand
+  // Remove auto-seated platform agents from a table — immediate if between hands, queued if mid-hand
+  // Only extracts agents with _autoSeated flag (manually joined agents are left alone)
   _extractPlatformAgents(table) {
     if (table.phase === 'waiting') {
       // Between hands — safe to splice (reverse iterate for index safety)
       for (let i = table.agents.length - 1; i >= 0; i--) {
         const agent = table.agents[i];
-        if (this._isPlatformAgent(agent)) {
+        if (this._isAutoSeated(agent)) {
+          delete agent._autoSeated;
           const result = table._executeUnseat(i, agent);
           if (result.success) {
             this._finalizeLeave(agent.walletAddress, table, result.agent);
@@ -289,7 +298,7 @@ class RoomManager {
     } else {
       // Hand in progress — queue for end of hand
       for (const agent of table.agents) {
-        if (this._isPlatformAgent(agent) && !table._pendingLeaves.has(agent.id)) {
+        if (this._isAutoSeated(agent) && !table._pendingLeaves.has(agent.id)) {
           table._pendingLeaves.set(agent.id, agent.walletAddress);
         }
       }
@@ -312,6 +321,10 @@ class RoomManager {
 
         const result = table.seatAgent(lobbyAgent);
         if (result.success) {
+          // Mark as auto-seated so rebalancing can extract it later
+          // (manually joined agents won't have this flag)
+          const seated = table.agents.find(a => a.id === lobbyAgent.id);
+          if (seated) seated._autoSeated = true;
           agents.splice(i, 1);
           if (agents.length === 0) this.lobbyAgents.delete(walletAddress);
           seeded++;
@@ -741,6 +754,7 @@ class RoomManager {
 
   // Called both for immediate leaves and deferred (post-hand) leaves
   _finalizeLeave(walletAddress, table, lobbyAgent) {
+    delete lobbyAgent._autoSeated; // clean up rebalancing flag
     const isSandboxTable = table.roomId === 'sandbox';
 
     // Sandbox: restore real chipStack, don't let sandbox chips leak out
