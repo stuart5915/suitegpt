@@ -991,7 +991,7 @@
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
         <h3>@inclawbator Schedule</h3>
         <div class="sched-info">
-            <span class="sched-info-item"><strong id="schedCost">10 credits per slot</strong></span>
+            <span class="sched-info-item">Hold 50K+ CLAWS to book &middot; max 3 active</span>
             <span class="sched-info-item"><strong id="schedBalance">—</strong></span>
         </div>
 
@@ -1243,11 +1243,26 @@ async function submitSocials(e) {
     }
 }
 
+// ── CLAWS balance helpers ──
+function formatClaws(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Math.round(n).toLocaleString();
+}
+
+function fetchClawsBalance(wallet) {
+    return fetch('/api/inclawbate/claws-balance?wallet=' + encodeURIComponent(wallet))
+        .then(function(r) { return r.json(); })
+        .then(function(d) { return d.balance || 0; });
+}
+
 // ── Schedule View State ──
 var _schedSlots = [];
 var _schedProjects = [];
 var _selectedDay = null;
 var _userWallet = '';
+var MIN_CLAWS = 50000;
 
 async function openAgentModal() {
     var ov = document.getElementById('agentOverlay');
@@ -1264,31 +1279,22 @@ async function openAgentModal() {
     var auth = getAuth();
     _userWallet = auth ? (auth.wallet || '').toLowerCase() : '';
 
-    // Show credit balance if logged in
-    if (auth && auth.token) {
+    // Show CLAWS balance if wallet connected
+    if (_userWallet) {
         document.getElementById('schedBalance').textContent = '...';
-        fetch('/api/inclawbate/credits', {
-            headers: { 'Authorization': 'Bearer ' + auth.token }
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            var bal = d.credits || 0;
-            document.getElementById('schedBalance').textContent = bal + ' credits';
-            if (bal < 10) {
+        fetchClawsBalance(_userWallet).then(function(bal) {
+            document.getElementById('schedBalance').textContent = formatClaws(bal) + ' CLAWS';
+            if (bal < MIN_CLAWS) {
                 document.getElementById('schedBalance').style.color = '#f87171';
             } else {
-                document.getElementById('schedBalance').style.color = '';
+                document.getElementById('schedBalance').style.color = '#4ade80';
             }
-        })
-        .catch(function() {
+        }).catch(function() {
             document.getElementById('schedBalance').textContent = '—';
         });
     } else {
         document.getElementById('schedBalance').innerHTML = '<a href="/launch" style="color:var(--seafoam-400);text-decoration:none">Sign in to book</a>';
     }
-
-    // Cost display
-    document.getElementById('schedCost').textContent = '10 credits per slot';
 
     // Fetch schedule (next 7 days)
     var start = new Date();

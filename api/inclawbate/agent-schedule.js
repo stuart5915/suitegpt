@@ -1,6 +1,7 @@
 // Agent Schedule API — Book/view/cancel @inclawbator tweet slots
+// Token-gated: hold CLAWS to book. No credits, no deductions.
 // GET  ?start=ISO&end=ISO  — list slots in date range
-// POST {action:"book"}     — book a slot (JWT auth)
+// POST {action:"book"}     — book a slot (JWT auth + CLAWS balance gate)
 // POST {action:"cancel"}   — cancel your slot (JWT auth)
 
 import { createClient } from '@supabase/supabase-js';
@@ -18,12 +19,59 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const SLOTS_PER_DAY = 12;
-const CREDIT_COST = 10;
 const MAX_DAYS_AHEAD = 7;
+const MIN_CLAWS = 50000;        // must hold at least 50K CLAWS
+const MAX_ACTIVE_BOOKINGS = 3;  // per wallet
 
 // Valid slot hours (UTC): every 2 hours
 const VALID_HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+
+// Admin wallets bypass balance checks
+const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+
+// ── On-chain CLAWS balance check ──
+
+const CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
+const BASE_RPCS = [
+    'https://mainnet.base.org',
+    'https://base.llamarpc.com',
+    'https://base.drpc.org'
+];
+
+async function getClawsBalance(wallet) {
+    const paddedAddr = '0x000000000000000000000000' + wallet.replace('0x', '').toLowerCase();
+    const callData = '0x70a08231' + paddedAddr.replace('0x', '');
+
+    for (const rpc of BASE_RPCS) {
+        try {
+            const resp = await fetch(rpc, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0', id: 1,
+                    method: 'eth_call',
+                    params: [{ to: CLAWS_TOKEN, data: callData }, 'latest']
+                })
+            });
+            const data = await resp.json();
+            if (data.result && data.result !== '0x') {
+                const raw = BigInt(data.result);
+                return Number(raw / BigInt(1e14)) / 10000; // 18 decimals
+            }
+            return 0;
+        } catch (e) { continue; }
+    }
+    return 0;
+}
+
+function formatClaws(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Math.round(n).toLocaleString();
+}
+
+// ── Slot sanitizer ──
 
 function sanitizeSlot(s) {
     if (!s) return s;
@@ -37,7 +85,6 @@ function sanitizeSlot(s) {
         tweet_text: s.tweet_text,
         tweet_id: s.tweet_id,
         created_at: s.created_at,
-        // Include project info if joined
         project_name: s.projects?.name || null,
         project_logo: s.projects?.logo_url || null,
         project_slug: s.projects?.slug || null,
@@ -107,36 +154,48 @@ export default async function handler(req, res) {
             const slotDate = new Date(scheduled_at);
             if (isNaN(slotDate.getTime())) return res.status(400).json({ error: 'Invalid date' });
 
-            // Must be a valid 2-hour slot
             if (!VALID_HOURS.includes(slotDate.getUTCHours()) || slotDate.getUTCMinutes() !== 0) {
                 return res.status(400).json({ error: 'Slots are every 2 hours on the hour (UTC)' });
             }
 
-            // Must be in the future
             if (slotDate.getTime() <= Date.now()) {
                 return res.status(400).json({ error: 'Cannot book slots in the past' });
             }
 
-            // Must be within 7 days
             if (slotDate.getTime() > Date.now() + MAX_DAYS_AHEAD * 86400000) {
                 return res.status(400).json({ error: 'Cannot book more than 7 days ahead' });
             }
 
-            // Check credits
-            const { data: profile } = await supabase
-                .from('human_profiles')
-                .select('id, credits, wallet_address')
-                .eq('wallet_address', wallet)
-                .single();
-
-            const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
             const isFree = FREE_WALLETS.includes(wallet);
 
-            if (!isFree && (!profile || (profile.credits || 0) < CREDIT_COST)) {
-                return res.status(402).json({ error: 'Not enough credits. You need ' + CREDIT_COST + ' credits to book a slot.' });
+            // Check on-chain CLAWS balance
+            if (!isFree) {
+                const balance = await getClawsBalance(wallet);
+                if (balance < MIN_CLAWS) {
+                    return res.status(402).json({
+                        error: 'Hold at least ' + formatClaws(MIN_CLAWS) + ' CLAWS to book slots. You have ' + formatClaws(balance) + '.',
+                        balance,
+                        required: MIN_CLAWS
+                    });
+                }
             }
 
-            // Try to insert (unique constraint prevents double-booking)
+            // Check active booking limit
+            if (!isFree) {
+                const { count } = await supabase
+                    .from('agent_schedule')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('booked_by_wallet', wallet)
+                    .eq('status', 'scheduled');
+
+                if ((count || 0) >= MAX_ACTIVE_BOOKINGS) {
+                    return res.status(429).json({
+                        error: 'Max ' + MAX_ACTIVE_BOOKINGS + ' active bookings at a time. Cancel one to book another.'
+                    });
+                }
+            }
+
+            // Insert slot (unique constraint prevents double-booking)
             const { data: slot, error: insertErr } = await supabase
                 .from('agent_schedule')
                 .insert({
@@ -146,7 +205,6 @@ export default async function handler(req, res) {
                     content_angle: (content_angle || '').slice(0, 200) || null,
                     tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
                     catchphrase: (catchphrase || '').slice(0, 100) || null,
-                    credits_cost: CREDIT_COST,
                     status: 'scheduled'
                 })
                 .select()
@@ -157,14 +215,6 @@ export default async function handler(req, res) {
                     return res.status(409).json({ error: 'This slot is already booked' });
                 }
                 return res.status(500).json({ error: insertErr.message });
-            }
-
-            // Deduct credits
-            if (!isFree && profile) {
-                await supabase
-                    .from('human_profiles')
-                    .update({ credits: Math.max(0, (profile.credits || 0) - CREDIT_COST) })
-                    .eq('id', profile.id);
             }
 
             return res.status(201).json({ slot: sanitizeSlot(slot) });
@@ -184,12 +234,10 @@ export default async function handler(req, res) {
 
             if (!slot) return res.status(404).json({ error: 'Slot not found or already posted' });
 
-            // Only the booker can cancel
             if (slot.booked_by_wallet !== wallet) {
                 return res.status(403).json({ error: 'Not your slot' });
             }
 
-            // Must be in the future
             if (new Date(slot.scheduled_at).getTime() <= Date.now()) {
                 return res.status(400).json({ error: 'Cannot cancel past slots' });
             }
@@ -198,23 +246,6 @@ export default async function handler(req, res) {
                 .from('agent_schedule')
                 .update({ status: 'cancelled' })
                 .eq('id', slot_id);
-
-            // Refund credits
-            const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
-            if (!FREE_WALLETS.includes(wallet)) {
-                const { data: profile } = await supabase
-                    .from('human_profiles')
-                    .select('id, credits')
-                    .eq('wallet_address', wallet)
-                    .single();
-
-                if (profile) {
-                    await supabase
-                        .from('human_profiles')
-                        .update({ credits: (profile.credits || 0) + (slot.credits_cost || CREDIT_COST) })
-                        .eq('id', profile.id);
-                }
-            }
 
             return res.status(200).json({ cancelled: true });
         }

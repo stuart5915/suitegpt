@@ -466,14 +466,6 @@ export default async function handler(req, res) {
                     .update({ status: 'failed', tweet_text: postErr.message })
                     .eq('id', slot.id);
 
-                // Refund credits on failure
-                if (!FREE_CREDIT_WALLETS.includes(slot.booked_by_wallet)) {
-                    const bookerProfile = await getOwnerProfile(slot.booked_by_wallet);
-                    if (bookerProfile) {
-                        await refundOwnerCredits(bookerProfile.id, slot.credits_cost || CREDIT_COST);
-                    }
-                }
-
                 errors.push(`${project.name}: ${postErr.message}`);
             }
         }
