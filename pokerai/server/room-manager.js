@@ -521,9 +521,9 @@ class RoomManager {
       }
     }
 
-    // All tables full — spawn new one (rebalancing will populate it)
+    // All tables full — spawn new one (caller must start after seating agent)
     const table = this._addTable(roomId);
-    table.start();
+    table._needsStart = true;
     return table;
   }
 
@@ -782,6 +782,9 @@ class RoomManager {
       const result = table.seatAgent(lobbyAgent);
       if (result.error) return result;
 
+      // Start newly created tables AFTER seating (avoids race where empty table gets cleaned up)
+      if (table._needsStart) { delete table._needsStart; table.start(); }
+
       walletLobby.splice(lobbyIdx, 1);
       if (walletLobby.length === 0) this.lobbyAgents.delete(walletAddress);
 
@@ -812,6 +815,9 @@ class RoomManager {
 
     const result = table.seatAgent(lobbyAgent);
     if (result.error) return result;
+
+    // Start newly created tables AFTER seating (avoids race where empty table gets cleaned up)
+    if (table._needsStart) { delete table._needsStart; table.start(); }
 
     // Deduct balance if funded inline (not pre-funded)
     if (chipStack && chipStack > 0) {
