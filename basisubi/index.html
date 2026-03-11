@@ -1401,12 +1401,15 @@
                         </div>
                     </div>
 
+                    <!-- Hero Value -->
+                    <div style="text-align:center; padding:24px 16px; background:var(--surface); border-radius:14px; border:1px solid var(--border-accent); margin-bottom:4px;">
+                        <div style="font-family:var(--mono); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-dim); margin-bottom:8px;">Total Position Value</div>
+                        <div id="sim-vault" style="font-family:var(--mono); font-size:2.8rem; font-weight:800; color:var(--text); line-height:1;">$1,000.00</div>
+                        <div id="sim-profit" style="font-family:var(--mono); font-size:1rem; font-weight:600; color:var(--text-dim); margin-top:8px;">+$0.00 (0.0%)</div>
+                    </div>
+
                     <!-- Stats Row -->
-                    <div class="sim-stats" style="grid-template-columns: repeat(3, 1fr);">
-                        <div class="sim-stat">
-                            <div class="sim-stat-label">Your $1,000 Is Now</div>
-                            <div class="sim-stat-value" id="sim-vault">$1,000.00</div>
-                        </div>
+                    <div class="sim-stats" style="grid-template-columns: repeat(4, 1fr);">
                         <div class="sim-stat">
                             <div class="sim-stat-label">Fees Earned</div>
                             <div class="sim-stat-value" id="sim-fees" style="color:var(--green)">$0.00</div>
@@ -1414,6 +1417,14 @@
                         <div class="sim-stat">
                             <div class="sim-stat-label">Price Impact (IL)</div>
                             <div class="sim-stat-value" id="sim-il" style="color:var(--text-secondary)">$0.00</div>
+                        </div>
+                        <div class="sim-stat">
+                            <div class="sim-stat-label">ETH Price</div>
+                            <div class="sim-stat-value" id="sim-eth-now" style="color:var(--accent-bright)">$2,500</div>
+                        </div>
+                        <div class="sim-stat">
+                            <div class="sim-stat-label">Rebalances</div>
+                            <div class="sim-stat-value" id="sim-rebal-count2" style="color:var(--cyan)">0</div>
                         </div>
                     </div>
 
@@ -2768,10 +2779,22 @@
             var feesEarned = sim.fees[step];
             var ilAmount = vv - INITIAL_DEPOSIT - feesEarned; // IL = total change minus fees
 
-            // Main stats
+            // Hero value
             var vaultEl = document.getElementById('sim-vault');
             vaultEl.textContent = '$' + vv.toFixed(2);
-            vaultEl.style.color = vv >= INITIAL_DEPOSIT ? 'var(--green)' : '#ff6450';
+            vaultEl.style.color = vv >= INITIAL_DEPOSIT ? 'var(--text)' : '#ff6450';
+
+            // Profit line
+            var profit = vv - INITIAL_DEPOSIT;
+            var profitPct = (profit / INITIAL_DEPOSIT * 100);
+            var profitEl = document.getElementById('sim-profit');
+            profitEl.textContent = (profit >= 0 ? '+' : '-') + '$' + Math.abs(profit).toFixed(2) + ' (' + (profit >= 0 ? '+' : '') + profitPct.toFixed(1) + '%)';
+            profitEl.style.color = profit >= 0 ? 'var(--green)' : '#ff6450';
+
+            // ETH price
+            var ethNow = sim.prices[step];
+            var ethEl = document.getElementById('sim-eth-now');
+            if (ethEl) ethEl.textContent = '$' + Math.round(ethNow).toLocaleString();
 
             document.getElementById('sim-fees').textContent = '+$' + feesEarned.toFixed(2);
 
@@ -2794,6 +2817,8 @@
                 if (sim.rebalanceSteps[r] <= step) rebalCount++;
             }
             document.getElementById('sim-rebal-count').textContent = rebalCount + ' rebalance' + (rebalCount !== 1 ? 's' : '');
+            var rebalCount2El = document.getElementById('sim-rebal-count2');
+            if (rebalCount2El) rebalCount2El.textContent = rebalCount;
 
             // Position breakdown bar (ETH vs USDC)
             var ethFrac = sim.ethPct[step];
