@@ -1331,23 +1331,11 @@ function formatClaws(n) {
     return Math.round(n).toLocaleString();
 }
 
-// Read on-chain CLAWS balance (ERC20 balanceOf via Base RPC)
-var CLAWS_TOKEN = '0x7ca47B141639B893C6782823C0b219f872056379';
+// Read on-chain CLAWS balance via server-side API (avoids CORS issues)
 function fetchClawsBalance(wallet) {
-    var paddedAddr = '0x000000000000000000000000' + wallet.replace('0x', '').toLowerCase();
-    var callData = '0x70a08231' + paddedAddr; // balanceOf(address)
-    return fetch('https://mainnet.base.org', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: CLAWS_TOKEN, data: callData }, 'latest'] })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-        if (!d.result || d.result === '0x') return 0;
-        // CLAWS has 18 decimals
-        var raw = BigInt(d.result);
-        return Number(raw / BigInt(1e14)) / 10000; // keep 4 decimal precision
-    });
+    return fetch('/api/inclawbate/claws-balance?wallet=' + encodeURIComponent(wallet))
+        .then(function(r) { return r.json(); })
+        .then(function(d) { return d.balance || 0; });
 }
 
 function getClawsCostPerPost() {
