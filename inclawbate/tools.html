@@ -944,6 +944,43 @@
 </div>
 
 <!-- AI Agent Modal -->
+<style>
+    .agent-project-list { display:flex;flex-direction:column;gap:8px;margin-bottom:var(--space-md); }
+    .agent-project-card {
+        display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);
+        border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02);cursor:pointer;transition:all 0.15s;
+    }
+    .agent-project-card:hover { border-color:var(--lobster-400);background:rgba(232,121,85,0.04); }
+    .agent-project-card.selected { border-color:var(--lobster-400);background:rgba(232,121,85,0.08);box-shadow:0 0 0 1px var(--lobster-400); }
+    .agent-project-logo {
+        width:40px;height:40px;border-radius:10px;background:var(--bg-card);flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;
+        color:var(--lobster-400);overflow:hidden;
+    }
+    .agent-project-logo img { width:100%;height:100%;object-fit:cover; }
+    .agent-project-info { flex:1;min-width:0; }
+    .agent-project-top { display:flex;align-items:center;gap:6px;margin-bottom:2px; }
+    .agent-project-symbol { font-weight:700;font-size:0.88rem;color:var(--text-primary); }
+    .agent-project-chain {
+        font-family:var(--font-mono);font-size:0.62rem;font-weight:600;text-transform:uppercase;
+        padding:2px 6px;border-radius:6px;letter-spacing:0.04em;
+    }
+    .agent-project-chain[data-chain="base"] { background:rgba(0,82,255,0.15);color:#3b82f6; }
+    .agent-project-chain[data-chain="solana"] { background:rgba(153,69,255,0.15);color:#a78bfa; }
+    .agent-project-chain[data-chain="cardano"] { background:rgba(0,180,160,0.15);color:#2dd4bf; }
+    .agent-project-name { font-size:0.75rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .agent-project-badges { display:flex;gap:6px;flex-shrink:0;align-items:center; }
+    .agent-badge {
+        font-family:var(--font-mono);font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:10px;
+    }
+    .agent-badge--active { background:rgba(34,197,94,0.15);color:#4ade80; }
+    .agent-badge--dormant { background:rgba(239,68,68,0.15);color:#f87171; }
+    .agent-badge--paused { background:rgba(251,191,36,0.15);color:#fbbf24; }
+    .agent-badge--off { background:rgba(255,255,255,0.05);color:var(--text-dim); }
+    .agent-config-section {
+        padding-top:var(--space-md);border-top:1px solid var(--border-subtle);margin-top:var(--space-sm);
+    }
+</style>
 <div class="native-modal-overlay" id="agentOverlay">
     <div class="native-modal">
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
@@ -957,6 +994,9 @@
         <div id="agentNoProjects" style="display:none">
             <p style="color:var(--text-dim);font-size:0.85rem">No projects found. <a href="/inclawbator" style="color:var(--lobster-400)">Register a project first</a>.</p>
         </div>
+
+        <!-- Project selector cards -->
+        <div id="agentProjectList" class="agent-project-list" style="display:none"></div>
 
         <!-- Agent status (shown when agent exists) -->
         <div id="agentStatus" style="display:none">
@@ -980,11 +1020,10 @@
 
         <!-- Agent setup form -->
         <form id="agentForm" style="display:none" onsubmit="submitAgent(event)">
-            <label for="agentProject">Project</label>
-            <select id="agentProject" required onchange="onAgentProjectChange()"></select>
+            <input type="hidden" id="agentProject" value="">
 
             <!-- X Account Connection -->
-            <div id="agentXSection" style="margin:var(--space-md) 0;padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02)">
+            <div id="agentXSection" style="margin-bottom:var(--space-md);padding:12px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(255,255,255,0.02)">
                 <div style="display:flex;align-items:center;justify-content:space-between">
                     <div>
                         <div style="font-size:0.82rem;font-weight:600;color:var(--text-primary)" id="agentXLabel">X Account</div>
@@ -994,40 +1033,42 @@
                 </div>
             </div>
 
-            <label for="agentTone">Tone</label>
-            <select id="agentTone">
-                <option value="">Default</option>
-                <option value="hype">Hype — high energy, bullish, exclamation marks</option>
-                <option value="chill">Chill — laid back, casual, lowercase vibes</option>
-                <option value="degen">Degen — crypto native, memes, slang</option>
-                <option value="professional">Professional — informative, clean, data-driven</option>
-                <option value="meme">Meme Lord — funny, ironic, shitpost energy</option>
-            </select>
+            <div class="agent-config-section">
+                <label for="agentTone">Tone</label>
+                <select id="agentTone">
+                    <option value="">Default</option>
+                    <option value="hype">Hype — high energy, bullish, exclamation marks</option>
+                    <option value="chill">Chill — laid back, casual, lowercase vibes</option>
+                    <option value="degen">Degen — crypto native, memes, slang</option>
+                    <option value="professional">Professional — informative, clean, data-driven</option>
+                    <option value="meme">Meme Lord — funny, ironic, shitpost energy</option>
+                </select>
 
-            <label>Focus topics</label>
-            <div id="agentTopics" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-sm)">
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="price"> Price/Trading</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="community" checked> Community</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="utility"> Utility</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="staking"> Staking</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="partnerships"> Partnerships</label>
-                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="memes"> Memes</label>
+                <label>Focus topics</label>
+                <div id="agentTopics" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-sm)">
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="price"> Price/Trading</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="community" checked> Community</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="utility"> Utility</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="staking"> Staking</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="partnerships"> Partnerships</label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--text-secondary);cursor:pointer"><input type="checkbox" name="topic" value="memes"> Memes</label>
+                </div>
+
+                <label for="agentCatchphrase">Custom catchphrase <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
+                <input type="text" id="agentCatchphrase" placeholder="e.g. always signs off with LFG" maxlength="100">
+                <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">A short note woven into the agent's tweets.</p>
+
+                <label for="agentFrequency">Posts per day</label>
+                <select id="agentFrequency">
+                    <option value="1">1 / day — 1 credit/day</option>
+                    <option value="2" selected>2 / day — 2 credits/day</option>
+                    <option value="3">3 / day — 3 credits/day</option>
+                </select>
+
+                <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
+                <div class="modal-success" id="agentSuccess" style="display:none"></div>
+                <div class="modal-error" id="agentError" style="display:none"></div>
             </div>
-
-            <label for="agentCatchphrase">Custom catchphrase <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
-            <input type="text" id="agentCatchphrase" placeholder="e.g. always signs off with LFG" maxlength="100">
-            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">A short note woven into the agent's tweets.</p>
-
-            <label for="agentFrequency">Posts per day</label>
-            <select id="agentFrequency">
-                <option value="1">1 / day — 1 credit/day</option>
-                <option value="2" selected>2 / day — 2 credits/day</option>
-                <option value="3">3 / day — 3 credits/day</option>
-            </select>
-
-            <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
-            <div class="modal-success" id="agentSuccess" style="display:none"></div>
-            <div class="modal-error" id="agentError" style="display:none"></div>
         </form>
     </div>
 </div>
@@ -1252,6 +1293,7 @@ async function openAgentModal() {
     document.getElementById('agentSuccess').style.display = 'none';
     document.getElementById('agentError').style.display = 'none';
     document.getElementById('agentStatus').style.display = 'none';
+    document.getElementById('agentProjectList').style.display = 'none';
 
     var auth = getAuth();
     if (!auth || !auth.token) {
@@ -1275,22 +1317,67 @@ async function openAgentModal() {
         }
 
         document.getElementById('agentNoProjects').style.display = 'none';
-        document.getElementById('agentForm').style.display = 'block';
+        renderProjectCards();
+        document.getElementById('agentProjectList').style.display = 'flex';
 
-        var sel = document.getElementById('agentProject');
-        sel.innerHTML = '';
-        _agentProjects.forEach(function(p) {
-            var opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = '$' + (p.token_symbol || '') + ' — ' + (p.token_name || 'Project');
-            sel.appendChild(opt);
-        });
-
-        onAgentProjectChange();
+        // Auto-select first project
+        selectAgentProject(_agentProjects[0].id);
     } catch(err) {
         document.getElementById('agentNoProjects').style.display = 'block';
         document.getElementById('agentForm').style.display = 'none';
     }
+}
+
+function renderProjectCards() {
+    var list = document.getElementById('agentProjectList');
+    list.innerHTML = '';
+
+    _agentProjects.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'agent-project-card';
+        card.setAttribute('data-id', p.id);
+        card.onclick = function() { selectAgentProject(p.id); };
+
+        var chain = (p.chain || 'base').toLowerCase();
+        var agentSt = p.agent_enabled ? (p.agent_status || 'dormant') : 'off';
+        var badgeClass = agentSt === 'active' ? 'agent-badge--active'
+            : agentSt === 'dormant' ? 'agent-badge--dormant'
+            : agentSt === 'paused' ? 'agent-badge--paused' : 'agent-badge--off';
+        var badgeText = agentSt === 'off' ? 'no agent' : agentSt;
+
+        var logoHtml = p.logo_url
+            ? '<img src="' + p.logo_url + '" alt="" onerror="this.parentNode.textContent=\'' + (p.token_symbol || '?').charAt(0) + '\'">'
+            : (p.token_symbol || '?').charAt(0);
+
+        var descSnippet = p.description ? p.description.slice(0, 60) + (p.description.length > 60 ? '...' : '') : '';
+        var nameText = p.token_name || 'Project';
+        if (descSnippet) nameText = descSnippet;
+
+        card.innerHTML = '<div class="agent-project-logo">' + logoHtml + '</div>'
+            + '<div class="agent-project-info">'
+            + '<div class="agent-project-top">'
+            + '<span class="agent-project-symbol">$' + (p.token_symbol || '') + '</span>'
+            + '<span class="agent-project-chain" data-chain="' + chain + '">' + chain + '</span>'
+            + '</div>'
+            + '<div class="agent-project-name">' + nameText + '</div>'
+            + '</div>'
+            + '<div class="agent-project-badges">'
+            + (p.agent_enabled ? '<span class="agent-badge ' + badgeClass + '">' + badgeText + '</span>' : '<span class="agent-badge agent-badge--off">no agent</span>')
+            + '</div>';
+
+        list.appendChild(card);
+    });
+}
+
+function selectAgentProject(id) {
+    // Update card selection state
+    document.querySelectorAll('.agent-project-card').forEach(function(c) {
+        c.classList.toggle('selected', c.getAttribute('data-id') === id);
+    });
+
+    document.getElementById('agentProject').value = id;
+    document.getElementById('agentForm').style.display = 'block';
+    onAgentProjectChange();
 }
 
 function onAgentProjectChange() {
