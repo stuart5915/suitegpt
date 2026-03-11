@@ -450,8 +450,18 @@ class PokerEngine {
 
     const activePlayers = this.agents.filter(a => !a.folded);
     if (activePlayers.length < 2) {
-      // Not enough players to play
+      // Not enough players — reset to waiting so unseatAgent allows immediate leave
+      this.phase = 'waiting';
       this.currentTurnIndex = -1;
+
+      // Process any pending leaves (don't strand agents waiting for a hand that won't start)
+      const pendingResults = this._processPendingLeaves();
+      if (pendingResults.length > 0 && this._onPendingLeave) {
+        for (const r of pendingResults) {
+          this._onPendingLeave(r.walletAddress, r.agentId, r.agent);
+        }
+      }
+
       this.broadcastGameState();
       if (this._onHandComplete) this._onHandComplete();
       return;
