@@ -975,7 +975,8 @@ class PokerEngine {
       folded: false,
       currentBet: 0,
       roundBet: 0,
-      allIn: false
+      allIn: false,
+      _realChipStack: lobbyAgent._realChipStack  // preserve for sandbox leave/delete
     };
 
     // If a hand is in progress, mark as folded so agent sits out until next hand
@@ -1045,7 +1046,8 @@ class PokerEngine {
       chipStack: agent.chips,
       handsWon: agent.handsWon,
       handsPlayed: agent.handsPlayed,
-      biggestPot: agent.biggestPot
+      biggestPot: agent.biggestPot,
+      _realChipStack: agent._realChipStack  // preserve for sandbox restore
     };
 
     const originalBot = this.replacedBots.get(agentId);

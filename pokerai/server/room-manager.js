@@ -497,6 +497,8 @@ class RoomManager {
     if (room.isSandbox) {
       const freeChips = chipStack || room.baseChips;
       const lobbyAgent = walletLobby[lobbyIdx];
+      // Save real chipStack so sandbox can't inflate it
+      lobbyAgent._realChipStack = lobbyAgent.chipStack;
       lobbyAgent.chipStack = freeChips;
 
       const table = this._findAvailableTable(roomId);
@@ -558,11 +560,24 @@ class RoomManager {
     const table = this._findAgentTable(agentId);
     if (!table) return { error: 'Agent not found at any table' };
 
+    // Check if this was a sandbox table
+    const isSandboxTable = table.roomId === 'sandbox';
+
     const result = table.unseatAgent(walletAddress, agentId);
     if (result.error) return result;
 
     // Put agent back in lobby
     const lobbyAgent = result.agent;
+
+    // Sandbox: restore real chipStack, don't let sandbox chips leak out
+    if (isSandboxTable && lobbyAgent._realChipStack !== undefined) {
+      lobbyAgent.chipStack = lobbyAgent._realChipStack;
+      delete lobbyAgent._realChipStack;
+    } else if (isSandboxTable) {
+      // Fallback: if _realChipStack wasn't set (old agents), reset to 0
+      lobbyAgent.chipStack = 0;
+    }
+
     if (!this.lobbyAgents.has(walletAddress)) {
       this.lobbyAgents.set(walletAddress, []);
     }
@@ -621,7 +636,11 @@ class RoomManager {
 
     // Check tables first
     const table = this._findAgentTable(agentId);
+    let savedRealChipStack;
     if (table) {
+      // Grab _realChipStack before removal (sandbox exploit prevention)
+      const tableAgent = table.agents.find(a => a.id === agentId);
+      if (tableAgent) savedRealChipStack = tableAgent._realChipStack;
       const result = table.removeFromTable(walletAddress, agentId);
       if (result.error) return result;
       finalChips = result.finalChips;
@@ -644,9 +663,18 @@ class RoomManager {
       }
     }
 
-    // Return chips to wallet (not for sandbox agents)
+    // Return chips to wallet
     const wasInSandbox = table && this.rooms[table.roomId] && this.rooms[table.roomId].isSandbox;
-    if (finalChips > 0 && !wasInSandbox) {
+    if (wasInSandbox) {
+      // Sandbox: return the real funded chips, not inflated sandbox chips
+      const realChips = (savedRealChipStack !== undefined) ? savedRealChipStack : 0;
+      if (realChips > 0) {
+        this.store.addBalance(walletAddress, realChips);
+        finalChips = realChips;
+      } else {
+        finalChips = 0;
+      }
+    } else if (finalChips > 0) {
       this.store.addBalance(walletAddress, finalChips);
     }
 
