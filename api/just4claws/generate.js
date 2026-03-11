@@ -12,8 +12,8 @@ function isPromptSafe(prompt) {
 }
 
 const MODELS = {
-  flux: { endpoint: 'https://modelslab.com/api/v6/images/text2img', model_id: 'flux', width: 1024, height: 1024, steps: 20, guidance: 3.5, credits: 3 },
-  sdxl: { endpoint: 'https://modelslab.com/api/v6/realtime/text2img', model_id: null, width: 512, height: 768, steps: null, guidance: null, credits: 1 }
+  flux: { model_id: 'flux', width: 1024, height: 1024, steps: 20, guidance: 3.5, credits: 3 },
+  sdxl: { model_id: 'sdxl', width: 1024, height: 1024, steps: 30, guidance: 7.5, credits: 1 }
 };
 
 export default async function handler(req, res) {
@@ -42,24 +42,20 @@ export default async function handler(req, res) {
   try {
     const body = {
       key: MODELSLAB_KEY,
+      model_id: chosen.model_id,
       prompt: enhancedPrompt,
       negative_prompt: '2 people, multiple people, child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality, cross eyed',
       width: chosen.width,
       height: chosen.height,
       samples: 1,
-      safety_checker: chosen.model_id ? 'no' : false,
-      enhance_prompt: chosen.model_id ? 'no' : false,
+      num_inference_steps: chosen.steps,
+      guidance_scale: chosen.guidance,
+      safety_checker: 'no',
+      enhance_prompt: 'no',
       seed: null
     };
 
-    // FLUX uses community models endpoint with model_id + extra params
-    if (chosen.model_id) {
-      body.model_id = chosen.model_id;
-      body.num_inference_steps = chosen.steps;
-      body.guidance_scale = chosen.guidance;
-    }
-
-    const apiRes = await fetch(chosen.endpoint, {
+    const apiRes = await fetch('https://modelslab.com/api/v6/images/text2img', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
