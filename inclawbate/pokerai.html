@@ -5580,19 +5580,19 @@ function updateWalletUI() {
     btn.innerHTML = 'Connect Wallet';
   }
   const fb = document.getElementById('formBalance');
-  const hb = document.getElementById('balUsdc');
   if (fb) fb.textContent = walletBalance.toLocaleString();
-  if (hb) hb.textContent = formatChips(walletBalance);
-  // Update USDC balance sub text
+  // Show TOTAL value (wallet + agents) as the main number
+  const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
+  const totalChips = walletBalance + agentChips;
+  const hb = document.getElementById('balUsdc');
+  if (hb) hb.textContent = formatChips(totalChips);
+  // Subtitle: breakdown of wallet vs agents
   const balUsdcSub = document.getElementById('balUsdcSub');
-  if (balUsdcSub) balUsdcSub.textContent = '$' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' USDC';
-  // Show total including agent chips
+  if (balUsdcSub) balUsdcSub.textContent = '$' + (totalChips / CHIPS_PER_USDC).toFixed(2) + ' USDC total';
   const balUsdcTotal = document.getElementById('balUsdcTotal');
   if (balUsdcTotal) {
-    const agentChips = (myAgents || []).reduce((sum, a) => sum + (a.chips || a.chipStack || 0), 0);
-    const totalChips = walletBalance + agentChips;
     if (agentChips > 0) {
-      balUsdcTotal.textContent = 'Total: $' + (totalChips / CHIPS_PER_USDC).toFixed(2) + ' (incl. agents)';
+      balUsdcTotal.textContent = 'Wallet: $' + (walletBalance / CHIPS_PER_USDC).toFixed(2) + ' · Agents: $' + (agentChips / CHIPS_PER_USDC).toFixed(2);
     } else {
       balUsdcTotal.textContent = '';
     }
