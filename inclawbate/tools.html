@@ -1005,16 +1005,24 @@
                 <span id="agentPostsVia" style="font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--lobster-400)">@inclawbator</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-                <span style="font-size:0.82rem;color:var(--text-dim)">Credits remaining</span>
-                <span id="agentCredits" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
                 <span style="font-size:0.82rem;color:var(--text-dim)">Status</span>
                 <span id="agentStatusBadge" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:600;padding:2px 10px;border-radius:12px"></span>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
                 <span style="font-size:0.82rem;color:var(--text-dim)">Total posts</span>
                 <span id="agentTotalPosts" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">0</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Your credits</span>
+                <span id="agentCredits" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">—</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+                <span style="font-size:0.82rem;color:var(--text-dim)">Cost per post</span>
+                <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-secondary)">10 credits</span>
+            </div>
+            <div id="agentLowCredits" style="display:none;margin-bottom:var(--space-md);padding:10px;border-radius:var(--radius-md);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)">
+                <p style="font-size:0.78rem;color:#f87171;margin:0 0 6px">Low credits — agent will go dormant when credits run out.</p>
+                <a href="/build" style="font-size:0.78rem;font-weight:600;color:var(--lobster-400)">Buy Credits (CLAWS or Card)</a>
             </div>
         </div>
 
@@ -1060,9 +1068,9 @@
 
                 <label for="agentFrequency">Posts per day</label>
                 <select id="agentFrequency">
-                    <option value="1">1 / day — 1 credit/day</option>
-                    <option value="2" selected>2 / day — 2 credits/day</option>
-                    <option value="3">3 / day — 3 credits/day</option>
+                    <option value="1">1 / day — 10 credits/day</option>
+                    <option value="2" selected>2 / day — 20 credits/day</option>
+                    <option value="3">3 / day — 30 credits/day</option>
                 </select>
 
                 <button type="submit" class="modal-btn" id="agentSubmitBtn">Enable Agent</button>
@@ -1406,9 +1414,27 @@ function onAgentProjectChange() {
         document.getElementById('agentXBtn').onclick = hasOwnX ? function() { disconnectProjectX(project.id); } : connectProjectX;
     }
 
+    // Fetch owner's credit balance
+    var auth = getAuth();
+    if (auth && auth.token) {
+        fetch('/api/inclawbate/credits', {
+            headers: { 'Authorization': 'Bearer ' + auth.token }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var credits = d.credits || 0;
+            document.getElementById('agentCredits').textContent = credits.toLocaleString() + ' credits';
+            // Show low-credits warning if under 30 (3 posts worth)
+            var lowEl = document.getElementById('agentLowCredits');
+            if (lowEl) lowEl.style.display = credits < 30 ? 'block' : 'none';
+        })
+        .catch(function() {
+            document.getElementById('agentCredits').textContent = '—';
+        });
+    }
+
     if (project.agent_enabled) {
         statusDiv.style.display = 'block';
-        document.getElementById('agentCredits').textContent = (project.agent_credits || 0) + ' credits';
         document.getElementById('agentTotalPosts').textContent = project.agent_total_posts || 0;
 
         var badge = document.getElementById('agentStatusBadge');

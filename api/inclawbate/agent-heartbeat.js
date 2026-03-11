@@ -2,7 +2,8 @@
 // Finds active agents that are due, generates a tweet via Claude Haiku, posts to X.
 // If project has its own X account connected (OAuth 2.0), posts there.
 // Otherwise falls back to shared @inclawbator account (OAuth 1.0a).
-// Self-funding: 1 credit per post, goes dormant when broke.
+// Credits deducted from project owner's human_profiles.credits (same pool as build).
+// Cost: 10 credits per post (same as Haiku in build studio).
 
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -16,6 +17,12 @@ const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const DAILY_POST_CAP = 40; // global cap across all agents
+const CREDIT_COST = 10; // same as Haiku in build studio
+
+// Admin wallets that bypass credit checks
+const FREE_CREDIT_WALLETS = [
+    '0x91b5c0d07859cfeafeb67d9694121cd741f049bd'  // inclawbate.base.eth
+];
 
 // ── Tweet generation ──
 
@@ -57,7 +64,7 @@ async function generateTweet(project) {
         : `You tweet from @inclawbator on behalf of this project.`;
 
     const symbol = project.token_symbol;
-    const projectName = project.name || project.token_name || 'this project';
+    const projectName = project.name || 'this project';
     const tokenRef = symbol ? `$${symbol}` : projectName;
 
     const systemPrompt = `You are an AI agent for ${tokenRef}${symbol ? ' (' + projectName + ')' : ''}. ${accountNote}
@@ -102,6 +109,62 @@ Write a tweet:`;
     }
 
     return (data.content?.[0]?.text || '').trim();
+}
+
+// ── Owner credit helpers ──
+
+async function getOwnerProfile(creatorWallet) {
+    if (!creatorWallet) return null;
+    const wallet = creatorWallet.toLowerCase();
+
+    const { data } = await supabase
+        .from('human_profiles')
+        .select('id, credits, wallet_address, x_handle')
+        .eq('wallet_address', wallet)
+        .single();
+
+    return data || null;
+}
+
+function isAdmin(profile) {
+    return FREE_CREDIT_WALLETS.includes(profile?.wallet_address?.toLowerCase());
+}
+
+async function deductOwnerCredits(profileId, amount) {
+    // Atomic deduction: only succeeds if credits >= amount
+    const { data, error } = await supabase.rpc('deduct_credits', {
+        p_profile_id: profileId,
+        p_amount: amount
+    });
+    // If the RPC doesn't exist, fall back to manual update
+    if (error) {
+        const { data: profile } = await supabase
+            .from('human_profiles')
+            .select('credits')
+            .eq('id', profileId)
+            .single();
+        if (!profile || (profile.credits || 0) < amount) return -1;
+        const newBal = (profile.credits || 0) - amount;
+        await supabase
+            .from('human_profiles')
+            .update({ credits: newBal })
+            .eq('id', profileId);
+        return newBal;
+    }
+    return data;
+}
+
+async function refundOwnerCredits(profileId, amount) {
+    const { data: profile } = await supabase
+        .from('human_profiles')
+        .select('credits')
+        .eq('id', profileId)
+        .single();
+    if (!profile) return;
+    await supabase
+        .from('human_profiles')
+        .update({ credits: (profile.credits || 0) + amount })
+        .eq('id', profileId);
 }
 
 // ── OAuth 2.0 token refresh ──
@@ -226,7 +289,7 @@ async function postTweet(text, project) {
             if (newTokens) {
                 // Save refreshed tokens
                 await supabase
-                    .from('inclawbator_projects')
+                    .from('projects')
                     .update({
                         x_access_token: newTokens.access_token,
                         x_refresh_token: newTokens.refresh_token || project.x_refresh_token
@@ -281,8 +344,7 @@ export default async function handler(req, res) {
             .from('projects')
             .select('*')
             .eq('agent_enabled', true)
-            .eq('agent_status', 'active')
-            .gt('agent_credits', 0);
+            .eq('agent_status', 'active');
 
         if (queryErr) throw queryErr;
         if (!projects || projects.length === 0) {
@@ -299,18 +361,22 @@ export default async function handler(req, res) {
             if ((recentPosts || 0) + posted >= DAILY_POST_CAP) break;
 
             // Check if enough time has passed since last post
-            const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 4);
+            const intervalMs = (24 * 60 * 60 * 1000) / (project.agent_posts_per_day || 2);
             const lastPost = project.agent_last_post_at ? new Date(project.agent_last_post_at).getTime() : 0;
 
             if (now - lastPost < intervalMs) continue; // not due yet
 
-            // Deduct 1 credit atomically
-            const { data: newBalance } = await supabase.rpc('deduct_project_agent_credit', {
-                p_project_id: project.id,
-                p_amount: 1
-            });
+            // Look up project owner's credit balance
+            const ownerProfile = await getOwnerProfile(project.creator_wallet);
+            if (!ownerProfile) {
+                errors.push(`${project.name}: No owner profile found`);
+                continue;
+            }
 
-            if (newBalance === -1) {
+            const adminBypass = isAdmin(ownerProfile);
+
+            // Check credits (admin wallets bypass)
+            if (!adminBypass && (ownerProfile.credits || 0) < CREDIT_COST) {
                 // Insufficient credits — go dormant
                 await supabase
                     .from('projects')
@@ -318,6 +384,19 @@ export default async function handler(req, res) {
                     .eq('id', project.id);
                 dormant++;
                 continue;
+            }
+
+            // Deduct credits from owner (unless admin)
+            if (!adminBypass) {
+                const newBal = await deductOwnerCredits(ownerProfile.id, CREDIT_COST);
+                if (newBal === -1) {
+                    await supabase
+                        .from('projects')
+                        .update({ agent_status: 'dormant' })
+                        .eq('id', project.id);
+                    dormant++;
+                    continue;
+                }
             }
 
             try {
@@ -337,7 +416,7 @@ export default async function handler(req, res) {
                         project_id: project.id,
                         tweet_text: tweetText,
                         tweet_id: tweetId,
-                        credits_cost: 1,
+                        credits_cost: CREDIT_COST,
                         status: 'posted',
                         posted_via: posted_via || '@inclawbator'
                     });
@@ -360,16 +439,15 @@ export default async function handler(req, res) {
                     .insert({
                         project_id: project.id,
                         tweet_text: postErr.message || 'Generation failed',
-                        credits_cost: 1,
+                        credits_cost: CREDIT_COST,
                         status: 'failed',
                         error_message: postErr.message
                     });
 
-                // Refund the credit on failure
-                await supabase.rpc('add_project_agent_credits', {
-                    p_project_id: project.id,
-                    p_amount: 1
-                });
+                // Refund the credit on failure (unless admin)
+                if (!adminBypass) {
+                    await refundOwnerCredits(ownerProfile.id, CREDIT_COST);
+                }
 
                 errors.push(`${project.token_symbol || project.name}: ${postErr.message}`);
             }
@@ -379,6 +457,7 @@ export default async function handler(req, res) {
             posted,
             dormant,
             agents_checked: projects.length,
+            credit_cost: CREDIT_COST,
             ...(errors.length ? { errors } : {})
         });
 
