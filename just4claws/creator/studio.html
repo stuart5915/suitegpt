@@ -75,6 +75,19 @@
         .prompt-chip:hover {
             background: rgba(232, 67, 147, 0.15); border-color: rgba(232, 67, 147, 0.3);
         }
+        .toggle-track {
+            position:absolute;inset:0;border-radius:11px;cursor:pointer;
+            background:rgba(255,255,255,0.1);border:1px solid var(--border);
+            transition:all 0.3s;
+        }
+        .toggle-track::after {
+            content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;
+            border-radius:50%;background:#fff;transition:all 0.3s;
+        }
+        .toggle-track.on {
+            background:rgba(232,67,147,0.4);border-color:rgba(232,67,147,0.6);
+        }
+        .toggle-track.on::after { transform:translateX(18px); }
         .drafts-section { margin-top: 40px; }
         .drafts-section h3 {
             font-size: 18px; font-weight: 700; color: var(--text-bright);
@@ -124,9 +137,21 @@
                 <div class="form-group">
                     <label class="form-label">Model</label>
                     <select class="select" id="gen-model">
-                        <option value="sdxl">SDXL Fast (1 credit, ~15s)</option>
-                        <option value="flux">FLUX Premium (3 credits, ~2-4min)</option>
+                        <option value="fast">FLUX Fast (1 credit, ~5s)</option>
+                        <option value="flux">FLUX HD (3 credits, ~30s-2min)</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="document.getElementById('explicit-toggle').click()">
+                        Explicit Mode
+                        <div style="position:relative;width:40px;height:22px">
+                            <input type="checkbox" id="explicit-toggle" style="display:none">
+                            <div class="toggle-track" id="toggle-track" onclick="event.stopPropagation();document.getElementById('explicit-toggle').click();updateToggle()"></div>
+                        </div>
+                        <span id="explicit-label" style="font-size:12px;color:var(--text-dim)">OFF</span>
+                    </label>
+                    <p style="font-size:11px;color:var(--text-dim);margin-top:4px">Adds NSFW/nude modifiers to your prompt</p>
                 </div>
 
                 <button class="btn btn-primary btn-block btn-lg" id="gen-btn" onclick="generate()">
@@ -167,6 +192,15 @@
     <script>
         let currentStyle = 'realistic';
         let currentImageUrl = null;
+
+        function updateToggle() {
+            const cb = document.getElementById('explicit-toggle');
+            const track = document.getElementById('toggle-track');
+            const label = document.getElementById('explicit-label');
+            track.classList.toggle('on', cb.checked);
+            label.textContent = cb.checked ? 'ON' : 'OFF';
+            label.style.color = cb.checked ? 'var(--pink-bright)' : 'var(--text-dim)';
+        }
 
         const SUGGESTIONS = [
             'sexy woman in red lingerie, bedroom, seductive pose',
@@ -250,10 +284,11 @@
 
             try {
                 const model = document.getElementById('gen-model').value;
+                const explicit = document.getElementById('explicit-toggle').checked;
                 const res = await fetch(J4C_BASE + '/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, style: currentStyle, model })
+                    body: JSON.stringify({ prompt, style: currentStyle, model, explicit })
                 });
                 const data = await res.json();
 

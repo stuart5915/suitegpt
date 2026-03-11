@@ -13,7 +13,7 @@ function isPromptSafe(prompt) {
 
 const MODELS = {
   flux: { model_id: 'flux', width: 1024, height: 1024, steps: 20, guidance: 3.5, credits: 3 },
-  sdxl: { model_id: 'sdxl', width: 1024, height: 1024, steps: 30, guidance: 7.5, credits: 1 }
+  fast: { model_id: 'flux', width: 768, height: 768, steps: 8, guidance: 3.5, credits: 1 }
 };
 
 export default async function handler(req, res) {
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { prompt, style, model } = req.body;
+  const { prompt, style, model, explicit } = req.body;
   if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
   if (!isPromptSafe(prompt)) return res.status(400).json({ error: 'Prompt contains prohibited content.' });
   if (!MODELSLAB_KEY) return res.status(500).json({ error: 'Image API not configured.' });
@@ -36,15 +36,19 @@ export default async function handler(req, res) {
     cyberpunk: 'cyberpunk aesthetic, neon lights, futuristic, high tech'
   };
 
-  const chosen = MODELS[model] || MODELS.sdxl;
-  const enhancedPrompt = `1 person solo, ${prompt}, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality`;
+  const chosen = MODELS[model] || MODELS.fast;
+
+  let enhancedPrompt = `${prompt}, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality`;
+  if (explicit) {
+    enhancedPrompt = `${prompt}, nude, naked, explicit, nsfw, ${styleModifiers[style] || styleModifiers.realistic}, beautiful, high quality, detailed body, anatomically correct`;
+  }
 
   try {
     const body = {
       key: MODELSLAB_KEY,
       model_id: chosen.model_id,
       prompt: enhancedPrompt,
-      negative_prompt: '2 people, multiple people, child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality, cross eyed',
+      negative_prompt: 'child, minor, underage, low quality, blurry, deformed, ugly, disfigured, extra limbs, bad anatomy, bad hands, missing fingers, cropped, worst quality, cross eyed',
       width: chosen.width,
       height: chosen.height,
       samples: 1,
@@ -67,8 +71,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: data.message || data.messege || 'Generation failed' });
     }
 
-    if (data.status === 'success' && data.output?.[0]) {
-      return res.status(200).json({ status: 'COMPLETED', image_url: data.output[0], credits: chosen.credits });
+    // Prefer S3 URLs (persist), fallback to proxy_links
+    const imageUrl = data.output?.[0]?.includes('s3.amazonaws.com')
+      ? data.output[0]
+      : (data.proxy_links?.[0] || data.output?.[0]);
+
+    if (data.status === 'success' && imageUrl) {
+      return res.status(200).json({ status: 'COMPLETED', image_url: imageUrl, credits: chosen.credits });
     }
 
     if (data.status === 'processing') {
