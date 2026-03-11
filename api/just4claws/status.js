@@ -19,10 +19,7 @@ export default async function handler(req, res) {
     const data = await statusRes.json();
 
     if (data.status === 'success' && (data.output?.[0] || data.proxy_links?.[0])) {
-      const imageUrl = data.output?.[0]?.includes('s3.amazonaws.com')
-        ? data.output[0]
-        : (data.proxy_links?.[0] || data.output?.[0]);
-      return res.status(200).json({ status: 'COMPLETED', image_url: imageUrl });
+      return res.status(200).json({ status: 'COMPLETED', image_url: data.output?.[0] || data.proxy_links?.[0] });
     }
 
     if (data.status === 'processing') {
