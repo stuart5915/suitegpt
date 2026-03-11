@@ -71,8 +71,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: data.message || data.messege || 'Generation failed' });
     }
 
-    if (data.status === 'success' && (data.proxy_links?.[0] || data.output?.[0])) {
-      return res.status(200).json({ status: 'COMPLETED', image_url: data.proxy_links?.[0] || data.output[0], credits: chosen.credits });
+    if (data.status === 'success' && data.output?.[0]) {
+      return res.status(200).json({ status: 'COMPLETED', image_url: data.output[0], credits: chosen.credits });
     }
 
     if (data.status === 'processing') {

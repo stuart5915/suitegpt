@@ -273,8 +273,25 @@
                 }
 
                 currentImageUrl = imageUrl;
-                preview.innerHTML = `<img src="${imageUrl}" alt="Generated content">`;
-                document.getElementById('preview-actions').style.display = 'flex';
+                const img = new Image();
+                img.onload = () => {
+                    preview.innerHTML = '';
+                    preview.appendChild(img);
+                    document.getElementById('preview-actions').style.display = 'flex';
+                };
+                img.onerror = () => {
+                    // Try CDN fallback if R2 fails
+                    const cdnUrl = imageUrl.replace('pub-3626123a908346a7a8be8d9295f44e26.r2.dev', 'cdn2.stablediffusionapi.com');
+                    if (cdnUrl !== imageUrl) {
+                        img.onerror = () => showErr(preview, btn, 'Image failed to load');
+                        img.src = cdnUrl;
+                        currentImageUrl = cdnUrl;
+                    } else {
+                        showErr(preview, btn, 'Image failed to load');
+                    }
+                };
+                img.alt = 'Generated content';
+                img.src = imageUrl;
                 showToast('Image generated!', 'success');
             } catch (err) {
                 showErr(preview, btn, err.message);
