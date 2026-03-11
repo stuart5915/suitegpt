@@ -179,6 +179,19 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'updateAgent': {
+          const addr = getClientWallet(client);
+          if (client.walletAddress && !requireAuth(client, ws)) break;
+          const result = rooms.updateLobbyAgent(addr, msg.agentId, msg.config);
+          ws.send(JSON.stringify({ type: 'updateAgentResult', data: result }));
+          if (result.success) {
+            const agents = rooms.getMyAgents(addr);
+            ws.send(JSON.stringify({ type: 'myAgents', data: agents }));
+            broadcastStateToAll();
+          }
+          break;
+        }
+
         case 'fundAgent': {
           if (!requireAuth(client, ws)) break;
           const addr = client.walletAddress;

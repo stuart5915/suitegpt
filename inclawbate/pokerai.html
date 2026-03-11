@@ -3492,8 +3492,15 @@
             </div>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">Strategy Prompt <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+            <textarea class="form-input" id="agentPrompt" placeholder="e.g. Play tight early, go aggressive after the flop. Bluff on scary boards. Never fold pocket pairs." style="min-height:60px;resize:vertical;font-size:12px;line-height:1.4"></textarea>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Describe your agent's strategy in plain English</div>
+          </div>
+
           <button class="btn-deploy" id="deployBtn" onclick="deployAgent()">🤖 Create Agent</button>
-          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:6px">Free to create — fund when you join a table</div>
+          <div id="deployBtnNote" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:6px">Free to create — fund when you join a table</div>
+          <button class="btn-deploy" id="cancelEditBtn" onclick="cancelEditAgent()" style="display:none;background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-secondary);margin-top:6px">Cancel Edit</button>
         </div>
 
         <!-- MY AGENTS LIST -->
@@ -4192,6 +4199,16 @@ function handleMessage(msg) {
       } else {
         showToast(`${msg.data.agentName} created! Now pick a table to join.`, 'success');
         document.getElementById('agentName').value = '';
+        document.getElementById('agentPrompt').value = '';
+        refreshMyAgentsView();
+      }
+      break;
+
+    case 'updateAgentResult':
+      if (msg.data.error) {
+        showToast(msg.data.error, 'error');
+      } else {
+        showToast(`Agent updated!`, 'success');
         refreshMyAgentsView();
       }
       break;
@@ -5737,6 +5754,7 @@ function renderMyAgents() {
                 </div>`
               : `<button onclick="toggleFundPanel('${agent.id}')" style="padding:12px 24px;background:linear-gradient(135deg,#f5c542,#d4a017);border:none;border-radius:12px;color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(245,197,66,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(245,197,66,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(245,197,66,0.25)'">💰 FUND</button>`
             }
+            <button onclick="editAgent('${agent.id}')" style="font-size:12px;padding:8px 16px;background:none;border:1px solid rgba(99,102,241,0.3);color:var(--accent-primary);border-radius:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-primary)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.3)'">Edit</button>
             <button class="btn-recall" onclick="recallAgent('${agent.id}')" style="font-size:12px;padding:8px 16px">Delete</button>
           </div>
         </div>
@@ -5954,8 +5972,10 @@ function refreshTogglesUI() {
 }
 
 // ============================================================
-// DEPLOY / RECALL AGENTS
+// DEPLOY / RECALL / EDIT AGENTS
 // ============================================================
+let _editingAgentId = null; // null = create mode, agentId = edit mode
+
 function deployAgent() {
   const wallet = getWallet();
   const isSandbox = activeRoom === 'sandbox';
@@ -5973,11 +5993,72 @@ function deployAgent() {
     bluffing: parseInt(document.getElementById('sliderBluffing').value),
     patience: parseInt(document.getElementById('sliderPatience').value),
     tiltResist: parseInt(document.getElementById('sliderTiltResist').value),
-    rules: { ..._activeToggles }
+    rules: { ..._activeToggles },
+    prompt: (document.getElementById('agentPrompt').value || '').trim()
   };
 
-  ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet ? wallet.address : null, config }));
-  showToast('Creating agent...', 'info');
+  if (_editingAgentId) {
+    ws.send(JSON.stringify({ type: 'updateAgent', agentId: _editingAgentId, walletAddress: wallet ? wallet.address : null, config }));
+    showToast('Updating agent...', 'info');
+    cancelEditAgent();
+  } else {
+    ws.send(JSON.stringify({ type: 'createAgent', walletAddress: wallet ? wallet.address : null, config }));
+    showToast('Creating agent...', 'info');
+  }
+}
+
+function editAgent(agentId) {
+  const agent = myAgents.find(a => a.id === agentId);
+  if (!agent) return;
+
+  _editingAgentId = agentId;
+
+  // Populate form with agent's current values
+  document.getElementById('agentName').value = agent.name || '';
+  document.getElementById('agentPrompt').value = agent.prompt || '';
+
+  // Set emoji
+  document.querySelectorAll('.emoji-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.emoji === agent.emoji);
+  });
+
+  // Set sliders
+  const traits = agent.traits || {};
+  document.getElementById('sliderAggression').value = traits.aggression || 50;
+  document.getElementById('sliderBluffing').value = traits.bluffing || 30;
+  document.getElementById('sliderPatience').value = traits.patience || 50;
+  document.getElementById('sliderTiltResist').value = traits.tiltResist || 50;
+  updateSlider('aggression'); updateSlider('bluffing'); updateSlider('patience'); updateSlider('tiltResist');
+
+  // Set rules
+  const rules = agent.rules || {};
+  _activeToggles = { neverAllIn: !!rules.neverAllIn, tightPreflop: !!rules.tightPreflop, slowPlay: !!rules.slowPlay, bluffCatcher: !!rules.bluffCatcher };
+  refreshTogglesUI();
+
+  // Switch button to edit mode
+  document.getElementById('deployBtn').innerHTML = '✏️ Save Changes';
+  document.getElementById('deployBtnNote').textContent = 'Editing: ' + agent.name;
+  document.getElementById('cancelEditBtn').style.display = 'block';
+
+  // Scroll to form
+  document.querySelector('.create-agent-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelEditAgent() {
+  _editingAgentId = null;
+  document.getElementById('deployBtn').innerHTML = '🤖 Create Agent';
+  document.getElementById('deployBtnNote').textContent = 'Free to create — fund when you join a table';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  // Reset form
+  document.getElementById('agentName').value = '';
+  document.getElementById('agentPrompt').value = '';
+  document.getElementById('sliderAggression').value = 50;
+  document.getElementById('sliderBluffing').value = 30;
+  document.getElementById('sliderPatience').value = 50;
+  document.getElementById('sliderTiltResist').value = 50;
+  updateSlider('aggression'); updateSlider('bluffing'); updateSlider('patience'); updateSlider('tiltResist');
+  _activeToggles = { neverAllIn: false, tightPreflop: false, slowPlay: false, bluffCatcher: false };
+  refreshTogglesUI();
 }
 
 function toggleFundPanel(agentId) {

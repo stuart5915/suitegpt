@@ -203,6 +203,7 @@ class SupabaseStore {
       foldPct: row.fold_pct,
       traits: row.traits || {},
       rules: row.rules || {},
+      prompt: (row.traits && row.traits._prompt) || '',
       chipStack: row.chip_stack || 0,
       handsWon: row.hands_won || 0,
       handsPlayed: row.hands_played || 0,
@@ -211,6 +212,8 @@ class SupabaseStore {
   }
 
   _toDbAgent(agent) {
+    const traits = { ...(agent.traits || {}) };
+    if (agent.prompt) traits._prompt = agent.prompt;
     return {
       id: agent.id,
       wallet_address: (agent.walletAddress || '').toLowerCase(),
@@ -221,7 +224,7 @@ class SupabaseStore {
       raise_pct: agent.raisePct,
       bluff_pct: agent.bluffPct,
       fold_pct: agent.foldPct,
-      traits: agent.traits || {},
+      traits,
       rules: agent.rules || {},
       chip_stack: agent.chipStack || 0,
       hands_won: agent.handsWon || 0,

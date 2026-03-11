@@ -262,7 +262,7 @@ class RoomManager {
   // === Lobby management ===
 
   createLobbyAgent(walletAddress, agentConfig) {
-    const { name, emoji, aggression, bluffing, patience, tiltResist, rules } = agentConfig;
+    const { name, emoji, aggression, bluffing, patience, tiltResist, rules, prompt } = agentConfig;
 
     const agentId = `custom_${walletAddress}_${Date.now()}`;
     const raisePct = Math.round(aggression * 0.65 + 5);
@@ -286,6 +286,7 @@ class RoomManager {
       foldPct,
       traits: { aggression, bluffing, patience, tiltResist },
       rules: rules || {},
+      prompt: prompt || '',
       walletAddress,
       isCustom: true,
       chipStack: 0, // funded when joining a table
@@ -315,6 +316,58 @@ class RoomManager {
         chipStack: lobbyAgent.chipStack
       }
     };
+  }
+
+  // === Update agent in lobby or at table ===
+
+  updateLobbyAgent(walletAddress, agentId, config) {
+    const { name, emoji, aggression, bluffing, patience, tiltResist, rules, prompt } = config;
+
+    // Find agent in lobby or at a table
+    let agent = null;
+    const walletLobby = this.lobbyAgents.get(walletAddress);
+    if (walletLobby) agent = walletLobby.find(a => a.id === agentId);
+
+    // Also check tables (agent might be playing)
+    let tableAgent = null;
+    if (!agent) {
+      const table = this._findAgentTable(agentId);
+      if (table) {
+        tableAgent = table.agents.find(a => a.id === agentId && a.walletAddress === walletAddress);
+      }
+    }
+
+    const target = agent || tableAgent;
+    if (!target) return { error: 'Agent not found' };
+
+    // Update strategy
+    const raisePct = Math.round(aggression * 0.65 + 5);
+    const bluffPct = Math.round(bluffing * 0.7);
+    const foldPct = Math.max(5, Math.round(patience * 0.6));
+
+    let style;
+    if (aggression >= 70) style = 'aggressive';
+    else if (bluffing >= 60) style = 'bluffer';
+    else if (patience >= 70) style = 'conservative';
+    else style = 'balanced';
+
+    target.name = name || target.name;
+    target.emoji = emoji || target.emoji;
+    target.style = style;
+    target.raisePct = raisePct;
+    target.bluffPct = bluffPct;
+    target.foldPct = foldPct;
+    target.traits = { aggression, bluffing, patience, tiltResist };
+    target.rules = rules || {};
+    target.prompt = prompt || '';
+
+    // Persist
+    if (!walletAddress.startsWith('sandbox_')) {
+      this.store.saveAgent(target);
+    }
+
+    console.log(`[RoomManager] Updated agent ${target.name} (${agentId})`);
+    return { success: true, agent: { id: target.id, name: target.name, style: target.style } };
   }
 
   // === Fund agent in lobby (separate from joining) ===
@@ -544,6 +597,7 @@ class RoomManager {
               biggestPot: a.biggestPot,
               traits: a.traits,
               rules: a.rules || {},
+              prompt: a.prompt || '',
               pnl: a.chips - a.baseChips,
               status: 'playing',
               roomId: table.roomId,
@@ -570,6 +624,7 @@ class RoomManager {
         biggestPot: a.biggestPot,
         traits: a.traits,
         rules: a.rules || {},
+        prompt: a.prompt || '',
         pnl: 0,
         status: 'lobby'
       });
