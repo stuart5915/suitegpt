@@ -85,7 +85,11 @@ class AgentStore {
 
   addBalance(address, amount) {
     const addr = address.toLowerCase();
-    if (!this.wallets[addr]) return;
+    if (!this.wallets[addr]) {
+      // Auto-create wallet with 0 balance, then add
+      this.wallets[addr] = { balance: 0, createdAt: Date.now() };
+      console.log(`[AgentStore] Auto-created wallet for addBalance: ${addr}`);
+    }
     this.wallets[addr].balance += amount;
     this._save();
   }

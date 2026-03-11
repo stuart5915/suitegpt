@@ -19,7 +19,9 @@ app.use(cors({
   origin: [
     'https://inclawbate.com',
     'https://www.inclawbate.com',
-    /https:\/\/.*\.vercel\.app$/,
+    'https://pokerai.app',
+    'https://www.pokerai.app',
+    /https:\/\/stuart-hollinger-landing[a-z0-9-]*\.vercel\.app$/,
     'http://localhost:3000',
     'http://localhost:5500',
     'http://127.0.0.1:5500'
@@ -34,7 +36,25 @@ const clients = new Map(); // ws → { sessionId, walletAddress, authenticated, 
 // Authenticated wallet set — wallets that have passed signature verification
 const authenticatedWallets = new Set();
 
+// Per-wallet withdrawal lock to prevent race conditions
+const withdrawalsInProgress = new Set();
+
 let rooms; // initialized in startServer()
+
+// Validate that a value is a positive finite number
+function isValidPositiveNumber(val) {
+  return typeof val === 'number' && Number.isFinite(val) && val > 0;
+}
+
+// API key check for admin endpoints
+function requireApiKey(req, res) {
+  const key = req.headers['x-api-key'];
+  if (!key || key !== process.env.ADMIN_API_KEY) {
+    res.status(403).json({ error: 'Forbidden' });
+    return false;
+  }
+  return true;
+}
 
 function broadcastViewerCount() {
   const count = clients.size;
@@ -127,7 +147,9 @@ wss.on('connection', (ws) => {
 
         case 'setWallet': {
           client.walletAddress = msg.walletAddress ? msg.walletAddress.toLowerCase() : null;
-          client.authenticated = !!client.walletAddress;
+          // NOTE: Do NOT set client.authenticated here — only the 'authenticate'
+          // handler (which verifies a signature) may grant authenticated status.
+          // setWallet is read-only: lets client view agents/balance but not withdraw.
           if (client.walletAddress) {
             // Use async getOrCreateWallet so balance loads from Supabase on fresh restart
             const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
@@ -195,6 +217,10 @@ wss.on('connection', (ws) => {
 
         case 'fundAgent': {
           if (!requireAuth(client, ws)) break;
+          if (!isValidPositiveNumber(msg.amount)) {
+            ws.send(JSON.stringify({ type: 'fundAgentResult', data: { error: 'Invalid amount' } }));
+            break;
+          }
           const addr = client.walletAddress;
           const result = rooms.fundLobbyAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'fundAgentResult', data: result }));
@@ -224,6 +250,10 @@ wss.on('connection', (ws) => {
         case 'joinTable': {
           const isSandbox = (msg.roomId || client.activeRoom) === 'sandbox';
           if (!isSandbox && !requireAuth(client, ws)) break;
+          if (msg.chipStack !== undefined && !isValidPositiveNumber(msg.chipStack)) {
+            ws.send(JSON.stringify({ type: 'joinTableResult', data: { error: 'Invalid chip stack amount' } }));
+            break;
+          }
           const addr = getClientWallet(client);
           const roomId = msg.roomId || 'micro';
           const result = rooms.joinRoom(addr, msg.agentId, roomId, msg.chipStack);
@@ -239,6 +269,10 @@ wss.on('connection', (ws) => {
 
         case 'topUp': {
           if (!requireAuth(client, ws)) break;
+          if (!isValidPositiveNumber(msg.amount)) {
+            ws.send(JSON.stringify({ type: 'topUpResult', data: { error: 'Invalid amount' } }));
+            break;
+          }
           const addr = client.walletAddress;
           const result = rooms.topUpAgent(addr, msg.agentId, msg.amount);
           ws.send(JSON.stringify({ type: 'topUpResult', data: result }));
@@ -288,8 +322,19 @@ wss.on('connection', (ws) => {
           const addr = client.walletAddress;
           const chips = msg.chips;
 
-          if (!chips || chips < 1000) {
+          if (!isValidPositiveNumber(chips)) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Invalid chip amount' } }));
+            break;
+          }
+
+          if (chips < 1000) {
             ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Minimum withdrawal: 1,000 chips ($0.10)' } }));
+            break;
+          }
+
+          // Prevent concurrent withdrawals for the same wallet
+          if (withdrawalsInProgress.has(addr)) {
+            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: 'Withdrawal already in progress. Please wait.' } }));
             break;
           }
 
@@ -305,18 +350,25 @@ wss.on('connection', (ws) => {
             break;
           }
 
-          // Deduct chips first, then send on-chain
-          rooms.store.deductBalance(addr, chips);
+          // Lock this wallet's withdrawals
+          withdrawalsInProgress.add(addr);
 
-          const txResult = await chain.processWithdraw(addr, chips);
-          if (txResult.error) {
-            // Refund on failure
-            rooms.store.addBalance(addr, chips);
-            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: txResult.error } }));
-          } else {
-            await rooms.store.recordTransaction(addr, 'withdraw', Math.floor(chips / 10000 * 1e6), chips, txResult.txHash);
-            ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: txResult }));
-            sendBalance(ws, addr);
+          try {
+            // Deduct chips first, then send on-chain
+            rooms.store.deductBalance(addr, chips);
+
+            const txResult = await chain.processWithdraw(addr, chips);
+            if (txResult.error) {
+              // Refund on failure
+              rooms.store.addBalance(addr, chips);
+              ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: { error: txResult.error } }));
+            } else {
+              await rooms.store.recordTransaction(addr, 'withdraw', Math.floor(chips / 10000 * 1e6), chips, txResult.txHash);
+              ws.send(JSON.stringify({ type: 'withdrawUsdcResult', data: txResult }));
+              sendBalance(ws, addr);
+            }
+          } finally {
+            withdrawalsInProgress.delete(addr);
           }
           break;
         }
@@ -446,6 +498,7 @@ app.get('/stats', (req, res) => {
 
 // Check on-chain deposit and credit if missing (fallback for missed events)
 app.post('/check-deposit', async (req, res) => {
+  if (!requireApiKey(req, res)) return;
   if (!chain) return res.json({ error: 'Chain not configured' });
   const { walletAddress } = req.body;
   if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
@@ -496,6 +549,7 @@ app.post('/check-deposit', async (req, res) => {
 
 // Sync wallet balance to match on-chain reality
 app.post('/sync-balance', async (req, res) => {
+  if (!requireApiKey(req, res)) return;
   if (!chain) return res.json({ error: 'Chain not configured' });
   const { walletAddress } = req.body;
   if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
@@ -528,6 +582,7 @@ app.post('/sync-balance', async (req, res) => {
 });
 
 app.get('/debug/supabase-test', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && !requireApiKey(req, res)) return;
   if (!rooms.store.supabase) return res.json({ error: 'No Supabase connection' });
   try {
     // Try reading poker_agents directly
@@ -571,6 +626,7 @@ app.get('/debug/supabase-test', async (req, res) => {
 
 // View transaction history for a wallet
 app.get('/debug/transactions', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && !requireApiKey(req, res)) return;
   if (!rooms.store.supabase) return res.json({ error: 'No Supabase' });
   const addr = (req.query.wallet || '').toLowerCase();
   if (!addr) return res.json({ error: 'Pass ?wallet=0x...' });
@@ -585,6 +641,7 @@ app.get('/debug/transactions', async (req, res) => {
 });
 
 app.get('/debug/agents', (req, res) => {
+  if (process.env.NODE_ENV === 'production' && !requireApiKey(req, res)) return;
   const storeAgents = rooms.store.agents || [];
   const lobbyMap = {};
   for (const [wallet, agents] of rooms.lobbyAgents) {
@@ -618,6 +675,7 @@ app.get('/platform/status', (req, res) => {
 });
 
 app.post('/platform/add-wallet', (req, res) => {
+  if (!requireApiKey(req, res)) return;
   const { walletAddress } = req.body;
   if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
   const addr = walletAddress.toLowerCase();
@@ -627,6 +685,7 @@ app.post('/platform/add-wallet', (req, res) => {
 });
 
 app.post('/platform/remove-wallet', (req, res) => {
+  if (!requireApiKey(req, res)) return;
   const { walletAddress } = req.body;
   if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
   const addr = walletAddress.toLowerCase();
@@ -636,6 +695,7 @@ app.post('/platform/remove-wallet', (req, res) => {
 });
 
 app.post('/platform/rebalance', (req, res) => {
+  if (!requireApiKey(req, res)) return;
   const roomId = req.body.roomId || 'micro';
   rooms._rebalanceRoom(roomId);
   res.json({ success: true, message: `Rebalanced room: ${roomId}` });

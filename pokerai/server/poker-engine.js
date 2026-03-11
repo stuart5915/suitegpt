@@ -145,7 +145,7 @@ function _parsePrompt(agent) {
 
 function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, playerCount) {
   const toCall = currentBet - agentRoundBet;
-  const rules = agent.rules || {};
+  let rules = agent.rules || {};
   const headsUp = playerCount <= 2; // much looser play with fewer opponents
   const promptMods = _parsePrompt(agent);
 
@@ -230,7 +230,7 @@ function agentDecide(agent, communityCards, pot, bb, currentBet, agentRoundBet, 
     effectiveAgent.bluffPct = Math.max(0, Math.min(100, agent.bluffPct + (promptMods.bluffBoost || 0)));
     effectiveAgent.foldPct = Math.max(0, Math.min(100, agent.foldPct + (promptMods.foldBoost || 0)));
   }
-  if (promptMods.slowPlay) rules.slowPlay = true;
+  if (promptMods.slowPlay) rules = { ...rules, slowPlay: true };
 
   // Make the base decision first, then apply rule overrides
   let decision = _baseDecision(effectiveAgent, strength, r, toCall, raiseAmt, bb, pot, communityCards);
@@ -338,7 +338,7 @@ class PokerEngine {
     this.roomId = config.roomId || 'micro';
     this.bb = config.bb || 50;
     this.baseChips = config.baseChips || 10000;
-    this.rakePct = config.rakePct != null ? config.rakePct : 0.05;
+    this.rakePct = config.rakePct != null ? config.rakePct : 0.025;
     this.rakeMax = config.rakeMax || Math.floor(this.baseChips * 0.1);
     this.totalRake = 0;
 
@@ -470,9 +470,16 @@ class PokerEngine {
     // Rotate dealer (skip folded/bust agents)
     this.dealerIndex = this._nextActive(this.dealerIndex);
 
-    // Post blinds
-    const sbIdx = this._nextActive(this.dealerIndex);
-    const bbIdx = this._nextActive(sbIdx);
+    // Post blinds — in heads-up (2 players), dealer posts SB
+    let sbIdx, bbIdx;
+    if (activePlayers.length === 2) {
+      // Heads-up: dealer is SB, other player is BB
+      sbIdx = this.dealerIndex;
+      bbIdx = this._nextActive(this.dealerIndex);
+    } else {
+      sbIdx = this._nextActive(this.dealerIndex);
+      bbIdx = this._nextActive(sbIdx);
+    }
     const sb = this.agents[sbIdx];
     const bbAgent = this.agents[bbIdx];
 
@@ -767,8 +774,9 @@ class PokerEngine {
         }
       }
 
-      // Apply rake to this side pot
-      const rake = Math.min(Math.floor(sidePot.amount * this.rakePct), this.rakeMax);
+      // Apply rake to this side pot (capped at rakeMax for entire hand)
+      const rakeRoom = Math.max(0, this.rakeMax - totalRake);
+      const rake = Math.min(Math.floor(sidePot.amount * this.rakePct), rakeRoom);
       totalRake += rake;
       const netPot = sidePot.amount - rake;
 
@@ -1182,6 +1190,9 @@ class PokerEngine {
         allIn: false
       };
       this.replacedBots.delete(agentId);
+    } else {
+      // PvP room: remove agent from table entirely
+      this.agents.splice(tableIdx, 1);
     }
 
     // Update chip tracking for conservation check (external chip flow)

@@ -76,10 +76,12 @@ class SupabaseStore {
 
   async addBalance(address, amount) {
     const addr = address.toLowerCase();
-    const cached = this.walletCache.get(addr);
+    let cached = this.walletCache.get(addr);
     if (!cached) {
-      console.error(`[SupabaseStore] addBalance: wallet ${addr} not in cache!`);
-      return;
+      // Auto-create wallet with 0 balance, then add
+      cached = { balance: 0, createdAt: Date.now() };
+      this.walletCache.set(addr, cached);
+      console.log(`[SupabaseStore] Auto-created wallet for addBalance: ${addr}`);
     }
     cached.balance += amount;
 

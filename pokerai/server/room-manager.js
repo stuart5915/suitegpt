@@ -182,7 +182,8 @@ class RoomManager {
         const topUp = Math.min(needed, wallet.balance);
         if (topUp <= 0) continue;
 
-        this.store.deductBalance(agent.walletAddress, topUp);
+        const deducted = this.store.deductBalance(agent.walletAddress, topUp);
+        if (deducted === false) continue; // wallet couldn't cover it, skip
         agent.chips += topUp;
         console.log(`[AutoTopUp] ${agent.name}: +${topUp} chips (wallet: ${wallet.balance - topUp})`);
 
@@ -660,7 +661,10 @@ class RoomManager {
     const wallet = this.store.getWallet(walletAddress);
     if (!wallet || wallet.balance < amount) return { error: `Not enough chips! You have ${(wallet ? wallet.balance : 0).toLocaleString()}` };
 
-    this.store.deductBalance(walletAddress, amount);
+    const deducted = this.store.deductBalance(walletAddress, amount);
+    if (deducted === false) {
+      return { error: 'Failed to deduct chips from wallet' };
+    }
     agent.chipStack += amount;
     this.store.saveAgent(agent);
     console.log(`[RoomManager] Funded ${agent.name} with ${amount} chips (total: ${agent.chipStack})`);
@@ -706,12 +710,18 @@ class RoomManager {
     if (!agent) return { error: 'Agent not found' };
 
     // Deduct from wallet
-    this.store.deductBalance(walletAddress, amount);
+    const deducted = this.store.deductBalance(walletAddress, amount);
+    if (deducted === false) {
+      return { error: 'Failed to deduct chips from wallet' };
+    }
+
+    // Add backed chips to the agent's stack (so the chips are actually in play)
+    agent.chips += amount;
 
     // Create backing record
     const backing = this.store.createBacking(walletAddress, agentId, amount, roomId);
 
-    console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips`);
+    console.log(`[RoomManager] ${walletAddress.slice(0,8)} backed ${agent.name} with ${amount} chips (stack now ${agent.chips})`);
     return { success: true, agentId, agentName: agent.name, amount };
   }
 
@@ -722,6 +732,17 @@ class RoomManager {
 
     const currentValue = Math.max(0, backing.currentValue);
     const pnl = currentValue - backing.chipsStaked;
+
+    // Deduct the backing's current value from the agent's chip stack
+    const table = this._findAgentTable(backing.agentId);
+    if (table) {
+      const agent = table.agents.find(a => a.id === backing.agentId);
+      if (agent) {
+        // Don't take more than the agent has
+        const deductFromAgent = Math.min(currentValue, agent.chips);
+        agent.chips -= deductFromAgent;
+      }
+    }
 
     // Return current value to wallet
     if (currentValue > 0) {
@@ -798,12 +819,16 @@ class RoomManager {
 
     // If agent is already funded (via fundAgent), use their existing stack
     // Otherwise fund inline (legacy flow)
-    if (chipStack && chipStack > 0) {
+    let fundedInline = false;
+    if (lobbyAgent.chipStack >= 500) {
+      // Already pre-funded — skip inline funding even if chipStack param was provided
+    } else if (chipStack && chipStack > 0) {
       if (chipStack < 500) return { error: 'Minimum buy-in is 500 chips' };
       const wallet = this.store.getWallet(walletAddress);
       if (!wallet) return { error: 'Wallet not found' };
       if (wallet.balance < chipStack) return { error: `Not enough chips! You have ${wallet.balance.toLocaleString()}` };
       lobbyAgent.chipStack = chipStack;
+      fundedInline = true;
     }
 
     if (!lobbyAgent.chipStack || lobbyAgent.chipStack < 500) {
@@ -820,8 +845,17 @@ class RoomManager {
     if (table._needsStart) { delete table._needsStart; table.start(); }
 
     // Deduct balance if funded inline (not pre-funded)
-    if (chipStack && chipStack > 0) {
-      this.store.deductBalance(walletAddress, chipStack);
+    if (fundedInline) {
+      const deducted = this.store.deductBalance(walletAddress, chipStack);
+      if (deducted === false) {
+        // Roll back: unseat the agent and return to lobby
+        const agentIdx = table.agents.findIndex(a => a.id === agentId);
+        if (agentIdx >= 0) table._executeUnseat(agentIdx, table.agents[agentIdx]);
+        lobbyAgent.chipStack = 0;
+        if (!this.lobbyAgents.has(walletAddress)) this.lobbyAgents.set(walletAddress, []);
+        this.lobbyAgents.get(walletAddress).push(lobbyAgent);
+        return { error: 'Failed to deduct chips from wallet' };
+      }
     }
 
     // Remove from lobby on success
@@ -881,7 +915,15 @@ class RoomManager {
     this.lobbyAgents.get(walletAddress).push(lobbyAgent);
 
     // Auto-withdraw all backers when agent leaves table
+    // Deduct backing value from agent's chipStack so chips are conserved
     if (this.store.withdrawAllBackingsForAgent) {
+      const backings = this.store.getBackingsForAgent ? this.store.getBackingsForAgent(lobbyAgent.id) : [];
+      const totalBackingValue = backings.reduce((sum, b) => sum + Math.max(0, b.currentValue), 0);
+      if (totalBackingValue > 0) {
+        const deductFromAgent = Math.min(totalBackingValue, lobbyAgent.chipStack);
+        lobbyAgent.chipStack -= deductFromAgent;
+        console.log(`[RoomManager] Deducted ${deductFromAgent} backing chips from ${lobbyAgent.name} on leave (remaining: ${lobbyAgent.chipStack})`);
+      }
       this.store.withdrawAllBackingsForAgent(lobbyAgent.id);
     }
 
@@ -917,7 +959,13 @@ class RoomManager {
     const result = table.topUpAgent(walletAddress, agentId, amount);
     if (result.error) return result;
 
-    this.store.deductBalance(walletAddress, amount);
+    const deducted = this.store.deductBalance(walletAddress, amount);
+    if (deducted === false) {
+      // Roll back: remove the top-up chips from the agent
+      const agent = table.agents.find(a => a.id === agentId);
+      if (agent) agent.chips -= amount;
+      return { error: 'Failed to deduct chips from wallet' };
+    }
     result.newBalance = this.store.getWallet(walletAddress).balance;
     return result;
   }
@@ -926,8 +974,12 @@ class RoomManager {
     let finalChips = 0;
     let pnl = 0;
 
-    // Auto-withdraw all backers before removing agent
-    if (this.store.withdrawAllBackingsForAgent) {
+    // Calculate total backing value BEFORE withdrawing, so we can deduct from finalChips
+    let totalBackingValue = 0;
+    if (this.store.getBackingsForAgent && this.store.withdrawAllBackingsForAgent) {
+      const backings = this.store.getBackingsForAgent(agentId);
+      totalBackingValue = backings.reduce((sum, b) => sum + Math.max(0, b.currentValue), 0);
+      // Withdraw all backings (returns chips to backers' wallets)
       this.store.withdrawAllBackingsForAgent(agentId);
     }
 
@@ -958,6 +1010,13 @@ class RoomManager {
       } else {
         return { error: 'Agent not found' };
       }
+    }
+
+    // Deduct backing value from finalChips (backers already received their share above)
+    if (totalBackingValue > 0) {
+      const deduct = Math.min(totalBackingValue, finalChips);
+      finalChips -= deduct;
+      console.log(`[RoomManager] Deducted ${deduct} backing chips from deleteAgent finalChips (owner gets ${finalChips})`);
     }
 
     // Return chips to wallet
