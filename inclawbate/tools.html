@@ -991,8 +991,8 @@
         <button class="modal-close" onclick="closeAgentModal()">&times;</button>
         <h3>@inclawbator Schedule</h3>
         <div class="sched-info">
-            <span class="sched-info-item">12 slots/day &middot; <strong id="schedCost">~$0.05</strong> per slot</span>
-            <span class="sched-info-item">Balance: <strong id="schedBalance">—</strong></span>
+            <span class="sched-info-item"><strong id="schedCost">10 credits per slot</strong></span>
+            <span class="sched-info-item"><strong id="schedBalance">—</strong></span>
         </div>
 
         <!-- Day selector strip -->
@@ -1243,46 +1243,6 @@ async function submitSocials(e) {
     }
 }
 
-// ── AI Agent Modal ──
-var _agentProjects = [];
-var _clawsPerCredit = 0; // how many CLAWS = 1 credit (dynamic)
-var _clawsPrice = 0;
-var CREDIT_COST_PER_POST = 10;
-var USD_PER_CREDIT = 0.005;
-
-// Fetch live CLAWS price and compute tokens-per-credit
-(function() {
-    fetch('https://api.dexscreener.com/latest/dex/tokens/0x7ca47B141639B893C6782823C0b219f872056379')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            if (d.pairs && d.pairs.length > 0) {
-                _clawsPrice = parseFloat(d.pairs[0].priceUsd) || 0;
-                if (_clawsPrice > 0) {
-                    _clawsPerCredit = USD_PER_CREDIT / _clawsPrice;
-                }
-            }
-        })
-        .catch(function() {});
-})();
-
-function formatClaws(n) {
-    if (n >= 1000000000) return (n / 1000000000).toFixed(2) + 'B';
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return Math.round(n).toLocaleString();
-}
-
-// Read on-chain CLAWS balance via server-side API (avoids CORS issues)
-function fetchClawsBalance(wallet) {
-    return fetch('/api/inclawbate/claws-balance?wallet=' + encodeURIComponent(wallet))
-        .then(function(r) { return r.json(); })
-        .then(function(d) { return d.balance || 0; });
-}
-
-function getClawsCostPerPost() {
-    return _clawsPerCredit * CREDIT_COST_PER_POST;
-}
-
 // ── Schedule View State ──
 var _schedSlots = [];
 var _schedProjects = [];
@@ -1298,24 +1258,37 @@ async function openAgentModal() {
     document.getElementById('schedBookForm').style.display = 'none';
     document.getElementById('schedBookSuccess').style.display = 'none';
     document.getElementById('schedBookError').style.display = 'none';
+    document.getElementById('schedDays').innerHTML = '';
+    document.getElementById('schedSlots').innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:var(--text-dim)">Loading schedule...</div>';
 
     var auth = getAuth();
     _userWallet = auth ? (auth.wallet || '').toLowerCase() : '';
 
-    // Show CLAWS balance if logged in
-    if (_userWallet) {
-        fetchClawsBalance(_userWallet).then(function(bal) {
-            document.getElementById('schedBalance').textContent = formatClaws(bal) + ' CLAWS';
-        }).catch(function() {
+    // Show credit balance if logged in
+    if (auth && auth.token) {
+        document.getElementById('schedBalance').textContent = '...';
+        fetch('/api/inclawbate/credits', {
+            headers: { 'Authorization': 'Bearer ' + auth.token }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var bal = d.credits || 0;
+            document.getElementById('schedBalance').textContent = bal + ' credits';
+            if (bal < 10) {
+                document.getElementById('schedBalance').style.color = '#f87171';
+            } else {
+                document.getElementById('schedBalance').style.color = '';
+            }
+        })
+        .catch(function() {
             document.getElementById('schedBalance').textContent = '—';
         });
+    } else {
+        document.getElementById('schedBalance').innerHTML = '<a href="/launch" style="color:var(--seafoam-400);text-decoration:none">Sign in to book</a>';
     }
 
-    // Update cost display
-    var costPerSlot = getClawsCostPerPost();
-    if (costPerSlot > 0) {
-        document.getElementById('schedCost').textContent = '~' + formatClaws(costPerSlot) + ' CLAWS (~$0.05)';
-    }
+    // Cost display
+    document.getElementById('schedCost').textContent = '10 credits per slot';
 
     // Fetch schedule (next 7 days)
     var start = new Date();
@@ -1328,6 +1301,8 @@ async function openAgentModal() {
         _schedSlots = data.slots || [];
     } catch (e) {
         _schedSlots = [];
+        document.getElementById('schedSlots').innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:#f87171">Failed to load schedule. Try again.</div>';
+        return;
     }
 
     // Fetch user's projects for booking dropdown
@@ -1476,9 +1451,10 @@ function openBookForm(slotTime) {
     sel.innerHTML = '';
 
     if (!_userWallet) {
+        document.getElementById('schedBookBtn').disabled = true;
         var opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = 'Sign in to book slots';
+        opt.textContent = 'Sign in first to book slots';
         sel.appendChild(opt);
     } else if (!_schedProjects.length) {
         var opt = document.createElement('option');

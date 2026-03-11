@@ -133,7 +133,7 @@ export default async function handler(req, res) {
             const isFree = FREE_WALLETS.includes(wallet);
 
             if (!isFree && (!profile || (profile.credits || 0) < CREDIT_COST)) {
-                return res.status(402).json({ error: 'Insufficient CLAWS. Need ' + CREDIT_COST + ' credits.' });
+                return res.status(402).json({ error: 'Not enough credits. You need ' + CREDIT_COST + ' credits to book a slot.' });
             }
 
             // Try to insert (unique constraint prevents double-booking)
