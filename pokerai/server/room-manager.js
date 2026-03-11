@@ -262,16 +262,11 @@ class RoomManager {
         }
       }
     } else {
-      // No humans — keep platform agents at first table as showcase
-      for (let i = 1; i < stats.length; i++) {
-        if (stats[i].platform > 0) {
-          this._extractPlatformAgents(stats[i].table);
+      // No humans — pull all platform agents back to lobby (save resources)
+      for (const s of stats) {
+        if (s.platform > 0) {
+          this._extractPlatformAgents(s.table);
         }
-      }
-      // Seed first table if needed
-      const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - stats[0].table.agents.length);
-      if (needed > 0) {
-        this._seedPlatformAgents(stats[0].table, roomId, needed);
       }
     }
 
