@@ -358,8 +358,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     z-index: 10;
+  }
+
+  .seat.seat-bottom {
+    transform: translate(-50%, -70%);
   }
 
   .seat-avatar {
@@ -4865,7 +4869,8 @@ function renderTableSeats() {
   gameState.agents.forEach((agent, i) => {
     const pos = SEAT_POSITIONS[i];
     const seat = document.createElement('div');
-    seat.className = 'seat';
+    const bottomSeat = (i === 0 || i === 1 || i === 7);
+    seat.className = 'seat' + (bottomSeat ? ' seat-bottom' : '');
     seat.id = `seat-${agent.id}`;
     seat.style.top = pos.top;
     seat.style.left = pos.left;
@@ -4960,8 +4965,15 @@ function renderTableSeats() {
     const myAgentClass = isMyAgent ? ' my-agent' : '';
     const nameSize = isMyAgent ? 'font-size:15px;font-weight:700' : '';
     const chipsSize = isMyAgent ? 'font-size:16px;font-weight:800' : '';
+    // Bottom-half seats: render cards ABOVE the agent (toward table center)
+    const isBottomSeat = i === 0 || i === 1 || i === 7;
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
+      ${isBottomSeat ? pocketHTML : ''}
+      ${isBottomSeat ? pnlBadge : ''}
+      ${isBottomSeat ? statusLabel : ''}
+      ${isBottomSeat ? betHTML : ''}
+      ${isBottomSeat ? winPctHTML : ''}
       ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
       <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
            title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
@@ -4971,11 +4983,11 @@ function renderTableSeats() {
       </div>
       <div class="seat-name" style="${nameColor};${nameSize}">${agent.name.length > 12 ? agent.name.slice(0,12) : agent.name}</div>
       <div class="seat-chips" style="${chipsSize}">${formatChips(agent.chips)}</div>
-      ${winPctHTML}
-      ${betHTML}
-      ${statusLabel}
-      ${pnlBadge}
-      ${pocketHTML}
+      ${!isBottomSeat ? winPctHTML : ''}
+      ${!isBottomSeat ? betHTML : ''}
+      ${!isBottomSeat ? statusLabel : ''}
+      ${!isBottomSeat ? pnlBadge : ''}
+      ${!isBottomSeat ? pocketHTML : ''}
     `;
     felt.appendChild(seat);
 
