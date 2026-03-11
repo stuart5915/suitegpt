@@ -426,6 +426,39 @@ app.post('/check-deposit', async (req, res) => {
   }
 });
 
+// Sync wallet balance to match on-chain reality
+app.post('/sync-balance', async (req, res) => {
+  if (!chain) return res.json({ error: 'Chain not configured' });
+  const { walletAddress } = req.body;
+  if (!walletAddress) return res.json({ error: 'Missing walletAddress' });
+  const addr = walletAddress.toLowerCase();
+
+  try {
+    const stats = await chain.vault.playerStats(addr);
+    const onChainDeposited = Number(stats[0]);
+    const onChainWithdrawn = Number(stats[1]);
+    const depositedChips = Math.floor((onChainDeposited * 10000) / 1e6);
+    const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
+    const agentChips = rooms.getChipsInPlay(addr);
+    const correctBalance = Math.max(0, depositedChips - withdrawnChips - agentChips);
+
+    const wallet = await rooms.store.getOrCreateWallet(addr);
+    const oldBalance = wallet.balance;
+    await rooms.store.updateBalance(addr, correctBalance);
+
+    // Notify connected client
+    for (const [ws, client] of clients) {
+      if (client.walletAddress === addr && ws.readyState === 1) {
+        sendBalance(ws, addr);
+      }
+    }
+
+    res.json({ success: true, old: oldBalance, new: correctBalance, depositedChips, withdrawnChips, agentChips });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.get('/debug/supabase-test', async (req, res) => {
   if (!rooms.store.supabase) return res.json({ error: 'No Supabase connection' });
   try {
