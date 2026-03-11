@@ -433,13 +433,18 @@ app.get('/debug/supabase-test', async (req, res) => {
     const { data: agents, error: readErr } = await rooms.store.supabase.from('poker_agents').select('id, name, wallet_address').limit(10);
     if (readErr) return res.json({ error: 'Read failed: ' + readErr.message, code: readErr.code, details: readErr.details });
 
-    // If cache has agents but DB doesn't, try to force-save and return the error
+    // If cache has agents but DB doesn't, try saveAgent (which ensures wallet exists first)
     let writeTest = null;
     if (rooms.store.agentCache.length > 0 && agents.length === 0) {
       const testAgent = rooms.store.agentCache[0];
-      const dbRow = rooms.store._toDbAgent(testAgent);
-      const { error: writeErr } = await rooms.store.supabase.from('poker_agents').upsert(dbRow, { onConflict: 'id' });
-      writeTest = writeErr ? { error: writeErr.message, code: writeErr.code, details: writeErr.details, hint: writeErr.hint, row: dbRow } : { success: true, row: dbRow };
+      try {
+        await rooms.store.saveAgent(testAgent);
+        // Re-read to verify
+        const { data: check } = await rooms.store.supabase.from('poker_agents').select('id, name').eq('id', testAgent.id);
+        writeTest = check && check.length > 0 ? { success: true, saved: check[0] } : { error: 'saveAgent ran but row not found' };
+      } catch (e) {
+        writeTest = { error: e.message };
+      }
     }
 
     res.json({ agentCount: agents.length, agents, cacheCount: rooms.store.agentCache.length, writeTest });
