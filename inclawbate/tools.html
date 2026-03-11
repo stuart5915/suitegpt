@@ -128,6 +128,87 @@
             font-weight: 600;
             color: var(--lobster-300, #e87955);
             flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        /* ── Completed step ── */
+        .tool-row.step-done .launch-step-num {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #4ade80;
+        }
+        .tool-row.step-done {
+            opacity: 0.7;
+        }
+        .tool-row.step-done:hover { opacity: 1; }
+
+        /* ── Project Progress Tracker ── */
+        .progress-tracker {
+            margin-bottom: var(--space-lg);
+            animation: fadeUp 0.5s ease both;
+        }
+        .progress-tracker-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+        .progress-tracker-label {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+        .progress-tracker select {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            padding: 6px 10px;
+            outline: none;
+            cursor: pointer;
+            max-width: 220px;
+        }
+        .progress-tracker select:focus {
+            border-color: var(--lobster-400);
+        }
+        .progress-bar-wrap {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-elevated);
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--lobster-400), #4ade80);
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+        .progress-bar-text {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            text-align: right;
+        }
+        .progress-no-wallet {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            background: var(--bg-elevated);
+            border: 1px dashed var(--border-default);
+            text-align: center;
+        }
+        .progress-no-wallet a {
+            color: var(--lobster-400);
+            text-decoration: none;
         }
 
         .tool-row-icon {
@@ -532,6 +613,8 @@
             }
             .tool-row-arrow { display: none; }
             .tool-copy-link { opacity: 0.6; }
+            .progress-tracker-header { flex-wrap: wrap; }
+            .progress-tracker select { max-width: 100%; width: 100%; margin-top: 4px; }
         }
     </style>
 </head>
@@ -568,6 +651,21 @@
         <p>Everything you need to go from idea to live &mdash; token, app, staking, socials, and distribution.</p>
         <a href="/inclawbator" style="display:inline-block;margin-top:var(--space-sm);font-size:0.8rem;color:var(--lobster-300,#e87955);text-decoration:none;opacity:0.8;transition:opacity 0.15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Learn more about the Inclawbator &rarr;</a>
     </section>
+
+    <!-- Project Progress Tracker -->
+    <div class="progress-tracker" id="progressTracker" style="display:none">
+        <div class="progress-tracker-header">
+            <span class="progress-tracker-label">Your Progress</span>
+            <select id="progressProjectSelect"></select>
+        </div>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        <div class="progress-bar-text" id="progressBarText">0 / 7 steps</div>
+    </div>
+    <div class="progress-tracker" id="progressNoWallet" style="display:none">
+        <div class="progress-no-wallet">Connect your wallet to track project progress &mdash; or follow the steps below to get started.</div>
+    </div>
 
     <!-- Create Your Project -->
     <div class="section-header">
@@ -996,6 +1094,115 @@ async function submitSocials(e) {
 }
 
 // Marketing modal removed — now lives at /market-dash
+
+// ── Project Progress Tracker ──
+(function() {
+    var tracker = document.getElementById('progressTracker');
+    var noWallet = document.getElementById('progressNoWallet');
+    var select = document.getElementById('progressProjectSelect');
+    var barFill = document.getElementById('progressBarFill');
+    var barText = document.getElementById('progressBarText');
+    var userProjects = [];
+
+    // Step completion checks — maps data-tool/data-action/id to project field checks
+    var STEP_CHECKS = {
+        'launch':   function(p) { return !!p.token_address; },
+        'pool':     function(p) { return !!p.staking_address; },
+        'build':    function(p) { return !!(p.app_slug || p.app_id); },
+        'socials':  function(p) { return !!(p.x_handle || p.telegram_url || p.website_url); },
+        'incubate': function(p) { return p.status === 'active' || p.status === 'incubating'; },
+        'agent':    function(p) { return false; },  // no field yet, always pending
+        'disperse': function(p) { return false; }   // manual step, always pending
+    };
+
+    function getStepKey(row) {
+        return row.getAttribute('data-tool') || row.getAttribute('data-action') || row.id.replace('tool-', '');
+    }
+
+    function updateProgress(project) {
+        var steps = document.querySelectorAll('.launch-steps .tool-row');
+        var done = 0;
+        var total = steps.length;
+
+        steps.forEach(function(row) {
+            var key = getStepKey(row);
+            var check = STEP_CHECKS[key];
+            var numEl = row.querySelector('.launch-step-num');
+            if (check && project && check(project)) {
+                row.classList.add('step-done');
+                if (numEl) numEl.textContent = '\u2713';
+                done++;
+            } else {
+                row.classList.remove('step-done');
+                if (numEl) {
+                    var idx = Array.from(steps).indexOf(row);
+                    numEl.textContent = String(idx + 1).padStart(2, '0');
+                }
+            }
+        });
+
+        var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        barFill.style.width = pct + '%';
+        barText.textContent = done + ' / ' + total + ' steps';
+    }
+
+    function showTracker(projects) {
+        userProjects = projects;
+        noWallet.style.display = 'none';
+        tracker.style.display = 'block';
+
+        select.innerHTML = '';
+        if (projects.length === 0) {
+            var opt = document.createElement('option');
+            opt.textContent = 'No projects yet — start below!';
+            opt.value = '';
+            select.appendChild(opt);
+            updateProgress(null);
+            return;
+        }
+
+        projects.forEach(function(p, i) {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = p.name || p.token_symbol || 'Project';
+            select.appendChild(opt);
+        });
+
+        select.addEventListener('change', function() {
+            var idx = parseInt(select.value, 10);
+            updateProgress(isNaN(idx) ? null : userProjects[idx]);
+        });
+
+        updateProgress(projects[0]);
+    }
+
+    function init() {
+        try {
+            var profile = JSON.parse(localStorage.getItem('inclawbate_profile'));
+            if (!profile || !profile.wallet_address) {
+                noWallet.style.display = 'block';
+                return;
+            }
+            fetch('/api/inclawbate/projects?wallet=' + encodeURIComponent(profile.wallet_address.toLowerCase()))
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    showTracker(d.projects || d || []);
+                })
+                .catch(function() {
+                    noWallet.style.display = 'block';
+                });
+        } catch(e) {
+            noWallet.style.display = 'block';
+        }
+    }
+
+    // Init after a short delay to let wallet auth settle
+    setTimeout(init, 300);
+    // Re-init if user logs in
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'inclawbate_profile') setTimeout(init, 100);
+    });
+})();
 
 // ── Angel NFT Banner Check ──
 (function() {
