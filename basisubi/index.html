@@ -1777,180 +1777,221 @@
 
                     <!-- ═══ FULL STRATEGY EXPLAINER ═══ -->
                     <div class="vault-explainer">
-                        <div class="vault-explainer-title">How the Vault Works</div>
+                        <div class="vault-explainer-title">How the Vault Works &mdash; Plain English</div>
 
                         <div class="vault-explainer-grid">
-                            <!-- 1. The Range -->
+                            <!-- 1. The Big Picture -->
                             <div class="vault-explain-card">
                                 <h4>
-                                    <span class="vault-explain-icon" style="background:var(--accent-dim); border:1px solid var(--accent);">&#x1F3AF;</span>
-                                    The Range
+                                    <span class="vault-explain-icon" style="background:var(--accent-dim); border:1px solid var(--accent);">&#x1F4A1;</span>
+                                    The Big Picture
                                 </h4>
                                 <p>
-                                    The vault sets a <strong style="color:var(--text);">concentrated price range</strong> around the current ETH price.
-                                    The width is controlled by <code>rangeWidth</code> &mdash; measured in ticks (1 tick &asymp; 0.01%).
-                                    A range of 1000 ticks means <strong style="color:var(--text);">&plusmn;5%</strong> around current price.
+                                    You deposit USDC. The vault takes your USDC and puts it to work on <strong style="color:var(--text);">Aerodrome</strong>
+                                    (the biggest exchange on Base). It provides liquidity for ETH/USDC trades &mdash; every time someone swaps ETH and USDC on Aerodrome,
+                                    a small trading fee gets paid. Your money earns a cut of those fees.
                                 </p>
                                 <p style="margin-top:8px;">
-                                    <strong style="color:var(--text);">Why &plusmn;5%?</strong> Tighter ranges capture more fees per dollar of capital (up to 4000x vs full-range),
-                                    but require more frequent rebalances. &plusmn;5% balances fee efficiency against rebalance costs.
-                                </p>
-                                <p style="margin-top:8px; font-family:var(--mono); font-size:0.72rem; color:var(--accent-bright);">
-                                    Example: ETH at $2,500 &rarr; range = $2,375 to $2,625
+                                    The trick is <strong style="color:var(--text);">concentrated liquidity</strong> &mdash; instead of spreading your money across every possible price,
+                                    the vault focuses it in a tight band around where ETH is trading right now. This makes your money work much harder (earning more fees per dollar)
+                                    but it means the vault needs to actively manage the position.
                                 </p>
                             </div>
 
-                            <!-- 2. How Rebalance Works -->
+                            <!-- 2. The Price Range -->
                             <div class="vault-explain-card">
                                 <h4>
-                                    <span class="vault-explain-icon" style="background:var(--cyan-dim); border:1px solid var(--cyan);">&#x1F504;</span>
-                                    Rebalancing
+                                    <span class="vault-explain-icon" style="background:var(--cyan-dim); border:1px solid var(--cyan);">&#x1F3AF;</span>
+                                    The Price Range
                                 </h4>
                                 <p>
-                                    When ETH&rsquo;s price drifts <strong style="color:var(--text);">outside the range + a buffer zone</strong>,
-                                    the position stops earning fees. Anyone can call <code>rebalance()</code> to fix it:
+                                    The vault picks a <strong style="color:var(--text);">window of about &plusmn;5%</strong> around the current ETH price.
+                                </p>
+                                <p style="margin-top:8px; padding:10px; background:var(--surface-2); border-radius:8px; font-size:0.82rem;">
+                                    <strong style="color:var(--accent-bright);">Example:</strong> ETH is at $2,500.<br>
+                                    The vault covers <strong style="color:var(--text);">$2,375 to $2,625</strong>.<br>
+                                    As long as ETH stays in that window, you&rsquo;re earning fees.
+                                </p>
+                                <p style="margin-top:8px;">
+                                    <strong style="color:var(--text);">Why 5%?</strong> A tighter range earns more fees but needs adjusting more often. A wider range earns less but is more stable. 5% is the sweet spot &mdash; high fee capture without constant adjustments.
+                                </p>
+                            </div>
+
+                            <!-- 3. Rebalancing -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:hsla(40,90%,55%,0.1); border:1px solid hsl(40,90%,55%);">&#x1F504;</span>
+                                    What Happens When ETH Moves Too Far
+                                </h4>
+                                <p>
+                                    If ETH&rsquo;s price drifts outside the window, the vault <strong style="color:#ff6450;">stops earning</strong>. It&rsquo;s just sitting there doing nothing.
+                                    That&rsquo;s when a <strong style="color:var(--text);">rebalance</strong> needs to happen:
                                 </p>
                                 <div class="vault-flow-steps">
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">01</div>
-                                        <div class="vault-flow-step-text">Pull all liquidity from old position</div>
+                                        <div class="vault-flow-step-num">1</div>
+                                        <div class="vault-flow-step-text">Pull all money out of the old position</div>
                                         <span class="vault-flow-arrow">&rarr;</span>
                                     </div>
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">02</div>
-                                        <div class="vault-flow-step-text">Collect fees, burn old NFT</div>
+                                        <div class="vault-flow-step-num">2</div>
+                                        <div class="vault-flow-step-text">Convert everything back to USDC</div>
                                         <span class="vault-flow-arrow">&rarr;</span>
                                     </div>
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">03</div>
-                                        <div class="vault-flow-step-text">Swap everything to USDC</div>
-                                        <span class="vault-flow-arrow">&rarr;</span>
-                                    </div>
-                                    <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">04</div>
-                                        <div class="vault-flow-step-text">Mint new position centered on current price</div>
+                                        <div class="vault-flow-step-num">3</div>
+                                        <div class="vault-flow-step-text">Create a new position centered on where ETH is <em>now</em></div>
                                     </div>
                                 </div>
-                                <p style="margin-top:8px;">
-                                    The <code>rebalanceBuffer</code> adds extra ticks before triggering &mdash; prevents rebalancing on tiny price fluctuations.
-                                    Cost: ~$0.50&ndash;$2 in swap fees per rebalance on Base.
+                                <p style="margin-top:10px;">
+                                    <strong style="color:var(--text);">Anyone</strong> can trigger a rebalance &mdash; it&rsquo;s not locked to the admin. There&rsquo;s also a small buffer zone
+                                    so it doesn&rsquo;t rebalance on every tiny wiggle. Each rebalance costs about $0.50&ndash;$2 in swap fees on Base.
                                 </p>
                             </div>
 
-                            <!-- 3. How Compound Works -->
+                            <!-- 4. Compounding -->
                             <div class="vault-explain-card">
                                 <h4>
                                     <span class="vault-explain-icon" style="background:var(--green-dim); border:1px solid var(--green);">&#x1F4B0;</span>
-                                    Compounding
+                                    Compounding (Putting Money to Work)
                                 </h4>
                                 <p>
-                                    When USDC sits idle in the vault (from new deposits or collected fees), anyone can call <code>compound()</code>:
+                                    When you deposit USDC, it doesn&rsquo;t go into the LP position immediately &mdash; it sits idle in the vault.
+                                    Same with trading fees the vault collects. To actually put this money to work, someone calls <strong style="color:var(--text);">compound</strong>:
                                 </p>
                                 <div class="vault-flow-steps">
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">01</div>
-                                        <div class="vault-flow-step-text">Collect any accrued trading fees</div>
+                                        <div class="vault-flow-step-num">1</div>
+                                        <div class="vault-flow-step-text">Collect any earned trading fees</div>
                                         <span class="vault-flow-arrow">&rarr;</span>
                                     </div>
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">02</div>
-                                        <div class="vault-flow-step-text">Calculate optimal ETH/USDC split for the range</div>
+                                        <div class="vault-flow-step-num">2</div>
+                                        <div class="vault-flow-step-text">Swap some USDC to ETH (to match the range ratio)</div>
                                         <span class="vault-flow-arrow">&rarr;</span>
                                     </div>
                                     <div class="vault-flow-step">
-                                        <div class="vault-flow-step-num">03</div>
-                                        <div class="vault-flow-step-text">Swap portion to ETH, add both to LP</div>
+                                        <div class="vault-flow-step-num">3</div>
+                                        <div class="vault-flow-step-text">Add both ETH + USDC into the LP position</div>
                                     </div>
                                 </div>
-                                <p style="margin-top:8px;">
-                                    Only runs if idle USDC &ge; <code>compoundMinimum</code> (saves gas on tiny amounts).
-                                    Only works when the position is <strong style="color:var(--green);">in range</strong> &mdash; if out of range, call rebalance first.
+                                <p style="margin-top:10px;">
+                                    Like rebalancing, <strong style="color:var(--text);">anyone can call compound</strong> &mdash; it&rsquo;s permissionless. It only works when the position is currently earning (in range).
+                                    Won&rsquo;t run if there&rsquo;s less than ~$10 idle (not worth the gas).
                                 </p>
                             </div>
 
-                            <!-- 4. Deposit / Withdraw -->
+                            <!-- 5. Deposit & Withdraw -->
                             <div class="vault-explain-card">
                                 <h4>
-                                    <span class="vault-explain-icon" style="background:hsla(40,90%,55%,0.1); border:1px solid hsl(40,90%,55%);">&#x1F4E5;</span>
-                                    Deposit &amp; Withdraw
+                                    <span class="vault-explain-icon" style="background:var(--accent-dim); border:1px solid var(--accent);">&#x1F4E5;</span>
+                                    Depositing
                                 </h4>
                                 <p>
-                                    <strong style="color:var(--text);">Deposit:</strong> Send USDC &rarr; receive bUSDC shares.
-                                    Share price = <code>totalAssets / totalSupply</code>.
-                                    If the vault has $10,000 and you deposit $1,000, you own 10%.
-                                    USDC sits idle until someone calls <code>compound()</code>.
+                                    You send USDC to the vault. You get back <strong style="color:var(--text);">bUSDC</strong> tokens &mdash; think of them as your receipt.
+                                </p>
+                                <p style="margin-top:8px; padding:10px; background:var(--surface-2); border-radius:8px; font-size:0.82rem;">
+                                    <strong style="color:var(--accent-bright);">Example:</strong> The vault has $10,000 total. You deposit $1,000.<br>
+                                    You now own <strong style="color:var(--text);">10%</strong> of the vault.<br>
+                                    If the vault grows to $12,000, your 10% is worth <strong style="color:var(--green);">$1,200</strong>.
                                 </p>
                                 <p style="margin-top:8px;">
-                                    <strong style="color:var(--text);">Withdraw:</strong> Burn bUSDC &rarr; receive USDC.
-                                    If the vault doesn&rsquo;t have enough idle USDC, it automatically pulls from the LP position
-                                    (proportional liquidity removal + WETH&rarr;USDC swap).
-                                    <strong style="color:var(--green);">Withdrawals never pause</strong> &mdash; even in emergencies.
+                                    There&rsquo;s a $25,000 deposit cap while the vault is new &mdash; this limits risk during early operation.
+                                </p>
+                            </div>
+
+                            <!-- 6. Withdrawing -->
+                            <div class="vault-explain-card">
+                                <h4>
+                                    <span class="vault-explain-icon" style="background:var(--green-dim); border:1px solid var(--green);">&#x1F3E6;</span>
+                                    Withdrawing
+                                </h4>
+                                <p>
+                                    Give back your bUSDC, get your USDC &mdash; now worth more than you put in (from the fees earned).
+                                    <strong style="color:var(--green);">No lock-ups, no waiting period.</strong>
+                                </p>
+                                <p style="margin-top:8px;">
+                                    If the vault doesn&rsquo;t have enough USDC sitting idle, it automatically pulls from the LP position to cover your withdrawal.
+                                    You don&rsquo;t need to worry about this &mdash; it just works.
+                                </p>
+                                <p style="margin-top:8px;">
+                                    <strong style="color:var(--green);">Withdrawals can never be paused.</strong> Even if the admin pauses the vault for safety, you can always get your money out.
+                                    This is built into the smart contract and can&rsquo;t be changed.
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Strategy Parameters Table -->
+                        <!-- Fee Structure -->
+                        <div style="margin-top:20px; padding:18px; background:var(--green-dim); border:1px solid rgba(50,200,130,0.2); border-radius:12px;">
+                            <h4 style="font-family:var(--font-display); font-size:0.88rem; font-weight:700; color:var(--green); margin-bottom:10px;">Fees: Zero. All of Them.</h4>
+                            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; text-align:center;">
+                                <div>
+                                    <div style="font-family:var(--mono); font-size:1.3rem; font-weight:700; color:var(--green);">0%</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:4px;">Management Fee</div>
+                                </div>
+                                <div>
+                                    <div style="font-family:var(--mono); font-size:1.3rem; font-weight:700; color:var(--green);">0%</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:4px;">Performance Fee</div>
+                                </div>
+                                <div>
+                                    <div style="font-family:var(--mono); font-size:1.3rem; font-weight:700; color:var(--green);">0%</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:4px;">Deposit / Withdraw</div>
+                                </div>
+                            </div>
+                            <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:12px; text-align:center;">
+                                100% of trading fees earned go back to depositors. This is a public good &mdash; not a business.
+                            </p>
+                        </div>
+
+                        <!-- Vault Settings -->
                         <table class="vault-param-table">
                             <thead>
                                 <tr>
-                                    <th>Parameter</th>
+                                    <th>Setting</th>
                                     <th>Value</th>
-                                    <th>What It Means</th>
+                                    <th>In Plain English</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Range Width</td>
-                                    <td id="v-param-range">1000 ticks</td>
-                                    <td>&plusmn;5% around current ETH price. All deposited capital is concentrated in this band.</td>
+                                    <td>Price Range</td>
+                                    <td id="v-param-range" style="color:var(--accent-bright);">&plusmn;5%</td>
+                                    <td>The vault covers 5% above and below the current ETH price. If ETH is $2,500, the range is $2,375&ndash;$2,625.</td>
                                 </tr>
                                 <tr>
-                                    <td>Rebalance Buffer</td>
-                                    <td id="v-param-buffer">200 ticks</td>
-                                    <td>Price must move 2% beyond range edge before rebalance triggers. Prevents whipsawing.</td>
+                                    <td>Rebalance Trigger</td>
+                                    <td id="v-param-buffer" style="color:var(--accent-bright);">~2% past edge</td>
+                                    <td>ETH has to move about 2% beyond the range before rebalancing kicks in. Small wiggles don&rsquo;t trigger it.</td>
                                 </tr>
                                 <tr>
-                                    <td>Compound Minimum</td>
-                                    <td id="v-param-compound">$10 USDC</td>
-                                    <td>Minimum idle USDC before compound() is worth the gas cost.</td>
+                                    <td>Min Compound</td>
+                                    <td id="v-param-compound" style="color:var(--accent-bright);">~$10</td>
+                                    <td>The vault won&rsquo;t compound if there&rsquo;s less than $10 idle. Not worth paying gas for tiny amounts.</td>
                                 </tr>
                                 <tr>
-                                    <td>Slippage Tolerance</td>
-                                    <td id="v-param-slippage">0.5%</td>
-                                    <td>Max acceptable slippage on swaps. Reverts if price moves more than this during a transaction.</td>
+                                    <td>Slippage Guard</td>
+                                    <td id="v-param-slippage" style="color:var(--accent-bright);">0.5%</td>
+                                    <td>If a swap would lose more than 0.5% to price movement, the transaction cancels itself. Protects against bad fills.</td>
                                 </tr>
                                 <tr>
                                     <td>Deposit Cap</td>
-                                    <td id="v-param-cap">$25,000</td>
-                                    <td>Maximum total vault TVL. Limits risk during early operation.</td>
-                                </tr>
-                                <tr>
-                                    <td>Performance Fee</td>
-                                    <td style="color:var(--green);">0%</td>
-                                    <td>Zero fees. 100% of trading fees earned go back to depositors. Pure public good.</td>
-                                </tr>
-                                <tr>
-                                    <td>Management Fee</td>
-                                    <td style="color:var(--green);">0%</td>
-                                    <td>No fee on assets under management. Your principal is never taxed.</td>
+                                    <td id="v-param-cap" style="color:var(--accent-bright);">$25,000</td>
+                                    <td>Total max the vault can hold. Keeps risk manageable while the vault is new.</td>
                                 </tr>
                             </tbody>
                         </table>
 
                         <!-- Risks -->
                         <div style="margin-top:20px; padding:16px; background:rgba(255,100,80,0.05); border:1px solid rgba(255,100,80,0.15); border-radius:12px;">
-                            <h4 style="font-family:var(--font-display); font-size:0.85rem; font-weight:700; color:#ff6450; margin-bottom:8px;">Risks</h4>
-                            <div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.7;">
-                                <strong style="color:var(--text);">Impermanent Loss:</strong> As ETH price moves, the vault&rsquo;s position shifts between ETH and USDC.
-                                If ETH drops 10%, you lose more than a plain holder because concentrated LP amplifies the effect.
-                                Fees earned aim to offset this, but aren&rsquo;t guaranteed to.
+                            <h4 style="font-family:var(--font-display); font-size:0.85rem; font-weight:700; color:#ff6450; margin-bottom:10px;">What Could Go Wrong</h4>
+                            <div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.8;">
+                                <strong style="color:var(--text);">ETH price drops a lot:</strong> Your deposit is split between ETH and USDC. If ETH crashes, the vault ends up holding more ETH (bought on the way down) and less USDC.
+                                When you withdraw, you get back less than you put in. The trading fees earned <em>might</em> make up for it, but they&rsquo;re not guaranteed to. This is called &ldquo;impermanent loss&rdquo; and it&rsquo;s the main risk.
                                 <br><br>
-                                <strong style="color:var(--text);">Rebalance Cost:</strong> Each rebalance swaps all assets to USDC then back to a 50/50 split &mdash;
-                                two swaps = ~0.3&ndash;0.6% in swap fees. Frequent rebalances in volatile markets eat into returns.
+                                <strong style="color:var(--text);">Rebalancing costs money:</strong> Every time the vault rebalances, it swaps tokens &mdash; and every swap has a small fee (~0.3%). If ETH is super volatile and the vault rebalances a lot, those small fees add up.
                                 <br><br>
-                                <strong style="color:var(--text);">Smart Contract Risk:</strong> The vault contracts are upgradeable (UUPS) and managed by an admin.
-                                While the code uses audited OpenZeppelin libraries, bugs are always possible.
-                                Admin can pause deposits (never withdrawals) and upgrade the contract.
+                                <strong style="color:var(--text);">Smart contract bugs:</strong> The vault code uses battle-tested OpenZeppelin libraries, but no code is 100% bug-free.
+                                The admin can pause new deposits if something goes wrong, but <strong style="color:var(--green);">can never lock your withdrawals</strong>.
                             </div>
                         </div>
                     </div>
