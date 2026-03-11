@@ -2235,7 +2235,7 @@
                 volatility: 0.014,
                 meanReversion: 0,
                 events: [],
-                desc: 'ETH trends up ~12% over the year. The vault rebalances a few times as price rises. Fees accumulate but each rebalance crystallizes some IL. Net result: positive, but less than just holding ETH.'
+                desc: 'ETH trends up significantly over the year (~40-50%). The vault rebalances several times as price rises. Fees accumulate but each rebalance crystallizes some IL. Net result: positive, but less than just holding ETH.'
             },
             'steady-down': {
                 name: 'Steady Down',
@@ -2244,7 +2244,7 @@
                 volatility: 0.014,
                 meanReversion: 0,
                 events: [],
-                desc: 'ETH trends down ~12% over the year. The vault earns fees but concentrated IL hurts more than full-range. Each rebalance locks in losses at lower prices. Fees try to offset \u2014 but may not.'
+                desc: 'ETH trends down significantly over the year (~30-40%). The vault earns fees but concentrated IL hurts more than full-range. Each rebalance locks in losses at lower prices. Fees try to offset \u2014 but may not.'
             },
             'crash': {
                 name: 'Crash & Recover',
@@ -2384,8 +2384,12 @@
 
                 // Compound once per day (every 4 steps) — fees go back into LP
                 if (i > 0 && i % STEPS_PER_DAY === 0 && pendingFees > 0 && ir) {
-                    deployed += pendingFees;
+                    // Mark-to-market: deployed capital with IL + new fees
+                    var currentValue = deployed * clPositionValue(price, deployPrice, rL, rU);
+                    deployed = currentValue + pendingFees;
                     pendingFees = 0;
+                    // Reset deploy price — IL now tracked from current price
+                    deployPrice = price;
                 }
 
                 // LP position value with IL applied (only on deployed capital)
@@ -2408,6 +2412,8 @@
                         rL = price * (1 - RANGE_WIDTH / 2);
                         rU = price * (1 + RANGE_WIDTH / 2);
                         rebalanceSteps.push(i);
+                        // Recompute in-range with new bounds
+                        ir = price >= rL && price <= rU;
                     }
                 }
 
@@ -2808,7 +2814,6 @@
             document.getElementById('sim-fees').textContent = '+$' + feesEarned.toFixed(2);
 
             var ilEl = document.getElementById('sim-il');
-            ilEl.textContent = (ilAmount >= 0 ? '+' : '') + '$' + Math.abs(ilAmount).toFixed(2);
             if (ilAmount < -0.5) {
                 ilEl.textContent = '-$' + Math.abs(ilAmount).toFixed(2);
                 ilEl.style.color = '#ff6450';
