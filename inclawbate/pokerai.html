@@ -3972,6 +3972,24 @@
   </div>
 </div>
 
+<!-- Agent Bust Popup -->
+<div class="vault-overlay" id="bustOverlay">
+  <div class="vault-modal" style="text-align:center;padding:32px 28px">
+    <div style="font-size:56px;margin-bottom:12px">💀</div>
+    <h2 style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:800;color:var(--accent-red);margin:0 0 4px">Agent Busted!</h2>
+    <div style="font-size:14px;color:var(--text-secondary);margin-bottom:6px" id="bustAgentName"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:24px">Your agent lost all their chips and can't play.</div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:14px;color:var(--accent-orange);margin-bottom:20px">
+      Auto-leaving in <span id="bustCountdown" style="font-weight:800;font-size:18px;color:var(--accent-gold)">60</span>s
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="bustTopUp()" style="padding:14px;font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(99,102,241,0.1));border:1px solid rgba(99,102,241,0.4);color:var(--accent-primary);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(99,102,241,0.2),rgba(99,102,241,0.1))'">💰 Add More Chips</button>
+      <button onclick="bustFinetune()" style="padding:14px;font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(6,182,212,0.1));border:1px solid rgba(6,182,212,0.4);color:var(--accent-cyan);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(6,182,212,0.25)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(6,182,212,0.2),rgba(6,182,212,0.1))'">🧬 Edit Strategy &amp; Re-Deploy</button>
+      <button onclick="bustLeave()" style="padding:14px;font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);border-radius:12px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.15)'" onmouseout="this.style.background='rgba(239,68,68,0.08)'">🚪 Leave Table</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -4400,6 +4418,14 @@ function applyServerState(data) {
   // Detect hand completion → cache for timeline
   detectHandComplete(data);
 
+  // If bust popup is showing but agent got topped up, close it
+  if (_bustAgentId) {
+    const bustedAgent = data.agents.find(a => a.id === _bustAgentId);
+    if (!bustedAgent || bustedAgent.chips > 0) {
+      closeBustPopup();
+    }
+  }
+
   updateRoomTabs();
   if (!_replayingHand) renderFullState();
 }
@@ -4468,6 +4494,86 @@ function detectHandComplete(data) {
     if (handHistoryCache.length > 50) handHistoryCache.shift();
 
     renderTimeline();
+
+    // Check if user's agent went bust this hand
+    checkMyAgentBust(data);
+  }
+}
+
+// ============================================================
+// BUST POPUP — agent ran out of chips
+// ============================================================
+let _bustAgentId = null;
+let _bustTimer = null;
+let _bustCountdown = 60;
+
+function checkMyAgentBust(data) {
+  if (_bustAgentId) return; // already showing
+  const wallet = getWallet();
+  if (!wallet && !sessionId) return;
+
+  for (const agent of data.agents) {
+    if (!agent.isCustom) continue;
+    const isMine = (wallet && agent.walletAddress === wallet.address) ||
+      (!wallet && sessionId && agent.walletAddress === 'sandbox_' + sessionId);
+    if (isMine && agent.chips <= 0) {
+      showBustPopup(agent);
+      return;
+    }
+  }
+}
+
+function showBustPopup(agent) {
+  _bustAgentId = agent.id;
+  _bustCountdown = 60;
+  document.getElementById('bustAgentName').textContent = `${agent.emoji} ${agent.name} has 0 chips`;
+  document.getElementById('bustCountdown').textContent = _bustCountdown;
+  document.getElementById('bustOverlay').classList.add('show');
+
+  _bustTimer = setInterval(() => {
+    _bustCountdown--;
+    const el = document.getElementById('bustCountdown');
+    if (el) el.textContent = _bustCountdown;
+    if (_bustCountdown <= 0) {
+      bustLeave();
+    }
+  }, 1000);
+}
+
+function closeBustPopup() {
+  _bustAgentId = null;
+  if (_bustTimer) { clearInterval(_bustTimer); _bustTimer = null; }
+  document.getElementById('bustOverlay').classList.remove('show');
+}
+
+function bustTopUp() {
+  const agentId = _bustAgentId;
+  closeBustPopup();
+  // Open the top-up in sidebar
+  if (agentId) {
+    selectAgent(agentId);
+    sidebarTopUp(agentId);
+  }
+}
+
+function bustFinetune() {
+  const agentId = _bustAgentId;
+  closeBustPopup();
+  // Leave table, then open My Agents with edit
+  if (agentId) {
+    leaveTable(agentId);
+    setTimeout(() => {
+      showView('myagents');
+      editAgent(agentId);
+    }, 500);
+  }
+}
+
+function bustLeave() {
+  const agentId = _bustAgentId;
+  closeBustPopup();
+  if (agentId) {
+    leaveTable(agentId);
   }
 }
 

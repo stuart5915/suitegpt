@@ -403,6 +403,22 @@ class PokerEngine {
     this.currentHighBet = 0;
 
     // Reset agents — bust HOUSE bots rebuy from pool, custom agents sit out
+    // Auto-kick busted custom agents after 60s timeout
+    for (const a of this.agents) {
+      if (a.chips <= 0 && a.isCustom) {
+        if (!a._bustSince) {
+          a._bustSince = Date.now();
+          console.log(`[Table] ${a.name} is bust — 60s countdown to auto-kick`);
+        } else if (Date.now() - a._bustSince > 60000) {
+          // Queue for removal via pending leave
+          this._pendingLeaves.set(a.id, a.walletAddress);
+          this.broadcast('log', { html: `<span class="agent">${a.name}</span> <span class="fold">auto-removed (bust timeout)</span>` });
+        }
+      } else if (a.isCustom && a._bustSince) {
+        delete a._bustSince; // got topped up, reset timer
+      }
+    }
+
     for (const a of this.agents) {
       if (a.chips <= 0) {
         if (!a.isCustom) {
