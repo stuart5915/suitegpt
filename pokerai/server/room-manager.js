@@ -11,8 +11,9 @@ const ROOM_CONFIGS = {
 const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
 
 // Platform agent rebalancing — wallets whose agents auto-move between tables as liquidity
+const DEFAULT_PLATFORM_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const PLATFORM_WALLETS = new Set(
-  (process.env.PLATFORM_WALLETS || '').split(',').filter(Boolean).map(s => s.trim().toLowerCase())
+  [DEFAULT_PLATFORM_WALLET, ...(process.env.PLATFORM_WALLETS || '').split(',').filter(Boolean)].map(s => s.trim().toLowerCase())
 );
 const PLATFORM_TARGET_PER_TABLE = 5; // target total players per table with humans
 
