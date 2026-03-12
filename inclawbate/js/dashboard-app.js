@@ -3525,6 +3525,9 @@ async function rejectProject(id) {
 // AI AGENTS PANEL
 // ══════════════════════════════════════
 
+// Cache agent projects for controls
+var _agentProjects = [];
+
 async function loadAgents() {
     var container = document.getElementById('agentsList');
     if (!container) return;
@@ -3539,6 +3542,7 @@ async function loadAgents() {
         var res = await fetch(API_BASE + '/inclawbator?wallet=' + encodeURIComponent(auth.profile.wallet_address));
         var data = await res.json();
         var projects = (data.projects || []).filter(function(p) { return p.agent_enabled; });
+        _agentProjects = projects;
 
         if (!projects.length) {
             container.innerHTML = '<div class="overview-empty"><p>No agents yet. <a href="/tools#ai-agent" style="color:var(--lobster-400)">Set up an AI agent</a> for one of your projects.</p></div>';
@@ -3549,49 +3553,228 @@ async function loadAgents() {
         for (var i = 0; i < projects.length; i++) {
             var p = projects[i];
             var st = p.agent_status || 'dormant';
-            var stColor = st === 'active' ? '#4ade80' : st === 'paused' ? '#fbbf24' : '#f87171';
-            var stBg = st === 'active' ? 'rgba(34,197,94,0.15)' : st === 'paused' ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
-            var postsVia = p.x_connected && p.x_handle ? '@' + p.x_handle : '@inclawbator';
+            var postsVia = p.x_connected && p.x_handle ? '@' + esc(p.x_handle) : '@inclawbator';
+            var xBadgeClass = p.x_connected ? 'connected' : 'fallback';
+            var credits = p.agent_credits || 0;
+            var totalPosts = p.agent_total_posts || 0;
+            var postsPerDay = p.agent_posts_per_day || 2;
+            var toggleLabel = st === 'active' ? 'Pause' : 'Resume';
+            var toggleIcon = st === 'active' ? '⏸' : '▶';
 
-            html += '<div class="overview-item" style="flex-direction:column;align-items:stretch;gap:0;padding:var(--space-lg)">';
-            html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">';
-            html += '<div style="font-weight:700;color:var(--text-primary);font-size:0.95rem">$' + (p.token_symbol || '???') + '</div>';
-            html += '<span style="font-family:var(--font-mono);font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:12px;background:' + stBg + ';color:' + stColor + '">' + st + '</span>';
+            html += '<div class="agent-card" id="agentCard_' + p.id + '">';
+
+            // Header
+            html += '<div class="agent-card-header">';
+            html += '<div class="agent-card-name">$' + esc(p.token_symbol || '???');
+            if (p.project_name) html += ' <span style="font-weight:400;font-size:0.82rem;color:var(--text-dim)">' + esc(p.project_name) + '</span>';
+            html += '</div>';
+            html += '<span class="agent-status-pill ' + st + '">' + st + '</span>';
             html += '</div>';
 
-            html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-sm)">';
-            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Credits</div><div style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">' + (p.agent_credits || 0) + '</div></div>';
-            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Posts</div><div style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">' + (p.agent_total_posts || 0) + '</div></div>';
-            html += '<div style="text-align:center"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:2px">Posts via</div><div style="font-family:var(--font-mono);font-weight:600;color:var(--lobster-400);font-size:0.8rem">' + postsVia + '</div></div>';
+            // Stats grid
+            html += '<div class="agent-stats-grid">';
+            html += '<div class="agent-stat"><div class="agent-stat-label">Credits</div><div class="agent-stat-value">' + credits + '</div></div>';
+            html += '<div class="agent-stat"><div class="agent-stat-label">Total Posts</div><div class="agent-stat-value">' + totalPosts + '</div></div>';
+            html += '<div class="agent-stat"><div class="agent-stat-label">Posts/Day</div><div class="agent-stat-value">' + postsPerDay + '</div></div>';
+            html += '<div class="agent-stat"><div class="agent-stat-label">Posts via</div><div class="agent-stat-value accent" style="font-size:0.78rem">' + postsVia + '</div></div>';
             html += '</div>';
 
-            html += '<div style="display:flex;gap:6px">';
-            html += '<a href="/tools#ai-agent" style="flex:1;text-align:center;padding:6px 0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-decoration:none">Settings</a>';
-            html += '<a href="/inclawbator?id=' + p.id + '" style="flex:1;text-align:center;padding:6px 0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-secondary);font-size:0.75rem;font-weight:600;text-decoration:none">Feed Credits</a>';
+            // Action buttons
+            html += '<div class="agent-actions">';
+            html += '<button class="agent-action-btn' + (st === 'active' ? '' : ' primary') + '" onclick="toggleAgentStatus(\'' + p.id + '\',\'' + st + '\')">' + toggleIcon + ' ' + toggleLabel + '</button>';
+            html += '<button class="agent-action-btn" onclick="toggleAgentPanel(\'' + p.id + '\',\'persona\')">Edit Persona</button>';
+            html += '<button class="agent-action-btn" onclick="toggleAgentPanel(\'' + p.id + '\',\'posts\')">Post History</button>';
+            if (p.x_connected) {
+                html += '<button class="agent-action-btn danger" onclick="disconnectAgentX(\'' + p.id + '\')">Disconnect X</button>';
+            } else {
+                html += '<button class="agent-action-btn" onclick="connectAgentX(\'' + p.id + '\')">Connect X</button>';
+            }
+            html += '<a href="/inclawbator?id=' + p.id + '" class="agent-action-btn" style="text-decoration:none;text-align:center">Feed Credits</a>';
             html += '</div>';
 
-            // Show recent posts if available
-            if (p.recent_posts && p.recent_posts.length) {
-                html += '<div style="margin-top:var(--space-sm);border-top:1px solid var(--border-subtle);padding-top:var(--space-sm)">';
-                html += '<div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:4px">Recent tweets</div>';
-                for (var j = 0; j < Math.min(3, p.recent_posts.length); j++) {
-                    var post = p.recent_posts[j];
-                    var ago = timeAgo(post.created_at);
-                    html += '<div style="font-size:0.78rem;color:var(--text-secondary);padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
-                    html += '<span style="color:var(--text-dim);font-size:0.68rem;margin-right:6px">' + ago + '</span>' + escapeHtml(post.tweet_text || '');
-                    html += '</div>';
-                }
-                html += '</div>';
+            // X connection info
+            if (p.x_connected && p.x_handle) {
+                html += '<div style="margin-bottom:var(--space-sm)"><span class="agent-x-badge connected">&#120143; Connected: @' + esc(p.x_handle) + '</span></div>';
+            } else {
+                html += '<div style="margin-bottom:var(--space-sm)"><span class="agent-x-badge fallback">Posts go to @inclawbator (shared)</span></div>';
             }
 
+            // Persona editor panel (hidden by default)
+            html += '<div class="agent-panel" id="agentPersona_' + p.id + '">';
+            html += '<div class="agent-panel-title">Agent Persona</div>';
+            html += '<textarea class="agent-persona-textarea" id="personaText_' + p.id + '" placeholder="Describe how your agent should tweet...">' + esc(p.agent_persona || '') + '</textarea>';
+            html += '<div class="agent-posts-per-day">';
+            html += '<label>Posts per day:</label>';
+            html += '<select id="postsPerDay_' + p.id + '">';
+            for (var d = 1; d <= 3; d++) {
+                html += '<option value="' + d + '"' + (d === postsPerDay ? ' selected' : '') + '>' + d + '</option>';
+            }
+            html += '</select>';
             html += '</div>';
+            html += '<div class="agent-persona-actions">';
+            html += '<button class="agent-action-btn primary" onclick="saveAgentPersona(\'' + p.id + '\')">Save</button>';
+            html += '<button class="agent-action-btn" onclick="toggleAgentPanel(\'' + p.id + '\',\'persona\')">Cancel</button>';
+            html += '</div>';
+            html += '</div>';
+
+            // Post history panel (hidden by default)
+            html += '<div class="agent-panel" id="agentPosts_' + p.id + '">';
+            html += '<div class="agent-panel-title">Recent Posts</div>';
+            html += '<div id="agentPostsList_' + p.id + '"><div style="font-size:0.8rem;color:var(--text-dim)">Loading...</div></div>';
+            html += '</div>';
+
+            html += '</div>'; // end agent-card
         }
 
         container.innerHTML = html;
 
     } catch (err) {
+        console.error('[agents]', err);
         container.innerHTML = '<div class="overview-empty"><p>Failed to load agents.</p></div>';
     }
+}
+
+// ── Toggle agent panels ──
+function toggleAgentPanel(projectId, panel) {
+    var panelId = panel === 'persona' ? 'agentPersona_' + projectId : 'agentPosts_' + projectId;
+    var el = document.getElementById(panelId);
+    if (!el) return;
+    var isOpen = el.classList.contains('open');
+    // Close all panels on this card first
+    var card = document.getElementById('agentCard_' + projectId);
+    if (card) card.querySelectorAll('.agent-panel').forEach(function(p) { p.classList.remove('open'); });
+    if (!isOpen) {
+        el.classList.add('open');
+        if (panel === 'posts') loadAgentPosts(projectId);
+    }
+}
+
+// ── Pause / Resume ──
+async function toggleAgentStatus(projectId, currentStatus) {
+    var newStatus = currentStatus === 'active' ? 'paused' : 'active';
+    try {
+        var res = await fetch(API_BASE + '/inclawbator', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'update-agent', project_id: projectId, agent_status: newStatus })
+        });
+        var data = await res.json();
+        if (res.ok) {
+            showToast(newStatus === 'active' ? 'Agent resumed' : 'Agent paused');
+            loadAgents();
+        } else {
+            showToast(data.error || 'Failed to update', true);
+        }
+    } catch (e) {
+        showToast('Network error', true);
+    }
+}
+
+// ── Save persona ──
+async function saveAgentPersona(projectId) {
+    var personaEl = document.getElementById('personaText_' + projectId);
+    var ppdEl = document.getElementById('postsPerDay_' + projectId);
+    if (!personaEl) return;
+
+    var persona = personaEl.value.trim();
+    var postsPerDay = parseInt(ppdEl ? ppdEl.value : '2') || 2;
+
+    try {
+        var res = await fetch(API_BASE + '/inclawbator', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'update-agent', project_id: projectId, agent_persona: persona, agent_posts_per_day: postsPerDay })
+        });
+        var data = await res.json();
+        if (res.ok) {
+            showToast('Persona saved');
+            toggleAgentPanel(projectId, 'persona');
+            loadAgents();
+        } else {
+            showToast(data.error || 'Failed to save', true);
+        }
+    } catch (e) {
+        showToast('Network error', true);
+    }
+}
+
+// ── Load post history ──
+async function loadAgentPosts(projectId) {
+    var listEl = document.getElementById('agentPostsList_' + projectId);
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim)">Loading...</div>';
+
+    try {
+        var res = await fetch(API_BASE + '/inclawbator?id=' + projectId);
+        var data = await res.json();
+        var posts = data.agent_posts || [];
+        var proj = data.project || {};
+        var xHandle = proj.x_connected && proj.x_handle ? proj.x_handle : 'inclawbator';
+
+        if (!posts.length) {
+            listEl.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim)">No posts yet. Agent will start posting once it has credits.</div>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < posts.length; i++) {
+            var post = posts[i];
+            var ago = timeAgo(post.created_at);
+            var statusClass = post.status === 'posted' ? 'posted' : 'failed';
+            html += '<div class="agent-post-item">';
+            html += '<div class="agent-post-time">' + ago + '</div>';
+            html += '<div class="agent-post-text">' + esc(post.tweet_text || '');
+            html += ' <span class="agent-post-status ' + statusClass + '">' + post.status + '</span>';
+            html += '</div>';
+            if (post.tweet_id) {
+                html += '<div class="agent-post-link"><a href="https://x.com/' + esc(xHandle) + '/status/' + esc(post.tweet_id) + '" target="_blank">View</a></div>';
+            }
+            html += '</div>';
+        }
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = '<div style="font-size:0.8rem;color:#f87171">Failed to load posts.</div>';
+    }
+}
+
+// ── Connect / Disconnect X ──
+function connectAgentX(projectId) {
+    // Redirect to X OAuth flow for this project
+    window.location.href = '/tools#ai-agent';
+}
+
+async function disconnectAgentX(projectId) {
+    if (!confirm('Disconnect X account? Agent will post to @inclawbator instead.')) return;
+    try {
+        var res = await fetch(API_BASE + '/inclawbator', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ action: 'disconnect-x', project_id: projectId })
+        });
+        if (res.ok) {
+            showToast('X account disconnected');
+            loadAgents();
+        } else {
+            var data = await res.json();
+            showToast(data.error || 'Failed to disconnect', true);
+        }
+    } catch (e) {
+        showToast('Network error', true);
+    }
+}
+
+// ── Toast helper (reuse existing or create simple one) ──
+function showToast(msg, isError) {
+    var existing = document.getElementById('agentToast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.id = 'agentToast';
+    toast.textContent = msg;
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:9999;font-family:var(--font-body);' +
+        (isError ? 'background:#1a0a0a;border:1px solid hsla(0,60%,50%,0.4);color:#f87171;' : 'background:#0a1a12;border:1px solid hsla(142,52%,48%,0.3);color:#4ade80;');
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 2500);
+    setTimeout(function() { toast.remove(); }, 2900);
 }
 
 // Boot
