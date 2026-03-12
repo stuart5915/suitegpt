@@ -120,8 +120,16 @@
         .vibe-btn.active { background: var(--accent-gradient); border-color: transparent; color: #fff; }
         .settings-row { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-sm); }
         .settings-row label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); min-width: 90px; }
-        .settings-row input { flex: 1; padding: 8px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.82rem; box-sizing: border-box; }
-        .settings-row input:focus { border-color: var(--lobster-300); outline: none; }
+        .settings-row input, .settings-row select { flex: 1; padding: 8px 10px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.82rem; box-sizing: border-box; }
+        .settings-row input:focus, .settings-row select:focus { border-color: var(--lobster-300); outline: none; }
+        .settings-row select { cursor: pointer; }
+        .reply-item { display: flex; gap: var(--space-sm); padding: 8px 0; border-bottom: 1px solid hsla(240,4%,16%,0.5); font-size: 0.78rem; }
+        .reply-item:last-child { border-bottom: none; }
+        .reply-mention { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 2px; }
+        .reply-text { color: var(--text-secondary); line-height: 1.4; }
+        .reply-bar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .reply-bar-fill { height: 4px; border-radius: 2px; background: var(--accent-gradient); transition: width 0.3s; }
+        .reply-bar-track { flex: 1; height: 4px; border-radius: 2px; background: var(--bg-card); }
 
         /* Toggle switch */
         .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid hsla(240,4%,16%,0.5); }
@@ -438,6 +446,7 @@ function openDashboard(pid) {
     renderDashboard();
     loadDraft();
     loadDashPosts();
+    loadDashReplies();
 }
 
 function closeDashboard() {
@@ -539,12 +548,29 @@ function renderDashboard() {
     html+='<div style="margin-top:var(--space-sm)"><button class="ag-btn primary" onclick="dashSaveSettings()">Save Settings</button></div>';
     html+='</div>';
 
-    // ── 4. TOGGLES ──
-    html+='<div class="dash-section"><div class="dash-section-title">Features</div>';
-    html+='<div class="toggle-row"><div><div class="toggle-label">Auto-post</div><div class="toggle-desc">Agent posts automatically at scheduled times</div></div>';
+    // ── 4. AUTO-POST ──
+    html+='<div class="dash-section">';
+    html+='<div class="toggle-row" style="border-bottom:none"><div><div class="toggle-label">Auto-post</div><div class="toggle-desc">Agent posts automatically at your scheduled times above</div></div>';
     html+='<label class="toggle-switch"><input type="checkbox" id="toggleAutoPost" '+(p.agent_auto_post!==false?'checked':'')+' onchange="dashToggle(\'agent_auto_post\',this.checked)"><span class="toggle-track"></span></label></div>';
-    html+='<div class="toggle-row"><div><div class="toggle-label">Auto-reply</div><div class="toggle-desc">Automatically reply to mentions on X every 15 min</div></div>';
+    html+='</div>';
+
+    // ── 5. AUTO-REPLY ──
+    var replyLimit=p.agent_reply_limit||10;
+    html+='<div class="dash-section"><div class="dash-section-title">Auto-Reply</div>';
+    html+='<div class="toggle-row"><div><div class="toggle-label">Reply to mentions</div><div class="toggle-desc">AI reads mentions of your X account and replies in your agent\'s tone</div></div>';
     html+='<label class="toggle-switch"><input type="checkbox" id="toggleAutoReply" '+(p.agent_auto_reply?'checked':'')+' onchange="dashToggle(\'agent_auto_reply\',this.checked)"><span class="toggle-track"></span></label></div>';
+    html+='<div style="margin-top:var(--space-md)">';
+    html+='<div class="settings-row"><label>Daily limit</label><select id="dashReplyLimit" onchange="dashSaveReplyLimit()">';
+    [5,10,20,50,0].forEach(function(n){
+        var label=n===0?'Unlimited':n+' replies/day';
+        html+='<option value="'+n+'"'+(replyLimit===n?' selected':'')+'>'+label+'</option>';
+    });
+    html+='</select></div>';
+    html+='</div>';
+    html+='<div id="replyStats" style="margin-top:var(--space-sm);font-size:0.72rem;color:var(--text-dim)">Loading reply stats...</div>';
+    html+='<div style="margin-top:var(--space-md)"><div class="dash-section-title" style="margin-bottom:var(--space-sm)">Recent Replies</div>';
+    html+='<div id="dashReplies" style="font-size:0.8rem;color:var(--text-dim)">Loading...</div>';
+    html+='</div>';
     html+='</div>';
 
     // ── 5. POST HISTORY ──
@@ -747,6 +773,46 @@ async function loadDashPosts() {
         }
         el.innerHTML=html;
     } catch(e) { el.innerHTML='<span style="color:#f87171">Failed to load.</span>'; }
+}
+
+async function dashSaveReplyLimit() {
+    var val=parseInt(document.getElementById('dashReplyLimit').value)||10;
+    try {
+        var r=await fetch(API+'/projects',{method:'PATCH',headers:hdrs(),body:JSON.stringify({id:_selectedAgent.id,agent_reply_limit:val})});
+        if(r.ok) { _selectedAgent.agent_reply_limit=val; toast('Reply limit saved'); }
+        else { var d=await r.json(); toast(d.error||'Failed',true); }
+    } catch(e) { toast('Network error',true); }
+}
+
+async function loadDashReplies() {
+    var statsEl=document.getElementById('replyStats');
+    var listEl=document.getElementById('dashReplies');
+    if(!statsEl||!listEl) return;
+    try {
+        var r=await fetch(API+'/agent-replies?project_id='+_selectedAgent.id,{headers:hdrs()});
+        var data=await r.json();
+        var replies=data.replies||[];
+        var todayCount=data.today_count||0;
+        var limit=_selectedAgent.agent_reply_limit||10;
+
+        // Stats bar
+        var pct=limit>0?Math.min(100,Math.round((todayCount/limit)*100)):0;
+        var limitLabel=limit===0?'unlimited':limit+'/day';
+        statsEl.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span>'+todayCount+' replies today</span><span style="color:var(--text-dim)">/ '+limitLabel+'</span></div>'
+            +(limit>0?'<div class="reply-bar"><div class="reply-bar-track"><div class="reply-bar-fill" style="width:'+pct+'%"></div></div><span style="font-family:var(--font-mono);font-size:0.62rem">'+pct+'%</span></div>':'');
+
+        // List
+        if(!replies.length) { listEl.innerHTML='<span>No replies yet.</span>'; return; }
+        var html='';
+        for(var i=0;i<Math.min(replies.length,15);i++) {
+            var rp=replies[i];
+            html+='<div class="reply-item"><div class="post-time">'+timeAgo(rp.created_at)+'</div><div style="flex:1;min-width:0">';
+            if(rp.mention_author) html+='<div class="reply-mention">@'+esc(rp.mention_author)+': '+esc((rp.mention_text||'').slice(0,100))+'</div>';
+            html+='<div class="reply-text">'+esc(rp.reply_text||rp.error_message||'')+'</div>';
+            html+='</div><div style="flex:0 0 auto"><span class="post-badge '+(rp.status==='posted'?'posted':'failed')+'">'+rp.status+'</span></div></div>';
+        }
+        listEl.innerHTML=html;
+    } catch(e) { listEl.innerHTML='<span style="color:#f87171">Failed to load.</span>'; }
 }
 
 function detectVibe(persona) {

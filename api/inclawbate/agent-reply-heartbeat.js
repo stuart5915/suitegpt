@@ -15,8 +15,23 @@ const supabase = createClient(
 );
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MAX_REPLIES_PER_AGENT = 5;   // max replies per heartbeat run
-const MENTION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // ignore mentions older than 24h
+const MAX_REPLIES_PER_RUN = 3;     // max replies per heartbeat run (spread them out)
+const DEFAULT_DAILY_LIMIT = 10;    // default daily reply cap
+const MENTION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // ignore mentions older than 12h
+
+// ── Count today's replies for an agent ──
+
+async function getRepliesUsedToday(projectId) {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabase
+        .from('agent_replies')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('status', 'posted')
+        .gte('created_at', startOfDay.toISOString());
+    return count || 0;
+}
 
 // ── Fetch mentions for a user ──
 
@@ -143,8 +158,15 @@ async function processAgent(project, errors) {
         return 0;
     }
 
+    // Check daily limit
+    const dailyLimit = project.agent_reply_limit || DEFAULT_DAILY_LIMIT;
+    const usedToday = await getRepliesUsedToday(project.id);
+    const remaining = dailyLimit - usedToday;
+    if (remaining <= 0) return 0; // daily cap reached
+
     let accessToken = project.x_access_token;
     let replied = 0;
+    const maxThisRun = Math.min(MAX_REPLIES_PER_RUN, remaining);
 
     // Fetch mentions
     let mentionResult;
@@ -186,9 +208,9 @@ async function processAgent(project, errors) {
         }).eq('id', project.id);
     }
 
-    // Process each mention (newest first, limit per run)
+    // Process each mention (newest first, limit per run + daily cap)
     const now = Date.now();
-    for (const mention of mentions.slice(0, MAX_REPLIES_PER_AGENT)) {
+    for (const mention of mentions.slice(0, maxThisRun)) {
         // Skip self-mentions
         if (mention.author_username && mention.author_username.toLowerCase() === (project.x_handle || '').toLowerCase()) {
             await logReply(project.id, mention, '', 'skipped', 'Self-mention');

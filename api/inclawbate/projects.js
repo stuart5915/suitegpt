@@ -205,7 +205,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol, agent_schedule_times, agent_auto_post, agent_auto_reply, agent_tone, agent_topics, agent_catchphrase } = req.body || {};
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol, agent_schedule_times, agent_auto_post, agent_auto_reply, agent_tone, agent_topics, agent_catchphrase, agent_reply_limit } = req.body || {};
         if (!id) return res.status(400).json({ error: 'id is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -260,6 +260,9 @@ export default async function handler(req, res) {
         }
         if (agent_catchphrase !== undefined) {
             patch.agent_catchphrase = (agent_catchphrase || '').slice(0, 100) || null;
+        }
+        if (agent_reply_limit !== undefined) {
+            patch.agent_reply_limit = Math.max(0, Math.min(50, parseInt(agent_reply_limit) || 10));
         }
 
         const { data, error } = await supabase

@@ -2,6 +2,7 @@
 
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS agent_x_user_id text DEFAULT NULL;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS agent_last_mention_id text DEFAULT NULL;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS agent_reply_limit integer DEFAULT 10;
 
 CREATE TABLE IF NOT EXISTS agent_replies (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
