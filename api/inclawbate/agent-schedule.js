@@ -116,6 +116,7 @@ function sanitizeSlot(s) {
         project_symbol: s.projects?.token_symbol || null,
         booked_by_wallet: s.booked_by_wallet,
         paid_amount: s.paid_amount || 0,
+        tweet_options: s.tweet_options || {},
     };
 }
 
@@ -156,7 +157,7 @@ export default async function handler(req, res) {
 
         // ── Book a slot ──
         if (action === 'book') {
-            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash } = req.body;
+            const { project_id, scheduled_at, content_angle, tone, catchphrase, tx_hash, tweet_options } = req.body;
 
             if (!project_id || !scheduled_at) {
                 return res.status(400).json({ error: 'project_id and scheduled_at required' });
@@ -242,7 +243,8 @@ export default async function handler(req, res) {
                 tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
                 catchphrase: (catchphrase || '').slice(0, 100) || null,
                 status: 'scheduled',
-                paid_amount: paidClaws
+                paid_amount: paidClaws,
+                tweet_options: tweet_options || {}
             };
             if (tx_hash) insertData.tx_hash = tx_hash;
 
@@ -264,7 +266,7 @@ export default async function handler(req, res) {
 
         // ── Edit a slot ──
         if (action === 'edit') {
-            const { slot_id, content_angle, tone } = req.body;
+            const { slot_id, content_angle, tone, tweet_options } = req.body;
             if (!slot_id) return res.status(400).json({ error: 'slot_id required' });
 
             const { data: slot } = await supabase
@@ -285,6 +287,7 @@ export default async function handler(req, res) {
             const updates = {};
             if (content_angle !== undefined) updates.content_angle = (content_angle || '').slice(0, 200) || null;
             if (tone !== undefined) updates.tone = ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default';
+            if (tweet_options !== undefined) updates.tweet_options = tweet_options || {};
 
             const { error: updateErr } = await supabase
                 .from('agent_schedule')
@@ -297,7 +300,7 @@ export default async function handler(req, res) {
 
         // ── Takeover a slot (outbid) ──
         if (action === 'takeover') {
-            const { slot_id, project_id, content_angle, tone, tx_hash } = req.body;
+            const { slot_id, project_id, content_angle, tone, tx_hash, tweet_options } = req.body;
             if (!slot_id || !project_id || !tx_hash) {
                 return res.status(400).json({ error: 'slot_id, project_id, and tx_hash required' });
             }
@@ -400,7 +403,8 @@ export default async function handler(req, res) {
                     content_angle: (content_angle || '').slice(0, 200) || null,
                     tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
                     tx_hash,
-                    paid_amount: verification.amount
+                    paid_amount: verification.amount,
+                    tweet_options: tweet_options || {}
                 })
                 .eq('id', slot_id);
 

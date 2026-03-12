@@ -418,6 +418,31 @@ export default async function handler(req, res) {
                 if (slot.content_angle) slotPersona.push('Topics: ' + slot.content_angle);
                 if (slot.catchphrase) slotPersona.push('Catchphrase: ' + slot.catchphrase);
 
+                // Tweet options (checkboxes from booking form)
+                const opts = slot.tweet_options || {};
+                if (opts.include_app_link && project.app_slug) {
+                    slotPersona.push('MUST include link: inclawbate.com/apps/' + project.app_slug);
+                }
+                if (opts.include_project_link && project.slug) {
+                    slotPersona.push('MUST include link: inclawbate.com/projects/' + project.slug);
+                }
+                if (opts.mention_token && project.token_symbol) {
+                    slotPersona.push('MUST mention $' + project.token_symbol + ' prominently');
+                }
+                if (opts.mention_staking && project.staking_address) {
+                    slotPersona.push('Mention that staking is live for this project');
+                }
+                if (opts.cta && opts.cta !== 'none') {
+                    const ctaMap = {
+                        try_it: 'End with a call to action: try it out',
+                        stake_now: 'End with a call to action: stake now',
+                        join_community: 'End with a call to action: join the community',
+                        check_it: 'End with a call to action: check it out',
+                        buy: 'End with a call to action: get some / buy'
+                    };
+                    if (ctaMap[opts.cta]) slotPersona.push(ctaMap[opts.cta]);
+                }
+
                 const projectWithPersona = {
                     ...project,
                     agent_persona: slotPersona.length ? slotPersona.join(' | ') : project.agent_persona,

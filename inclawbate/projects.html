@@ -375,6 +375,33 @@
                 <option value="professional">Professional</option>
                 <option value="meme">Meme Lord</option>
             </select>
+
+            <label>Tweet Options</label>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:var(--space-sm)">
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:500;color:var(--text-secondary);cursor:pointer">
+                    <input type="checkbox" id="schedOptAppLink"> Include link to app
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:500;color:var(--text-secondary);cursor:pointer">
+                    <input type="checkbox" id="schedOptProjectLink"> Include link to project page
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:500;color:var(--text-secondary);cursor:pointer">
+                    <input type="checkbox" id="schedOptMentionToken" checked> Mention $TOKEN
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:500;color:var(--text-secondary);cursor:pointer">
+                    <input type="checkbox" id="schedOptMentionStaking"> Mention staking
+                </label>
+            </div>
+
+            <label>Call to Action</label>
+            <select id="schedBookCta">
+                <option value="none">None</option>
+                <option value="try_it">Try it out</option>
+                <option value="stake_now">Stake now</option>
+                <option value="join_community">Join the community</option>
+                <option value="check_it">Check it out</option>
+                <option value="buy">Get some / Buy</option>
+            </select>
+
             <div id="schedBookCost" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:var(--space-sm);padding:8px;border-radius:var(--radius-sm);background:rgba(45,212,191,0.06)">Cost: ~$0.01 in CLAWS</div>
             <button class="sched-btn" id="schedBookBtn" onclick="bookSlot()">Book This Slot</button>
             <div class="sched-success" id="schedBookSuccess"></div>
@@ -673,6 +700,7 @@
 
         document.getElementById('schedBookAngle').value = '';
         document.getElementById('schedBookTone').value = 'default';
+        setTweetOptions({ mention_token: true });
         document.getElementById('schedBookSuccess').style.display = 'none';
         document.getElementById('schedBookError').style.display = 'none';
         document.getElementById('schedBookBtn').disabled = false;
@@ -725,6 +753,7 @@
 
         document.getElementById('schedBookAngle').value = slot.content_angle || '';
         document.getElementById('schedBookTone').value = slot.tone || 'default';
+        setTweetOptions(slot.tweet_options);
         document.getElementById('schedBookCost').textContent = 'Editing \u2014 no additional cost';
         document.getElementById('schedBookSuccess').style.display = 'none';
         document.getElementById('schedBookError').style.display = 'none';
@@ -733,6 +762,25 @@
         document.getElementById('schedBookBtn').setAttribute('onclick', 'updateSlot()');
 
         form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function getTweetOptions() {
+        return {
+            include_app_link: document.getElementById('schedOptAppLink').checked,
+            include_project_link: document.getElementById('schedOptProjectLink').checked,
+            mention_token: document.getElementById('schedOptMentionToken').checked,
+            mention_staking: document.getElementById('schedOptMentionStaking').checked,
+            cta: document.getElementById('schedBookCta').value
+        };
+    }
+
+    function setTweetOptions(opts) {
+        opts = opts || {};
+        document.getElementById('schedOptAppLink').checked = !!opts.include_app_link;
+        document.getElementById('schedOptProjectLink').checked = !!opts.include_project_link;
+        document.getElementById('schedOptMentionToken').checked = opts.mention_token !== false;
+        document.getElementById('schedOptMentionStaking').checked = !!opts.mention_staking;
+        document.getElementById('schedBookCta').value = opts.cta || 'none';
     }
 
     // ── Global functions (called from onclick attributes) ──
@@ -835,6 +883,7 @@
                     scheduled_at: document.getElementById('schedBookSlotTime').value,
                     content_angle: document.getElementById('schedBookAngle').value,
                     tone: document.getElementById('schedBookTone').value,
+                    tweet_options: getTweetOptions(),
                     tx_hash: txHash
                 })
             });
@@ -894,7 +943,8 @@
                     action: 'edit',
                     slot_id: slotId,
                     content_angle: document.getElementById('schedBookAngle').value,
-                    tone: document.getElementById('schedBookTone').value
+                    tone: document.getElementById('schedBookTone').value,
+                    tweet_options: getTweetOptions()
                 })
             });
 
@@ -1126,6 +1176,7 @@
                     project_id: projectId,
                     content_angle: document.getElementById('schedBookAngle').value,
                     tone: document.getElementById('schedBookTone').value,
+                    tweet_options: getTweetOptions(),
                     tx_hash: txHash
                 })
             });
