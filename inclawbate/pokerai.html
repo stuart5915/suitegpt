@@ -3392,7 +3392,7 @@
           </div>
 
           <!-- Table tabs (shown when multiple tables exist) — above the playing area -->
-          <div id="tableTabsBar" style="display:none;margin-bottom:0;gap:0;justify-content:flex-start;position:relative;z-index:20;background:var(--bg-card);border-bottom:1px solid var(--border)"></div>
+          <div id="tableTabsBar" style="display:none;gap:6px;justify-content:flex-start;position:relative;z-index:20;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:6px;margin-bottom:8px"></div>
 
           <!-- Hand Timeline -->
           <div class="hand-timeline" id="handTimeline">
@@ -4824,11 +4824,11 @@ function renderTableTabs() {
   bar.innerHTML = tables.map((t, i) => {
     const isActive = t.tableId === gameState.activeTableId;
     const hasMine = t.hasMyAgent;
-    const bg = isActive ? 'var(--bg-surface)' : 'transparent';
-    const borderBottom = isActive ? '2px solid var(--accent-primary)' : '2px solid transparent';
-    const color = isActive ? '#fff' : hasMine ? 'var(--accent-green)' : 'var(--text-muted)';
+    const bg = isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)';
+    const color = isActive ? '#fff' : hasMine ? 'var(--accent-green)' : 'var(--text-secondary)';
+    const border = isActive ? '1px solid var(--accent-primary)' : '1px solid var(--border)';
     const dot = hasMine && !isActive ? '<span style="color:var(--accent-green);font-size:8px;margin-right:4px">●</span>' : '';
-    return `<button onclick="switchTable('${t.tableId}')" style="padding:8px 16px;background:${bg};border:none;border-bottom:${borderBottom};border-radius:0;color:${color};font-size:13px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;white-space:nowrap" onmouseover="if(!${isActive})this.style.background='rgba(255,255,255,0.05)'" onmouseout="if(!${isActive})this.style.background='transparent'">${dot}Table ${i + 1} <span style="font-size:11px;opacity:0.7">(${t.playerCount})</span></button>`;
+    return `<button onclick="switchTable('${t.tableId}')" style="padding:8px 18px;background:${bg};border:${border};border-radius:8px;color:${color};font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;white-space:nowrap" onmouseover="if(!${isActive})this.style.background='rgba(255,255,255,0.1)'" onmouseout="if(!${isActive})this.style.background='rgba(255,255,255,0.05)'">${dot}Table ${i + 1} <span style="font-size:12px;opacity:0.8">(${t.playerCount})</span></button>`;
   }).join('');
 }
 
