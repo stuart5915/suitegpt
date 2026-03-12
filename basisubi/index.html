@@ -1412,6 +1412,8 @@
         .mp-card-alloc { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin-bottom: 12px; }
         .mp-card-alloc-seg { border-radius: 3px; transition: width 0.3s; }
 
+        .mp-card-config { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .mp-card-tag { font-family: var(--mono); font-size: 0.6rem; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; }
         .mp-card-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .mp-empty { text-align: center; padding: 60px 20px; color: var(--text-dim); font-family: var(--mono); font-size: 0.85rem; }
@@ -5688,6 +5690,10 @@
                 const shortW = v.alloc_short_bps / 100;
                 const holdW = v.alloc_hold_bps / 100;
 
+                var lpRange = (v.brain_config && v.brain_config.lp_range) || 400;
+                var lpPct = (lpRange / 200).toFixed(0);
+                var rangeName = lpRange <= 200 ? 'Tight' : lpRange <= 400 ? 'Standard' : lpRange <= 800 ? 'Wide' : 'Ultra Wide';
+
                 html += '<div class="mp-card" onclick="openVaultDetail(' + i + ')">' +
                     '<div class="mp-card-header">' +
                         '<div class="mp-card-avatar">' + getAvatarEmoji(v.manager_name || 'A') + '</div>' +
@@ -5701,6 +5707,13 @@
                         '<div class="mp-card-stat"><div class="mp-card-stat-label">TVL</div><div class="mp-card-stat-value">' + tvlStr + '</div></div>' +
                         '<div class="mp-card-stat"><div class="mp-card-stat-label">Return</div><div class="mp-card-stat-value" style="color:' + retColor + '">' + retStr + '</div></div>' +
                         '<div class="mp-card-stat"><div class="mp-card-stat-label">Max DD</div><div class="mp-card-stat-value" style="color:#ff6450">' + ddStr + '</div></div>' +
+                    '</div>' +
+                    '<div class="mp-card-config">' +
+                        (lpW > 0 ? '<span class="mp-card-tag" style="color:var(--accent-bright);">LP ' + lpW + '%</span>' : '') +
+                        (longW > 0 ? '<span class="mp-card-tag" style="color:var(--green);">Long ' + longW + '%</span>' : '') +
+                        (shortW > 0 ? '<span class="mp-card-tag" style="color:#ff6450;">Short ' + shortW + '%</span>' : '') +
+                        (holdW > 0 ? '<span class="mp-card-tag">Hold ' + holdW + '%</span>' : '') +
+                        '<span class="mp-card-tag" style="color:var(--cyan);">LP Range \u00B1' + lpPct + '% (' + rangeName + ')</span>' +
                     '</div>' +
                     '<div class="mp-card-alloc">' +
                         (lpW > 0 ? '<div class="mp-card-alloc-seg" style="width:' + lpW + '%; background:var(--accent);"></div>' : '') +
