@@ -1304,6 +1304,45 @@ class RoomManager {
     return summary;
   }
 
+  getGlobalRoster() {
+    const seen = new Set();
+    const roster = [];
+    for (const [roomId, room] of Object.entries(this.rooms)) {
+      for (const table of room.tables) {
+        for (const a of table.agents) {
+          if (seen.has(a.id)) continue;
+          seen.add(a.id);
+          roster.push({
+            id: a.id,
+            name: a.name,
+            emoji: a.emoji,
+            style: a.style,
+            chips: a.chips,
+            baseChips: a.baseChips,
+            handsWon: a.handsWon,
+            handsPlayed: a.handsPlayed,
+            biggestPot: a.biggestPot,
+            description: a.description,
+            isCustom: a.isCustom || false,
+            walletAddress: a.walletAddress || null,
+            traits: a.traits,
+            rules: a.rules || {},
+            room: roomId,
+            roomName: room.name
+          });
+        }
+      }
+    }
+    // Sort by win rate descending, then hands played descending as tiebreaker
+    roster.sort((a, b) => {
+      const wrA = a.handsPlayed > 0 ? a.handsWon / a.handsPlayed : 0;
+      const wrB = b.handsPlayed > 0 ? b.handsWon / b.handsPlayed : 0;
+      if (wrB !== wrA) return wrB - wrA;
+      return b.handsPlayed - a.handsPlayed;
+    });
+    return roster;
+  }
+
   get totalHandsPlayed() {
     let total = 0;
     for (const room of Object.values(this.rooms)) {

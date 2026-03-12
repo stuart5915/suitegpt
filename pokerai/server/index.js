@@ -555,6 +555,10 @@ app.get('/stats', (req, res) => {
   });
 });
 
+app.get('/roster', (req, res) => {
+  res.json(rooms.getGlobalRoster());
+});
+
 // POKERAI rewards endpoints
 app.get('/tvl', (req, res) => {
   const stats = rewardEngine ? rewardEngine.getStats() : { tvl: { usdc: 0, pokerai: 0, total: 0 }, emission: {}, wallets: {} };
