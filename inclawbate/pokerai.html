@@ -3781,16 +3781,25 @@
       <p style="color:var(--text-secondary);font-size:14px">Performance stats across all played hands.</p>
     </div>
     <div class="panel">
+      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+        <span style="font-size:11px;color:var(--text-muted);margin-right:4px">Sort:</span>
+        <button class="roster-sort-btn active" onclick="setLeaderboardSort('winrate')" id="lb-sort-winrate">Win Rate</button>
+        <button class="roster-sort-btn" onclick="setLeaderboardSort('pnl')" id="lb-sort-pnl">P&L</button>
+        <button class="roster-sort-btn" onclick="setLeaderboardSort('hands')" id="lb-sort-hands">Hands</button>
+        <button class="roster-sort-btn" onclick="setLeaderboardSort('stack')" id="lb-sort-stack">Stack</button>
+      </div>
       <table class="leaderboard-table" id="leaderboardTable">
         <thead>
           <tr>
             <th>Rank</th>
             <th>Agent</th>
             <th>Style</th>
+            <th>Room</th>
             <th>Stack</th>
+            <th>P&L</th>
             <th>Won</th>
             <th>Win Rate</th>
-            <th>Biggest Pot</th>
+            <th>Hands</th>
           </tr>
         </thead>
         <tbody id="leaderboardBody"></tbody>
@@ -5572,29 +5581,82 @@ function renderPoolFlows() {
 // ============================================================
 // LEADERBOARD
 // ============================================================
-function renderLeaderboard() {
-  const sorted = [...gameState.agents].sort((a, b) => b.chips - a.chips);
+let _leaderboardSort = 'winrate';
+let _leaderboardCache = [];
+
+function setLeaderboardSort(sort) {
+  _leaderboardSort = sort;
+  document.querySelectorAll('[id^="lb-sort-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lb-sort-' + sort);
+  if (btn) btn.classList.add('active');
+  _renderLeaderboardFromCache();
+}
+
+async function renderLeaderboard() {
+  const tbody = document.getElementById('leaderboardBody');
+  try {
+    const wsUrl = ws ? ws.url.replace('wss://', 'https://').replace('ws://', 'http://') : '';
+    const baseUrl = wsUrl ? new URL(wsUrl).origin : '';
+    const res = await fetch(baseUrl + '/roster');
+    const data = await res.json();
+    _leaderboardCache = data.agents || [];
+  } catch (e) {
+    // Fallback to current table agents
+    _leaderboardCache = gameState.agents.map(a => ({ ...a, room: activeRoom }));
+  }
+  _renderLeaderboardFromCache();
+}
+
+function _renderLeaderboardFromCache() {
+  const sorted = [..._leaderboardCache];
+  if (_leaderboardSort === 'winrate') {
+    sorted.sort((a, b) => {
+      const wrA = a.handsPlayed > 0 ? a.handsWon / a.handsPlayed : 0;
+      const wrB = b.handsPlayed > 0 ? b.handsWon / b.handsPlayed : 0;
+      return wrB !== wrA ? wrB - wrA : b.handsPlayed - a.handsPlayed;
+    });
+  } else if (_leaderboardSort === 'pnl') {
+    sorted.sort((a, b) => (b.chips - (b.baseChips || b.chips)) - (a.chips - (a.baseChips || a.chips)));
+  } else if (_leaderboardSort === 'hands') {
+    sorted.sort((a, b) => b.handsPlayed - a.handsPlayed);
+  } else if (_leaderboardSort === 'stack') {
+    sorted.sort((a, b) => b.chips - a.chips);
+  }
+
   const tbody = document.getElementById('leaderboardBody');
   tbody.innerHTML = sorted.map((agent, i) => {
     const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+    const pnl = agent.chips - (agent.baseChips || agent.chips);
+    const pnlColor = pnl > 0 ? 'var(--accent-green)' : pnl < 0 ? 'var(--accent-red)' : 'var(--text-muted)';
+    const pnlStr = pnl > 0 ? '+' + formatChips(pnl) : pnl < 0 ? '-' + formatChips(Math.abs(pnl)) : '±0';
     const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+    const isPlayer = agent.isCustom;
+    const nameColor = isPlayer ? 'var(--accent-cyan)' : 'var(--text-primary)';
+    const typeBadge = isPlayer
+      ? '<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(6,182,212,0.12);color:var(--accent-cyan);border:1px solid rgba(6,182,212,0.3);margin-left:6px">PLAYER</span>'
+      : '<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(136,136,136,0.1);color:var(--text-muted);border:1px solid rgba(136,136,136,0.2);margin-left:6px">HOUSE</span>';
+    const roomLabel = agent.roomName || capitalize(agent.room || 'sandbox');
+    const roomClass = agent.room || 'sandbox';
     return `
-      <tr>
+      <tr style="${isPlayer ? 'border-left:2px solid var(--accent-cyan)' : ''}">
         <td><span class="rank-badge ${rankClass}">${i + 1}</span></td>
         <td>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:20px">${agent.emoji}</span>
-            <span style="font-weight:600">${agent.name}</span>
+            <span style="font-weight:600;color:${nameColor}">${agent.name}</span>
+            ${typeBadge}
           </div>
         </td>
         <td><span class="agent-style-badge badge-${agent.style}">${capitalize(agent.style)}</span></td>
-        <td style="color:var(--accent-gold);font-family:'Rajdhani';font-size:15px;font-weight:700">${agent.chips.toLocaleString()}</td>
+        <td><span class="roster-room-badge ${roomClass}" style="font-size:9px;padding:2px 6px">${roomLabel}</span></td>
+        <td style="color:var(--accent-gold);font-family:'Rajdhani';font-size:15px;font-weight:700">${formatChips(agent.chips)}</td>
+        <td style="color:${pnlColor};font-family:'Rajdhani';font-size:14px;font-weight:700">${pnlStr}</td>
         <td>${agent.handsWon}</td>
         <td>
           ${wr}%
           <span class="wr-bar"><span class="wr-fill" style="width:${wr}%"></span></span>
         </td>
-        <td style="color:var(--accent-purple)">${agent.biggestPot.toLocaleString()}</td>
+        <td style="color:var(--text-muted)">${agent.handsPlayed}</td>
       </tr>
     `;
   }).join('');
