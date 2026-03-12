@@ -4631,19 +4631,16 @@
         //
         // Rebalance cost: ~0.3% per unit of portfolio swapped
 
-        function btDailyReturn(alloc, pPrev, pNow, config, lpInRange, lpPriceDir) {
+        function btDailyReturn(alloc, pPrev, pNow, config) {
             const ethRet = (pNow - pPrev) / pPrev;
 
             // ── Concentrated LP ──
-            // lpApy is NET yield (swap fees minus expected IL) — already accounts for IL
-            // Only earned when position is in range; out of range = 0 fees
-            const dailyNetLP = lpInRange ? (config.lpApy / 100) / 365 : 0;
-            // ETH exposure depends on range status:
-            //   In range: 50% (half ETH, half USDC)
-            //   Above range: 0% (LP is all USDC — ETH was sold)
-            //   Below range: 100% (LP is all ETH — USDC was sold)
-            const lpEthExposure = lpInRange ? 0.5 : (lpPriceDir > 0 ? 0 : 1.0);
-            const lpRet = dailyNetLP + ethRet * lpEthExposure;
+            // lpApy is the NET yield after all LP management:
+            //   gross fees (~23% Aerodrome Slipstream) minus IL, re-centering costs,
+            //   and time spent out of range. This is the effective realized yield.
+            // 50% ETH exposure is the time-weighted average (half ETH, half USDC)
+            const dailyNetLP = (config.lpApy / 100) / 365;
+            const lpRet = dailyNetLP + ethRet * 0.5;
 
             // ── Leveraged Long (1.25x via Aave) ──
             // Looped: supply 1.25 ETH (earn 1.5% on all), borrow 0.25x USDC (pay borrowRate)
@@ -4771,9 +4768,6 @@
         let allRuns = [];
         let runCounter = 0;
 
-        // LP range widths per regime (as decimal half-range)
-        const LP_RANGES = { STRONG_UP: 0.02, RANGING: 0.03, HIGH_VOL: 0.08, STRONG_DOWN: 0.04 };
-
         // ── Core simulation (accepts config directly) ──
         // First 30 days are warmup for SMA/vol/momentum indicators
         function simulate(priceData, config) {
@@ -4788,9 +4782,6 @@
             const regimeCounts = {};
             const dailyLog = [];
 
-            // Track LP position via price ratio from last rebalance (not cumulative returns)
-            let lpRebalPrice = startPrice;
-            let lpHalfRange = 0.05; // default ±5%
             let currentRegime = 'RANGING';
 
             for (let i=SIM_START; i<priceData.length; i++) {
@@ -4812,39 +4803,20 @@
                     );
                     if (drift >= config.drift) {
                         // Proportional rebalance cost: ~0.3% per unit of portfolio swapped
-                        // Total swap volume = sum(|alloc changes|) / 2 (buys = sells)
                         const totalChange = Math.abs(currentAlloc.lp-target.lp) +
                                             Math.abs(currentAlloc.long-target.long) +
                                             Math.abs(currentAlloc.short-target.short) +
                                             Math.abs(currentAlloc.hold-target.hold);
-                        const swapFraction = totalChange / 200; // fraction of portfolio swapped
+                        const swapFraction = totalChange / 200;
                         const costRate = 0.003; // 0.3% swap cost (Aerodrome fee + slippage)
                         const cost = vaultVal * swapFraction * costRate;
                         vaultVal -= cost; totalCost += cost;
                         currentAlloc = {...target};
                         rebalCount++; lastRebalDay = i;
-                        // Reset LP position at current price
-                        lpRebalPrice = yesterday.price;
-                        currentRegime = regime;
-                        lpHalfRange = LP_RANGES[regime] || 0.05;
                     }
                 }
 
-                // LP auto-recenter: if LP is out of range, keeper re-centers it daily
-                // (withdraw out-of-range LP → swap ~50% → mint new LP at current price)
-                // Cost: ~0.15% of LP portion (one swap on half the position)
-                const lpPriceRatioBeforeRecenter = today.price / lpRebalPrice - 1;
-                if (currentAlloc.lp > 0 && Math.abs(lpPriceRatioBeforeRecenter) >= lpHalfRange) {
-                    const recenterCost = vaultVal * (currentAlloc.lp / 100) * 0.0015;
-                    vaultVal -= recenterCost; totalCost += recenterCost;
-                    lpRebalPrice = yesterday.price; // re-center at yesterday's close
-                }
-
-                // LP in-range check AFTER rebalance and potential recenter
-                const lpPriceRatio = today.price / lpRebalPrice - 1;
-                const lpInRange = Math.abs(lpPriceRatio) < lpHalfRange;
-
-                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config, lpInRange, lpPriceRatio);
+                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config);
                 vaultVal *= (1+ret);
                 ethHoldVal = ethUnits * today.price;
                 if (vaultVal > peak) peak = vaultVal;
