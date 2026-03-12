@@ -3545,7 +3545,7 @@ async function loadAgents() {
         _agentProjects = projects;
 
         if (!projects.length) {
-            container.innerHTML = '<div class="overview-empty"><p>No agents yet. <a href="/tools#ai-agent" style="color:var(--lobster-400)">Set up an AI agent</a> for one of your projects.</p></div>';
+            container.innerHTML = '<div class="overview-empty"><p>No agents yet.</p><button onclick="openCreateAgent()" style="margin-top:8px;padding:10px 24px;background:var(--accent-gradient);border:none;border-radius:var(--radius-md);color:#fff;font-family:var(--font-body);font-size:0.88rem;font-weight:700;cursor:pointer">Create Your First Agent</button></div>';
             return;
         }
 
@@ -3563,10 +3563,15 @@ async function loadAgents() {
 
             html += '<div class="agent-card" id="agentCard_' + p.id + '">';
 
-            // Header
+            // Header with optional pfp
             html += '<div class="agent-card-header">';
-            html += '<div class="agent-card-name">$' + esc(p.token_symbol || '???');
-            if (p.project_name) html += ' <span style="font-weight:400;font-size:0.82rem;color:var(--text-dim)">' + esc(p.project_name) + '</span>';
+            html += '<div style="display:flex;align-items:center;gap:10px">';
+            if (p.logo_url) {
+                html += '<img src="' + esc(p.logo_url) + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid var(--border-subtle)" onerror="this.style.display=\'none\'">';
+            } else {
+                html += '<div style="width:36px;height:36px;border-radius:50%;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--text-dim);font-size:0.9rem">' + (p.token_symbol || '?')[0] + '</div>';
+            }
+            html += '<div class="agent-card-name">' + esc(p.token_name || p.token_symbol || '???') + '</div>';
             html += '</div>';
             html += '<span class="agent-status-pill ' + st + '">' + st + '</span>';
             html += '</div>';
@@ -3775,6 +3780,233 @@ function showToast(msg, isError) {
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 2500);
     setTimeout(function() { toast.remove(); }, 2900);
+}
+
+// ══════════════════════════════════════
+// CREATE AGENT
+// ══════════════════════════════════════
+
+var _agentPfpFile = null;
+var _agentSelectedVibe = 'degen';
+
+var VIBE_PERSONAS = {
+    degen: 'You are a degen crypto enthusiast. Use slang like "lfg", "gm", "wagmi", "ser". Be bullish, energetic, and hype. Use fire/rocket emojis. Keep tweets short and punchy.',
+    hype: 'You are an ultra-hype marketing agent. Every post should build excitement and FOMO. Use caps for emphasis, countdown energy, and make everything sound like the biggest thing happening right now.',
+    chill: 'You are laid-back and conversational. Share updates casually like you are talking to friends. No hype, no caps lock. Just genuine, relaxed vibes about the project.',
+    professional: 'You are a professional project communicator. Write clear, informative tweets about developments, metrics, and milestones. No slang, no emojis. Credible and data-driven.',
+    meme: 'You are a meme lord. Every tweet should be funny, irreverent, or reference popular memes. Roast competitors gently. Use absurd humor. Make people laugh first, learn about the project second.'
+};
+
+function openCreateAgent() {
+    var modal = document.getElementById('createAgentModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    // Reset form
+    document.getElementById('createAgentName').value = '';
+    document.getElementById('createAgentPersona').value = '';
+    document.getElementById('createAgentPPD').value = '2';
+    document.getElementById('createAgentResult').textContent = '';
+    document.getElementById('createAgentBtn').disabled = false;
+    _agentPfpFile = null;
+
+    // Reset pfp preview
+    var preview = document.getElementById('agentPfpPreview');
+    preview.innerHTML = '<span id="agentPfpPlaceholder" style="font-size:0.7rem;color:var(--text-dim);text-align:center;line-height:1.2">Upload<br>pic</span>';
+    preview.style.borderStyle = 'dashed';
+
+    // Reset vibe
+    _agentSelectedVibe = 'degen';
+    document.querySelectorAll('.agent-vibe-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.vibe === 'degen'); });
+    document.getElementById('createAgentPersonaWrap').style.display = 'none';
+
+    // Populate token dropdown from cached projects
+    var select = document.getElementById('createAgentToken');
+    select.innerHTML = '<option value="">No token — standalone agent</option>';
+    if (_agentProjects && _agentProjects.length) {
+        // Filter out projects that already have agents
+        var agentProjectIds = _agentProjects.map(function(p) { return p.id; });
+    }
+    // Use _cachedTokens (all user projects)
+    if (typeof _cachedTokens !== 'undefined' && _cachedTokens.length) {
+        _cachedTokens.forEach(function(t) {
+            var symbol = t.token_symbol || '';
+            var name = t.token_name || '';
+            var hasAgent = t.agent_enabled;
+            var label = '$' + symbol + (name ? ' — ' + name : '');
+            if (hasAgent) label += ' (agent exists)';
+            var opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = label;
+            if (hasAgent) opt.disabled = true;
+            select.appendChild(opt);
+        });
+    }
+}
+
+function closeCreateAgent() {
+    var modal = document.getElementById('createAgentModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function previewAgentPfp(input) {
+    if (!input.files || !input.files[0]) return;
+    _agentPfpFile = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var preview = document.getElementById('agentPfpPreview');
+        preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover">';
+        preview.style.borderStyle = 'solid';
+        preview.style.borderColor = 'var(--lobster-300)';
+    };
+    reader.readAsDataURL(_agentPfpFile);
+}
+
+function selectAgentVibe(btn) {
+    document.querySelectorAll('.agent-vibe-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _agentSelectedVibe = btn.dataset.vibe;
+    var personaWrap = document.getElementById('createAgentPersonaWrap');
+    if (_agentSelectedVibe === 'custom') {
+        personaWrap.style.display = 'block';
+    } else {
+        personaWrap.style.display = 'none';
+    }
+}
+
+async function uploadAgentPfp() {
+    if (!_agentPfpFile) return null;
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                var res = await fetch(API_BASE + '/upload', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        file_data: e.target.result,
+                        file_name: 'agent-pfp-' + Date.now() + '.' + (_agentPfpFile.type.split('/')[1] || 'png'),
+                        file_type: _agentPfpFile.type
+                    })
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    resolve(data.url);
+                } else {
+                    resolve(null);
+                }
+            } catch (e) {
+                resolve(null);
+            }
+        };
+        reader.readAsDataURL(_agentPfpFile);
+    });
+}
+
+async function submitCreateAgent() {
+    var auth = getStoredAuth();
+    if (!auth || !auth.profile) {
+        showToast('Sign in first', true);
+        return;
+    }
+
+    var nameEl = document.getElementById('createAgentName');
+    var name = (nameEl.value || '').trim();
+    if (!name) {
+        showToast('Give your agent a name', true);
+        nameEl.focus();
+        return;
+    }
+
+    var btn = document.getElementById('createAgentBtn');
+    var result = document.getElementById('createAgentResult');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+    result.textContent = '';
+    result.className = 'buy-result';
+
+    // Build persona from vibe or custom
+    var persona;
+    if (_agentSelectedVibe === 'custom') {
+        persona = (document.getElementById('createAgentPersona').value || '').trim();
+    } else {
+        persona = VIBE_PERSONAS[_agentSelectedVibe] || '';
+    }
+    // Prepend agent name to persona
+    persona = 'Agent name: ' + name + '. ' + persona;
+
+    var postsPerDay = parseInt(document.getElementById('createAgentPPD').value) || 2;
+    var tokenProjectId = document.getElementById('createAgentToken').value;
+
+    try {
+        // Upload pfp if selected
+        var logoUrl = await uploadAgentPfp();
+
+        var wallet = auth.profile.wallet_address || '';
+
+        // If linking to existing project, just enable agent on it
+        if (tokenProjectId) {
+            var res = await fetch(API_BASE + '/inclawbator', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    action: 'update-agent',
+                    project_id: tokenProjectId,
+                    agent_enabled: true,
+                    agent_persona: persona,
+                    agent_posts_per_day: postsPerDay,
+                    agent_status: 'active'
+                })
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+
+            // Update logo if uploaded
+            if (logoUrl) {
+                await fetch(API_BASE + '/inclawbator', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ action: 'update-project', project_id: tokenProjectId, logo_url: logoUrl })
+                });
+            }
+        } else {
+            // Create standalone agent project
+            var res = await fetch(API_BASE + '/inclawbator', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    action: 'register',
+                    token_name: name,
+                    token_symbol: name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(),
+                    creator_wallet: wallet,
+                    agent_enabled: true,
+                    agent_persona: persona,
+                    agent_posts_per_day: postsPerDay,
+                    logo_url: logoUrl || null,
+                    tier: 'agent',
+                    description: 'AI agent: ' + name
+                })
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+        }
+
+        result.textContent = 'Agent created! 10 free credits loaded.';
+        result.className = 'buy-result success';
+        btn.textContent = 'Done';
+
+        // Reload agents list after short delay
+        setTimeout(function() {
+            closeCreateAgent();
+            loadAgents();
+        }, 1200);
+
+    } catch (err) {
+        result.textContent = err.message || 'Something went wrong';
+        result.className = 'buy-result error';
+        btn.disabled = false;
+        btn.textContent = 'Create Agent';
+    }
 }
 
 // Boot

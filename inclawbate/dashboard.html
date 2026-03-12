@@ -241,6 +241,10 @@
             .agent-actions { flex-direction:column; }
             .agent-action-btn { text-align:center; }
         }
+        /* Vibe preset buttons */
+        .agent-vibe-btn { padding:7px 14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:999px; color:var(--text-secondary); font-family:var(--font-body); font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+        .agent-vibe-btn:hover { border-color:var(--lobster-300); color:var(--text-primary); }
+        .agent-vibe-btn.active { background:var(--accent-gradient); border-color:transparent; color:#fff; box-shadow:0 2px 8px hsla(9,60%,54%,0.2); }
     </style>
 </head>
 <body>
@@ -374,7 +378,7 @@
                     <h3>AI Agents</h3>
                     <div style="display:flex;gap:8px;align-items:center">
                         <button type="button" onclick="loadAgents()" style="background:none;border:1px solid var(--border-subtle);color:var(--text-dim);padding:4px 10px;border-radius:var(--radius-md);font-size:0.72rem;cursor:pointer">Refresh</button>
-                        <a href="/tools#ai-agent" class="overview-section-action">Set Up Agent</a>
+                        <button type="button" onclick="openCreateAgent()" class="overview-section-action" style="background:var(--accent-gradient);color:#fff;border:none;padding:5px 14px;border-radius:var(--radius-md);font-size:0.8rem;font-weight:700;cursor:pointer">+ Create Agent</button>
                     </div>
                 </div>
                 <div id="agentsList">
@@ -384,6 +388,72 @@
         </div>
     </div>
 
+</div>
+
+<!-- Create Agent Modal -->
+<div id="createAgentModal" class="buy-modal-overlay hidden">
+    <div class="buy-modal-backdrop" onclick="closeCreateAgent()"></div>
+    <div class="buy-modal-dialog" style="max-width:480px">
+        <div class="buy-modal-header">
+            <h3>Create AI Agent</h3>
+            <button type="button" class="buy-modal-close" onclick="closeCreateAgent()">&times;</button>
+        </div>
+        <div class="dash-buy-panel" style="padding-top:var(--space-md)">
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:var(--space-lg);line-height:1.5">Your agent will autonomously market your token on X. Give it a name, a vibe, and it starts posting.</p>
+
+            <!-- Profile pic -->
+            <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-lg)">
+                <div id="agentPfpPreview" onclick="document.getElementById('agentPfpInput').click()" style="width:64px;height:64px;border-radius:50%;background:var(--bg-surface);border:2px dashed var(--border-subtle);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;transition:border-color 0.2s">
+                    <span id="agentPfpPlaceholder" style="font-size:0.7rem;color:var(--text-dim);text-align:center;line-height:1.2">Upload<br>pic</span>
+                </div>
+                <input type="file" id="agentPfpInput" accept="image/*" style="display:none" onchange="previewAgentPfp(this)">
+                <div style="flex:1">
+                    <label style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Agent Name</label>
+                    <input id="createAgentName" class="buy-custom-input" type="text" placeholder="e.g. PEPE Marketing Bot">
+                </div>
+            </div>
+
+            <!-- Link to token (optional) -->
+            <label style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Link to Token <span style="font-weight:400;text-transform:none">(optional)</span></label>
+            <select id="createAgentToken" class="buy-custom-input" style="margin-bottom:var(--space-md);cursor:pointer">
+                <option value="">No token — standalone agent</option>
+            </select>
+
+            <!-- Vibe presets -->
+            <label style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Vibe</label>
+            <div id="agentVibePresets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-md)">
+                <button type="button" class="agent-vibe-btn active" data-vibe="degen" onclick="selectAgentVibe(this)">Degen</button>
+                <button type="button" class="agent-vibe-btn" data-vibe="hype" onclick="selectAgentVibe(this)">Hype Beast</button>
+                <button type="button" class="agent-vibe-btn" data-vibe="chill" onclick="selectAgentVibe(this)">Chill</button>
+                <button type="button" class="agent-vibe-btn" data-vibe="professional" onclick="selectAgentVibe(this)">Professional</button>
+                <button type="button" class="agent-vibe-btn" data-vibe="meme" onclick="selectAgentVibe(this)">Meme Lord</button>
+                <button type="button" class="agent-vibe-btn" data-vibe="custom" onclick="selectAgentVibe(this)">Custom</button>
+            </div>
+
+            <!-- Custom persona (shown when "Custom" selected or always editable) -->
+            <div id="createAgentPersonaWrap" style="margin-bottom:var(--space-md);display:none">
+                <label style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Custom Persona</label>
+                <textarea id="createAgentPersona" class="buy-custom-input" style="min-height:70px;resize:vertical;font-size:0.82rem" placeholder="Describe how your agent should talk, what topics it covers, its personality..."></textarea>
+            </div>
+
+            <!-- Posts per day -->
+            <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-lg)">
+                <div>
+                    <label style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Posts / Day</label>
+                    <select id="createAgentPPD" class="buy-custom-input" style="width:80px;cursor:pointer">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+                <div style="flex:1;font-size:0.78rem;color:var(--text-dim);line-height:1.4;padding-top:16px">Each post costs 10 credits. Your agent starts with 10 free credits.</div>
+            </div>
+
+            <!-- Create button -->
+            <button type="button" id="createAgentBtn" class="buy-pay-btn" onclick="submitCreateAgent()">Create Agent</button>
+            <div id="createAgentResult" class="buy-result" style="min-height:20px"></div>
+        </div>
+    </div>
 </div>
 
 <!-- Buy Credits Modal -->
