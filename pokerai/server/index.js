@@ -312,6 +312,26 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'adminCredit': {
+          if (!requireAuth(client, ws)) break;
+          const addr = client.walletAddress;
+          if (!PLATFORM_WALLETS.has(addr)) {
+            ws.send(JSON.stringify({ type: 'adminCreditResult', data: { error: 'Not a platform wallet' } }));
+            break;
+          }
+          const amount = msg.amount;
+          if (!isValidPositiveNumber(amount) || amount > 1000000) {
+            ws.send(JSON.stringify({ type: 'adminCreditResult', data: { error: 'Invalid amount (max 1M)' } }));
+            break;
+          }
+          await rooms.store.addBalance(addr, amount);
+          rooms.store.recordTransaction(addr, 'admin_credit', 0, amount);
+          sendBalance(ws, addr);
+          ws.send(JSON.stringify({ type: 'adminCreditResult', data: { success: true, amount } }));
+          console.log(`[Admin] Platform wallet ${addr.slice(0,8)} self-credited ${amount} chips`);
+          break;
+        }
+
         case 'leaveTable': {
           const addr = getClientWallet(client);
           if (client.walletAddress && !requireAuth(client, ws)) break;

@@ -3725,6 +3725,25 @@
               </div>
             </div>
           </div>
+          <!-- Admin Credit Bar (platform wallet only) -->
+          <div id="adminCreditBar" style="display:none;width:100%;background:linear-gradient(135deg, rgba(212,175,55,0.12), rgba(255,215,0,0.08));border:1px solid rgba(212,175,55,0.4);border-radius:10px;padding:12px 16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:140px">
+                <div style="font-family:'Rajdhani';font-size:16px;font-weight:700;color:#d4af37">⚡ Admin: Credit Chips</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">Credit chips to platform wallet without on-chain deposit.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <button onclick="adminCreditChips(10000)" style="background:rgba(212,175,55,0.15);color:#d4af37;border:1px solid rgba(212,175,55,0.3);border-radius:6px;padding:4px 10px;font-size:12px;font-family:'Rajdhani';font-weight:700;cursor:pointer">10K</button>
+                <button onclick="adminCreditChips(25000)" style="background:rgba(212,175,55,0.15);color:#d4af37;border:1px solid rgba(212,175,55,0.3);border-radius:6px;padding:4px 10px;font-size:12px;font-family:'Rajdhani';font-weight:700;cursor:pointer">25K</button>
+                <button onclick="adminCreditChips(50000)" style="background:rgba(212,175,55,0.15);color:#d4af37;border:1px solid rgba(212,175,55,0.3);border-radius:6px;padding:4px 10px;font-size:12px;font-family:'Rajdhani';font-weight:700;cursor:pointer">50K</button>
+                <button onclick="adminCreditChips(100000)" style="background:rgba(212,175,55,0.15);color:#d4af37;border:1px solid rgba(212,175,55,0.3);border-radius:6px;padding:4px 10px;font-size:12px;font-family:'Rajdhani';font-weight:700;cursor:pointer">100K</button>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <input id="adminCreditInput" type="number" placeholder="Custom" min="1" max="1000000" style="background:var(--bg-card);color:var(--text-primary);border:1px solid rgba(212,175,55,0.3);border-radius:6px;padding:4px 8px;font-size:12px;font-family:'Rajdhani';width:80px">
+                  <button onclick="adminCreditChips(Number(document.getElementById('adminCreditInput').value))" style="background:#d4af37;color:#0a0a0f;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-family:'Rajdhani';font-weight:800;cursor:pointer">CREDIT</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- Auto Top-Up Toggle (visible when wallet connected on USDC rooms) -->
           <div id="autoTopUpBar" style="display:none;width:100%;background:linear-gradient(135deg, rgba(45,138,78,0.12), rgba(34,208,88,0.08));border:1px solid rgba(45,138,78,0.3);border-radius:10px;padding:12px 16px;margin-bottom:10px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -4212,6 +4231,7 @@ let pingInterval = null;
 // ============================================================
 // $POKERAI AIRDROP APY
 // ============================================================
+const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
 const AIRDROP_TOKENS = 15_000_000_000;  // 15B tokens
 const AIRDROP_DAYS = 90;
 const TOKEN_SUPPLY = 100_000_000_000;   // 100B total supply
@@ -4498,6 +4518,14 @@ function handleMessage(msg) {
       }
       window._lastTopUpAmount = null;
       window._lastTopUpAgentId = null;
+      break;
+
+    case 'adminCreditResult':
+      if (msg.data.success) {
+        showToast(`Credited ${msg.data.amount.toLocaleString()} chips`, 'success');
+      } else {
+        showToast(msg.data.error || 'Credit failed', 'error');
+      }
       break;
 
     case 'leaveTableResult':
@@ -6276,6 +6304,25 @@ function refreshMyAgentsView() {
   const autoTopUpBar = document.getElementById('autoTopUpBar');
   if (autoTopUpBar) {
     autoTopUpBar.style.display = (wallet && !isSandbox) ? 'block' : 'none';
+  }
+
+  // Show admin credit bar only for platform wallet
+  const adminBar = document.getElementById('adminCreditBar');
+  if (adminBar) {
+    const addr = wallet ? wallet.address.toLowerCase() : '';
+    adminBar.style.display = (addr === ADMIN_WALLET && !isSandbox) ? 'block' : 'none';
+  }
+}
+
+// === Admin Credit ===
+
+function adminCreditChips(amount) {
+  if (!amount || amount <= 0 || amount > 1000000) {
+    showToast('Enter a valid amount (1 - 1,000,000)', 'error');
+    return;
+  }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'adminCredit', amount }));
   }
 }
 
