@@ -1684,6 +1684,73 @@
   .my-agent-card.losing { border-color: rgba(239,68,68,0.4); box-shadow: 0 0 24px rgba(239,68,68,0.08); }
   .my-agent-card.losing::before { background: linear-gradient(90deg, #ef4444, #f97316); }
 
+  /* Compact agent card for 20+ agent management */
+  .my-agent-compact {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .my-agent-compact::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent-gold);
+    opacity: 0.6;
+  }
+  .my-agent-compact:hover { border-color: var(--border-light); background: var(--bg-elevated); }
+  .my-agent-compact.profitable { border-color: rgba(34,197,94,0.3); }
+  .my-agent-compact.profitable::before { background: #22c55e; }
+  .my-agent-compact.losing { border-color: rgba(239,68,68,0.3); }
+  .my-agent-compact.losing::before { background: #ef4444; }
+  .my-agent-compact .compact-emoji {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bg-dark); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; border: 2px solid var(--border-light); flex-shrink: 0;
+  }
+  .my-agent-compact .compact-info { flex: 1; min-width: 0; }
+  .my-agent-compact .compact-name {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .my-agent-compact .compact-meta {
+    display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted);
+  }
+  .my-agent-compact .compact-stats { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .my-agent-compact .compact-pnl {
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; white-space: nowrap;
+  }
+  .my-agent-compact .compact-chips {
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+    color: var(--accent-gold); white-space: nowrap;
+  }
+  .my-agent-compact .compact-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .my-agent-compact .compact-btn {
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; border: 1px solid;
+    background: none;
+  }
+  .compact-btn.btn-watch { color: var(--accent-green); border-color: rgba(34,197,94,0.3); }
+  .compact-btn.btn-watch:hover { background: rgba(34,197,94,0.1); }
+  .compact-btn.btn-topup { color: var(--accent-gold); border-color: rgba(245,197,66,0.3); }
+  .compact-btn.btn-topup:hover { background: rgba(245,197,66,0.1); }
+  .compact-btn.btn-sitout { color: var(--accent-red); border-color: rgba(239,68,68,0.3); }
+  .compact-btn.btn-sitout:hover { background: rgba(239,68,68,0.1); }
+  /* Expanded detail panel under compact card */
+  .compact-expand {
+    display: none; padding: 10px 14px 14px 60px;
+    background: var(--bg-dark); border: 1px solid var(--border);
+    border-top: none; border-radius: 0 0 12px 12px; margin-top: -2px;
+  }
+
   .my-agent-header {
     display: flex;
     align-items: center;
@@ -2927,6 +2994,9 @@
     .my-agent-card { padding: 16px; }
     .my-agent-emoji { width: 48px; height: 48px; font-size: 24px; }
     .my-agent-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .my-agent-compact .compact-actions { gap: 2px; }
+    .my-agent-compact .compact-btn { padding: 3px 7px; font-size: 10px; }
+    .compact-expand { padding: 8px 10px 10px 46px; }
     .preset-row { flex-wrap: wrap; }
     .preset-btn { min-width: 55px; padding: 6px 4px; font-size: 10px; }
     .toggle-row { flex-wrap: wrap; }
@@ -6139,6 +6209,15 @@ let _openWithdrawPanel = null; // track which agent's withdraw panel is open
 let _selectedFundAmount = {};  // track selected preset per agent { agentId: amount }
 let _selectedWithdrawAmount = {};  // track selected withdraw preset per agent
 
+function toggleCompactExpand(agentId) {
+  const el = document.getElementById('compactExpand-' + agentId);
+  if (!el) return;
+  const isOpen = el.style.display === 'block';
+  // Close all others
+  document.querySelectorAll('.compact-expand').forEach(e => e.style.display = 'none');
+  if (!isOpen) el.style.display = 'block';
+}
+
 function renderMyAgents() {
   const grid = document.getElementById('myAgentsGrid');
   const wallet = getWallet();
@@ -6169,7 +6248,64 @@ function renderMyAgents() {
 
   let html = '';
 
-  // LOBBY section
+  // PLAYING section — compact cards, shown first
+  if (playing.length > 0) {
+    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+      <span style="color:var(--accent-green);font-size:18px">🟢</span> Playing (${playing.length})
+    </div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:${lobby.length > 0 ? '20px' : '0'}">`;
+    html += playing.map(agent => {
+      const pnl = agent.chips - agent.baseChips;
+      const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+      const pnlSign = pnl >= 0 ? '+' : '';
+      const cardClass = pnl >= 0 ? 'profitable' : 'losing';
+      const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
+      const wrClass = wr >= 20 ? 'wr-hot' : wr >= 10 ? 'wr-warm' : 'wr-cold';
+      const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
+      const roomLabel = roomNames[agent.roomId] || '';
+
+      return `
+      <div class="my-agent-compact ${cardClass}" onclick="toggleCompactExpand('${agent.id}')">
+        <div class="compact-emoji">${agent.emoji}</div>
+        <div class="compact-info">
+          <div class="compact-name">${agent.name}</div>
+          <div class="compact-meta">
+            <span class="agent-winrate ${wrClass}" style="font-size:10px;padding:1px 6px">${wr >= 20 ? '🔥' : ''}${wr}%</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(34,197,94,0.12);color:var(--accent-green)">
+              <span style="width:5px;height:5px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
+              ${roomLabel}
+            </span>
+            <span style="color:var(--text-muted)">${agent.handsPlayed}h</span>
+          </div>
+        </div>
+        <div class="compact-stats">
+          <div class="compact-chips">${formatChips(agent.chips)}</div>
+          <div class="compact-pnl" style="color:${pnlColor}">${agent.roomId === 'sandbox' ? 'FREE' : pnlSign + pnl.toLocaleString()}</div>
+        </div>
+        <div class="compact-actions" onclick="event.stopPropagation()">
+          <button class="compact-btn btn-watch" onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')">👁</button>
+          ${agent.roomId !== 'sandbox' ? `<button class="compact-btn btn-topup" onclick="topUpAgent('${agent.id}',2500)">+</button>` : ''}
+          <button class="compact-btn btn-sitout" onclick="leaveTable('${agent.id}');this.textContent='...';this.disabled=true">✕</button>
+        </div>
+      </div>
+      <div id="compactExpand-${agent.id}" class="compact-expand">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div style="font-size:11px;color:var(--text-muted)">
+            <span style="color:var(--accent-gold)">${formatChips(agent.chips)}</span> stack · started ${formatChips(agent.baseChips)} · ${agent.handsPlayed} hands · ${wr}% WR
+          </div>
+          <div style="display:flex;gap:4px;margin-left:auto">
+            <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:5px 12px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif">WATCH</button>
+            ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}',2500)" style="padding:5px 12px;background:none;border:1px solid rgba(245,197,66,0.3);border-radius:8px;color:var(--accent-gold);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">+ Top Up</button>` : ''}
+            <button onclick="switchAgentRoom('${agent.id}')" style="padding:5px 12px;background:none;border:1px solid rgba(99,102,241,0.3);border-radius:8px;color:var(--accent-primary);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Switch</button>
+            <button onclick="leaveTable('${agent.id}');this.textContent='Leaving...';this.disabled=true;this.style.opacity='0.5'" style="padding:5px 12px;background:none;border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--accent-red);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Sit Out</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  }
+
+  // LOBBY section — full cards for setup/funding
   if (lobby.length > 0) {
     html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
       <span style="color:var(--accent-gold);font-size:18px">⏳</span> Ready to Deploy (${lobby.length})
@@ -6258,79 +6394,6 @@ function renderMyAgents() {
           <div style="font-size:10px;font-weight:700;color:#34d058;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;opacity:0.5">🃏 $POKERAI · 0% Rake · Coming Soon</div>
         </div>
         ${agent.handsPlayed > 0 ? `<div style="font-size:10px;color:var(--text-muted);margin-top:8px">${agent.handsPlayed} hands played · ${wr}% win rate · best pot ${agent.biggestPot.toLocaleString()}</div>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  // PLAYING section
-  if (playing.length > 0) {
-    html += `<div style="font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:${lobby.length > 0 ? '24px' : '0'} 0 12px;display:flex;align-items:center;gap:8px">
-      <span style="color:var(--accent-green);font-size:18px">🟢</span> Playing (${playing.length})
-    </div>`;
-    html += playing.map(agent => {
-      const pnl = agent.chips - agent.baseChips;
-      const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-      const pnlSign = pnl >= 0 ? '+' : '';
-      const cardClass = pnl >= 0 ? 'profitable' : 'losing';
-      const wr = agent.handsPlayed > 0 ? Math.round(agent.handsWon / agent.handsPlayed * 100) : 0;
-      const roomNames = { sandbox: 'Sandbox', micro: 'Micro', mid: 'Mid', high: 'High' };
-      const roomLabel = roomNames[agent.roomId] || '';
-
-      return `
-      <div class="my-agent-card ${cardClass}">
-        <div class="my-agent-header">
-          <div class="my-agent-left">
-            <div class="my-agent-emoji">${agent.emoji}</div>
-            <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-                <span style="font-family:'Rajdhani';font-size:26px;font-weight:800;color:var(--text-primary)">${agent.name}</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(34,197,94,0.15);color:var(--accent-green);border:1px solid rgba(34,197,94,0.3)">
-                  <span style="width:7px;height:7px;border-radius:50%;background:var(--accent-green);animation:pulse 1.5s infinite"></span>
-                  LIVE${roomLabel ? ' · ' + roomLabel : ''}
-                </span>
-              </div>
-              <span class="agent-style-badge badge-${agent.style}" style="font-size:12px">${capitalize(agent.style)}</span>
-            </div>
-          </div>
-          <div style="text-align:right">
-            ${agent.roomId === 'sandbox'
-              ? `<div style="font-family:'Rajdhani';font-size:18px;font-weight:700;color:var(--accent-green)">FREE PLAY</div>`
-              : `<div class="my-agent-pnl" style="color:${pnlColor}">${pnlSign}${pnl.toLocaleString()}</div>
-                 <div style="font-size:11px;color:var(--text-muted)">P&L</div>`
-            }
-          </div>
-        </div>
-        <div class="my-agent-stats">
-          <div class="mini-stat">
-            <div class="mini-stat-label">Stack</div>
-            <div class="mini-stat-value" style="color:var(--accent-gold);font-size:24px">${formatChips(agent.chips)}</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Started</div>
-            <div class="mini-stat-value">${formatChips(agent.baseChips)}</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Hands</div>
-            <div class="mini-stat-value">${agent.handsPlayed}</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Win Rate</div>
-            <div class="mini-stat-value">${wr}%</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <div style="flex:1">
-            ${renderStrategyBar('Aggression', agent.traits?.aggression || 50, '#ef4444')}
-            ${renderStrategyBar('Bluffing', agent.traits?.bluffing || 30, '#a855f7')}
-            ${renderStrategyBar('Patience', agent.traits?.patience || 50, '#3b82f6')}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button onclick="showView('arena');switchRoom('${agent.roomId || 'micro'}')" style="padding:12px 24px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 16px rgba(34,197,94,0.25)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(34,197,94,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(34,197,94,0.25)'">👁 WATCH</button>
-            ${agent.roomId !== 'sandbox' ? `<button onclick="topUpAgent('${agent.id}', 2500)" style="padding:10px 20px;background:var(--bg-surface);border:2px solid rgba(245,197,66,0.3);border-radius:10px;color:var(--accent-gold);font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(245,197,66,0.1)';this.style.borderColor='rgba(245,197,66,0.5)'" onmouseout="this.style.background='var(--bg-surface)';this.style.borderColor='rgba(245,197,66,0.3)'">+ TOP UP</button>` : ''}
-            <button onclick="switchAgentRoom('${agent.id}')" style="padding:10px 20px;background:var(--bg-surface);border:2px solid rgba(99,102,241,0.3);border-radius:10px;color:var(--accent-primary);font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(99,102,241,0.08)';this.style.borderColor='rgba(99,102,241,0.5)'" onmouseout="this.style.background='var(--bg-surface)';this.style.borderColor='rgba(99,102,241,0.3)'">🔄 Switch Room</button>
-            <button onclick="leaveTable('${agent.id}');this.textContent='Leaving...';this.disabled=true;this.style.opacity='0.5'" style="padding:10px 20px;background:rgba(239,68,68,0.08);border:2px solid rgba(239,68,68,0.4);border-radius:10px;color:var(--accent-red);font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.borderColor='rgba(239,68,68,0.6)'" onmouseout="this.style.background='rgba(239,68,68,0.08)';this.style.borderColor='rgba(239,68,68,0.4)'">Sit Out</button>
-          </div>
-        </div>
       </div>`;
     }).join('');
   }
