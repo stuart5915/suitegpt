@@ -416,8 +416,21 @@ class RoomManager {
   _seedPlatformAgents(table, roomId, count) {
     let seeded = 0;
 
+    // Collect wallets that already have a human (manually-joined) agent at this table
+    // so we don't auto-seat their other lobby agents as platform liquidity
+    const humansAtTable = new Set();
+    for (const a of table.agents) {
+      if (a.isCustom && a.walletAddress && !a._autoSeated) {
+        humansAtTable.add(a.walletAddress.toLowerCase());
+      }
+    }
+
     for (const [walletAddress, agents] of this.lobbyAgents) {
       if (!PLATFORM_WALLETS.has(walletAddress.toLowerCase())) continue;
+
+      // Skip this wallet if they already have a manually-joined agent at the table
+      // (they chose to sit one agent — don't auto-seat the rest)
+      if (humansAtTable.has(walletAddress.toLowerCase())) continue;
 
       for (let i = agents.length - 1; i >= 0; i--) {
         if (seeded >= count) return seeded;
