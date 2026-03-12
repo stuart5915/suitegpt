@@ -259,12 +259,41 @@ async function handleResearch(chatId) {
     );
 }
 
+// ── Store message in telegram_messages table for ClawsNet bridge ──
+
+async function storeMessage(update) {
+    const msg = update.message || update.edited_message;
+    if (!msg || !msg.text) return;
+    try {
+        const row = {
+            message_id: msg.message_id,
+            text: msg.text,
+            from_id: msg.from?.id,
+            from_name: [msg.from?.first_name, msg.from?.last_name].filter(Boolean).join(' '),
+            from_username: msg.from?.username || null,
+            reply_to_id: msg.reply_to_message?.message_id || null,
+            reply_to_text: msg.reply_to_message?.text?.slice(0, 200) || null,
+            reply_to_name: msg.reply_to_message ? [msg.reply_to_message.from?.first_name, msg.reply_to_message.from?.last_name].filter(Boolean).join(' ') : null,
+            timestamp: msg.date * 1000,
+            edited: !!update.edited_message,
+        };
+        if (update.edited_message) {
+            await supabase.from('telegram_messages').upsert(row, { onConflict: 'message_id' });
+        } else {
+            await supabase.from('telegram_messages').insert(row);
+        }
+    } catch (e) { /* silent — don't break bot commands */ }
+}
+
 // ── Main ──
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
     try {
+        // Store every message for ClawsNet bridge
+        await storeMessage(req.body);
+
         const message = req.body?.message;
         if (!message || !message.text) return res.status(200).json({ ok: true });
 
