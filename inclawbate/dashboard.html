@@ -340,14 +340,49 @@
                 </div>
             </div>
             <div class="overview-section" id="overviewAutoBuy" data-section="tokens" style="animation:fadeUp 0.4s ease both">
-                <a href="/tools/autobuy" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(138,43,226,0.06));border:1px solid rgba(0,229,255,0.15);border-radius:var(--radius-lg);text-decoration:none;transition:border-color 0.2s">
-                    <div style="font-size:1.6rem">&#128176;</div>
-                    <div style="flex:1">
+                <!-- Promo state (no active position) -->
+                <div id="autobuyPromo">
+                    <a href="/tools/autobuy" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(138,43,226,0.06));border:1px solid rgba(0,229,255,0.15);border-radius:var(--radius-lg);text-decoration:none;transition:border-color 0.2s">
+                        <div style="font-size:1.6rem">&#128176;</div>
+                        <div style="flex:1">
+                            <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary)">AutoBuy CLAWS</div>
+                            <div style="font-size:0.8rem;color:var(--text-dim);margin-top:2px">Deposit ETH, automatically buy CLAWS over time. Free, no fees.</div>
+                        </div>
+                        <span style="color:var(--text-dim);font-size:1.2rem">&#8250;</span>
+                    </a>
+                </div>
+                <!-- Live position state -->
+                <div id="autobuyLive" style="display:none;padding:var(--space-md) var(--space-lg);background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(138,43,226,0.06));border:1px solid rgba(0,229,255,0.15);border-radius:var(--radius-lg)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                         <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary)">AutoBuy CLAWS</div>
-                        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:2px">Deposit ETH, automatically buy CLAWS over time. Free, no fees.</div>
+                        <span id="abStatus" style="font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(0,255,179,0.12);color:#00ffb3">ACTIVE</span>
                     </div>
-                    <span style="color:var(--text-dim);font-size:1.2rem">&#8250;</span>
-                </a>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+                        <div style="text-align:center">
+                            <div id="abBuys" style="font-size:1.05rem;font-weight:800;color:#00e5ff">0/0</div>
+                            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Buys</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div id="abRemaining" style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">0</div>
+                            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">ETH Left</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div id="abClaws" style="font-size:1.05rem;font-weight:800;color:#00ffb3">0</div>
+                            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">CLAWS</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div id="abNext" style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">--</div>
+                            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Next Buy</div>
+                        </div>
+                    </div>
+                    <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;margin-bottom:8px">
+                        <div id="abProgress" style="height:100%;background:linear-gradient(90deg,#8a2be2,#00e5ff);border-radius:3px;width:0%;transition:width 0.5s"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span id="abProgressText" style="font-size:0.72rem;color:var(--text-dim)">0% complete</span>
+                        <a href="/tools/autobuy" style="font-size:0.75rem;color:#00e5ff;text-decoration:none;font-weight:700">Manage &rarr;</a>
+                    </div>
+                </div>
             </div>
 
             <div class="overview-section" id="overviewTokens" data-section="tokens">
@@ -594,9 +629,85 @@
 </div>
 
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
 <script src="/js/dashboard-app.js"></script>
+<script>
+// AutoBuy dashboard widget
+(async function initAutoBuyWidget() {
+    const AUTOBUY_CONTRACT = '0x9b434Db8daD66AEbD81594C4C32ce5ba16709c0A';
+    const ABI = ['function getPosition(address user) view returns (uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256)'];
+    const RPC = 'https://mainnet.base.org';
+
+    function getWallet() {
+        try {
+            const p = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+            return p && p.wallet_address ? p.wallet_address : null;
+        } catch (e) { return null; }
+    }
+
+    function fmtClaws(wei) {
+        const n = parseFloat(ethers.formatEther(wei));
+        if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+        if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+        if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+        return n >= 1 ? n.toFixed(0) : n.toFixed(2);
+    }
+
+    function fmtTime(s) {
+        if (s >= 3600) return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+        if (s >= 60) return Math.floor(s/60)+'m';
+        return s+'s';
+    }
+
+    async function loadPosition() {
+        const wallet = getWallet();
+        if (!wallet) return;
+        try {
+            const provider = new ethers.JsonRpcProvider(RPC);
+            const contract = new ethers.Contract(AUTOBUY_CONTRACT, ABI, provider);
+            const pos = await contract.getPosition(wallet);
+            const active = pos[7];
+            const buysCompleted = Number(pos[4]);
+            const totalBuys = Number(pos[5]);
+
+            if (!active && !(buysCompleted > 0 && buysCompleted >= totalBuys)) return;
+
+            document.getElementById('autobuyPromo').style.display = 'none';
+            document.getElementById('autobuyLive').style.display = 'block';
+
+            const remaining = pos[0];
+            const totalClaws = pos[6];
+            const nextBuyTime = Number(pos[8]);
+
+            document.getElementById('abBuys').textContent = buysCompleted + '/' + totalBuys;
+            document.getElementById('abRemaining').textContent = parseFloat(ethers.formatEther(remaining)).toFixed(4);
+            document.getElementById('abClaws').textContent = fmtClaws(totalClaws);
+
+            const pct = totalBuys > 0 ? Math.round((buysCompleted / totalBuys) * 100) : 0;
+            document.getElementById('abProgress').style.width = pct + '%';
+            document.getElementById('abProgressText').textContent = pct + '% complete';
+
+            if (!active && buysCompleted >= totalBuys) {
+                document.getElementById('abStatus').textContent = 'COMPLETE';
+                document.getElementById('abStatus').style.background = 'rgba(0,229,255,0.12)';
+                document.getElementById('abStatus').style.color = '#00e5ff';
+                document.getElementById('abNext').textContent = 'Done';
+            } else {
+                const now = Math.floor(Date.now() / 1000);
+                const diff = nextBuyTime - now;
+                const el = document.getElementById('abNext');
+                if (diff <= 0) { el.textContent = 'Ready'; el.style.color = '#00ffb3'; }
+                else { el.textContent = fmtTime(diff); }
+            }
+        } catch (e) {}
+    }
+
+    loadPosition();
+    setInterval(loadPosition, 15000);
+})();
+</script>
 
 <footer class="footer">
     <div class="container">
