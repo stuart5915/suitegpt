@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     if (ALLOWED_ORIGINS.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(204).end();
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { name, description, long_description, app_id, app_slug, token_address, staking_address, x_handle, telegram_url, website_url, logo_url } = req.body || {};
+        const { name, description, long_description, app_id, app_slug, token_address, token_symbol, staking_address, x_handle, telegram_url, website_url, logo_url, agent_enabled, agent_persona, agent_posts_per_day, agent_status } = req.body || {};
         if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -119,29 +119,42 @@ export default async function handler(req, res) {
         if (!baseSlug) return res.status(400).json({ error: 'Invalid project name' });
         const slug = await uniqueSlug(baseSlug);
 
+        const row = {
+            creator_wallet: wallet,
+            creator_profile_id: user.profile_id || null,
+            name: name.trim(),
+            slug,
+            description: description || null,
+            app_id: app_id || null,
+            app_slug: app_slug || null,
+            token_address: token_address || null,
+            token_symbol: token_symbol || null,
+            staking_address: staking_address || null,
+            x_handle: x_handle || null,
+            telegram_url: telegram_url || null,
+            website_url: website_url || null,
+            long_description: long_description || null,
+            logo_url: logo_url || null,
+        };
+
+        // Agent fields (optional)
+        if (typeof agent_enabled === 'boolean') row.agent_enabled = agent_enabled;
+        if (agent_persona) row.agent_persona = agent_persona;
+        if (agent_posts_per_day !== undefined) {
+            row.agent_posts_per_day = Math.max(1, Math.min(3, parseInt(agent_posts_per_day) || 2));
+        }
+        if (agent_status && ['active', 'dormant', 'paused'].includes(agent_status)) {
+            row.agent_status = agent_status;
+        }
+
         const { data, error } = await supabase
             .from('projects')
-            .insert({
-                creator_wallet: wallet,
-                creator_profile_id: user.profile_id || null,
-                name: name.trim(),
-                slug,
-                description: description || null,
-                app_id: app_id || null,
-                app_slug: app_slug || null,
-                token_address: token_address || null,
-                staking_address: staking_address || null,
-                x_handle: x_handle || null,
-                telegram_url: telegram_url || null,
-                website_url: website_url || null,
-                long_description: long_description || null,
-                logo_url: logo_url || null,
-            })
+            .insert(row)
             .select()
             .single();
 
         if (error) return res.status(500).json({ error: error.message });
-        return res.status(201).json({ project: data });
+        return res.status(201).json({ project: sanitizeProject(data) });
     }
 
     // PUT — update project
@@ -166,7 +179,7 @@ export default async function handler(req, res) {
         }
 
         // Only allow updating safe fields
-        const allowed = ['name', 'description', 'long_description', 'app_id', 'app_slug', 'token_address', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url', 'marketing_plan'];
+        const allowed = ['name', 'description', 'long_description', 'app_id', 'app_slug', 'token_address', 'token_symbol', 'staking_address', 'x_handle', 'telegram_url', 'website_url', 'logo_url', 'marketing_plan'];
         const patch = { updated_at: new Date().toISOString() };
         for (const key of allowed) {
             if (key in updates) patch[key] = updates[key] || null;

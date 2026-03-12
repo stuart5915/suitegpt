@@ -3762,8 +3762,8 @@ async function loadAgentPosts(projectId) {
 
 // ── Connect / Disconnect X ──
 function connectAgentX(projectId) {
-    // Redirect to X OAuth flow for this project
-    window.location.href = '/tools#ai-agent';
+    // Redirect to unified agents page
+    window.location.href = '/agents';
 }
 
 async function disconnectAgentX(projectId) {

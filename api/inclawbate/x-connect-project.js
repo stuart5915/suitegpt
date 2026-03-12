@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const REDIRECT_URI = 'https://inclawbate.com/tools';
+const REDIRECT_URI = 'https://inclawbate.com/agents';
 
 const ALLOWED_ORIGINS = [
     'https://inclawbate.com',
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
 
         // Verify project ownership
         const { data: project } = await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .select('creator_profile_id')
             .eq('id', project_id)
             .single();
@@ -104,7 +104,7 @@ export default async function handler(req, res) {
 
         // Verify ownership
         const { data: project } = await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .select('creator_profile_id')
             .eq('id', project_id)
             .single();
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
 
         // Store on project
         const { error: updateErr } = await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .update({
                 x_access_token: tokenData.access_token,
                 x_refresh_token: tokenData.refresh_token || null,
@@ -170,7 +170,7 @@ export default async function handler(req, res) {
         if (!project_id) return res.status(400).json({ error: 'project_id required' });
 
         const { data: project } = await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .select('creator_profile_id')
             .eq('id', project_id)
             .single();
@@ -181,7 +181,7 @@ export default async function handler(req, res) {
         }
 
         await supabase
-            .from('inclawbator_projects')
+            .from('projects')
             .update({
                 x_access_token: null,
                 x_refresh_token: null,
