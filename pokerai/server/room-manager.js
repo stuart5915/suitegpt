@@ -3,9 +3,9 @@ const { AgentStore } = require('./agent-store');
 
 const ROOM_CONFIGS = {
   sandbox: { name: 'Sandbox',      buyIn: 'FREE', bb: 50,   baseChips: 10000,  rakePct: 0,     isSandbox: true, currency: 'free', maxStack: Infinity },
-  micro:   { name: 'Micro',        buyIn: '$1',   bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc', maxStack: 50000 },   // 2.5% rake, max 50k ($5)
-  mid:     { name: 'Mid Stakes',   buyIn: '$5',   bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc', maxStack: 250000 },  // 2.5% rake, max 250k ($25)
-  high:    { name: 'High Stakes',  buyIn: '$25',  bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc', maxStack: 1000000 }  // 2.5% rake, max 1M ($100)
+  micro:   { name: 'Micro',        buyIn: '25/50',   bb: 50,   baseChips: 10000,  rakePct: 0.025, currency: 'usdc', maxStack: 50000 },
+  mid:     { name: 'Mid Stakes',   buyIn: '125/250', bb: 250,  baseChips: 50000,  rakePct: 0.025, currency: 'usdc', maxStack: 250000 },
+  high:    { name: 'High Stakes',  buyIn: '625/1250', bb: 1250, baseChips: 250000, rakePct: 0.025, currency: 'usdc', maxStack: 1000000 }
 };
 
 const RAKE_FLUSH_INTERVAL = 60 * 60 * 1000; // Flush rake to chain once per hour
