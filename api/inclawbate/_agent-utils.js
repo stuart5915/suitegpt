@@ -60,7 +60,7 @@ ${project.description ? 'Project: ' + project.description : ''}
 ${project.website_url ? 'Website: ' + project.website_url : ''}
 
 Rules:
-- Under 260 characters (STRICT — leave room for the bot tag at the end)
+- Under 280 characters (STRICT)
 ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name naturally'}
 - No hashtags
 - No "excited to announce" or any corporate speak
@@ -90,7 +90,5 @@ ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name n
     if (!response.ok) throw new Error(data.error?.message || 'Claude API error');
 
     let text = (data.content?.[0]?.text || '').trim();
-    const tag = '\n\n\ud83e\udd16 via @inclawbator AI';
-    if (text.length + tag.length <= 280) text += tag;
     return { text, content_angle: pillar };
 }
