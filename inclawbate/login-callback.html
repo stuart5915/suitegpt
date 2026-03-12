@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signing in... — Inclawbate</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a0f;
+            color: #e8e4df;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .cb-wrap { text-align: center; padding: 24px; }
+        .cb-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #c75b3f;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .cb-msg { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+        .cb-sub { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+        .cb-error { color: #ef4444; margin-top: 16px; font-size: 0.9rem; display: none; }
+        .cb-error a { color: #c75b3f; }
+    </style>
+</head>
+<body>
+    <div class="cb-wrap">
+        <div class="cb-spinner" id="cbSpinner"></div>
+        <div class="cb-msg" id="cbMsg">Signing you in...</div>
+        <div class="cb-sub">Setting up your account</div>
+        <div class="cb-error" id="cbError"></div>
+    </div>
+
+    <script src="/js/privy-bundle.js"></script>
+    <script>
+        (async function() {
+            var msgEl = document.getElementById('cbMsg');
+            var errEl = document.getElementById('cbError');
+            var spinEl = document.getElementById('cbSpinner');
+            var returnUrl = localStorage.getItem('privy_return_url') || '/';
+
+            try {
+                // Small delay to let Privy iframe init
+                await new Promise(function(r) { setTimeout(r, 500); });
+                msgEl.textContent = 'Creating your wallet...';
+                var address = await window.PrivyAuth.handleOAuthCallback();
+                msgEl.textContent = 'You\'re in!';
+                spinEl.style.display = 'none';
+                localStorage.removeItem('privy_return_url');
+                setTimeout(function() { window.location.href = returnUrl; }, 800);
+            } catch(e) {
+                console.error('OAuth callback error:', e);
+                spinEl.style.display = 'none';
+                msgEl.textContent = 'Something went wrong';
+                errEl.style.display = 'block';
+                errEl.innerHTML = (e.message || 'Login failed') + '<br><a href="' + returnUrl + '">Go back and try again</a>';
+            }
+        })();
+    </script>
+</body>
+</html>
