@@ -387,7 +387,22 @@ class PokerEngine {
 
   async gameLoop() {
     while (this.running) {
-      await this.playHand();
+      try {
+        await this.playHand();
+      } catch (err) {
+        console.error(`[Table ${this.tableId}] playHand crashed — recovering:`, err.message);
+        // Reset state so next hand can start clean
+        this.phase = 'waiting';
+        this.currentTurnIndex = -1;
+        this.pot = 0;
+        this.communityCards = [];
+        for (const a of this.agents) {
+          a.folded = false;
+          a.currentBet = 0;
+          a.roundBet = 0;
+          a.allIn = false;
+        }
+      }
       await sleep(BETWEEN_HANDS_DELAY);
     }
   }
@@ -430,16 +445,16 @@ class PokerEngine {
         if (a._bustCount >= 3) {
           a.chips = 0;
           this.broadcast('log', { html: `<span class="pool-event">🚫 ${a.name}</span> <span class="fold">retired (bust 3x)</span>` });
-          continue;
-        }
-
-        const rebuyAmount = Math.min(this.baseChips, this.contractPool); // full rebuy
-        if (rebuyAmount >= Math.floor(this.baseChips * 0.25)) {
-          this.contractPool -= rebuyAmount;
-          this.totalBuyins += rebuyAmount;
-          a.chips = rebuyAmount;
-          this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
-          this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">rebuys ${rebuyAmount.toLocaleString()} from pool</span>` });
+          // Don't continue — fall through to reset folded/currentBet/etc below
+        } else {
+          const rebuyAmount = Math.min(this.baseChips, this.contractPool); // full rebuy
+          if (rebuyAmount >= Math.floor(this.baseChips * 0.25)) {
+            this.contractPool -= rebuyAmount;
+            this.totalBuyins += rebuyAmount;
+            a.chips = rebuyAmount;
+            this.addPoolFlow('buyin', a.name, a.emoji, rebuyAmount);
+            this.broadcast('log', { html: `<span class="pool-event">🏦 ${a.name}</span> <span class="pool-out">rebuys ${rebuyAmount.toLocaleString()} from pool</span>` });
+          }
         }
       }
       // Custom agents with 0 chips just sit out (folded = true below if chips <= 0)
