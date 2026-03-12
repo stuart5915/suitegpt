@@ -872,7 +872,7 @@
         }
         .toolkit-tf-btn.active { background: var(--accent-dim); color: var(--accent-bright); border-color: var(--border-accent); }
         .toolkit-tf-btn:hover:not(.active) { color: var(--text); }
-        #toolkit-chart-canvas { width: 100%; height: 280px; display: block; }
+        #toolkit-chart-canvas { width: 100%; height: 280px; display: block; cursor: grab; touch-action: none; }
 
         /* ── Insights ── */
         .toolkit-insights {
@@ -2551,6 +2551,14 @@
         let currentDays = 7;
         let chartCanvas, chartCtx, chartDpr;
 
+        // ── Chart interaction state ──
+        let chartMapping = null;
+        let viewStartIdx = 0, viewEndIdx = 0;
+        let isPanning = false, panStartX = 0, panStartViewStart = 0, panStartViewEnd = 0;
+        let lpLowerPrice = 0, lpUpperPrice = 0;
+        let draggingHandle = null;
+        let pinchStartDist = 0, pinchStartSpan = 0, pinchMidIdx = 0;
+
         // ── Helpers ──
         function formatUsd(val) {
             if (val >= 1000000) return '$' + (val / 1000000).toFixed(2) + 'M';
@@ -2583,6 +2591,8 @@
                 var data = await res.json();
                 if (data.prices && data.prices.length > 0) {
                     priceHistory = data.prices;
+                    viewStartIdx = 0;
+                    viewEndIdx = priceHistory.length - 1;
                     ethPrice = priceHistory[priceHistory.length - 1][1];
                     updatePriceDisplay();
                     drawChart();
@@ -2645,6 +2655,59 @@
             chartCanvas.height = h * chartDpr;
         }
 
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function canvasCoords(e) {
+            var rect = chartCanvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function hitTestHandle(y) {
+            if (!chartMapping || activeCard !== 'lp') return null;
+            var lowerY = chartMapping.yP(lpLowerPrice);
+            var upperY = chartMapping.yP(lpUpperPrice);
+            if (Math.abs(y - lowerY) < 10) return 'lower';
+            if (Math.abs(y - upperY) < 10) return 'upper';
+            return null;
+        }
+
+        function syncHandlesToInputs() {
+            var lowerEl = document.getElementById('tk-lp-lower');
+            var upperEl = document.getElementById('tk-lp-upper');
+            if (lowerEl) lowerEl.value = Math.round(lpLowerPrice);
+            if (upperEl) upperEl.value = Math.round(lpUpperPrice);
+            var rwEl = document.getElementById('tk-lp-range-width');
+            if (rwEl && ethPrice > 0) {
+                var width = ((lpUpperPrice - lpLowerPrice) / ethPrice * 100).toFixed(1);
+                rwEl.textContent = '\u00b1' + (width / 2).toFixed(1) + '%';
+            }
+        }
+
+        function syncInputsToHandles() {
+            var lowerEl = document.getElementById('tk-lp-lower');
+            var upperEl = document.getElementById('tk-lp-upper');
+            if (lowerEl) lowerEl.addEventListener('input', function() {
+                var v = parseFloat(this.value);
+                if (!isNaN(v) && v > 0) { lpLowerPrice = v; drawChart(); }
+            });
+            if (upperEl) upperEl.addEventListener('input', function() {
+                var v = parseFloat(this.value);
+                if (!isNaN(v) && v > 0) { lpUpperPrice = v; drawChart(); }
+            });
+        }
+
         function drawChart() {
             if (!chartCtx || priceHistory.length < 2) return;
             var W = chartCanvas.clientWidth;
@@ -2658,16 +2721,32 @@
             var plotH = H - pad.top - pad.bottom;
             var prices = priceHistory;
 
+            // Viewport bounds
+            var vStart = Math.max(0, Math.floor(viewStartIdx));
+            var vEnd = Math.min(prices.length - 1, Math.ceil(viewEndIdx));
+            var viewLen = viewEndIdx - viewStartIdx;
+            if (viewLen < 1) viewLen = 1;
+
+            // Find min/max in viewport
             var minP = Infinity, maxP = -Infinity;
-            for (var i = 0; i < prices.length; i++) {
+            for (var i = vStart; i <= vEnd; i++) {
                 if (prices[i][1] < minP) minP = prices[i][1];
                 if (prices[i][1] > maxP) maxP = prices[i][1];
+            }
+            // Expand to include LP bounds when LP card is active
+            if (activeCard === 'lp' && lpLowerPrice > 0 && lpUpperPrice > 0) {
+                if (lpLowerPrice < minP) minP = lpLowerPrice;
+                if (lpUpperPrice > maxP) maxP = lpUpperPrice;
             }
             var pPad = (maxP - minP) * 0.1 || 50;
             minP -= pPad; maxP += pPad;
 
-            function xP(idx) { return pad.left + (idx / (prices.length - 1)) * plotW; }
+            function xP(idx) { return pad.left + ((idx - viewStartIdx) / viewLen) * plotW; }
             function yP(price) { return pad.top + plotH - ((price - minP) / (maxP - minP)) * plotH; }
+            function priceFromY(y) { return minP + (1 - (y - pad.top) / plotH) * (maxP - minP); }
+
+            // Store mapping for event handlers
+            chartMapping = { xP: xP, yP: yP, priceFromY: priceFromY, pad: pad, plotW: plotW, plotH: plotH };
 
             // Grid
             chartCtx.strokeStyle = 'rgba(50, 140, 255, 0.06)';
@@ -2683,7 +2762,7 @@
             }
 
             // Gradient fill
-            var isUp = prices[prices.length - 1][1] >= prices[0][1];
+            var isUp = prices[vEnd][1] >= prices[vStart][1];
             var gradient = chartCtx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
             if (isUp) {
                 gradient.addColorStop(0, 'rgba(34, 200, 120, 0.15)');
@@ -2693,46 +2772,107 @@
                 gradient.addColorStop(1, 'rgba(255, 100, 80, 0)');
             }
             chartCtx.beginPath();
-            chartCtx.moveTo(xP(0), yP(prices[0][1]));
-            for (var i = 1; i < prices.length; i++) chartCtx.lineTo(xP(i), yP(prices[i][1]));
-            chartCtx.lineTo(xP(prices.length - 1), pad.top + plotH);
-            chartCtx.lineTo(xP(0), pad.top + plotH);
+            chartCtx.moveTo(xP(vStart), yP(prices[vStart][1]));
+            for (var i = vStart + 1; i <= vEnd; i++) chartCtx.lineTo(xP(i), yP(prices[i][1]));
+            chartCtx.lineTo(xP(vEnd), pad.top + plotH);
+            chartCtx.lineTo(xP(vStart), pad.top + plotH);
             chartCtx.closePath();
             chartCtx.fillStyle = gradient;
             chartCtx.fill();
 
             // Price line
             chartCtx.beginPath();
-            chartCtx.moveTo(xP(0), yP(prices[0][1]));
-            for (var i = 1; i < prices.length; i++) chartCtx.lineTo(xP(i), yP(prices[i][1]));
+            chartCtx.moveTo(xP(vStart), yP(prices[vStart][1]));
+            for (var i = vStart + 1; i <= vEnd; i++) chartCtx.lineTo(xP(i), yP(prices[i][1]));
             chartCtx.strokeStyle = isUp ? '#22c878' : '#ff6450';
             chartCtx.lineWidth = 2;
             chartCtx.stroke();
 
-            // Current price dot
+            // Current price dot (only if last data point is in viewport)
             var lastIdx = prices.length - 1;
-            var cx = xP(lastIdx), cy = yP(prices[lastIdx][1]);
-            var grd = chartCtx.createRadialGradient(cx, cy, 0, cx, cy, 14);
-            grd.addColorStop(0, isUp ? 'rgba(34, 200, 120, 0.5)' : 'rgba(255, 100, 80, 0.5)');
-            grd.addColorStop(1, 'transparent');
-            chartCtx.fillStyle = grd;
-            chartCtx.beginPath(); chartCtx.arc(cx, cy, 14, 0, Math.PI * 2); chartCtx.fill();
-            chartCtx.fillStyle = isUp ? '#22c878' : '#ff6450';
-            chartCtx.beginPath(); chartCtx.arc(cx, cy, 4, 0, Math.PI * 2); chartCtx.fill();
-            chartCtx.fillStyle = '#fff';
-            chartCtx.beginPath(); chartCtx.arc(cx, cy, 1.5, 0, Math.PI * 2); chartCtx.fill();
+            if (lastIdx >= vStart && lastIdx <= vEnd) {
+                var cx = xP(lastIdx), cy = yP(prices[lastIdx][1]);
+                var grd = chartCtx.createRadialGradient(cx, cy, 0, cx, cy, 14);
+                grd.addColorStop(0, isUp ? 'rgba(34, 200, 120, 0.5)' : 'rgba(255, 100, 80, 0.5)');
+                grd.addColorStop(1, 'transparent');
+                chartCtx.fillStyle = grd;
+                chartCtx.beginPath(); chartCtx.arc(cx, cy, 14, 0, Math.PI * 2); chartCtx.fill();
+                chartCtx.fillStyle = isUp ? '#22c878' : '#ff6450';
+                chartCtx.beginPath(); chartCtx.arc(cx, cy, 4, 0, Math.PI * 2); chartCtx.fill();
+                chartCtx.fillStyle = '#fff';
+                chartCtx.beginPath(); chartCtx.arc(cx, cy, 1.5, 0, Math.PI * 2); chartCtx.fill();
+            }
 
             // Date labels
             chartCtx.font = '9px "IBM Plex Mono"';
             chartCtx.fillStyle = '#3a4a5e';
             chartCtx.textAlign = 'center';
-            var dateCount = Math.min(6, prices.length);
+            var dateCount = Math.min(6, Math.floor(vEnd - vStart + 1));
+            if (dateCount < 2) dateCount = 2;
             for (var d = 0; d < dateCount; d++) {
-                var idx = Math.floor(d / (dateCount - 1) * (prices.length - 1));
-                var date = new Date(prices[idx][0]);
-                var label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                chartCtx.fillText(label, xP(idx), H - 8);
+                var idx = Math.round(vStart + d / (dateCount - 1) * (vEnd - vStart));
+                if (idx >= 0 && idx < prices.length) {
+                    var date = new Date(prices[idx][0]);
+                    var label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    chartCtx.fillText(label, xP(idx), H - 8);
+                }
             }
+
+            // ── LP Range Overlay ──
+            if (activeCard === 'lp' && lpLowerPrice > 0 && lpUpperPrice > 0) {
+                var lowerY = yP(lpLowerPrice);
+                var upperY = yP(lpUpperPrice);
+                var leftX = pad.left;
+                var rightX = W - pad.right;
+
+                // Shaded range between bounds
+                chartCtx.fillStyle = 'rgba(99, 102, 241, 0.08)';
+                chartCtx.fillRect(leftX, upperY, rightX - leftX, lowerY - upperY);
+
+                // Dashed horizontal lines
+                chartCtx.setLineDash([6, 4]);
+                chartCtx.lineWidth = 1.5;
+
+                // Lower bound line
+                chartCtx.strokeStyle = 'rgba(255, 100, 80, 0.7)';
+                chartCtx.beginPath(); chartCtx.moveTo(leftX, lowerY); chartCtx.lineTo(rightX, lowerY); chartCtx.stroke();
+
+                // Upper bound line
+                chartCtx.strokeStyle = 'rgba(34, 200, 120, 0.7)';
+                chartCtx.beginPath(); chartCtx.moveTo(leftX, upperY); chartCtx.lineTo(rightX, upperY); chartCtx.stroke();
+
+                chartCtx.setLineDash([]);
+
+                // Drag handles at right edge
+                var handleW = 8, handleH = 20, handleR = 4;
+                var handleX = rightX - handleW - 4;
+
+                // Lower handle
+                chartCtx.fillStyle = 'rgba(255, 100, 80, 0.9)';
+                roundRect(chartCtx, handleX, lowerY - handleH / 2, handleW, handleH, handleR);
+                chartCtx.fill();
+
+                // Upper handle
+                chartCtx.fillStyle = 'rgba(34, 200, 120, 0.9)';
+                roundRect(chartCtx, handleX, upperY - handleH / 2, handleW, handleH, handleR);
+                chartCtx.fill();
+
+                // Price labels on left
+                chartCtx.font = '9px "IBM Plex Mono"';
+                chartCtx.textAlign = 'left';
+                chartCtx.fillStyle = 'rgba(255, 100, 80, 0.9)';
+                chartCtx.fillText('$' + Math.round(lpLowerPrice).toLocaleString(), leftX + 4, lowerY - 5);
+                chartCtx.fillStyle = 'rgba(34, 200, 120, 0.9)';
+                chartCtx.fillText('$' + Math.round(lpUpperPrice).toLocaleString(), leftX + 4, upperY - 5);
+
+                // "LP RANGE" centered text
+                chartCtx.font = '10px "IBM Plex Mono"';
+                chartCtx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+                chartCtx.textAlign = 'center';
+                var midY = (upperY + lowerY) / 2;
+                chartCtx.fillText('LP RANGE', (leftX + rightX) / 2, midY + 3);
+            }
+
             chartCtx.restore();
         }
 
@@ -2836,6 +2976,7 @@
             if (activeCard === type) {
                 activeCard = null;
                 document.getElementById('tk-expand').classList.remove('visible');
+                drawChart();
                 return;
             }
 
@@ -2846,10 +2987,19 @@
             var panel = document.getElementById('tk-expand');
             var content = document.getElementById('tk-expand-content');
 
-            if (type === 'lp') content.innerHTML = renderLPPanel();
-            else if (type === 'long') content.innerHTML = renderLongPanel();
-            else if (type === 'short') content.innerHTML = renderShortPanel();
+            if (type === 'lp') {
+                content.innerHTML = renderLPPanel();
+                var cp = ethPrice || 2500;
+                lpLowerPrice = Math.round(cp * 0.95);
+                lpUpperPrice = Math.round(cp * 1.05);
+                syncInputsToHandles();
+            } else if (type === 'long') {
+                content.innerHTML = renderLongPanel();
+            } else if (type === 'short') {
+                content.innerHTML = renderShortPanel();
+            }
 
+            drawChart();
             panel.classList.add('visible');
             panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         };
@@ -2858,6 +3008,7 @@
             activeCard = null;
             document.querySelectorAll('.toolkit-card').forEach(function(c) { c.classList.remove('active'); });
             document.getElementById('tk-expand').classList.remove('visible');
+            drawChart();
         };
 
         // ── Panel Renderers ──
@@ -2873,7 +3024,7 @@
                 '</div>' +
                 '<div class="toolkit-info-grid">' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Current ETH</div><div class="toolkit-info-val">$' + Math.round(cp).toLocaleString() + '</div></div>' +
-                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Range Width</div><div class="toolkit-info-val">\u00b15.0%</div></div>' +
+                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Range Width</div><div class="toolkit-info-val" id="tk-lp-range-width">\u00b15.0%</div></div>' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Status</div><div class="toolkit-info-val green">Ready</div></div>' +
                 '</div>' +
                 '<div class="toolkit-action-btns">' +
@@ -3206,6 +3357,189 @@
             }
 
             window.addEventListener('resize', function() { resizeChart(); drawChart(); });
+
+            // ── Canvas: Mouse Events ──
+            chartCanvas.addEventListener('mousedown', function(e) {
+                var pos = canvasCoords(e);
+                var handle = hitTestHandle(pos.y);
+                if (handle) {
+                    draggingHandle = handle;
+                    chartCanvas.style.cursor = 'ns-resize';
+                    e.preventDefault();
+                    return;
+                }
+                isPanning = true;
+                panStartX = pos.x;
+                panStartViewStart = viewStartIdx;
+                panStartViewEnd = viewEndIdx;
+                chartCanvas.style.cursor = 'grabbing';
+            });
+
+            chartCanvas.addEventListener('mousemove', function(e) {
+                var pos = canvasCoords(e);
+                if (draggingHandle && chartMapping) {
+                    var price = chartMapping.priceFromY(pos.y);
+                    price = Math.max(1, price);
+                    if (draggingHandle === 'lower') {
+                        lpLowerPrice = Math.min(price, lpUpperPrice - 1);
+                    } else {
+                        lpUpperPrice = Math.max(price, lpLowerPrice + 1);
+                    }
+                    syncHandlesToInputs();
+                    drawChart();
+                    return;
+                }
+                if (isPanning && chartMapping) {
+                    var dx = pos.x - panStartX;
+                    var idxPerPx = (panStartViewEnd - panStartViewStart) / chartMapping.plotW;
+                    var shift = -dx * idxPerPx;
+                    var newStart = panStartViewStart + shift;
+                    var newEnd = panStartViewEnd + shift;
+                    var span = newEnd - newStart;
+                    if (newStart < 0) { newStart = 0; newEnd = span; }
+                    if (newEnd > priceHistory.length - 1) { newEnd = priceHistory.length - 1; newStart = newEnd - span; }
+                    viewStartIdx = newStart;
+                    viewEndIdx = newEnd;
+                    drawChart();
+                    return;
+                }
+                // Cursor hint
+                var handle = hitTestHandle(pos.y);
+                if (handle) {
+                    chartCanvas.style.cursor = 'ns-resize';
+                } else {
+                    chartCanvas.style.cursor = 'grab';
+                }
+            });
+
+            chartCanvas.addEventListener('mouseup', function() {
+                draggingHandle = null;
+                isPanning = false;
+                chartCanvas.style.cursor = 'grab';
+            });
+
+            chartCanvas.addEventListener('mouseleave', function() {
+                draggingHandle = null;
+                isPanning = false;
+                chartCanvas.style.cursor = 'grab';
+            });
+
+            // ── Canvas: Wheel Zoom ──
+            chartCanvas.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                if (priceHistory.length < 2) return;
+                var pos = canvasCoords(e);
+                var span = viewEndIdx - viewStartIdx;
+                var factor = e.deltaY > 0 ? 1.15 : 0.87;
+                var newSpan = span * factor;
+                // Clamp
+                if (newSpan < 20) newSpan = 20;
+                if (newSpan > priceHistory.length - 1) newSpan = priceHistory.length - 1;
+                // Anchor at cursor position
+                var pad = chartMapping ? chartMapping.pad : { left: 60, right: 20 };
+                var plotW = chartMapping ? chartMapping.plotW : (chartCanvas.clientWidth - 80);
+                var cursorRatio = Math.max(0, Math.min(1, (pos.x - pad.left) / plotW));
+                var cursorIdx = viewStartIdx + cursorRatio * span;
+                var newStart = cursorIdx - cursorRatio * newSpan;
+                var newEnd = cursorIdx + (1 - cursorRatio) * newSpan;
+                if (newStart < 0) { newStart = 0; newEnd = newSpan; }
+                if (newEnd > priceHistory.length - 1) { newEnd = priceHistory.length - 1; newStart = newEnd - newSpan; }
+                if (newStart < 0) newStart = 0;
+                viewStartIdx = newStart;
+                viewEndIdx = newEnd;
+                drawChart();
+            }, { passive: false });
+
+            // ── Canvas: Touch Events ──
+            chartCanvas.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    var touch = e.touches[0];
+                    var rect = chartCanvas.getBoundingClientRect();
+                    var pos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+                    var handle = hitTestHandle(pos.y);
+                    if (handle) {
+                        draggingHandle = handle;
+                        e.preventDefault();
+                        return;
+                    }
+                    isPanning = true;
+                    panStartX = pos.x;
+                    panStartViewStart = viewStartIdx;
+                    panStartViewEnd = viewEndIdx;
+                    e.preventDefault();
+                } else if (e.touches.length === 2) {
+                    isPanning = false;
+                    var t0 = e.touches[0], t1 = e.touches[1];
+                    pinchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+                    pinchStartSpan = viewEndIdx - viewStartIdx;
+                    var rect = chartCanvas.getBoundingClientRect();
+                    var midX = ((t0.clientX + t1.clientX) / 2) - rect.left;
+                    var pad = chartMapping ? chartMapping.pad : { left: 60 };
+                    var plotW = chartMapping ? chartMapping.plotW : (chartCanvas.clientWidth - 80);
+                    var ratio = Math.max(0, Math.min(1, (midX - pad.left) / plotW));
+                    pinchMidIdx = viewStartIdx + ratio * pinchStartSpan;
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            chartCanvas.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 1) {
+                    var touch = e.touches[0];
+                    var rect = chartCanvas.getBoundingClientRect();
+                    var pos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+                    if (draggingHandle && chartMapping) {
+                        var price = chartMapping.priceFromY(pos.y);
+                        price = Math.max(1, price);
+                        if (draggingHandle === 'lower') {
+                            lpLowerPrice = Math.min(price, lpUpperPrice - 1);
+                        } else {
+                            lpUpperPrice = Math.max(price, lpLowerPrice + 1);
+                        }
+                        syncHandlesToInputs();
+                        drawChart();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (isPanning && chartMapping) {
+                        var dx = pos.x - panStartX;
+                        var idxPerPx = (panStartViewEnd - panStartViewStart) / chartMapping.plotW;
+                        var shift = -dx * idxPerPx;
+                        var newStart = panStartViewStart + shift;
+                        var newEnd = panStartViewEnd + shift;
+                        var span = newEnd - newStart;
+                        if (newStart < 0) { newStart = 0; newEnd = span; }
+                        if (newEnd > priceHistory.length - 1) { newEnd = priceHistory.length - 1; newStart = newEnd - span; }
+                        viewStartIdx = newStart;
+                        viewEndIdx = newEnd;
+                        drawChart();
+                        e.preventDefault();
+                    }
+                } else if (e.touches.length === 2) {
+                    var t0 = e.touches[0], t1 = e.touches[1];
+                    var dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+                    var scale = pinchStartDist / dist;
+                    var newSpan = pinchStartSpan * scale;
+                    if (newSpan < 20) newSpan = 20;
+                    if (newSpan > priceHistory.length - 1) newSpan = priceHistory.length - 1;
+                    var ratio = (pinchMidIdx - viewStartIdx) / (viewEndIdx - viewStartIdx) || 0.5;
+                    var newStart = pinchMidIdx - ratio * newSpan;
+                    var newEnd = pinchMidIdx + (1 - ratio) * newSpan;
+                    if (newStart < 0) { newStart = 0; newEnd = newSpan; }
+                    if (newEnd > priceHistory.length - 1) { newEnd = priceHistory.length - 1; newStart = newEnd - newSpan; }
+                    if (newStart < 0) newStart = 0;
+                    viewStartIdx = newStart;
+                    viewEndIdx = newEnd;
+                    drawChart();
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            chartCanvas.addEventListener('touchend', function(e) {
+                if (e.touches.length === 0) {
+                    draggingHandle = null;
+                    isPanning = false;
+                }
+            });
         }
 
         if (document.readyState === 'loading') {
