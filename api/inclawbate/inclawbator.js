@@ -312,7 +312,6 @@ export default async function handler(req, res) {
                     agent_enabled: wantsAgent,
                     agent_persona: wantsAgent ? (agent_persona || null) : null,
                     agent_posts_per_day: wantsAgent ? postsPerDay : 4,
-                    agent_credits: wantsAgent ? 10 : 0,
                     agent_status: wantsAgent ? 'active' : 'dormant',
                     burn_tx_hash: burn_tx_hash || null,
                     allocation_pct: allocPct,
@@ -798,7 +797,6 @@ export default async function handler(req, res) {
                     agent_enabled: true,
                     agent_persona: agent_persona || null,
                     agent_posts_per_day: postsPerDay,
-                    agent_credits: 10,
                     agent_status: 'active'
                 })
                 .select()

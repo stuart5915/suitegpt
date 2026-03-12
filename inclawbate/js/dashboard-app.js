@@ -4009,7 +4009,7 @@ async function submitCreateAgent() {
             if (!res.ok) throw new Error(data.error || 'Failed');
         }
 
-        result.textContent = 'Agent created! 10 free credits loaded.';
+        result.textContent = 'Agent created! Connect your X account to start posting.';
         result.className = 'buy-result success';
         btn.textContent = 'Done';
 

@@ -2,8 +2,8 @@
 // Finds active agents that are due, generates a tweet via Claude Haiku, posts to X.
 // If project has its own X account connected (OAuth 2.0), posts there.
 // Otherwise falls back to shared @inclawbator account (OAuth 1.0a).
-// Credits deducted from project owner's human_profiles.credits (same pool as build).
-// Cost: 10 credits per post (same as Haiku in build studio).
+// Autonomous agents post to their own X account for free.
+// @inclawbator slots are paid via on-chain CLAWS (see agent-schedule.js).
 
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -527,34 +527,6 @@ async function processAgentPost(project, errors) {
         return 'skip';
     }
 
-    const adminBypass = isAdmin(ownerProfile);
-
-    // Total cost = base + bid (bid only applies to shared @inclawbator posts)
-    const hasOwnX = project.x_access_token && project.x_refresh_token;
-    const bidCost = hasOwnX ? 0 : (project.agent_bid || 0);
-    const totalCost = CREDIT_COST + bidCost;
-
-    // Check credits
-    if (!adminBypass && (ownerProfile.credits || 0) < totalCost) {
-        await supabase
-            .from('projects')
-            .update({ agent_status: 'dormant' })
-            .eq('id', project.id);
-        return 'dormant';
-    }
-
-    // Deduct credits
-    if (!adminBypass) {
-        const newBal = await deductOwnerCredits(ownerProfile.id, totalCost);
-        if (newBal === -1) {
-            await supabase
-                .from('projects')
-                .update({ agent_status: 'dormant' })
-                .eq('id', project.id);
-            return 'dormant';
-        }
-    }
-
     try {
         const tweetText = await generateTweet(project);
         if (!tweetText || tweetText.length > 280) {
@@ -569,7 +541,7 @@ async function processAgentPost(project, errors) {
                 project_id: project.id,
                 tweet_text: tweetText,
                 tweet_id: tweetId,
-                credits_cost: totalCost,
+                credits_cost: 0,
                 status: 'posted',
                 posted_via: posted_via || '@inclawbator'
             });
