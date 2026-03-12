@@ -71,7 +71,7 @@ input::placeholder{color:rgba(136,117,170,0.5)}
         <button class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
         <div class="how-it-works">
             <h3>How it works</h3>
-            <div class="step"><div class="step-num">1</div><div>Deposit ETH and choose how many buys + interval</div></div>
+            <div class="step"><div class="step-num">1</div><div>Pick how much ETH, how often, and when to stop</div></div>
             <div class="step"><div class="step-num">2</div><div>Contract automatically swaps ETH for CLAWS on your schedule</div></div>
             <div class="step"><div class="step-num">3</div><div>CLAWS sent directly to your wallet each buy</div></div>
             <div class="step"><div class="step-num">4</div><div>Withdraw anytime to stop and reclaim remaining ETH</div></div>
@@ -94,24 +94,22 @@ input::placeholder{color:rgba(136,117,170,0.5)}
                 <label>Total ETH to spend</label>
                 <input type="number" id="totalEth" placeholder="0.05" step="0.001" min="0.001">
             </div>
-            <div class="row">
-                <div>
-                    <label>Number of buys</label>
-                    <input type="number" id="numBuys" placeholder="10" min="2" max="1000" value="10">
-                </div>
-                <div>
-                    <label>Interval</label>
-                    <select id="interval">
-                        <option value="600">Every 10 min</option>
-                        <option value="1800" selected>Every 30 min</option>
-                        <option value="3600">Every 1 hour</option>
-                        <option value="7200">Every 2 hours</option>
-                        <option value="14400">Every 4 hours</option>
-                        <option value="86400">Every 24 hours</option>
-                    </select>
-                </div>
+            <div>
+                <label>Buy every</label>
+                <select id="interval">
+                    <option value="600">10 minutes</option>
+                    <option value="1800" selected>30 minutes</option>
+                    <option value="3600">1 hour</option>
+                    <option value="7200">2 hours</option>
+                    <option value="14400">4 hours</option>
+                    <option value="86400">24 hours</option>
+                </select>
             </div>
-            <div id="summary" style="font-size:0.82rem;color:var(--text-dim);padding:4px 0;min-height:20px"></div>
+            <div>
+                <label>Stop buying on</label>
+                <input type="datetime-local" id="endDate" style="color-scheme:dark">
+            </div>
+            <div id="summary" style="font-size:0.82rem;color:var(--text-dim);padding:8px 12px;min-height:20px;background:rgba(0,229,255,0.04);border-radius:8px;line-height:1.5"></div>
             <button class="primary-btn" id="depositBtn" onclick="doDeposit()">Deposit & Start AutoBuy</button>
         </div>
     </div>
@@ -284,11 +282,13 @@ function showComplete(totalClaws) {
 
 async function doDeposit() {
     const totalEth = parseFloat(document.getElementById('totalEth').value);
-    const numBuys = parseInt(document.getElementById('numBuys').value);
     const interval = parseInt(document.getElementById('interval').value);
+    const numBuys = calcNumBuys();
 
     if (!totalEth || totalEth <= 0) { alert('Enter total ETH to spend'); return; }
-    if (!numBuys || numBuys < 2 || numBuys > 1000) { alert('Number of buys must be 2-1000'); return; }
+    if (!document.getElementById('endDate').value) { alert('Pick an end date'); return; }
+    if (numBuys < 2) { alert('End date too soon - need at least 2 buy intervals'); return; }
+    if (numBuys > 1000) { alert('Too many buys (max 1000). Pick a shorter range or slower frequency.'); return; }
 
     const btn = document.getElementById('depositBtn');
     btn.disabled = true;
@@ -434,23 +434,46 @@ function formatInterval(sec) {
     return sec + 's';
 }
 
+function calcNumBuys() {
+    const endVal = document.getElementById('endDate').value;
+    const interval = parseInt(document.getElementById('interval').value);
+    if (!endVal) return 0;
+    const endMs = new Date(endVal).getTime();
+    const nowMs = Date.now();
+    if (endMs <= nowMs) return 0;
+    return Math.floor((endMs - nowMs) / (interval * 1000));
+}
+
 function updateSummary() {
     const total = parseFloat(document.getElementById('totalEth').value) || 0;
-    const num = parseInt(document.getElementById('numBuys').value) || 0;
+    const num = calcNumBuys();
     const interval = parseInt(document.getElementById('interval').value);
     const el = document.getElementById('summary');
-    if (total > 0 && num >= 2) {
+    el.style.color = '';
+    if (num > 1000) {
+        el.textContent = 'Too many buys (max 1000) - pick a shorter range or slower frequency';
+        el.style.color = 'var(--red)';
+    } else if (num < 2) {
+        el.textContent = total > 0 ? 'End date too soon - need at least 2 buy intervals' : '';
+    } else if (total > 0) {
         const perBuy = (total / num).toFixed(6);
-        const totalTime = (num - 1) * interval;
-        const timeStr = formatTime(totalTime);
-        el.textContent = perBuy + ' ETH per buy \u00b7 ' + num + ' buys over ' + timeStr;
+        const endDate = new Date(document.getElementById('endDate').value);
+        const dateStr = endDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        el.textContent = num + ' buys of ' + perBuy + ' ETH each, ending ' + dateStr;
     } else {
         el.textContent = '';
     }
 }
 
+// Set default end date to 24 hours from now
+(function setDefaultEnd() {
+    const d = new Date(Date.now() + 86400000);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('endDate').value = d.toISOString().slice(0, 16);
+})();
+
 document.getElementById('totalEth').addEventListener('input', updateSummary);
-document.getElementById('numBuys').addEventListener('input', updateSummary);
+document.getElementById('endDate').addEventListener('input', updateSummary);
 document.getElementById('interval').addEventListener('change', updateSummary);
 
 // Handle wallet account/network changes
