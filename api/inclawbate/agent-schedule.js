@@ -21,7 +21,7 @@ const supabase = createClient(
 
 const MAX_DAYS_AHEAD = 7;
 const MAX_ACTIVE_BOOKINGS = 3;
-const SLOT_COST_USD = 0.05;  // covers Haiku API cost ($0.001) + margin
+const SLOT_COST_USD = 0.01;  // actual cost: ~$0.01 X API + ~$0.001 Haiku
 const VALID_HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
 
 const FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
