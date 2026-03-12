@@ -895,19 +895,21 @@ async function startServer() {
     console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
   }
 
-  // Broadcast rewards updates to connected wallets every 30s
+  // Broadcast rewards updates to connected wallets every 10s
   setInterval(() => {
     if (!rewardEngine) return;
-    const stats = rewardEngine.getStats();
     for (const [ws, client] of clients) {
       if (ws.readyState === 1 && client.walletAddress && !client.walletAddress.startsWith('sandbox_')) {
         try {
+          // Recalculate wallet value (balance + chips in play) before reading rewards
+          updateRewardsForWallet(client.walletAddress);
           const rewards = rewardEngine.getWalletRewards(client.walletAddress);
+          const stats = rewardEngine.getStats();
           ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
         } catch (e) { /* ignore */ }
       }
     }
-  }, 30000);
+  }, 10000);
 
   server.listen(PORT, () => {
     console.log(`PokerAI server v5 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}, rewards: ${!!rewardEngine}`);
