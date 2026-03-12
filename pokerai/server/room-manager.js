@@ -1219,21 +1219,11 @@ class RoomManager {
       return { agents: [], rooms: this.getRoomsSummary(), lobbyAgents: [], activeRoom };
     }
 
-    // Find table: prefer client's requested table (if it has their agent), else first with their agent
+    // Find table: if client requested a specific table, use it; else find their agent's table
     let activeTable = room.tables[0];
-    if (preferredTableId && walletAddress) {
+    if (preferredTableId) {
       const preferred = room.tables.find(t => t.tableId === preferredTableId);
-      if (preferred && preferred.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
-        activeTable = preferred;
-      } else {
-        // Preferred table no longer has our agent (rebalanced?) — find where they are
-        for (const table of room.tables) {
-          if (table.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
-            activeTable = table;
-            break;
-          }
-        }
-      }
+      if (preferred) activeTable = preferred;
     } else if (walletAddress) {
       for (const table of room.tables) {
         if (table.agents.some(a => a.isCustom && a.walletAddress === walletAddress)) {
