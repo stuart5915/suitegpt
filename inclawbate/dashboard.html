@@ -342,7 +342,7 @@
             <div class="overview-section" id="overviewAutoBuy" data-section="tokens" style="animation:fadeUp 0.4s ease both">
                 <!-- Promo state (no active position) -->
                 <div id="autobuyPromo">
-                    <a href="/tools/autobuy" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(138,43,226,0.06));border:1px solid rgba(0,229,255,0.15);border-radius:var(--radius-lg);text-decoration:none;transition:border-color 0.2s">
+                    <a href="#" onclick="event.preventDefault();openAutobuyModal()" style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(138,43,226,0.06));border:1px solid rgba(0,229,255,0.15);border-radius:var(--radius-lg);text-decoration:none;transition:border-color 0.2s">
                         <div style="font-size:1.6rem">&#128176;</div>
                         <div style="flex:1">
                             <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary)">AutoBuy CLAWS</div>
@@ -384,7 +384,7 @@
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center">
                         <span id="abProgressText" style="font-size:0.72rem;color:var(--text-dim)">0% complete</span>
-                        <a href="/tools/autobuy" style="font-size:0.75rem;color:#00e5ff;text-decoration:none;font-weight:700">Manage &rarr;</a>
+                        <a href="#" onclick="event.preventDefault();openAutobuyModal()" style="font-size:0.75rem;color:#00e5ff;text-decoration:none;font-weight:700">Manage &rarr;</a>
                     </div>
                 </div>
             </div>
@@ -631,6 +631,33 @@
         </div>
     </div>
 </div>
+
+<!-- AutoBuy Modal -->
+<style>
+.ab-modal-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px}
+.ab-modal-overlay.open{display:flex}
+.ab-modal{position:relative;width:100%;max-width:560px;max-height:90vh;border-radius:16px;overflow:hidden}
+.ab-modal-close{position:absolute;top:12px;right:14px;z-index:10;font-size:1.4rem;background:rgba(30,30,40,0.8);border:none;color:var(--text-dim);cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ab-modal-close:hover{color:var(--text-primary)}
+.ab-modal iframe{width:100%;border:none;background:transparent;height:80vh;max-height:90vh}
+</style>
+<div class="ab-modal-overlay" id="abModal">
+    <div class="ab-modal">
+        <button class="ab-modal-close" onclick="closeAutobuyModal()">&times;</button>
+        <iframe id="abModalIframe"></iframe>
+    </div>
+</div>
+<script>
+function openAutobuyModal(){
+    var o=document.getElementById('abModal'),f=document.getElementById('abModalIframe');
+    f.src='/tools/autobuy';o.classList.add('open');document.body.style.overflow='hidden';
+}
+function closeAutobuyModal(){
+    var o=document.getElementById('abModal'),f=document.getElementById('abModalIframe');
+    o.classList.remove('open');f.src='';document.body.style.overflow='';
+}
+document.getElementById('abModal').addEventListener('click',function(e){if(e.target===this)closeAutobuyModal()});
+</script>
 
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
