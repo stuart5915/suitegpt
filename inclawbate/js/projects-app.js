@@ -75,7 +75,22 @@
         try {
             var res = await fetch(API);
             var json = await res.json();
-            allProjects = json.projects || [];
+            var raw = json.projects || [];
+
+            // Filter out junk / agent-only / duplicate entries
+            var seen = {};
+            allProjects = raw.filter(function(p) {
+                // Must have a name
+                if (!p.name) return false;
+                // Skip entries that are clearly agent-only with no real content
+                var hasContent = p.app_slug || p.token_address || p.staking_address || p.website_url || p.description;
+                if (!hasContent && /^inclawbate agent/i.test(p.name)) return false;
+                // Deduplicate by lowercase name
+                var key = p.name.toLowerCase().trim();
+                if (seen[key]) return false;
+                seen[key] = true;
+                return true;
+            });
         } catch (e) {
             allProjects = [];
         }
