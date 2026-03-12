@@ -357,7 +357,7 @@
                         <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary)">AutoBuy CLAWS</div>
                         <span id="abStatus" style="font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(0,255,179,0.12);color:#00ffb3">ACTIVE</span>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px">
                         <div style="text-align:center">
                             <div id="abBuys" style="font-size:1.05rem;font-weight:800;color:#00e5ff">0/0</div>
                             <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Buys</div>
@@ -373,6 +373,10 @@
                         <div style="text-align:center">
                             <div id="abNext" style="font-size:0.82rem;font-weight:800;color:var(--text-primary)">--</div>
                             <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Next Buy</div>
+                        </div>
+                        <div style="text-align:center">
+                            <div id="abEnds" style="font-size:0.82rem;font-weight:800;color:var(--text-primary)">--</div>
+                            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">Ends</div>
                         </div>
                     </div>
                     <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;margin-bottom:8px">
@@ -678,6 +682,7 @@
             document.getElementById('autobuyLive').style.display = 'block';
 
             const remaining = pos[0];
+            const intervalSec = Number(pos[2]);
             const totalClaws = pos[6];
             const nextBuyTime = Number(pos[8]);
 
@@ -689,19 +694,25 @@
             document.getElementById('abProgress').style.width = pct + '%';
             document.getElementById('abProgressText').textContent = pct + '% complete';
 
+            // End date
+            const buysLeft = totalBuys - buysCompleted;
+            const endTs = nextBuyTime + (buysLeft - 1) * intervalSec;
+            const fmt = (ts) => new Date(ts * 1000).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
             if (!active && buysCompleted >= totalBuys) {
                 document.getElementById('abStatus').textContent = 'COMPLETE';
                 document.getElementById('abStatus').style.background = 'rgba(0,229,255,0.12)';
                 document.getElementById('abStatus').style.color = '#00e5ff';
                 document.getElementById('abNext').textContent = 'Done';
+                document.getElementById('abEnds').textContent = 'Done';
             } else {
+                document.getElementById('abEnds').textContent = fmt(endTs);
                 const now = Math.floor(Date.now() / 1000);
                 const el = document.getElementById('abNext');
                 if (nextBuyTime <= now) {
                     el.innerHTML = '<span style="color:#00ffb3">Buying soon</span>';
                 } else {
-                    const d = new Date(nextBuyTime * 1000);
-                    el.textContent = d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+                    el.textContent = fmt(nextBuyTime);
                     el.style.color = '';
                 }
             }

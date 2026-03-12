@@ -147,11 +147,10 @@ input::placeholder{color:rgba(136,117,170,0.5)}
             </div>
         </div>
 
-        <div style="text-align:center;margin-top:12px">
-            <span style="font-size:0.75rem;color:var(--text-dim)">Per buy: </span>
-            <span style="font-size:0.75rem;color:var(--cyan)" id="statPerBuy">0 ETH</span>
-            <span style="font-size:0.75rem;color:var(--text-dim);margin-left:12px">Interval: </span>
-            <span style="font-size:0.75rem;color:var(--cyan)" id="statInterval">--</span>
+        <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+            <span style="font-size:0.75rem"><span style="color:var(--text-dim)">Per buy: </span><span style="color:var(--cyan)" id="statPerBuy">0 ETH</span></span>
+            <span style="font-size:0.75rem"><span style="color:var(--text-dim)">Interval: </span><span style="color:var(--cyan)" id="statInterval">--</span></span>
+            <span style="font-size:0.75rem"><span style="color:var(--text-dim)">Ends: </span><span style="color:var(--cyan)" id="statEnds">--</span></span>
         </div>
 
         <button class="withdraw-btn" onclick="doWithdraw()">Stop & Withdraw Remaining ETH</button>
@@ -357,6 +356,11 @@ function updateActiveStats(pos) {
     document.getElementById('statClaws').textContent = formatClaws(totalClawsBought);
     document.getElementById('statPerBuy').textContent = parseFloat(ethers.formatEther(amountPerBuy)).toFixed(6) + ' ETH';
     document.getElementById('statInterval').textContent = formatInterval(intervalSec);
+
+    // End date: nextBuyTime + remaining buys * interval
+    const buysLeft = totalBuys - buysCompleted;
+    const endTs = nextBuyTime + (buysLeft - 1) * intervalSec;
+    document.getElementById('statEnds').textContent = fmtDate(endTs);
 
     const pct = totalBuys > 0 ? Math.round((buysCompleted / totalBuys) * 100) : 0;
     document.getElementById('progressFill').style.width = pct + '%';
