@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Chronicle | AgentScape</title>
+    <meta name="description" content="The living history of AgentScape. Every day the world evolves — new creatures, shifting power, world events.">
+    <meta property="og:title" content="World Chronicle | AgentScape">
+    <meta property="og:description" content="AgentScape evolves every day. See the full history.">
+    <meta property="og:url" content="https://agentscape.app/chronicle">
+    <link rel="icon" type="image/png" href="/assets/suite-logo-new.png">
+    <link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #050508; --bg-card: #0a0a10; --border: rgba(180, 160, 120, 0.12);
+            --border-bright: rgba(220, 190, 100, 0.3); --gold: #c9a84c; --gold-bright: #e8c55a;
+            --ember: #e8733a; --teal: #4ad8c1; --violet: #8b6ce0;
+            --text: #b8b0a0; --text-bright: #e8e0d0; --text-dim: #5a5548;
+            --green: #4ade80; --red: #f87171; --yellow: #fbbf24;
+            --font-display: 'Uncial Antiqua', cursive;
+            --font-body: 'Cormorant Garamond', serif;
+            --font-ui: 'Rajdhani', sans-serif;
+        }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 18px; line-height: 1.6; }
+        a { color: var(--gold); text-decoration: none; }
+        a:hover { color: var(--gold-bright); }
+        ::selection { background: rgba(201, 168, 76, 0.35); color: #fff; }
+
+        .nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(5,5,8,0.95); backdrop-filter: blur(10px); z-index: 100; }
+        .nav-brand { font-family: var(--font-display); font-size: 1.4rem; color: var(--gold); }
+        .nav-links { display: flex; gap: 1.5rem; font-family: var(--font-ui); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .nav-links a { color: var(--text); } .nav-links a:hover { color: var(--gold); }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .hero { text-align: center; padding: 3rem 0 2rem; }
+        .hero h1 { font-family: var(--font-display); font-size: 2.4rem; color: var(--gold); margin-bottom: 0.5rem; }
+        .hero p { font-size: 1.15rem; color: var(--text-dim); max-width: 600px; margin: 0 auto; }
+
+        .timeline { position: relative; padding-left: 2rem; }
+        .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--gold), var(--border), transparent); }
+
+        .evo-card { position: relative; margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; transition: border-color 0.3s; }
+        .evo-card:hover { border-color: var(--border-bright); }
+        .evo-card::before { content: ''; position: absolute; left: -1.75rem; top: 1.5rem; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--gold); background: var(--bg); }
+
+        .evo-card.type-new_monster::before { border-color: var(--red); }
+        .evo-card.type-balance_tweak::before { border-color: var(--yellow); }
+        .evo-card.type-world_event::before { border-color: var(--teal); }
+
+        .evo-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .evo-day { font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+        .evo-type { font-family: var(--font-ui); font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .evo-type.new_monster { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+        .evo-type.balance_tweak { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+        .evo-type.world_event { background: rgba(74, 216, 193, 0.15); color: var(--teal); }
+
+        .evo-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--text-bright); margin-bottom: 0.35rem; }
+        .evo-desc { font-size: 1rem; color: var(--text); line-height: 1.5; }
+        .evo-date { font-family: var(--font-ui); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; }
+
+        .empty-state { text-align: center; padding: 4rem 0; color: var(--text-dim); }
+        .empty-state h2 { font-family: var(--font-display); color: var(--gold); margin-bottom: 0.5rem; }
+
+        .loading { text-align: center; padding: 3rem; color: var(--text-dim); font-family: var(--font-ui); }
+
+        .stats-bar { display: flex; gap: 2rem; justify-content: center; padding: 1rem 0 2rem; font-family: var(--font-ui); font-size: 0.9rem; color: var(--text-dim); flex-wrap: wrap; }
+        .stat-item span { color: var(--gold); font-weight: 600; }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 1.8rem; }
+            .container { padding: 1rem; }
+            .nav { padding: 0.75rem 1rem; }
+            .nav-links { gap: 1rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/home" class="nav-brand">AgentScape</a>
+    <div class="nav-links">
+        <a href="/play">Play</a>
+        <a href="/hiscores">Hiscores</a>
+        <a href="/chronicle" style="color: var(--gold);">Chronicle</a>
+        <a href="/home">Home</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="hero">
+        <h1>World Chronicle</h1>
+        <p>AgentScape evolves every day. New creatures emerge, powers shift, and world events reshape the landscape. This is the living history.</p>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+        <div class="stat-item">Total evolutions: <span id="stat-total">—</span></div>
+        <div class="stat-item">New creatures: <span id="stat-monsters">—</span></div>
+        <div class="stat-item">World events: <span id="stat-events">—</span></div>
+        <div class="stat-item">Balance shifts: <span id="stat-tweaks">—</span></div>
+    </div>
+
+    <div id="timeline" class="timeline">
+        <div class="loading">Loading chronicle...</div>
+    </div>
+</div>
+
+<script>
+(async function() {
+    const SERVER = 'https://play.agentscape.app';
+    const timeline = document.getElementById('timeline');
+
+    try {
+        const res = await fetch(SERVER + '/chronicle?limit=100');
+        const data = await res.json();
+        const evos = data.evolutions || [];
+
+        if (evos.length === 0) {
+            timeline.innerHTML = '<div class="empty-state"><h2>Day Zero</h2><p>The world has just been born. The first evolution arrives tomorrow.</p></div>';
+            return;
+        }
+
+        // Stats
+        document.getElementById('stat-total').textContent = evos.length;
+        document.getElementById('stat-monsters').textContent = evos.filter(e => e.type === 'new_monster').length;
+        document.getElementById('stat-events').textContent = evos.filter(e => e.type === 'world_event').length;
+        document.getElementById('stat-tweaks').textContent = evos.filter(e => e.type === 'balance_tweak').length;
+
+        // Render
+        const typeLabels = { new_monster: 'New Creature', balance_tweak: 'Balance Shift', world_event: 'World Event' };
+        let html = '';
+        for (const evo of evos) {
+            const date = new Date(evo.created_at);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            html += '<div class="evo-card type-' + evo.type + '">'
+                + '<div class="evo-header">'
+                + '<span class="evo-day">Day ' + evo.day_number + '</span>'
+                + '<span class="evo-type ' + evo.type + '">' + (typeLabels[evo.type] || evo.type) + '</span>'
+                + '</div>'
+                + '<div class="evo-title">' + evo.title + '</div>'
+                + '<div class="evo-desc">' + evo.description + '</div>'
+                + '<div class="evo-date">' + dateStr + '</div>'
+                + '</div>';
+        }
+        timeline.innerHTML = html;
+    } catch (err) {
+        timeline.innerHTML = '<div class="empty-state"><h2>Connection Lost</h2><p>Could not reach the AgentScape server. Try again later.</p></div>';
+    }
+})();
+</script>
+
+</body>
+</html>

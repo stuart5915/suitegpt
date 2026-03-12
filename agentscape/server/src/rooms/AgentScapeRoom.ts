@@ -32,6 +32,7 @@ import { generateAgents } from '../agents/AgentGenerator';
 import { GeminiReflectionService } from '../agents/GeminiReflection';
 import { AgentCombatAdapter } from '../agents/AgentCombatAdapter';
 import { RaidCoordinator } from '../agents/RaidCoordinator';
+import { loadEvolutions, generateEvoSpawns, applyBalanceTweaks, LoadedEvolutions } from '../evolutions/EvolutionLoader';
 import {
     TICK_RATE, COMBAT_TICK, COMBAT_TICK_INTERVAL, PATHFINDING_BUDGET_PER_TICK,
     NPC_COMBAT_STATS, ROLE_COLORS, ITEMS, BUILDINGS, LOOT_DECAY_TIME,
@@ -70,10 +71,11 @@ export class AgentScapeRoom extends Room<GameState> {
     private combatTickCounter: number = 0;
     private stallTimers: Map<string, number> = new Map();
     private raidCleanupTimer: number = 0;
+    private evolutions: LoadedEvolutions | null = null;
 
     maxClients = MAX_PLAYERS_PER_ROOM;
 
-    onCreate() {
+    async onCreate() {
         this.setState(new GameState());
 
         // Generate deterministic map
@@ -112,6 +114,17 @@ export class AgentScapeRoom extends Room<GameState> {
         // Spawn NPCs (in SUITE City) and Monsters (in PvM zones)
         this.spawnNPCs();
         this.spawnMonsters();
+
+        // Load and apply daily evolutions from Supabase
+        try {
+            this.evolutions = await loadEvolutions();
+            if (this.evolutions) {
+                applyBalanceTweaks(this.evolutions.balanceTweaks);
+                this.spawnEvolutionMonsters();
+            }
+        } catch (e: any) {
+            console.log('[AgentScapeRoom] Evolution load error (non-fatal):', e.message);
+        }
 
         // Register action handler
         this.onMessage('action', (client, data: GameAction) => {
@@ -1345,6 +1358,56 @@ export class AgentScapeRoom extends Room<GameState> {
         }
 
         console.log(`[AgentScapeRoom] Spawned ${monsterCount} monsters + ${bossCount} bosses`);
+    }
+
+    // ============================================================
+    // EVOLUTION MONSTER SPAWNING
+    // ============================================================
+    private spawnEvolutionMonsters() {
+        if (!this.evolutions || this.evolutions.monsters.length === 0) return;
+        let evoCount = 0;
+
+        for (const def of this.evolutions.monsters) {
+            const spawns = generateEvoSpawns(def);
+            spawns.forEach((pos, idx) => {
+                const monster = new MonsterSchema();
+                monster.id = `evo-${def.id}-${idx}`;
+                monster.monsterId = def.id;
+                monster.name = def.name;
+                monster.icon = def.icon;
+                monster.level = def.level;
+                monster.x = pos.x;
+                monster.z = pos.z;
+                monster.tileX = pos.x;
+                monster.tileZ = pos.z;
+                monster.hp = def.hp;
+                monster.maxHp = def.hp;
+                monster.aggressive = def.aggressive;
+                monster.zone = def.zone;
+                monster.color = def.color;
+                monster.spawnX = pos.x;
+                monster.spawnZ = pos.z;
+                monster.respawnTime = def.respawnTime;
+                monster.aggroRange = MONSTER_AGGRO_RANGE;
+                monster.leashRange = 15;
+                monster.stateTimer = 2 + Math.random() * 5;
+                monster.combatStats = {
+                    attack: def.attack,
+                    strength: def.strength,
+                    defence: def.defence,
+                    drops: def.drops,
+                    coinDrop: def.coinDrop,
+                    xpReward: def.xpReward,
+                };
+
+                this.state.monsters.set(monster.id, monster);
+                evoCount++;
+            });
+        }
+
+        if (evoCount > 0) {
+            console.log(`[AgentScapeRoom] Spawned ${evoCount} evolution monsters`);
+        }
     }
 
     // ============================================================

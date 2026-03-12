@@ -330,6 +330,22 @@ app.get('/activity', async (_req, res) => {
     }
 });
 
+// World Chronicle — evolution history
+app.get('/chronicle', async (req, res) => {
+    try {
+        const limit = Math.min(Number(req.query.limit) || 50, 200);
+        const { data, error } = await sbPublic
+            .from('agentscape_evolutions')
+            .select('id, day_number, type, title, description, created_at, active')
+            .order('day_number', { ascending: false })
+            .limit(limit);
+        if (error) throw error;
+        res.json({ evolutions: data || [] });
+    } catch {
+        res.json({ evolutions: [] });
+    }
+});
+
 // Colyseus monitor (admin panel)
 app.use('/colyseus', monitor());
 
