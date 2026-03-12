@@ -607,6 +607,24 @@ class PokerEngine {
       this.broadcast('action', { agentId: agent.id, action: action.type, amount: action.amount, label: action.label });
       this.broadcastGameState();
 
+      // If agent just folded and had a pending leave, execute it now
+      if (action.type === 'fold' && this._pendingLeaves.has(agent.id)) {
+        const leaveWallet = this._pendingLeaves.get(agent.id);
+        this._pendingLeaves.delete(agent.id);
+        const agentIdx = this.agents.indexOf(agent);
+        if (agentIdx !== -1) {
+          const unseatResult = this._executeUnseat(agentIdx, agent);
+          if (unseatResult.success && this._onPendingLeave) {
+            this._onPendingLeave(leaveWallet, agent.id, unseatResult.agent);
+          }
+          // Adjust loop variables after splice
+          n = this.agents.length;
+          if (startIdx >= n) startIdx = 0;
+          if (lastRaiserIdx >= n) lastRaiserIdx = -1;
+          continue; // skip increment — index already points to next agent after splice
+        }
+      }
+
       startIdx = (startIdx + 1) % n;
       actedCount++;
       if (actedCount >= n * 3) break; // safety valve — max 3 orbits
