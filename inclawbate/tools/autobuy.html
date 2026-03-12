@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoBuy - DCA into CLAWS | Inclawbate</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#06060b;--surface:#0f0a1e;--surface2:#16102b;--border:rgba(138,43,226,0.2);--border-bright:rgba(138,43,226,0.5);--purple:#8a2be2;--purple-bright:#a855f7;--cyan:#00e5ff;--green:#00ffb3;--red:#ff3366;--text:#e2e8f0;--text-dim:#8875aa;--radius:10px}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{max-width:500px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;overflow:hidden}
+.container::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(138,43,226,0.06),transparent 50%);pointer-events:none}
+h1{font-size:1.6rem;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#a855f7,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{color:var(--text-dim);font-size:0.85rem;margin-bottom:24px}
+.connect-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--purple),var(--purple-bright));color:#fff;border:none;border-radius:var(--radius);font-size:0.95rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
+.connect-btn:hover{opacity:0.88}
+.connected-bar{padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;font-family:monospace;font-size:0.8rem;color:var(--cyan);display:flex;align-items:center;justify-content:space-between}
+.connected-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:8px;flex-shrink:0}
+.connected-bar .addr{overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center}
+.connected-bar .bal{color:var(--text-dim);font-size:0.75rem}
+.hidden{display:none!important}
+.form{display:flex;flex-direction:column;gap:16px}
+label{font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:4px;display:block}
+input,select{width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:0.95rem;font-family:inherit;outline:none;transition:border-color 0.15s}
+input:focus,select:focus{border-color:var(--purple-bright)}
+input::placeholder{color:rgba(136,117,170,0.5)}
+.row{display:flex;gap:12px}
+.row>div{flex:1}
+.primary-btn{width:100%;padding:14px;background:linear-gradient(135deg,#00b894,#00e5ff);color:#000;border:none;border-radius:var(--radius);font-size:1rem;font-weight:800;cursor:pointer;transition:all 0.15s;text-transform:uppercase;letter-spacing:0.05em}
+.primary-btn:hover{opacity:0.88;transform:translateY(-1px)}
+.primary-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.withdraw-btn{width:100%;padding:12px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:var(--radius);font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:12px}
+.withdraw-btn:hover{background:rgba(255,51,102,0.1)}
+.stats{margin-top:20px;padding:20px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.stats-title{font-size:0.85rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat{text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px}
+.stat-value{font-size:1.15rem;font-weight:800;color:var(--cyan)}
+.stat-value.green{color:var(--green)}
+.stat-value.dim{color:var(--text-dim)}
+.stat-label{font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+.progress{margin-top:16px}
+.progress-bar{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));border-radius:4px;transition:width 0.5s;width:0%}
+.progress-text{font-size:0.78rem;color:var(--text-dim);text-align:center;margin-top:8px}
+.info-box{background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2);border-radius:var(--radius);padding:12px 14px;font-size:0.82rem;color:rgba(0,229,255,0.8);line-height:1.5;margin-bottom:16px}
+.how-it-works{margin-top:20px;padding:16px;border-top:1px solid var(--border)}
+.how-it-works h3{font-size:0.82rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+.step{display:flex;gap:10px;margin-bottom:8px;font-size:0.82rem;color:var(--text-dim);line-height:1.4}
+.step-num{width:20px;height:20px;border-radius:50%;background:rgba(138,43,226,0.2);color:var(--purple-bright);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;flex-shrink:0;margin-top:1px}
+.complete-box{text-align:center;padding:24px;background:rgba(0,255,179,0.05);border:1px solid rgba(0,255,179,0.2);border-radius:var(--radius);margin-bottom:16px}
+.complete-box h2{color:var(--green);font-size:1.3rem;margin-bottom:8px}
+.complete-box p{color:var(--text-dim);font-size:0.9rem}
+.tx-link{color:var(--cyan);text-decoration:none;font-size:0.8rem}
+.tx-link:hover{text-decoration:underline}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--purple);border-radius:2px}
+@media(max-width:480px){.container{padding:20px}.stats-grid{grid-template-columns:1fr 1fr;gap:8px}}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>AutoBuy</h1>
+    <p class="subtitle">DCA into $CLAWS - deposit once, buys happen automatically</p>
+
+    <!-- Connect -->
+    <div id="connectSection">
+        <button class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+        <div class="how-it-works">
+            <h3>How it works</h3>
+            <div class="step"><div class="step-num">1</div><div>Deposit ETH and choose how many buys + interval</div></div>
+            <div class="step"><div class="step-num">2</div><div>Contract automatically swaps ETH for CLAWS on your schedule</div></div>
+            <div class="step"><div class="step-num">3</div><div>CLAWS sent directly to your wallet each buy</div></div>
+            <div class="step"><div class="step-num">4</div><div>Withdraw anytime to stop and reclaim remaining ETH</div></div>
+        </div>
+    </div>
+
+    <!-- Deposit Form (no active position) -->
+    <div id="depositSection" class="hidden">
+        <div class="connected-bar">
+            <div class="addr"><span class="dot"></span><span id="walletAddr"></span></div>
+            <div class="bal" id="walletBal"></div>
+        </div>
+
+        <div class="info-box">
+            One transaction. Close the tab. Buys happen automatically. Check back anytime. Free, no fees.
+        </div>
+
+        <div class="form">
+            <div>
+                <label>Total ETH to spend</label>
+                <input type="number" id="totalEth" placeholder="0.05" step="0.001" min="0.001">
+            </div>
+            <div class="row">
+                <div>
+                    <label>Number of buys</label>
+                    <input type="number" id="numBuys" placeholder="10" min="2" max="1000" value="10">
+                </div>
+                <div>
+                    <label>Interval</label>
+                    <select id="interval">
+                        <option value="600">Every 10 min</option>
+                        <option value="1800" selected>Every 30 min</option>
+                        <option value="3600">Every 1 hour</option>
+                        <option value="7200">Every 2 hours</option>
+                        <option value="14400">Every 4 hours</option>
+                        <option value="86400">Every 24 hours</option>
+                    </select>
+                </div>
+            </div>
+            <div id="summary" style="font-size:0.82rem;color:var(--text-dim);padding:4px 0;min-height:20px"></div>
+            <button class="primary-btn" id="depositBtn" onclick="doDeposit()">Deposit & Start AutoBuy</button>
+        </div>
+    </div>
+
+    <!-- Active Position -->
+    <div id="activeSection" class="hidden">
+        <div class="connected-bar">
+            <div class="addr"><span class="dot"></span><span id="walletAddr2"></span></div>
+            <div class="bal" id="walletBal2"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stats-title">Your DCA Position</div>
+            <div class="stats-grid">
+                <div class="stat">
+                    <div class="stat-value" id="statBuys">0/0</div>
+                    <div class="stat-label">Buys Completed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statRemaining">0</div>
+                    <div class="stat-label">ETH Remaining</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value green" id="statClaws">0</div>
+                    <div class="stat-label">CLAWS Bought</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statNext">--</div>
+                    <div class="stat-label">Next Buy</div>
+                </div>
+            </div>
+            <div class="progress">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-text" id="progressText">0% complete</div>
+            </div>
+        </div>
+
+        <div style="text-align:center;margin-top:12px">
+            <span style="font-size:0.75rem;color:var(--text-dim)">Per buy: </span>
+            <span style="font-size:0.75rem;color:var(--cyan)" id="statPerBuy">0 ETH</span>
+            <span style="font-size:0.75rem;color:var(--text-dim);margin-left:12px">Interval: </span>
+            <span style="font-size:0.75rem;color:var(--cyan)" id="statInterval">--</span>
+        </div>
+
+        <button class="withdraw-btn" onclick="doWithdraw()">Stop & Withdraw Remaining ETH</button>
+    </div>
+
+    <!-- Completed -->
+    <div id="completeSection" class="hidden">
+        <div class="connected-bar">
+            <div class="addr"><span class="dot"></span><span id="walletAddr3"></span></div>
+            <div class="bal" id="walletBal3"></div>
+        </div>
+
+        <div class="complete-box">
+            <h2>DCA Complete!</h2>
+            <p>You bought <strong id="finalClaws">0</strong> CLAWS</p>
+        </div>
+
+        <button class="primary-btn" onclick="showDeposit()">Start New AutoBuy</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+<script>
+// === CONTRACT CONFIG ===
+const CONTRACT_ADDRESS = '0x9b434Db8daD66AEbD81594C4C32ce5ba16709c0A';
+const BASE_CHAIN_ID = 8453;
+
+const CONTRACT_ABI = [
+    'function deposit(uint16 numBuys, uint32 intervalSeconds) payable',
+    'function withdraw()',
+    'function getPosition(address user) view returns (uint256 remaining, uint256 amountPerBuy, uint256 intervalSeconds, uint256 lastBuyTime, uint256 buysCompleted, uint256 totalBuys, uint256 totalClawsBought, bool active, uint256 nextBuyTime)',
+    'function activeUserCount() view returns (uint256)',
+    'event Deposited(address indexed user, uint256 amount, uint16 numBuys, uint32 interval)',
+    'event BuyExecuted(address indexed user, uint256 ethSpent, uint256 clawsReceived, uint16 buyNumber)',
+    'event Withdrawn(address indexed user, uint256 amount)'
+];
+
+let provider, signer, contract, userAddress;
+let pollTimer = null;
+
+// === WALLET ===
+
+async function connectWallet() {
+    if (!window.ethereum) { alert('Install a wallet (MetaMask, Coinbase, etc.)'); return; }
+    try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== BASE_CHAIN_ID) {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+                provider = new ethers.BrowserProvider(window.ethereum);
+            } catch (e) { alert('Please switch to Base network'); return; }
+        }
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        // Check if user has an active position
+        await checkPosition();
+    } catch (e) {
+        alert('Connection failed: ' + (e.message || e));
+    }
+}
+
+async function updateBalanceDisplay() {
+    const bal = await provider.getBalance(userAddress);
+    const short = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+    const balStr = parseFloat(ethers.formatEther(bal)).toFixed(4) + ' ETH';
+    document.querySelectorAll('[id^="walletAddr"]').forEach(el => el.textContent = short);
+    document.querySelectorAll('[id^="walletBal"]').forEach(el => el.textContent = balStr);
+}
+
+// === POSITION CHECK ===
+
+async function checkPosition() {
+    await updateBalanceDisplay();
+
+    try {
+        const pos = await contract.getPosition(userAddress);
+        const active = pos[7]; // active
+        const buysCompleted = Number(pos[4]);
+        const totalBuys = Number(pos[5]);
+        const totalClawsBought = pos[6];
+
+        if (active) {
+            showActive(pos);
+            startPolling();
+        } else if (buysCompleted > 0 && buysCompleted >= totalBuys && totalClawsBought > 0n) {
+            showComplete(totalClawsBought);
+        } else {
+            showDeposit();
+        }
+    } catch (e) {
+        // Contract not deployed yet or error - show deposit form
+        showDeposit();
+    }
+}
+
+// === VIEWS ===
+
+function hideAll() {
+    document.getElementById('connectSection').classList.add('hidden');
+    document.getElementById('depositSection').classList.add('hidden');
+    document.getElementById('activeSection').classList.add('hidden');
+    document.getElementById('completeSection').classList.add('hidden');
+}
+
+function showDeposit() {
+    hideAll();
+    document.getElementById('depositSection').classList.remove('hidden');
+    stopPolling();
+}
+
+function showActive(pos) {
+    hideAll();
+    document.getElementById('activeSection').classList.remove('hidden');
+    updateActiveStats(pos);
+}
+
+function showComplete(totalClaws) {
+    hideAll();
+    document.getElementById('completeSection').classList.remove('hidden');
+    document.getElementById('finalClaws').textContent = formatClaws(totalClaws);
+    stopPolling();
+}
+
+// === DEPOSIT ===
+
+async function doDeposit() {
+    const totalEth = parseFloat(document.getElementById('totalEth').value);
+    const numBuys = parseInt(document.getElementById('numBuys').value);
+    const interval = parseInt(document.getElementById('interval').value);
+
+    if (!totalEth || totalEth <= 0) { alert('Enter total ETH to spend'); return; }
+    if (!numBuys || numBuys < 2 || numBuys > 1000) { alert('Number of buys must be 2-1000'); return; }
+
+    const btn = document.getElementById('depositBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Confirming...';
+
+    try {
+        const value = ethers.parseEther(totalEth.toString());
+        const tx = await contract.deposit(numBuys, interval, { value });
+
+        btn.innerHTML = '<span class="loading"></span>Waiting for confirmation...';
+        await tx.wait();
+
+        await checkPosition();
+    } catch (e) {
+        const msg = e.reason || e.message || String(e);
+        if (msg.includes('user rejected') || msg.includes('denied')) {
+            // User cancelled - do nothing
+        } else if (msg.includes('Already active')) {
+            alert('You already have an active DCA position. Withdraw first.');
+        } else {
+            alert('Transaction failed: ' + msg.slice(0, 120));
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Deposit & Start AutoBuy';
+    }
+}
+
+// === WITHDRAW ===
+
+async function doWithdraw() {
+    if (!confirm('Stop your DCA and withdraw remaining ETH?')) return;
+
+    const btn = document.querySelector('.withdraw-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Withdrawing...';
+
+    try {
+        const tx = await contract.withdraw();
+        await tx.wait();
+        await checkPosition();
+    } catch (e) {
+        const msg = e.reason || e.message || String(e);
+        if (!msg.includes('user rejected') && !msg.includes('denied')) {
+            alert('Withdraw failed: ' + msg.slice(0, 120));
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Stop & Withdraw Remaining ETH';
+    }
+}
+
+// === STATS ===
+
+function updateActiveStats(pos) {
+    const remaining = pos[0];
+    const amountPerBuy = pos[1];
+    const intervalSec = Number(pos[2]);
+    const buysCompleted = Number(pos[4]);
+    const totalBuys = Number(pos[5]);
+    const totalClawsBought = pos[6];
+    const nextBuyTime = Number(pos[8]);
+
+    document.getElementById('statBuys').textContent = buysCompleted + '/' + totalBuys;
+    document.getElementById('statRemaining').textContent = parseFloat(ethers.formatEther(remaining)).toFixed(4);
+    document.getElementById('statClaws').textContent = formatClaws(totalClawsBought);
+    document.getElementById('statPerBuy').textContent = parseFloat(ethers.formatEther(amountPerBuy)).toFixed(6) + ' ETH';
+    document.getElementById('statInterval').textContent = formatInterval(intervalSec);
+
+    const pct = totalBuys > 0 ? Math.round((buysCompleted / totalBuys) * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = buysCompleted + ' of ' + totalBuys + ' buys (' + pct + '%)';
+
+    // Next buy countdown
+    updateCountdown(nextBuyTime);
+}
+
+function updateCountdown(nextBuyTime) {
+    const el = document.getElementById('statNext');
+    if (!nextBuyTime) { el.textContent = '--'; return; }
+
+    const now = Math.floor(Date.now() / 1000);
+    const diff = nextBuyTime - now;
+
+    if (diff <= 0) {
+        el.textContent = 'Ready';
+        el.style.color = 'var(--green)';
+    } else {
+        el.textContent = formatTime(diff);
+        el.style.color = '';
+    }
+}
+
+// === POLLING ===
+
+function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+        try {
+            const pos = await contract.getPosition(userAddress);
+            const active = pos[7];
+            const buysCompleted = Number(pos[4]);
+            const totalBuys = Number(pos[5]);
+
+            if (!active && buysCompleted >= totalBuys) {
+                showComplete(pos[6]);
+            } else if (!active) {
+                showDeposit();
+            } else {
+                updateActiveStats(pos);
+            }
+            await updateBalanceDisplay();
+        } catch (e) { /* silent */ }
+    }, 10000); // Poll every 10 seconds
+}
+
+function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+// === HELPERS ===
+
+function formatClaws(wei) {
+    const n = parseFloat(ethers.formatEther(wei));
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    if (n >= 1) return n.toFixed(0);
+    return n.toFixed(2);
+}
+
+function formatTime(s) {
+    if (s >= 86400) return Math.floor(s / 86400) + 'd ' + Math.floor((s % 86400) / 3600) + 'h';
+    if (s >= 3600) return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+    if (s >= 60) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+    return s + 's';
+}
+
+function formatInterval(sec) {
+    if (sec >= 86400) return (sec / 86400) + ' day' + (sec > 86400 ? 's' : '');
+    if (sec >= 3600) return (sec / 3600) + ' hr' + (sec > 3600 ? 's' : '');
+    if (sec >= 60) return (sec / 60) + ' min';
+    return sec + 's';
+}
+
+function updateSummary() {
+    const total = parseFloat(document.getElementById('totalEth').value) || 0;
+    const num = parseInt(document.getElementById('numBuys').value) || 0;
+    const interval = parseInt(document.getElementById('interval').value);
+    const el = document.getElementById('summary');
+    if (total > 0 && num >= 2) {
+        const perBuy = (total / num).toFixed(6);
+        const totalTime = (num - 1) * interval;
+        const timeStr = formatTime(totalTime);
+        el.textContent = perBuy + ' ETH per buy \u00b7 ' + num + ' buys over ' + timeStr;
+    } else {
+        el.textContent = '';
+    }
+}
+
+document.getElementById('totalEth').addEventListener('input', updateSummary);
+document.getElementById('numBuys').addEventListener('input', updateSummary);
+document.getElementById('interval').addEventListener('change', updateSummary);
+
+// Handle wallet account/network changes
+if (window.ethereum) {
+    window.ethereum.on('accountsChanged', () => location.reload());
+    window.ethereum.on('chainChanged', () => location.reload());
+}
+</script>
+</body>
+</html>
