@@ -51,6 +51,22 @@ function getWalletAddress(user) {
     return w ? w.address : null;
 }
 
+// Store Privy login info for nav/dashboard display
+function storeLoginInfo(method, email) {
+    localStorage.setItem('privy_login_info', JSON.stringify({ method: method, email: email || null }));
+}
+
+// Extract email from Privy user's linked accounts
+function extractEmail(user) {
+    if (!user || !user.linked_accounts) return null;
+    for (var i = 0; i < user.linked_accounts.length; i++) {
+        var a = user.linked_accounts[i];
+        if (a.type === 'google_oauth' && a.email) return a.email;
+        if (a.type === 'email' && a.address) return a.address;
+    }
+    return null;
+}
+
 // Authenticate with Inclawbate backend
 async function authWithBackend(address) {
     var resp = await fetch('/api/inclawbate/wallet-connect', {
@@ -91,6 +107,7 @@ window.PrivyAuth = {
             address = getWalletAddress(user);
         }
         if (!address) throw new Error('Could not create embedded wallet');
+        storeLoginInfo('email', email);
         await authWithBackend(address);
         return address;
     },
@@ -132,6 +149,7 @@ window.PrivyAuth = {
             address = getWalletAddress(user);
         }
         if (!address) throw new Error('Could not create embedded wallet');
+        storeLoginInfo(provider, extractEmail(user));
         await authWithBackend(address);
         return address;
     },
@@ -146,8 +164,14 @@ window.PrivyAuth = {
         return null;
     },
 
+    // Get login info
+    getLoginInfo() {
+        try { return JSON.parse(localStorage.getItem('privy_login_info') || 'null'); } catch(e) { return null; }
+    },
+
     // Logout
     async logout() {
+        localStorage.removeItem('privy_login_info');
         try {
             if (privy) await privy.auth.logout();
         } catch(e) {}

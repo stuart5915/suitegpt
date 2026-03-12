@@ -163,12 +163,29 @@ function renderProfileCard(profile) {
     const initial = (profile.display_name || profile.wallet_address || 'A')[0].toUpperCase();
     const avatarHtml = `<div class="overview-profile-avatar-fallback">${initial}</div>`;
 
+    // Privy login info
+    let privyInfo = null;
+    try { privyInfo = JSON.parse(localStorage.getItem('privy_login_info') || 'null'); } catch(e) {}
+    const signInMethod = privyInfo ? (privyInfo.method === 'google' ? 'Google' : privyInfo.method === 'email' ? 'Email' : 'Wallet') : 'Wallet';
+    const signInEmail = privyInfo && privyInfo.email ? privyInfo.email : null;
+    const displayName = signInEmail || name;
+
     card.innerHTML = `
         ${avatarHtml}
         <div class="overview-profile-info">
-            <div class="overview-profile-name">${esc(name)}</div>
+            <div class="overview-profile-name">${esc(displayName)}</div>
+            ${signInEmail ? `<div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-dim);margin-top:2px;">Signed in with ${signInMethod}</div>` : ''}
             ${walletDisplay ? `<div class="overview-profile-handle" style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-dim);">${esc(walletDisplay)}</div>` : ''}
         </div>
+        ${profile.wallet_address ? `
+        <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;width:100%;margin-top:8px;">
+            <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Your Wallet (Base)</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${profile.wallet_address}</code>
+                <button type="button" id="dashCopyWallet" style="background:none;border:1px solid var(--border-subtle);border-radius:6px;padding:3px 8px;color:var(--text-dim);font-size:0.7rem;cursor:pointer;font-family:var(--font-mono);white-space:nowrap;" title="Copy address">Copy</button>
+            </div>
+            ${privyInfo ? '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;line-height:1.4;">This wallet was created when you signed in. Tokens and rewards are sent here automatically.</div>' : ''}
+        </div>` : ''}
         <div class="profile-credits-area">
             <div class="profile-sub-row">
                 <span class="profile-sub-badge" id="profileSubBadge">Free</span>
@@ -213,6 +230,15 @@ function renderProfileCard(profile) {
     document.getElementById('profileSubUpgrade')?.addEventListener('click', (e) => {
         e.preventDefault();
         openBuyModal('subscribe');
+    });
+
+    document.getElementById('dashCopyWallet')?.addEventListener('click', function() {
+        navigator.clipboard.writeText(profile.wallet_address).then(() => {
+            this.textContent = 'Copied!';
+            this.style.color = 'var(--seafoam-300)';
+            this.style.borderColor = 'var(--seafoam-300)';
+            setTimeout(() => { this.textContent = 'Copy'; this.style.color = ''; this.style.borderColor = ''; }, 2000);
+        });
     });
 
     document.getElementById('dashEditProfile')?.addEventListener('click', () => {

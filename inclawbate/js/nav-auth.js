@@ -458,10 +458,22 @@
             }
 
             if (token && profile && profile.wallet_address) {
-                var addr = profile.wallet_address;
-                var short = addr.slice(0, 6) + '…' + addr.slice(-4);
+                // Check if user logged in via Privy social login
+                var privyInfo = null;
+                try { privyInfo = JSON.parse(localStorage.getItem('privy_login_info') || 'null'); } catch(e) {}
+                var displayLabel;
+                if (privyInfo && privyInfo.email) {
+                    // Truncate long emails
+                    var em = privyInfo.email;
+                    displayLabel = em.length > 18 ? em.slice(0, 15) + '…' : em;
+                } else if (privyInfo && privyInfo.method) {
+                    displayLabel = privyInfo.method === 'google' ? 'Google' : privyInfo.method === 'email' ? 'Email' : 'Signed in';
+                } else {
+                    var addr = profile.wallet_address;
+                    displayLabel = addr.slice(0, 6) + '…' + addr.slice(-4);
+                }
                 walletEl.innerHTML = '<button class="nav-wallet-btn connected" id="navWalletBtn">' +
-                    '<span class="nav-wallet-dot"></span>' + short + '</button>';
+                    '<span class="nav-wallet-dot"></span>' + displayLabel + '</button>';
                 document.getElementById('navWalletBtn').addEventListener('click', function() {
                     disconnectWallet();
                 });
