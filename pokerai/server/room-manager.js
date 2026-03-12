@@ -1115,8 +1115,11 @@ class RoomManager {
 
   // Get total chips currently in play (at tables + lobby) for a wallet
   getChipsInPlay(walletAddress) {
+    // Only count chips from YOUR agents actively seated at tables
+    // Lobby agents, idle wallet balance, and backing stakes do NOT earn rewards
     let total = 0;
     for (const room of Object.values(this.rooms)) {
+      if (room.isSandbox) continue; // sandbox doesn't earn rewards
       for (const table of room.tables) {
         for (const a of table.agents) {
           if (a.isCustom && a.walletAddress === walletAddress) {
@@ -1124,10 +1127,6 @@ class RoomManager {
           }
         }
       }
-    }
-    const walletLobby = this.lobbyAgents.get(walletAddress) || [];
-    for (const a of walletLobby) {
-      total += a.chipStack || 0;
     }
     return total;
   }
