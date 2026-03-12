@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Board — Inclawbate</title>
+    <meta name="description" content="Request features, vote on ideas, and shape the future of Inclawbate.">
+    <meta property="og:title" content="Feedback Board — Inclawbate">
+    <meta property="og:description" content="Request features, vote on ideas, and shape the future of Inclawbate.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://inclawbate.com/feedback">
+    <meta property="og:image" content="https://www.inclawbate.com/api/inclawbate/og?page=feedback">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@inclawbate">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129438;</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body{opacity:0}</style>
+    <link rel="stylesheet" href="/styles/core.css">
+    <link rel="stylesheet" href="/styles/components.css">
+    <style>
+        body { opacity: 1; background: var(--bg-deepest); }
+
+        .fb-page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: calc(var(--nav-height) + var(--space-xl)) var(--space-lg) var(--space-3xl);
+        }
+
+        .fb-hero {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+            animation: fadeUp 0.5s ease both;
+        }
+        .fb-hero h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: var(--title-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.15;
+            margin-bottom: var(--space-xs);
+        }
+        .fb-hero p {
+            font-size: 0.95rem;
+            color: var(--text-dim);
+        }
+
+        /* ── Controls ── */
+        .fb-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+            animation: fadeUp 0.5s ease both;
+            animation-delay: 0.05s;
+        }
+        .fb-filters {
+            display: flex;
+            gap: 4px;
+        }
+        .fb-filter {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .fb-filter:hover { border-color: var(--border-bright); color: var(--text-primary); }
+        .fb-filter.active { border-color: var(--lobster-400); color: var(--lobster-400); background: rgba(232,121,85,0.08); }
+
+        .fb-submit-btn {
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--accent-gradient);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .fb-submit-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+        /* ── Submit Form ── */
+        .fb-form {
+            display: none;
+            padding: var(--space-lg);
+            border-radius: var(--radius-xl);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            margin-bottom: var(--space-lg);
+            animation: fadeUp 0.3s ease both;
+        }
+        .fb-form.open { display: block; }
+        .fb-form h3 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 var(--space-md);
+        }
+        .fb-form input,
+        .fb-form textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color var(--transition-fast);
+            box-sizing: border-box;
+        }
+        .fb-form input:focus,
+        .fb-form textarea:focus { border-color: var(--lobster-400); }
+        .fb-form textarea { resize: vertical; min-height: 80px; margin-top: var(--space-sm); }
+        .fb-form-hint {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .fb-form-actions {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+            align-items: center;
+        }
+        .fb-form-submit {
+            padding: 8px 20px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: var(--accent-gradient);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .fb-form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .fb-form-cancel {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            background: none;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+        .fb-form-msg {
+            font-size: 0.78rem;
+            margin-left: auto;
+        }
+        .fb-form-msg.error { color: #f87171; }
+        .fb-form-msg.success { color: #4ade80; }
+
+        /* ── Card List ── */
+        .fb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            animation: fadeUp 0.5s ease both;
+            animation-delay: 0.1s;
+        }
+        .fb-empty {
+            text-align: center;
+            padding: var(--space-3xl) var(--space-lg);
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+        .fb-card {
+            display: flex;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            transition: border-color var(--transition-fast);
+        }
+        .fb-card:hover { border-color: var(--border-bright); }
+
+        /* Vote column */
+        .fb-vote {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 44px;
+            flex-shrink: 0;
+        }
+        .fb-vote-btn {
+            width: 36px;
+            height: 30px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            font-size: 0.9rem;
+        }
+        .fb-vote-btn:hover { border-color: var(--lobster-400); color: var(--lobster-400); }
+        .fb-vote-btn.voted {
+            border-color: var(--lobster-400);
+            background: rgba(232,121,85,0.12);
+            color: var(--lobster-400);
+        }
+        .fb-vote-count {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Content column */
+        .fb-body { flex: 1; min-width: 0; }
+        .fb-title {
+            font-family: var(--font-display);
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+        .fb-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+        .fb-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+
+        /* Status badges */
+        .fb-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .fb-status--open { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .fb-status--building { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .fb-status--shipped { background: rgba(74,222,128,0.15); color: #4ade80; }
+        .fb-status--closed { background: rgba(148,163,184,0.12); color: #94a3b8; }
+
+        /* Admin reply */
+        .fb-reply {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            background: rgba(232,121,85,0.05);
+            border-left: 3px solid var(--lobster-400);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .fb-reply-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--lobster-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        /* Admin controls */
+        .fb-admin {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .fb-admin-btn {
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .fb-admin-btn:hover { border-color: var(--border-bright); color: var(--text-primary); }
+        .fb-admin-btn--danger:hover { border-color: #f87171; color: #f87171; }
+
+        /* Admin reply form (inline) */
+        .fb-reply-form {
+            display: none;
+            margin-top: 8px;
+        }
+        .fb-reply-form.open { display: flex; gap: 6px; align-items: flex-start; }
+        .fb-reply-form textarea {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            resize: none;
+            min-height: 36px;
+            outline: none;
+        }
+        .fb-reply-form button {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: var(--lobster-400);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Delete confirm */
+        .fb-delete-own {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.65rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 4px;
+        }
+        .fb-delete-own:hover { color: #f87171; }
+
+        @media (max-width: 600px) {
+            .fb-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .fb-hero h1 { font-size: 1.6rem; }
+            .fb-controls { flex-direction: column; align-items: stretch; }
+            .fb-filters { overflow-x: auto; }
+            .fb-submit-btn { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">inclawbate &#129438;</span>
+    </a>
+    <div class="nav-links">
+        <div class="nav-group">
+            <a href="/explore" class="nav-link">Explore</a>
+            <div class="nav-group-menu">
+                <a href="/projects">Projects</a>
+                <a href="/apps">Apps</a>
+                <a href="/tokens">Tokens</a>
+                <a href="/nfts">NFTs</a>
+                <a href="/stake">Staking</a>
+                <a href="/agents">Agents</a>
+                <a href="/schedule">X Schedule</a>
+            </div>
+        </div>
+        <a href="/tools" class="nav-link">Launch / Tools</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/feedback" class="nav-link active">Feedback</a>
+    </div>
+</nav>
+
+<div class="fb-page">
+
+    <section class="fb-hero">
+        <h1>Feedback Board</h1>
+        <p>Request features, report issues, and vote on what gets built next.</p>
+    </section>
+
+    <!-- Controls -->
+    <div class="fb-controls">
+        <div class="fb-filters">
+            <button class="fb-filter active" data-status="all">All</button>
+            <button class="fb-filter" data-status="open">Open</button>
+            <button class="fb-filter" data-status="building">Building</button>
+            <button class="fb-filter" data-status="shipped">Shipped</button>
+        </div>
+        <button class="fb-submit-btn" id="fbNewBtn">+ New Request</button>
+    </div>
+
+    <!-- Submit Form -->
+    <div class="fb-form" id="fbForm">
+        <h3>Submit a Request</h3>
+        <input type="text" id="fbTitle" placeholder="What should we build or fix?" maxlength="100">
+        <textarea id="fbDesc" placeholder="Add more detail (optional)" maxlength="500"></textarea>
+        <div class="fb-form-hint">1 submission per 24 hours</div>
+        <div class="fb-form-actions">
+            <button class="fb-form-submit" id="fbFormSubmit">Submit</button>
+            <button class="fb-form-cancel" id="fbFormCancel">Cancel</button>
+            <span class="fb-form-msg" id="fbFormMsg"></span>
+        </div>
+    </div>
+
+    <!-- List -->
+    <div class="fb-list" id="fbList">
+        <div class="fb-empty">Loading...</div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <p class="footer-text">inclawbate &mdash; we incubate anything for anyone.</p>
+        <div class="footer-links">
+            <a href="/agents" class="footer-link">Agents</a>
+            <a href="/tokens" class="footer-link">Tokens</a>
+            <a href="/apps" class="footer-link">Apps</a>
+            <a href="/stake" class="footer-link">Stake</a>
+            <a href="/skills" class="footer-link">Skills</a>
+            <a href="/docs" class="footer-link">Docs</a>
+            <a href="/feedback" class="footer-link">Feedback</a>
+            <a href="/team" class="footer-link">Team</a>
+            <a href="https://t.me/inclawbate" target="_blank" rel="noopener" class="footer-link">Telegram</a>
+            <a href="https://x.com/inclawbate" target="_blank" rel="noopener" class="footer-link">X</a>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/wallet-bundle.js"></script>
+<script src="/js/privy-bundle.js"></script>
+<script src="/js/nav-auth.js"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    var API = '/api/inclawbate/feedback';
+    var ADMIN_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
+    var _items = [];
+    var _filter = 'all';
+    var _userWallet = '';
+    var _isAdmin = false;
+
+    function getAuth() {
+        try {
+            var token = localStorage.getItem('inclawbate_token');
+            var profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
+            if (token && profile) return { token: token, wallet: (profile.wallet_address || '').toLowerCase() };
+        } catch(e) {}
+        return null;
+    }
+
+    function authHeaders() {
+        var auth = getAuth();
+        if (!auth) return { 'Content-Type': 'application/json' };
+        return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth.token };
+    }
+
+    function timeAgo(dateStr) {
+        var diff = Date.now() - new Date(dateStr).getTime();
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h ago';
+        var days = Math.floor(hrs / 24);
+        if (days < 30) return days + 'd ago';
+        return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function escHtml(str) {
+        var d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    // ── Load feedback ──
+    async function loadFeedback() {
+        var auth = getAuth();
+        _userWallet = auth ? auth.wallet : '';
+        _isAdmin = ADMIN_WALLETS.includes(_userWallet);
+
+        try {
+            var resp = await fetch(API, { headers: authHeaders() });
+            var data = await resp.json();
+            _items = data.feedback || [];
+        } catch(e) {
+            _items = [];
+        }
+
+        renderList();
+    }
+
+    // ── Render ──
+    function renderList() {
+        var container = document.getElementById('fbList');
+        var filtered = _filter === 'all' ? _items : _items.filter(function(f) { return f.status === _filter; });
+
+        if (!filtered.length) {
+            container.innerHTML = '<div class="fb-empty">' +
+                (_filter === 'all' ? 'No feedback yet. Be the first to submit!' : 'No ' + _filter + ' items.') +
+                '</div>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(function(f) {
+            var voted = f.user_voted ? ' voted' : '';
+            var isMine = f.wallet && f.wallet.toLowerCase() === _userWallet;
+
+            var html = '<div class="fb-card" data-id="' + f.id + '">';
+
+            // Vote column
+            html += '<div class="fb-vote">';
+            html += '<button class="fb-vote-btn' + voted + '" onclick="window._fbVote(\'' + f.id + '\',' + (f.user_voted ? 'true' : 'false') + ')" title="' + (f.user_voted ? 'Remove vote' : 'Upvote') + '">&#9650;</button>';
+            html += '<span class="fb-vote-count">' + (f.vote_count || 0) + '</span>';
+            html += '</div>';
+
+            // Body
+            html += '<div class="fb-body">';
+            html += '<div class="fb-title">' + escHtml(f.title) + '</div>';
+            if (f.description) {
+                html += '<div class="fb-desc">' + escHtml(f.description) + '</div>';
+            }
+
+            // Meta
+            html += '<div class="fb-meta">';
+            html += '<span class="fb-status fb-status--' + f.status + '">' + f.status + '</span>';
+            html += '<span>' + (f.wallet_short || '???') + '</span>';
+            html += '<span>' + timeAgo(f.created_at) + '</span>';
+            if (isMine) {
+                html += '<button class="fb-delete-own" onclick="window._fbDelete(\'' + f.id + '\')">delete</button>';
+            }
+            html += '</div>';
+
+            // Admin reply
+            if (f.admin_reply) {
+                html += '<div class="fb-reply">';
+                html += '<div class="fb-reply-label">Team Reply</div>';
+                html += escHtml(f.admin_reply);
+                html += '</div>';
+            }
+
+            // Admin controls
+            if (_isAdmin) {
+                html += '<div class="fb-admin">';
+                html += '<button class="fb-admin-btn" onclick="window._fbStatus(\'' + f.id + '\',\'open\')">open</button>';
+                html += '<button class="fb-admin-btn" onclick="window._fbStatus(\'' + f.id + '\',\'building\')">building</button>';
+                html += '<button class="fb-admin-btn" onclick="window._fbStatus(\'' + f.id + '\',\'shipped\')">shipped</button>';
+                html += '<button class="fb-admin-btn" onclick="window._fbStatus(\'' + f.id + '\',\'closed\')">close</button>';
+                html += '<button class="fb-admin-btn" onclick="window._fbReplyToggle(\'' + f.id + '\')">reply</button>';
+                html += '<button class="fb-admin-btn fb-admin-btn--danger" onclick="window._fbDelete(\'' + f.id + '\')">delete</button>';
+                html += '</div>';
+                html += '<div class="fb-reply-form" id="reply-' + f.id + '">';
+                html += '<textarea placeholder="Reply..."></textarea>';
+                html += '<button onclick="window._fbReply(\'' + f.id + '\')">Send</button>';
+                html += '</div>';
+            }
+
+            html += '</div></div>';
+            return html;
+        }).join('');
+    }
+
+    // ── Actions ──
+
+    window._fbVote = async function(id, alreadyVoted) {
+        if (!_userWallet) { alert('Sign in first'); return; }
+
+        var action = alreadyVoted ? 'unvote' : 'vote';
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: action, feedback_id: id })
+            });
+            var data = await resp.json();
+            if (!resp.ok) { if (data.error) alert(data.error); return; }
+
+            // Update local state
+            var item = _items.find(function(f) { return f.id === id; });
+            if (item) {
+                item.vote_count = data.vote_count;
+                item.user_voted = !alreadyVoted;
+            }
+            // Re-sort by votes
+            _items.sort(function(a, b) { return (b.vote_count || 0) - (a.vote_count || 0); });
+            renderList();
+        } catch(e) {}
+    };
+
+    window._fbDelete = async function(id) {
+        if (!confirm('Delete this feedback?')) return;
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: 'delete', feedback_id: id })
+            });
+            if (resp.ok) {
+                _items = _items.filter(function(f) { return f.id !== id; });
+                renderList();
+            }
+        } catch(e) {}
+    };
+
+    window._fbStatus = async function(id, status) {
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: 'reply', feedback_id: id, status: status })
+            });
+            if (resp.ok) {
+                var item = _items.find(function(f) { return f.id === id; });
+                if (item) item.status = status;
+                renderList();
+            }
+        } catch(e) {}
+    };
+
+    window._fbReplyToggle = function(id) {
+        var form = document.getElementById('reply-' + id);
+        if (form) form.classList.toggle('open');
+    };
+
+    window._fbReply = async function(id) {
+        var form = document.getElementById('reply-' + id);
+        var textarea = form ? form.querySelector('textarea') : null;
+        if (!textarea || !textarea.value.trim()) return;
+
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: 'reply', feedback_id: id, reply: textarea.value.trim() })
+            });
+            if (resp.ok) {
+                var data = await resp.json();
+                var item = _items.find(function(f) { return f.id === id; });
+                if (item && data.feedback) {
+                    item.admin_reply = data.feedback.admin_reply;
+                    item.admin_reply_at = data.feedback.admin_reply_at;
+                }
+                renderList();
+            }
+        } catch(e) {}
+    };
+
+    // ── Submit Form ──
+    var formOpen = false;
+
+    document.getElementById('fbNewBtn').addEventListener('click', function() {
+        formOpen = !formOpen;
+        document.getElementById('fbForm').classList.toggle('open', formOpen);
+        if (formOpen) document.getElementById('fbTitle').focus();
+    });
+
+    document.getElementById('fbFormCancel').addEventListener('click', function() {
+        formOpen = false;
+        document.getElementById('fbForm').classList.remove('open');
+        document.getElementById('fbTitle').value = '';
+        document.getElementById('fbDesc').value = '';
+        document.getElementById('fbFormMsg').textContent = '';
+    });
+
+    document.getElementById('fbFormSubmit').addEventListener('click', async function() {
+        var btn = this;
+        var msg = document.getElementById('fbFormMsg');
+        var title = document.getElementById('fbTitle').value.trim();
+        var desc = document.getElementById('fbDesc').value.trim();
+
+        if (!_userWallet) { msg.className = 'fb-form-msg error'; msg.textContent = 'Sign in first'; return; }
+        if (title.length < 5) { msg.className = 'fb-form-msg error'; msg.textContent = 'Title too short'; return; }
+
+        btn.disabled = true;
+        msg.textContent = '';
+
+        try {
+            var resp = await fetch(API, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ action: 'submit', title: title, description: desc })
+            });
+            var data = await resp.json();
+
+            if (!resp.ok) {
+                msg.className = 'fb-form-msg error';
+                msg.textContent = data.error || 'Failed';
+                btn.disabled = false;
+                return;
+            }
+
+            // Add to top of list
+            _items.unshift(data.feedback);
+            renderList();
+
+            // Reset form
+            document.getElementById('fbTitle').value = '';
+            document.getElementById('fbDesc').value = '';
+            formOpen = false;
+            document.getElementById('fbForm').classList.remove('open');
+            msg.textContent = '';
+        } catch(e) {
+            msg.className = 'fb-form-msg error';
+            msg.textContent = 'Network error';
+        }
+        btn.disabled = false;
+    });
+
+    // ── Filters ──
+    document.querySelectorAll('.fb-filter').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.fb-filter').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            _filter = btn.getAttribute('data-status');
+            renderList();
+        });
+    });
+
+    // ── Init ──
+    loadFeedback();
+})();
+</script>
+
+</body>
+</html>
