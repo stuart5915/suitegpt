@@ -153,7 +153,20 @@ export default async function handler(req, res) {
         if (!user) return res.status(401).json({ error: 'Sign in to book slots' });
 
         const { action } = req.body || {};
-        const wallet = (user.wallet_address || '').toLowerCase();
+
+        // JWT doesn't contain wallet_address — look it up from human_profiles
+        let wallet = '';
+        if (user.sub) {
+            const { data: profile } = await supabase
+                .from('human_profiles')
+                .select('wallet_address')
+                .eq('id', user.sub)
+                .single();
+            wallet = (profile?.wallet_address || '').toLowerCase();
+        }
+        if (!wallet) {
+            return res.status(400).json({ error: 'No wallet linked to your account. Connect your wallet in the dashboard first.' });
+        }
 
         // ── Book a slot ──
         if (action === 'book') {

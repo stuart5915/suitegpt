@@ -6,7 +6,17 @@ function getStoredAuth() {
     try {
         const token = localStorage.getItem('inclawbate_token');
         const profile = JSON.parse(localStorage.getItem('inclawbate_profile') || 'null');
-        if (token && profile) return { token, profile };
+        if (token && profile) {
+            // Check if JWT is expired
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+                    localStorage.removeItem('inclawbate_token');
+                    return null;
+                }
+            } catch (e) {}
+            return { token, profile };
+        }
     } catch (e) {}
     return null;
 }
@@ -425,6 +435,14 @@ function openEditDetailsModal(app, cardEl) {
                 })
             });
             const data = await resp.json();
+            if (resp.status === 401) {
+                // Token expired or invalid — prompt re-login
+                localStorage.removeItem('inclawbate_token');
+                overlay.remove();
+                alert('Session expired. Please sign in again.');
+                window.location.reload();
+                return;
+            }
             if (data.updated) {
                 if (data.name !== undefined) { app.name = data.name; cardEl.querySelector('.overview-item-title').textContent = data.name; }
                 if (data.slug !== undefined) app.slug = data.slug;
