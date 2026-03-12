@@ -150,6 +150,7 @@ export default async function handler(req, res) {
         });
         const userData = await userRes.json();
         const xHandle = userData.data?.username || null;
+        const xUserId = userData.data?.id || null;
 
         // Store on project
         const { error: updateErr } = await supabase
@@ -158,6 +159,7 @@ export default async function handler(req, res) {
                 x_access_token: tokenData.access_token,
                 x_refresh_token: tokenData.refresh_token || null,
                 x_handle: xHandle,
+                agent_x_user_id: xUserId,
                 updated_at: new Date().toISOString()
             })
             .eq('id', project_id);
