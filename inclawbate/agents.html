@@ -502,7 +502,9 @@ function renderCards() {
 
         // Persona editor
         html += '<div class="agent-expand" id="persona_' + p.id + '">';
-        html += '<div class="agent-expand-title">Agent Persona</div>';
+        html += '<div class="agent-expand-title">Agent Settings</div>';
+        html += '<div class="ppd-row" style="margin-top:0;margin-bottom:8px"><label>Token Symbol:</label><input type="text" id="tsym_' + p.id + '" value="' + esc(p.token_symbol || '') + '" placeholder="e.g. CLAWS" maxlength="20" style="width:120px;padding:6px 10px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:var(--font-mono);font-size:0.82rem"></div>';
+        html += '<label style="display:block;font-size:0.72rem;color:var(--text-dim);margin-bottom:4px">Persona</label>';
         html += '<textarea class="agent-textarea" id="pText_' + p.id + '">' + esc(p.agent_persona || '') + '</textarea>';
         html += '<div class="ppd-row"><label>Posts per day:</label><select id="ppd_' + p.id + '">';
         for (var d = 1; d <= 3; d++) html += '<option value="' + d + '"' + (d === ppd ? ' selected' : '') + '>' + d + '</option>';
@@ -551,8 +553,9 @@ async function deleteAgent(pid, name) {
 async function savePersona(pid) {
     var text = document.getElementById('pText_' + pid).value.trim();
     var ppd = parseInt(document.getElementById('ppd_' + pid).value) || 2;
+    var tsym = (document.getElementById('tsym_' + pid).value || '').trim().toUpperCase();
     try {
-        var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_persona: text, agent_posts_per_day: ppd }) });
+        var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_persona: text, agent_posts_per_day: ppd, token_symbol: tsym || null }) });
         if (r.ok) { toast('Saved'); togglePanel(pid, 'persona'); loadAgents(); }
         else { var d = await r.json(); toast(d.error || 'Failed', true); }
     } catch (e) { toast('Network error', true); }

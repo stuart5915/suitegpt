@@ -205,19 +205,22 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid } = req.body || {};
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol } = req.body || {};
         if (!id) return res.status(400).json({ error: 'id is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
 
-        // Verify ownership
+        // Verify ownership (check wallet or profile ID)
         const { data: existing } = await supabase
             .from('projects')
-            .select('creator_wallet, agent_enabled')
+            .select('creator_wallet, creator_profile_id, agent_enabled')
             .eq('id', id)
             .single();
 
-        if (!existing || existing.creator_wallet !== wallet) {
+        if (!existing) return res.status(404).json({ error: 'Project not found' });
+        const patchOwner = existing.creator_wallet === wallet ||
+            existing.creator_profile_id === user.sub;
+        if (!patchOwner) {
             return res.status(403).json({ error: 'Not your project' });
         }
 
@@ -234,6 +237,9 @@ export default async function handler(req, res) {
         }
         if (agent_bid !== undefined) {
             patch.agent_bid = Math.max(0, parseInt(agent_bid) || 0);
+        }
+        if (token_symbol !== undefined) {
+            patch.token_symbol = token_symbol || null;
         }
 
         const { data, error } = await supabase
