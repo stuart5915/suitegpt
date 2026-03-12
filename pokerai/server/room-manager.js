@@ -772,13 +772,16 @@ class RoomManager {
       const backings = this.store.getBackingsForAgent(agent.id);
       if (backings.length === 0) continue;
 
-      const totalPool = backings.reduce((sum, b) => sum + b.currentValue, 0);
+      // Use _startChips as the total pool (owner + all backers)
+      // so delta is distributed proportionally between owner and backers
+      const totalPool = agent._startChips;
       if (totalPool <= 0) continue;
 
       const updates = [];
       for (const b of backings) {
         const share = b.currentValue / totalPool;
-        const newValue = Math.max(0, Math.floor(b.currentValue + delta * share));
+        const backerDelta = Math.floor(delta * share);
+        const newValue = Math.max(0, b.currentValue + backerDelta);
         updates.push({ id: b.id, currentValue: newValue });
       }
       this.store.updateBackingValues(agent.id, updates);
