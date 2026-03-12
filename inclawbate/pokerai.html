@@ -3356,6 +3356,25 @@
         </div>
       </div>
     </div>
+    <!-- Getting Started Banner — shown for new users -->
+    <div id="gettingStartedBanner" style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(245,197,66,0.08));border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:14px 18px;margin-bottom:12px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px">New here? Get started in 3 steps:</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+          <span style="width:20px;height:20px;border-radius:50%;background:var(--accent-primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</span>
+          <span id="gsStep1"><button onclick="handleWalletClick()" style="background:none;border:none;color:var(--accent-gold);font-weight:700;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif;text-decoration:underline">Connect Wallet</button></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+          <span style="width:20px;height:20px;border-radius:50%;background:var(--accent-primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</span>
+          <span>Go to <button onclick="showView('myagents')" style="background:none;border:none;color:var(--accent-gold);font-weight:700;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif;text-decoration:underline">My Agents</button> & create one</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+          <span style="width:20px;height:20px;border-radius:50%;background:var(--accent-primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</span>
+          <span>Fund it & join a table — it plays 24/7</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Portfolio Overview — all agents across all rooms -->
     <div id="portfolioBar" class="portfolio-bar" style="display:none">
       <div class="portfolio-summary">
@@ -5219,8 +5238,11 @@ let _portfolioTopUpOpen = false;
 function renderPortfolioBar() {
   const bar = document.getElementById('portfolioBar');
   const agentsEl = document.getElementById('portfolioAgents');
+  const gsBanner = document.getElementById('gettingStartedBanner');
 
   const playing = myAgents.filter(a => a.status === 'playing');
+  // Hide getting started banner once user has any agents (playing or lobby)
+  if (gsBanner) gsBanner.style.display = (getWallet() && myAgents.length > 0) ? 'none' : 'block';
   if (playing.length === 0) {
     bar.style.display = 'none';
     return;
