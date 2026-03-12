@@ -2977,6 +2977,25 @@ async function reactivateSubscription() {
 }
 
 // ── User Projects ──
+async function deleteUserProject(projectId, projectName) {
+    if (!confirm(`Delete "${projectName}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`${API_BASE}/projects`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+            body: JSON.stringify({ id: projectId })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || 'Failed to delete project');
+            return;
+        }
+        loadUserProjects();
+    } catch (err) {
+        alert('Failed to delete project');
+    }
+}
+
 async function loadUserProjects() {
     const auth = getStoredAuth();
     if (!auth) return;
@@ -2989,7 +3008,15 @@ async function loadUserProjects() {
     try {
         const res = await fetch(`${API_BASE}/projects?wallet=${encodeURIComponent(wallet.toLowerCase())}`);
         const data = await res.json();
-        const projects = data.projects || [];
+        // Filter out agent-only duplicates (no app, no token, no real content)
+        const seen = {};
+        const projects = (data.projects || []).filter(p => {
+            if (p.agent_enabled && !p.app_slug && !p.token_address && !p.staking_address && !p.website_url) return false;
+            const key = (p.name || '').toLowerCase();
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
 
         if (!projects.length) {
             container.innerHTML = '<div class="overview-empty"><p>No projects yet. Bundle your app, token, and socials into one project.</p></div>';
@@ -3017,6 +3044,7 @@ function renderUserProjectCard(p) {
     if (p.x_handle) chipsHtml += `<span class="user-project-chip">@${esc(p.x_handle)}</span>`;
 
     let actionsHtml = `<button type="button" class="project-card-action" data-edit-user-project="1">Edit</button>`;
+    actionsHtml += `<button type="button" class="project-card-action" data-delete-user-project="${esc(p.id)}" data-delete-name="${esc(p.name)}" style="color:#ef4444;">Delete</button>`;
     if (p.app_slug) actionsHtml += `<a href="/s/${esc(p.app_slug)}" target="_blank" class="project-card-action">Open App</a>`;
     if (p.token_address && (p.chain === 'solana' || !p.token_address.startsWith('0x'))) actionsHtml += `<a href="https://solscan.io/token/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">Solscan</a>`;
     else if (p.token_address) actionsHtml += `<a href="https://basescan.org/address/${esc(p.token_address)}" target="_blank" rel="noopener" class="project-card-action">BaseScan</a>`;
@@ -3036,6 +3064,10 @@ function renderUserProjectCard(p) {
 
     card.querySelector('[data-edit-user-project]')?.addEventListener('click', () => {
         openCreateProjectModal(p);
+    });
+
+    card.querySelector('[data-delete-user-project]')?.addEventListener('click', (e) => {
+        deleteUserProject(e.currentTarget.dataset.deleteUserProject, e.currentTarget.dataset.deleteName);
     });
 
     return card;
