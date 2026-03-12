@@ -795,21 +795,21 @@ async function startServer() {
     rooms = new RoomManager((type, data) => broadcastToClients(type, data));
   }
 
-  // Initialize reward engine (25B tokens over 90 days, 15/85 split)
+  // Initialize reward engine — Round 1: 2.5B tokens (10% of supply) over 90 days
+  // ~0.1% daily sell pressure vs 1.1% with full 25B. Remaining 22.5B saved for round 2.
   rewardEngine = new RewardEngine({
-    totalRewards: 25_000_000_000,
+    totalRewards: 2_500_000_000,
     durationDays: 90
   });
   rooms.rewardEngine = rewardEngine;
-  console.log('[Server] Reward engine initialized — 25B POKERAI over 90 days');
+  console.log('[Server] Reward engine initialized — Round 1: 2.5B POKERAI over 90 days (10% of supply)');
 
-  // Helper: update reward engine when a wallet's total value changes
+  // Helper: update reward engine — ONLY count chips actively in play at tables
+  // Idle wallet balance does NOT earn rewards (prevents deposit-and-farm abuse)
   function updateRewardsForWallet(walletAddress) {
     if (!rewardEngine || !walletAddress || walletAddress.startsWith('sandbox_')) return;
-    const wallet = rooms.store.getWallet(walletAddress);
-    const balance = wallet ? wallet.balance : 0;
     const inPlay = rooms.getChipsInPlay(walletAddress);
-    rewardEngine.updateWalletValue(walletAddress, balance + inPlay, 'usdc');
+    rewardEngine.updateWalletValue(walletAddress, inPlay, 'usdc');
   }
 
   // Set up auto-top-up balance change notifications

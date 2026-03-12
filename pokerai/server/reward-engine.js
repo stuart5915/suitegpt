@@ -1,14 +1,16 @@
 /**
  * PokerAI Reward Engine
  *
- * Tracks POKERAI token earnings for wallets based on their share of platform TVL.
+ * Tracks POKERAI token earnings for wallets based on their share of chips IN PLAY.
  * Uses Synthetix-style per-second accumulator math for fair, continuous distribution.
+ * Only chips actively at tables count — idle wallet balance earns nothing.
  *
+ * Round 1: 2.5B tokens (10% of supply) over 90 days (~0.1%/day sell pressure)
  * Two pools:
- *   - USDC pool:    15% of rewards (3.75B over 3 months) → drips to USDC table players
- *   - POKERAI pool: 85% of rewards (21.25B over 3 months) → drips to POKERAI table players
+ *   - USDC pool:    15% of rewards → drips to USDC table players
+ *   - POKERAI pool: 85% of rewards → drips to POKERAI table players
  *
- * Earnings = (your value / total TVL) * emission rate * time
+ * Earnings = (your in-play chips / total in-play TVL) * emission rate * time
  */
 
 const SECONDS_PER_DAY = 86400;
