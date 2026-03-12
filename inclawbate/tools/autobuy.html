@@ -363,23 +363,23 @@ function updateActiveStats(pos) {
     document.getElementById('progressText').textContent = buysCompleted + ' of ' + totalBuys + ' buys (' + pct + '%)';
 
     // Next buy countdown
-    updateCountdown(nextBuyTime);
+    updateCountdown(nextBuyTime, intervalSec);
 }
 
-function updateCountdown(nextBuyTime) {
+function fmtDate(ts) {
+    return new Date(ts * 1000).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function updateCountdown(nextBuyTime, intervalSec) {
     const el = document.getElementById('statNext');
     if (!nextBuyTime) { el.textContent = '--'; return; }
 
     const now = Math.floor(Date.now() / 1000);
-    const diff = nextBuyTime - now;
-
-    if (diff <= 0) {
-        el.textContent = 'Any moment';
-        el.title = 'Buy is ready - cron executes every 10 min';
-        el.style.color = 'var(--green)';
+    if (nextBuyTime <= now) {
+        // Buy is past due — show when it WILL execute (next cron window, within 10 min)
+        el.innerHTML = '<span style="color:var(--green);font-size:0.85em">Buying soon</span><br><span style="font-size:0.7em;color:var(--text-dim)">Bot runs every 10 min</span>';
     } else {
-        const d = new Date(nextBuyTime * 1000);
-        el.textContent = d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        el.textContent = fmtDate(nextBuyTime);
         el.style.color = '';
     }
 }
