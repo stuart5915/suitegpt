@@ -1475,6 +1475,21 @@
         .mgr-log-detail { color: var(--text-secondary); flex: 1; }
         .mgr-log-empty { color: var(--text-dim); font-family: var(--mono); font-size: 0.75rem; text-align: center; padding: 20px; }
 
+        /* ═══ STANDALONE MANAGER DASHBOARD ═══ */
+        .dash-section { display: none; padding-top: 80px; min-height: 100vh; }
+        .dash-section.show { display: block; }
+        .dash-back { font-family: var(--mono); font-size: 0.78rem; color: var(--accent-bright); cursor: pointer; margin-bottom: 20px; display: inline-block; }
+        .dash-back:hover { text-decoration: underline; }
+        .dash-connect-msg { text-align: center; padding: 80px 20px; font-family: var(--mono); font-size: 0.85rem; color: var(--text-dim); }
+        .dash-connect-btn { background: linear-gradient(135deg, var(--accent), var(--cyan)); color: #fff; border: none; padding: 10px 28px; border-radius: 10px; font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 16px; }
+        .dash-vault-selector { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+        .dash-vault-tab { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 18px; border-radius: 10px; font-family: var(--mono); font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+        .dash-vault-tab:hover, .dash-vault-tab.active { border-color: var(--accent); color: var(--accent-bright); background: var(--accent-dim); }
+        .dash-overview { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .dash-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+        .dash-stat-label { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+        .dash-stat-val { font-family: var(--mono); font-size: 1.1rem; font-weight: 600; color: var(--text); }
+
         /* LP range presets */
         .lp-range-presets { display: flex; gap: 6px; margin-top: 6px; }
         .lp-range-preset { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-family: var(--mono); font-size: 0.62rem; cursor: pointer; transition: all 0.2s; }
@@ -1507,6 +1522,7 @@
                 <li><a href="#deepdive">The Story</a></li>
                 <li><a href="#toolkit">Toolkit</a></li>
                 <li><a href="#marketplace">Vaults</a></li>
+                <li><a href="#" onclick="event.preventDefault(); openManagerDashboard();" style="color:var(--accent-bright);">Dashboard</a></li>
             </ul>
         </div>
     </nav>
@@ -2656,6 +2672,134 @@
             <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-top:10px; text-align:center;" id="mp-c-status"></div>
         </div>
     </div>
+
+    <!-- ═══ MANAGER DASHBOARD (standalone page) ═══ -->
+    <section class="dash-section" id="dashboard-section">
+        <div class="container">
+            <div class="dash-back" onclick="closeManagerDashboard()">&larr; Back to Basis</div>
+            <div class="fade-in" style="margin-bottom:30px;">
+                <div class="section-label">Manager Dashboard</div>
+                <h2 class="section-title">Your Vaults</h2>
+                <p class="section-desc" style="margin:0 auto;">Manage your vault strategies, adjust allocations, configure LP ranges, and track performance.</p>
+            </div>
+
+            <!-- Connect wallet prompt -->
+            <div class="dash-connect-msg" id="dash-connect-msg">
+                Connect your wallet to see your vaults.<br>
+                <button class="dash-connect-btn" onclick="dashConnectWallet()">Connect Wallet</button>
+            </div>
+
+            <!-- Dashboard content (hidden until wallet connected) -->
+            <div id="dash-content" style="display:none;">
+                <!-- Vault selector tabs -->
+                <div class="dash-vault-selector" id="dash-vault-tabs"></div>
+
+                <!-- Overview stats for selected vault -->
+                <div class="dash-overview" id="dash-overview">
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">TVL</div>
+                        <div class="dash-stat-val" id="dash-tvl">$0</div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">Share Price</div>
+                        <div class="dash-stat-val" id="dash-share-price">$1.00</div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">Return</div>
+                        <div class="dash-stat-val" id="dash-return">0%</div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">Depositors</div>
+                        <div class="dash-stat-val" id="dash-depositors">0</div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">Fees Earned</div>
+                        <div class="dash-stat-val" id="dash-fees">$0</div>
+                    </div>
+                    <div class="dash-stat-card">
+                        <div class="dash-stat-label">Rebalances</div>
+                        <div class="dash-stat-val" id="dash-rebals">0</div>
+                    </div>
+                </div>
+
+                <!-- Current Allocation -->
+                <div style="margin-bottom:16px;">
+                    <div class="mp-card-stat-label" style="margin-bottom:6px;">Current Allocation</div>
+                    <div class="mp-card-alloc" id="dash-alloc-bar" style="height:10px;"></div>
+                    <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:0.65rem; color:var(--text-dim); margin-top:4px;">
+                        <span id="dash-alloc-lp">LP 0%</span>
+                        <span id="dash-alloc-long">Long 0%</span>
+                        <span id="dash-alloc-short">Short 0%</span>
+                        <span id="dash-alloc-hold">Hold 0%</span>
+                    </div>
+                </div>
+
+                <!-- Reuse the same mgr-panel controls but with dash- IDs -->
+                <!-- Adjust Allocation -->
+                <div class="mgr-panel">
+                    <div class="mgr-panel-label">Adjust Allocation</div>
+                    <div class="mgr-row">
+                        <div class="mgr-field"><label>LP %</label><input type="number" id="dash-lp" value="0" min="0" max="100"></div>
+                        <div class="mgr-field"><label>Long %</label><input type="number" id="dash-long" value="0" min="0" max="100"></div>
+                        <div class="mgr-field"><label>Short %</label><input type="number" id="dash-short" value="0" min="0" max="100"></div>
+                        <div class="mgr-field"><label>Hold %</label><input type="number" id="dash-hold" value="0" min="0" max="100"></div>
+                    </div>
+                    <div style="font-family:var(--mono); font-size:0.62rem; margin-top:6px;" id="dash-alloc-total">Total: 0%</div>
+                    <div class="mgr-row" style="margin-top:10px;">
+                        <button class="mgr-btn" onclick="dashRebalance()">Rebalance On-Chain</button>
+                        <button class="mgr-btn mgr-btn-secondary" onclick="dashSaveConfig()">Save Config (Keeper)</button>
+                    </div>
+                    <div class="mgr-status" id="dash-alloc-status"></div>
+                </div>
+
+                <!-- LP Range -->
+                <div class="mgr-panel">
+                    <div class="mgr-panel-label">LP Range Configuration</div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">How concentrated the LP position is. Tighter = more fees, more IL risk. Wider = fewer fees, stays in range longer.</div>
+                    <div class="mgr-row">
+                        <div class="mgr-field" style="flex:2;"><label>Range Width (ticks)</label><input type="number" id="dash-lp-range" value="400" min="100" max="4000" step="100"></div>
+                        <div class="mgr-field"><label>Slippage (bps)</label><input type="number" id="dash-slippage" value="50" min="10" max="500" step="10"></div>
+                        <button class="mgr-btn" onclick="dashSetLPParams()" style="align-self:end;">Update LP Params</button>
+                    </div>
+                    <div class="lp-range-presets" style="margin-top:8px;">
+                        <button type="button" class="lp-range-preset" onclick="dashSetRange(200, this)">Tight &#177;1%</button>
+                        <button type="button" class="lp-range-preset" onclick="dashSetRange(400, this)">Standard &#177;2%</button>
+                        <button type="button" class="lp-range-preset" onclick="dashSetRange(800, this)">Wide &#177;4%</button>
+                        <button type="button" class="lp-range-preset" onclick="dashSetRange(1600, this)">Ultra Wide &#177;8%</button>
+                    </div>
+                    <div class="mgr-status" id="dash-lp-status"></div>
+                </div>
+
+                <!-- Vault Settings -->
+                <div class="mgr-panel">
+                    <div class="mgr-panel-label">Vault Settings</div>
+                    <div class="mgr-row">
+                        <div class="mgr-field" style="flex:2;"><label>Deposit Cap (USDC)</label><input type="number" id="dash-cap" value="50000" min="100"></div>
+                        <button class="mgr-btn" onclick="dashSetCap()">Update Cap</button>
+                    </div>
+                    <div class="mgr-row" style="margin-top:12px;">
+                        <button class="mgr-btn" onclick="dashCollectFees()">Collect Performance Fees</button>
+                        <button class="mgr-btn mgr-btn-danger" onclick="dashEmergencyExit()">Emergency Exit All</button>
+                    </div>
+                    <div class="mgr-status" id="dash-settings-status"></div>
+                </div>
+
+                <!-- Config Change Log -->
+                <div class="mgr-panel">
+                    <div class="mgr-panel-label">Config Change Log</div>
+                    <div class="mgr-log" id="dash-log">
+                        <div class="mgr-log-empty">No changes recorded yet</div>
+                    </div>
+                </div>
+
+                <!-- No vaults message -->
+                <div id="dash-no-vaults" style="display:none; text-align:center; padding:40px; font-family:var(--mono); font-size:0.85rem; color:var(--text-dim);">
+                    You don't manage any vaults yet.<br>
+                    <button class="mp-create-btn" style="margin-top:16px;" onclick="closeManagerDashboard(); setTimeout(function(){ openCreateVaultModal(); }, 300);">Create Your First Vault</button>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- ═══ POWERED BY ═══ -->
     <section class="powered-section">
@@ -6155,6 +6299,333 @@
             } catch(e) {
                 status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
             }
+        };
+
+        // ═══════════════════════════════════════════
+        //  STANDALONE MANAGER DASHBOARD
+        // ═══════════════════════════════════════════
+
+        var dashVaults = [];
+        var dashSelectedVault = null;
+        var dashSigner = null;
+
+        // Sections to hide/show when dashboard is open
+        var mainSections = null;
+        function getMainSections() {
+            if (!mainSections) mainSections = document.querySelectorAll('body > nav, body > .ambient-bg, body > section:not(.dash-section), body > footer, #mp-create-modal');
+            return mainSections;
+        }
+
+        window.openManagerDashboard = async function() {
+            // Hide all other sections, show dashboard
+            getMainSections().forEach(function(el) { el.style.display = 'none'; });
+            document.getElementById('dashboard-section').classList.add('show');
+            window.scrollTo(0, 0);
+
+            // Check wallet
+            if (!window.ethereum) {
+                document.getElementById('dash-connect-msg').style.display = 'block';
+                document.getElementById('dash-content').style.display = 'none';
+                return;
+            }
+
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                dashSigner = await provider.getSigner();
+                await loadDashVaults();
+            } catch(e) {
+                document.getElementById('dash-connect-msg').style.display = 'block';
+                document.getElementById('dash-content').style.display = 'none';
+            }
+        };
+
+        window.closeManagerDashboard = function() {
+            document.getElementById('dashboard-section').classList.remove('show');
+            getMainSections().forEach(function(el) { el.style.display = ''; });
+        };
+
+        window.dashConnectWallet = async function() {
+            if (!window.ethereum) { alert('No wallet detected. Install MetaMask.'); return; }
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                dashSigner = await provider.getSigner();
+                await loadDashVaults();
+            } catch(e) {
+                alert('Wallet connection failed: ' + e.message);
+            }
+        };
+
+        async function loadDashVaults() {
+            document.getElementById('dash-connect-msg').style.display = 'none';
+            document.getElementById('dash-content').style.display = 'block';
+
+            // Fetch vaults managed by this wallet from API
+            try {
+                var resp = await fetch(MARKETPLACE_API + '?manager=' + dashSigner.address);
+                var data = await resp.json();
+                dashVaults = data.vaults || [];
+            } catch(e) {
+                dashVaults = [];
+            }
+
+            if (dashVaults.length === 0) {
+                document.getElementById('dash-no-vaults').style.display = 'block';
+                document.getElementById('dash-overview').style.display = 'none';
+                document.getElementById('dash-vault-tabs').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('dash-no-vaults').style.display = 'none';
+            document.getElementById('dash-overview').style.display = '';
+
+            // Build vault selector tabs
+            var tabsHtml = '';
+            dashVaults.forEach(function(v, i) {
+                tabsHtml += '<button class="dash-vault-tab' + (i === 0 ? ' active' : '') + '" onclick="dashSelectVault(' + i + ', this)">' + escapeHtml(v.name) + '</button>';
+            });
+            document.getElementById('dash-vault-tabs').innerHTML = tabsHtml;
+
+            // Select first vault
+            dashSelectVault(0);
+        }
+
+        window.dashSelectVault = async function(idx, btn) {
+            dashSelectedVault = dashVaults[idx];
+            if (!dashSelectedVault) return;
+
+            // Highlight tab
+            if (btn) {
+                document.querySelectorAll('.dash-vault-tab').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+            }
+
+            var v = dashSelectedVault;
+
+            // Populate overview
+            document.getElementById('dash-tvl').textContent = formatUSD(v.tvl_usdc || 0);
+            document.getElementById('dash-share-price').textContent = '$' + (v.share_price || 1).toFixed(4);
+            var retPct = v.total_return_pct || 0;
+            var retColor = retPct >= 0 ? 'var(--green)' : '#ff6450';
+            document.getElementById('dash-return').innerHTML = '<span style="color:' + retColor + '">' + (retPct >= 0 ? '+' : '') + retPct.toFixed(1) + '%</span>';
+            document.getElementById('dash-rebals').textContent = v.rebalance_count || 0;
+
+            // Fees from chain
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var vault = new ethers.Contract(v.vault_address, VAULT_ABI, provider);
+                var feesRaw = await vault.totalFeesCollected();
+                document.getElementById('dash-fees').textContent = '$' + parseFloat(ethers.formatUnits(feesRaw, 6)).toFixed(2);
+            } catch(e) {
+                document.getElementById('dash-fees').textContent = '$0';
+            }
+
+            // Depositors count (total supply > 0 means at least the manager)
+            document.getElementById('dash-depositors').textContent = (v.tvl_usdc || 0) > 0 ? '1+' : '0';
+
+            // Allocation bar
+            var lp = (v.alloc_lp_bps || 0) / 100;
+            var lo = (v.alloc_long_bps || 0) / 100;
+            var sh = (v.alloc_short_bps || 0) / 100;
+            var ho = (v.alloc_hold_bps || 0) / 100;
+            document.getElementById('dash-alloc-bar').innerHTML =
+                (lp > 0 ? '<div class="mp-card-alloc-seg" style="width:' + lp + '%; background:var(--accent);"></div>' : '') +
+                (lo > 0 ? '<div class="mp-card-alloc-seg" style="width:' + lo + '%; background:var(--green);"></div>' : '') +
+                (sh > 0 ? '<div class="mp-card-alloc-seg" style="width:' + sh + '%; background:#ff6450;"></div>' : '') +
+                (ho > 0 ? '<div class="mp-card-alloc-seg" style="width:' + ho + '%; background:var(--text-dim);"></div>' : '');
+            document.getElementById('dash-alloc-lp').textContent = 'LP ' + lp + '%';
+            document.getElementById('dash-alloc-long').textContent = 'Long ' + lo + '%';
+            document.getElementById('dash-alloc-short').textContent = 'Short ' + sh + '%';
+            document.getElementById('dash-alloc-hold').textContent = 'Hold ' + ho + '%';
+
+            // Populate form fields
+            document.getElementById('dash-lp').value = lp;
+            document.getElementById('dash-long').value = lo;
+            document.getElementById('dash-short').value = sh;
+            document.getElementById('dash-hold').value = ho;
+            document.getElementById('dash-alloc-total').textContent = 'Total: ' + (lp + lo + sh + ho) + '%';
+            document.getElementById('dash-alloc-total').style.color = (lp + lo + sh + ho) === 100 ? 'var(--green)' : '#ff6450';
+
+            // LP params from chain
+            try {
+                var provider2 = new ethers.BrowserProvider(window.ethereum);
+                var vault2 = new ethers.Contract(v.vault_address, VAULT_ABI, provider2);
+                var lpp = await vault2.lpParams();
+                document.getElementById('dash-lp-range').value = Number(lpp.rangeWidth);
+                document.getElementById('dash-slippage').value = Number(lpp.slippageBps);
+            } catch(e) {}
+
+            try {
+                var vault3 = new ethers.Contract(v.vault_address, VAULT_ABI, new ethers.BrowserProvider(window.ethereum));
+                var cap = await vault3.depositCap();
+                document.getElementById('dash-cap').value = parseInt(ethers.formatUnits(cap, 6));
+            } catch(e) {}
+
+            // Load change log
+            dashLoadLog(v.vault_address);
+        };
+
+        // Alloc total updater for dashboard
+        ['dash-lp','dash-long','dash-short','dash-hold'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', function() {
+                var lp = parseInt(document.getElementById('dash-lp').value) || 0;
+                var lo = parseInt(document.getElementById('dash-long').value) || 0;
+                var sh = parseInt(document.getElementById('dash-short').value) || 0;
+                var ho = parseInt(document.getElementById('dash-hold').value) || 0;
+                var total = lp + lo + sh + ho;
+                document.getElementById('dash-alloc-total').textContent = 'Total: ' + total + '%';
+                document.getElementById('dash-alloc-total').style.color = total === 100 ? 'var(--green)' : '#ff6450';
+            });
+        });
+
+        window.dashSetRange = function(ticks, btn) {
+            document.getElementById('dash-lp-range').value = ticks;
+            document.querySelectorAll('#dashboard-section .lp-range-preset').forEach(function(b) { b.classList.remove('active'); });
+            if (btn) btn.classList.add('active');
+        };
+
+        async function dashLoadLog(vaultAddr) {
+            var logEl = document.getElementById('dash-log');
+            try {
+                var resp = await fetch('/api/basis/vault-log?vault_address=' + vaultAddr);
+                if (!resp.ok) throw new Error('');
+                var data = await resp.json();
+                var logs = data.logs || [];
+                if (logs.length === 0) { logEl.innerHTML = '<div class="mgr-log-empty">No changes recorded yet</div>'; return; }
+
+                var html = '';
+                logs.forEach(function(log) {
+                    var dt = new Date(log.created_at);
+                    var timeStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    var detail = '';
+                    if (log.change_type === 'allocation') {
+                        var nv = log.new_value || {};
+                        detail = 'LP ' + (nv.lp||0) + '% / Long ' + (nv.long||0) + '% / Short ' + (nv.short||0) + '% / Hold ' + (nv.hold||0) + '%';
+                    } else if (log.change_type === 'lp_params') {
+                        var nv2 = log.new_value || {};
+                        detail = 'Range: ' + (nv2.rangeWidth||'?') + ' ticks, Slippage: ' + (nv2.slippageBps||'?') + ' bps';
+                    } else if (log.change_type === 'deposit_cap') {
+                        detail = 'New cap: $' + ((log.new_value||{}).cap||'?');
+                    } else {
+                        detail = JSON.stringify(log.new_value||{}).slice(0,80);
+                    }
+                    if (log.note) detail += ' — ' + escapeHtml(log.note);
+                    html += '<div class="mgr-log-entry"><div class="mgr-log-time">' + timeStr + '</div><div class="mgr-log-type">' + escapeHtml(log.change_type) + '</div><div class="mgr-log-detail">' + detail + '</div></div>';
+                });
+                logEl.innerHTML = html;
+            } catch(e) { logEl.innerHTML = '<div class="mgr-log-empty">Could not load log</div>'; }
+        }
+
+        // ── Dashboard actions (mirror the mgr-* functions but use dash- IDs) ──
+
+        function dashGetAlloc() {
+            var lp = parseInt(document.getElementById('dash-lp').value) || 0;
+            var lo = parseInt(document.getElementById('dash-long').value) || 0;
+            var sh = parseInt(document.getElementById('dash-short').value) || 0;
+            var ho = parseInt(document.getElementById('dash-hold').value) || 0;
+            return { lp: lp, long: lo, short: sh, hold: ho, sum: lp + lo + sh + ho };
+        }
+
+        window.dashRebalance = async function() {
+            if (!dashSelectedVault) return;
+            var a = dashGetAlloc(); var status = document.getElementById('dash-alloc-status');
+            if (a.sum !== 100) { status.textContent = 'Must sum to 100%'; status.style.color = '#ff6450'; return; }
+            try {
+                status.textContent = 'Sending rebalance...'; status.style.color = 'var(--text-dim)';
+                var vault = new ethers.Contract(dashSelectedVault.vault_address, VAULT_ABI, dashSigner);
+                var tx = await vault.rebalance(a.lp * 100, a.long * 100, a.short * 100, a.hold * 100, 0);
+                status.textContent = 'Confirming...';
+                await tx.wait();
+                await fetch(MARKETPLACE_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    vault_address: dashSelectedVault.vault_address, brain_config: { lp: a.lp, long: a.long, short: a.short, hold: a.hold, lp_range: parseInt(document.getElementById('dash-lp-range').value) || 400 },
+                    alloc_lp_bps: a.lp*100, alloc_long_bps: a.long*100, alloc_short_bps: a.short*100, alloc_hold_bps: a.hold*100,
+                    manager_address: dashSigner.address, _log_change: true, _change_type: 'allocation', _old_value: dashSelectedVault.brain_config || {}, _note: 'On-chain rebalance'
+                })});
+                status.textContent = 'Rebalanced! ' + tx.hash.slice(0,14) + '...'; status.style.color = 'var(--green)';
+                dashLoadLog(dashSelectedVault.vault_address); loadDashVaults();
+            } catch(e) { status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450'; }
+        };
+
+        window.dashSaveConfig = async function() {
+            if (!dashSelectedVault) return;
+            var a = dashGetAlloc(); var status = document.getElementById('dash-alloc-status');
+            if (a.sum !== 100) { status.textContent = 'Must sum to 100%'; status.style.color = '#ff6450'; return; }
+            try {
+                status.textContent = 'Saving...'; status.style.color = 'var(--text-dim)';
+                await fetch(MARKETPLACE_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    vault_address: dashSelectedVault.vault_address, brain_config: { lp: a.lp, long: a.long, short: a.short, hold: a.hold, lp_range: parseInt(document.getElementById('dash-lp-range').value) || 400 },
+                    manager_address: dashSigner.address, _log_change: true, _change_type: 'brain_config', _old_value: dashSelectedVault.brain_config || {}, _note: 'Config saved for keeper'
+                })});
+                status.textContent = 'Saved! Keeper executes next run.'; status.style.color = 'var(--green)';
+                dashLoadLog(dashSelectedVault.vault_address);
+            } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = '#ff6450'; }
+        };
+
+        window.dashSetLPParams = async function() {
+            if (!dashSelectedVault) return;
+            var range = parseInt(document.getElementById('dash-lp-range').value) || 400;
+            var slip = parseInt(document.getElementById('dash-slippage').value) || 50;
+            var status = document.getElementById('dash-lp-status');
+            if (range < 100 || range > 4000) { status.textContent = 'Range: 100-4000'; status.style.color = '#ff6450'; return; }
+            try {
+                status.textContent = 'Sending tx...'; status.style.color = 'var(--text-dim)';
+                var vault = new ethers.Contract(dashSelectedVault.vault_address, VAULT_ABI, dashSigner);
+                var tx = await vault.setLPParams(range, slip); await tx.wait();
+                await fetch(MARKETPLACE_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    vault_address: dashSelectedVault.vault_address, manager_address: dashSigner.address,
+                    _log_change: true, _change_type: 'lp_params', _old_value: {}, _note: 'Range: ' + range + ' ticks'
+                })});
+                status.textContent = 'Updated! \u00B1' + (range/200).toFixed(0) + '%'; status.style.color = 'var(--green)';
+                dashLoadLog(dashSelectedVault.vault_address);
+            } catch(e) { status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450'; }
+        };
+
+        window.dashSetCap = async function() {
+            if (!dashSelectedVault) return;
+            var cap = parseInt(document.getElementById('dash-cap').value) || 0;
+            var status = document.getElementById('dash-settings-status');
+            if (cap < 100) { status.textContent = 'Min $100'; status.style.color = '#ff6450'; return; }
+            try {
+                status.textContent = 'Sending tx...'; status.style.color = 'var(--text-dim)';
+                var vault = new ethers.Contract(dashSelectedVault.vault_address, VAULT_ABI, dashSigner);
+                var tx = await vault.setDepositCap(ethers.parseUnits(cap.toString(), 6)); await tx.wait();
+                await fetch(MARKETPLACE_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    vault_address: dashSelectedVault.vault_address, deposit_cap_usdc: cap, manager_address: dashSigner.address,
+                    _log_change: true, _change_type: 'deposit_cap', _old_value: { cap: dashSelectedVault.deposit_cap_usdc }, _note: 'Cap updated'
+                })});
+                status.textContent = 'Cap: $' + cap.toLocaleString(); status.style.color = 'var(--green)';
+                dashLoadLog(dashSelectedVault.vault_address);
+            } catch(e) { status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450'; }
+        };
+
+        window.dashCollectFees = async function() {
+            if (!dashSelectedVault) return;
+            var status = document.getElementById('dash-settings-status');
+            try {
+                status.textContent = 'Collecting...'; status.style.color = 'var(--text-dim)';
+                var vault = new ethers.Contract(dashSelectedVault.vault_address, VAULT_ABI, dashSigner);
+                var tx = await vault.collectPerformanceFee(); await tx.wait();
+                status.textContent = 'Fees collected!'; status.style.color = 'var(--green)';
+                dashSelectVault(dashVaults.indexOf(dashSelectedVault));
+            } catch(e) { status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450'; }
+        };
+
+        window.dashEmergencyExit = async function() {
+            if (!dashSelectedVault) return;
+            if (!confirm('Emergency exit ALL positions to USDC?')) return;
+            var status = document.getElementById('dash-settings-status');
+            try {
+                status.textContent = 'Exiting...'; status.style.color = '#ff6450';
+                var vault = new ethers.Contract(dashSelectedVault.vault_address, VAULT_ABI, dashSigner);
+                var tx = await vault.emergencyExitAll(); await tx.wait();
+                await fetch(MARKETPLACE_API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    vault_address: dashSelectedVault.vault_address, alloc_lp_bps:0, alloc_long_bps:0, alloc_short_bps:0, alloc_hold_bps:10000,
+                    brain_config: { lp:0, long:0, short:0, hold:100 }, manager_address: dashSigner.address,
+                    _log_change: true, _change_type: 'allocation', _old_value: dashSelectedVault.brain_config || {}, _note: 'EMERGENCY EXIT'
+                })});
+                status.textContent = 'All positions exited.'; status.style.color = 'var(--green)';
+                dashLoadLog(dashSelectedVault.vault_address); loadDashVaults();
+            } catch(e) { status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450'; }
         };
 
         // Load on page init

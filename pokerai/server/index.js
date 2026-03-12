@@ -138,7 +138,7 @@ wss.on('connection', (ws) => {
 
             // Get or create wallet (starts at 0 chips — must deposit USDC)
             const wallet = rooms.getWalletBalance(addr);
-            ws.send(JSON.stringify({ type: 'authenticated', data: { address: addr, balance: wallet.balance } }));
+            ws.send(JSON.stringify({ type: 'authenticated', data: { address: addr, balance: wallet.balance, isPlatformWallet: PLATFORM_WALLETS.has(addr) } }));
 
             // Send state with wallet context
             const s = rooms.getStateForClient(client.sessionId, addr, client.activeRoom);

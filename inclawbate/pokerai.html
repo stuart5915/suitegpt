@@ -4231,7 +4231,7 @@ let pingInterval = null;
 // ============================================================
 // $POKERAI AIRDROP APY
 // ============================================================
-const ADMIN_WALLET = '0x91b5c0d07859cfeafeb67d9694121cd741f049bd';
+let isPlatformWallet = false;
 const AIRDROP_TOKENS = 15_000_000_000;  // 15B tokens
 const AIRDROP_DAYS = 90;
 const TOKEN_SUPPLY = 100_000_000_000;   // 100B total supply
@@ -5905,6 +5905,7 @@ async function handleChallenge(data) {
 function handleAuthenticated(data) {
   walletAuthenticated = true;
   walletBalance = data.balance || 0;
+  isPlatformWallet = !!data.isPlatformWallet;
   updateWalletUI();
   showToast('Wallet verified!', 'gold');
   refreshMyAgentsView();
@@ -6309,8 +6310,7 @@ function refreshMyAgentsView() {
   // Show admin credit bar only for platform wallet
   const adminBar = document.getElementById('adminCreditBar');
   if (adminBar) {
-    const addr = wallet ? wallet.address.toLowerCase() : '';
-    adminBar.style.display = (addr === ADMIN_WALLET && !isSandbox) ? 'block' : 'none';
+    adminBar.style.display = (isPlatformWallet && !isSandbox) ? 'block' : 'none';
   }
 }
 
