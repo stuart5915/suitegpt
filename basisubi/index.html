@@ -2201,12 +2201,12 @@
                             <input type="number" id="bt-drift" value="10" step="1" min="1" max="50">
                         </div>
                         <div class="bt-param">
-                            <label>LP APY Assumption %</label>
-                            <input type="number" id="bt-lp-apy" value="15" step="1" min="0" max="60">
+                            <label>LP Net APY % (after IL)</label>
+                            <input type="number" id="bt-lp-apy" value="6" step="1" min="0" max="30">
                         </div>
                         <div class="bt-param">
-                            <label>Borrow Rate %</label>
-                            <input type="number" id="bt-borrow-rate" value="3.5" step="0.5" min="0" max="20">
+                            <label>USDC Borrow Rate %</label>
+                            <input type="number" id="bt-borrow-rate" value="5.5" step="0.5" min="0" max="20">
                         </div>
                     </div>
                 </div>
@@ -4612,18 +4612,70 @@
             return { regime:'RANGING', signals:{price,sma7,sma30,vol,mom} };
         }
 
-        function btDailyReturn(alloc, pPrev, pNow, config) {
-            const ethRet = (pNow-pPrev)/pPrev;
-            const dailyLP = (config.lpApy/100)/365;
-            const dailyBorrow = (config.borrowRate/100)/365;
-            const dailySupply = 0.03/365;
-            const ilFactor = -(ethRet**2)/8;
-            const lpRet = dailyLP + ethRet*0.5 + ilFactor;
-            const volDrag = (ethRet**2)*0.5;
-            const longRet = ethRet*1.5 - dailyBorrow*0.5 - volDrag;
-            const shortRet = -ethRet*0.65 + dailySupply*0.5 - dailyBorrow*0.65 - volDrag;
-            const holdRet = dailySupply;
-            return (alloc.lp/100)*Math.max(lpRet,-0.5) + (alloc.long/100)*Math.max(longRet,-0.5) + (alloc.short/100)*Math.max(shortRet,-0.5) + (alloc.hold/100)*holdRet;
+        // ── Realistic DeFi return model ──
+        // Based on actual Aave V3 / Aerodrome rates on Base mainnet
+        //
+        // Aave rates (conservative averages):
+        //   ETH supply: 1.5%   USDC supply: 3.5%
+        //   USDC borrow: 5.5%  ETH borrow: 2.5%
+        //   Liquidation penalty: 5%
+        //
+        // Leverage (safe, not max LTV):
+        //   Long: 1.25x (supply ETH, borrow USDC at ~60% LTV, buy more ETH)
+        //   Short: 0.50x (supply USDC, borrow ETH at ~50% LTV, sell ETH)
+        //
+        // Concentrated LP:
+        //   Net APY after IL: 5-8% (config.lpApy, NOT gross fees)
+        //   Out-of-range: earn 0 fees, stuck in one asset
+        //   Concentration amplifies IL ~5-10x vs full range
+        //
+        // Swap costs: 0.4% per swap (slippage + fee on Aerodrome)
+        // Rebalance: 4-6 swaps = ~2% per rebalance
+
+        function btDailyReturn(alloc, pPrev, pNow, config, lpCumDrift, lpHalfRange) {
+            const ethRet = (pNow - pPrev) / pPrev;
+
+            // ── Concentrated LP ──
+            // Track if position is still in range
+            const inRange = Math.abs(lpCumDrift + ethRet) < lpHalfRange;
+            // Net LP APY (fees minus expected IL) — only earned when in range
+            const dailyNetLP = inRange ? (config.lpApy / 100) / 365 : 0;
+            // 50% ETH exposure (LP is half ETH, half USDC)
+            // Concentrated IL: amplified by ~1/(2*halfRange) vs full range
+            // Full range IL ≈ -ethRet²/8, concentrated multiplier capped at 10x
+            const concMultiplier = Math.min(1 / (2 * lpHalfRange), 10);
+            const ilConc = -(ethRet ** 2) * concMultiplier / 8;
+            const lpRet = dailyNetLP + ethRet * 0.5 + ilConc;
+
+            // ── Leveraged Long (1.25x via Aave) ──
+            // Supply ETH (earn 1.5%), borrow USDC at ~60% (pay 5.5%), buy more ETH
+            const longLeverage = 1.25;
+            const borrowRatio = longLeverage - 1; // 0.25 of position is borrowed
+            const dailyETHSupply = 0.015 / 365;
+            const dailyUSDCBorrow = (config.borrowRate / 100) / 365;
+            // Vol drag for leveraged position: -(L²-L)/2 * ethRet²
+            const longVolDrag = -((longLeverage ** 2 - longLeverage) / 2) * (ethRet ** 2);
+            let longRet = ethRet * longLeverage + dailyETHSupply - dailyUSDCBorrow * borrowRatio + longVolDrag;
+            // Liquidation check: if position drops >20% from entry, 5% penalty
+            longRet = Math.max(longRet, -0.20);
+
+            // ── Leveraged Short (0.50x via Aave) ──
+            // Supply USDC (earn 3.5%), borrow ETH at ~50% LTV (pay 2.5%), sell ETH
+            const shortExposure = 0.50;
+            const dailyUSDCSupply = 0.035 / 365;
+            const dailyETHBorrow = 0.025 / 365;
+            const shortVolDrag = -((shortExposure ** 2 + shortExposure) / 2) * (ethRet ** 2);
+            let shortRet = -ethRet * shortExposure + dailyUSDCSupply - dailyETHBorrow * shortExposure + shortVolDrag;
+            // Liquidation check: if ETH pumps >40%, short gets liquidated
+            shortRet = Math.max(shortRet, -0.20);
+
+            // ── Hold (USDC on Aave, earn supply rate) ──
+            const holdRet = dailyUSDCSupply;
+
+            return (alloc.lp / 100) * lpRet +
+                   (alloc.long / 100) * longRet +
+                   (alloc.short / 100) * shortRet +
+                   (alloc.hold / 100) * holdRet;
         }
 
         // ── Read config from UI ──
@@ -4659,15 +4711,15 @@
 
         // ── Presets ──
         const PRESETS = {
-            default: { volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+            default: { volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            conservative: { volThresh:0.60, momUp:0.008, momDown:-0.008, drift:15, lpApy:15, borrowRate:3.5,
+            conservative: { volThresh:0.60, momUp:0.008, momDown:-0.008, drift:15, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:30,long:35,short:0,hold:35}, RANGING:{lp:40,long:10,short:5,hold:45}, HIGH_VOL:{lp:10,long:5,short:5,hold:80}, STRONG_DOWN:{lp:5,long:0,short:30,hold:65} }},
-            aggressive: { volThresh:1.0, momUp:0.003, momDown:-0.003, drift:8, lpApy:15, borrowRate:3.5,
+            aggressive: { volThresh:1.0, momUp:0.003, momDown:-0.003, drift:8, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:20,long:75,short:0,hold:5}, RANGING:{lp:50,long:30,short:5,hold:15}, HIGH_VOL:{lp:30,long:20,short:20,hold:30}, STRONG_DOWN:{lp:10,long:5,short:70,hold:15} }},
-            lpHeavy: { volThresh:0.80, momUp:0.005, momDown:-0.005, drift:12, lpApy:15, borrowRate:3.5,
+            lpHeavy: { volThresh:0.80, momUp:0.005, momDown:-0.005, drift:12, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:60,long:25,short:0,hold:15}, RANGING:{lp:70,long:10,short:5,hold:15}, HIGH_VOL:{lp:40,long:5,short:5,hold:50}, STRONG_DOWN:{lp:30,long:0,short:30,hold:40} }},
-            trendFollow: { volThresh:0.70, momUp:0.002, momDown:-0.002, drift:8, lpApy:15, borrowRate:3.5,
+            trendFollow: { volThresh:0.70, momUp:0.002, momDown:-0.002, drift:8, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:15,long:80,short:0,hold:5}, RANGING:{lp:40,long:25,short:10,hold:25}, HIGH_VOL:{lp:10,long:10,short:10,hold:70}, STRONG_DOWN:{lp:5,long:0,short:80,hold:15} }}
         };
 
@@ -4707,6 +4759,9 @@
         let allRuns = [];
         let runCounter = 0;
 
+        // LP range widths per regime (as decimal half-range)
+        const LP_RANGES = { STRONG_UP: 0.02, RANGING: 0.03, HIGH_VOL: 0.08, STRONG_DOWN: 0.04 };
+
         // ── Core simulation (accepts config directly) ──
         function simulate(priceData, config) {
             let vaultVal = 10000, ethHoldVal = 10000;
@@ -4718,12 +4773,21 @@
             const regimeCounts = {};
             const dailyLog = [];
 
+            // Track LP position: cumulative price drift since last rebalance
+            let lpCumDrift = 0;
+            let lpHalfRange = 0.05; // default ±5%
+            let currentRegime = 'RANGING';
+
             for (let i=30; i<priceData.length; i++) {
                 const history = priceData.slice(0,i+1).map(d=>d.price);
                 const today = priceData[i], yesterday = priceData[i-1];
+                const ethRet = (today.price - yesterday.price) / yesterday.price;
                 const {regime} = btDetectRegime(history, config);
                 const target = config.regimes[regime];
                 regimeCounts[regime] = (regimeCounts[regime]||0)+1;
+
+                // Update LP cumulative drift
+                lpCumDrift += ethRet;
 
                 if (i - lastRebalDay >= 0.167) {
                     const drift = Math.max(
@@ -4733,14 +4797,19 @@
                         Math.abs(currentAlloc.hold-target.hold)
                     );
                     if (drift >= config.drift) {
-                        const cost = vaultVal * (5/10000) * 4;
+                        // Realistic rebalance cost: 0.4% per swap × 5 swaps avg = 2%
+                        const cost = vaultVal * 0.02;
                         vaultVal -= cost; totalCost += cost;
                         currentAlloc = {...target};
                         rebalCount++; lastRebalDay = i;
+                        // Reset LP drift (new LP position minted at current price)
+                        lpCumDrift = 0;
+                        currentRegime = regime;
+                        lpHalfRange = LP_RANGES[regime] || 0.05;
                     }
                 }
 
-                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config);
+                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config, lpCumDrift, lpHalfRange);
                 vaultVal *= (1+ret);
                 ethHoldVal = ethUnits * today.price;
                 if (vaultVal > peak) peak = vaultVal;
@@ -4801,31 +4870,31 @@
 
         // ── Extra custom configs beyond the 5 presets ──
         const EXTRA_CONFIGS = [
-            { label: 'Balanced', volThresh:0.75, momUp:0.004, momDown:-0.004, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'Balanced', volThresh:0.75, momUp:0.004, momDown:-0.004, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:30,long:45,short:0,hold:25}, RANGING:{lp:45,long:20,short:10,hold:25}, HIGH_VOL:{lp:15,long:10,short:10,hold:65}, STRONG_DOWN:{lp:10,long:5,short:45,hold:40} }},
-            { label: 'Low Vol Thresh (0.5)', volThresh:0.50, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'Low Vol Thresh (0.5)', volThresh:0.50, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'High Vol Thresh (1.2)', volThresh:1.20, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'High Vol Thresh (1.2)', volThresh:1.20, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'Tight Momentum (0.002)', volThresh:0.80, momUp:0.002, momDown:-0.002, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'Tight Momentum (0.002)', volThresh:0.80, momUp:0.002, momDown:-0.002, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'Wide Momentum (0.01)', volThresh:0.80, momUp:0.01, momDown:-0.01, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'Wide Momentum (0.01)', volThresh:0.80, momUp:0.01, momDown:-0.01, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'Low Drift (5%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:5, lpApy:15, borrowRate:3.5,
+            { label: 'Low Drift (5%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:5, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'High Drift (20%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:20, lpApy:15, borrowRate:3.5,
+            { label: 'High Drift (20%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:20, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'No Shorts Ever', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'No Shorts Ever', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:30,long:55,short:0,hold:15}, RANGING:{lp:55,long:25,short:0,hold:20}, HIGH_VOL:{lp:30,long:10,short:0,hold:60}, STRONG_DOWN:{lp:20,long:0,short:0,hold:80} }},
-            { label: 'Max LP Yield', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+            { label: 'Max LP Yield', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:70,long:20,short:0,hold:10}, RANGING:{lp:80,long:5,short:5,hold:10}, HIGH_VOL:{lp:30,long:5,short:5,hold:60}, STRONG_DOWN:{lp:20,long:0,short:40,hold:40} }},
-            { label: 'Pure Trend (no LP)', volThresh:0.70, momUp:0.003, momDown:-0.003, drift:8, lpApy:15, borrowRate:3.5,
+            { label: 'Pure Trend (no LP)', volThresh:0.70, momUp:0.003, momDown:-0.003, drift:8, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:0,long:85,short:0,hold:15}, RANGING:{lp:0,long:30,short:10,hold:60}, HIGH_VOL:{lp:0,long:10,short:10,hold:80}, STRONG_DOWN:{lp:0,long:0,short:75,hold:25} }},
-            { label: 'Defensive', volThresh:0.50, momUp:0.008, momDown:-0.006, drift:15, lpApy:15, borrowRate:3.5,
+            { label: 'Defensive', volThresh:0.50, momUp:0.008, momDown:-0.006, drift:15, lpApy:6, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:20,long:30,short:0,hold:50}, RANGING:{lp:30,long:10,short:5,hold:55}, HIGH_VOL:{lp:5,long:0,short:5,hold:90}, STRONG_DOWN:{lp:5,long:0,short:25,hold:70} }},
-            { label: 'LP APY 25%', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:25, borrowRate:3.5,
+            { label: 'LP APY 12% (optimistic)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:12, borrowRate:5.5,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
-            { label: 'Borrow Rate 6%', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:6,
+            { label: 'Borrow Rate 8%', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:6, borrowRate:8,
                 regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }}
         ];
 
