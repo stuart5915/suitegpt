@@ -2754,6 +2754,13 @@
                 var width = ((lpUpperPrice - lpLowerPrice) / ethPrice * 100).toFixed(1);
                 rwEl.textContent = '\u00b1' + (width / 2).toFixed(1) + '%';
             }
+            // Update optimal ratio display from new range
+            if (lpLowerPrice > 0 && lpUpperPrice > lpLowerPrice) {
+                var r = calcOptimalRatio(lpLowerPrice, lpUpperPrice);
+                var ratioEl = document.getElementById('tk-lp-ratio');
+                if (ratioEl) ratioEl.textContent = r.ethPct + '% ETH / ' + r.usdcPct + '% USDC';
+            }
+            updateLPSwapStatus();
         }
 
         function syncInputsToHandles() {
