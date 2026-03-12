@@ -236,11 +236,11 @@
   /* Round stats */
   .round-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     position: relative;
-    z-index: 20;
+    z-index: 1;
   }
 
   .stat-box {
@@ -262,7 +262,7 @@
     width: 100%;
     padding-bottom: 68%;
     margin-bottom: 20px;
-    margin-top: 80px;
+    margin-top: 10px;
   }
 
   .table-felt {
@@ -684,10 +684,11 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 6px 12px;
-    margin-bottom: 0;
+    margin-bottom: 8px;
+    margin-top: 8px;
     overflow: hidden;
     position: relative;
-    z-index: 20;
+    z-index: 1;
   }
   .hand-timeline-track {
     display: flex;
@@ -3372,35 +3373,8 @@
             </div>
           </div>
 
-          <div class="round-stats">
-            <div class="stat-box">
-              <div class="stat-label">Hand</div>
-              <div class="stat-value" id="roundNum">0</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Pot</div>
-              <div class="stat-value gold" id="potDisplay">0</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Phase</div>
-              <div class="stat-value" id="phaseDisplay" style="font-size:13px">Waiting</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Total Hands</div>
-              <div class="stat-value green" id="handsPlayed">0</div>
-            </div>
-          </div>
-
-          <!-- Table tabs (shown when multiple tables exist) — above the playing area -->
-          <div id="tableTabsBar" style="display:none;gap:6px;justify-content:flex-start;position:relative;z-index:20;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:6px;margin-bottom:8px"></div>
-
-          <!-- Hand Timeline -->
-          <div class="hand-timeline" id="handTimeline">
-            <div class="timeline-label">HANDS</div>
-            <div class="hand-timeline-track" id="handTimelineTrack">
-              <div class="hand-dot live-dot active" onclick="jumpToLive()" id="liveBtn">● LIVE</div>
-            </div>
-          </div>
+          <!-- Table tabs (shown when multiple tables exist) — right after header -->
+          <div id="tableTabsBar" style="display:none;gap:0;justify-content:stretch;position:relative;z-index:20;margin-bottom:10px"></div>
 
           <div class="poker-table" id="pokerTable" style="position:relative">
             <div class="hand-recap" id="handRecap">
@@ -3429,8 +3403,35 @@
           <!-- Agent History — click an agent to see their hands -->
           <div id="agentHistoryPanel" style="display:none"></div>
 
+          <!-- Round stats + hand timeline — below the table -->
+          <div class="round-stats" style="margin-top:12px">
+            <div class="stat-box">
+              <div class="stat-label">Hand</div>
+              <div class="stat-value" id="roundNum">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Pot</div>
+              <div class="stat-value gold" id="potDisplay">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Phase</div>
+              <div class="stat-value" id="phaseDisplay" style="font-size:13px">Waiting</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Total Hands</div>
+              <div class="stat-value green" id="handsPlayed">0</div>
+            </div>
+          </div>
+
+          <div class="hand-timeline" id="handTimeline">
+            <div class="timeline-label">HANDS</div>
+            <div class="hand-timeline-track" id="handTimelineTrack">
+              <div class="hand-dot live-dot active" onclick="jumpToLive()" id="liveBtn">● LIVE</div>
+            </div>
+          </div>
+
           <!-- Table Stats panel — below the table -->
-          <div class="panel pool-panel" style="margin-top:48px">
+          <div class="panel pool-panel" style="margin-top:12px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div class="panel-title" style="margin-bottom:0"><span class="icon">📊</span> <span id="poolTitle">Table Stats</span></div>
               <div style="font-family:'Rajdhani';font-size:22px;font-weight:700;color:var(--accent-cyan)" id="poolBalance">0</div>
@@ -4824,11 +4825,12 @@ function renderTableTabs() {
   bar.innerHTML = tables.map((t, i) => {
     const isActive = t.tableId === gameState.activeTableId;
     const hasMine = t.hasMyAgent;
-    const bg = isActive ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)';
+    const bg = isActive ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : 'var(--bg-surface)';
     const color = isActive ? '#fff' : hasMine ? 'var(--accent-green)' : 'var(--text-secondary)';
-    const border = isActive ? '1px solid var(--accent-primary)' : '1px solid var(--border)';
-    const dot = hasMine && !isActive ? '<span style="color:var(--accent-green);font-size:8px;margin-right:4px">●</span>' : '';
-    return `<button onclick="switchTable('${t.tableId}')" style="padding:8px 18px;background:${bg};border:${border};border-radius:8px;color:${color};font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;white-space:nowrap" onmouseover="if(!${isActive})this.style.background='rgba(255,255,255,0.1)'" onmouseout="if(!${isActive})this.style.background='rgba(255,255,255,0.05)'">${dot}Table ${i + 1} <span style="font-size:12px;opacity:0.8">(${t.playerCount})</span></button>`;
+    const border = isActive ? '2px solid #6366f1' : '2px solid var(--border)';
+    const shadow = isActive ? 'box-shadow:0 4px 12px rgba(99,102,241,0.3);' : '';
+    const dot = hasMine && !isActive ? '<span style="color:var(--accent-green);font-size:10px;margin-right:6px">●</span>' : '';
+    return `<button onclick="switchTable('${t.tableId}')" style="flex:1;padding:12px 20px;background:${bg};border:${border};border-radius:10px;color:${color};font-size:16px;font-weight:800;font-family:'Rajdhani',sans-serif;cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;white-space:nowrap;${shadow}" onmouseover="if(!${isActive})this.style.borderColor='#6366f1';this.style.color='#fff'" onmouseout="if(!${isActive}){this.style.borderColor='var(--border)';this.style.color='${hasMine ? 'var(--accent-green)' : 'var(--text-secondary)'}'}">${dot}Table ${i + 1} <span style="font-size:13px;opacity:0.7;font-weight:600">${t.playerCount} players</span></button>`;
   }).join('');
 }
 
