@@ -83,13 +83,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Not enough ETH for gas. Balance: ' + ethBal.toFixed(6) + ' ETH (need ~0.002)' });
     }
 
-    // ─── Step 1: Deploy Implementation ───
-    console.log('[deploy-auto-vault] Step 1: Deploying implementation...');
-    const implFactory = new ethers.ContractFactory([], IMPL_BYTECODE, wallet);
-    const implContract = await implFactory.deploy();
-    await implContract.waitForDeployment();
-    const implAddress = await implContract.getAddress();
-    console.log('[deploy-auto-vault] Implementation:', implAddress);
+    // ─── Step 1: Deploy Implementation (or reuse existing) ───
+    const { implementationAddress: existingImpl } = req.body || {};
+    let implAddress;
+    if (existingImpl) {
+      implAddress = existingImpl;
+      console.log('[deploy-auto-vault] Reusing implementation:', implAddress);
+    } else {
+      console.log('[deploy-auto-vault] Step 1: Deploying implementation...');
+      const implFactory = new ethers.ContractFactory([], IMPL_BYTECODE, wallet);
+      const implContract = await implFactory.deploy();
+      await implContract.waitForDeployment();
+      implAddress = await implContract.getAddress();
+      console.log('[deploy-auto-vault] Implementation:', implAddress);
+    }
 
     // ─── Step 2: Encode initialize() calldata ───
     console.log('[deploy-auto-vault] Step 2: Encoding initialize calldata...');
