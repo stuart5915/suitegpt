@@ -2541,6 +2541,12 @@
             'function exactInputSingle((address tokenIn, address tokenOut, int24 tickSpacing, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) returns (uint256 amountOut)'
         ];
 
+        const WETH_ABI = [
+            'function deposit() payable',
+            'function withdraw(uint256) returns (bool)',
+            ...ERC20_ABI
+        ];
+
         // ── State ──
         let provider = null;
         let signer = null;
@@ -2581,6 +2587,61 @@
 
         function tickToPrice(tick) {
             return Math.pow(1.0001, tick) * 1e-12;
+        }
+
+        // Returns { ethPct, usdcPct } — the optimal value split for a given LP range
+        function calcOptimalRatio(lower, upper) {
+            var P = ethPrice || 2500;
+            if (P <= lower) return { ethPct: 100, usdcPct: 0 };
+            if (P >= upper) return { ethPct: 0, usdcPct: 100 };
+            var sqrtP = Math.sqrt(P), sqrtPa = Math.sqrt(lower), sqrtPb = Math.sqrt(upper);
+            var ethVal = sqrtP - P / sqrtPb;
+            var usdcVal = sqrtP - sqrtPa;
+            var total = ethVal + usdcVal;
+            if (total <= 0) return { ethPct: 50, usdcPct: 50 };
+            return {
+                ethPct: Math.round(ethVal / total * 100),
+                usdcPct: Math.round(usdcVal / total * 100)
+            };
+        }
+
+        window.autoSplitLP = function() {
+            var totalEl = document.getElementById('tk-lp-total');
+            var ethEl = document.getElementById('tk-lp-eth');
+            var usdcEl = document.getElementById('tk-lp-usdc');
+            var total = parseFloat(totalEl && totalEl.value) || 0;
+            if (total <= 0) {
+                // Sum existing inputs as total
+                var e = parseFloat(ethEl && ethEl.value) || 0;
+                var u = parseFloat(usdcEl && usdcEl.value) || 0;
+                total = e * ethPrice + u;
+                if (total <= 0) return;
+            }
+            var lower = parseFloat(document.getElementById('tk-lp-lower').value);
+            var upper = parseFloat(document.getElementById('tk-lp-upper').value);
+            var ratio = calcOptimalRatio(lower, upper);
+            var ethUsd = total * ratio.ethPct / 100;
+            var usdcAmt = total * ratio.usdcPct / 100;
+            if (ethEl) ethEl.value = ethPrice > 0 ? (ethUsd / ethPrice).toFixed(6) : '0';
+            if (usdcEl) usdcEl.value = usdcAmt.toFixed(2);
+            updateLPSwapStatus();
+        };
+
+        function updateLPSwapStatus() {
+            var ethAmt = parseFloat(document.getElementById('tk-lp-eth')?.value) || 0;
+            var usdcAmt = parseFloat(document.getElementById('tk-lp-usdc')?.value) || 0;
+            var statusEl = document.getElementById('tk-lp-swap-status');
+            if (!statusEl) return;
+            if (ethAmt > 0 && usdcAmt > 0) {
+                statusEl.textContent = 'No swap needed';
+                statusEl.className = 'toolkit-info-val green';
+            } else if (ethAmt > 0 || usdcAmt > 0) {
+                statusEl.textContent = 'Swap ~0.3% fee';
+                statusEl.className = 'toolkit-info-val yellow';
+            } else {
+                statusEl.textContent = 'Ready';
+                statusEl.className = 'toolkit-info-val green';
+            }
         }
 
         // ── CoinGecko Price ──
@@ -2993,6 +3054,25 @@
                 lpLowerPrice = Math.round(cp * 0.95);
                 lpUpperPrice = Math.round(cp * 1.05);
                 syncInputsToHandles();
+                // Hook up ETH/USDC inputs to swap status
+                var ethIn = document.getElementById('tk-lp-eth');
+                var usdcIn = document.getElementById('tk-lp-usdc');
+                if (ethIn) ethIn.addEventListener('input', updateLPSwapStatus);
+                if (usdcIn) usdcIn.addEventListener('input', updateLPSwapStatus);
+                // Recalc ratio when range changes
+                var lowerIn = document.getElementById('tk-lp-lower');
+                var upperIn = document.getElementById('tk-lp-upper');
+                function updateRatioDisplay() {
+                    var lo = parseFloat(lowerIn && lowerIn.value) || 0;
+                    var hi = parseFloat(upperIn && upperIn.value) || 0;
+                    if (lo > 0 && hi > lo) {
+                        var r = calcOptimalRatio(lo, hi);
+                        var ratioEl = document.getElementById('tk-lp-ratio');
+                        if (ratioEl) ratioEl.textContent = r.ethPct + '% ETH / ' + r.usdcPct + '% USDC';
+                    }
+                }
+                if (lowerIn) lowerIn.addEventListener('input', updateRatioDisplay);
+                if (upperIn) upperIn.addEventListener('input', updateRatioDisplay);
             } else if (type === 'long') {
                 content.innerHTML = renderLongPanel();
             } else if (type === 'short') {
@@ -3016,8 +3096,17 @@
             var cp = ethPrice || 2500;
             var lower = Math.round(cp * 0.95);
             var upper = Math.round(cp * 1.05);
+            var ratio = calcOptimalRatio(lower, upper);
             return '<div class="toolkit-expand-title">Concentrated LP \u2014 Aerodrome</div>' +
-                '<div class="toolkit-input-row"><label>Deposit USDC</label><input type="number" class="toolkit-input" id="tk-lp-amount" placeholder="0.00" min="0" step="any"><button class="toolkit-max-btn" onclick="tkMaxUSDC(\'tk-lp-amount\')">MAX</button></div>' +
+                '<div class="toolkit-range-row">' +
+                    '<div class="toolkit-range-field"><label>Deposit ETH</label><input type="number" class="toolkit-input" id="tk-lp-eth" placeholder="0.00" min="0" step="any"></div>' +
+                    '<div class="toolkit-range-field"><label>Deposit USDC</label><input type="number" class="toolkit-input" id="tk-lp-usdc" placeholder="0.00" min="0" step="any"></div>' +
+                '</div>' +
+                '<div style="text-align:center; margin:-4px 0 12px; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:8px;">' +
+                    '<span style="color:var(--text-secondary)">Optimal: </span>' +
+                    '<span id="tk-lp-ratio" style="color:var(--cyan)">' + ratio.ethPct + '% ETH / ' + ratio.usdcPct + '% USDC</span>' +
+                    '<button class="toolkit-max-btn" onclick="autoSplitLP()">Auto-split</button>' +
+                '</div>' +
                 '<div class="toolkit-range-row">' +
                     '<div class="toolkit-range-field"><label>Lower Price</label><input type="number" class="toolkit-input" id="tk-lp-lower" value="' + lower + '" step="1"></div>' +
                     '<div class="toolkit-range-field"><label>Upper Price</label><input type="number" class="toolkit-input" id="tk-lp-upper" value="' + upper + '" step="1"></div>' +
@@ -3025,7 +3114,7 @@
                 '<div class="toolkit-info-grid">' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Current ETH</div><div class="toolkit-info-val">$' + Math.round(cp).toLocaleString() + '</div></div>' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Range Width</div><div class="toolkit-info-val" id="tk-lp-range-width">\u00b15.0%</div></div>' +
-                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Status</div><div class="toolkit-info-val green">Ready</div></div>' +
+                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Swap Fees</div><div class="toolkit-info-val green" id="tk-lp-swap-status">Ready</div></div>' +
                 '</div>' +
                 '<div class="toolkit-action-btns">' +
                     '<button class="toolkit-action-btn primary" onclick="openLPPosition()">Approve & Mint LP</button>' +
@@ -3115,54 +3204,96 @@
         // ── LP Position (Aerodrome) ──
         window.openLPPosition = async function() {
             if (!signer || !userAddress) return showTxStatus('Connect wallet first', 'error');
-            var amtStr = document.getElementById('tk-lp-amount').value;
+            var ethAmt = parseFloat(document.getElementById('tk-lp-eth').value) || 0;
+            var usdcAmt = parseFloat(document.getElementById('tk-lp-usdc').value) || 0;
             var lower = parseFloat(document.getElementById('tk-lp-lower').value);
             var upper = parseFloat(document.getElementById('tk-lp-upper').value);
-            if (!amtStr || parseFloat(amtStr) <= 0) return showTxStatus('Enter an amount', 'error');
+            if (ethAmt <= 0 && usdcAmt <= 0) return showTxStatus('Enter ETH and/or USDC amount', 'error');
             if (lower >= upper) return showTxStatus('Lower price must be less than upper', 'error');
 
-            var amount = ethers.parseUnits(amtStr, 6);
             var tickLower = priceToTick(lower);
             var tickUpper = priceToTick(upper);
+            var deadline = Math.floor(Date.now() / 1000) + 600;
 
             try {
                 var usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
-                var weth = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, signer);
+                var weth = new ethers.Contract(WETH_ADDRESS, WETH_ABI, signer);
                 var router = new ethers.Contract(AERO_ROUTER, SWAP_ROUTER_ABI, signer);
                 var npm = new ethers.Contract(AERO_NPM, NPM_ABI, signer);
+                var hasBoth = ethAmt > 0 && usdcAmt > 0;
 
-                // 1. Approve USDC to router
-                showTxStatus('Approving USDC...', 'pending');
-                var allowance = await usdc.allowance(userAddress, AERO_ROUTER);
-                if (allowance < amount) {
-                    var tx = await usdc.approve(AERO_ROUTER, ethers.MaxUint256);
-                    await tx.wait();
+                // 1. Wrap ETH → WETH if user provided ETH
+                if (ethAmt > 0) {
+                    showTxStatus('Wrapping ETH to WETH...', 'pending');
+                    var ethWei = ethers.parseEther(ethAmt.toString());
+                    var wrapTx = await weth.deposit({ value: ethWei });
+                    await wrapTx.wait();
                 }
 
-                // 2. Swap half USDC to WETH
-                var halfAmount = amount / 2n;
-                showTxStatus('Swapping USDC to WETH...', 'pending');
-                var deadline = Math.floor(Date.now() / 1000) + 600;
-                var swapTx = await router.exactInputSingle({
-                    tokenIn: USDC_ADDRESS, tokenOut: WETH_ADDRESS,
-                    tickSpacing: TICK_SPACING, recipient: userAddress,
-                    deadline: deadline, amountIn: halfAmount,
-                    amountOutMinimum: 0n, sqrtPriceLimitX96: 0n
-                });
-                await swapTx.wait();
+                // 2. If only one token provided, swap for the missing one
+                if (!hasBoth && usdcAmt > 0) {
+                    // USDC only — swap optimal ETH portion to WETH
+                    var ratio = calcOptimalRatio(lower, upper);
+                    var swapPortion = ethers.parseUnits((usdcAmt * ratio.ethPct / 100).toFixed(6), 6);
+                    if (swapPortion > 0n) {
+                        showTxStatus('Approving USDC for swap...', 'pending');
+                        var rAllow = await usdc.allowance(userAddress, AERO_ROUTER);
+                        if (rAllow < swapPortion) {
+                            var aTx = await usdc.approve(AERO_ROUTER, ethers.MaxUint256);
+                            await aTx.wait();
+                        }
+                        showTxStatus('Swapping USDC to WETH...', 'pending');
+                        var swapTx = await router.exactInputSingle({
+                            tokenIn: USDC_ADDRESS, tokenOut: WETH_ADDRESS,
+                            tickSpacing: TICK_SPACING, recipient: userAddress,
+                            deadline: deadline, amountIn: swapPortion,
+                            amountOutMinimum: 0n, sqrtPriceLimitX96: 0n
+                        });
+                        await swapTx.wait();
+                    }
+                } else if (!hasBoth && ethAmt > 0) {
+                    // ETH only — swap optimal USDC portion of WETH to USDC
+                    var ratio = calcOptimalRatio(lower, upper);
+                    var wethBal = await weth.balanceOf(userAddress);
+                    var swapPortion = wethBal * BigInt(ratio.usdcPct) / 100n;
+                    if (swapPortion > 0n) {
+                        showTxStatus('Approving WETH for swap...', 'pending');
+                        var rAllow = await weth.allowance(userAddress, AERO_ROUTER);
+                        if (rAllow < swapPortion) {
+                            var aTx = await weth.approve(AERO_ROUTER, ethers.MaxUint256);
+                            await aTx.wait();
+                        }
+                        showTxStatus('Swapping WETH to USDC...', 'pending');
+                        var swapTx = await router.exactInputSingle({
+                            tokenIn: WETH_ADDRESS, tokenOut: USDC_ADDRESS,
+                            tickSpacing: TICK_SPACING, recipient: userAddress,
+                            deadline: deadline, amountIn: swapPortion,
+                            amountOutMinimum: 0n, sqrtPriceLimitX96: 0n
+                        });
+                        await swapTx.wait();
+                    }
+                }
 
                 // 3. Approve both tokens to NPM
                 showTxStatus('Approving tokens for LP...', 'pending');
                 var wethBal = await weth.balanceOf(userAddress);
-                var wethAllow = await weth.allowance(userAddress, AERO_NPM);
-                if (wethAllow < wethBal) {
-                    var tx2 = await weth.approve(AERO_NPM, ethers.MaxUint256);
-                    await tx2.wait();
+                var usdcBal = usdcAmt > 0 ? await usdc.balanceOf(userAddress) : 0n;
+                // Use provided USDC amount if both given (don't use full balance)
+                var usdcForMint = hasBoth ? ethers.parseUnits(usdcAmt.toFixed(6), 6) : usdcBal;
+
+                if (wethBal > 0n) {
+                    var wAllow = await weth.allowance(userAddress, AERO_NPM);
+                    if (wAllow < wethBal) {
+                        var tx2 = await weth.approve(AERO_NPM, ethers.MaxUint256);
+                        await tx2.wait();
+                    }
                 }
-                var usdcAllow = await usdc.allowance(userAddress, AERO_NPM);
-                if (usdcAllow < amount - halfAmount) {
-                    var tx3 = await usdc.approve(AERO_NPM, ethers.MaxUint256);
-                    await tx3.wait();
+                if (usdcForMint > 0n) {
+                    var uAllow = await usdc.allowance(userAddress, AERO_NPM);
+                    if (uAllow < usdcForMint) {
+                        var tx3 = await usdc.approve(AERO_NPM, ethers.MaxUint256);
+                        await tx3.wait();
+                    }
                 }
 
                 // 4. Mint LP position (WETH is token0 on Base)
@@ -3170,13 +3301,13 @@
                 var mintTx = await npm.mint({
                     token0: WETH_ADDRESS, token1: USDC_ADDRESS,
                     tickSpacing: TICK_SPACING, tickLower: tickLower, tickUpper: tickUpper,
-                    amount0Desired: wethBal, amount1Desired: amount - halfAmount,
+                    amount0Desired: wethBal, amount1Desired: usdcForMint,
                     amount0Min: 0n, amount1Min: 0n,
                     recipient: userAddress, deadline: deadline
                 });
                 await mintTx.wait();
 
-                showTxStatus('LP position opened!', 'success');
+                showTxStatus(hasBoth ? 'LP minted \u2014 no swap fees!' : 'LP position opened!', 'success');
                 refreshPositions();
             } catch(e) {
                 console.error(e);
