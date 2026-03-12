@@ -458,6 +458,17 @@ if (window.ethereum) {
     window.ethereum.on('accountsChanged', () => location.reload());
     window.ethereum.on('chainChanged', () => location.reload());
 }
+
+// Auto-connect if wallet is already connected (no extra click needed)
+(async function() {
+    if (!window.ethereum) return;
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+            connectWallet();
+        }
+    } catch (e) {}
+})();
 </script>
 </body>
 </html>

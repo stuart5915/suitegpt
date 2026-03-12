@@ -778,7 +778,7 @@
     <div class="tools-divider" style="margin-top:0"><span>Featured</span></div>
 
     <div class="tool-list" style="margin-bottom:var(--space-lg)">
-        <a href="/tools/autobuy" class="tool-row" id="tool-autobuy">
+        <div class="tool-row" data-autobuy="1" id="tool-autobuy" style="cursor:pointer">
             <span class="tool-row-icon">&#128176;</span>
             <div class="tool-row-body">
                 <div class="tool-row-name">AutoBuy CLAWS</div>
@@ -789,8 +789,9 @@
                 <span class="tool-row-badge tool-row-badge--base">Base</span>
                 <span class="tool-row-badge tool-row-badge--new">New</span>
             </div>
+            <button class="tool-copy-link" onclick="event.stopPropagation();copyToolLink('/tools/autobuy',this)">Copy link</button>
             <span class="tool-row-arrow">&#8250;</span>
-        </a>
+        </div>
     </div>
 
     <div class="tools-divider"><span>All Tools</span></div>
@@ -1093,11 +1094,31 @@
 
     document.querySelectorAll('[data-tool]').forEach(function(row) {
         row.addEventListener('click', function(e) {
-            if (e.target.closest('.tool-copy-link')) return; // don't open if copying link
+            if (e.target.closest('.tool-copy-link')) return;
             var tool = row.getAttribute('data-tool');
             openTool(tool);
         });
     });
+
+    // AutoBuy opens directly in iframe modal
+    document.querySelectorAll('[data-autobuy]').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.tool-copy-link')) return;
+            iframe.src = '/tools/autobuy';
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            history.replaceState(null, '', '#autobuy');
+        });
+    });
+
+    function copyToolLink(path, btn) {
+        navigator.clipboard.writeText(location.origin + path).then(function() {
+            btn.classList.add('copied');
+            btn.textContent = 'copied!';
+            setTimeout(function() { btn.classList.remove('copied'); btn.textContent = 'Copy link'; }, 1500);
+        });
+    }
+    window.copyToolLink = copyToolLink;
 
     function closeToolModal() {
         overlay.classList.remove('open');
@@ -1171,7 +1192,13 @@
             row.classList.add('hash-highlight');
             setTimeout(function() { row.classList.remove('hash-highlight'); }, 2000);
             // Auto-open if it's a drawer tool
-            if (row.dataset.tool) {
+            if (row.dataset.autobuy) {
+                setTimeout(function() {
+                    iframe.src = '/tools/autobuy';
+                    overlay.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                }, 400);
+            } else if (row.dataset.tool) {
                 setTimeout(function() { openTool(row.dataset.tool); }, 400);
             } else if (row.dataset.action === 'socials') {
                 setTimeout(function() { openSocialsModal(); }, 400);
