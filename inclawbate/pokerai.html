@@ -5044,29 +5044,21 @@ function renderTableSeats() {
     const myAgentClass = isMyAgent ? ' my-agent' : '';
     const nameSize = isMyAgent ? 'font-size:15px;font-weight:700' : '';
     const chipsSize = isMyAgent ? 'font-size:16px;font-weight:800' : '';
-    // Card placement per seat:
-    // Left-side (1,2,3): cards to the RIGHT of agent
-    // Right-side (5,6,7): cards to the LEFT of agent
-    // Top center (4): cards below
-    // Bottom center (0): cards above
-    const cardPos = (i === 1 || i === 2 || i === 3) ? 'right'
-                  : (i === 5 || i === 6 || i === 7) ? 'left'
-                  : (i === 0) ? 'above' : 'below';
-    const sideClass = (cardPos === 'left' || cardPos === 'right')
-      ? ` pocket-side pocket-${cardPos}` : '';
+    // Card placement — ALL seats use side placement to keep center clear
+    // Left half (0,1,2,3): cards to the RIGHT
+    // Right half (4,5,6,7): cards to the LEFT
+    const cardSide = (i <= 3) ? 'right' : 'left';
+    const sideClass = ` pocket-side pocket-${cardSide}`;
     const sidePocket = pocketHTML ? pocketHTML.replace('class="seat-pocket"', `class="seat-pocket${sideClass}"`) : '';
-    const cardsAbove = cardPos === 'above';
-    const cardsSide = cardPos === 'left' || cardPos === 'right';
     seat.innerHTML = `
       <div class="seat-action-bubble" id="bubble-${agent.id}"></div>
-      ${cardsAbove ? pocketHTML : ''}
       ${isMyAgent ? '<div class="my-agent-label">YOUR AGENT</div>' : ''}
       <div class="seat-avatar${myAgentClass} ${isCurrent ? 'active' : ''} ${folded ? 'folded' : ''} ${isWinner ? 'winner' : ''}"
            title="${agent.name}${isMyAgent ? ' (Your Agent)' : ''}" style="position:relative;${isMyAgent ? '' : myBorder}${isSelected && !isMyAgent ? 'box-shadow:0 0 12px rgba(99,102,241,0.7);border-color:var(--accent-primary);' : ''}"
           >
         ${agent.emoji}
         ${cornerBadge}
-        ${cardsSide ? sidePocket : ''}
+        ${sidePocket}
       </div>
       <div class="seat-name" style="${nameColor};${nameSize}">${agent.name.length > 12 ? agent.name.slice(0,12) : agent.name}</div>
       <div class="seat-chips" style="${chipsSize}">${formatChips(agent.chips)}</div>
@@ -5074,7 +5066,6 @@ function renderTableSeats() {
       ${betHTML}
       ${statusLabel}
       ${pnlBadge}
-      ${!cardsAbove && !cardsSide ? pocketHTML : ''}
     `;
     felt.appendChild(seat);
 
