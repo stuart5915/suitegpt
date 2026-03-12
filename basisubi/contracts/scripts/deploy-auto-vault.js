@@ -17,7 +17,7 @@ const AAVE_POOL    = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
 const A_WETH       = "0xD4a0e0b9149BCee3C920d2E00b5dE09138fd8bb7"; // aBasWETH
 const A_USDC       = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB"; // aBasUSDbC → actually aBasUSDC
 const V_DEBT_USDC  = "0x59dca05b6c26dbd64b5381374aAaC5CD05644C28"; // variableDebtBasUSDbC → USDC variable debt
-const V_DEBT_WETH  = "0x24e6e0795b3c7c71D965fCc4f371803d1c1DcA1e"; // variableDebtBasWETH
+const V_DEBT_WETH  = "0x24e6e0795b3c7c71D965fCc4f371803d1c1DcA1E"; // variableDebtBasWETH
 
 // Config
 const DEPOSIT_CAP = ethers.parseUnits("50000", 6); // $50K USDC starting cap
