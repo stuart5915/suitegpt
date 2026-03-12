@@ -4707,95 +4707,176 @@
         let allRuns = [];
         let runCounter = 0;
 
-        // ── Run Backtest ──
+        // ── Core simulation (accepts config directly) ──
+        function simulate(priceData, config) {
+            let vaultVal = 10000, ethHoldVal = 10000;
+            const startPrice = priceData[0].price;
+            const ethUnits = 10000 / startPrice;
+            let currentAlloc = {lp:0,long:0,short:0,hold:100};
+            let rebalCount = 0, lastRebalDay = -999;
+            let peak = 10000, maxDD = 0, totalCost = 0;
+            const regimeCounts = {};
+            const dailyLog = [];
+
+            for (let i=30; i<priceData.length; i++) {
+                const history = priceData.slice(0,i+1).map(d=>d.price);
+                const today = priceData[i], yesterday = priceData[i-1];
+                const {regime} = btDetectRegime(history, config);
+                const target = config.regimes[regime];
+                regimeCounts[regime] = (regimeCounts[regime]||0)+1;
+
+                if (i - lastRebalDay >= 0.167) {
+                    const drift = Math.max(
+                        Math.abs(currentAlloc.lp-target.lp),
+                        Math.abs(currentAlloc.long-target.long),
+                        Math.abs(currentAlloc.short-target.short),
+                        Math.abs(currentAlloc.hold-target.hold)
+                    );
+                    if (drift >= config.drift) {
+                        const cost = vaultVal * (5/10000) * 4;
+                        vaultVal -= cost; totalCost += cost;
+                        currentAlloc = {...target};
+                        rebalCount++; lastRebalDay = i;
+                    }
+                }
+
+                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config);
+                vaultVal *= (1+ret);
+                ethHoldVal = ethUnits * today.price;
+                if (vaultVal > peak) peak = vaultVal;
+                const dd = (peak-vaultVal)/peak;
+                if (dd > maxDD) maxDD = dd;
+
+                dailyLog.push({ date:today.date.toISOString().slice(0,10), vault:vaultVal, eth:ethHoldVal, regime });
+            }
+
+            const vaultRet = (vaultVal-10000)/100;
+            const ethRet = (ethHoldVal-10000)/100;
+            return { vaultRet, ethRet, vsEth: vaultRet-ethRet, maxDD:maxDD*100, rebalCount, regimeCounts, dailyLog };
+        }
+
+        function addRun(config, label, days, priceData) {
+            const result = simulate(priceData, config);
+            runCounter++;
+            const run = { id:runCounter, config:JSON.parse(JSON.stringify(config)), configLabel:label, ...result, days };
+            allRuns.push(run);
+            return run;
+        }
+
+        function showLatestRun(run) {
+            document.getElementById('bt-summary').style.display = '';
+            document.getElementById('bt-chart-wrap').style.display = '';
+            document.getElementById('bt-runs-wrap').style.display = '';
+            const retCol = run.vaultRet >= 0 ? 'var(--green)' : '#ff6450';
+            const vsCol = run.vsEth >= 0 ? 'var(--green)' : '#ff6450';
+            document.getElementById('bt-s-return').innerHTML = '<span style="color:'+retCol+'">'+(run.vaultRet>=0?'+':'')+run.vaultRet.toFixed(1)+'%</span>';
+            document.getElementById('bt-s-vs-eth').innerHTML = '<span style="color:'+vsCol+'">'+(run.vsEth>=0?'+':'')+run.vsEth.toFixed(1)+'%</span>';
+            document.getElementById('bt-s-dd').innerHTML = '<span style="color:#ff6450">-'+run.maxDD.toFixed(1)+'%</span>';
+            document.getElementById('bt-s-rebal').textContent = run.rebalCount;
+            drawChart(run);
+            renderRunsTable();
+        }
+
+        // ── Run from UI button ──
         window.runBacktest = async function() {
             const btn = document.getElementById('bt-run-btn');
             const status = document.getElementById('bt-status');
             btn.disabled = true;
             status.textContent = 'Fetching prices...';
-
             try {
                 const days = +document.getElementById('bt-days').value;
                 const config = readConfig();
                 const priceData = await fetchPrices(days);
-
                 if (priceData.length < 31) { status.textContent = 'Not enough data'; btn.disabled=false; return; }
                 status.textContent = 'Running simulation...';
-
-                // Run in next frame to not block UI
                 await new Promise(r => setTimeout(r, 10));
-
-                let vaultVal = 10000, ethHoldVal = 10000;
-                const startPrice = priceData[0].price;
-                const ethUnits = 10000 / startPrice;
-                let currentAlloc = {lp:0,long:0,short:0,hold:100};
-                let rebalCount = 0, lastRebalDay = -999;
-                let peak = 10000, maxDD = 0, totalCost = 0;
-                const regimeCounts = {};
-                const dailyLog = [];
-
-                for (let i=30; i<priceData.length; i++) {
-                    const history = priceData.slice(0,i+1).map(d=>d.price);
-                    const today = priceData[i], yesterday = priceData[i-1];
-                    const {regime} = btDetectRegime(history, config);
-                    const target = config.regimes[regime];
-                    regimeCounts[regime] = (regimeCounts[regime]||0)+1;
-
-                    if (i - lastRebalDay >= 0.167) {
-                        const drift = Math.max(
-                            Math.abs(currentAlloc.lp-target.lp),
-                            Math.abs(currentAlloc.long-target.long),
-                            Math.abs(currentAlloc.short-target.short),
-                            Math.abs(currentAlloc.hold-target.hold)
-                        );
-                        if (drift >= config.drift) {
-                            const cost = vaultVal * (5/10000) * 4;
-                            vaultVal -= cost; totalCost += cost;
-                            currentAlloc = {...target};
-                            rebalCount++; lastRebalDay = i;
-                        }
-                    }
-
-                    const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config);
-                    vaultVal *= (1+ret);
-                    ethHoldVal = ethUnits * today.price;
-                    if (vaultVal > peak) peak = vaultVal;
-                    const dd = (peak-vaultVal)/peak;
-                    if (dd > maxDD) maxDD = dd;
-
-                    dailyLog.push({ date:today.date.toISOString().slice(0,10), vault:vaultVal, eth:ethHoldVal, regime });
-                }
-
-                const vaultRet = (vaultVal-10000)/100;
-                const ethRet = (ethHoldVal-10000)/100;
-                const vsEth = vaultRet - ethRet;
-
-                // Store run
-                runCounter++;
-                const configLabel = describeConfig(config);
-                const run = { id:runCounter, config:JSON.parse(JSON.stringify(config)), configLabel, vaultRet, ethRet, vsEth, maxDD:maxDD*100, rebalCount, regimeCounts, dailyLog, days };
-                allRuns.push(run);
-
-                // Update UI
-                document.getElementById('bt-summary').style.display = '';
-                document.getElementById('bt-chart-wrap').style.display = '';
-                document.getElementById('bt-runs-wrap').style.display = '';
-
-                const retCol = vaultRet >= 0 ? 'var(--green)' : '#ff6450';
-                const vsCol = vsEth >= 0 ? 'var(--green)' : '#ff6450';
-                document.getElementById('bt-s-return').innerHTML = '<span style="color:'+retCol+'">'+(vaultRet>=0?'+':'')+vaultRet.toFixed(1)+'%</span>';
-                document.getElementById('bt-s-vs-eth').innerHTML = '<span style="color:'+vsCol+'">'+(vsEth>=0?'+':'')+vsEth.toFixed(1)+'%</span>';
-                document.getElementById('bt-s-dd').innerHTML = '<span style="color:#ff6450">-'+(maxDD*100).toFixed(1)+'%</span>';
-                document.getElementById('bt-s-rebal').textContent = rebalCount;
-
-                drawChart(run);
-                renderRunsTable();
-                status.textContent = 'Run #'+runCounter+' complete';
+                const run = addRun(config, describeConfig(config), days, priceData);
+                showLatestRun(run);
+                status.textContent = 'Run #'+run.id+' complete';
             } catch(e) {
                 status.textContent = 'Error: '+e.message;
             }
             btn.disabled = false;
         };
+
+        // ── Extra custom configs beyond the 5 presets ──
+        const EXTRA_CONFIGS = [
+            { label: 'Balanced', volThresh:0.75, momUp:0.004, momDown:-0.004, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:30,long:45,short:0,hold:25}, RANGING:{lp:45,long:20,short:10,hold:25}, HIGH_VOL:{lp:15,long:10,short:10,hold:65}, STRONG_DOWN:{lp:10,long:5,short:45,hold:40} }},
+            { label: 'Low Vol Thresh (0.5)', volThresh:0.50, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'High Vol Thresh (1.2)', volThresh:1.20, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'Tight Momentum (0.002)', volThresh:0.80, momUp:0.002, momDown:-0.002, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'Wide Momentum (0.01)', volThresh:0.80, momUp:0.01, momDown:-0.01, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'Low Drift (5%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:5, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'High Drift (20%)', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:20, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'No Shorts Ever', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:30,long:55,short:0,hold:15}, RANGING:{lp:55,long:25,short:0,hold:20}, HIGH_VOL:{lp:30,long:10,short:0,hold:60}, STRONG_DOWN:{lp:20,long:0,short:0,hold:80} }},
+            { label: 'Max LP Yield', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:70,long:20,short:0,hold:10}, RANGING:{lp:80,long:5,short:5,hold:10}, HIGH_VOL:{lp:30,long:5,short:5,hold:60}, STRONG_DOWN:{lp:20,long:0,short:40,hold:40} }},
+            { label: 'Pure Trend (no LP)', volThresh:0.70, momUp:0.003, momDown:-0.003, drift:8, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:0,long:85,short:0,hold:15}, RANGING:{lp:0,long:30,short:10,hold:60}, HIGH_VOL:{lp:0,long:10,short:10,hold:80}, STRONG_DOWN:{lp:0,long:0,short:75,hold:25} }},
+            { label: 'Defensive', volThresh:0.50, momUp:0.008, momDown:-0.006, drift:15, lpApy:15, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:20,long:30,short:0,hold:50}, RANGING:{lp:30,long:10,short:5,hold:55}, HIGH_VOL:{lp:5,long:0,short:5,hold:90}, STRONG_DOWN:{lp:5,long:0,short:25,hold:70} }},
+            { label: 'LP APY 25%', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:25, borrowRate:3.5,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }},
+            { label: 'Borrow Rate 6%', volThresh:0.80, momUp:0.005, momDown:-0.005, drift:10, lpApy:15, borrowRate:6,
+                regimes:{ STRONG_UP:{lp:25,long:60,short:0,hold:15}, RANGING:{lp:55,long:20,short:5,hold:20}, HIGH_VOL:{lp:25,long:12,short:13,hold:50}, STRONG_DOWN:{lp:15,long:5,short:50,hold:30} }}
+        ];
+
+        // ── Auto-run all presets + extras on page load ──
+        async function autoRunAll() {
+            const status = document.getElementById('bt-status');
+            const btn = document.getElementById('bt-run-btn');
+            btn.disabled = true;
+            status.textContent = 'Auto-running all configs...';
+
+            try {
+                const days = 365;
+                const priceData = await fetchPrices(days);
+                if (priceData.length < 31) { status.textContent = 'Not enough price data'; btn.disabled=false; return; }
+
+                // Run all 5 presets
+                const presetNames = Object.keys(PRESETS);
+                let lastRun;
+                for (let i=0; i<presetNames.length; i++) {
+                    const name = presetNames[i];
+                    const label = name.charAt(0).toUpperCase() + name.slice(1);
+                    status.textContent = 'Running ' + label + '... (' + (i+1) + '/' + (presetNames.length + EXTRA_CONFIGS.length) + ')';
+                    await new Promise(r => setTimeout(r, 5));
+                    lastRun = addRun(PRESETS[name], label, days, priceData);
+                }
+
+                // Run all extras
+                for (let i=0; i<EXTRA_CONFIGS.length; i++) {
+                    const cfg = EXTRA_CONFIGS[i];
+                    const label = cfg.label;
+                    status.textContent = 'Running ' + label + '... (' + (presetNames.length+i+1) + '/' + (presetNames.length + EXTRA_CONFIGS.length) + ')';
+                    await new Promise(r => setTimeout(r, 5));
+                    lastRun = addRun(cfg, label, days, priceData);
+                }
+
+                // Show best run's chart
+                const bestIdx = allRuns.reduce((best,r,i) => r.vsEth > allRuns[best].vsEth ? i : best, 0);
+                showLatestRun(allRuns[bestIdx]);
+                status.textContent = 'Done! ' + allRuns.length + ' configs tested. Best: ' + allRuns[bestIdx].configLabel + ' (' + (allRuns[bestIdx].vsEth>=0?'+':'') + allRuns[bestIdx].vsEth.toFixed(1) + '% vs ETH)';
+            } catch(e) {
+                status.textContent = 'Error: ' + e.message;
+            }
+            btn.disabled = false;
+        }
+
+        // Auto-run when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setTimeout(autoRunAll, 1500));
+        } else {
+            setTimeout(autoRunAll, 1500);
+        }
 
         function describeConfig(c) {
             const preset = Object.entries(PRESETS).find(([k,p]) => {
