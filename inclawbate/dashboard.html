@@ -650,6 +650,13 @@
 </div>
 <script>
 function openAutobuyModal(){
+    // Mobile wallet browsers (Coinbase, MetaMask) can't inject ethereum into iframes — navigate directly
+    var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    var isWalletBrowser = /CoinbaseWallet|MetaMaskMobile|TrustWallet/i.test(navigator.userAgent);
+    if (isMobile || isWalletBrowser) {
+        window.location.href = '/tools/autobuy';
+        return;
+    }
     var o=document.getElementById('abModal'),f=document.getElementById('abModalIframe');
     f.src='/tools/autobuy';o.classList.add('open');document.body.style.overflow='hidden';
 }

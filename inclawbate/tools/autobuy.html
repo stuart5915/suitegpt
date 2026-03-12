@@ -63,6 +63,7 @@ input::placeholder{color:rgba(136,117,170,0.5)}
 </head>
 <body>
 <div class="container">
+    <a href="/dashboard" style="font-size:0.78rem;color:var(--text-dim);text-decoration:none;display:inline-block;margin-bottom:12px">&larr; Back to Dashboard</a>
     <h1>AutoBuy</h1>
     <p class="subtitle">DCA into $CLAWS - deposit once, buys happen automatically</p>
 
@@ -197,15 +198,36 @@ let pollTimer = null;
 // === WALLET ===
 
 async function connectWallet() {
-    if (!window.ethereum) { alert('Install a wallet (MetaMask, Coinbase, etc.)'); return; }
+    // Detect provider: prefer parent window's ethereum (for iframe), then window.ethereum
+    var eth = window.ethereum;
+    if (!eth && window.parent && window.parent.ethereum) eth = window.parent.ethereum;
+    if (!eth) { alert('No wallet detected. Open this page in your wallet browser or install MetaMask.'); return; }
+
     try {
-        provider = new ethers.BrowserProvider(window.ethereum);
+        // Request accounts first (required for Coinbase Wallet browser)
+        await eth.request({ method: 'eth_requestAccounts' });
+
+        provider = new ethers.BrowserProvider(eth);
+
+        // Switch to Base if needed
         const network = await provider.getNetwork();
         if (Number(network.chainId) !== BASE_CHAIN_ID) {
             try {
-                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-                provider = new ethers.BrowserProvider(window.ethereum);
-            } catch (e) { alert('Please switch to Base network'); return; }
+                await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+                // Re-create provider after chain switch
+                provider = new ethers.BrowserProvider(eth);
+            } catch (e) {
+                if (e.code === 4902) {
+                    await eth.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{ chainId: '0x2105', chainName: 'Base', rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'], nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 } }]
+                    });
+                    provider = new ethers.BrowserProvider(eth);
+                } else {
+                    alert('Please switch to Base network in your wallet.');
+                    return;
+                }
+            }
         }
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
@@ -214,7 +236,8 @@ async function connectWallet() {
         // Check if user has an active position
         await checkPosition();
     } catch (e) {
-        alert('Connection failed: ' + (e.message || e));
+        console.error('Wallet connection error:', e);
+        alert('Connection failed: ' + (e.shortMessage || e.message || e));
     }
 }
 
@@ -283,6 +306,11 @@ function showComplete(totalClaws) {
 // === DEPOSIT ===
 
 async function doDeposit() {
+    if (!contract || !signer) {
+        alert('Wallet not connected. Click "Connect Wallet" first.');
+        return;
+    }
+
     const totalEth = parseFloat(document.getElementById('totalEth').value);
     const interval = parseInt(document.getElementById('interval').value);
     const numBuys = calcNumBuys();
@@ -294,10 +322,21 @@ async function doDeposit() {
 
     const btn = document.getElementById('depositBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="loading"></span>Confirming...';
+    btn.innerHTML = '<span class="loading"></span>Sending transaction...';
 
     try {
+        // Ensure we're on Base before sending
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== BASE_CHAIN_ID) {
+            btn.innerHTML = '<span class="loading"></span>Switching to Base...';
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        }
+
         const value = ethers.parseEther(totalEth.toString());
+        btn.innerHTML = '<span class="loading"></span>Confirm in wallet...';
         const tx = await contract.deposit(numBuys, interval, { value });
 
         btn.innerHTML = '<span class="loading"></span>Waiting for confirmation...';
@@ -305,13 +344,16 @@ async function doDeposit() {
 
         await checkPosition();
     } catch (e) {
-        const msg = e.reason || e.message || String(e);
-        if (msg.includes('user rejected') || msg.includes('denied')) {
+        console.error('Deposit error:', e);
+        const msg = e.shortMessage || e.reason || e.message || String(e);
+        if (msg.includes('user rejected') || msg.includes('denied') || msg.includes('User denied')) {
             // User cancelled - do nothing
         } else if (msg.includes('Already active')) {
             alert('You already have an active DCA position. Withdraw first.');
+        } else if (msg.includes('insufficient funds') || msg.includes('INSUFFICIENT_FUNDS')) {
+            alert('Not enough ETH in your wallet for this deposit + gas.');
         } else {
-            alert('Transaction failed: ' + msg.slice(0, 120));
+            alert('Transaction failed: ' + msg.slice(0, 200));
         }
     } finally {
         btn.disabled = false;
@@ -507,16 +549,18 @@ document.getElementById('endDate').addEventListener('input', updateSummary);
 document.getElementById('interval').addEventListener('change', updateSummary);
 
 // Handle wallet account/network changes
-if (window.ethereum) {
-    window.ethereum.on('accountsChanged', () => location.reload());
-    window.ethereum.on('chainChanged', () => location.reload());
+var eth = window.ethereum || (window.parent && window.parent.ethereum);
+if (eth) {
+    try { eth.on('accountsChanged', () => location.reload()); } catch(e) {}
+    try { eth.on('chainChanged', () => location.reload()); } catch(e) {}
 }
 
 // Auto-connect if wallet is already connected (no extra click needed)
 (async function() {
-    if (!window.ethereum) return;
+    var eth = window.ethereum || (window.parent && window.parent.ethereum);
+    if (!eth) return;
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await eth.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
             connectWallet();
         }

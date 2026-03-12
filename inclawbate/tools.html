@@ -1101,10 +1101,16 @@
         });
     });
 
-    // AutoBuy opens directly in iframe modal
+    // AutoBuy — on mobile/wallet browsers go directly, otherwise iframe modal
     document.querySelectorAll('[data-autobuy]').forEach(function(row) {
         row.addEventListener('click', function(e) {
             if (e.target.closest('.tool-copy-link')) return;
+            var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+            var isWalletBrowser = /CoinbaseWallet|MetaMaskMobile|TrustWallet/i.test(navigator.userAgent);
+            if (isMobile || isWalletBrowser) {
+                window.location.href = '/tools/autobuy';
+                return;
+            }
             iframe.src = '/tools/autobuy';
             overlay.classList.add('open');
             document.body.style.overflow = 'hidden';
