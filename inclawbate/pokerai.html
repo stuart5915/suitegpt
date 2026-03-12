@@ -3214,18 +3214,24 @@
 
   <!-- ARENA VIEW -->
   <div id="view-arena" class="view active">
-    <!-- APY Banner -->
+    <!-- TVL + Rewards Banner -->
     <div style="background:linear-gradient(135deg,rgba(52,208,88,0.1),rgba(99,102,241,0.08));border:1px solid rgba(52,208,88,0.25);border-radius:12px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="display:flex;align-items:center;gap:10px">
         <img src="/inclawbate/assets/pokerai-logo.png" alt="" style="width:28px;height:28px;object-fit:contain">
         <div>
-          <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">$POKERAI Airdrop</div>
-          <div style="font-size:12px;color:var(--text-secondary)">15B tokens · 90 days · deposit USDC to earn</div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">$POKERAI Rewards</div>
+          <div style="font-size:12px;color:var(--text-secondary)">25B tokens · 90 days · deposit USDC to earn</div>
         </div>
       </div>
-      <div style="text-align:right">
-        <div style="font-size:24px;font-weight:800;color:#34d058;font-family:'Rajdhani',sans-serif;line-height:1" class="pokerai-apy-value">---</div>
-        <div style="font-size:10px;color:#34d058;font-weight:600">APY</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:var(--accent-primary);font-family:'Rajdhani',sans-serif;line-height:1" id="tvlDisplay">$0.00</div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600">TVL</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:#34d058;font-family:'Rajdhani',sans-serif;line-height:1" class="pokerai-apy-value">---</div>
+          <div style="font-size:10px;color:#34d058;font-weight:600">DRIP</div>
+        </div>
       </div>
     </div>
     <!-- Portfolio Overview — all agents across all rooms -->
@@ -3556,14 +3562,14 @@
                     <button onclick="openVault('withdraw')" class="bal-btn bal-btn-withdraw">Withdraw</button>
                   </div>
                 </div>
-                <!-- $POKERAI Balance -->
+                <!-- $POKERAI Rewards -->
                 <div class="bal-card bal-pokerai">
                   <img src="/inclawbate/assets/pokerai-logo.png" alt="POKERAI" class="bal-logo" style="width:44px;height:44px;margin:-6px auto 2px">
-                  <div class="bal-label">$POKERAI</div>
-                  <div class="bal-amount"><span id="balPokerai">—</span></div>
-                  <div class="bal-sub">coming soon</div>
+                  <div class="bal-label">$POKERAI Earned</div>
+                  <div class="bal-amount"><span id="balPokerai">0.00</span></div>
+                  <div class="bal-sub" id="pokeraiRateSub">earning 0/sec</div>
                   <div class="bal-actions">
-                    <button disabled class="bal-btn bal-btn-stake">Stake</button>
+                    <button onclick="claimPokerai()" class="bal-btn bal-btn-stake" id="claimPokeraiBtn">Claim</button>
                   </div>
                 </div>
               </div>
@@ -4386,6 +4392,14 @@ function handleMessage(msg) {
     case 'depositDetected':
       // Server detected on-chain deposit, re-sync wallet to credit chips
       checkDepositBalance();
+      break;
+
+    case 'rewardsUpdate':
+      handleRewardsUpdate(msg.data);
+      break;
+
+    case 'claimPokeraiResult':
+      handleClaimResult(msg.data);
       break;
 
     case 'myAgents':
@@ -5435,6 +5449,14 @@ const CHIPS_PER_USDC = 10000;
 let walletBalance = 0;
 let walletAuthenticated = false;
 
+// POKERAI rewards state
+let pokeraiEarned = 0;
+let pokeraiClaimed = 0;
+let pokeraiClaimable = 0;
+let pokeraiRatePerSecond = 0;
+let pokeraiTvl = { usdc: 0, pokerai: 0, total: 0 };
+let _pokeraiDripRAF = null;
+
 function getWallet() {
   try {
     const data = JSON.parse(localStorage.getItem(WALLET_KEY));
@@ -5802,6 +5824,97 @@ function handleWithdrawResult(data) {
 function handleDepositConfirmed(data) {
   showToast(`+${data.chips.toLocaleString()} chips deposited!`, 'gold');
   updateWalletUI();
+}
+
+// ============================================================
+// POKERAI REWARDS — drip counter + claim
+// ============================================================
+
+function handleRewardsUpdate(data) {
+  pokeraiEarned = data.earned || 0;
+  pokeraiClaimed = data.claimed || 0;
+  pokeraiClaimable = data.claimable || 0;
+  pokeraiRatePerSecond = data.ratePerSecond || 0;
+  if (data.tvl) {
+    pokeraiTvl = data.tvl;
+    const tvlEl = document.getElementById('tvlDisplay');
+    if (tvlEl) tvlEl.textContent = '$' + (pokeraiTvl.usdc / CHIPS_PER_USDC).toFixed(2);
+  }
+  if (data.emission) {
+    const apyEls = document.querySelectorAll('.pokerai-apy-value');
+    const usdcPerDay = data.emission.usdcPerDay || 0;
+    const apyText = usdcPerDay > 0 ? formatCompact(usdcPerDay) + '/day' : '---';
+    apyEls.forEach(el => el.textContent = apyText);
+  }
+  updatePokeraiUI();
+  startDripCounter();
+}
+
+function updatePokeraiUI() {
+  const el = document.getElementById('balPokerai');
+  if (el) el.textContent = formatCompact(pokeraiClaimable);
+
+  const rateSub = document.getElementById('pokeraiRateSub');
+  if (rateSub) {
+    if (pokeraiRatePerSecond > 0) {
+      rateSub.textContent = '+' + formatCompact(pokeraiRatePerSecond * 3600) + '/hr';
+    } else {
+      rateSub.textContent = 'deposit USDC to earn';
+    }
+  }
+
+  const claimBtn = document.getElementById('claimPokeraiBtn');
+  if (claimBtn) claimBtn.disabled = pokeraiClaimable <= 0;
+}
+
+function formatCompact(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
+  return n.toFixed(2);
+}
+
+function startDripCounter() {
+  if (_pokeraiDripRAF) return; // already running
+  let lastTime = performance.now();
+
+  function tick(now) {
+    const dt = (now - lastTime) / 1000; // seconds elapsed
+    lastTime = now;
+
+    if (pokeraiRatePerSecond > 0) {
+      pokeraiEarned += pokeraiRatePerSecond * dt;
+      pokeraiClaimable += pokeraiRatePerSecond * dt;
+      const el = document.getElementById('balPokerai');
+      if (el) el.textContent = formatCompact(pokeraiClaimable);
+    }
+
+    _pokeraiDripRAF = requestAnimationFrame(tick);
+  }
+
+  _pokeraiDripRAF = requestAnimationFrame(tick);
+}
+
+function claimPokerai() {
+  if (pokeraiClaimable <= 0) { showToast('Nothing to claim yet', 'info'); return; }
+  const btn = document.getElementById('claimPokeraiBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'claimPokerai' }));
+  }
+}
+
+function handleClaimResult(data) {
+  const btn = document.getElementById('claimPokeraiBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
+  if (data.error) {
+    showToast(data.error, 'error');
+  } else {
+    showToast(`Claimed ${formatCompact(data.claimed)} $POKERAI!`, 'gold');
+    pokeraiClaimed += data.claimed;
+    pokeraiClaimable = Math.max(0, pokeraiClaimable - data.claimed);
+    updatePokeraiUI();
+  }
 }
 
 // ============================================================

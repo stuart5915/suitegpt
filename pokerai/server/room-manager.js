@@ -112,6 +112,8 @@ class RoomManager {
     table._onHandComplete = () => {
       if (!room.isSandbox) {
         this._rebalanceRoom(roomId);
+        // Notify reward engine of value changes
+        if (this.onHandComplete) this.onHandComplete(table);
       }
     };
 

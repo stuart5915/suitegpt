@@ -6,10 +6,12 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const { RoomManager, PLATFORM_WALLETS } = require('./room-manager');
 const { createChallenge, verifySignature, getChallengeMessage } = require('./wallet-auth');
+const { RewardEngine } = require('./reward-engine');
 
 // Optional: chain + supabase (graceful fallback to JSON store if not configured)
 let chain = null;
 let useSupabase = false;
+let rewardEngine = null;
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -174,6 +176,17 @@ wss.on('connection', (ws) => {
               } catch (e) { /* silent — check-deposit HTTP fallback still available */ }
             }
           }
+          // Update reward engine with this wallet's value
+          if (rewardEngine && client.walletAddress) {
+            const bal = (await rooms.store.getOrCreateWallet(client.walletAddress)).balance;
+            const ip = rooms.getChipsInPlay(client.walletAddress);
+            rewardEngine.updateWalletValue(client.walletAddress, bal + ip, 'usdc');
+            // Send rewards state
+            const rewards = rewardEngine.getWalletRewards(client.walletAddress);
+            const stats = rewardEngine.getStats();
+            ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
+          }
+
           const s = rooms.getStateForClient(client.sessionId, getClientWallet(client), client.activeRoom);
           ws.send(JSON.stringify({ type: 'gameState', data: s }));
           break;
@@ -439,6 +452,51 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        // === POKERAI Rewards ===
+        case 'getRewards': {
+          if (!requireAuth(client, ws)) break;
+          if (!rewardEngine) {
+            ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { earned: 0, claimed: 0, claimable: 0, ratePerSecond: 0 } }));
+            break;
+          }
+          const rewards = rewardEngine.getWalletRewards(client.walletAddress);
+          const stats = rewardEngine.getStats();
+          ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
+          break;
+        }
+
+        case 'claimPokerai': {
+          if (!requireAuth(client, ws)) break;
+          if (!rewardEngine) {
+            ws.send(JSON.stringify({ type: 'claimPokraiResult', data: { error: 'Rewards not active yet' } }));
+            break;
+          }
+          const addr = client.walletAddress;
+          const claimable = rewardEngine.getClaimable(addr);
+          if (claimable <= 0) {
+            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: 'Nothing to claim' } }));
+            break;
+          }
+
+          try {
+            // Distribute on-chain via rewards contract
+            if (chain && chain.distributeReward) {
+              const txResult = await chain.distributeReward(addr, claimable);
+              if (txResult.error) {
+                ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: txResult.error } }));
+                break;
+              }
+            }
+            rewardEngine.recordClaim(addr, claimable);
+            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { success: true, claimed: claimable } }));
+            console.log(`[Rewards] ${addr} claimed ${claimable.toFixed(2)} POKERAI`);
+          } catch (e) {
+            console.error('[Rewards] Claim failed:', e.message);
+            ws.send(JSON.stringify({ type: 'claimPokeraiResult', data: { error: 'Claim failed — try again' } }));
+          }
+          break;
+        }
+
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong' }));
           break;
@@ -494,6 +552,19 @@ app.get('/stats', (req, res) => {
     handsPlayed: rooms.totalHandsPlayed,
     rooms: rooms.getRoomsSummary()
   });
+});
+
+// POKERAI rewards endpoints
+app.get('/tvl', (req, res) => {
+  const stats = rewardEngine ? rewardEngine.getStats() : { tvl: { usdc: 0, pokerai: 0, total: 0 }, emission: {}, wallets: {} };
+  res.json(stats);
+});
+
+app.get('/rewards/:address', (req, res) => {
+  const addr = req.params.address.toLowerCase();
+  if (!rewardEngine) return res.json({ earned: 0, claimed: 0, claimable: 0, ratePerSecond: 0 });
+  const rewards = rewardEngine.getWalletRewards(addr);
+  res.json(rewards);
 });
 
 // Check on-chain deposit and credit if missing (fallback for missed events)
@@ -724,11 +795,38 @@ async function startServer() {
     rooms = new RoomManager((type, data) => broadcastToClients(type, data));
   }
 
+  // Initialize reward engine (25B tokens over 90 days, 15/85 split)
+  rewardEngine = new RewardEngine({
+    totalRewards: 25_000_000_000,
+    durationDays: 90
+  });
+  rooms.rewardEngine = rewardEngine;
+  console.log('[Server] Reward engine initialized — 25B POKERAI over 90 days');
+
+  // Helper: update reward engine when a wallet's total value changes
+  function updateRewardsForWallet(walletAddress) {
+    if (!rewardEngine || !walletAddress || walletAddress.startsWith('sandbox_')) return;
+    const wallet = rooms.store.getWallet(walletAddress);
+    const balance = wallet ? wallet.balance : 0;
+    const inPlay = rooms.getChipsInPlay(walletAddress);
+    rewardEngine.updateWalletValue(walletAddress, balance + inPlay, 'usdc');
+  }
+
   // Set up auto-top-up balance change notifications
   rooms.onBalanceChange = (walletAddress) => {
     for (const [ws, client] of clients) {
       if (client.walletAddress === walletAddress && ws.readyState === 1) {
         sendBalance(ws, walletAddress);
+      }
+    }
+    updateRewardsForWallet(walletAddress);
+  };
+
+  // Update rewards after every hand (chip values change)
+  rooms.onHandComplete = (table) => {
+    for (const agent of table.agents) {
+      if (agent.isCustom && agent.walletAddress && !agent.walletAddress.startsWith('sandbox_')) {
+        updateRewardsForWallet(agent.walletAddress);
       }
     }
   };
@@ -797,8 +895,22 @@ async function startServer() {
     console.log('[Server] Chain not configured (set VAULT_CONTRACT_ADDRESS, OPERATOR_PRIVATE_KEY, BASE_RPC_URL)');
   }
 
+  // Broadcast rewards updates to connected wallets every 30s
+  setInterval(() => {
+    if (!rewardEngine) return;
+    const stats = rewardEngine.getStats();
+    for (const [ws, client] of clients) {
+      if (ws.readyState === 1 && client.walletAddress && !client.walletAddress.startsWith('sandbox_')) {
+        try {
+          const rewards = rewardEngine.getWalletRewards(client.walletAddress);
+          ws.send(JSON.stringify({ type: 'rewardsUpdate', data: { ...rewards, tvl: stats.tvl, emission: stats.emission } }));
+        } catch (e) { /* ignore */ }
+      }
+    }
+  }, 30000);
+
   server.listen(PORT, () => {
-    console.log(`PokerAI server v5 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}`);
+    console.log(`PokerAI server v5 running on port ${PORT} — 3 rooms, ${useSupabase ? 'Supabase' : 'JSON'} store, chain: ${!!chain}, rewards: ${!!rewardEngine}`);
     rooms.start();
   });
 }
