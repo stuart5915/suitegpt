@@ -680,7 +680,6 @@ app.post('/sync-balance', async (req, res) => {
     const onChainWithdrawn = Number(stats[1]);
     const depositedChips = Math.floor((onChainDeposited * 10000) / 1e6);
     const withdrawnChips = Math.floor((onChainWithdrawn * 10000) / 1e6);
-    const agentChips = rooms.getChipsInPlay(addr);
     const wallet = await rooms.store.getOrCreateWallet(addr);
     const currentBalance = wallet.balance;
     const agentChips = rooms.getChipsInPlay(addr);
