@@ -228,16 +228,60 @@
         }
         .x-feed-follow:hover { opacity: 0.85; }
         .x-feed-follow svg { width: 14px; height: 14px; }
-        .x-feed-embed {
-            border-radius: var(--radius-lg);
+
+        .x-feed-list { display: flex; flex-direction: column; gap: 2px; }
+        .x-feed-empty { text-align: center; padding: var(--space-xl); color: var(--text-dim); font-size: 0.85rem; }
+
+        .x-tweet {
+            display: flex; gap: 12px; padding: 14px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .x-tweet:last-child { border-bottom: none; }
+        .x-tweet-avatar {
+            width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+            background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
             overflow: hidden;
-            min-height: 500px;
         }
-        .x-feed-embed iframe {
-            width: 100%;
-            border: none;
-            min-height: 500px;
+        .x-tweet-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .x-tweet-avatar-letter {
+            font-weight: 800; font-size: 0.85rem; color: var(--lobster-400);
         }
+        .x-tweet-body { flex: 1; min-width: 0; }
+        .x-tweet-meta {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;
+        }
+        .x-tweet-name {
+            font-weight: 700; font-size: 0.85rem; color: var(--text-primary);
+        }
+        .x-tweet-handle {
+            font-size: 0.78rem; color: var(--text-dim);
+        }
+        .x-tweet-dot { color: var(--text-dim); font-size: 0.7rem; }
+        .x-tweet-time {
+            font-size: 0.75rem; color: var(--text-dim);
+        }
+        .x-tweet-text {
+            font-size: 0.88rem; line-height: 1.45; color: var(--text-secondary);
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .x-tweet-project {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-top: 8px; padding: 4px 10px; border-radius: var(--radius-md);
+            background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+            font-size: 0.72rem; font-weight: 600; color: var(--text-dim);
+        }
+        .x-tweet-project-logo {
+            width: 16px; height: 16px; border-radius: 4px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.55rem; font-weight: 700; color: var(--lobster-400); background: var(--bg-card);
+        }
+        .x-tweet-project-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .x-tweet-link {
+            display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; margin-left: 8px;
+            font-size: 0.72rem; color: var(--text-dim); text-decoration: none; font-weight: 600;
+        }
+        .x-tweet-link:hover { color: var(--lobster-400); }
+        .x-tweet-link svg { width: 12px; height: 12px; }
 
         @media (max-width: 600px) {
             .sched-section { padding: var(--space-md); }
@@ -353,14 +397,8 @@
                 Follow @inclawbator
             </a>
         </div>
-        <div class="x-feed-embed" id="xFeedEmbed">
-            <a class="twitter-timeline"
-               data-theme="dark"
-               data-chrome="noheader nofooter noborders transparent"
-               data-tweet-limit="10"
-               href="https://x.com/inclawbator">
-                Loading @inclawbator tweets...
-            </a>
+        <div class="x-feed-list" id="xFeedList">
+            <div class="x-feed-empty">Loading recent posts...</div>
         </div>
     </section>
 
@@ -386,7 +424,6 @@
 
 <script src="/js/wallet-bundle.js"></script>
 <script src="/js/nav-auth.js"></script>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <script>
 // ── @inclawbator Schedule ──
@@ -1198,8 +1235,86 @@
         }
     };
 
+    // ── @inclawbator Feed ──
+
+    function timeAgoShort(dateStr) {
+        var diff = Date.now() - new Date(dateStr).getTime();
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'now';
+        if (mins < 60) return mins + 'm';
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 24) return hrs + 'h';
+        var days = Math.floor(hrs / 24);
+        if (days < 30) return days + 'd';
+        return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function escHtml(str) {
+        var d = document.createElement('div');
+        d.textContent = str || '';
+        return d.innerHTML;
+    }
+
+    async function loadFeed() {
+        var container = document.getElementById('xFeedList');
+        try {
+            var start = new Date(Date.now() - 30 * 86400000).toISOString();
+            var end = new Date().toISOString();
+            var resp = await fetch('/api/inclawbate/agent-schedule?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end));
+            var data = await resp.json();
+            var posted = (data.slots || []).filter(function(s) {
+                return s.status === 'posted' && s.tweet_text;
+            }).sort(function(a, b) {
+                return new Date(b.scheduled_at) - new Date(a.scheduled_at);
+            }).slice(0, 15);
+
+            if (!posted.length) {
+                container.innerHTML = '<div class="x-feed-empty">No posts yet. Book a slot above to get started!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            posted.forEach(function(s) {
+                var logoChar = (s.project_name || '?').charAt(0).toUpperCase();
+                var avatarHtml = s.project_logo
+                    ? '<img src="' + escHtml(s.project_logo) + '" alt="" onerror="this.parentNode.innerHTML=\'<span class=x-tweet-avatar-letter>' + logoChar + '</span>\'">'
+                    : '<span class="x-tweet-avatar-letter">' + logoChar + '</span>';
+
+                var tweetUrl = s.tweet_id ? 'https://x.com/inclawbator/status/' + escHtml(s.tweet_id) : '';
+                var viewLink = tweetUrl
+                    ? '<a href="' + tweetUrl + '" target="_blank" rel="noopener" class="x-tweet-link"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>View on X</a>'
+                    : '';
+
+                var projectChip = '<span class="x-tweet-project">'
+                    + '<span class="x-tweet-project-logo">' + avatarHtml + '</span>'
+                    + escHtml(s.project_name || 'Project')
+                    + (s.project_symbol ? ' <span style="opacity:0.6">$' + escHtml(s.project_symbol) + '</span>' : '')
+                    + '</span>';
+
+                var el = document.createElement('div');
+                el.className = 'x-tweet';
+                el.innerHTML = '<div class="x-tweet-avatar">' + avatarHtml + '</div>'
+                    + '<div class="x-tweet-body">'
+                    + '<div class="x-tweet-meta">'
+                    + '<span class="x-tweet-name">inclawbator</span>'
+                    + '<span class="x-tweet-handle">@inclawbator</span>'
+                    + '<span class="x-tweet-dot">&middot;</span>'
+                    + '<span class="x-tweet-time">' + timeAgoShort(s.scheduled_at) + '</span>'
+                    + '</div>'
+                    + '<div class="x-tweet-text">' + escHtml(s.tweet_text) + '</div>'
+                    + '<div style="display:flex;align-items:center;flex-wrap:wrap">' + projectChip + viewLink + '</div>'
+                    + '</div>';
+
+                container.appendChild(el);
+            });
+        } catch (e) {
+            container.innerHTML = '<div class="x-feed-empty">Could not load feed.</div>';
+        }
+    }
+
     // ── Init ──
     initSchedule();
+    loadFeed();
 })();
 </script>
 
