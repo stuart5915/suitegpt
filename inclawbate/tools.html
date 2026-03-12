@@ -1261,6 +1261,7 @@ function fetchClawsBalance(wallet) {
 var SLOT_COST_USD = 0.01;
 var CLAWS_TOKEN_ADDR = '0x7ca47B141639B893C6782823C0b219f872056379';
 var ADMIN_WALLET = '0x91B5C0D07859CFeAfEB67d9694121CD741F049bd';
+var FREE_WALLETS = ['0x91b5c0d07859cfeafeb67d9694121cd741f049bd'];
 
 function fetchClawsPrice() {
     return fetch('https://api.dexscreener.com/latest/dex/tokens/' + CLAWS_TOKEN_ADDR)
@@ -1431,6 +1432,10 @@ function renderSlots(date) {
             }
             html += '</div>';
 
+            var isAdmin = booked.booked_by_wallet && FREE_WALLETS.includes(booked.booked_by_wallet.toLowerCase());
+            var canTakeover = !isPast && !isPosted && !isMine && !isAdmin && _userWallet
+                && slotTime.getTime() > Date.now() + 2 * 3600000;
+
             if (isPosted) {
                 html += '<span class="sched-tag sched-tag--posted">posted</span>';
             } else if (isMine && !isPast) {
@@ -1439,6 +1444,10 @@ function renderSlots(date) {
                 html += '<button onclick="event.stopPropagation();openEditForm(\'' + booked.id + '\')" style="background:none;border:none;color:var(--seafoam-400);cursor:pointer;font-size:0.7rem;font-weight:600;padding:2px 6px">edit</button>';
             } else if (isMine && isPast) {
                 html += '<span class="sched-tag sched-tag--mine">yours</span>';
+            }
+
+            if (canTakeover) {
+                html += '<button onclick="event.stopPropagation();openTakeoverForm(\'' + booked.id + '\')" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:none;cursor:pointer;font-family:var(--font-mono);font-size:0.6rem;font-weight:600;padding:2px 6px;border-radius:6px">takeover</button>';
             }
         } else if (!isPast) {
             html += '<span class="sched-avail">Available — click to book</span>';
@@ -1520,6 +1529,7 @@ function openBookForm(slotTime) {
 function closeBookForm() {
     document.getElementById('schedBookForm').style.display = 'none';
     document.getElementById('schedBookForm').removeAttribute('data-edit-id');
+    document.getElementById('schedBookForm').removeAttribute('data-takeover-id');
 }
 
 function openEditForm(slotId) {
@@ -1776,6 +1786,214 @@ async function cancelSlot(slotId) {
 
     } catch (err) {
         alert(err.message || 'Failed to cancel slot');
+    }
+}
+
+function openTakeoverForm(slotId) {
+    var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+    if (!slot) return;
+
+    var form = document.getElementById('schedBookForm');
+    form.style.display = 'block';
+    form.setAttribute('data-takeover-id', slotId);
+    form.removeAttribute('data-edit-id');
+
+    var slotTime = new Date(slot.scheduled_at);
+    var timeStr = slotTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    var dateStr = (slotTime.getMonth() + 1) + '/' + slotTime.getDate();
+    document.getElementById('schedBookTime').textContent = 'Takeover ' + dateStr + ' at ' + timeStr + ' (from ' + (slot.project_name || 'someone') + ')';
+    document.getElementById('schedBookSlotTime').value = slotTime.toISOString();
+
+    var sel = document.getElementById('schedBookProject');
+    sel.innerHTML = '';
+    sel.disabled = false;
+
+    if (!_userWallet) {
+        document.getElementById('schedBookBtn').disabled = true;
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sign in first';
+        sel.appendChild(opt);
+    } else if (!_schedProjects.length) {
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No projects — create one first';
+        sel.appendChild(opt);
+    } else {
+        _schedProjects.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name || p.token_symbol || 'Project';
+            sel.appendChild(opt);
+        });
+    }
+
+    document.getElementById('schedBookAngle').value = '';
+    document.getElementById('schedBookTone').value = 'default';
+    document.getElementById('schedBookSuccess').style.display = 'none';
+    document.getElementById('schedBookError').style.display = 'none';
+    document.getElementById('schedBookBtn').disabled = false;
+    document.getElementById('schedBookBtn').textContent = 'Takeover Slot';
+    document.getElementById('schedBookBtn').setAttribute('onclick', 'takeoverSlot()');
+
+    var costEl = document.getElementById('schedBookCost');
+    var currentPaid = slot.paid_amount || 0;
+    costEl.textContent = 'Loading takeover cost...';
+    fetchClawsPrice().then(function(price) {
+        if (price > 0) {
+            var minFromBase = SLOT_COST_USD / price;
+            var minClaws = Math.max(currentPaid * 2, minFromBase);
+            var usdEst = (minClaws * price).toFixed(2);
+            costEl.textContent = 'Takeover: ' + formatClaws(minClaws) + ' CLAWS (~$' + usdEst + ') — 2x current bid. Outbid user moves to next open slot.';
+        } else {
+            costEl.textContent = 'Takeover: 2x current bid in CLAWS';
+        }
+    });
+
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function takeoverSlot() {
+    var auth = getAuth();
+    if (!auth || !auth.token) {
+        document.getElementById('schedBookError').textContent = 'Sign in first';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
+    var form = document.getElementById('schedBookForm');
+    var slotId = form.getAttribute('data-takeover-id');
+    if (!slotId) return;
+
+    var slot = _schedSlots.find(function(s) { return s.id === slotId; });
+    if (!slot) return;
+
+    var projectId = document.getElementById('schedBookProject').value;
+    if (!projectId) {
+        document.getElementById('schedBookError').textContent = 'Select a project first';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
+    if (!window.ethereum) {
+        document.getElementById('schedBookError').textContent = 'No wallet detected. Install MetaMask or similar.';
+        document.getElementById('schedBookError').style.display = 'block';
+        return;
+    }
+
+    var btn = document.getElementById('schedBookBtn');
+    btn.disabled = true;
+    document.getElementById('schedBookSuccess').style.display = 'none';
+    document.getElementById('schedBookError').style.display = 'none';
+
+    try {
+        btn.textContent = 'Fetching price...';
+        var clawsPrice = await fetchClawsPrice();
+        if (!clawsPrice) throw new Error('Could not fetch CLAWS price. Try again.');
+
+        var currentPaid = slot.paid_amount || 0;
+        var minFromBase = SLOT_COST_USD / clawsPrice;
+        var clawsNeeded = Math.max(currentPaid * 2, minFromBase);
+        var clawsWhole = Math.ceil(clawsNeeded * 10000);
+        var costWei = (BigInt(clawsWhole) * BigInt('100000000000000')).toString(16);
+
+        btn.textContent = 'Send ' + formatClaws(clawsNeeded) + ' CLAWS...';
+
+        var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x2105') {
+            try {
+                await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+            } catch (switchErr) {
+                if (switchErr.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{ chainId: '0x2105', chainName: 'Base', rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'], nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 } }]
+                    });
+                } else {
+                    throw new Error('Switch to Base network in your wallet.');
+                }
+            }
+        }
+
+        var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (!accounts || !accounts[0]) {
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        }
+        var fromAddr = accounts[0];
+        if (!fromAddr) throw new Error('Connect your wallet first.');
+
+        var transferData = '0xa9059cbb'
+            + ADMIN_WALLET.replace('0x', '').toLowerCase().padStart(64, '0')
+            + costWei.padStart(64, '0');
+
+        var txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: fromAddr, to: CLAWS_TOKEN_ADDR, data: transferData }]
+        });
+
+        btn.textContent = 'Confirming tx...';
+        var confirmed = false;
+        for (var i = 0; i < 15; i++) {
+            try {
+                var receipt = await window.ethereum.request({
+                    method: 'eth_getTransactionReceipt', params: [txHash]
+                });
+                if (receipt && receipt.status === '0x1') { confirmed = true; break; }
+                if (receipt && receipt.status !== '0x1') throw new Error('Transaction failed on-chain.');
+            } catch (e) {
+                if (e.message === 'Transaction failed on-chain.') throw e;
+            }
+            await new Promise(function(r) { setTimeout(r, 2000); });
+        }
+        if (!confirmed) throw new Error('Transaction not confirmed after 30s. Contact support with tx: ' + txHash);
+
+        btn.textContent = 'Taking over slot...';
+        var resp = await fetch('/api/inclawbate/agent-schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + auth.token
+            },
+            body: JSON.stringify({
+                action: 'takeover',
+                slot_id: slotId,
+                project_id: projectId,
+                content_angle: document.getElementById('schedBookAngle').value,
+                tone: document.getElementById('schedBookTone').value,
+                tx_hash: txHash
+            })
+        });
+
+        var data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Takeover failed');
+
+        var msg = 'Takeover complete! This slot is now yours.';
+        if (data.outbid_moved_to) {
+            msg += ' Previous holder moved to ' + new Date(data.outbid_moved_to.scheduled_at).toLocaleString([], { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '.';
+        }
+        document.getElementById('schedBookSuccess').textContent = msg;
+        document.getElementById('schedBookSuccess').style.display = 'block';
+
+        if (data.slot) {
+            var idx = _schedSlots.findIndex(function(s) { return s.id === slotId; });
+            if (idx >= 0) _schedSlots[idx] = data.slot;
+        }
+        if (data.outbid_moved_to) {
+            _schedSlots.push(data.outbid_moved_to);
+        }
+
+        setTimeout(function() {
+            closeBookForm();
+            form.removeAttribute('data-takeover-id');
+            renderSlots(_selectedDay);
+            renderDayStrip();
+        }, 2000);
+
+    } catch (err) {
+        document.getElementById('schedBookError').textContent = err.message || 'Failed to takeover slot';
+        document.getElementById('schedBookError').style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Takeover Slot';
     }
 }
 

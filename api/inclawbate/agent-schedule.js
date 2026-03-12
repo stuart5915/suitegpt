@@ -1,7 +1,8 @@
-// Agent Schedule API — Book/view/cancel @inclawbator tweet slots
+// Agent Schedule API — Book/view/cancel/takeover @inclawbator tweet slots
 // Payment: user sends CLAWS to admin wallet, server verifies on-chain.
 // GET  ?start=ISO&end=ISO  — list slots in date range
 // POST {action:"book"}     — book a slot (JWT auth + on-chain CLAWS payment)
+// POST {action:"takeover"} — outbid an existing slot (pay 2x what they paid)
 // POST {action:"cancel"}   — cancel your slot (JWT auth, no refund)
 
 import { createClient } from '@supabase/supabase-js';
@@ -114,6 +115,7 @@ function sanitizeSlot(s) {
         project_slug: s.projects?.slug || null,
         project_symbol: s.projects?.token_symbol || null,
         booked_by_wallet: s.booked_by_wallet,
+        paid_amount: s.paid_amount || 0,
     };
 }
 
@@ -186,6 +188,7 @@ export default async function handler(req, res) {
             }
 
             const isFree = FREE_WALLETS.includes(wallet);
+            let paidClaws = 0;
 
             // Verify on-chain CLAWS payment (skip for admin)
             if (!isFree) {
@@ -214,6 +217,7 @@ export default async function handler(req, res) {
                 if (!verification.valid) {
                     return res.status(402).json({ error: verification.error });
                 }
+                paidClaws = verification.amount;
             }
 
             // Check active booking limit
@@ -237,7 +241,8 @@ export default async function handler(req, res) {
                 content_angle: (content_angle || '').slice(0, 200) || null,
                 tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
                 catchphrase: (catchphrase || '').slice(0, 100) || null,
-                status: 'scheduled'
+                status: 'scheduled',
+                paid_amount: paidClaws
             };
             if (tx_hash) insertData.tx_hash = tx_hash;
 
@@ -288,6 +293,152 @@ export default async function handler(req, res) {
 
             if (updateErr) return res.status(500).json({ error: updateErr.message });
             return res.status(200).json({ updated: true });
+        }
+
+        // ── Takeover a slot (outbid) ──
+        if (action === 'takeover') {
+            const { slot_id, project_id, content_angle, tone, tx_hash } = req.body;
+            if (!slot_id || !project_id || !tx_hash) {
+                return res.status(400).json({ error: 'slot_id, project_id, and tx_hash required' });
+            }
+
+            // Fetch the existing slot
+            const { data: existing } = await supabase
+                .from('agent_schedule')
+                .select('*')
+                .eq('id', slot_id)
+                .eq('status', 'scheduled')
+                .single();
+
+            if (!existing) return res.status(404).json({ error: 'Slot not found or already posted' });
+
+            // Can't takeover your own slot
+            if (existing.booked_by_wallet === wallet) {
+                return res.status(400).json({ error: 'You already own this slot. Use edit instead.' });
+            }
+
+            // Can't takeover admin/free wallet slots
+            if (FREE_WALLETS.includes(existing.booked_by_wallet)) {
+                return res.status(403).json({ error: 'This slot cannot be taken over.' });
+            }
+
+            // Must be 2+ hours before posting
+            const slotTime = new Date(existing.scheduled_at).getTime();
+            if (slotTime <= Date.now() + 2 * 3600000) {
+                return res.status(400).json({ error: 'Slots lock 2 hours before posting. Too late to takeover.' });
+            }
+
+            // Validate project ownership
+            const { data: project } = await supabase
+                .from('projects')
+                .select('id, name, creator_wallet')
+                .eq('id', project_id)
+                .single();
+
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            if (project.creator_wallet !== wallet) {
+                return res.status(403).json({ error: 'Only the project owner can book slots' });
+            }
+
+            // Check tx not already used
+            const { count: txUsed } = await supabase
+                .from('agent_schedule')
+                .select('id', { count: 'exact', head: true })
+                .eq('tx_hash', tx_hash);
+
+            if (txUsed > 0) {
+                return res.status(409).json({ error: 'This transaction was already used' });
+            }
+
+            // Must pay 2x the CLAWS amount current holder paid (minimum $0.01 worth)
+            const currentPaidClaws = existing.paid_amount || 0;
+
+            const clawsPrice = await getClawsPrice();
+            if (!clawsPrice) {
+                return res.status(503).json({ error: 'Could not fetch CLAWS price. Try again.' });
+            }
+            const minFromBase = SLOT_COST_USD / clawsPrice;
+            const minClaws = Math.max(currentPaidClaws * 2, minFromBase);
+
+            const verification = await verifyPayment(tx_hash, minClaws);
+            if (!verification.valid) {
+                return res.status(402).json({ error: verification.error });
+            }
+
+            // Find next available slot for the outbid person
+            const now = Date.now();
+            const maxTime = now + MAX_DAYS_AHEAD * 86400000;
+            let movedTo = null;
+
+            // Get all booked slots in the window
+            const { data: bookedSlots } = await supabase
+                .from('agent_schedule')
+                .select('scheduled_at')
+                .eq('status', 'scheduled')
+                .gte('scheduled_at', new Date(now).toISOString())
+                .lte('scheduled_at', new Date(maxTime).toISOString());
+
+            const bookedTimes = new Set((bookedSlots || []).map(s => new Date(s.scheduled_at).getTime()));
+
+            // Walk through every 2-hour slot starting from the current slot time
+            for (let t = slotTime + 2 * 3600000; t < maxTime; t += 2 * 3600000) {
+                const d = new Date(t);
+                if (!VALID_HOURS.includes(d.getUTCHours())) continue;
+                if (d.getTime() <= now) continue;
+                if (!bookedTimes.has(d.getTime())) {
+                    movedTo = d.toISOString();
+                    break;
+                }
+            }
+
+            // Update existing slot → takeover (replace with new booker)
+            const { error: updateErr } = await supabase
+                .from('agent_schedule')
+                .update({
+                    project_id,
+                    booked_by_wallet: wallet,
+                    content_angle: (content_angle || '').slice(0, 200) || null,
+                    tone: ['hype', 'chill', 'degen', 'professional', 'meme'].includes(tone) ? tone : 'default',
+                    tx_hash,
+                    paid_amount: verification.amount
+                })
+                .eq('id', slot_id);
+
+            if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+            // Move outbid person to next available slot (if one exists)
+            let movedSlot = null;
+            if (movedTo) {
+                const { data: newSlot } = await supabase
+                    .from('agent_schedule')
+                    .insert({
+                        project_id: existing.project_id,
+                        booked_by_wallet: existing.booked_by_wallet,
+                        scheduled_at: movedTo,
+                        content_angle: existing.content_angle,
+                        tone: existing.tone,
+                        catchphrase: existing.catchphrase,
+                        status: 'scheduled',
+                        paid_amount: existing.paid_amount || 0
+                    })
+                    .select('*, projects(name, logo_url, slug, token_symbol)')
+                    .single();
+
+                movedSlot = newSlot ? sanitizeSlot(newSlot) : null;
+            }
+            // If no available slot, the outbid person just loses out (no refund — on-chain payment)
+
+            // Return the updated slot
+            const { data: updatedSlot } = await supabase
+                .from('agent_schedule')
+                .select('*, projects(name, logo_url, slug, token_symbol)')
+                .eq('id', slot_id)
+                .single();
+
+            return res.status(200).json({
+                slot: sanitizeSlot(updatedSlot),
+                outbid_moved_to: movedSlot
+            });
         }
 
         // ── Cancel a slot ──
