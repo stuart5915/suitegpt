@@ -254,8 +254,34 @@
         });
     }
 
+    function normalizeAgents(agents) {
+        return (agents || []).map(function (a) {
+            var badges = ['Agent'];
+            if (a.x_handle) badges.push('@' + a.x_handle);
+            if (a.token_symbol) badges.push('$' + a.token_symbol);
+            return {
+                type: 'agent',
+                name: a.name || 'Unnamed Agent',
+                slug: a.slug || '',
+                description: a.latest_tweet || a.description || '',
+                logo_url: a.logo_url || '',
+                href: '/agents',
+                token_address: '',
+                token_symbol: a.token_symbol || '',
+                staking_address: '',
+                category: '',
+                upvote_count: 0,
+                tier: '',
+                supply: '',
+                badges: badges,
+                agent_total_posts: a.agent_total_posts || 0,
+                created_at: a.latest_tweet_at || ''
+            };
+        });
+    }
+
     // ── Dedup & merge ──
-    function buildItemList(projects, apps, tokens) {
+    function buildItemList(projects, apps, tokens, agents) {
         // Normalize tokens (API + extras)
         var apiTokens = (tokens || []).filter(function (t) {
             return t.status === 'active' || t.status === 'launched';
@@ -320,7 +346,9 @@
         // NFT items from static data
         var nftItems = STATIC_NFTS.slice();
 
-        allItems = [].concat(projectItems, appItems, tokenItems, stakingItems, nftItems);
+        var agentItems = normalizeAgents(agents);
+
+        allItems = [].concat(projectItems, appItems, tokenItems, stakingItems, nftItems, agentItems);
     }
 
     // ── Filtering & sorting ──
@@ -368,7 +396,7 @@
         var items = getFiltered();
 
         // Update tab counts
-        var counts = { all: 0, project: 0, app: 0, token: 0, nft: 0, staking: 0 };
+        var counts = { all: 0, project: 0, app: 0, token: 0, nft: 0, staking: 0, agent: 0 };
         var q = searchQuery.toLowerCase();
         allItems.forEach(function (item) {
             if (q) {
@@ -434,6 +462,8 @@
                 }
             } else if (item.type === 'app' && item.upvote_count) {
                 statsHtml += '<span class="explore-row-stat">' + item.upvote_count + ' upvotes</span>';
+            } else if (item.type === 'agent') {
+                if (item.agent_total_posts) statsHtml += '<span class="explore-row-stat">' + item.agent_total_posts + ' posts</span>';
             } else if (item.type === 'nft') {
                 if (item.supply) statsHtml += '<span class="explore-row-stat">Supply: <strong>' + escapeHtml(item.supply) + '</strong></span>';
             }
@@ -618,11 +648,11 @@
         var path = window.location.pathname;
         var hash = window.location.hash.replace('#', '').toLowerCase();
 
-        if (hash && ['project', 'app', 'token', 'nft', 'staking'].indexOf(hash) !== -1) {
+        if (hash && ['project', 'app', 'token', 'nft', 'staking', 'agent'].indexOf(hash) !== -1) {
             activeTab = hash;
         }
         // Also support plural hashes
-        var pluralMap = { projects: 'project', apps: 'app', tokens: 'token', nfts: 'nft' };
+        var pluralMap = { projects: 'project', apps: 'app', tokens: 'token', nfts: 'nft', agents: 'agent' };
         if (hash && pluralMap[hash]) activeTab = pluralMap[hash];
 
         tabBtns.forEach(function (t) {
@@ -637,12 +667,14 @@
         var projectsData = [];
         var appsData = [];
         var tokensData = [];
+        var agentsData = [];
 
-        // 3 parallel fetches
+        // 4 parallel fetches
         var results = await Promise.allSettled([
             fetch(APIS.projects).then(function (r) { return r.json(); }),
             fetch(APIS.apps).then(function (r) { return r.json(); }),
-            fetch(APIS.tokens).then(function (r) { return r.json(); })
+            fetch(APIS.tokens).then(function (r) { return r.json(); }),
+            fetch(APIS.agents).then(function (r) { return r.json(); })
         ]);
 
         if (results[0].status === 'fulfilled') {
@@ -658,8 +690,12 @@
             tokensData = td.projects || td || [];
             if (!Array.isArray(tokensData)) tokensData = [];
         }
+        if (results[3].status === 'fulfilled') {
+            agentsData = results[3].value.agents || [];
+            if (!Array.isArray(agentsData)) agentsData = [];
+        }
 
-        buildItemList(projectsData, appsData, tokensData);
+        buildItemList(projectsData, appsData, tokensData, agentsData);
         render();
         fetchMarketCaps();
         fetchStakingStats();

@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { authenticateRequest } from './x-callback.js';
+import { generateTweet } from './_agent-utils.js';
 import crypto from 'crypto';
 
 const supabase = createClient(
@@ -21,87 +22,7 @@ const ALLOWED_ORIGINS = [
     'http://localhost:5500',
 ];
 
-// ── Tweet generation (same as heartbeat) ──
-
-const TONE_DESCRIPTIONS = {
-    hype: 'High energy, bullish, uses exclamation marks. Excited but not cringey.',
-    chill: 'Laid back, casual, lowercase vibes. Calm and collected.',
-    degen: 'Crypto native, uses slang (gm, ser, lfg, ngmi), meme-aware.',
-    professional: 'Informative, clean, data-driven. No slang.',
-    meme: 'Funny, ironic, shitpost energy. Absurdist humor.'
-};
-
-const DEFAULT_TOPICS = ['community', 'utility', 'staking', 'milestones', 'memes', 'market vibes'];
-
-function parsePersona(persona) {
-    const result = { tone: '', topics: [], catchphrase: '' };
-    if (!persona) return result;
-    const toneMatch = persona.match(/Tone:\s*(\w+)/i);
-    if (toneMatch) result.tone = toneMatch[1].toLowerCase();
-    const topicMatch = persona.match(/Topics:\s*([^|]+)/i);
-    if (topicMatch) result.topics = topicMatch[1].split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-    const catchMatch = persona.match(/Catchphrase:\s*(.+)/i);
-    if (catchMatch) result.catchphrase = catchMatch[1].trim();
-    return result;
-}
-
-async function generateTweet(project) {
-    const persona = parsePersona(project.agent_persona);
-    const topics = persona.topics.length ? persona.topics : DEFAULT_TOPICS;
-    const pillar = topics[Math.floor(Math.random() * topics.length)];
-    const toneDesc = TONE_DESCRIPTIONS[persona.tone] || 'Natural, authentic, conversational.';
-
-    const hasOwnX = project.x_access_token && project.x_refresh_token;
-    const accountNote = hasOwnX && project.x_handle
-        ? `You tweet as @${project.x_handle}.`
-        : `You tweet from @inclawbator on behalf of this project.`;
-
-    const symbol = project.token_symbol;
-    const projectName = project.name || 'this project';
-    const tokenRef = symbol ? `$${symbol}` : projectName;
-
-    const systemPrompt = `You are an AI agent for ${tokenRef}${symbol ? ' (' + projectName + ')' : ''}. ${accountNote}
-
-Tone: ${toneDesc}
-${persona.catchphrase ? 'Signature style: ' + persona.catchphrase : ''}
-${project.description ? 'Project: ' + project.description : ''}
-${project.website_url ? 'Website: ' + project.website_url : ''}
-
-Rules:
-- Under 260 characters (STRICT — leave room for the bot tag at the end)
-${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name naturally'}
-- No hashtags
-- No "excited to announce" or any corporate speak
-- No em dashes
-- No quotation marks around the tweet
-- NEVER say "buy", "invest", "financial advice", "guaranteed returns", or "not financial advice"
-- No price predictions or promises of gains
-- Output ONLY the tweet text, nothing else
-- Be creative, varied, and authentic`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 300,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: `Today's content angle: ${pillar}\n\nWrite a tweet:` }]
-        })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Claude API error');
-
-    let text = (data.content?.[0]?.text || '').trim();
-    const tag = '\n\n\ud83e\udd16 via @inclawbator AI';
-    if (text.length + tag.length <= 280) text += tag;
-    return text;
-}
+// generateTweet imported from shared _agent-utils.js
 
 // ── Posting helpers (same as heartbeat) ──
 
@@ -189,7 +110,8 @@ export default async function handler(req, res) {
 
     try {
         // Generate tweet
-        const tweetText = await generateTweet(project);
+        const genResult = await generateTweet(project);
+        const tweetText = genResult.text;
         if (!tweetText || tweetText.length > 280) {
             throw new Error('Generated tweet too long or empty');
         }
