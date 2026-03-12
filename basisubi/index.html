@@ -4636,16 +4636,12 @@
             const ethRet = (pNow - pPrev) / pPrev;
 
             // ── Concentrated LP ──
-            // Track if position is still in range
+            // lpApy is NET yield (swap fees minus expected IL) — already accounts for IL
+            // Only earned when position is in range; out of range = 0 fees
             const inRange = Math.abs(lpCumDrift + ethRet) < lpHalfRange;
-            // Net LP APY (fees minus expected IL) — only earned when in range
             const dailyNetLP = inRange ? (config.lpApy / 100) / 365 : 0;
             // 50% ETH exposure (LP is half ETH, half USDC)
-            // Concentrated IL: amplified by ~1/(2*halfRange) vs full range
-            // Full range IL ≈ -ethRet²/8, concentrated multiplier capped at 10x
-            const concMultiplier = Math.min(1 / (2 * lpHalfRange), 10);
-            const ilConc = -(ethRet ** 2) * concMultiplier / 8;
-            const lpRet = dailyNetLP + ethRet * 0.5 + ilConc;
+            const lpRet = dailyNetLP + ethRet * 0.5;
 
             // ── Leveraged Long (1.25x via Aave) ──
             // Supply ETH (earn 1.5%), borrow USDC at ~60% (pay 5.5%), buy more ETH
@@ -4789,7 +4785,7 @@
                 // Update LP cumulative drift
                 lpCumDrift += ethRet;
 
-                if (i - lastRebalDay >= 0.167) {
+                if (i - lastRebalDay >= 3) { // 3-day cooldown between rebalances
                     const drift = Math.max(
                         Math.abs(currentAlloc.lp-target.lp),
                         Math.abs(currentAlloc.long-target.long),
@@ -4797,8 +4793,15 @@
                         Math.abs(currentAlloc.hold-target.hold)
                     );
                     if (drift >= config.drift) {
-                        // Realistic rebalance cost: 0.4% per swap × 5 swaps avg = 2%
-                        const cost = vaultVal * 0.02;
+                        // Proportional rebalance cost: ~0.3% per unit of portfolio swapped
+                        // Total swap volume = sum(|alloc changes|) / 2 (buys = sells)
+                        const totalChange = Math.abs(currentAlloc.lp-target.lp) +
+                                            Math.abs(currentAlloc.long-target.long) +
+                                            Math.abs(currentAlloc.short-target.short) +
+                                            Math.abs(currentAlloc.hold-target.hold);
+                        const swapFraction = totalChange / 200; // fraction of portfolio swapped
+                        const costRate = 0.003; // 0.3% swap cost (Aerodrome fee + slippage)
+                        const cost = vaultVal * swapFraction * costRate;
                         vaultVal -= cost; totalCost += cost;
                         currentAlloc = {...target};
                         rebalCount++; lastRebalDay = i;
