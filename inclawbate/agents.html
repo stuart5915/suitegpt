@@ -283,9 +283,13 @@
             <div class="wiz-progress"><div class="wiz-dot current" id="wizDot0"></div><div class="wiz-dot" id="wizDot1"></div><div class="wiz-dot" id="wizDot2"></div><div class="wiz-dot" id="wizDot3"></div></div>
             <div class="wiz-step active" id="wizStep0">
                 <h3>Name your agent</h3>
-                <p class="desc">Give it a name. This shows up publicly.</p>
+                <p class="desc">Give it a name and tell it what to promote.</p>
                 <label>Agent Name</label>
                 <input type="text" id="wizName" placeholder="e.g. CLAWS Hype Bot" maxlength="60">
+                <label>Token Symbol <span style="font-weight:400;color:var(--text-dim)">(optional)</span></label>
+                <input type="text" id="wizToken" placeholder="e.g. CLAWS" maxlength="20" style="text-transform:uppercase">
+                <label>What does it promote? <span style="font-weight:400;color:var(--text-dim)">(1-2 sentences)</span></label>
+                <textarea id="wizDesc" placeholder="e.g. CLAWS is the Inclawbate ecosystem token. Stake it, earn rewards, use it across all Inclawbate apps." maxlength="300" style="min-height:50px"></textarea>
                 <div class="wiz-btns"><button class="wiz-btn wiz-btn-back" onclick="closeWizard()">Cancel</button><button class="wiz-btn wiz-btn-next" onclick="wizNext(1)">Next</button></div>
             </div>
             <div class="wiz-step" id="wizStep1">
@@ -876,7 +880,7 @@ async function disconnectX(pid) {
 // WIZARD
 // ══════════════════════════════════════
 var _wizStep=0;
-function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';document.getElementById('wizName').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
+function openWizard(){_wizStep=0;_wizProjectId=null;_vibe='degen';document.getElementById('wizName').value='';document.getElementById('wizToken').value='';document.getElementById('wizDesc').value='';document.getElementById('wizPersonaText').value='';document.getElementById('wizCustom').style.display='none';document.querySelectorAll('.wizard .vibe-btn').forEach(function(b){b.classList.toggle('active',b.dataset.vibe==='degen');});document.getElementById('wizLaunchMsg').textContent='';document.getElementById('wizConnectMsg').textContent='';document.getElementById('wizard').classList.add('open');goToStep(0);}
 function closeWizard(){document.getElementById('wizard').classList.remove('open');}
 function goToStep(n){_wizStep=n;for(var i=0;i<4;i++){document.getElementById('wizStep'+i).classList.toggle('active',i===n);var dot=document.getElementById('wizDot'+i);dot.className='wiz-dot';if(i<n)dot.classList.add('done');else if(i===n)dot.classList.add('current');}}
 function wizNext(s){if(s===1&&!document.getElementById('wizName').value.trim()){toast('Enter a name',true);return;}goToStep(s);}
@@ -889,9 +893,11 @@ async function wizConnectX(){
     try {
         if(!_wizProjectId){
             var name=document.getElementById('wizName').value.trim();
+            var tokenSym=(document.getElementById('wizToken').value||'').trim().toUpperCase()||null;
+            var desc=(document.getElementById('wizDesc').value||'').trim()||null;
             var persona=_vibe==='custom'?(document.getElementById('wizPersonaText').value||'').trim():(VIBES[_vibe]||'');
             persona='Agent name: '+name+'. '+persona;
-            var r=await fetch(API+'/projects',{method:'POST',headers:hdrs(),body:JSON.stringify({name:name,description:'AI agent: '+name,agent_enabled:true,agent_persona:persona,agent_tone:_vibe,agent_status:'paused'})});
+            var r=await fetch(API+'/projects',{method:'POST',headers:hdrs(),body:JSON.stringify({name:name,description:desc||('AI agent for '+(tokenSym?'$'+tokenSym:name)),token_symbol:tokenSym,agent_enabled:true,agent_persona:persona,agent_tone:_vibe,agent_status:'paused'})});
             var data=await r.json();if(!r.ok) throw new Error(data.error||'Failed');
             _wizProjectId=data.project.id;
         }
