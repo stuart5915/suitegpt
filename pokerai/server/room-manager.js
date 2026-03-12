@@ -264,28 +264,15 @@ class RoomManager {
     // Step 1: Balance tables — even distribution across all tables
     this._balanceTables(roomId);
 
-    // Step 2: Platform agent liquidity (seed from lobby / extract when no humans)
+    // Step 2: Platform agent liquidity — keep tables populated, platform agents play 24/7
     if (PLATFORM_WALLETS.size > 0) {
       const stats = room.tables.map(t => ({ table: t, ...this._getTableStats(t) }));
-      const humanTables = stats.filter(s => s.humans > 0);
-      const noHumanTables = stats.filter(s => s.humans === 0 && s.platform > 0);
-
-      if (humanTables.length > 0) {
-        for (const s of noHumanTables) {
-          this._extractPlatformAgents(s.table);
-        }
-        for (const s of humanTables) {
-          const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
-          if (needed > 0) {
-            const seeded = this._seedPlatformAgents(s.table, roomId, needed);
-            if (seeded > 0) console.log(`[Rebalance] Seeded ${seeded} platform agent(s) → ${s.table.tableId}`);
-          }
-        }
-      } else {
-        for (const s of stats) {
-          if (s.platform > 0) {
-            this._extractPlatformAgents(s.table);
-          }
+      for (const s of stats) {
+        // Seed platform agents if table is below target (regardless of human presence)
+        const needed = Math.max(0, PLATFORM_TARGET_PER_TABLE - s.table.agents.length);
+        if (needed > 0) {
+          const seeded = this._seedPlatformAgents(s.table, roomId, needed);
+          if (seeded > 0) console.log(`[Rebalance] Seeded ${seeded} platform agent(s) → ${s.table.tableId}`);
         }
       }
     }
