@@ -4424,6 +4424,7 @@ function handleMessage(msg) {
       break;
 
     case 'backAgentResult':
+      _sidebarBackOpen = false;
       if (msg.data.error) {
         showToast(msg.data.error, 'error');
       } else {
@@ -5210,7 +5211,7 @@ function renderAgentHistory() {
 }
 
 function renderAgentsSidebar() {
-  if (_sidebarTopUpOpen) return;
+  if (_sidebarTopUpOpen || _sidebarBackOpen) return;
   const container = document.getElementById('agentsSidebar');
   const wallet = getWallet();
   container.innerHTML = gameState.agents.map(agent => {
@@ -5264,6 +5265,7 @@ function renderAgentsSidebar() {
 }
 
 let _sidebarTopUpOpen = false;
+let _sidebarBackOpen = false;
 function sidebarTopUp(agentId) {
   const el = document.getElementById('sidebar-topup-' + agentId);
   if (!el) return;
@@ -6553,7 +6555,9 @@ function recallAgent(agentId) {
 function toggleBackPanel(agentId) {
   const el = document.getElementById('sidebar-back-' + agentId);
   if (!el) return;
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  _sidebarBackOpen = opening;
 }
 
 function backAgent(agentId, amount) {
