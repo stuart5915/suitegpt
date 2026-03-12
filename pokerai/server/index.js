@@ -157,7 +157,7 @@ wss.on('connection', (ws) => {
             const wallet = await rooms.store.getOrCreateWallet(client.walletAddress);
             ws.send(JSON.stringify({ type: 'walletBalance', data: { balance: wallet.balance } }));
 
-            // Also check on-chain deposits in background (credits if server missed any)
+            // Sync with on-chain deposits — credit up OR cap down if server drifted
             if (chain) {
               try {
                 const stats = await chain.vault.playerStats(client.walletAddress);
@@ -167,11 +167,19 @@ wss.on('connection', (ws) => {
                 const inPlay = rooms.getChipsInPlay(client.walletAddress);
                 const total = wallet.balance + inPlay;
                 if (expected > total) {
+                  // Server missed a deposit — credit the difference
                   const credit = expected - total;
                   await rooms.store.addBalance(client.walletAddress, credit);
                   await rooms.store.recordTransaction(client.walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
                   sendBalance(ws, client.walletAddress);
                   ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit } }));
+                } else if (total > expected && wallet.balance > 0) {
+                  // Server balance drifted above on-chain reality (bug, exploit, etc.) — cap it
+                  const excess = total - expected;
+                  const capTo = Math.max(0, wallet.balance - excess);
+                  console.log(`[BalanceSync] ${client.walletAddress.slice(0,8)}: server total ${total} > on-chain ${expected}, capping wallet from ${wallet.balance} to ${capTo}`);
+                  rooms.store.updateBalance(client.walletAddress, capTo);
+                  sendBalance(ws, client.walletAddress);
                 }
               } catch (e) { /* silent — check-deposit HTTP fallback still available */ }
             }
@@ -600,6 +608,7 @@ app.post('/check-deposit', async (req, res) => {
     console.log(`[CheckDeposit] ${addr}: onChain=${onChainChips} chips deposited, ${withdrawnChips} withdrawn, server balance=${serverBalance}, in play=${agentChipsInPlay}, total=${totalServerChips}`);
 
     if (expectedMinBalance > totalServerChips) {
+      // Server missed a deposit — credit the difference
       const credit = expectedMinBalance - totalServerChips;
       await rooms.store.addBalance(addr, credit);
       await rooms.store.recordTransaction(addr, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
@@ -614,6 +623,20 @@ app.post('/check-deposit', async (req, res) => {
       }
 
       res.json({ success: true, credited: credit, newBalance: serverBalance + credit });
+    } else if (totalServerChips > expectedMinBalance && serverBalance > 0) {
+      // Server drifted above on-chain — cap it
+      const excess = totalServerChips - expectedMinBalance;
+      const capTo = Math.max(0, serverBalance - excess);
+      rooms.store.updateBalance(addr, capTo);
+      console.log(`[CheckDeposit] Capped ${addr}: server was ${serverBalance}, now ${capTo} (on-chain max: ${expectedMinBalance})`);
+
+      for (const [ws, client] of clients) {
+        if (client.walletAddress === addr && ws.readyState === 1) {
+          sendBalance(ws, addr);
+        }
+      }
+
+      res.json({ success: true, capped: true, oldBalance: serverBalance, newBalance: capTo });
     } else {
       res.json({ success: true, credited: 0, balance: serverBalance, message: 'Balance already correct' });
     }
