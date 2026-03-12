@@ -5,7 +5,8 @@
  * Uses Synthetix-style per-second accumulator math for fair, continuous distribution.
  * Only chips actively at tables count — idle wallet balance earns nothing.
  *
- * Round 1: 2.5B tokens (10% of supply) over 90 days (~0.1%/day sell pressure)
+ * Round 1: 2.5B tokens (2.5% of 100B supply) over 90 days (~0.028%/day sell pressure)
+ * Total allocation: 25B (25%). Starting small, ramping up as platform matures.
  * Two pools:
  *   - USDC pool:    15% of rewards → drips to USDC table players
  *   - POKERAI pool: 85% of rewards → drips to POKERAI table players

@@ -795,14 +795,16 @@ async function startServer() {
     rooms = new RoomManager((type, data) => broadcastToClients(type, data));
   }
 
-  // Initialize reward engine — Round 1: 2.5B tokens (10% of supply) over 90 days
-  // ~0.1% daily sell pressure vs 1.1% with full 25B. Remaining 22.5B saved for round 2.
+  // Initialize reward engine — Round 1: 2.5B tokens (2.5% of 100B supply) over 90 days
+  // ~0.028%/day sell pressure. Total rewards allocation = 25B (25% of supply).
+  // Starting small and ramping up as platform matures + token price appreciates.
+  // Round 1: 2.5B → Round 2: ramp to 10B (10%) → future rounds with remaining 12.5B
   rewardEngine = new RewardEngine({
     totalRewards: 2_500_000_000,
     durationDays: 90
   });
   rooms.rewardEngine = rewardEngine;
-  console.log('[Server] Reward engine initialized — Round 1: 2.5B POKERAI over 90 days (10% of supply)');
+  console.log('[Server] Reward engine initialized — Round 1: 2.5B POKERAI over 90 days (2.5% of supply)');
 
   // Helper: update reward engine — ONLY count chips actively in play at tables
   // Idle wallet balance does NOT earn rewards (prevents deposit-and-farm abuse)
