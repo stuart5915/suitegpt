@@ -477,6 +477,57 @@ function getAirdropEntries() {
     return entries;
 }
 
+function addRewardRecipient() {
+    var container = document.getElementById('rewardRecipientEntries');
+    if (!container) return;
+    var entry = document.createElement('div');
+    entry.className = 'reward-entry';
+    entry.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px';
+    entry.innerHTML = '<input class="form-input reward-addr" type="text" placeholder="0x... wallet address" style="font-family:var(--font-mono);font-size:0.82rem;flex:3">' +
+        '<input class="form-input reward-pct" type="number" min="0" max="100" placeholder="%" style="font-family:var(--font-mono);width:70px;flex:0 0 70px">' +
+        '<button type="button" onclick="removeRewardRecipient(this)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:4px;flex:0 0 16px">&times;</button>';
+    container.appendChild(entry);
+    updateRewardTotal();
+}
+window.addRewardRecipient = addRewardRecipient;
+
+function removeRewardRecipient(btn) {
+    btn.parentElement.remove();
+    updateRewardTotal();
+}
+window.removeRewardRecipient = removeRewardRecipient;
+
+function updateRewardTotal() {
+    var total = 0;
+    document.querySelectorAll('#rewardRecipientEntries .reward-pct').forEach(function(el) {
+        total += parseInt(el.value) || 0;
+    });
+    var label = document.getElementById('rewardTotalLabel');
+    if (label) {
+        label.textContent = 'Total: ' + total + '%';
+        label.style.color = total === 100 ? 'var(--text-dim)' : '#ef4444';
+    }
+}
+
+function getRewardRecipients() {
+    var recipients = [];
+    document.querySelectorAll('#rewardRecipientEntries .reward-entry').forEach(function(row) {
+        var addr = row.querySelector('.reward-addr');
+        var pct = row.querySelector('.reward-pct');
+        var address = addr ? addr.value.trim() : '';
+        var percent = pct ? (parseInt(pct.value) || 0) : 0;
+        if (percent > 0) {
+            recipients.push({ address: address, bps: percent * 100 });
+        }
+    });
+    return recipients;
+}
+
+// Listen for % changes to update total
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.classList.contains('reward-pct')) updateRewardTotal();
+});
+
 // ══════════════════════════════════════
 // CLANKER V4 DEPLOY
 // ══════════════════════════════════════
@@ -552,12 +603,18 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
     // Anti-sniper protection matching current Clanker deploys
     var SNIPER_MEV_DATA = '0x00000000000000000000000000000000000000000000000000000000000a2c99000000000000000000000000000000000000000000000000000000000000a2c9000000000000000000000000000000000000000000000000000000000000000f';
 
-    // Read configurable values from form
-    var rewardAdminAddr = (document.getElementById('rewardAdminAddr') && document.getElementById('rewardAdminAddr').value.trim()) || state.wallet;
-    var rewardRecipientAddr = (document.getElementById('rewardRecipientAddr') && document.getElementById('rewardRecipientAddr').value.trim()) || state.wallet;
-    var rewardPctVal = state.rewardPct || 80;
-    var creatorBps = rewardPctVal * 100; // e.g. 80% = 8000 bps
-    var inclawbateBps = 10000 - creatorBps;
+    // Read reward recipients from dynamic list
+    var recipientList = getRewardRecipients();
+    // Fill in empty addresses with connected wallet
+    recipientList.forEach(function(r) { if (!r.address) r.address = state.wallet; });
+    // Fallback: if no recipients configured, use default 80/20
+    if (recipientList.length === 0) {
+        recipientList = [
+            { address: state.wallet, bps: 8000 },
+            { address: INCLAWBATE_TREASURY, bps: 2000 }
+        ];
+    }
+    var rewardAdminAddr = recipientList[0].address;
 
     // Build sniper MEV data with configurable duration
     var sniperDuration = parseInt((document.getElementById('sniperTaxDuration') || {}).value) || 15;
@@ -587,9 +644,9 @@ function encodeClankerDeploy(name, symbol, devBuyWei, imageUrl) {
         },
         lockerConfig: {
             locker: CLANKER_LP_LOCKER,
-            rewardAdmins: [rewardAdminAddr, INCLAWBATE_TREASURY],
-            rewardRecipients: [rewardRecipientAddr, INCLAWBATE_TREASURY],
-            rewardBps: [creatorBps, inclawbateBps],
+            rewardAdmins: recipientList.map(function(r) { return r.address; }),
+            rewardRecipients: recipientList.map(function(r) { return r.address; }),
+            rewardBps: recipientList.map(function(r) { return r.bps; }),
             tickLower: [-230400],
             tickUpper: [-120000],
             positionBps: [10000],
