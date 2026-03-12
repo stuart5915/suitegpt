@@ -173,13 +173,12 @@ wss.on('connection', (ws) => {
                   await rooms.store.recordTransaction(client.walletAddress, 'deposit', Math.floor(credit / 10000 * 1e6), credit);
                   sendBalance(ws, client.walletAddress);
                   ws.send(JSON.stringify({ type: 'depositConfirmed', data: { chips: credit } }));
-                } else if (total > expected && wallet.balance > 0) {
-                  // Server balance drifted above on-chain reality (bug, exploit, etc.) — cap it
-                  const excess = total - expected;
-                  const capTo = Math.max(0, wallet.balance - excess);
-                  console.log(`[BalanceSync] ${client.walletAddress.slice(0,8)}: server total ${total} > on-chain ${expected}, capping wallet from ${wallet.balance} to ${capTo}`);
-                  rooms.store.updateBalance(client.walletAddress, capTo);
-                  sendBalance(ws, client.walletAddress);
+                } else if (total > expected) {
+                  // Server total > on-chain deposits — this is NORMAL in poker
+                  // Players win chips from each other, so their balance grows beyond deposits.
+                  // Do NOT cap down — that destroys legitimate poker winnings.
+                  // Only log for monitoring.
+                  console.log(`[BalanceSync] ${client.walletAddress.slice(0,8)}: server total ${total} > on-chain ${expected} (poker winnings, not capping)`);
                 }
               } catch (e) { /* silent — check-deposit HTTP fallback still available */ }
             }
