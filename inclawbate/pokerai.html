@@ -642,27 +642,34 @@
 
   .seat-action-bubble {
     position: absolute;
-    top: -24px;
+    top: -28px;
     left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.85);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 10px;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: 600;
+    transform: translateX(-50%) scale(0.5);
+    background: rgba(0,0,0,0.92);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.15s ease-out, transform 0.15s ease-out;
     pointer-events: none;
+    z-index: 20;
   }
 
-  .seat-action-bubble.visible { opacity: 1; }
-  .seat-action-bubble.raise { color: var(--accent-gold); border-color: rgba(245,197,66,0.4); }
-  .seat-action-bubble.call { color: var(--accent-green); border-color: rgba(34,197,94,0.4); }
-  .seat-action-bubble.fold { color: var(--accent-red); border-color: rgba(239,68,68,0.4); }
-  .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.4); }
-  .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.4); }
+  .seat-action-bubble.visible {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  .seat-action-bubble.raise { color: var(--accent-gold); border-color: rgba(245,197,66,0.5); box-shadow: 0 0 10px rgba(245,197,66,0.3); }
+  .seat-action-bubble.call { color: var(--accent-green); border-color: rgba(34,197,94,0.5); box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+  .seat-action-bubble.fold { color: var(--accent-red); border-color: rgba(239,68,68,0.5); box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+  .seat-action-bubble.check { color: var(--accent-blue); border-color: rgba(59,130,246,0.5); box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+  .seat-action-bubble.allin { color: var(--accent-purple); border-color: rgba(168,85,247,0.5); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
 
   /* Hand Timeline */
   .hand-timeline {
@@ -5025,16 +5032,41 @@ function renderTableSeats() {
       felt.appendChild(db);
     }
   });
+
+  // Re-apply any active action bubbles after DOM rebuild
+  _reapplyBubbles();
 }
 
+// Track active bubbles so they survive DOM re-renders
+const _activeBubbles = new Map(); // agentId → { type, label, expiry }
+
 function showActionBubble(agentId, action) {
-  const bubble = document.getElementById(`bubble-${agentId}`);
-  if (!bubble) return;
-  bubble.className = `seat-action-bubble visible ${action.type}`;
-  bubble.textContent = action.label;
+  _activeBubbles.set(agentId, { type: action.type, label: action.label, expiry: Date.now() + 2200 });
+  _applyBubble(agentId);
   setTimeout(() => {
-    if (bubble) bubble.classList.remove('visible');
-  }, 1800);
+    const b = _activeBubbles.get(agentId);
+    if (b && b.expiry <= Date.now()) {
+      _activeBubbles.delete(agentId);
+      const el = document.getElementById(`bubble-${agentId}`);
+      if (el) { el.classList.remove('visible'); }
+    }
+  }, 2300);
+}
+
+function _applyBubble(agentId) {
+  const b = _activeBubbles.get(agentId);
+  const el = document.getElementById(`bubble-${agentId}`);
+  if (!el || !b) return;
+  el.className = `seat-action-bubble visible ${b.type}`;
+  el.textContent = b.label;
+}
+
+function _reapplyBubbles() {
+  const now = Date.now();
+  for (const [agentId, b] of _activeBubbles) {
+    if (b.expiry <= now) { _activeBubbles.delete(agentId); continue; }
+    _applyBubble(agentId);
+  }
 }
 
 // ============================================================
