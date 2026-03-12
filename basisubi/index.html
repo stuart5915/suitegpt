@@ -4830,7 +4830,17 @@
                     }
                 }
 
-                // LP in-range check AFTER rebalance (uses updated lpRebalPrice if rebalanced)
+                // LP auto-recenter: if LP is out of range, keeper re-centers it daily
+                // (withdraw out-of-range LP → swap ~50% → mint new LP at current price)
+                // Cost: ~0.15% of LP portion (one swap on half the position)
+                const lpPriceRatioBeforeRecenter = today.price / lpRebalPrice - 1;
+                if (currentAlloc.lp > 0 && Math.abs(lpPriceRatioBeforeRecenter) >= lpHalfRange) {
+                    const recenterCost = vaultVal * (currentAlloc.lp / 100) * 0.0015;
+                    vaultVal -= recenterCost; totalCost += recenterCost;
+                    lpRebalPrice = yesterday.price; // re-center at yesterday's close
+                }
+
+                // LP in-range check AFTER rebalance and potential recenter
                 const lpPriceRatio = today.price / lpRebalPrice - 1;
                 const lpInRange = Math.abs(lpPriceRatio) < lpHalfRange;
 
