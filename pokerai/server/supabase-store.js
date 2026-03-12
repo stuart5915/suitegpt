@@ -138,6 +138,7 @@ class SupabaseStore {
       foldPct: agent.foldPct,
       traits: agent.traits,
       rules: agent.rules || {},
+      prompt: agent.prompt || '',
       chipStack: agent.chipStack || agent.chips || 0,
       handsWon: agent.handsWon || 0,
       handsPlayed: agent.handsPlayed || 0,
