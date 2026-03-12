@@ -905,6 +905,315 @@
             .toolkit-action-btns { flex-direction: column; }
         }
 
+        /* ═══ AUTOMATED VAULT ═══ */
+        .auto-vault-wrapper {
+            margin-bottom: 32px;
+        }
+        .auto-vault-card {
+            background: var(--surface);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .auto-vault-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #8b5cf6, var(--cyan), var(--green));
+            opacity: 0.8;
+        }
+        .auto-vault-card:hover {
+            border-color: rgba(139, 92, 246, 0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 48px rgba(139, 92, 246, 0.12);
+        }
+        .auto-vault-card.active {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.15);
+        }
+        .auto-vault-badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            margin-bottom: 12px;
+        }
+        .auto-vault-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .auto-vault-info { flex: 1; min-width: 260px; }
+        .auto-vault-title {
+            font-family: var(--font-display);
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .auto-vault-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            max-width: 520px;
+        }
+        .auto-vault-stats {
+            display: flex;
+            gap: 24px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .auto-vault-stat {
+            text-align: right;
+        }
+        .auto-vault-stat-label {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .auto-vault-stat-val {
+            font-family: var(--mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Allocation bars */
+        .auto-vault-alloc {
+            margin-top: 20px;
+        }
+        .auto-vault-alloc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .auto-vault-alloc-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+        }
+        .auto-vault-alloc-regime {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--accent-bright);
+        }
+        .alloc-bar-track {
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.04);
+            display: flex;
+            overflow: hidden;
+            gap: 2px;
+        }
+        .alloc-bar-seg {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .alloc-seg-lp   { background: linear-gradient(90deg, var(--accent), var(--cyan)); }
+        .alloc-seg-long  { background: var(--green); }
+        .alloc-seg-short { background: #ff6450; }
+        .alloc-seg-hold  { background: hsl(40, 90%, 55%); }
+        .alloc-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .alloc-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+        .alloc-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .alloc-legend-pct {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Auto vault expand panel */
+        .auto-vault-expand {
+            display: none;
+            margin-top: 24px;
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+        }
+        .auto-vault-expand.visible { display: block; }
+
+        .av-deposit-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .av-deposit-input {
+            flex: 1;
+            min-width: 160px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .av-deposit-input:focus { border-color: #8b5cf6; }
+        .av-deposit-input::placeholder { color: var(--text-dim); }
+        .av-deposit-btn {
+            padding: 12px 32px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #8b5cf6, var(--cyan));
+            color: #fff;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.92rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .av-deposit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .av-deposit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Brain/Logic section */
+        .av-brain {
+            margin-top: 28px;
+        }
+        .av-brain-title {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .av-brain-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .av-brain-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px 20px;
+        }
+        .av-brain-card-title {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .av-brain-card-title.regime-title { color: #a78bfa; }
+        .av-brain-card-title.rebalance-title { color: var(--cyan); }
+        .av-brain-card-title.risk-title { color: #ff6450; }
+        .av-brain-card-title.signals-title { color: var(--green); }
+
+        .av-regime-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .av-regime-row:last-child { border-bottom: none; }
+        .av-regime-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+        .av-regime-name {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        .av-regime-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .av-regime-alloc {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .av-rule-list {
+            list-style: none;
+            padding: 0;
+        }
+        .av-rule-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .av-rule-list li:last-child { border-bottom: none; }
+        .av-rule-mark {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .auto-vault-top { flex-direction: column; }
+            .auto-vault-stats { justify-content: flex-start; }
+            .auto-vault-stat { text-align: left; }
+            .av-brain-grid { grid-template-columns: 1fr; }
+            .av-deposit-row { flex-direction: column; }
+            .av-deposit-btn { width: 100%; text-align: center; }
+        }
+        @media (max-width: 480px) {
+            .auto-vault-card { padding: 24px 20px; }
+            .alloc-legend { gap: 10px; }
+        }
+
         /* ═══ POWERED BY ═══ */
         .powered-section { text-align: center; }
         .powered-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
@@ -1563,13 +1872,155 @@
             <div class="fade-in" style="text-align:center; margin-bottom:40px;">
                 <div class="section-label">Toolkit</div>
                 <h2 class="section-title">Your positions, your way</h2>
-                <p class="section-desc" style="margin:0 auto;">Three strategies. One dashboard. See the chart, pick your position, manage it yourself. No middleman contracts.</p>
+                <p class="section-desc" style="margin:0 auto;">Let the vault manage your capital automatically, or take the wheel with three manual strategies. One dashboard.</p>
             </div>
 
             <!-- Header: Connect + ETH Price -->
             <div class="toolkit-header fade-in">
                 <div class="toolkit-eth-price" id="tk-eth-price">ETH: $--<span id="tk-eth-change"></span></div>
                 <button class="toolkit-connect-btn" id="tk-connect-btn" onclick="toolkitConnect()">Connect Wallet</button>
+            </div>
+
+            <!-- ── Automated Vault ── -->
+            <div class="auto-vault-wrapper fade-in">
+                <div class="auto-vault-card" id="auto-vault-card" onclick="toggleAutoVault()">
+                    <span class="auto-vault-badge">Automated</span>
+                    <div class="auto-vault-top">
+                        <div class="auto-vault-info">
+                            <div class="auto-vault-title">Basis Auto Vault</div>
+                            <div class="auto-vault-subtitle">Hands-off position management. The vault reads market conditions and moves your capital between Concentrated LP, 2x Long, 2x Short, and ETH/USDC hold &mdash; maximizing value automatically.</div>
+                        </div>
+                        <div class="auto-vault-stats">
+                            <div class="auto-vault-stat">
+                                <div class="auto-vault-stat-label">Your Position</div>
+                                <div class="auto-vault-stat-val" id="av-position">$0.00</div>
+                            </div>
+                            <div class="auto-vault-stat">
+                                <div class="auto-vault-stat-label">Vault TVL</div>
+                                <div class="auto-vault-stat-val" id="av-tvl">$--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Allocation visualization -->
+                    <div class="auto-vault-alloc">
+                        <div class="auto-vault-alloc-header">
+                            <span class="auto-vault-alloc-label">Current Allocation</span>
+                            <span class="auto-vault-alloc-regime" id="av-regime">Regime: Analyzing...</span>
+                        </div>
+                        <div class="alloc-bar-track">
+                            <div class="alloc-bar-seg alloc-seg-lp" id="av-bar-lp" style="width:55%"></div>
+                            <div class="alloc-bar-seg alloc-seg-long" id="av-bar-long" style="width:20%"></div>
+                            <div class="alloc-bar-seg alloc-seg-short" id="av-bar-short" style="width:5%"></div>
+                            <div class="alloc-bar-seg alloc-seg-hold" id="av-bar-hold" style="width:20%"></div>
+                        </div>
+                        <div class="alloc-legend">
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></div> LP <span class="alloc-legend-pct" id="av-pct-lp">55%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:var(--green)"></div> Long <span class="alloc-legend-pct" id="av-pct-long">20%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:#ff6450"></div> Short <span class="alloc-legend-pct" id="av-pct-short">5%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:hsl(40,90%,55%)"></div> Hold <span class="alloc-legend-pct" id="av-pct-hold">20%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable deposit + brain -->
+                    <div class="auto-vault-expand" id="av-expand">
+                        <div class="av-deposit-row">
+                            <input type="number" class="av-deposit-input" id="av-deposit-amt" placeholder="USDC amount" min="0" step="any" onclick="event.stopPropagation()">
+                            <button class="av-deposit-btn" id="av-deposit-btn" onclick="event.stopPropagation(); depositAutoVault()">Deposit USDC</button>
+                        </div>
+
+                        <!-- ═══ THE BRAIN — Strategy Logic ═══ -->
+                        <div class="av-brain">
+                            <div class="av-brain-title">How the Vault Thinks</div>
+
+                            <div class="av-brain-grid">
+                                <!-- 1. Market Regime Detection -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title signals-title">&#x25C9; Signal Inputs</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">01</span> ETH price vs 7-day and 30-day moving averages &mdash; determines trend direction</li>
+                                        <li><span class="av-rule-mark">02</span> 14-day rolling volatility (std dev of daily returns) &mdash; measures market chaos</li>
+                                        <li><span class="av-rule-mark">03</span> Momentum score: consecutive up/down days weighted by magnitude</li>
+                                        <li><span class="av-rule-mark">04</span> Aerodrome LP fee APR (trailing 24h) &mdash; is providing liquidity profitable right now?</li>
+                                        <li><span class="av-rule-mark">05</span> Aave utilization rates for ETH/USDC &mdash; monitors borrow cost for leverage</li>
+                                    </ul>
+                                </div>
+
+                                <!-- 2. Four Regimes -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title regime-title">&#x25C9; Market Regimes</div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:var(--green)"></div>
+                                        <div>
+                                            <div class="av-regime-name">Strong Uptrend</div>
+                                            <div class="av-regime-desc">Price &gt; 7d MA &gt; 30d MA, low volatility. Market is trending up cleanly.</div>
+                                            <div class="av-regime-alloc">&#8594; 60% Long &middot; 25% LP &middot; 15% Hold &middot; 0% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:var(--cyan)"></div>
+                                        <div>
+                                            <div class="av-regime-name">Ranging / Mild Up</div>
+                                            <div class="av-regime-desc">Price near moving averages, moderate vol. Sideways or slow grind up.</div>
+                                            <div class="av-regime-alloc">&#8594; 55% LP &middot; 20% Long &middot; 20% Hold &middot; 5% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:hsl(40,90%,55%)"></div>
+                                        <div>
+                                            <div class="av-regime-name">High Volatility</div>
+                                            <div class="av-regime-desc">Large daily swings, moving averages crossing. Uncertain direction.</div>
+                                            <div class="av-regime-alloc">&#8594; 50% Hold &middot; 25% LP (wide) &middot; 12% Long &middot; 13% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:#ff6450"></div>
+                                        <div>
+                                            <div class="av-regime-name">Strong Downtrend</div>
+                                            <div class="av-regime-desc">Price &lt; 7d MA &lt; 30d MA. Clear bearish momentum.</div>
+                                            <div class="av-regime-alloc">&#8594; 50% Short &middot; 30% Hold &middot; 15% LP (tight) &middot; 5% Long</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Rebalancing Rules -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title rebalance-title">&#x25C9; Rebalancing Rules</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Check interval:</strong> Every 4 hours the vault re-evaluates market regime and current allocation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drift threshold:</strong> Only rebalance if any position drifts &gt;10% from target allocation (avoids churning)</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max move:</strong> Cap each rebalance at 25% of vault value &mdash; no panic all-in/all-out</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Gas awareness:</strong> Skip rebalance if Base gas exceeds 0.5 gwei &mdash; wait for cheaper window</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Regime confirmation:</strong> New regime must persist for 2 consecutive checks (8 hrs) before the vault shifts allocation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>LP range auto-adjust:</strong> Tight range (&#177;2%) in calm markets for max fees, wide range (&#177;8%) in volatile markets to stay in range</li>
+                                    </ul>
+                                </div>
+
+                                <!-- 4. Risk Parameters -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title risk-title">&#x25C9; Risk Guardrails</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max leverage:</strong> 2x only. Never exceeds 2x exposure on any position</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drawdown circuit breaker:</strong> If vault drops 15% from all-time high, exit all positions to 100% USDC hold until regime stabilizes</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Minimum USDC buffer:</strong> Always keeps at least 10% in USDC as dry powder &mdash; never fully deployed</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Aave health floor:</strong> Maintains &gt;1.5 health factor on all leveraged positions &mdash; auto-deleverages if approaching liquidation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Slippage cap:</strong> Max 0.5% slippage per swap. Larger rebalances split into multiple txs</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>No oracle dependency:</strong> Uses on-chain TWAP from Aerodrome pool &mdash; resistant to flash loan manipulation</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider: "or manage manually" -->
+            <div style="text-align:center; margin-bottom:24px; opacity:0.4;">
+                <span style="font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-dim);">&#x2500;&#x2500; or manage positions manually &#x2500;&#x2500;</span>
             </div>
 
             <!-- 3 Position Cards -->
@@ -3131,6 +3582,69 @@
             }
         }
 
+        // ── Auto Vault Toggle ──
+        window.toggleAutoVault = function() {
+            var card = document.getElementById('auto-vault-card');
+            var expand = document.getElementById('av-expand');
+            var isOpen = expand.classList.contains('visible');
+            if (isOpen) {
+                expand.classList.remove('visible');
+                card.classList.remove('active');
+            } else {
+                expand.classList.add('visible');
+                card.classList.add('active');
+                // Close manual card if open
+                window.closeExpand();
+            }
+        };
+        window.depositAutoVault = function() {
+            var amt = document.getElementById('av-deposit-amt').value;
+            if (!amt || parseFloat(amt) <= 0) return;
+            alert('Auto Vault deposit coming soon. Amount: ' + amt + ' USDC');
+        };
+
+        // Simulated regime detection based on toolkit insights
+        (function updateAutoVaultRegime() {
+            var trendEl = document.getElementById('tk-trend');
+            var volEl = document.getElementById('tk-vol');
+            var regimeEl = document.getElementById('av-regime');
+            if (!trendEl || !regimeEl) return;
+
+            function detectAndUpdate() {
+                var trend = (trendEl.textContent || '').toLowerCase();
+                var vol = (volEl ? volEl.textContent : '').toLowerCase();
+                var regime, lp, long_, short_, hold;
+
+                if (trend.indexOf('bull') >= 0 && vol.indexOf('low') >= 0) {
+                    regime = 'Strong Uptrend';
+                    lp = 25; long_ = 60; short_ = 0; hold = 15;
+                } else if (trend.indexOf('bear') >= 0 || trend.indexOf('down') >= 0) {
+                    regime = 'Strong Downtrend';
+                    lp = 15; long_ = 5; short_ = 50; hold = 30;
+                } else if (vol.indexOf('high') >= 0 || vol.indexOf('extreme') >= 0) {
+                    regime = 'High Volatility';
+                    lp = 25; long_ = 12; short_ = 13; hold = 50;
+                } else {
+                    regime = 'Ranging / Mild Up';
+                    lp = 55; long_ = 20; short_ = 5; hold = 20;
+                }
+
+                regimeEl.textContent = 'Regime: ' + regime;
+                document.getElementById('av-bar-lp').style.width = lp + '%';
+                document.getElementById('av-bar-long').style.width = long_ + '%';
+                document.getElementById('av-bar-short').style.width = short_ + '%';
+                document.getElementById('av-bar-hold').style.width = hold + '%';
+                document.getElementById('av-pct-lp').textContent = lp + '%';
+                document.getElementById('av-pct-long').textContent = long_ + '%';
+                document.getElementById('av-pct-short').textContent = short_ + '%';
+                document.getElementById('av-pct-hold').textContent = hold + '%';
+            }
+
+            // Update after price sim finishes, then periodically
+            setTimeout(detectAndUpdate, 3000);
+            setInterval(detectAndUpdate, 10000);
+        })();
+
         // ── Card Selection ──
         window.selectCard = function(type) {
             var cards = document.querySelectorAll('.toolkit-card');
@@ -3144,6 +3658,10 @@
             }
 
             activeCard = type;
+            // Close auto vault if open
+            document.getElementById('av-expand').classList.remove('visible');
+            document.getElementById('auto-vault-card').classList.remove('active');
+
             var clickedCard = document.querySelector('.card-' + type);
             if (clickedCard) clickedCard.classList.add('active');
 
