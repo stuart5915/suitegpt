@@ -205,7 +205,7 @@ export default async function handler(req, res) {
         const user = authenticateRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol } = req.body || {};
+        const { id, agent_enabled, agent_persona, agent_posts_per_day, agent_status, agent_bid, token_symbol, agent_schedule_times, agent_auto_post, agent_auto_reply, agent_tone, agent_topics, agent_catchphrase } = req.body || {};
         if (!id) return res.status(400).json({ error: 'id is required' });
 
         const wallet = (user.wallet_address || '').toLowerCase();
@@ -240,6 +240,26 @@ export default async function handler(req, res) {
         }
         if (token_symbol !== undefined) {
             patch.token_symbol = token_symbol || null;
+        }
+        if (agent_schedule_times !== undefined) {
+            // Validate: array of integers 0-23, max 3
+            if (Array.isArray(agent_schedule_times) && agent_schedule_times.length <= 3 &&
+                agent_schedule_times.every(h => Number.isInteger(h) && h >= 0 && h <= 23)) {
+                patch.agent_schedule_times = agent_schedule_times;
+                patch.agent_posts_per_day = agent_schedule_times.length || 1;
+            }
+        }
+        if (typeof agent_auto_post === 'boolean') patch.agent_auto_post = agent_auto_post;
+        if (typeof agent_auto_reply === 'boolean') patch.agent_auto_reply = agent_auto_reply;
+        if (agent_tone !== undefined) {
+            const validTones = ['hype', 'chill', 'degen', 'professional', 'meme', 'custom'];
+            patch.agent_tone = validTones.includes(agent_tone) ? agent_tone : null;
+        }
+        if (agent_topics !== undefined) {
+            patch.agent_topics = Array.isArray(agent_topics) ? agent_topics.slice(0, 10) : null;
+        }
+        if (agent_catchphrase !== undefined) {
+            patch.agent_catchphrase = (agent_catchphrase || '').slice(0, 100) || null;
         }
 
         const { data, error } = await supabase

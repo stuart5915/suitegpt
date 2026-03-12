@@ -5,7 +5,8 @@
     var APIS = {
         projects: '/api/inclawbate/projects?public=1',
         apps: '/api/inclawbate/apps?sort=newest&limit=50',
-        tokens: '/api/inclawbate/inclawbator'
+        tokens: '/api/inclawbate/inclawbator',
+        agents: '/api/inclawbate/agent-posts?public=1'
     };
 
     // Extra tokens not in inclawbator API (same as tokens-app.js + stake-app.js)
