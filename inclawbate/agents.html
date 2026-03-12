@@ -466,6 +466,7 @@ function renderDashboard() {
         var tgl=st==='active'?'Pause':'Resume';
         html+='<button class="ag-btn'+(st==='active'?'':' primary')+'" onclick="dashToggleStatus()">'+tgl+'</button>';
         html+='<button class="ag-btn primary" onclick="dashPostNow()">Post Now</button>';
+        html+='<button class="ag-btn danger" onclick="dashDisconnectX()">Disconnect X</button>';
     } else {
         html+='<button class="ag-btn primary" onclick="doConnectX(\''+p.id+'\')">Connect X</button>';
     }
@@ -666,6 +667,15 @@ async function draftApprove() {
 }
 
 // ── Dashboard actions ──
+async function dashDisconnectX() {
+    if(!confirm('Disconnect X account @'+(_selectedAgent.x_handle||'')+'? You can reconnect anytime.')) return;
+    try {
+        var r=await fetch(API+'/x-connect-project',{method:'POST',headers:hdrs(),body:JSON.stringify({action:'disconnect',project_id:_selectedAgent.id})});
+        if(r.ok) { toast('X disconnected'); _selectedAgent.x_connected=false; _selectedAgent.x_handle=null; renderDashboard(); }
+        else { var d=await r.json(); toast(d.error||'Failed',true); }
+    } catch(e) { toast('Network error',true); }
+}
+
 async function dashToggleStatus() {
     var next=_selectedAgent.agent_status==='active'?'paused':'active';
     try {
