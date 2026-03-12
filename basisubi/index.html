@@ -4631,25 +4631,30 @@
         //
         // Rebalance cost: ~0.3% per unit of portfolio swapped
 
-        function btDailyReturn(alloc, pPrev, pNow, config, lpInRange, lpHalfRange) {
+        function btDailyReturn(alloc, pPrev, pNow, config, lpInRange, lpPriceDir) {
             const ethRet = (pNow - pPrev) / pPrev;
 
             // ── Concentrated LP ──
             // lpApy is NET yield (swap fees minus expected IL) — already accounts for IL
             // Only earned when position is in range; out of range = 0 fees
             const dailyNetLP = lpInRange ? (config.lpApy / 100) / 365 : 0;
-            // 50% ETH exposure (LP is half ETH, half USDC)
-            const lpRet = dailyNetLP + ethRet * 0.5;
+            // ETH exposure depends on range status:
+            //   In range: 50% (half ETH, half USDC)
+            //   Above range: 0% (LP is all USDC — ETH was sold)
+            //   Below range: 100% (LP is all ETH — USDC was sold)
+            const lpEthExposure = lpInRange ? 0.5 : (lpPriceDir > 0 ? 0 : 1.0);
+            const lpRet = dailyNetLP + ethRet * lpEthExposure;
 
             // ── Leveraged Long (1.25x via Aave) ──
-            // Supply ETH (earn 1.5%), borrow USDC (pay borrowRate), buy more ETH
+            // Looped: supply 1.25 ETH (earn 1.5% on all), borrow 0.25x USDC (pay borrowRate)
             const longLeverage = 1.25;
             const borrowRatio = longLeverage - 1; // 0.25 of position is borrowed
             const dailyETHSupply = 0.015 / 365;
             const dailyUSDCBorrow = (config.borrowRate / 100) / 365;
             // Vol drag for leveraged position: -(L²-L)/2 * ethRet²
             const longVolDrag = -((longLeverage ** 2 - longLeverage) / 2) * (ethRet ** 2);
-            let longRet = ethRet * longLeverage + dailyETHSupply - dailyUSDCBorrow * borrowRatio + longVolDrag;
+            // Supply yield on full 1.25x (looped position supplies all ETH)
+            let longRet = ethRet * longLeverage + dailyETHSupply * longLeverage - dailyUSDCBorrow * borrowRatio + longVolDrag;
             // Liquidation floor: -20% max daily loss
             longRet = Math.max(longRet, -0.20);
 
@@ -4784,10 +4789,6 @@
                 const target = config.regimes[regime];
                 regimeCounts[regime] = (regimeCounts[regime]||0)+1;
 
-                // LP in-range check: actual price ratio from rebalance point (not sum of returns)
-                const lpPriceRatio = today.price / lpRebalPrice - 1;
-                const lpInRange = Math.abs(lpPriceRatio) < lpHalfRange;
-
                 if (i - lastRebalDay >= 3) { // 3-day cooldown between rebalances
                     const drift = Math.max(
                         Math.abs(currentAlloc.lp-target.lp),
@@ -4815,7 +4816,11 @@
                     }
                 }
 
-                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config, lpInRange, lpHalfRange);
+                // LP in-range check AFTER rebalance (uses updated lpRebalPrice if rebalanced)
+                const lpPriceRatio = today.price / lpRebalPrice - 1;
+                const lpInRange = Math.abs(lpPriceRatio) < lpHalfRange;
+
+                const ret = btDailyReturn(currentAlloc, yesterday.price, today.price, config, lpInRange, lpPriceRatio);
                 vaultVal *= (1+ret);
                 ethHoldVal = ethUnits * today.price;
                 if (vaultVal > peak) peak = vaultVal;
