@@ -83,23 +83,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Not enough ETH for gas. Balance: ' + ethBal.toFixed(6) + ' ETH (need ~0.002)' });
     }
 
-    // ─── Step 1: Deploy Implementation (or reuse existing) ───
-    const { implementationAddress: existingImpl } = req.body || {};
-    let implAddress;
-    if (existingImpl) {
-      implAddress = existingImpl;
-      console.log('[deploy-auto-vault] Reusing implementation:', implAddress);
-    } else {
-      console.log('[deploy-auto-vault] Step 1: Deploying implementation...');
-      const implFactory = new ethers.ContractFactory([], IMPL_BYTECODE, wallet);
-      const implContract = await implFactory.deploy();
-      await implContract.waitForDeployment();
-      implAddress = await implContract.getAddress();
-      console.log('[deploy-auto-vault] Implementation:', implAddress);
-    }
+    // Implementation already deployed on Base mainnet
+    const implAddress = '0x989B4A7b21d6c9Ad4447F3eF471135B3117de306';
+    console.log('[deploy-auto-vault] Using implementation:', implAddress);
 
-    // ─── Step 2: Encode initialize() calldata ───
-    console.log('[deploy-auto-vault] Step 2: Encoding initialize calldata...');
+    // ─── Encode initialize() calldata ───
+    console.log('[deploy-auto-vault] Encoding initialize calldata...');
     const iface = new ethers.Interface(INIT_ABI);
     const initData = iface.encodeFunctionData('initialize', [{
       usdc: USDC,
@@ -116,14 +105,16 @@ export default async function handler(req, res) {
       depositCap_: DEPOSIT_CAP
     }]);
 
-    // ─── Step 3: Deploy ERC1967Proxy ───
-    console.log('[deploy-auto-vault] Step 3: Deploying ERC1967Proxy...');
+    // ─── Deploy ERC1967Proxy (with explicit nonce to avoid caching) ───
+    console.log('[deploy-auto-vault] Deploying ERC1967Proxy...');
+    const nonce = await provider.getTransactionCount(wallet.address, 'latest');
+    console.log('[deploy-auto-vault] Using nonce:', nonce);
     const proxyFactory = new ethers.ContractFactory(
       ['constructor(address implementation, bytes data)'],
       PROXY_BYTECODE,
       wallet
     );
-    const proxyContract = await proxyFactory.deploy(implAddress, initData);
+    const proxyContract = await proxyFactory.deploy(implAddress, initData, { nonce });
     await proxyContract.waitForDeployment();
     const proxyAddress = await proxyContract.getAddress();
     console.log('[deploy-auto-vault] Proxy (vault):', proxyAddress);
