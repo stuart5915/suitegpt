@@ -886,6 +886,9 @@ class PokerEngine {
       }
     }
 
+    // Set phase to waiting so rebalancing can move agents between tables
+    this.phase = 'waiting';
+
     // Notify room manager for platform agent rebalancing
     if (this._onHandComplete) this._onHandComplete();
 
