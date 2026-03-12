@@ -4660,8 +4660,8 @@
             const shortExposure = 0.50;
             const dailyUSDCSupply = 0.035 / 365;
             const dailyETHBorrow = 0.025 / 365;
-            const shortVolDrag = -((shortExposure ** 2 + shortExposure) / 2) * (ethRet ** 2);
-            let shortRet = -ethRet * shortExposure + dailyUSDCSupply - dailyETHBorrow * shortExposure + shortVolDrag;
+            // No vol drag for short — 0.5x is deleveraged, convexity effect negligible
+            let shortRet = -ethRet * shortExposure + dailyUSDCSupply - dailyETHBorrow * shortExposure;
             // Liquidation check: if ETH pumps >40%, short gets liquidated
             shortRet = Math.max(shortRet, -0.20);
 
@@ -4775,10 +4775,12 @@
             let currentRegime = 'RANGING';
 
             for (let i=30; i<priceData.length; i++) {
-                const history = priceData.slice(0,i+1).map(d=>d.price);
+                // IMPORTANT: regime detection uses prices UP TO yesterday (no look-ahead)
+                // Brain decides allocation at yesterday's close, then earns/loses today's move
+                const historyNoLookahead = priceData.slice(0,i).map(d=>d.price);
                 const today = priceData[i], yesterday = priceData[i-1];
                 const ethRet = (today.price - yesterday.price) / yesterday.price;
-                const {regime} = btDetectRegime(history, config);
+                const {regime} = btDetectRegime(historyNoLookahead, config);
                 const target = config.regimes[regime];
                 regimeCounts[regime] = (regimeCounts[regime]||0)+1;
 
