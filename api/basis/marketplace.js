@@ -72,9 +72,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ vault: data });
     }
 
-    // PUT — update vault metrics (called by keeper)
+    // PUT — update vault config (called by manager dashboard) or metrics (called by keeper)
     if (req.method === 'PUT') {
-      const { vault_address, ...updates } = req.body;
+      const { vault_address, _log_change, _change_type, _old_value, _note, ...updates } = req.body;
       if (!vault_address) {
         return res.status(400).json({ error: 'vault_address required' });
       }
@@ -89,6 +89,19 @@ export default async function handler(req, res) {
         .single();
 
       if (error) throw error;
+
+      // Log the config change if requested
+      if (_log_change && _change_type) {
+        await supabase.from('vault_config_log').insert({
+          vault_address: vault_address.toLowerCase(),
+          changed_by: (updates.manager_address || data.manager_address || '').toLowerCase(),
+          change_type: _change_type,
+          old_value: _old_value || {},
+          new_value: updates.brain_config || updates,
+          note: _note || ''
+        });
+      }
+
       return res.status(200).json({ vault: data });
     }
 

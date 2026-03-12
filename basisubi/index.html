@@ -1447,10 +1447,44 @@
         .mp-deposit-btn { background: linear-gradient(135deg, var(--green), hsl(155, 80%, 40%)); color: #fff; border: none; padding: 10px 24px; border-radius: 10px; font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
         .mp-withdraw-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary); padding: 10px 20px; border-radius: 10px; font-family: var(--mono); font-size: 0.82rem; cursor: pointer; }
 
+        /* ═══ MANAGER DASHBOARD ═══ */
+        .mgr-dash { display: none; margin-top: 24px; }
+        .mgr-dash.show { display: block; }
+        .mgr-dash-title { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--accent-bright); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .mgr-dash-title::before { content: ''; display: inline-block; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+        .mgr-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+        .mgr-panel-label { font-family: var(--mono); font-size: 0.68rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+        .mgr-row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+        .mgr-field { flex: 1; min-width: 80px; }
+        .mgr-field label { display: block; font-family: var(--mono); font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .mgr-field input, .mgr-field select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-family: var(--mono); font-size: 0.78rem; }
+        .mgr-field input:focus { outline: none; border-color: var(--accent); }
+        .mgr-btn { background: linear-gradient(135deg, var(--accent), var(--cyan)); color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; cursor: pointer; white-space: nowrap; }
+        .mgr-btn:hover { box-shadow: 0 3px 14px var(--accent-glow); }
+        .mgr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .mgr-btn-danger { background: linear-gradient(135deg, #ff6450, #cc3322); }
+        .mgr-btn-secondary { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary); }
+        .mgr-status { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; }
+
+        /* Config change log */
+        .mgr-log { max-height: 260px; overflow-y: auto; }
+        .mgr-log-entry { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.72rem; }
+        .mgr-log-entry:last-child { border-bottom: none; }
+        .mgr-log-time { font-family: var(--mono); color: var(--text-dim); white-space: nowrap; min-width: 80px; }
+        .mgr-log-type { font-family: var(--mono); color: var(--accent-bright); text-transform: uppercase; font-size: 0.62rem; background: var(--accent-dim); padding: 2px 6px; border-radius: 4px; white-space: nowrap; align-self: start; }
+        .mgr-log-detail { color: var(--text-secondary); flex: 1; }
+        .mgr-log-empty { color: var(--text-dim); font-family: var(--mono); font-size: 0.75rem; text-align: center; padding: 20px; }
+
+        /* LP range presets */
+        .lp-range-presets { display: flex; gap: 6px; margin-top: 6px; }
+        .lp-range-preset { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-family: var(--mono); font-size: 0.62rem; cursor: pointer; transition: all 0.2s; }
+        .lp-range-preset:hover, .lp-range-preset.active { border-color: var(--accent); color: var(--accent-bright); background: var(--accent-dim); }
+
         @media (max-width: 768px) {
             .mp-grid { grid-template-columns: 1fr; }
             .mp-detail-stats { grid-template-columns: 1fr 1fr; }
             .mp-deposit-row { flex-direction: column; }
+            .mgr-row { flex-direction: column; }
         }
 
     </style>
@@ -2448,6 +2482,7 @@
                         <span id="mp-d-alloc-hold">Hold 0%</span>
                     </div>
                 </div>
+                <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-dim); margin-bottom:10px;" id="mp-d-lp-range">LP Range: Standard &#177;2%</div>
                 <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:16px;" id="mp-d-desc"></div>
                 <div class="mp-deposit-row">
                     <div class="mp-deposit-input">
@@ -2458,6 +2493,89 @@
                     <button class="mp-withdraw-btn" onclick="mpWithdraw()">Withdraw</button>
                 </div>
                 <div style="font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); margin-top:8px;" id="mp-d-position">Your position: 0 shares ($0.00)</div>
+
+                <!-- Manager Dashboard (only visible to vault manager) -->
+                <div class="mgr-dash" id="mgr-dash">
+                    <div class="mgr-dash-title">Manager Dashboard</div>
+
+                    <!-- Adjust Allocation -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Adjust Allocation</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field">
+                                <label>LP %</label>
+                                <input type="number" id="mgr-lp" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Long %</label>
+                                <input type="number" id="mgr-long" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Short %</label>
+                                <input type="number" id="mgr-short" value="0" min="0" max="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Hold %</label>
+                                <input type="number" id="mgr-hold" value="0" min="0" max="100">
+                            </div>
+                        </div>
+                        <div style="font-family:var(--mono); font-size:0.62rem; margin-top:6px;" id="mgr-alloc-total">Total: 0%</div>
+                        <div class="mgr-row" style="margin-top:10px;">
+                            <button class="mgr-btn" onclick="mgrRebalance()">Rebalance On-Chain</button>
+                            <button class="mgr-btn mgr-btn-secondary" onclick="mgrSaveConfig()">Save Config (Off-Chain)</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-alloc-status"></div>
+                    </div>
+
+                    <!-- LP Range Configuration -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">LP Range Configuration</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;">Controls how concentrated the LP position is. Tighter range = more fees but more impermanent loss risk.</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field" style="flex:2;">
+                                <label>Range Width (ticks)</label>
+                                <input type="number" id="mgr-lp-range" value="400" min="100" max="4000" step="100">
+                            </div>
+                            <div class="mgr-field">
+                                <label>Slippage (bps)</label>
+                                <input type="number" id="mgr-slippage" value="50" min="10" max="500" step="10">
+                            </div>
+                            <button class="mgr-btn" onclick="mgrSetLPParams()" style="align-self:end;">Update LP Params</button>
+                        </div>
+                        <div class="lp-range-presets" style="margin-top:8px;">
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(200, this)">Tight &#177;1%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(400, this)">Standard &#177;2%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(800, this)">Wide &#177;4%</button>
+                            <button type="button" class="lp-range-preset" onclick="mgrSetRangePreset(1600, this)">Ultra Wide &#177;8%</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-lp-status"></div>
+                    </div>
+
+                    <!-- Vault Settings -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Vault Settings</div>
+                        <div class="mgr-row">
+                            <div class="mgr-field" style="flex:2;">
+                                <label>Deposit Cap (USDC)</label>
+                                <input type="number" id="mgr-cap" value="50000" min="100">
+                            </div>
+                            <button class="mgr-btn" onclick="mgrSetCap()">Update Cap</button>
+                        </div>
+                        <div class="mgr-row" style="margin-top:12px;">
+                            <button class="mgr-btn" onclick="mgrCollectFees()">Collect Performance Fees</button>
+                            <button class="mgr-btn mgr-btn-danger" onclick="mgrEmergencyExit()">Emergency Exit All</button>
+                        </div>
+                        <div class="mgr-status" id="mgr-settings-status"></div>
+                    </div>
+
+                    <!-- Config Change Log -->
+                    <div class="mgr-panel">
+                        <div class="mgr-panel-label">Config Change Log</div>
+                        <div class="mgr-log" id="mgr-log">
+                            <div class="mgr-log-empty">No changes recorded yet</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -2516,6 +2634,19 @@
                     </div>
                 </div>
                 <div style="font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-top:6px;" id="mp-c-alloc-total">Total: 100%</div>
+
+                <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+                    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--text-secondary); margin-bottom:6px;">LP RANGE WIDTH</div>
+                    <div style="font-size:0.68rem; color:var(--text-dim); margin-bottom:8px;">How concentrated the LP position is. Tighter = more fees but more rebalancing. Wider = fewer fees but stays in range.</div>
+                    <div class="lp-range-presets">
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(200, this)">Tight (&#177;1%)</button>
+                        <button type="button" class="lp-range-preset active" onclick="setLPRange(400, this)">Standard (&#177;2%)</button>
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(800, this)">Wide (&#177;4%)</button>
+                        <button type="button" class="lp-range-preset" onclick="setLPRange(1600, this)">Ultra Wide (&#177;8%)</button>
+                    </div>
+                    <input type="hidden" id="mp-c-lp-range" value="400">
+                    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--text-dim); margin-top:4px;">Tick width: <span id="mp-c-lp-range-display">400</span> (&#177;<span id="mp-c-lp-range-pct">2</span>%)</div>
+                </div>
             </div>
 
             <div class="mp-modal-actions">
@@ -5329,7 +5460,16 @@
             'function performanceFeeBps() external view returns (uint256)',
             'function name() external view returns (string)',
             'function getVaultInfo() external view returns (uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,uint256,uint256)',
-            'function getUserPosition(address) external view returns (uint256 shares, uint256 value)'
+            'function getUserPosition(address) external view returns (uint256 shares, uint256 value)',
+            'function rebalance(uint256 lpBps, uint256 longBps, uint256 shortBps, uint256 holdBps, int24 newRangeWidth) external',
+            'function setLPParams(int24 rangeWidth, uint256 slippageBps) external',
+            'function setDepositCap(uint256 newCap) external',
+            'function collectPerformanceFee() external',
+            'function emergencyExitAll() external',
+            'function lpParams() external view returns (int24 rangeWidth, uint256 slippageBps)',
+            'function depositCap() external view returns (uint256)',
+            'function highWaterMark() external view returns (uint256)',
+            'function totalFeesCollected() external view returns (uint256)'
         ];
         const ERC20_ABI = [
             'function approve(address spender, uint256 amount) external returns (bool)',
@@ -5437,6 +5577,12 @@
             document.getElementById('mp-d-fee').textContent = ((v.performance_fee_bps || 0) / 100).toFixed(0) + '%';
             document.getElementById('mp-d-desc').textContent = v.description || 'No description provided.';
 
+            // LP range from brain config
+            var lpRange = (v.brain_config && v.brain_config.lp_range) || 400;
+            var lpPct = (lpRange / 200).toFixed(0);
+            var rangeName = lpRange <= 200 ? 'Tight' : lpRange <= 400 ? 'Standard' : lpRange <= 800 ? 'Wide' : 'Ultra Wide';
+            document.getElementById('mp-d-lp-range').textContent = 'LP Range: ' + rangeName + ' \u00B1' + lpPct + '% (' + lpRange + ' ticks)';
+
             const lp = (v.alloc_lp_bps || 0) / 100;
             const lo = (v.alloc_long_bps || 0) / 100;
             const sh = (v.alloc_short_bps || 0) / 100;
@@ -5456,6 +5602,9 @@
 
             // Load on-chain position if wallet connected
             loadUserPosition(v.vault_address);
+
+            // Check if user is manager → show dashboard
+            checkManagerAndShowDash(v);
         };
 
         window.closeVaultDetail = function() {
@@ -5575,7 +5724,7 @@
                         manager_address: signer.address,
                         name: name,
                         description: desc,
-                        brain_config: { lp: lp, long: lo, short: sh, hold: ho },
+                        brain_config: { lp: lp, long: lo, short: sh, hold: ho, lp_range: parseInt(document.getElementById('mp-c-lp-range').value) || 400 },
                         performance_fee_bps: feeBps,
                         deposit_cap_usdc: cap,
                         manager_name: managerName
@@ -5672,6 +5821,341 @@
             for (var i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i);
             return emojis[Math.abs(hash) % emojis.length];
         }
+
+        // ── LP Range helpers (create modal) ──
+        window.setLPRange = function(ticks, btn) {
+            document.getElementById('mp-c-lp-range').value = ticks;
+            document.getElementById('mp-c-lp-range-display').textContent = ticks;
+            document.getElementById('mp-c-lp-range-pct').textContent = (ticks / 200).toFixed(0);
+            document.querySelectorAll('#mp-create-modal .lp-range-preset').forEach(function(b) { b.classList.remove('active'); });
+            if (btn) btn.classList.add('active');
+        };
+
+        // ── Manager Dashboard Logic ──
+
+        // Update alloc total in dashboard
+        ['mgr-lp','mgr-long','mgr-short','mgr-hold'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', function() {
+                var lp = parseInt(document.getElementById('mgr-lp').value) || 0;
+                var lo = parseInt(document.getElementById('mgr-long').value) || 0;
+                var sh = parseInt(document.getElementById('mgr-short').value) || 0;
+                var ho = parseInt(document.getElementById('mgr-hold').value) || 0;
+                var total = lp + lo + sh + ho;
+                var el = document.getElementById('mgr-alloc-total');
+                el.textContent = 'Total: ' + total + '%';
+                el.style.color = total === 100 ? 'var(--green)' : '#ff6450';
+            });
+        });
+
+        window.mgrSetRangePreset = function(ticks, btn) {
+            document.getElementById('mgr-lp-range').value = ticks;
+            document.querySelectorAll('#mgr-dash .lp-range-preset').forEach(function(b) { b.classList.remove('active'); });
+            if (btn) btn.classList.add('active');
+        };
+
+        // Check if connected wallet is vault manager → show dashboard
+        async function checkManagerAndShowDash(vaultData) {
+            var dash = document.getElementById('mgr-dash');
+            dash.classList.remove('show');
+            if (!window.ethereum || !vaultData) return;
+
+            try {
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(vaultData.vault_address, VAULT_ABI, provider);
+                var mgr = await vault.manager();
+
+                if (mgr.toLowerCase() !== signer.address.toLowerCase()) return;
+
+                // This user IS the manager — populate dashboard
+                dash.classList.add('show');
+
+                // Populate current alloc from Supabase data
+                document.getElementById('mgr-lp').value = (vaultData.alloc_lp_bps || 0) / 100;
+                document.getElementById('mgr-long').value = (vaultData.alloc_long_bps || 0) / 100;
+                document.getElementById('mgr-short').value = (vaultData.alloc_short_bps || 0) / 100;
+                document.getElementById('mgr-hold').value = (vaultData.alloc_hold_bps || 0) / 100;
+                document.getElementById('mgr-alloc-total').textContent = 'Total: 100%';
+                document.getElementById('mgr-alloc-total').style.color = 'var(--green)';
+
+                // Populate LP params from chain
+                try {
+                    var lpp = await vault.lpParams();
+                    document.getElementById('mgr-lp-range').value = Number(lpp.rangeWidth);
+                    document.getElementById('mgr-slippage').value = Number(lpp.slippageBps);
+                } catch(e) {}
+
+                // Populate deposit cap
+                try {
+                    var cap = await vault.depositCap();
+                    document.getElementById('mgr-cap').value = parseInt(ethers.formatUnits(cap, 6));
+                } catch(e) {}
+
+                // Load config change log
+                loadConfigLog(vaultData.vault_address);
+
+            } catch(e) {
+                console.log('Manager check failed:', e.message);
+            }
+        }
+
+        async function loadConfigLog(vaultAddr) {
+            var logEl = document.getElementById('mgr-log');
+            try {
+                var resp = await fetch('/api/basis/vault-log?vault_address=' + vaultAddr);
+                if (!resp.ok) throw new Error('');
+                var data = await resp.json();
+                var logs = data.logs || [];
+
+                if (logs.length === 0) {
+                    logEl.innerHTML = '<div class="mgr-log-empty">No changes recorded yet</div>';
+                    return;
+                }
+
+                var html = '';
+                logs.forEach(function(log) {
+                    var dt = new Date(log.created_at);
+                    var timeStr = dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    var detail = '';
+
+                    if (log.change_type === 'allocation') {
+                        var nv = log.new_value || {};
+                        detail = 'LP ' + (nv.lp||0) + '% / Long ' + (nv.long||0) + '% / Short ' + (nv.short||0) + '% / Hold ' + (nv.hold||0) + '%';
+                    } else if (log.change_type === 'lp_params') {
+                        var nv = log.new_value || {};
+                        detail = 'Range: ' + (nv.rangeWidth||'?') + ' ticks, Slippage: ' + (nv.slippageBps||'?') + ' bps';
+                    } else if (log.change_type === 'deposit_cap') {
+                        detail = 'New cap: $' + ((log.new_value||{}).cap||'?');
+                    } else {
+                        detail = JSON.stringify(log.new_value||{}).slice(0,80);
+                    }
+
+                    if (log.note) detail += ' — ' + escapeHtml(log.note);
+
+                    html += '<div class="mgr-log-entry">' +
+                        '<div class="mgr-log-time">' + timeStr + '</div>' +
+                        '<div class="mgr-log-type">' + escapeHtml(log.change_type) + '</div>' +
+                        '<div class="mgr-log-detail">' + detail + '</div>' +
+                    '</div>';
+                });
+
+                logEl.innerHTML = html;
+            } catch(e) {
+                logEl.innerHTML = '<div class="mgr-log-empty">Could not load log</div>';
+            }
+        }
+
+        // ── Manager Actions ──
+
+        window.mgrRebalance = async function() {
+            if (!mpSelectedVault) return;
+            var status = document.getElementById('mgr-alloc-status');
+            var lp = parseInt(document.getElementById('mgr-lp').value) || 0;
+            var lo = parseInt(document.getElementById('mgr-long').value) || 0;
+            var sh = parseInt(document.getElementById('mgr-short').value) || 0;
+            var ho = parseInt(document.getElementById('mgr-hold').value) || 0;
+
+            if (lp + lo + sh + ho !== 100) { status.textContent = 'Allocations must sum to 100%'; status.style.color = '#ff6450'; return; }
+
+            try {
+                status.textContent = 'Sending rebalance tx...'; status.style.color = 'var(--text-dim)';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(mpSelectedVault.vault_address, VAULT_ABI, signer);
+
+                var tx = await vault.rebalance(lp * 100, lo * 100, sh * 100, ho * 100, 0);
+                status.textContent = 'Waiting for confirmation...';
+                await tx.wait();
+
+                // Log the change
+                var oldConfig = mpSelectedVault.brain_config || {};
+                await fetch(MARKETPLACE_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: mpSelectedVault.vault_address,
+                        brain_config: { lp: lp, long: lo, short: sh, hold: ho, lp_range: parseInt(document.getElementById('mgr-lp-range').value) || 400 },
+                        alloc_lp_bps: lp * 100, alloc_long_bps: lo * 100, alloc_short_bps: sh * 100, alloc_hold_bps: ho * 100,
+                        manager_address: signer.address,
+                        _log_change: true,
+                        _change_type: 'allocation',
+                        _old_value: oldConfig,
+                        _note: 'On-chain rebalance executed'
+                    })
+                });
+
+                status.textContent = 'Rebalanced! TX: ' + tx.hash.slice(0, 14) + '...'; status.style.color = 'var(--green)';
+                loadConfigLog(mpSelectedVault.vault_address);
+                loadMarketplaceVaults();
+            } catch(e) {
+                status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
+            }
+        };
+
+        window.mgrSaveConfig = async function() {
+            if (!mpSelectedVault) return;
+            var status = document.getElementById('mgr-alloc-status');
+            var lp = parseInt(document.getElementById('mgr-lp').value) || 0;
+            var lo = parseInt(document.getElementById('mgr-long').value) || 0;
+            var sh = parseInt(document.getElementById('mgr-short').value) || 0;
+            var ho = parseInt(document.getElementById('mgr-hold').value) || 0;
+
+            if (lp + lo + sh + ho !== 100) { status.textContent = 'Allocations must sum to 100%'; status.style.color = '#ff6450'; return; }
+
+            try {
+                status.textContent = 'Saving config...'; status.style.color = 'var(--text-dim)';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var oldConfig = mpSelectedVault.brain_config || {};
+
+                await fetch(MARKETPLACE_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: mpSelectedVault.vault_address,
+                        brain_config: { lp: lp, long: lo, short: sh, hold: ho, lp_range: parseInt(document.getElementById('mgr-lp-range').value) || 400 },
+                        manager_address: signer.address,
+                        _log_change: true,
+                        _change_type: 'brain_config',
+                        _old_value: oldConfig,
+                        _note: 'Config updated (keeper will execute on next run)'
+                    })
+                });
+
+                status.textContent = 'Config saved! Keeper will execute on next run.'; status.style.color = 'var(--green)';
+                loadConfigLog(mpSelectedVault.vault_address);
+            } catch(e) {
+                status.textContent = 'Error: ' + e.message; status.style.color = '#ff6450';
+            }
+        };
+
+        window.mgrSetLPParams = async function() {
+            if (!mpSelectedVault) return;
+            var status = document.getElementById('mgr-lp-status');
+            var range = parseInt(document.getElementById('mgr-lp-range').value) || 400;
+            var slip = parseInt(document.getElementById('mgr-slippage').value) || 50;
+
+            if (range < 100 || range > 4000) { status.textContent = 'Range must be 100-4000'; status.style.color = '#ff6450'; return; }
+            if (slip < 10 || slip > 500) { status.textContent = 'Slippage must be 10-500 bps'; status.style.color = '#ff6450'; return; }
+
+            try {
+                status.textContent = 'Sending setLPParams tx...'; status.style.color = 'var(--text-dim)';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(mpSelectedVault.vault_address, VAULT_ABI, signer);
+
+                var tx = await vault.setLPParams(range, slip);
+                status.textContent = 'Waiting for confirmation...';
+                await tx.wait();
+
+                // Log it
+                await fetch(MARKETPLACE_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: mpSelectedVault.vault_address,
+                        manager_address: signer.address,
+                        _log_change: true,
+                        _change_type: 'lp_params',
+                        _old_value: {},
+                        _note: 'LP params updated on-chain'
+                    })
+                });
+
+                status.textContent = 'LP params updated! Range: ' + range + ' ticks (\u00B1' + (range/200).toFixed(0) + '%)'; status.style.color = 'var(--green)';
+                loadConfigLog(mpSelectedVault.vault_address);
+            } catch(e) {
+                status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
+            }
+        };
+
+        window.mgrSetCap = async function() {
+            if (!mpSelectedVault) return;
+            var status = document.getElementById('mgr-settings-status');
+            var cap = parseInt(document.getElementById('mgr-cap').value) || 0;
+            if (cap < 100) { status.textContent = 'Min $100'; status.style.color = '#ff6450'; return; }
+
+            try {
+                status.textContent = 'Sending setDepositCap tx...'; status.style.color = 'var(--text-dim)';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(mpSelectedVault.vault_address, VAULT_ABI, signer);
+                var capWei = ethers.parseUnits(cap.toString(), 6);
+
+                var tx = await vault.setDepositCap(capWei);
+                await tx.wait();
+
+                await fetch(MARKETPLACE_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: mpSelectedVault.vault_address,
+                        deposit_cap_usdc: cap,
+                        manager_address: signer.address,
+                        _log_change: true,
+                        _change_type: 'deposit_cap',
+                        _old_value: { cap: mpSelectedVault.deposit_cap_usdc },
+                        _note: 'Deposit cap updated'
+                    })
+                });
+
+                status.textContent = 'Deposit cap set to $' + cap.toLocaleString(); status.style.color = 'var(--green)';
+                loadConfigLog(mpSelectedVault.vault_address);
+            } catch(e) {
+                status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
+            }
+        };
+
+        window.mgrCollectFees = async function() {
+            if (!mpSelectedVault) return;
+            var status = document.getElementById('mgr-settings-status');
+            try {
+                status.textContent = 'Collecting fees...'; status.style.color = 'var(--text-dim)';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(mpSelectedVault.vault_address, VAULT_ABI, signer);
+                var tx = await vault.collectPerformanceFee();
+                await tx.wait();
+                status.textContent = 'Fees collected!'; status.style.color = 'var(--green)';
+            } catch(e) {
+                status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
+            }
+        };
+
+        window.mgrEmergencyExit = async function() {
+            if (!mpSelectedVault) return;
+            if (!confirm('Emergency exit all positions to USDC? This will close all LP, long, and short positions immediately.')) return;
+            var status = document.getElementById('mgr-settings-status');
+            try {
+                status.textContent = 'Emergency exiting...'; status.style.color = '#ff6450';
+                var provider = new ethers.BrowserProvider(window.ethereum);
+                var signer = await provider.getSigner();
+                var vault = new ethers.Contract(mpSelectedVault.vault_address, VAULT_ABI, signer);
+                var tx = await vault.emergencyExitAll();
+                await tx.wait();
+
+                await fetch(MARKETPLACE_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vault_address: mpSelectedVault.vault_address,
+                        alloc_lp_bps: 0, alloc_long_bps: 0, alloc_short_bps: 0, alloc_hold_bps: 10000,
+                        brain_config: { lp: 0, long: 0, short: 0, hold: 100 },
+                        manager_address: signer.address,
+                        _log_change: true,
+                        _change_type: 'allocation',
+                        _old_value: mpSelectedVault.brain_config || {},
+                        _note: 'EMERGENCY EXIT — all positions closed'
+                    })
+                });
+
+                status.textContent = 'All positions exited to USDC.'; status.style.color = 'var(--green)';
+                loadConfigLog(mpSelectedVault.vault_address);
+                loadMarketplaceVaults();
+            } catch(e) {
+                status.textContent = 'Error: ' + (e.reason || e.message); status.style.color = '#ff6450';
+            }
+        };
 
         // Load on page init
         loadMarketplaceVaults();
