@@ -2605,31 +2605,79 @@
             };
         }
 
-        window.autoSplitLP = function() {
-            var totalEl = document.getElementById('tk-lp-total');
+        // Which input the user is actively typing in — prevents feedback loops
+        var _lpInputLock = null;
+
+        // Called when user types in the ETH input
+        window.lpEthChanged = function() {
+            if (_lpInputLock === 'usdc') return;
+            _lpInputLock = 'eth';
             var ethEl = document.getElementById('tk-lp-eth');
             var usdcEl = document.getElementById('tk-lp-usdc');
-            var total = parseFloat(totalEl && totalEl.value) || 0;
-            if (total <= 0) {
-                // Sum existing inputs as total
-                var e = parseFloat(ethEl && ethEl.value) || 0;
-                var u = parseFloat(usdcEl && usdcEl.value) || 0;
-                total = e * ethPrice + u;
-                if (total <= 0) return;
-            }
+            var ethAmt = parseFloat(ethEl && ethEl.value) || 0;
             var lower = parseFloat(document.getElementById('tk-lp-lower').value);
             var upper = parseFloat(document.getElementById('tk-lp-upper').value);
             var ratio = calcOptimalRatio(lower, upper);
-            var ethUsd = total * ratio.ethPct / 100;
-            var usdcAmt = total * ratio.usdcPct / 100;
-            if (ethEl) ethEl.value = ethPrice > 0 ? (ethUsd / ethPrice).toFixed(6) : '0';
-            if (usdcEl) usdcEl.value = usdcAmt.toFixed(2);
-            updateLPSwapStatus();
+            if (ethAmt > 0 && ratio.ethPct > 0 && ethPrice > 0) {
+                var totalUsd = (ethAmt * ethPrice) / (ratio.ethPct / 100);
+                var usdcNeeded = totalUsd * ratio.usdcPct / 100;
+                if (usdcEl) usdcEl.value = usdcNeeded.toFixed(2);
+            } else if (ethAmt === 0 && usdcEl) {
+                usdcEl.value = '';
+            }
+            updateLPSummary();
+            _lpInputLock = null;
         };
 
-        function updateLPSwapStatus() {
+        // Called when user types in the USDC input
+        window.lpUsdcChanged = function() {
+            if (_lpInputLock === 'eth') return;
+            _lpInputLock = 'usdc';
+            var ethEl = document.getElementById('tk-lp-eth');
+            var usdcEl = document.getElementById('tk-lp-usdc');
+            var usdcAmt = parseFloat(usdcEl && usdcEl.value) || 0;
+            var lower = parseFloat(document.getElementById('tk-lp-lower').value);
+            var upper = parseFloat(document.getElementById('tk-lp-upper').value);
+            var ratio = calcOptimalRatio(lower, upper);
+            if (usdcAmt > 0 && ratio.usdcPct > 0 && ethPrice > 0) {
+                var totalUsd = usdcAmt / (ratio.usdcPct / 100);
+                var ethNeeded = (totalUsd * ratio.ethPct / 100) / ethPrice;
+                if (ethEl) ethEl.value = ethNeeded > 0 ? ethNeeded.toFixed(6) : '0';
+            } else if (usdcAmt === 0 && ethEl) {
+                ethEl.value = '';
+            }
+            updateLPSummary();
+            _lpInputLock = null;
+        };
+
+        // Recalc both amounts when range changes (keep whichever field has a value)
+        window.lpRangeChanged = function() {
+            var ethEl = document.getElementById('tk-lp-eth');
+            var usdcEl = document.getElementById('tk-lp-usdc');
+            var ethAmt = parseFloat(ethEl && ethEl.value) || 0;
+            var usdcAmt = parseFloat(usdcEl && usdcEl.value) || 0;
+            // Recalc from whichever has a value (prefer ETH if both do)
+            if (ethAmt > 0) { lpEthChanged(); }
+            else if (usdcAmt > 0) { lpUsdcChanged(); }
+            // Update ratio display
+            var lower = parseFloat(document.getElementById('tk-lp-lower').value) || 0;
+            var upper = parseFloat(document.getElementById('tk-lp-upper').value) || 0;
+            if (lower > 0 && upper > lower) {
+                var r = calcOptimalRatio(lower, upper);
+                var ratioEl = document.getElementById('tk-lp-ratio');
+                if (ratioEl) ratioEl.textContent = r.ethPct + '% ETH / ' + r.usdcPct + '% USDC';
+            }
+        };
+
+        // Update total value + swap status display
+        function updateLPSummary() {
             var ethAmt = parseFloat(document.getElementById('tk-lp-eth')?.value) || 0;
             var usdcAmt = parseFloat(document.getElementById('tk-lp-usdc')?.value) || 0;
+            var totalUsd = ethAmt * ethPrice + usdcAmt;
+
+            var totalEl = document.getElementById('tk-lp-total-val');
+            if (totalEl) totalEl.textContent = totalUsd > 0 ? '$' + totalUsd.toFixed(2) : '--';
+
             var statusEl = document.getElementById('tk-lp-swap-status');
             if (!statusEl) return;
             if (ethAmt > 0 && usdcAmt > 0) {
@@ -2754,13 +2802,8 @@
                 var width = ((lpUpperPrice - lpLowerPrice) / ethPrice * 100).toFixed(1);
                 rwEl.textContent = '\u00b1' + (width / 2).toFixed(1) + '%';
             }
-            // Update optimal ratio display from new range
-            if (lpLowerPrice > 0 && lpUpperPrice > lpLowerPrice) {
-                var r = calcOptimalRatio(lpLowerPrice, lpUpperPrice);
-                var ratioEl = document.getElementById('tk-lp-ratio');
-                if (ratioEl) ratioEl.textContent = r.ethPct + '% ETH / ' + r.usdcPct + '% USDC';
-            }
-            updateLPSwapStatus();
+            // Update ratio + recalc deposit amounts
+            lpRangeChanged();
         }
 
         function syncInputsToHandles() {
@@ -3061,25 +3104,6 @@
                 lpLowerPrice = Math.round(cp * 0.95);
                 lpUpperPrice = Math.round(cp * 1.05);
                 syncInputsToHandles();
-                // Hook up ETH/USDC inputs to swap status
-                var ethIn = document.getElementById('tk-lp-eth');
-                var usdcIn = document.getElementById('tk-lp-usdc');
-                if (ethIn) ethIn.addEventListener('input', updateLPSwapStatus);
-                if (usdcIn) usdcIn.addEventListener('input', updateLPSwapStatus);
-                // Recalc ratio when range changes
-                var lowerIn = document.getElementById('tk-lp-lower');
-                var upperIn = document.getElementById('tk-lp-upper');
-                function updateRatioDisplay() {
-                    var lo = parseFloat(lowerIn && lowerIn.value) || 0;
-                    var hi = parseFloat(upperIn && upperIn.value) || 0;
-                    if (lo > 0 && hi > lo) {
-                        var r = calcOptimalRatio(lo, hi);
-                        var ratioEl = document.getElementById('tk-lp-ratio');
-                        if (ratioEl) ratioEl.textContent = r.ethPct + '% ETH / ' + r.usdcPct + '% USDC';
-                    }
-                }
-                if (lowerIn) lowerIn.addEventListener('input', updateRatioDisplay);
-                if (upperIn) upperIn.addEventListener('input', updateRatioDisplay);
             } else if (type === 'long') {
                 content.innerHTML = renderLongPanel();
             } else if (type === 'short') {
@@ -3106,21 +3130,21 @@
             var ratio = calcOptimalRatio(lower, upper);
             return '<div class="toolkit-expand-title">Concentrated LP \u2014 Aerodrome</div>' +
                 '<div class="toolkit-range-row">' +
-                    '<div class="toolkit-range-field"><label>Deposit ETH</label><input type="number" class="toolkit-input" id="tk-lp-eth" placeholder="0.00" min="0" step="any"></div>' +
-                    '<div class="toolkit-range-field"><label>Deposit USDC</label><input type="number" class="toolkit-input" id="tk-lp-usdc" placeholder="0.00" min="0" step="any"></div>' +
+                    '<div class="toolkit-range-field"><label>Lower Price</label><input type="number" class="toolkit-input" id="tk-lp-lower" value="' + lower + '" step="1" oninput="lpRangeChanged()"></div>' +
+                    '<div class="toolkit-range-field"><label>Upper Price</label><input type="number" class="toolkit-input" id="tk-lp-upper" value="' + upper + '" step="1" oninput="lpRangeChanged()"></div>' +
                 '</div>' +
-                '<div style="text-align:center; margin:-4px 0 12px; font-size:0.78rem; display:flex; align-items:center; justify-content:center; gap:8px;">' +
-                    '<span style="color:var(--text-secondary)">Optimal: </span>' +
-                    '<span id="tk-lp-ratio" style="color:var(--cyan)">' + ratio.ethPct + '% ETH / ' + ratio.usdcPct + '% USDC</span>' +
-                    '<button class="toolkit-max-btn" onclick="autoSplitLP()">Auto-split</button>' +
+                '<div style="text-align:center; margin:-4px 0 14px; font-size:0.8rem;">' +
+                    '<span style="color:var(--text-secondary)">Optimal split: </span>' +
+                    '<span id="tk-lp-ratio" style="color:var(--cyan); font-weight:600;">' + ratio.ethPct + '% ETH / ' + ratio.usdcPct + '% USDC</span>' +
+                    '<span style="color:var(--text-secondary); margin-left:10px;" id="tk-lp-range-width">\u00b15.0%</span>' +
                 '</div>' +
                 '<div class="toolkit-range-row">' +
-                    '<div class="toolkit-range-field"><label>Lower Price</label><input type="number" class="toolkit-input" id="tk-lp-lower" value="' + lower + '" step="1"></div>' +
-                    '<div class="toolkit-range-field"><label>Upper Price</label><input type="number" class="toolkit-input" id="tk-lp-upper" value="' + upper + '" step="1"></div>' +
+                    '<div class="toolkit-range-field"><label>Deposit ETH</label><input type="number" class="toolkit-input" id="tk-lp-eth" placeholder="0.00" min="0" step="any" oninput="lpEthChanged()"></div>' +
+                    '<div class="toolkit-range-field"><label>Deposit USDC</label><input type="number" class="toolkit-input" id="tk-lp-usdc" placeholder="0.00" min="0" step="any" oninput="lpUsdcChanged()"></div>' +
                 '</div>' +
                 '<div class="toolkit-info-grid">' +
+                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Total Value</div><div class="toolkit-info-val" id="tk-lp-total-val">--</div></div>' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Current ETH</div><div class="toolkit-info-val">$' + Math.round(cp).toLocaleString() + '</div></div>' +
-                    '<div class="toolkit-info-cell"><div class="toolkit-info-label">Range Width</div><div class="toolkit-info-val" id="tk-lp-range-width">\u00b15.0%</div></div>' +
                     '<div class="toolkit-info-cell"><div class="toolkit-info-label">Swap Fees</div><div class="toolkit-info-val green" id="tk-lp-swap-status">Ready</div></div>' +
                 '</div>' +
                 '<div class="toolkit-action-btns">' +
