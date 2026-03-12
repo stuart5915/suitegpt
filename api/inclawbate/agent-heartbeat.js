@@ -76,12 +76,14 @@ ${project.description ? 'Project: ' + project.description : ''}
 ${project.website_url ? 'Website: ' + project.website_url : ''}
 
 Rules:
-- Under 280 characters (STRICT — count carefully)
+- Under 260 characters (STRICT — leave room for the bot tag at the end)
 ${symbol ? '- Mention $' + symbol + ' naturally' : '- Mention the project name naturally'}
 - No hashtags
 - No "excited to announce" or any corporate speak
 - No em dashes
 - No quotation marks around the tweet
+- NEVER say "buy", "invest", "financial advice", "guaranteed returns", or "not financial advice"
+- No price predictions or promises of gains
 - Output ONLY the tweet text, nothing else
 - Be creative, varied, and authentic`;
 
@@ -109,7 +111,13 @@ Write a tweet:`;
         throw new Error(data.error?.message || 'Claude API error');
     }
 
-    return (data.content?.[0]?.text || '').trim();
+    let text = (data.content?.[0]?.text || '').trim();
+    // Append bot disclosure for X automation transparency
+    const tag = '\n\n\ud83e\udd16 via @inclawbator AI';
+    if (text.length + tag.length <= 280) {
+        text += tag;
+    }
+    return text;
 }
 
 // ── Owner credit helpers ──
@@ -427,18 +435,18 @@ export default async function handler(req, res) {
                     slotPersona.push('MUST include link: inclawbate.com/projects/' + project.slug);
                 }
                 if (opts.mention_token && project.token_symbol) {
-                    slotPersona.push('MUST mention $' + project.token_symbol + ' prominently');
+                    slotPersona.push('Mention $' + project.token_symbol + ' naturally (do NOT shill or hype the price)');
                 }
                 if (opts.mention_staking && project.staking_address) {
-                    slotPersona.push('Mention that staking is live for this project');
+                    slotPersona.push('Mention that staking is available for this project');
                 }
                 if (opts.cta && opts.cta !== 'none') {
                     const ctaMap = {
-                        try_it: 'End with a call to action: try it out',
-                        stake_now: 'End with a call to action: stake now',
-                        join_community: 'End with a call to action: join the community',
-                        check_it: 'End with a call to action: check it out',
-                        buy: 'End with a call to action: get some / buy'
+                        try_it: 'End with a soft call to action: try it out',
+                        stake_now: 'End with a soft call to action: staking is open',
+                        join_community: 'End with a soft call to action: come hang out / join us',
+                        check_it: 'End with a soft call to action: check it out',
+                        learn_more: 'End with a soft call to action: learn more'
                     };
                     if (ctaMap[opts.cta]) slotPersona.push(ctaMap[opts.cta]);
                 }
