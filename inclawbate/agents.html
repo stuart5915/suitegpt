@@ -491,6 +491,7 @@ function renderCards() {
         } else {
             html += '<button class="ag-btn primary" onclick="doConnectX(\'' + p.id + '\')">Connect X to start posting</button>';
         }
+        html += '<button class="ag-btn danger" onclick="deleteAgent(\'' + p.id + '\',\'' + esc(p.name) + '\')">Delete</button>';
         html += '</div>';
 
         // Persona editor
@@ -528,6 +529,15 @@ async function toggleStatus(pid, current) {
     try {
         var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_status: next }) });
         if (r.ok) { toast(next === 'active' ? 'Agent resumed' : 'Agent paused'); loadAgents(); }
+        else { var d = await r.json(); toast(d.error || 'Failed', true); }
+    } catch (e) { toast('Network error', true); }
+}
+
+async function deleteAgent(pid, name) {
+    if (!confirm('Delete agent "' + name + '"? This cannot be undone.')) return;
+    try {
+        var r = await fetch(API + '/projects', { method: 'PATCH', headers: hdrs(), body: JSON.stringify({ id: pid, agent_enabled: false, agent_status: 'dormant' }) });
+        if (r.ok) { toast('Agent deleted'); loadAgents(); }
         else { var d = await r.json(); toast(d.error || 'Failed', true); }
     } catch (e) { toast('Network error', true); }
 }
