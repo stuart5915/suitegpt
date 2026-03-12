@@ -1402,6 +1402,239 @@
         </div>
     </div>
 
+    <!-- ═══ VAULT DEPOSIT UI ═══ -->
+<!-- ═══ TOOLKIT ═══ -->
+    <section class="toolkit-section" id="toolkit">
+        <div class="container">
+            <div class="fade-in" style="text-align:center; margin-bottom:40px;">
+                <div class="section-label">Toolkit</div>
+                <h2 class="section-title">Your positions, your way</h2>
+                <p class="section-desc" style="margin:0 auto;">Let the vault manage your capital automatically, or take the wheel with three manual strategies. One dashboard.</p>
+            </div>
+
+            <!-- Header: Connect + ETH Price -->
+            <div class="toolkit-header fade-in">
+                <div class="toolkit-eth-price" id="tk-eth-price">ETH: $--<span id="tk-eth-change"></span></div>
+                <button class="toolkit-connect-btn" id="tk-connect-btn" onclick="toolkitConnect()">Connect Wallet</button>
+            </div>
+
+            <!-- ── Automated Vault ── -->
+            <div class="auto-vault-wrapper fade-in">
+                <div class="auto-vault-card" id="auto-vault-card" onclick="toggleAutoVault()">
+                    <span class="auto-vault-badge">Automated</span>
+                    <div class="auto-vault-top">
+                        <div class="auto-vault-info">
+                            <div class="auto-vault-title">Basis Auto Vault</div>
+                            <div class="auto-vault-subtitle">Hands-off position management. The vault reads market conditions and moves your capital between Concentrated LP, 2x Long, 2x Short, and ETH/USDC hold &mdash; maximizing value automatically.</div>
+                        </div>
+                        <div class="auto-vault-stats">
+                            <div class="auto-vault-stat">
+                                <div class="auto-vault-stat-label">Your Position</div>
+                                <div class="auto-vault-stat-val" id="av-position">$0.00</div>
+                            </div>
+                            <div class="auto-vault-stat">
+                                <div class="auto-vault-stat-label">Vault TVL</div>
+                                <div class="auto-vault-stat-val" id="av-tvl">$--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Allocation visualization -->
+                    <div class="auto-vault-alloc">
+                        <div class="auto-vault-alloc-header">
+                            <span class="auto-vault-alloc-label">Current Allocation</span>
+                            <span class="auto-vault-alloc-regime" id="av-regime">Regime: Analyzing...</span>
+                        </div>
+                        <div class="alloc-bar-track">
+                            <div class="alloc-bar-seg alloc-seg-lp" id="av-bar-lp" style="width:55%"></div>
+                            <div class="alloc-bar-seg alloc-seg-long" id="av-bar-long" style="width:20%"></div>
+                            <div class="alloc-bar-seg alloc-seg-short" id="av-bar-short" style="width:5%"></div>
+                            <div class="alloc-bar-seg alloc-seg-hold" id="av-bar-hold" style="width:20%"></div>
+                        </div>
+                        <div class="alloc-legend">
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></div> LP <span class="alloc-legend-pct" id="av-pct-lp">55%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:var(--green)"></div> Long <span class="alloc-legend-pct" id="av-pct-long">20%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:#ff6450"></div> Short <span class="alloc-legend-pct" id="av-pct-short">5%</span></div>
+                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:hsl(40,90%,55%)"></div> Hold <span class="alloc-legend-pct" id="av-pct-hold">20%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Expandable deposit + brain -->
+                    <div class="auto-vault-expand" id="av-expand">
+                        <div class="av-deposit-row">
+                            <input type="number" class="av-deposit-input" id="av-deposit-amt" placeholder="USDC amount" min="0" step="any" onclick="event.stopPropagation()">
+                            <button class="av-deposit-btn" id="av-deposit-btn" onclick="event.stopPropagation(); depositAutoVault()">Deposit USDC</button>
+                        </div>
+
+                        <!-- ═══ THE BRAIN — Strategy Logic ═══ -->
+                        <div class="av-brain">
+                            <div class="av-brain-title">How the Vault Thinks</div>
+
+                            <div class="av-brain-grid">
+                                <!-- 1. Market Regime Detection -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title signals-title">&#x25C9; Signal Inputs</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">01</span> ETH price vs 7-day and 30-day moving averages &mdash; determines trend direction</li>
+                                        <li><span class="av-rule-mark">02</span> 14-day rolling volatility (std dev of daily returns) &mdash; measures market chaos</li>
+                                        <li><span class="av-rule-mark">03</span> Momentum score: consecutive up/down days weighted by magnitude</li>
+                                        <li><span class="av-rule-mark">04</span> Aerodrome LP fee APR (trailing 24h) &mdash; is providing liquidity profitable right now?</li>
+                                        <li><span class="av-rule-mark">05</span> Aave utilization rates for ETH/USDC &mdash; monitors borrow cost for leverage</li>
+                                    </ul>
+                                </div>
+
+                                <!-- 2. Four Regimes -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title regime-title">&#x25C9; Market Regimes</div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:var(--green)"></div>
+                                        <div>
+                                            <div class="av-regime-name">Strong Uptrend</div>
+                                            <div class="av-regime-desc">Price &gt; 7d MA &gt; 30d MA, low volatility. Market is trending up cleanly.</div>
+                                            <div class="av-regime-alloc">&#8594; 60% Long &middot; 25% LP &middot; 15% Hold &middot; 0% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:var(--cyan)"></div>
+                                        <div>
+                                            <div class="av-regime-name">Ranging / Mild Up</div>
+                                            <div class="av-regime-desc">Price near moving averages, moderate vol. Sideways or slow grind up.</div>
+                                            <div class="av-regime-alloc">&#8594; 55% LP &middot; 20% Long &middot; 20% Hold &middot; 5% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:hsl(40,90%,55%)"></div>
+                                        <div>
+                                            <div class="av-regime-name">High Volatility</div>
+                                            <div class="av-regime-desc">Large daily swings, moving averages crossing. Uncertain direction.</div>
+                                            <div class="av-regime-alloc">&#8594; 50% Hold &middot; 25% LP (wide) &middot; 12% Long &middot; 13% Short</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="av-regime-row">
+                                        <div class="av-regime-dot" style="background:#ff6450"></div>
+                                        <div>
+                                            <div class="av-regime-name">Strong Downtrend</div>
+                                            <div class="av-regime-desc">Price &lt; 7d MA &lt; 30d MA. Clear bearish momentum.</div>
+                                            <div class="av-regime-alloc">&#8594; 50% Short &middot; 30% Hold &middot; 15% LP (tight) &middot; 5% Long</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Rebalancing Rules -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title rebalance-title">&#x25C9; Rebalancing Rules</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Check interval:</strong> Every 4 hours the vault re-evaluates market regime and current allocation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drift threshold:</strong> Only rebalance if any position drifts &gt;10% from target allocation (avoids churning)</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max move:</strong> Cap each rebalance at 25% of vault value &mdash; no panic all-in/all-out</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Gas awareness:</strong> Skip rebalance if Base gas exceeds 0.5 gwei &mdash; wait for cheaper window</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Regime confirmation:</strong> New regime must persist for 2 consecutive checks (8 hrs) before the vault shifts allocation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>LP range auto-adjust:</strong> Tight range (&#177;2%) in calm markets for max fees, wide range (&#177;8%) in volatile markets to stay in range</li>
+                                    </ul>
+                                </div>
+
+                                <!-- 4. Risk Parameters -->
+                                <div class="av-brain-card">
+                                    <div class="av-brain-card-title risk-title">&#x25C9; Risk Guardrails</div>
+                                    <ul class="av-rule-list">
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max leverage:</strong> 2x only. Never exceeds 2x exposure on any position</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drawdown circuit breaker:</strong> If vault drops 15% from all-time high, exit all positions to 100% USDC hold until regime stabilizes</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Minimum USDC buffer:</strong> Always keeps at least 10% in USDC as dry powder &mdash; never fully deployed</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Aave health floor:</strong> Maintains &gt;1.5 health factor on all leveraged positions &mdash; auto-deleverages if approaching liquidation</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Slippage cap:</strong> Max 0.5% slippage per swap. Larger rebalances split into multiple txs</li>
+                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>No oracle dependency:</strong> Uses on-chain TWAP from Aerodrome pool &mdash; resistant to flash loan manipulation</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider: "or manage manually" -->
+            <div style="text-align:center; margin-bottom:24px; opacity:0.4;">
+                <span style="font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-dim);">&#x2500;&#x2500; or manage positions manually &#x2500;&#x2500;</span>
+            </div>
+
+            <!-- 3 Position Cards -->
+            <div class="toolkit-cards">
+                <div class="toolkit-card card-lp fade-in delay-1" onclick="selectCard('lp')">
+                    <span class="toolkit-card-icon">&#x1F4CA;</span>
+                    <div class="toolkit-card-title">Concentrated LP</div>
+                    <div class="toolkit-card-subtitle">Set your own price range on Aerodrome. Earn trading fees while ETH stays in range.</div>
+                    <div class="toolkit-card-pos-label">Your Position</div>
+                    <div class="toolkit-card-pos-val" id="tk-lp-val">$0.00</div>
+                    <button class="toolkit-card-btn">Enter Position</button>
+                </div>
+
+                <div class="toolkit-card card-long fade-in delay-2" onclick="selectCard('long')">
+                    <span class="toolkit-card-icon">&#x1F7E2;</span>
+                    <div class="toolkit-card-title">2x Long ETH</div>
+                    <div class="toolkit-card-subtitle">Leveraged long via Aave V3. Supply, borrow, swap &mdash; ~2x ETH exposure for bull markets.</div>
+                    <div class="toolkit-card-pos-label">Your Position</div>
+                    <div class="toolkit-card-pos-val" id="tk-long-val">$0.00</div>
+                    <button class="toolkit-card-btn">Enter Position</button>
+                </div>
+
+                <div class="toolkit-card card-short fade-in delay-3" onclick="selectCard('short')">
+                    <span class="toolkit-card-icon">&#x1F534;</span>
+                    <div class="toolkit-card-title">2x Short ETH</div>
+                    <div class="toolkit-card-subtitle">Leveraged short via Aave V3. Supply USDC, borrow ETH, sell &mdash; profits when ETH drops.</div>
+                    <div class="toolkit-card-pos-label">Your Position</div>
+                    <div class="toolkit-card-pos-val" id="tk-short-val">$0.00</div>
+                    <button class="toolkit-card-btn">Enter Position</button>
+                </div>
+            </div>
+
+            <!-- Expandable Action Panel -->
+            <div class="toolkit-expand" id="tk-expand">
+                <button class="toolkit-expand-close" onclick="closeExpand()">&#x2715;</button>
+                <div id="tk-expand-content"></div>
+                <div class="toolkit-tx-status" id="tk-tx-status"></div>
+            </div>
+
+            <!-- ETH Price Chart -->
+            <div class="toolkit-chart fade-in">
+                <div class="toolkit-chart-header">
+                    <div>
+                        <span class="toolkit-chart-price" id="tk-chart-price">$--</span>
+                        <span class="toolkit-chart-change" id="tk-chart-change"></span>
+                    </div>
+                    <div class="toolkit-timeframes">
+                        <button class="toolkit-tf-btn" data-days="1" onclick="switchTimeframe(1)">1D</button>
+                        <button class="toolkit-tf-btn active" data-days="7" onclick="switchTimeframe(7)">7D</button>
+                        <button class="toolkit-tf-btn" data-days="30" onclick="switchTimeframe(30)">30D</button>
+                        <button class="toolkit-tf-btn" data-days="365" onclick="switchTimeframe(365)">1Y</button>
+                    </div>
+                </div>
+                <canvas id="toolkit-chart-canvas"></canvas>
+            </div>
+
+            <!-- Insights Panel -->
+            <div class="toolkit-insights fade-in">
+                <div class="toolkit-insight">
+                    <div class="toolkit-insight-label">Trend</div>
+                    <div class="toolkit-insight-val" id="tk-trend" style="color:var(--text-secondary);">Loading...</div>
+                    <div class="toolkit-insight-desc" id="tk-trend-desc">Analyzing price data</div>
+                </div>
+                <div class="toolkit-insight">
+                    <div class="toolkit-insight-label">Volatility</div>
+                    <div class="toolkit-insight-val" id="tk-vol" style="color:var(--text-secondary);">Loading...</div>
+                    <div class="toolkit-insight-desc" id="tk-vol-desc">Calculating...</div>
+                </div>
+                <div class="toolkit-insight">
+                    <div class="toolkit-insight-label">Suggestion</div>
+                    <div class="toolkit-insight-val" id="tk-suggest" style="color:var(--accent-bright);">--</div>
+                    <div class="toolkit-insight-desc" id="tk-suggest-desc">Based on trend &amp; volatility</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- ═══ HOW IT WORKS ═══ -->
     <section class="how-it-works" id="how">
         <div class="container">
@@ -1860,239 +2093,6 @@
                     <div class="flow-step-num" style="color:var(--green);">03</div>
                     <div class="flow-step-title">Compound</div>
                     <div class="flow-step-desc">Fees are auto-reinvested back into the LP position, growing your bUSDC share value</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ═══ VAULT DEPOSIT UI ═══ -->
-<!-- ═══ TOOLKIT ═══ -->
-    <section class="toolkit-section" id="toolkit">
-        <div class="container">
-            <div class="fade-in" style="text-align:center; margin-bottom:40px;">
-                <div class="section-label">Toolkit</div>
-                <h2 class="section-title">Your positions, your way</h2>
-                <p class="section-desc" style="margin:0 auto;">Let the vault manage your capital automatically, or take the wheel with three manual strategies. One dashboard.</p>
-            </div>
-
-            <!-- Header: Connect + ETH Price -->
-            <div class="toolkit-header fade-in">
-                <div class="toolkit-eth-price" id="tk-eth-price">ETH: $--<span id="tk-eth-change"></span></div>
-                <button class="toolkit-connect-btn" id="tk-connect-btn" onclick="toolkitConnect()">Connect Wallet</button>
-            </div>
-
-            <!-- ── Automated Vault ── -->
-            <div class="auto-vault-wrapper fade-in">
-                <div class="auto-vault-card" id="auto-vault-card" onclick="toggleAutoVault()">
-                    <span class="auto-vault-badge">Automated</span>
-                    <div class="auto-vault-top">
-                        <div class="auto-vault-info">
-                            <div class="auto-vault-title">Basis Auto Vault</div>
-                            <div class="auto-vault-subtitle">Hands-off position management. The vault reads market conditions and moves your capital between Concentrated LP, 2x Long, 2x Short, and ETH/USDC hold &mdash; maximizing value automatically.</div>
-                        </div>
-                        <div class="auto-vault-stats">
-                            <div class="auto-vault-stat">
-                                <div class="auto-vault-stat-label">Your Position</div>
-                                <div class="auto-vault-stat-val" id="av-position">$0.00</div>
-                            </div>
-                            <div class="auto-vault-stat">
-                                <div class="auto-vault-stat-label">Vault TVL</div>
-                                <div class="auto-vault-stat-val" id="av-tvl">$--</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Allocation visualization -->
-                    <div class="auto-vault-alloc">
-                        <div class="auto-vault-alloc-header">
-                            <span class="auto-vault-alloc-label">Current Allocation</span>
-                            <span class="auto-vault-alloc-regime" id="av-regime">Regime: Analyzing...</span>
-                        </div>
-                        <div class="alloc-bar-track">
-                            <div class="alloc-bar-seg alloc-seg-lp" id="av-bar-lp" style="width:55%"></div>
-                            <div class="alloc-bar-seg alloc-seg-long" id="av-bar-long" style="width:20%"></div>
-                            <div class="alloc-bar-seg alloc-seg-short" id="av-bar-short" style="width:5%"></div>
-                            <div class="alloc-bar-seg alloc-seg-hold" id="av-bar-hold" style="width:20%"></div>
-                        </div>
-                        <div class="alloc-legend">
-                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--cyan))"></div> LP <span class="alloc-legend-pct" id="av-pct-lp">55%</span></div>
-                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:var(--green)"></div> Long <span class="alloc-legend-pct" id="av-pct-long">20%</span></div>
-                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:#ff6450"></div> Short <span class="alloc-legend-pct" id="av-pct-short">5%</span></div>
-                            <div class="alloc-legend-item"><div class="alloc-legend-dot" style="background:hsl(40,90%,55%)"></div> Hold <span class="alloc-legend-pct" id="av-pct-hold">20%</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Expandable deposit + brain -->
-                    <div class="auto-vault-expand" id="av-expand">
-                        <div class="av-deposit-row">
-                            <input type="number" class="av-deposit-input" id="av-deposit-amt" placeholder="USDC amount" min="0" step="any" onclick="event.stopPropagation()">
-                            <button class="av-deposit-btn" id="av-deposit-btn" onclick="event.stopPropagation(); depositAutoVault()">Deposit USDC</button>
-                        </div>
-
-                        <!-- ═══ THE BRAIN — Strategy Logic ═══ -->
-                        <div class="av-brain">
-                            <div class="av-brain-title">How the Vault Thinks</div>
-
-                            <div class="av-brain-grid">
-                                <!-- 1. Market Regime Detection -->
-                                <div class="av-brain-card">
-                                    <div class="av-brain-card-title signals-title">&#x25C9; Signal Inputs</div>
-                                    <ul class="av-rule-list">
-                                        <li><span class="av-rule-mark">01</span> ETH price vs 7-day and 30-day moving averages &mdash; determines trend direction</li>
-                                        <li><span class="av-rule-mark">02</span> 14-day rolling volatility (std dev of daily returns) &mdash; measures market chaos</li>
-                                        <li><span class="av-rule-mark">03</span> Momentum score: consecutive up/down days weighted by magnitude</li>
-                                        <li><span class="av-rule-mark">04</span> Aerodrome LP fee APR (trailing 24h) &mdash; is providing liquidity profitable right now?</li>
-                                        <li><span class="av-rule-mark">05</span> Aave utilization rates for ETH/USDC &mdash; monitors borrow cost for leverage</li>
-                                    </ul>
-                                </div>
-
-                                <!-- 2. Four Regimes -->
-                                <div class="av-brain-card">
-                                    <div class="av-brain-card-title regime-title">&#x25C9; Market Regimes</div>
-
-                                    <div class="av-regime-row">
-                                        <div class="av-regime-dot" style="background:var(--green)"></div>
-                                        <div>
-                                            <div class="av-regime-name">Strong Uptrend</div>
-                                            <div class="av-regime-desc">Price &gt; 7d MA &gt; 30d MA, low volatility. Market is trending up cleanly.</div>
-                                            <div class="av-regime-alloc">&#8594; 60% Long &middot; 25% LP &middot; 15% Hold &middot; 0% Short</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="av-regime-row">
-                                        <div class="av-regime-dot" style="background:var(--cyan)"></div>
-                                        <div>
-                                            <div class="av-regime-name">Ranging / Mild Up</div>
-                                            <div class="av-regime-desc">Price near moving averages, moderate vol. Sideways or slow grind up.</div>
-                                            <div class="av-regime-alloc">&#8594; 55% LP &middot; 20% Long &middot; 20% Hold &middot; 5% Short</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="av-regime-row">
-                                        <div class="av-regime-dot" style="background:hsl(40,90%,55%)"></div>
-                                        <div>
-                                            <div class="av-regime-name">High Volatility</div>
-                                            <div class="av-regime-desc">Large daily swings, moving averages crossing. Uncertain direction.</div>
-                                            <div class="av-regime-alloc">&#8594; 50% Hold &middot; 25% LP (wide) &middot; 12% Long &middot; 13% Short</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="av-regime-row">
-                                        <div class="av-regime-dot" style="background:#ff6450"></div>
-                                        <div>
-                                            <div class="av-regime-name">Strong Downtrend</div>
-                                            <div class="av-regime-desc">Price &lt; 7d MA &lt; 30d MA. Clear bearish momentum.</div>
-                                            <div class="av-regime-alloc">&#8594; 50% Short &middot; 30% Hold &middot; 15% LP (tight) &middot; 5% Long</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 3. Rebalancing Rules -->
-                                <div class="av-brain-card">
-                                    <div class="av-brain-card-title rebalance-title">&#x25C9; Rebalancing Rules</div>
-                                    <ul class="av-rule-list">
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Check interval:</strong> Every 4 hours the vault re-evaluates market regime and current allocation</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drift threshold:</strong> Only rebalance if any position drifts &gt;10% from target allocation (avoids churning)</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max move:</strong> Cap each rebalance at 25% of vault value &mdash; no panic all-in/all-out</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Gas awareness:</strong> Skip rebalance if Base gas exceeds 0.5 gwei &mdash; wait for cheaper window</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Regime confirmation:</strong> New regime must persist for 2 consecutive checks (8 hrs) before the vault shifts allocation</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>LP range auto-adjust:</strong> Tight range (&#177;2%) in calm markets for max fees, wide range (&#177;8%) in volatile markets to stay in range</li>
-                                    </ul>
-                                </div>
-
-                                <!-- 4. Risk Parameters -->
-                                <div class="av-brain-card">
-                                    <div class="av-brain-card-title risk-title">&#x25C9; Risk Guardrails</div>
-                                    <ul class="av-rule-list">
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Max leverage:</strong> 2x only. Never exceeds 2x exposure on any position</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Drawdown circuit breaker:</strong> If vault drops 15% from all-time high, exit all positions to 100% USDC hold until regime stabilizes</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Minimum USDC buffer:</strong> Always keeps at least 10% in USDC as dry powder &mdash; never fully deployed</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Aave health floor:</strong> Maintains &gt;1.5 health factor on all leveraged positions &mdash; auto-deleverages if approaching liquidation</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>Slippage cap:</strong> Max 0.5% slippage per swap. Larger rebalances split into multiple txs</li>
-                                        <li><span class="av-rule-mark">&#x25B8;</span> <strong>No oracle dependency:</strong> Uses on-chain TWAP from Aerodrome pool &mdash; resistant to flash loan manipulation</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Divider: "or manage manually" -->
-            <div style="text-align:center; margin-bottom:24px; opacity:0.4;">
-                <span style="font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-dim);">&#x2500;&#x2500; or manage positions manually &#x2500;&#x2500;</span>
-            </div>
-
-            <!-- 3 Position Cards -->
-            <div class="toolkit-cards">
-                <div class="toolkit-card card-lp fade-in delay-1" onclick="selectCard('lp')">
-                    <span class="toolkit-card-icon">&#x1F4CA;</span>
-                    <div class="toolkit-card-title">Concentrated LP</div>
-                    <div class="toolkit-card-subtitle">Set your own price range on Aerodrome. Earn trading fees while ETH stays in range.</div>
-                    <div class="toolkit-card-pos-label">Your Position</div>
-                    <div class="toolkit-card-pos-val" id="tk-lp-val">$0.00</div>
-                    <button class="toolkit-card-btn">Enter Position</button>
-                </div>
-
-                <div class="toolkit-card card-long fade-in delay-2" onclick="selectCard('long')">
-                    <span class="toolkit-card-icon">&#x1F7E2;</span>
-                    <div class="toolkit-card-title">2x Long ETH</div>
-                    <div class="toolkit-card-subtitle">Leveraged long via Aave V3. Supply, borrow, swap &mdash; ~2x ETH exposure for bull markets.</div>
-                    <div class="toolkit-card-pos-label">Your Position</div>
-                    <div class="toolkit-card-pos-val" id="tk-long-val">$0.00</div>
-                    <button class="toolkit-card-btn">Enter Position</button>
-                </div>
-
-                <div class="toolkit-card card-short fade-in delay-3" onclick="selectCard('short')">
-                    <span class="toolkit-card-icon">&#x1F534;</span>
-                    <div class="toolkit-card-title">2x Short ETH</div>
-                    <div class="toolkit-card-subtitle">Leveraged short via Aave V3. Supply USDC, borrow ETH, sell &mdash; profits when ETH drops.</div>
-                    <div class="toolkit-card-pos-label">Your Position</div>
-                    <div class="toolkit-card-pos-val" id="tk-short-val">$0.00</div>
-                    <button class="toolkit-card-btn">Enter Position</button>
-                </div>
-            </div>
-
-            <!-- Expandable Action Panel -->
-            <div class="toolkit-expand" id="tk-expand">
-                <button class="toolkit-expand-close" onclick="closeExpand()">&#x2715;</button>
-                <div id="tk-expand-content"></div>
-                <div class="toolkit-tx-status" id="tk-tx-status"></div>
-            </div>
-
-            <!-- ETH Price Chart -->
-            <div class="toolkit-chart fade-in">
-                <div class="toolkit-chart-header">
-                    <div>
-                        <span class="toolkit-chart-price" id="tk-chart-price">$--</span>
-                        <span class="toolkit-chart-change" id="tk-chart-change"></span>
-                    </div>
-                    <div class="toolkit-timeframes">
-                        <button class="toolkit-tf-btn" data-days="1" onclick="switchTimeframe(1)">1D</button>
-                        <button class="toolkit-tf-btn active" data-days="7" onclick="switchTimeframe(7)">7D</button>
-                        <button class="toolkit-tf-btn" data-days="30" onclick="switchTimeframe(30)">30D</button>
-                        <button class="toolkit-tf-btn" data-days="365" onclick="switchTimeframe(365)">1Y</button>
-                    </div>
-                </div>
-                <canvas id="toolkit-chart-canvas"></canvas>
-            </div>
-
-            <!-- Insights Panel -->
-            <div class="toolkit-insights fade-in">
-                <div class="toolkit-insight">
-                    <div class="toolkit-insight-label">Trend</div>
-                    <div class="toolkit-insight-val" id="tk-trend" style="color:var(--text-secondary);">Loading...</div>
-                    <div class="toolkit-insight-desc" id="tk-trend-desc">Analyzing price data</div>
-                </div>
-                <div class="toolkit-insight">
-                    <div class="toolkit-insight-label">Volatility</div>
-                    <div class="toolkit-insight-val" id="tk-vol" style="color:var(--text-secondary);">Loading...</div>
-                    <div class="toolkit-insight-desc" id="tk-vol-desc">Calculating...</div>
-                </div>
-                <div class="toolkit-insight">
-                    <div class="toolkit-insight-label">Suggestion</div>
-                    <div class="toolkit-insight-val" id="tk-suggest" style="color:var(--accent-bright);">--</div>
-                    <div class="toolkit-insight-desc" id="tk-suggest-desc">Based on trend &amp; volatility</div>
                 </div>
             </div>
         </div>
